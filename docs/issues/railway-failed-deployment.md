@@ -35,6 +35,18 @@ The Railway service was connected to the repository before P1 created applicatio
   before Railway will deploy it.
 - A regression check must confirm Railpack/Docker can build the selected root and start command before any production promotion.
 
+## Superseding live-state update — 2026-09-06
+
+The original document-only deployment remains a valid root-cause record. It is no longer the
+current deployment state: production now runs API deployment `c52cd2c5-2063-443b-a92a-6917c6239156`
+from commit `0d3a503d33e3f9dbbdb21d5b50acb034048be601`, with a private Railway Postgres service
+and generated API HTTPS domain. Health and database readiness passed externally on 2026-09-05.
+
+The live deployment did not apply config-as-code values for healthcheck or pre-deploy migration.
+Railway documents that a config file does not follow a monorepo root directory; service settings
+must explicitly point to `/apps/api/railway.toml`. Migration execution remains unproven until a
+staging deployment records the pre-deploy command and the migration revision in its logs.
+
 ## Acceptance evidence for closure
 
 1. P1 local build, tests and production bundle pass.

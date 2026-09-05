@@ -29,8 +29,11 @@ For the API service, set these Railway build settings:
 | Watch paths | `/apps/api/**` |
 | Dockerfile | `Dockerfile` relative to `/apps/api` |
 
-Railway's monorepo behavior requires a service root directory. Its config file path is specified
-as an absolute repository path when the file is outside the default root configuration lookup.
+Railway's monorepo behavior requires a service root directory. The Railway config file does **not**
+follow that root directory automatically, so its path must be set explicitly as the absolute
+repository path `/apps/api/railway.toml`. On the deployment details page, verify that the
+healthcheck and pre-deploy settings are marked as originating from the config file before treating
+the migration gate as configured.
 
 ## Railway steps
 
@@ -38,7 +41,7 @@ as an absolute repository path when the file is outside the default root configu
 2. Create a staging PostgreSQL service named `Postgres`. Record its resource limits and the
    usage snapshot before and after provisioning.
 3. Create or configure a staging API service from the existing repository. Set source root to
-   `apps/api`, use its `railway.toml`, and configure the required variables from
+   `apps/api`, explicitly set config-as-code path to `/apps/api/railway.toml`, and configure the required variables from
    `deployment/railway/env.example` in Railway's secret store.
 4. Use the private variable reference `${{Postgres.DATABASE_URL}}` for `DATABASE_URL`.
 5. Generate a Railway public domain for the API. Configure the web staging origin in

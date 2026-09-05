@@ -28,6 +28,18 @@ class Settings(BaseSettings):
     supabase_jwt_audience: str = "authenticated"
     supabase_jwks_url: str | None = None
 
+    @field_validator("database_url")
+    @classmethod
+    def normalize_postgres_driver(cls, value: str | None) -> str | None:
+        """Make Railway/Postgres URLs explicit for the bundled psycopg v3 driver."""
+        if value is None:
+            return None
+        if value.startswith("postgresql://"):
+            return f"postgresql+psycopg://{value.removeprefix('postgresql://')}"
+        if value.startswith("postgres://"):
+            return f"postgresql+psycopg://{value.removeprefix('postgres://')}"
+        return value
+
     @field_validator("cors_allowed_origins", mode="before")
     @classmethod
     def split_origins(cls, value: object) -> object:

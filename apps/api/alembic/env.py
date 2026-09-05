@@ -6,6 +6,7 @@ import os
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
+from rt_connect_api.core.config import Settings
 from rt_connect_api.db.base import Base
 from rt_connect_api.db import models  # noqa: F401
 
@@ -14,7 +15,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 if database_url := os.getenv("DATABASE_URL"):
-    config.set_main_option("sqlalchemy.url", database_url)
+    config.set_main_option("sqlalchemy.url", Settings(database_url=database_url).database_url or database_url)
 
 target_metadata = Base.metadata
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Generator
 from functools import lru_cache
 
-from sqlalchemy import Engine, create_engine, text
+from sqlalchemy import Engine, create_engine, inspect, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from rt_connect_api.core.config import get_settings
@@ -29,12 +29,19 @@ def get_session() -> Generator[Session]:
 
 
 def database_ready() -> tuple[bool, str | None]:
-    engine = get_engine()
-    if engine is None:
-        return False, "DATABASE_URL is not configured"
     try:
+        engine = get_engine()
+        if engine is None:
+            return False, "DATABASE_URL is not configured"
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
+            if not inspect(engine).has_table("alembic_version"):
+                return False, "Database migration is not applied"
+            schema_revision = connection.execute(
+                text("SELECT version_num FROM alembic_version")
+            ).scalar_one_or_none()
     except Exception:
         return False, "Database connection failed"
+    if schema_revision is None:
+        return False, "Database migration is not applied"
     return True, None

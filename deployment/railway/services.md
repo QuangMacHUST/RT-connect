@@ -7,10 +7,16 @@
 | API | `RT-connect` or a clearly renamed `api` service | Public HTTPS | FastAPI application and later API surface |
 | PostgreSQL | `Postgres` | Private only | Sole business-data database |
 
-The API source root is `apps/api`. Its `railway.toml` uses the Dockerfile, applies
-`alembic upgrade head` as a pre-deploy command, checks `/api/v1/health`, and restarts on
-failure. `DATABASE_URL` must be set using Railway's private reference to Postgres; it must not
-be copied into a browser build or committed environment file.
+The API source root is `apps/api`. Railway must also be explicitly configured with config-as-code
+path `/apps/api/railway.toml`: config discovery does not follow the monorepo root directory. That
+file uses the Dockerfile, applies `alembic upgrade head` as a pre-deploy command, checks
+`/api/v1/health`, and restarts on failure. `DATABASE_URL` must be set using Railway's private
+reference to Postgres; it must not be copied into a browser build or committed environment file.
+
+After each deployment, inspect Railway deployment details and confirm the config-file provenance
+for `healthcheckPath` and `preDeployCommand`. A running API plus a successful `SELECT 1` is not
+evidence that migrations ran; `/api/v1/ready` in the current branch additionally requires an
+applied `alembic_version` row.
 
 P2 deliberately does not create Redis, a worker, renderer, object-storage proxy, or a public
 database domain. Those are introduced only in their scheduled phases after workload evidence.

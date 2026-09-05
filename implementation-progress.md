@@ -4,9 +4,9 @@
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
 - **Current phase:** P2 — Railway staging, PostgreSQL và deployment foundation.
-- **Current status:** IN_PROGRESS — P1 local gate closed; both Railway tokens verified live from root .env. Supabase public configuration remains empty.
-- **Last authoritative check:** 2026-09-05T07:05:00+07:00.
-- **Next exact step:** push the CI guard fix through the user's reviewed Git workflow, configure the Railway service root as `/apps/api` in a non-production target, then provision staging PostgreSQL/API and execute the remote migration/auth smoke gate.
+- **Current status:** IN_PROGRESS — P1 local gate closed; production API and Railway PostgreSQL now pass external health/readiness checks. Supabase public configuration and a separate staging environment remain absent.
+- **Last authoritative check:** 2026-09-06T00:20:46+07:00.
+- **Next exact step:** provision the no-cost staging environment if Railway access permits, then obtain a cost/usage snapshot before creating any staging PostgreSQL resource; configure Supabase Auth staging and run the migration/auth smoke gate without changing production.
 
 ## Source documents read
 
@@ -22,7 +22,7 @@
 | :--- | :--- | :--- |
 | P0 | DONE | Exit audit passed on 2026-09-05; baseline, traceability, module/route/environment registries and Railway failure issue recorded |
 | P1 | DONE | Full local Compose build/health, in-container PostgreSQL migration, synthetic seed persistence, API readiness and web health passed on 2026-09-05 |
-| P2 | IN_PROGRESS | JWT contract, deployment manifest and runbooks are ready; staging provisioning needs Railway project-write access plus Supabase configuration |
+| P2 | IN_PROGRESS | Production API/PostgreSQL connectivity is verified; URL resilience and failure handling are covered locally. Staging, Railway migration evidence, Supabase configuration and live Auth smoke remain required. |
 | P3 | NOT_STARTED | Depends on P2 |
 | P4 | NOT_STARTED | Depends on P3 |
 | P5 | NOT_STARTED | Depends on P4 |
@@ -64,10 +64,14 @@
 
 - Project: `prolific-learning` (`339f2c50-ddd7-491f-8c4e-da2a2d169502`).
 - Workspace: `Mạc Đăng Quang's Projects` (`53fb850d-a59c-4690-816f-01aea06f0645`).
-- Only environment: `production` (`910dff25-75b6-42b2-bf6b-e2601ba9d7d2`).
-- Only service: `RT-connect` (`9544c3e6-c8bd-4c29-b62e-c6172eb51af3`).
-- Latest deployment: `FAILED`, deployment `b8037f6c-720c-407c-b5e4-34421358b4a3`, stopped.
-- No service/custom domain and no Railway bucket were present in the status payload.
+- Only environment: `production` (`910dff25-75b6-42b2-bf6b-e2601ba9d7d2`); no staging environment exists.
+- Services: `RT-connect` (`9544c3e6-c8bd-4c29-b62e-c6172eb51af3`) and private `Postgres` (`5709f18d-c92d-461a-9f73-478dd7748d80`).
+- API latest deployment: `SUCCESS`, deployment `c52cd2c5-2063-443b-a92a-6917c6239156`, instance `RUNNING`, source commit `0d3a503d33e3f9dbbdb21d5b50acb034048be601`.
+- Railway generated public API domain: `https://rt-connect-production.up.railway.app` on target port 8000; no custom domain exists.
+- External check at 2026-09-05T16:57Z: `/api/v1/health` returned 200 `ok`; `/api/v1/ready` returned 200 `ready` after the production API was connected to private Railway PostgreSQL.
+- PostgreSQL runs privately with a Railway-managed 5 GB volume. No public PostgreSQL domain was reported.
+- The deployment metadata still reports no applied `healthcheckPath` or `preDeployCommand`; migration execution on the Railway database remains unproven and must not be inferred from readiness.
+- Railway documentation was rechecked on 2026-09-06: config-as-code does not follow a monorepo root directory. The API service must explicitly set config path `/apps/api/railway.toml`; this explains the null healthcheck/pre-deploy fields in the current production deployment metadata.
 - Account and project token scopes were verified without printing token values.
 - Railway CLI was not installed globally; `npx @railway/cli` version `5.49.1` was used read-only.
 - Workspace usage query returned `UNAUTHORIZED`; exact billing/usage remains unavailable with the supplied token scope and must not be guessed.
@@ -122,18 +126,23 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 - P2 Railway source audit: the old failed deployment analyzed `aa5dce6`, but `origin/main` now points to `dc6ee79` and contains the API/web source. The deployment for `dc6ee79` was skipped because the GitHub secret-guard job failed; API and web jobs passed. The CI guard has been corrected to allow `.env.example` templates while rejecting private environment files and credentials.
 - P2 post-change local regression: PASS — full `scripts/verify-p1.ps1 -WithContainers` completed after JWT, CORS and Railway manifest changes: 17 API tests, lint/type checks, migration SQL, web checks, five healthy Compose services, in-container migration, synthetic seed persistence, API readiness and web health. The scoped stack and test volumes were removed.
 - P2 Stitch recheck: PASS — project `RT-connect` remains public with the Clinical Precision Interface design system, the four active QA application screens, and four hidden/deprecated Biological screen instances. No Stitch design was altered during P2.
+- P2 public infrastructure smoke: PASS — the generated Railway domain is reachable over HTTPS; API health and database readiness both returned 200 from an external network.
+- P2 PostgreSQL URL resilience: PASS locally — plain `postgres://`/`postgresql://` URLs are normalized to the bundled psycopg v3 dialect; invalid engine initialization is surfaced as controlled 503 readiness failure instead of an unhandled 500. Focused API tests (6), Ruff, strict mypy and Alembic PostgreSQL SQL rendering pass.
+- P2 migration-aware readiness: PASS locally — `/api/v1/ready` now requires a reachable database and an applied Alembic version row. Against a fresh Docker PostgreSQL database it returned 503 `Database migration is not applied`; after in-container `alembic upgrade head` it returned `ready`, and the synthetic seed persisted one machine. The scoped API/web/PostgreSQL/Redis/MinIO test stack and its two newly created volumes were removed after verification. Focused tests (7), Ruff, strict mypy and Alembic PostgreSQL SQL rendering pass.
+- P2 local regression after connection hardening: PASS — 19 API tests, Ruff, strict mypy, Alembic PostgreSQL SQL render, web lint/typecheck/production build and the web component test pass. Vitest is pinned to one worker for deterministic local/CI completion; the prior default parallel runner left an orphan worker after the test had passed.
 
 ## Blockers
 
 - Correction on 2026-09-05: both Railway tokens are present in root `.env` and authenticate successfully through the Railway API. Account-token access resolves project `prolific-learning`; project-token scope resolves its production environment. The earlier missing-token report was incorrect. Standard dotenv parsing supports spaces around `=` and quoted values.
 - Supabase URL and publishable key are present as names but have empty values. This is the remaining Auth configuration dependency.
 - Actual credentials were found in `.env.example` and replaced with empty placeholders; the user's `.env` was preserved.
-- Railway account token lacks the write scope needed to create/link staging and the usage scope needed to view costs. A project-write credential is required before any billable Railway resource can be provisioned.
-- The current Railway production service has not deployed `dc6ee79`; it still reports the old failed deployment and the new deployment as skipped. After the CI fix is pushed and green, verify Railway sees `dc6ee79` before any staging/production deployment decision.
-- The live Railway service metadata still reports `rootDirectory=null` and `dockerfilePath=null`. Configure `/apps/api` on a staging service/environment before testing the Railway Dockerfile; do not use the current production service as the P2 test target.
+- Supabase URL and publishable key are still empty; a Supabase Auth project/configuration is required before live sign-in and JWT verification can be tested.
+- No Railway staging environment exists. Railway cost/usage remains unavailable with the current account token scope, so a billable staging PostgreSQL service must not be provisioned until its resource/cost gate can be reviewed.
+- Revalidated 2026-09-06: the supplied Railway account token can read explicit project/environment status but `railway link --project 339f2c50-ddd7-491f-8c4e-da2a2d169502` is rejected as `Unauthorized`; therefore it cannot create or link the required staging environment. No Railway resource was created by this attempt.
+- The running production API uses `apps/api` and its Dockerfile correctly, but its live deployment metadata does not show `healthcheckPath` or `preDeployCommand` applied. The baseline Alembic migration therefore lacks Railway execution evidence.
 
 ## Known limitations
 
 - No staging Railway environment or PostgreSQL service exists yet; these belong to P2.
-- No Supabase configuration keys are present in `.env`; Auth project/configuration is required by P2/P3.
+- No Supabase configuration values are present in `.env`; Auth project/configuration is required by P2/P3.
 - Four Biological designs must be regenerated in P12–P15.
