@@ -4,9 +4,9 @@
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
 - **Current phase:** P2 — Railway staging, PostgreSQL và deployment foundation.
-- **Current status:** IN_PROGRESS — P1 local gate closed; production API and Railway PostgreSQL now pass external health/readiness checks. Supabase public configuration and a separate staging environment remain absent.
+- **Current status:** IN_PROGRESS — P1 local gate closed; production API and Railway PostgreSQL now pass external health/readiness checks. Railway staging environment exists but its generated service has no source or deployment; Supabase public configuration remains absent.
 - **Last authoritative check:** 2026-09-06T00:20:46+07:00.
-- **Next exact step:** provision the no-cost staging environment if Railway access permits, then obtain a cost/usage snapshot before creating any staging PostgreSQL resource; configure Supabase Auth staging and run the migration/auth smoke gate without changing production.
+- **Next exact step:** configure the existing empty staging service to deploy GitHub branch `codex/p2-runtime-resilience` using source root `/apps/api` and config path `/apps/api/railway.toml`; then obtain a cost/usage snapshot before creating any staging PostgreSQL resource.
 
 ## Source documents read
 
@@ -22,7 +22,7 @@
 | :--- | :--- | :--- |
 | P0 | DONE | Exit audit passed on 2026-09-05; baseline, traceability, module/route/environment registries and Railway failure issue recorded |
 | P1 | DONE | Full local Compose build/health, in-container PostgreSQL migration, synthetic seed persistence, API readiness and web health passed on 2026-09-05 |
-| P2 | IN_PROGRESS | Production API/PostgreSQL connectivity is verified; URL resilience and failure handling are covered locally. Staging, Railway migration evidence, Supabase configuration and live Auth smoke remain required. |
+| P2 | IN_PROGRESS | Production API/PostgreSQL connectivity is verified; URL resilience and failure handling are covered locally. Staging environment exists, but its API source/service setup, PostgreSQL migration evidence, Supabase configuration and live Auth smoke remain required. |
 | P3 | NOT_STARTED | Depends on P2 |
 | P4 | NOT_STARTED | Depends on P3 |
 | P5 | NOT_STARTED | Depends on P4 |
@@ -64,12 +64,13 @@
 
 - Project: `prolific-learning` (`339f2c50-ddd7-491f-8c4e-da2a2d169502`).
 - Workspace: `Mạc Đăng Quang's Projects` (`53fb850d-a59c-4690-816f-01aea06f0645`).
-- Only environment: `production` (`910dff25-75b6-42b2-bf6b-e2601ba9d7d2`); no staging environment exists.
+- Environments: `production` (`910dff25-75b6-42b2-bf6b-e2601ba9d7d2`) and `staging` (`b0ab34e5-0ff4-479d-8232-659d175e9e2f`).
 - Services: `RT-connect` (`9544c3e6-c8bd-4c29-b62e-c6172eb51af3`) and private `Postgres` (`5709f18d-c92d-461a-9f73-478dd7748d80`).
 - API latest deployment: `SUCCESS`, deployment `c52cd2c5-2063-443b-a92a-6917c6239156`, instance `RUNNING`, source commit `0d3a503d33e3f9dbbdb21d5b50acb034048be601`.
 - Railway generated public API domain: `https://rt-connect-production.up.railway.app` on target port 8000; no custom domain exists.
 - External check at 2026-09-05T16:57Z: `/api/v1/health` returned 200 `ok`; `/api/v1/ready` returned 200 `ready` after the production API was connected to private Railway PostgreSQL.
 - PostgreSQL runs privately with a Railway-managed 5 GB volume. No public PostgreSQL domain was reported.
+- Staging was verified live on 2026-09-06. It contains generated service `gleaming-cooperation` (`9b35bf0b-0419-4679-8af0-e639e5a84713`) with no source, deployment, domain or volume; it is safe to configure as the staging API rather than create a second empty service.
 - The deployment metadata still reports no applied `healthcheckPath` or `preDeployCommand`; migration execution on the Railway database remains unproven and must not be inferred from readiness.
 - Railway documentation was rechecked on 2026-09-06: config-as-code does not follow a monorepo root directory. The API service must explicitly set config path `/apps/api/railway.toml`; this explains the null healthcheck/pre-deploy fields in the current production deployment metadata.
 - Account and project token scopes were verified without printing token values.
@@ -137,12 +138,12 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 - Supabase URL and publishable key are present as names but have empty values. This is the remaining Auth configuration dependency.
 - Actual credentials were found in `.env.example` and replaced with empty placeholders; the user's `.env` was preserved.
 - Supabase URL and publishable key are still empty; a Supabase Auth project/configuration is required before live sign-in and JWT verification can be tested.
-- No Railway staging environment exists. Railway cost/usage remains unavailable with the current account token scope, so a billable staging PostgreSQL service must not be provisioned until its resource/cost gate can be reviewed.
+- Railway staging now exists, but account-token CLI calls still cannot link or mutate service source/configuration. The generated staging service must be connected to the GitHub source through Railway UI or a project-write credential before deployment. Railway cost/usage remains unavailable with the current account token scope, so a billable staging PostgreSQL service must not be provisioned until its resource/cost gate can be reviewed.
 - Revalidated 2026-09-06: the supplied Railway account token can read explicit project/environment status but `railway link --project 339f2c50-ddd7-491f-8c4e-da2a2d169502` is rejected as `Unauthorized`; therefore it cannot create or link the required staging environment. No Railway resource was created by this attempt.
 - The running production API uses `apps/api` and its Dockerfile correctly, but its live deployment metadata does not show `healthcheckPath` or `preDeployCommand` applied. The baseline Alembic migration therefore lacks Railway execution evidence.
 
 ## Known limitations
 
-- No staging Railway environment or PostgreSQL service exists yet; these belong to P2.
+- No staging PostgreSQL service exists yet; this belongs to P2 after the staging API source/configuration gate.
 - No Supabase configuration values are present in `.env`; Auth project/configuration is required by P2/P3.
 - Four Biological designs must be regenerated in P12–P15.
