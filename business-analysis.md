@@ -2,13 +2,13 @@
 
 ## Dự án RT-CONNECT
 
-**Tên sản phẩm:** RT-CONNECT  
-**Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị  
-**Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức  
-**Phiên bản tài liệu:** 0.3 — bổ sung yêu cầu truy cập web từ xa  
-**Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
+- **Tên sản phẩm:** RT-CONNECT
+- **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
+- **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
+- **Phiên bản tài liệu:** 0.5 — đồng bộ lại baseline Google Stitch sau khi loại bốn thiết kế Biological cũ
+- **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
-Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Các quyết định về framework, database, server, cấu trúc source code và cách triển khai sẽ được viết ở tài liệu kỹ thuật riêng sau khi tài liệu nghiệp vụ được thống nhất.
+Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Các quyết định về framework, database, server, cấu trúc source code và cách triển khai được mô tả trong `technical-specification.md`; trình tự thực hiện và tiêu chí đóng từng module được mô tả trong `plan.md`.
 
 ---
 
@@ -99,7 +99,7 @@ Xây dựng một website giúp bệnh viện quản lý tập trung các bài Q
 12. Thư viện protocol điều trị, phác đồ và knowledge library trong Biological Toolkit.
 13. Lịch sử thay đổi, version và audit trail.
 
-### 4.5. Kênh truy cập từ xa
+### 4.2. Kênh truy cập từ xa
 
 RT-CONNECT được phát hành dưới dạng website có URL để các thành viên chuyên môn truy cập từ xa bằng trình duyệt desktop hoặc mobile. Truy cập từ xa là yêu cầu về khả năng kết nối và phát hành sản phẩm, không làm phát sinh phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
@@ -111,7 +111,7 @@ Phạm vi truy cập:
 - Database, object storage, worker, queue và DICOM gateway là thành phần hạ tầng phía sau, không phải các dịch vụ public độc lập.
 - Nếu chia sẻ nội dung kiến thức hoặc protocol ra ngoài organization trong tương lai, đó sẽ là một yêu cầu sản phẩm riêng; không mặc định mở dữ liệu QA hoặc dữ liệu có định danh cho người dùng ẩn danh.
 
-### 4.2. Clinical MVP
+### 4.3. Clinical MVP
 
 Clinical MVP tập trung vào:
 
@@ -124,7 +124,7 @@ Clinical MVP tập trung vào:
 
 Biological Toolkit được phát triển như một khu vực riêng, không gắn mặc định với các case QA hoặc ca bệnh.
 
-### 4.3. Phạm vi mở rộng
+### 4.4. Phạm vi mở rộng
 
 - Visual Dose Review trên anatomy.
 - DVH/Plan Review.
@@ -132,7 +132,7 @@ Biological Toolkit được phát triển như một khu vực riêng, không g�
 - Các phương pháp phân tích QA khác ngoài Gamma.
 - Import dữ liệu từ nhiều thiết bị đo và phần mềm bên ngoài.
 
-### 4.4. Ngoài phạm vi tự động hóa
+### 4.5. Ngoài phạm vi tự động hóa
 
 - Thay thế TPS, PACS hoặc bệnh án điện tử.
 - Chỉnh sửa treatment plan, prescription, MLC hoặc thông số máy điều trị.
@@ -140,6 +140,55 @@ Biological Toolkit được phát triển như một khu vực riêng, không g�
 - Tự động phát hành clinical order.
 - Tự động đưa ra quyết định điều trị.
 - Tự động liên kết Biological Toolkit với một ca bệnh hoặc QA case nếu user không chủ động chọn dữ liệu.
+
+### 4.6. Nguồn thiết kế giao diện và ràng buộc triển khai đã thống nhất
+
+Các quyết định sau là baseline sản phẩm tại ngày 2026-09-04:
+
+- Google Stitch project `RT-connect` là nguồn thiết kế trực quan đang hoạt động. Project ID là `14242591911141046021`.
+- Thiết kế được truy xuất trực tiếp qua MCP Google Stitch; repository không còn duy trì `UI-UX.md` như một nguồn yêu cầu song song.
+- `business-analysis.md` vẫn là nguồn yêu cầu nghiệp vụ. Màn hình hoặc code do Stitch tạo không được tự thay đổi quy tắc nghiệp vụ trong tài liệu này.
+- Railway là nền tảng triển khai backend server và PostgreSQL của RT-CONNECT.
+- Supabase chỉ cung cấp Authentication/Identity/Session; Supabase không phải database nghiệp vụ của RT-CONNECT.
+- Website phải truy cập được từ xa qua HTTPS sau khi hoàn tất release production.
+- Token Railway, khóa MCP, database credential và các secret triển khai không phải dữ liệu nghiệp vụ, không xuất hiện trên giao diện người dùng và không được ghi vào tài liệu hoặc source code.
+
+Stitch hiện có bốn màn hình sản phẩm đang hoạt động làm thiết kế tham chiếu:
+
+| Mã | Màn hình hiện có | Khu vực nghiệp vụ |
+| :--- | :--- | :--- |
+| UI-01 | Trang chủ - Home Dashboard | Tổng quan và điều hướng |
+| UI-02 | Kho lưu trữ QA & Thư mục | Folder, QA archive và QA case |
+| UI-03 | Phân tích PSQA Gamma Workspace | Upload/validation/Gamma/result |
+| UI-04 | Trình biên soạn Báo cáo - Report Builder Studio | Report Builder, preview và export |
+
+Bốn thiết kế Biological Toolkit cũ đã được user loại khỏi canvas hoạt động vì không đồng nhất với bốn màn hình trên. MCP vẫn có thể trả các instance cũ ở trạng thái `hidden`; các instance này là legacy/deprecated, không được dùng làm nguồn thiết kế, không được tự khôi phục và không được giữ Screen ID cũ trong mapping triển khai. Biological Toolkit Overview, BED/EQD2, so sánh phác đồ và Re-irradiation phải được tạo lại lần lượt trong cùng project Stitch, dùng Design System `Clinical Precision Interface` và bốn màn hình đang hoạt động làm chuẩn.
+
+Bốn màn hình đang hoạt động chưa phải toàn bộ sản phẩm. Các module chưa có màn hình riêng như đăng nhập, organization/site/machine, QA case detail, upload/validation chi tiết, Machine QA checklist, trend, QA Protocol Library, Biological Toolkit, dose-limit/knowledge library, report history và trạng thái lỗi hệ thống vẫn phải được thiết kế khi phase tương ứng bắt đầu. Việc chưa có screen trên Stitch không làm yêu cầu nghiệp vụ đó biến mất.
+
+### 4.7. Danh mục module và kết quả nghiệp vụ phải bàn giao
+
+| Mã module | Module | Kết quả nghiệp vụ hoàn chỉnh |
+| :--- | :--- | :--- |
+| MOD-00 | Identity và Organization Context | User đăng nhập bằng Supabase Auth, vào đúng organization và không truy vấn chéo organization |
+| MOD-01 | Home Dashboard | User thấy machine, QA gần đây, cảnh báo, job và lối vào các khu vực chính |
+| MOD-02 | Organization, Site và Machine | Tạo và quản lý đúng hierarchy; machine giữ định danh ổn định khi đổi tên |
+| MOD-03 | QA Archive, Folder và QA Case | Quản lý folder lồng nhau, tìm kiếm, tạo case, di chuyển/archive mà không mất lịch sử |
+| MOD-04 | Artifact, Upload và Validation | Upload giữ nguyên file, tạo checksum, Input Manifest và kết quả validation có thể giải thích |
+| MOD-05 | Machine QA | Tạo checklist Daily/Monthly/Annual/Custom, nhập metric, áp rule và tạo trend point |
+| MOD-06 | PSQA Gamma | Chạy Gamma end-to-end từ RTDOSE + measurement, lưu map, metric, warning, configuration và provenance |
+| MOD-07 | Report Builder | Tạo report tùy chỉnh, revision, preview và export tái hiện được từ snapshot |
+| MOD-08 | Trend | Xem lịch sử theo machine/metric/time, baseline, tolerance, action level và drill-down về nguồn |
+| MOD-09 | QA Protocol Library | Tạo, sao chép, version hóa protocol/rule/reference mà không cập nhật ngược report cũ |
+| MOD-10 | Biological Hub | Điều hướng, history, source và report độc lập cho toàn bộ Biological Toolkit |
+| MOD-11 | BED/EQD2 | Tính, giải thích, lưu lịch sử và vẽ đồ thị theo tổng liều D |
+| MOD-12 | So sánh phác đồ | So sánh hai hoặc nhiều phác đồ bằng bảng/đồ thị và ghi rõ khác biệt context/model |
+| MOD-13 | Re-irradiation và bù fraction | Tính nhiều course, recovery/no-recovery, khoảng thời gian, scenario và cảnh báo giới hạn |
+| MOD-14 | Dose Limit, Treatment Protocol và Knowledge Library | Tra cứu, tạo version, dẫn nguồn và dùng nội dung như công cụ tính toán/kiến thức độc lập |
+| MOD-15 | Visual Dose và DVH/Plan Review | Xem dose trên anatomy và tính metric structure khi input geometry hợp lệ |
+| MOD-16 | Audit, vận hành và truy cập từ xa | Theo dõi lineage/revision, backup/restore, monitoring và sử dụng website ổn định qua HTTPS |
+
+Một module chỉ được coi là hoàn thành khi người dùng thực hiện được workflow từ giao diện đến dữ liệu/kết quả cuối, có trạng thái rỗng/đang xử lý/lỗi/cảnh báo, có lịch sử cần thiết và đạt tiêu chí nghiệm thu của module. Một ảnh giao diện, một API riêng lẻ hoặc một deployment thành công chưa đủ để đóng module.
 
 ---
 
@@ -866,6 +915,13 @@ Mỗi lần tính phải lưu:
 | BR-024 | Biological Toolkit có thể tính và xuất report độc lập nhưng không tạo clinical order. |
 | BR-025 | Bộ test tính toán là căn cứ nghiệm thu ban đầu của engine; dataset thật được dùng cho pilot và cải tiến tiếp theo. |
 | BR-026 | RT-CONNECT có thể được truy cập từ xa qua website/HTTPS bởi các thành viên của organization; yêu cầu này không tạo phân cấp hoặc quyền theo từng hành động. |
+| BR-027 | Google Stitch là nguồn thiết kế trực quan; business-analysis.md mới là nguồn quy tắc nghiệp vụ và tiêu chí nghiệm thu. |
+| BR-028 | Việc xóa `UI-UX.md` không xóa requirement; screen còn thiếu phải được bổ sung trên Stitch trong phase của module tương ứng. |
+| BR-029 | Supabase chỉ quản lý identity/session; dữ liệu nghiệp vụ, QA, report, protocol, audit và Biological Toolkit nằm trong PostgreSQL của Railway. |
+| BR-030 | Browser không được nhận Railway token, database credential, Supabase service-role key hoặc secret triển khai. |
+| BR-031 | Mỗi module phải được nghiệm thu theo workflow end-to-end, không chỉ bằng ảnh Stitch, component tĩnh, API đơn lẻ hoặc deploy thành công. |
+| BR-032 | Mỗi screen Stitch được triển khai phải map được tới module, route, dữ liệu, event, trạng thái và tiêu chí nghiệm thu tương ứng. |
+| BR-033 | Release production phải đi qua staging, migration, backup/restore, remote smoke test và rollback evidence trước khi được coi là hoàn tất. |
 
 ---
 
@@ -969,49 +1025,68 @@ Mỗi lần tính phải lưu:
 - Mất kết nối hoặc refresh browser không làm mất artifact hoặc tạo analysis trùng.
 - Database, object storage, queue, worker và DICOM gateway không bị mở thành các endpoint public độc lập.
 
+### 18.11. Nghiệm thu theo module và Google Stitch
+
+- MOD-00 đến MOD-16 có owner, dependency, input, output và tiêu chí đóng module trong `plan.md`.
+- Mỗi module có route/màn hình tương ứng trên Stitch hoặc được ghi rõ là module nền không cần screen riêng.
+- Bốn application screen đang hoạt động được giữ bằng screen ID ổn định; màn hình mới phải ghi Screen ID sau khi tạo. Instance Biological cũ ở trạng thái hidden/deprecated không được dùng trong mapping module.
+- Screen mới được tạo trong đúng Google Stitch project `RT-connect`, dùng dữ liệu giả lập và có trạng thái loading, empty, error, warning và success phù hợp.
+- Frontend triển khai được đối chiếu với screenshot/HTML/design tokens từ Stitch nhưng hành vi phải theo API contract và quy tắc nghiệp vụ.
+- Không xem resource tài liệu hoặc ảnh asset mà Stitch liệt kê như một application screen.
+- Module có tác vụ bất đồng bộ chỉ hoàn thành khi refresh/mất kết nối tạm thời không tạo job hoặc result trùng.
+- Module có dữ liệu version/revision chỉ hoàn thành khi phiên bản cũ vẫn xem hoặc tái hiện được.
+- Module chỉ được đưa lên production sau khi pass trên staging và có remote smoke test phù hợp.
+
 ---
 
 ## 19. Trình tự phát triển
 
-### Giai đoạn 1 — Clinical MVP
+Trình tự chi tiết nằm trong `plan.md`. Ở mức nghiệp vụ, sản phẩm được bàn giao theo các release stream sau:
 
-- Organization, site, machine.
-- Folder và QA archive.
-- Machine QA.
-- PSQA Gamma.
-- Input validation.
-- Report Builder.
-- Trend.
-- Version và provenance.
-- Bộ test engine.
+### Stream A — Nền tảng có thể phát triển và truy cập trên staging
 
-### Giai đoạn 2 — Biological Toolkit độc lập
+- Baseline yêu cầu, mapping Stitch và module traceability.
+- Repository, test harness và CI.
+- Railway staging, PostgreSQL và backend shell.
+- Supabase Auth và organization context.
+- Application shell, Home Dashboard và navigation.
 
-- BED/EQD2.
-- Đồ thị theo tổng liều D.
-- So sánh phác đồ.
-- Bù fraction.
-- Re-irradiation scenario chi tiết.
-- Bảng giới hạn liều.
-- Protocol/phác đồ điều trị.
-- Knowledge library.
-- Calculation report độc lập.
+### Stream B — Clinical MVP theo từng module hoàn chỉnh
 
-### Giai đoạn 3 — Phân tích DICOM mở rộng
+1. Organization/Site/Machine và QA Archive/Folder/QACase.
+2. Artifact upload, checksum, DICOM validation và Input Manifest.
+3. Machine QA và metric/rule engine.
+4. PSQA Gamma.
+5. Report Builder/revision/export.
+6. Trend.
+7. QA Protocol Library.
+
+Mỗi module được đưa lên staging ngay khi hoàn thành để người dùng có thể kiểm tra workflow từ xa; không chờ tới cuối dự án mới kiểm tra deployment.
+
+### Stream C — Biological Toolkit theo từng module độc lập
+
+1. Biological Hub và calculation history.
+2. BED/EQD2 và đồ thị theo tổng liều D.
+3. So sánh phác đồ.
+4. Re-irradiation và bù fraction.
+5. Dose-limit table, treatment protocol và knowledge library.
+6. Calculation report độc lập.
+
+### Stream D — Phân tích DICOM mở rộng
 
 - Visual Dose Review.
 - DVH/Plan Review.
-- Structure-level biological view.
-- Các workflow DICOM nâng cao.
+- Structure-level biological view khi user chủ động cung cấp dataset.
+- Các measurement/vendor adapter và DICOM gateway mở rộng.
 
-### Giai đoạn 4 — Phát hành web và truy cập từ xa
+### Stream E — Hardening, pilot và production remote access
 
-- Public web URL.
-- Truy cập HTTPS từ mạng ngoài hạ tầng.
-- Responsive web cho desktop và mobile browser.
-- Kiểm thử upload, analysis job, report/export và Biological Toolkit qua mạng ngoài.
-- Vận hành domain, certificate, backup/restore, monitoring và rollback.
-- Chỉ public lớp web/API cần thiết; các service dữ liệu và xử lý vẫn nằm trong hạ tầng được kiểm soát.
+- Integrated/golden/E2E test.
+- Performance, worker reliability và tenant isolation.
+- Dataset thật trong pilot và bổ sung regression case.
+- Domain, HTTPS, migration, backup/restore, monitoring và rollback.
+- Public production URL chỉ sau khi staging/pilot đạt tiêu chí release.
+- Chỉ public frontend/API; PostgreSQL, object storage, queue, worker và DICOM gateway không public trực tiếp.
 
 ---
 
@@ -1021,4 +1096,4 @@ RT-CONNECT là hệ thống quản lý và phân tích QA xạ trị kết hợp
 
 Clinical MVP tập trung vào Machine QA, PSQA Gamma, report, trend, input validation và provenance. Biological Toolkit được tổ chức thành tab riêng, phục vụ tính toán BED/EQD2, đồ thị, so sánh phác đồ, giới hạn liều, protocol điều trị, knowledge library và re-irradiation scenario mà không gắn mặc định với QA case hoặc ca bệnh.
 
-Tài liệu kỹ thuật sau này phải được xây dựng từ các yêu cầu, quy tắc và tiêu chí nghiệm thu trong tài liệu phân tích nghiệp vụ này.
+`technical-specification.md` và `plan.md` phải tiếp tục được xây dựng từ các yêu cầu, quy tắc và tiêu chí nghiệm thu trong tài liệu này. Google Stitch cung cấp thiết kế trực quan; Railway và Supabase cung cấp hạ tầng đã chọn; không nguồn nào trong số đó được tự thay thế hoặc làm mất requirement nghiệp vụ.

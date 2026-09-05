@@ -2,14 +2,77 @@
 
 ## Dự án RT-CONNECT
 
-**Tên file:** technical.md  
-**Phiên bản:** 0.5  
-**Nguồn yêu cầu:** business-analysis.md phiên bản 0.3  
-**Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai  
-**Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh  
-**Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
+- **Tên file:** technical-specification.md
+- **Phiên bản:** 0.7
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.5
+- **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
+- **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
+- **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
 
-Tài liệu này chuyển các yêu cầu trong business-analysis.md thành kiến trúc, module, hợp đồng dữ liệu, workflow kỹ thuật, cách kiểm thử và tiêu chí triển khai. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
+Tài liệu này chuyển các yêu cầu trong `business-analysis.md` thành kiến trúc, module, hợp đồng dữ liệu, workflow kỹ thuật, cách kiểm thử và tiêu chí triển khai. `plan.md` là trình tự thực hiện theo phase; Google Stitch là nguồn thiết kế trực quan truy cập qua MCP. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
+
+---
+
+## 0. Baseline tích hợp đang có
+
+Baseline dưới đây được kiểm tra trực tiếp ngày 2026-09-04. ID hạ tầng được ghi để tránh nối nhầm project; trạng thái deployment/service phải được truy vấn lại trước mỗi lần triển khai.
+
+### 0.1. Google Stitch
+
+| Thuộc tính | Giá trị |
+| :--- | :--- |
+| Project title | `RT-connect` |
+| Project ID | `14242591911141046021` |
+| Visibility hiện tại | `PUBLIC` |
+| Device baseline | `DESKTOP` |
+| Nguồn truy cập | Google Stitch MCP |
+
+`list_screens` hiện trả sáu screen resource đang hoạt động: bốn application screen và hai image asset (logo, avatar). Chỉ bốn application screen dưới đây được map thành route sản phẩm:
+
+| Screen ID | Title | Module |
+| :--- | :--- | :--- |
+| `70b9f1d256884221ae20e63b5244db11` | Trang chủ - Home Dashboard | MOD-01 |
+| `4c9ec57310fd404cbae3b53b0bab2368` | Kho lưu trữ QA & Thư mục | MOD-03 |
+| `ffb87901b3194bd3aff8760c54c2f9f4` | Phân tích PSQA Gamma Workspace | MOD-04, MOD-06 |
+| `a1478466ace843c5aaf9a15dfc58273e` | Trình biên soạn Báo cáo - Report Builder Studio | MOD-07 |
+
+Logo và avatar không phải route. `get_project` vẫn có thể trả bốn instance Biological cũ ở trạng thái `hidden`; chúng là legacy/deprecated sau khi user loại khỏi canvas hoạt động, không phải nguồn thiết kế hiện hành và không được tự khôi phục. MOD-10 đến MOD-13 là design gap: phải tạo screen mới theo thứ tự Biological Hub → BED/EQD2 → Plan Comparison → Re-irradiation/Fraction Compensation, kế thừa Design System `Clinical Precision Interface` và AppShell của bốn screen đang hoạt động.
+
+Các resource tài liệu cũ trên Stitch không phải bản canonical trong repository. `UI-UX.md` không còn được duy trì; việc thiết kế mới hoặc sửa thiết kế được thực hiện trực tiếp trong project Stitch qua MCP.
+
+Vì project Stitch hiện là `PUBLIC`, chỉ được dùng dữ liệu giả lập. Không upload DICOM thật, PatientID, token, database URL, secret hoặc dữ liệu vận hành vào prompt, image, HTML hay metadata của Stitch.
+
+### 0.2. Railway
+
+| Thuộc tính | Giá trị kiểm tra hiện tại |
+| :--- | :--- |
+| Railway project name | `prolific-learning` |
+| Railway project ID | `339f2c50-ddd7-491f-8c4e-da2a2d169502` |
+| Environment hiện có | `production` |
+| Environment ID | `910dff25-75b6-42b2-bf6b-e2601ba9d7d2` |
+| Service hiện có | `RT-connect` |
+| Service ID | `9544c3e6-c8bd-4c29-b62e-c6172eb51af3` |
+| Latest deployment tại thời điểm kiểm tra | `FAILED` |
+| PostgreSQL service | Chưa có trong project |
+| Worker/Redis/Renderer service | Chưa có trong project |
+| Ngân sách/credit khởi điểm do user cung cấp | 5 USD; usage/cost phải được kiểm tra theo service và environment |
+
+Project Token hiện trỏ đúng vào environment `production`. Token cấp rộng hơn có thể liệt kê project và được dùng để provisioning environment/service nếu phạm vi Railway thực tế cho phép. Không ghi giá trị token vào tài liệu, source, log hoặc Railway runtime variables của ứng dụng.
+
+Repository `.env` dùng hai tên nội bộ:
+
+- `RAILWAY_PROJECT_TOKEN`: ánh xạ tạm thành `RAILWAY_TOKEN` khi Railway CLI cần thao tác project/environment hiện tại.
+- `RAILWAY_ACCOUNT_TOKEN`: ánh xạ tạm thành `RAILWAY_API_TOKEN` khi Railway CLI cần thao tác account/workspace.
+
+Chỉ đặt một biến xác thực CLI chính thức tại một thời điểm. Hai token là credential phục vụ deployment/automation, không phải secret mà backend RT-CONNECT cần khi chạy. `.env` phải tiếp tục bị Git ignore và không được đưa vào image build.
+
+### 0.3. Supabase và repository
+
+- Supabase được chọn làm Auth/Identity/Session plane nhưng repository chưa có biến cấu hình Supabase tại baseline này.
+- Cần tạo/chọn Supabase project cho development/staging trước khi MOD-00 được triển khai.
+- Repository hiện chỉ có tài liệu Markdown, chưa có frontend, backend, migration, test hoặc deployment manifest.
+- Các file `UI-UX.md`, `DESIGN.md` và `Biological-toolkit.html` đã được user xóa; không tự khôi phục. Thiết kế UI được truy xuất qua Stitch MCP.
+- Không triển khai trực tiếp production từ baseline tài liệu. Trước hết phải tạo staging, sửa nguyên nhân deployment thất bại và chạy health/migration/smoke test.
 
 ---
 
@@ -126,35 +189,83 @@ Mỗi environment phải có biến cấu hình riêng cho Railway và Supabase;
 
 ### 2.5. Thiết kế UX/UI và handoff bằng Google Stitch
 
-Google Stitch được sử dụng ở giai đoạn thiết kế để tạo prototype UI độ trung thực cao, bản đồ màn hình, luồng tương tác và design system ban đầu. Stitch là công cụ hỗ trợ thiết kế/handoff, không phải dependency runtime của RT-CONNECT.
+Google Stitch là design source truy cập trực tiếp qua MCP, không còn phụ thuộc vào `UI-UX.md` hoặc `DESIGN.md` trong repository. Stitch vẫn chỉ là công cụ design-time/handoff; production frontend không gọi Stitch API và không phụ thuộc MCP để chạy.
 
-Phạm vi sử dụng:
+#### 2.5.1. Quy trình đọc design trước khi triển khai một module
 
-- Tạo và lặp lại thiết kế cho các workflow trong business-analysis.md:
-  - Organization, site, machine, folder và QA case.
-  - Upload artifact, Input Manifest và validation.
-  - Machine QA, PSQA Gamma và xem cảnh báo.
-  - Report Builder, report revision và export.
-  - Trend và QA Protocol Library.
-  - Biological Toolkit, đồ thị, so sánh phác đồ, re-irradiation và bù fraction.
-- Sinh các trạng thái desktop/responsive, loading, empty, error, invalid input, warning và job đang chạy.
-- Chốt design tokens: màu, typography, spacing, grid, breakpoint, biểu đồ, bảng, form và trạng thái cảnh báo.
-- Xuất hoặc lưu lại screen map, prototype link, ảnh thiết kế, component inventory và `DESIGN.md`/design token spec trong thư mục tài liệu thiết kế của repository.
+1. Gọi `list_projects` và xác nhận project ID `14242591911141046021`, title `RT-connect`.
+2. Gọi `list_screens` và phân loại application screen với asset/tài liệu hỗ trợ.
+3. Gọi `get_screen` cho screen của module để lấy metadata, screenshot và HTML hiện hành.
+4. Ghi `stitch_project_id`, `stitch_screen_id`, title và thời điểm đọc design trong issue/PR của module.
+5. Lập mapping screen → route → component → API → entity → event → trạng thái.
+6. Chỉ sau khi mapping được review mới chuyển HTML/design thành React component.
 
-Quy tắc handoff:
+#### 2.5.2. Quy trình bổ sung screen còn thiếu
 
-- Thiết kế Stitch phải được map tới route, component và API contract thật trước khi frontend được coi là hoàn tất.
-- Code do Stitch sinh ra chỉ là tài liệu tham chiếu hoặc điểm khởi đầu; phải được review, chuẩn hóa và kết nối với frontend source code.
-- Không đưa dữ liệu bệnh nhân, DICOM thật hoặc thông tin nhận dạng thật vào Stitch; chỉ dùng dữ liệu giả lập/synthetic.
-- Thay đổi design sau khi handoff phải có design revision và ghi rõ màn hình/component bị ảnh hưởng.
-- Frontend vẫn phải hoạt động khi Stitch không khả dụng; build production không được gọi Stitch API.
+Trước khi code frontend của module chưa có screen, dùng MCP để tạo hoặc chỉnh screen trong cùng project `RT-connect`. Tối thiểu còn thiếu các nhóm:
 
-Tiêu chí kỹ thuật của design handoff:
+- Login, password recovery và auth callback.
+- Organization/site/machine management.
+- QA case detail, upload queue, Input Manifest và validation detail.
+- Machine QA checklist/editor/result.
+- Trend dashboard và drill-down.
+- QA Protocol Library và version comparison.
+- Report viewer/revision history ngoài Report Builder.
+- Dose-limit, treatment protocol và knowledge library.
+- Global empty/error/offline/404/maintenance states.
+- Responsive variants cho tablet/mobile của các workflow được phát hành.
 
-- Mỗi BR có ít nhất một màn hình/luồng tương ứng hoặc được ghi rõ là không có UI riêng.
-- Mỗi workflow quan trọng có trạng thái thành công, đang xử lý, rỗng, lỗi và cảnh báo.
-- Design tokens có mapping rõ tới component của frontend.
-- Không có màn hình nào chỉ có ảnh tĩnh mà thiếu hợp đồng dữ liệu, event và navigation cần thiết.
+Mỗi screen mới phải dùng synthetic data và có ít nhất loading, empty, success, warning/invalid, error/retry và disabled/running state phù hợp. Nếu module có job bất đồng bộ, thiết kế phải thể hiện queued/running/succeeded/failed/retry và trạng thái sau khi browser refresh.
+
+#### 2.5.3. Handoff và implementation contract
+
+- Screenshot là visual reference; HTML do Stitch tạo là implementation reference, không phải code production mặc định.
+- Không sao chép inline secret, remote tracking script hoặc dependency không được review từ HTML export.
+- Chuyển màu, typography, spacing, radius, shadow, chart palette và breakpoint thành design tokens trong source frontend.
+- Component chung phải được tách khỏi page-specific markup: AppShell, Sidebar, Header, DataTable, FilterBar, FileUploader, StatusBadge, WarningPanel, JobProgress, ChartCard, RevisionPanel và ReportBlock.
+- Event handler phải gọi typed API client; không giữ mock result trong production path.
+- Accessibility tối thiểu: keyboard navigation, focus visibility, label/form association, semantic table, chart fallback table, color contrast và trạng thái không chỉ biểu diễn bằng màu.
+- Frontend route phải hỗ trợ deep-link/reload và organization context.
+- Thay đổi design sau khi module đã implement phải được đánh giá ảnh hưởng tới component, API contract, screenshot test và acceptance test.
+
+#### 2.5.4. Tiêu chí design-to-code hoàn thành
+
+- Screen ID và route mapping tồn tại.
+- Component inventory và design tokens được implement trong source, không chỉ mô tả.
+- Dữ liệu mock được thay bằng API thật hoặc fixture test có nhãn rõ.
+- Loading/empty/error/warning/success được kiểm thử.
+- Desktop baseline khớp design; responsive behavior không làm mất chức năng.
+- Screenshot/visual regression được lưu trong test artifact của CI hoặc release, không bắt buộc tạo lại `UI-UX.md`.
+- Frontend build và runtime hoạt động khi MCP/Stitch không khả dụng.
+
+### 2.6. Route và screen map ban đầu
+
+| Route đề xuất | Screen Stitch | Module | Ghi chú triển khai |
+| :--- | :--- | :--- | :--- |
+| `/app` | Home Dashboard | MOD-01 | Tổng quan organization, quick action, job và cảnh báo |
+| `/app/qa` | Kho lưu trữ QA & Thư mục | MOD-03 | Folder tree, search, case list |
+| `/app/qa/cases/:caseId/gamma` | PSQA Gamma Workspace | MOD-04, MOD-06 | Upload/manifest/config/job/result |
+| `/app/reports/:reportId/edit` | Report Builder Studio | MOD-07 | Builder, preview, revision và export |
+| `/app/biological` | Chưa có — tạo lại trong P12 | MOD-10 | Hub độc lập với QA case |
+| `/app/biological/bed-eqd2` | Chưa có — tạo lại trong P13 | MOD-11 | Calculator, chart, history |
+| `/app/biological/compare` | Chưa có — tạo lại trong P14 | MOD-12 | Multi-course comparison |
+| `/app/biological/re-irradiation` | Chưa có — tạo lại trong P15 | MOD-13 | Multi-course/recovery/scenario |
+
+Các route chưa có Stitch screen được tạo trong phase module tương ứng. Route cuối cùng được khóa trong typed route registry; không hardcode URL rải rác trong component.
+
+### 2.7. Topology Railway theo giai đoạn và giới hạn chi phí
+
+Để không tạo nhiều service trước khi có workload thật, topology được mở rộng theo phase:
+
+| Giai đoạn | Service tối thiểu | Ghi chú |
+| :--- | :--- | :--- |
+| Foundation/staging | `RT-connect` hoặc `api-web`, `postgres` | API có thể phục vụ frontend build; chưa chạy Gamma đồng bộ trong request |
+| Machine QA | API/web + Postgres | Job nhẹ có thể dùng background adapter phát triển nhưng result vẫn persisted |
+| PSQA Gamma | Thêm `worker` và `redis` | Analysis chạy bất đồng bộ; API chỉ enqueue và đọc trạng thái |
+| Report Builder | Renderer là capability của worker; tách `renderer` khi benchmark yêu cầu | Tránh service riêng nếu chưa có tải đủ lớn |
+| Production scale | API/web, Postgres, Redis, worker pool, renderer tùy tải | Quyết định bằng benchmark và queue depth |
+
+Khoản thanh toán hoặc credit Railway không được dùng làm giả định rằng mọi service sẽ luôn nằm trong ngân sách. Trước khi thêm service hoặc tăng resource, phải xem usage/cost hiện tại, benchmark workload và đặt giới hạn/alert phù hợp. Không giảm tính toàn vẹn dữ liệu chỉ để tiết kiệm chi phí; có thể trì hoãn module hoặc scale-to-zero ở môi trường không dùng.
 
 ---
 
@@ -218,6 +329,30 @@ Nguyên tắc:
 - Supabase Auth URL, publishable/anon key, JWKS URL, audience và redirect URL được ghi theo environment; Railway PostgreSQL connection URL/private reference variable và secret chỉ cấu hình trong Railway dashboard hoặc secret store.
 - Deployment manifest phải ghi image/commit, migration version, engine version, renderer version và biến cấu hình bắt buộc.
 - Không commit Railway PostgreSQL password, Redis password, S3 secret, Supabase service role key hoặc token thật.
+
+### 3.2. Module boundaries dùng chung với plan.md
+
+| Module | Frontend boundary | Backend/domain boundary | Worker/engine |
+| :--- | :--- | :--- | :--- |
+| MOD-00 Identity | auth routes, session bootstrap, organization selector | token verifier, UserIdentity, OrganizationMembership | Không |
+| MOD-01 Dashboard | dashboard route/widgets | dashboard read model/query service | Chỉ aggregate job status |
+| MOD-02 Organization/Site/Machine | management pages/forms | organization/site/machine services | Không |
+| MOD-03 QA Archive | folder tree, case list/detail shell | Folder, QACase, search service | Không |
+| MOD-04 Artifact/Validation | upload, manifest, warning panels | Artifact, ValidationRun, InputManifest | ingestion/validation job |
+| MOD-05 Machine QA | checklist/editor/result | protocol application, metric/rule evaluation | Có thể chạy nhẹ, vẫn qua analysis contract |
+| MOD-06 PSQA Gamma | Gamma workspace/result | AnalysisRun/GammaConfiguration | GammaEngine worker |
+| MOD-07 Report | builder/viewer/revision | report snapshot/template services | renderer/export worker |
+| MOD-08 Trend | chart/filter/drill-down | TrendPoint/query/read model | projection/rebuild job khi cần |
+| MOD-09 QA Protocol | library/version/rule editor | QAProtocol/Version/Rule/Reference | Không |
+| MOD-10 Biological Hub | hub/history/report entry | BiologicalScenario/read model | Không |
+| MOD-11 BED/EQD2 | calculator/chart/history | BiologicalCalculationRun | BiologicalEngine |
+| MOD-12 Comparison | multi-course editor/chart | course comparison service | BiologicalEngine |
+| MOD-13 Re-irradiation | course/scenario/recovery UI | re-irradiation scenario service | BiologicalEngine; spatial worker chỉ phase mở rộng |
+| MOD-14 Knowledge | dose-limit/protocol/knowledge pages | versioned knowledge repositories | Import/index job khi cần |
+| MOD-15 Dose/DVH | dose viewer/DVH workspace | DICOM linkage/DVH contracts | DVHEngine worker |
+| MOD-16 Operations | status/history/diagnostic UI cần thiết | AuditEvent, health, backup manifest | monitoring/maintenance jobs |
+
+Cross-module import phải đi qua public application interface hoặc shared contract; không truy cập trực tiếp table của module khác từ frontend. Biological module không được thêm foreign key bắt buộc tới QA case hoặc patient record.
 
 ---
 
@@ -730,6 +865,17 @@ Không có bước tự động tìm hoặc gắn QA case/ca bệnh.
 - Redirect URL, site URL, email template/provider và provider được phép phải tách theo dev, staging, pilot và production.
 - Test phải bao gồm token hợp lệ, hết hạn, sai issuer/audience, sai signature, user không thuộc organization và membership bị vô hiệu hóa.
 
+### 6.1.2. Session bootstrap và Home Dashboard
+
+| Method | Path | Mục đích |
+| :--- | :--- | :--- |
+| GET | `/session/bootstrap` | Trả identity snapshot, organization membership và feature/module availability |
+| GET | `/organizations/{id}/dashboard` | Read model cho Home Dashboard: machine summary, recent QA, warning, job và quick links |
+| GET | `/jobs/{id}` | Trạng thái job bất đồng bộ dùng chung |
+| GET | `/jobs` | Danh sách job gần đây theo organization và filter |
+
+Dashboard endpoint là read model tổng hợp; không chạy analysis khi render trang và không trả file lớn. Widget không có dữ liệu phải trả collection rỗng/metadata rõ ràng, không coi là lỗi server.
+
 ### 6.2. Organization, site và machine
 
 | Method | Path | Mục đích |
@@ -782,6 +928,15 @@ Không có bước tự động tìm hoặc gắn QA case/ca bệnh.
 | GET | /analysis-runs/{id}/warnings | Xem warnings |
 | GET | /analysis-runs/{id}/artifacts | Xem map, plot và result artifact |
 
+Machine QA dùng cùng Analysis Run contract nhưng có endpoint nghiệp vụ rõ:
+
+| Method | Path | Mục đích |
+| :--- | :--- | :--- |
+| POST | `/qa-cases/{id}/machine-qa-runs` | Tạo lần nhập/chạy Machine QA từ protocol version |
+| PATCH | `/machine-qa-runs/{id}/measurements` | Lưu draft measurement/value/unit/note theo idempotency/version |
+| POST | `/machine-qa-runs/{id}/evaluate` | Evaluate rule và tạo immutable result run |
+| GET | `/machine-qa-runs/{id}` | Xem checklist, measurement, metric, warning và provenance |
+
 ### 6.6. Report và trend
 
 | Method | Path | Mục đích |
@@ -808,11 +963,18 @@ Không có bước tự động tìm hoặc gắn QA case/ca bệnh.
 | POST | /biological/scenarios/{id}/calculations | Chạy calculation |
 | GET | /biological/calculations/{id} | Xem kết quả |
 | POST | /biological/calculations/{id}/charts | Tạo đồ thị |
+| POST | /biological/comparisons | So sánh hai hoặc nhiều course/phác đồ |
+| POST | /biological/re-irradiation | Tạo và tính re-irradiation scenario |
+| POST | /biological/fraction-compensation | Tạo các phương án bù fraction/gián đoạn |
 | GET | /biological/dose-limits | Tra cứu giới hạn liều |
 | POST | /biological/dose-limits | Tạo dữ liệu giới hạn liều |
+| POST | /biological/dose-limits/{id}/versions | Tạo version mới của dose-limit entry |
 | GET | /biological/treatment-protocols | Tra cứu protocol điều trị |
 | POST | /biological/treatment-protocols | Tạo nội dung protocol |
+| POST | /biological/treatment-protocols/{id}/versions | Tạo version protocol/phác đồ mới |
 | GET | /biological/knowledge | Tra cứu knowledge library |
+| POST | /biological/knowledge | Tạo knowledge entry |
+| POST | /biological/knowledge/{id}/versions | Tạo version knowledge entry |
 | POST | /biological/reports | Tạo calculation report độc lập |
 
 ### 6.8. API error contract
@@ -1777,6 +1939,21 @@ Mỗi release ghi:
 
 ### 17.5. Public Web Deployment và remote access
 
+#### 17.5.0. Bootstrap từ Railway project hiện có
+
+Không tạo project Railway mới khi chưa có lý do. Dùng project `prolific-learning` (`339f2c50-ddd7-491f-8c4e-da2a2d169502`) làm project triển khai RT-CONNECT và thực hiện theo thứ tự:
+
+1. Cài hoặc dùng Railway CLI phiên bản được pin; không giả định CLI đã có trên máy.
+2. Dùng Account/Workspace token để kiểm tra quyền, tạo environment `staging` và provisioning service; không xuất token ra terminal/log.
+3. Dùng Project Token hiện có chỉ cho thao tác environment `production` mà token trỏ tới.
+4. Điều tra deployment `FAILED` của service `RT-connect`; lưu nguyên nhân và regression/smoke check trước khi deploy lại.
+5. Tạo Railway PostgreSQL trong staging, chạy migration baseline và kiểm tra private connection từ backend.
+6. Deploy health-only/API shell lên staging trước; chưa deploy production khi source/test/migration chưa tồn tại.
+7. Tạo Redis/worker ở phase PSQA Gamma; renderer tách service chỉ khi benchmark hoặc failure isolation yêu cầu.
+8. Chỉ promote release đã có manifest từ staging sang production.
+
+Tên biến `.env` nội bộ không được copy nguyên xi vào runtime. Script deployment đọc chúng cục bộ rồi ánh xạ một token tại một thời điểm sang biến mà Railway CLI hỗ trợ. Token Railway không được đưa vào frontend, backend runtime image hoặc bảng database.
+
 #### 17.5.1. Mục tiêu triển khai
 
 RT-CONNECT phải có một URL web để người dùng được tổ chức cho phép truy cập từ xa bằng desktop hoặc mobile browser. Phương án triển khai mục tiêu là Supabase cho Auth, Railway cho PostgreSQL, backend server/API, worker, renderer, queue và public API networking; frontend là static web riêng hoặc được backend phục vụ tùy phương án phát hành; object storage dùng S3-compatible/MinIO được chỉ định.
@@ -1808,8 +1985,8 @@ Mỗi environment dùng Railway environment và Railway PostgreSQL service riên
       | HTTPS
       v
 [Frontend static host hoặc frontend bundle được API phục vụ]
-      | HTTPS                         
-      v                              
+      | HTTPS
+      v
 [Railway public API domain + automatic TLS]
       |                         \
       v                          v
@@ -1828,7 +2005,7 @@ Mỗi environment dùng Railway environment và Railway PostgreSQL service riên
                     [S3-compatible object storage]
 
 [Optional Orthanc/DICOMweb] --> [Railway API/Ingestion]
-      
+
 ~~~
 
 Frontend và API là các endpoint được public qua HTTPS theo nhu cầu của browser. Railway là application/backend/data plane; PostgreSQL, worker, renderer, Redis, object storage và Orthanc admin không có public domain của RT-CONNECT. API/worker kết nối tới Railway PostgreSQL qua private networking hoặc reference variable được giữ trong Railway secret. Supabase chỉ cung cấp Auth; browser không kết nối trực tiếp tới PostgreSQL, Redis, MinIO/S3, Celery monitor hoặc Orthanc admin. Nếu cần truy cập DICOM từ xa, phải đi qua API/gateway đã kiểm soát, không cấp URL quản trị nội bộ cho browser.
@@ -1920,6 +2097,11 @@ Phải kiểm tra tối thiểu trên một mạng ngoài bệnh viện/server v
 | Audit/provenance | AuditEvent, hash và lineage |
 | Bộ test engine | Unit, fixture, golden, integration và E2E suite |
 | Truy cập web từ xa qua HTTPS | Public web edge, DNS/TLS, reverse proxy, private service network và remote smoke test |
+| Google Stitch là nguồn thiết kế | Stitch MCP adapter/workflow, screen ID map, design-to-code checklist; không runtime dependency |
+| Supabase chỉ làm Auth | Supabase session/JWT verifier + UserIdentity mapping; không dùng Supabase database cho domain |
+| Railway backend và PostgreSQL | Railway API/web/worker/renderer topology, Railway PostgreSQL, private reference variables và migration |
+| Hoàn thiện theo module | MOD-00 đến MOD-16, mỗi module có route/API/entity/test/exit criteria trong plan.md |
+| Không lộ deployment secret | `.env` ignored, secret store, log redaction và frontend bundle scan |
 
 ---
 
@@ -1989,13 +2171,15 @@ Phải kiểm tra tối thiểu trên một mạng ngoài bệnh viện/server v
 
 ## 21. Kết luận
 
-technical.md định nghĩa RT-CONNECT thành một hệ thống web gồm hai bounded context:
+`technical-specification.md` định nghĩa RT-CONNECT thành một hệ thống web gồm hai bounded context:
 
 1. QA Management cho machine QA, PSQA Gamma, DICOM workflow, report và trend.
 2. Biological Toolkit độc lập cho các phép tính sinh học, scenario, phác đồ và knowledge library.
 
 Kiến trúc giữ nguyên quyền sử dụng nghiệp vụ ngang nhau, không xây dựng phân quyền theo hành động, đồng thời vẫn giữ provenance, version, checksum và audit để tái hiện kết quả. Việc triển khai phải đi theo test-first, sau đó dùng dataset thật ở pilot và vận hành để bổ sung regression test và hoàn thiện workflow.
 
-Hệ thống được thiết kế để phát hành qua public web edge cho truy cập từ xa, nhưng chỉ frontend/API được expose qua HTTPS; dữ liệu và các service nội bộ vẫn nằm trong private network. Google Stitch được dùng ở design-time để tạo prototype và handoff UI, không phải thành phần runtime hay nguồn thay thế cho API contract, kiểm thử và review frontend.
+Hệ thống được thiết kế để phát hành qua public web edge cho truy cập từ xa, nhưng chỉ frontend/API được expose qua HTTPS; dữ liệu và các service nội bộ vẫn nằm trong private network. Google Stitch project `RT-connect` được đọc/chỉnh qua MCP ở design-time; screen ID là đầu mối traceability, không phải thành phần runtime hay nguồn thay thế cho API contract, kiểm thử và review frontend. Repository không cần tái tạo `UI-UX.md`.
 
 Trong deployment target, Supabase là auth/identity plane cho Supabase Auth, còn Railway là application/backend/data plane cho backend API/server, PostgreSQL, worker, renderer và queue. Frontend là static web host riêng hoặc static bundle được backend phục vụ. Không kết nối browser trực tiếp tới Railway PostgreSQL; mọi truy cập database đi qua backend/private networking.
+
+Baseline Railway hiện có mới gồm project/environment/service và một deployment thất bại; chưa có PostgreSQL hoặc source application. Vì vậy phase đầu phải dựng staging, migration, health endpoint và CI/CD trước khi sử dụng production token để deploy release thật.

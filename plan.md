@@ -1,1647 +1,1264 @@
-# KẾ HOẠCH TRIỂN KHAI
+# KẾ HOẠCH TRIỂN KHAI THEO MODULE
 
 ## Dự án RT-CONNECT
 
-**Tên file:** plan.md  
-**Phiên bản:** 0.5  
-**Nguồn:** business-analysis.md phiên bản 0.3, technical.md phiên bản 0.5 và UI-UX.md phiên bản 0.3  
-**Mục tiêu:** triển khai RT-CONNECT theo phase có thể kiểm tra, bàn giao và mở rộng  
-**Mô hình triển khai:** Supabase cho Auth; Railway cho PostgreSQL, backend API/server, worker, renderer và queue/public API networking; frontend là static web riêng hoặc được backend phục vụ; object storage S3-compatible/MinIO được chỉ định  
-**Nguyên tắc:** hoàn thành từng vertical slice, test trước, không làm mất dữ liệu và giữ Biological Toolkit độc lập với QA/ca bệnh
+- **Tên file:** plan.md
+- **Phiên bản:** 1.1
+- **Nguồn nghiệp vụ:** business-analysis.md phiên bản 0.5
+- **Nguồn kỹ thuật:** technical-specification.md phiên bản 0.7
+- **Nguồn thiết kế:** Google Stitch MCP, project RT-connect, project ID 14242591911141046021
+- **Hạ tầng mục tiêu:** Supabase Auth; Railway backend và PostgreSQL; object storage bền vững; frontend web truy cập từ xa
+- **Mục tiêu:** hoàn thiện từng module thành một vertical slice có thể chạy, kiểm thử, bàn giao và triển khai trên staging trước khi chuyển sang module tiếp theo
+
+Tài liệu này thay thế lộ trình cũ phụ thuộc UI-UX.md. UI-UX.md và DESIGN.md không được tái tạo. Google Stitch là nguồn thiết kế trực quan được đọc hoặc cập nhật qua MCP; business-analysis.md vẫn là nguồn yêu cầu và technical-specification.md vẫn là nguồn hợp đồng kỹ thuật.
 
 ---
 
-## 1. Mục tiêu triển khai
+## 0. Baseline đã kiểm tra
 
-Kế hoạch này chia RT-CONNECT thành các phase theo thứ tự phụ thuộc kỹ thuật:
+### 0.1. Repository
 
-1. Khóa yêu cầu và kiến trúc.
-2. Dựng nền tảng chạy được.
-3. Thiết kế UX/UI và design system bằng Google Stitch, sau đó handoff cho frontend.
-4. Hoàn thiện Organization, Site, Machine, Folder và QA Case.
-5. Hoàn thiện artifact storage, DICOM ingestion và validation.
-6. Xây dựng analysis engine và Machine QA.
-7. Xây dựng PSQA Gamma vertical slice.
-8. Xây dựng Report Builder và export.
-9. Xây dựng trend và QA Protocol Library.
-10. Xây dựng Biological Toolkit độc lập.
-11. Kiểm thử tích hợp, hardening, pilot và chuyển giao.
-12. Đưa hệ thống lên public web, kết nối Supabase Auth và Railway PostgreSQL với backend Railway, mở truy cập từ xa và vận hành production.
+- Repository hiện chỉ có tài liệu Markdown, chưa có source frontend/backend.
+- Chưa có migration, test suite, Dockerfile, Railway manifest hoặc CI pipeline.
+- .env có tên biến cho Google Stitch MCP và hai Railway token; không ghi giá trị token vào tài liệu.
+- .env đã được Git ignore và không bị Git theo dõi.
+- Các file UI-UX.md, DESIGN.md và Biological-toolkit.html đã được user xóa; giữ nguyên trạng thái xóa.
 
-Clinical MVP gồm P0–P7 và P1A, bao gồm cả design handoff. P8 là track Biological Toolkit riêng; P9 là tích hợp/hardening dùng chung. Public web là phase phát hành sau hardening/pilot, không được coi là hoàn tất chỉ vì hệ thống chạy được trên localhost hoặc LAN.
+### 0.2. Google Stitch
+
+Project thiết kế hiện tại:
+
+| Thuộc tính | Giá trị |
+| :--- | :--- |
+| Title | RT-connect |
+| Project ID | 14242591911141046021 |
+| Visibility | PUBLIC |
+| Device baseline | DESKTOP |
+| Screen resource đang hoạt động từ `list_screens` | 6 |
+| Application screen đang hoạt động | 4 |
+| Image asset không phải route | 2 (logo, avatar) |
+| Biological legacy instance | 4 instance hidden/deprecated, không dùng làm nguồn thiết kế |
+
+Bốn application screen đang hoạt động:
+
+| UI | Screen | Screen ID | Module |
+| :--- | :--- | :--- | :--- |
+| UI-01 | Trang chủ - Home Dashboard | 70b9f1d256884221ae20e63b5244db11 | MOD-01 |
+| UI-02 | Kho lưu trữ QA & Thư mục | 4c9ec57310fd404cbae3b53b0bab2368 | MOD-03 |
+| UI-03 | Phân tích PSQA Gamma Workspace | ffb87901b3194bd3aff8760c54c2f9f4 | MOD-04, MOD-06 |
+| UI-04 | Trình biên soạn Báo cáo - Report Builder Studio | a1478466ace843c5aaf9a15dfc58273e | MOD-07 |
+
+Bốn Biological screen cũ đã bị user loại khỏi canvas hoạt động vì lệch phong cách. `get_project` còn trả chúng dưới dạng instance `hidden`, nhưng chúng là legacy/deprecated: không tự khôi phục, không dùng Screen ID cũ trong route mapping và không coi là screen hiện có. P12–P15 phải tạo lại từng screen trong đúng project, dùng Design System `Clinical Precision Interface` và bốn screen đang hoạt động làm chuẩn.
+
+Logo và avatar không phải application route. Vì project Stitch đang public, tất cả prompt, image và screen chỉ dùng dữ liệu synthetic.
+
+### 0.3. Railway
+
+| Thuộc tính | Trạng thái hiện tại |
+| :--- | :--- |
+| Project | prolific-learning |
+| Project ID | 339f2c50-ddd7-491f-8c4e-da2a2d169502 |
+| Environment | production |
+| Environment ID | 910dff25-75b6-42b2-bf6b-e2601ba9d7d2 |
+| Service | RT-connect |
+| Service ID | 9544c3e6-c8bd-4c29-b62e-c6172eb51af3 |
+| Latest deployment | FAILED |
+| PostgreSQL service | Chưa có |
+| Redis/worker/renderer | Chưa có |
+| Railway CLI local | Chưa cài tại thời điểm kiểm tra |
+| Ngân sách/credit khởi điểm do user cung cấp | 5 USD; phải theo dõi usage thực tế, không coi là tài nguyên không giới hạn |
+
+Project Token trỏ vào production. Account/Workspace token truy cập được project và dùng cho provisioning nếu scope cho phép. Không triển khai production trực tiếp từ trạng thái hiện tại.
+
+### 0.4. Supabase
+
+- Đã chọn Supabase làm Auth/Identity/Session.
+- Chưa có biến Supabase trong .env tại baseline này.
+- Supabase không lưu database nghiệp vụ RT-CONNECT.
+- Cần tạo hoặc chọn Supabase project cho development/staging trước MOD-00.
 
 ---
 
-## 2. Nguyên tắc thực hiện
+## 1. Mô hình release
 
-- business-analysis.md là nguồn nghiệp vụ.
-- technical.md là nguồn kiến trúc và hợp đồng kỹ thuật.
-- Không mở rộng sang thay TPS, PACS, OIS hoặc treatment control.
-- Không xây dựng phân quyền theo hành động hoặc phân cấp bác sĩ–kỹ sư.
-- Report Builder phải giữ toàn quyền tùy chỉnh.
-- Biological Toolkit không tự liên kết với QA case hoặc ca bệnh.
-- File gốc không bị ghi đè.
-- Chạy lại analysis tạo kết quả mới.
-- Mọi lỗi phát hiện trong dataset thật phải được chuyển thành regression test.
-- Không đánh dấu một phase hoàn thành chỉ vì giao diện đã hiển thị; phải đạt cả test, dữ liệu và workflow end-to-end.
-- Google Stitch chỉ dùng để thiết kế, prototype và handoff; code sinh ra phải được review và nối với API thật.
-- Không đưa dữ liệu bệnh nhân hoặc DICOM thật vào Stitch.
-- Truy cập từ xa qua public web chỉ expose frontend/API cần thiết qua HTTPS; Railway PostgreSQL chỉ được backend truy cập qua private networking/reference variable, còn Redis, object storage, worker và Orthanc không public trực tiếp.
-- Public release phải có domain/DNS, TLS, backup/restore, monitoring, rollback và kiểm thử từ mạng bên ngoài.
-- Supabase Auth chỉ là identity provider; RT-CONNECT không lưu password và API phải tự xác minh access token.
-- Railway PostgreSQL là database nghiệp vụ duy nhất của môi trường mục tiêu; không triển khai database nghiệp vụ trên Supabase.
-- Railway được dùng cho PostgreSQL, backend API/server, worker, renderer và queue; frontend có thể là static host riêng hoặc được backend phục vụ.
-- Railway environment/PostgreSQL service, Supabase Auth project/config và secret phải tách riêng giữa development, staging, pilot và production.
-- Railway filesystem ephemeral không được dùng làm kho artifact chính; artifact phải ở object storage có persistence và backup.
+| Release | Phạm vi | Phase |
+| :--- | :--- | :--- |
+| R0 — Development Foundation | Repository, CI, staging Railway, PostgreSQL, Supabase Auth, app shell | P0–P3 |
+| R1 — Clinical MVP | Organization, archive, artifact validation, Machine QA, Gamma, report, trend, QA protocol | P4–P11 |
+| R2 — Biological Toolkit | Biological Hub, BED/EQD2, comparison, re-irradiation, dose-limit/knowledge | P12–P16 |
+| R3 — Advanced DICOM | Visual Dose, DVH/Plan Review và structure-level view | P17 |
+| R4 — Production Web | Hardening, pilot, production deploy, remote access và vận hành | P18–P20 |
+
+P17 không chặn R1 hoặc R2. Có thể phát hành Clinical MVP và Biological Toolkit trước Visual Dose/DVH nếu các release gate tương ứng đạt.
 
 ---
 
-## 3. Lộ trình tổng thể
+## 2. Definition of Done cho mọi module
+
+Một module chỉ hoàn thành khi đạt tất cả điều kiện áp dụng:
+
+1. Requirement và acceptance criteria được map tới MOD/BR.
+2. Screen Stitch hiện có được đọc bằng MCP hoặc screen thiếu đã được bổ sung trong đúng project.
+3. Có route, navigation và organization context.
+4. Có schema/migration nếu module lưu dữ liệu.
+5. Có API contract typed và error contract.
+6. Có frontend nối API thật; mock chỉ tồn tại trong fixture/story/test.
+7. Có loading, empty, success, warning/invalid và error/retry state.
+8. Tác vụ bất đồng bộ có queued/running/succeeded/failed/retry và idempotency.
+9. Có provenance/version/revision nếu module tạo kết quả.
+10. Có unit/contract/integration/E2E test phù hợp.
+11. Có log và correlation ID; không lộ secret hoặc dữ liệu nhạy cảm.
+12. Chạy được trên Railway staging qua HTTPS.
+13. Refresh hoặc mất kết nối tạm thời không tạo record/job/result trùng.
+14. CI pass và migration được kiểm tra.
+15. Tài liệu kỹ thuật, OpenAPI và release note được cập nhật.
+
+Ảnh Stitch đẹp, component tĩnh, API riêng lẻ, test unit riêng lẻ hoặc một deployment thành công đều chưa đủ để đóng module.
+
+---
+
+## 3. Dependency roadmap
 
 ~~~text
-P0  Baseline nghiệp vụ + kiến trúc
-        |
-P1  Nền tảng repository + runtime + CI
-        |
-P1A Thiết kế UX/UI + design system bằng Google Stitch
-        |
-P2  Organization / Site / Machine / Folder / QA Case
-        |
-P3  Artifact storage + DICOM ingestion + validation
-        |
-P4  Analysis foundation + Machine QA + metric/rule
-        |
-P5  PSQA Gamma vertical slice
-        |
-P6  Report Builder + render + export
-        |
-P7  Trend + QA Protocol Library
-        |
-        +--------------------+
-        |                    |
-P8  Biological Toolkit   P9  Integrated verification
-        |                    |
-        +-----------> P10 Pilot / hardening / handover
-                                      |
-                         P11 Public web + remote access
+P0  Baseline + traceability
+ |
+P1  Repository + local runtime + CI
+ |
+P2  Railway staging + PostgreSQL + Supabase Auth foundation
+ |
+P3  App shell + Auth + Home Dashboard
+ |
+P4  Organization / Site / Machine
+ |
+P5  QA Archive / Folder / QA Case
+ |
+P6  Artifact / Upload / DICOM Validation
+ |
+P7  Machine QA
+ |
+P8  PSQA Gamma
+ |
+P9  Report Builder
+ |
+P10 Trend
+ |
+P11 QA Protocol Library
+ |
++-------------------------------+
+|                               |
+P12 Biological Hub              P17 Visual Dose / DVH (optional track)
+ |
+P13 BED & EQD2
+ |
+P14 Plan Comparison
+ |
+P15 Re-irradiation + Fraction Compensation
+ |
+P16 Dose Limit + Treatment Protocol + Knowledge
+ |
++-------------------------------+
+ |
+P18 Integration + Hardening + Pilot
+ |
+P19 Production Web + Remote Access
+ |
+P20 Operations + Continuous Improvement
 ~~~
 
-Thời lượng dưới đây là ước lượng tương đối theo tuần làm việc, dùng để lập kế hoạch chứ không phải cam kết lịch cố định. Một phase chỉ bắt đầu khi dependency chính của phase đó đã đạt.
+Thời lượng là ước lượng tham chiếu cho một nhóm nhỏ. Phase có thể chạy song song chỉ khi dependency dữ liệu/API đã ổn định và không làm mất Definition of Done.
 
 ---
 
-## 4. Mốc chính
+# PHASE 0 — Baseline, kết nối và traceability
 
-| Mốc | Kết quả |
-| :--- | :--- |
-| M0 | Business analysis và technical baseline được khóa |
-| M1 | Repository, local runtime và CI chạy được |
-| M1A | Screen map, design system và frontend handoff từ Google Stitch được duyệt |
-| M2 | Có thể tạo organization/site/machine/folder/QA case |
-| M3 | Upload artifact, checksum và DICOM validation hoạt động |
-| M4 | Machine QA và metric/rule engine hoạt động |
-| M5 | PSQA Gamma end-to-end hoạt động |
-| M6 | Report tùy chỉnh và export hoạt động |
-| M7 | Trend và QA Protocol Library hoạt động |
-| M8 | Biological Toolkit độc lập hoạt động |
-| M9 | Regression, performance, backup/restore và pilot checklist hoàn tất |
-| M10 | Pilot hoàn tất, release candidate và hồ sơ vận hành sẵn sàng |
-| M11 | Public URL/HTTPS, remote smoke test và production runbook hoàn tất |
+**Thời lượng:** 3–5 ngày
+**Phụ thuộc:** Không
+**Mục tiêu:** khóa nguồn yêu cầu, nguồn thiết kế và đúng project hạ tầng trước khi code.
 
----
+## Công việc
 
-# PHASE 0 — Khóa yêu cầu và kiến trúc
+- Khóa business-analysis.md 0.4, technical-specification.md 0.6 và plan.md 1.0.
+- Lập BR → MOD → screen → route → API → test matrix.
+- Xác nhận bốn application screen đang hoạt động bằng project/screen ID.
+- Phân loại logo/avatar và các instance hidden/deprecated để không biến thành route.
+- Xác nhận Railway project, environment, service và trạng thái deployment.
+- Ghi rõ deployment gần nhất đang FAILED; tạo issue điều tra, chưa redeploy production.
+- Xác nhận .env chỉ dùng local và bị Git ignore.
+- Tạo danh sách secret cần có theo environment nhưng không ghi giá trị.
+- Chốt module code MOD-00 đến MOD-16 và metric/error naming convention.
 
-**Thời lượng tham chiếu:** 1–2 tuần  
-**Mục tiêu:** biến business-analysis.md thành baseline có thể code và kiểm thử.
+## Deliverables
 
-## 0.1. Công việc
-
-### Nghiệp vụ
-
-- Đọc và lập traceability cho 26 BR, trong đó có yêu cầu truy cập web từ xa.
-- Xác định màn hình, workflow và output tương ứng với từng BR.
-- Chốt danh sách QA type:
-  - Machine QA.
-  - PSQA Gamma.
-  - Visual Dose Review.
-  - DVH/Plan Review.
-- Chốt các khu vực Biological Toolkit:
-  - BED/EQD2.
-  - Đồ thị theo tổng liều D.
-  - So sánh phác đồ.
-  - Bảng giới hạn liều.
-  - Protocol/phác đồ điều trị.
-  - Knowledge library.
-  - Re-irradiation.
-  - Bù fraction.
-- Xác nhận Biological Toolkit không có liên kết mặc định tới QA case hoặc ca bệnh.
-- Lập danh sách thuật ngữ thống nhất: organization, site, machine, QA case, artifact, analysis run, report revision, scenario.
-
-### Kỹ thuật
-
-- Khóa kiến trúc tham chiếu trong technical.md.
-- Khóa API naming convention.
-- Khóa ID, timestamp, checksum và version convention.
-- Khóa data status của artifact.
-- Khóa gamma.measurement.v1.
-- Khóa metric key convention.
-- Khóa các engine interface:
-  - GammaEngine.
-  - DVHEngine.
-  - BiologicalEngine.
-  - ReportRenderer.
-- Khóa môi trường development, test/CI, staging, pilot và production.
-- Xác định các package/version sẽ pin ở lockfile.
-- Khóa Railway project/environment strategy:
-  - API/backend service.
-  - PostgreSQL service.
-  - worker/renderer service.
-  - Redis service nếu dùng Railway cho queue.
-  - public API networking.
-- Khóa Supabase Auth strategy:
-  - project/config theo environment.
-  - login provider.
-  - redirect/site URL.
-  - token validation và JWKS/introspection.
-  - mapping `supabase_user_id` với organization membership.
-- Khóa object storage artifact độc lập với filesystem ephemeral của Railway.
-- Khóa Railway PostgreSQL là database nghiệp vụ mục tiêu; xác định migration tool, private networking/reference variable, backup và restore.
-
-### Kiểm thử
-
-- Tạo test matrix từ BR → test case.
-- Tạo danh sách golden/reference fixture cần có.
-- Tạo checklist DICOM fixture.
-- Tạo checklist Biological formula fixture.
-- Tạo checklist Report Builder.
-
-## 0.2. Deliverables
-
-- technical.md hoàn chỉnh.
+- Baseline snapshot.
 - Traceability matrix.
-- Domain glossary.
-- API route inventory.
-- Test matrix.
-- Input contract draft.
-- Architecture decision record cho các lựa chọn còn mở.
+- Module registry.
+- Route registry draft.
+- Environment/secret name inventory.
+- Issue cho Railway failed deployment.
 
-## 0.3. Tiêu chí hoàn thành
+## Exit criteria
 
-- Mọi BR có ít nhất một module kỹ thuật và một test/acceptance target.
-- Không còn requirement kỹ thuật quan trọng chỉ mô tả bằng từ “hỗ trợ” mà không có output.
-- Có danh sách input/output cho từng workflow.
-- Có quyết định rõ phần nào thuộc Clinical MVP và phần nào thuộc phase sau.
-
-## 0.4. Không làm trong phase này
-
-- Không viết engine Gamma đầy đủ.
-- Không viết giao diện hoàn chỉnh.
-- Không nhập dataset thật vào hệ thống.
-- Không xây dựng tích hợp PACS/TPS.
+- Không còn nhầm technical.md với technical-specification.md.
+- Không còn phụ thuộc UI-UX.md.
+- Mọi screen hiện có có module owner.
+- Mọi module chưa có screen được đánh dấu design gap.
+- Project Railway và Stitch được xác nhận bằng ID, không chỉ bằng tên.
 
 ---
 
-# PHASE 1 — Nền tảng repository, runtime và CI
+# PHASE 1 — Repository, local runtime và CI
 
-**Thời lượng tham chiếu:** 1–2 tuần  
-**Phụ thuộc:** P0  
-**Mục tiêu:** mọi developer có thể chạy hệ thống bằng một quy trình giống nhau.
+**Thời lượng:** 1–2 tuần
+**Phụ thuộc:** P0
+**Mục tiêu:** có source tree và test pipeline chạy lặp lại được.
 
-## 1.1. Backend
+## Backend
 
-- Tạo Python project.
-- Tạo FastAPI app.
+- Tạo Python/FastAPI/Pydantic project.
 - Tạo configuration layer theo environment.
-- Tạo health endpoint.
-- Tạo request_id/correlation_id middleware.
-- Tạo error contract.
-- Tạo OpenAPI base.
-- Tạo logging JSON.
-- Tạo database session layer.
-- Tạo migration baseline.
-- Tạo object storage adapter interface.
-- Tạo Redis/queue adapter interface.
-- Tạo Supabase Auth JWT verification middleware.
-- Tạo `UserIdentity` và `OrganizationMembership` mapping.
-- Tạo error contract cho token hết hạn, sai issuer/audience/signature và user không thuộc organization.
+- Tạo health, readiness và version endpoint.
+- Tạo error contract và request/correlation ID middleware.
+- Tạo structured logging và log redaction.
+- Tạo SQLAlchemy session, Alembic baseline và repository pattern.
+- Tạo object storage, queue, auth và engine interfaces.
+- Tạo pytest, type check, lint và coverage baseline.
 
-## 1.2. Frontend
+## Frontend
 
-- Tạo React + TypeScript + Vite app.
-- Tạo routing.
-- Tạo layout chung.
-- Tạo organization context selector.
-- Tạo API client.
-- Tạo query/cache layer.
-- Tạo form validation layer.
-- Tạo error/empty/loading state.
-- Tạo component library tối thiểu.
-- Tích hợp `@supabase/supabase-js` cho sign-in, session refresh, logout và password recovery.
-- Không đưa service key hoặc Railway secret vào frontend bundle.
+- Tạo React + TypeScript + Vite.
+- Tạo typed route registry và API client.
+- Tạo query/cache layer và form validation.
+- Tạo test runner, component test và E2E harness.
+- Tạo AppShell placeholder; chưa sao chép nguyên HTML Stitch vào production.
 
-## 1.3. Hạ tầng local
+## Local infrastructure
 
-- Docker Compose cho:
-  - API.
-  - Web.
-  - PostgreSQL.
-  - Redis.
-  - Object storage.
-  - Worker placeholder.
-- PostgreSQL local chỉ phục vụ development/test; database mục tiêu là Railway PostgreSQL.
-- File environment example.
-- Seed data cho organization/site/machine.
-- Script khởi tạo database.
-- Script chạy test.
-- Template Railway service/environment và reference variables.
-- Railway PostgreSQL migration configuration skeleton.
-- File cấu hình Supabase Auth theo environment, không chứa secret thật.
+- Docker Compose cho web, API, PostgreSQL, Redis-compatible queue và object storage development.
+- Seed synthetic organization/site/machine.
+- Env example chỉ có tên biến giả.
+- Script migration, seed, test và local startup.
 
-## 1.4. CI
+## CI
 
-Pipeline:
+- Format/lint/type check.
+- Backend unit/contract test.
+- Frontend unit/component test.
+- Migration up/down or forward-check.
+- Frontend production build.
+- OpenAPI generation/diff.
+- Secret scan và dependency inventory.
 
-1. Backend format/lint.
-2. Backend type check.
-3. Frontend type check.
-4. Unit test.
-5. Frontend build.
-6. Migration check.
-7. OpenAPI generation.
-8. Diff/document check.
-9. Auth contract test với Supabase test project/mock.
+## Deliverables
 
-## 1.5. Deliverables
-
-- Local stack chạy được.
-- Health check.
-- Empty web shell.
+- Source tree.
+- Local stack.
 - CI pipeline.
+- Health/version endpoints.
 - Migration baseline.
-- README setup.
-- Environment template.
-- Test command chuẩn.
-- Supabase Auth client/server adapter skeleton.
-- Railway service/environment manifest draft.
+- Setup README.
 
-## 1.6. Tiêu chí hoàn thành
+## Exit criteria
 
-- Một developer mới có thể khởi động local stack theo README.
-- API health, database và Redis health trả về đúng.
-- Frontend gọi được API health.
-- Frontend đăng nhập được bằng Supabase Auth test project và API xác minh được access token.
-- CI chạy thành công trên repository sạch.
-- Không có secret thật trong source code.
-- Railway reference variables hoặc cấu hình local tương đương không làm lộ database/Redis/object-storage secret.
-- Railway PostgreSQL connection được kiểm tra từ backend/private network, không từ frontend.
-- Railway deployment skeleton phải tạo Railway PostgreSQL service cho database nghiệp vụ; Supabase chỉ cấu hình Auth.
+- Một máy mới có thể chạy local theo README.
+- API, database và frontend health đều pass.
+- Repository sạch không chứa token/credential.
+- CI pass trên commit sạch.
 
 ---
 
-# PHASE 1A — Thiết kế UX/UI, design system và handoff bằng Google Stitch
+# PHASE 2 — Railway staging, PostgreSQL và Supabase Auth foundation
 
-**Thời lượng tham chiếu:** 1–2 tuần  
-**Phụ thuộc:** P0; có thể chạy song song với P1 sau khi các workflow nghiệp vụ chính đã được khóa  
-**Mục tiêu:** tạo bộ thiết kế có thể triển khai thật, làm đầu vào thống nhất cho frontend của các phase sau.
+**Module:** MOD-00 hạ tầng
+**Thời lượng:** 1–2 tuần
+**Phụ thuộc:** P1
+**Mục tiêu:** có staging URL thật, database thật và auth project tách khỏi production.
 
-## 1A.1. Phạm vi thiết kế
+## Railway
 
-Tạo prototype và thiết kế cho các luồng:
+- Cài hoặc pin Railway CLI; không log token.
+- Dùng token phù hợp để link project prolific-learning.
+- Tạo environment staging; production token không được dùng thay cho staging credential.
+- Điều tra log của deployment FAILED hiện có và ghi nguyên nhân.
+- Quyết định giữ service RT-connect làm api-web ban đầu hoặc đổi tên có migration rõ.
+- Tạo Railway PostgreSQL cho staging.
+- Cấu hình private reference variable cho DATABASE_URL.
+- Deploy health-only/API shell lên staging.
+- Bật health check, restart policy và structured logs.
+- Chưa tạo worker/Redis/renderer production trước khi phase cần.
 
-- Trang vào hệ thống, trạng thái truy cập và organization context.
-- Organization, site, machine, folder, QA case và tìm kiếm.
-- Upload artifact, tiến trình upload, Input Manifest và DICOM validation.
-- Machine QA, PSQA Gamma, cấu hình phân tích, queue/job đang chạy, map/kết quả/cảnh báo.
-- Report Builder, bố cục report, revision, preview và export.
-- Trend dashboard, drill-down về QA case và QA Protocol Library.
-- Biological Toolkit độc lập: BED/EQD2, đồ thị theo tổng liều D, so sánh phác đồ, giới hạn liều, protocol/knowledge library, re-irradiation và bù fraction.
+## Supabase
 
-Mỗi luồng phải có các trạng thái tối thiểu:
+- Tạo/chọn Supabase Auth project development/staging.
+- Cấu hình site URL, redirect URL và provider.
+- Lấy public/publishable configuration cho frontend.
+- Cấu hình JWT issuer, audience và JWKS/introspection cho backend.
+- Không dùng Supabase database cho entity nghiệp vụ.
 
-- Loading và job đang xử lý.
-- Empty state khi chưa có dữ liệu.
-- Validation warning và invalid input.
-- Error/retry.
-- Kết quả thành công và kết quả có cảnh báo.
-- Responsive layout cho màn hình desktop, tablet và mobile browser.
+## Security và cost gate
 
-## 1A.2. Công việc với Google Stitch
+- Account/Project token chỉ dùng cho deployment tooling.
+- Backend runtime không cần Railway account/project token.
+- Không đưa Supabase service-role key vào frontend.
+- Kiểm tra Railway usage/cost trước và sau khi tạo PostgreSQL.
+- Ghi baseline 5 USD do user cung cấp và xác định service nào tiêu thụ usage; không hứa toàn bộ topology nằm trong ngân sách nếu chưa đo.
+- Ghi resource limit, timeout và retention hiện tại.
 
-- Tạo project thiết kế bằng dữ liệu giả lập, không dùng PatientID, DICOM hoặc dữ liệu thật.
-- Dùng prompt/reference phù hợp để tạo các màn hình và luồng tương tác.
-- Lặp lại thiết kế theo business-analysis.md và các quy tắc Gamma/Biological Toolkit.
-- Chuẩn hóa navigation, layout, form, table, chart, alert, modal, upload và report block.
-- Chốt design tokens: màu, typography, spacing, grid, breakpoint và trạng thái.
-- Lập component inventory và mapping component → màn hình → workflow → API contract.
-- Lưu prototype link/export/screenshot và quyết định thiết kế vào repository.
-- Review thủ công mọi code hoặc asset do Stitch sinh ra trước khi đưa vào source frontend.
+## Tests
 
-## 1A.3. Deliverables
+- Railway API health từ mạng ngoài.
+- Backend kết nối PostgreSQL qua private/reference variable.
+- Alembic migration trên database rỗng.
+- Supabase sign-in test account và JWT verification.
+- Token sai/hết hạn/sai issuer bị từ chối.
+- Secret không xuất hiện trong bundle/log.
 
-- `UI-UX.md` được khóa làm design brief và prompt đầu vào cho Google Stitch.
-- Screen map và user-flow map.
-- Prototype/design link hoặc export từ Google Stitch.
-- Design token specification.
-- Component inventory và trạng thái component.
-- `docs/design/DESIGN.md` hoặc tài liệu tương đương.
-- Danh sách route frontend và API cần cho từng màn hình.
-- UX acceptance checklist.
-- Danh sách điểm cần làm rõ trước khi frontend implementation.
+## Deliverables
 
-## 1A.4. Tiêu chí hoàn thành
+- Staging environment.
+- Railway PostgreSQL staging.
+- Supabase Auth staging config.
+- Deployment manifest đầu tiên.
+- Failed-deployment root-cause note.
+- Cost/usage snapshot.
 
-- Mọi workflow Clinical MVP có màn hình và luồng tương ứng.
-- Biological Toolkit có tab/khu vực riêng, không bị trộn vào QA case.
-- Có đủ loading, empty, error, invalid và warning state cho workflow bất đồng bộ.
-- Thiết kế thể hiện được report tùy chỉnh toàn diện theo yêu cầu nghiệp vụ.
-- Component và token có thể chuyển thành frontend component dùng chung.
-- Prototype không chứa dữ liệu thật.
-- Frontend team có thể triển khai màn hình mà không phải đoán event, field, navigation hoặc trạng thái API.
-- Design handoff được version hóa; thay đổi sau handoff tạo revision mới.
+## Exit criteria
 
-## 1A.5. Không làm trong phase này
-
-- Không coi prototype hoặc code export là production frontend.
-- Không kết nối Stitch trực tiếp với database, DICOM storage hoặc API production.
-- Không đưa dữ liệu bệnh nhân vào công cụ thiết kế.
-- Không chốt những metric/tolerance lâm sàng chưa có trong business-analysis.md hoặc protocol đã chọn.
+- Staging health qua HTTPS pass.
+- Migration baseline pass trên Railway PostgreSQL.
+- Supabase access token được API xác minh.
+- Production chưa bị thay đổi ngoài thao tác read-only cần thiết.
 
 ---
 
-# PHASE 2 — Organization, Site, Machine, Folder và QA Case
+# PHASE 3 — App Shell, Authentication và Home Dashboard
 
-**Thời lượng tham chiếu:** 2–3 tuần  
-**Phụ thuộc:** P1  
-**Mục tiêu:** hoàn thiện lõi quản lý dữ liệu QA chưa phân tích.
+**Module:** MOD-00, MOD-01
+**Thời lượng:** 1–2 tuần
+**Phụ thuộc:** P2
+**Stitch:** UI-01 có sẵn; Login/Auth screen còn thiếu
+**Mục tiêu:** user đăng nhập và vào được Home Dashboard của đúng organization.
 
-## 2.1. Database/domain
+## Stitch/design
 
-- Tạo Organization.
-- Tạo Site.
-- Tạo Machine.
-- Tạo Folder với parent-child.
-- Tạo QA Case.
-- Tạo quan hệ primary_folder.
-- Tạo audit event cơ bản.
-- Tạo search indexes.
-- Tạo machine stable identifier.
+- Đọc UI-01 bằng get_screen.
+- Tạo screen Login, Password Recovery, Auth Callback và Session Error trong cùng Stitch project.
+- Chốt AppShell, sidebar, header, organization selector và responsive behavior.
+- Trích design tokens thành source.
 
-## 2.2. API
+## Backend/data
 
-- CRUD organization.
-- CRUD site.
-- CRUD machine.
-- CRUD folder.
-- Folder tree.
-- Rename/move/archive folder.
-- CRUD QA case.
-- Search QA case theo:
-  - site.
-  - machine.
-  - QA type.
-  - QA cycle.
-  - folder.
-  - thời gian.
-  - protocol.
-  - status dữ liệu.
+- Tạo UserIdentity và OrganizationMembership.
+- Tạo session bootstrap endpoint.
+- Tạo dashboard read model: machine count, QA gần đây, warning, job và quick action.
+- Seed organization và membership synthetic.
 
-## 2.3. Frontend
+## Frontend
 
-- Organization dashboard.
-- Site list.
-- Machine list.
-- Folder tree.
-- Folder create/rename/move/archive.
-- QA case list.
-- QA case create/edit.
-- QA case detail shell.
+- Tích hợp Supabase sign-in, refresh, logout và recovery.
+- Protected route.
+- Organization context.
+- Home Dashboard nối API thật.
+- Loading/empty/error/offline/session-expired state.
+
+## Tests
+
+- Login/logout/refresh.
+- Deep-link sau login.
+- Membership không hợp lệ.
+- Organization context không bị giả mạo từ client.
+- Dashboard empty và populated state.
+- Accessibility keyboard/focus/label.
+
+## Deliverables
+
+- Auth screens trên Stitch.
+- AppShell component library.
+- Home Dashboard.
+- Session/bootstrap API.
+
+## Exit criteria
+
+- User test đăng nhập từ staging URL.
+- Chỉ thấy organization mình thuộc.
+- Refresh browser giữ hoặc phục hồi session đúng.
+- UI không chứa mock data trong production path.
+
+---
+
+# PHASE 4 — Organization, Site và Machine
+
+**Module:** MOD-02
+**Thời lượng:** 1–2 tuần
+**Phụ thuộc:** P3
+**Stitch:** Chưa có screen riêng
+**Mục tiêu:** hoàn thiện hierarchy organization → site → machine.
+
+## Stitch/design
+
+- Tạo Organization/Site/Machine management screens.
+- Thiết kế create/edit/detail/search/empty/error states.
+- Dùng cùng AppShell và DataTable đã có.
+
+## Backend/data
+
+- Migration Organization, Site, Machine.
+- Stable machine ID, display name, code, manufacturer/model và status.
+- Organization isolation cho mọi query/mutation.
+- Audit event create/update/archive.
+
+## API/frontend
+
+- CRUD organization/site/machine.
 - Search/filter/pagination.
+- Machine detail và lifecycle note.
+- Rename machine không tạo machine mới.
 
-## 2.4. Kiểm thử
+## Tests
 
-- Folder lồng nhau.
-- Di chuyển folder không mất QA case.
-- Archive không xóa record.
-- Machine rename không tách trend identity.
-- Organization không truy vấn lẫn dữ liệu.
-- Search đúng filter.
-- Audit event được tạo.
+- Hierarchy constraints.
+- Cross-organization access.
+- Rename giữ stable ID.
+- Duplicate code policy.
+- Audit event.
 
-## 2.5. Deliverables
+## Exit criteria
 
-- Mốc M2.
-- UI quản lý archive.
-- API và migration.
-- Test suite domain/folder/search.
-- Seed data.
-
-## 2.6. Tiêu chí hoàn thành
-
-- Tạo được organization → site → machine → QA case.
-- Tạo folder con và đặt tên tự do.
-- Đổi tên/di chuyển/archive folder không làm mất QA case.
-- QA case hiển thị đúng machine và site.
-- Có audit history cho các thay đổi chính.
+- Workflow create organization → site → machine chạy trên staging.
+- Machine rename không làm thay identity.
+- Screen-to-API traceability hoàn chỉnh.
 
 ---
 
-# PHASE 3 — Artifact storage, upload và DICOM validation
+# PHASE 5 — QA Archive, Folder và QA Case
 
-**Thời lượng tham chiếu:** 3–4 tuần  
-**Phụ thuộc:** P2  
-**Mục tiêu:** lưu file nguyên trạng và biết file có đủ điều kiện cho workflow nào.
+**Module:** MOD-03
+**Thời lượng:** 2–3 tuần
+**Phụ thuộc:** P4
+**Stitch:** UI-02 có sẵn
+**Mục tiêu:** kho QA hoạt động giống folder máy tính nhưng vẫn có metadata/search.
 
-## 3.1. Object storage
+## Stitch/design
 
-- Tạo object storage adapter.
-- Object key không dùng trực tiếp filename.
-- Lưu byte size, media type và checksum.
-- Hỗ trợ upload progress.
-- Hỗ trợ retry.
-- Hỗ trợ download signed URL.
-- Tách original object và derived object.
-- Tạo artifact lifecycle.
+- Đọc UI-02.
+- Bổ sung modal create/rename/move/archive folder.
+- Bổ sung QA Case create/detail shell, search, filter, pagination và empty/error state.
 
-## 3.2. Artifact API
+## Backend/data
 
-- Upload artifact cho QA case.
-- Upload measurement.
-- Xem metadata.
-- Download file.
-- Archive artifact.
-- Tạo derived artifact.
-- Xem parent lineage.
-- Xem checksum.
-- Xem validation history.
+- Folder parent-child/materialized path.
+- QACase, primary_folder, qa_type, qa_cycle, performed_at.
+- Index organization/site/machine/folder/time/type.
+- Archive không hard delete.
+- Move/rename không đổi QACase ID.
 
-## 3.3. DICOM parser
+## API/frontend
 
-- Đọc file meta.
-- Detect modality.
-- Đọc SOP/Study/Series/Frame UIDs.
-- Đọc RTDOSE metadata.
-- Đọc RTSTRUCT metadata.
-- Đọc RTPLAN metadata.
-- Đọc CT geometry.
-- Đọc dose grid.
-- Đọc structure contours.
-- Không save lại file nguồn.
+- Folder tree CRUD.
+- QA case CRUD.
+- Search theo site, machine, cycle, type, protocol, time và data status.
+- Breadcrumb và deep-link.
 
-## 3.4. Validation service
+## Tests
 
-Validation code tối thiểu:
+- Folder nhiều cấp.
+- Move subtree.
+- Rename/archive không mất case.
+- Search combinations.
+- Organization isolation.
+- Audit history.
 
-- INVALID_DICOM.
-- UNSUPPORTED_MODALITY.
-- MISSING_UID.
-- MISSING_PIXEL_DATA.
-- MISSING_DOSE_SCALING.
-- INVALID_DOSE_GRID.
-- GEOMETRY_MISMATCH.
-- STRUCTURE_REFERENCE_MISMATCH.
-- RTDOSE_REQUIRED.
-- COMPARE_DATASET_REQUIRED.
-- MEASUREMENT_REQUIRED.
-- DVH_INPUT_REQUIRED.
-- UNIT_MISSING.
+## Exit criteria
 
-## 3.5. Input Manifest
-
-- Tạo manifest sau upload.
-- Cho phép user chọn logical role.
-- Lưu metadata snapshot.
-- Lưu geometry summary.
-- Lưu unit summary.
-- Lưu checksum at use.
-- Hiển thị validation warnings.
-
-## 3.6. Measurement contract
-
-- Viết schema validator cho gamma.measurement.v1.
-- Tạo JSON fixture hợp lệ.
-- Tạo fixture thiếu unit.
-- Tạo fixture sai shape.
-- Tạo fixture mơ hồ.
-- Từ chối đoán cột hoặc đơn vị.
-
-## 3.7. Frontend
-
-- Artifact list.
-- Upload progress.
-- Validation result panel.
-- DICOM metadata panel.
-- Input role selector.
-- Missing/invalid warning panel.
-- Artifact lineage view.
-
-## 3.8. Deliverables
-
-- Mốc M3.
-- Object storage integration.
-- DICOM validation service.
-- Input Manifest.
-- Measurement contract.
-- DICOM fixture set.
-
-## 3.9. Tiêu chí hoàn thành
-
-- Upload xong có checksum.
-- File gốc tải xuống đúng byte.
-- RTDOSE/RTSTRUCT/RTPLAN đọc được metadata yêu cầu.
-- File sai bị cảnh báo hoặc invalid đúng mã.
-- Không ghép DICOM chỉ dựa trên filename hoặc PatientID.
-- Measurement mơ hồ không được chạy Gamma.
+- User tạo folder con và QA case từ UI-02 trên staging.
+- Archive vẫn xem lại được.
+- Deep-link và browser reload không lỗi.
 
 ---
 
-# PHASE 4 — Analysis foundation, Machine QA và metric/rule engine
+# PHASE 6 — Artifact, Upload, Input Manifest và DICOM Validation
 
-**Thời lượng tham chiếu:** 3–4 tuần  
-**Phụ thuộc:** P3  
-**Mục tiêu:** tạo khung analysis bất đồng bộ và hoàn thiện Machine QA trước PSQA Gamma.
+**Module:** MOD-04
+**Thời lượng:** 3–4 tuần
+**Phụ thuộc:** P5
+**Stitch:** Một phần trong UI-03; cần QA Case Upload/Validation screens chi tiết
+**Mục tiêu:** file gốc được lưu nguyên trạng và biết rõ có dùng được cho workflow nào.
 
-## 4.1. Analysis infrastructure
+## Design
 
-- Tạo AnalysisConfiguration.
-- Tạo AnalysisRun.
-- Tạo job queue.
-- Tạo worker lifecycle.
-- Tạo retry policy.
-- Tạo job log.
-- Tạo MetricResult.
-- Tạo Warning.
-- Tạo result artifact.
-- Tạo rerun flow.
-- Tạo engine version snapshot.
+- Tạo QA Case detail/upload queue.
+- Tạo Input Manifest, metadata, validation warning/error và lineage views.
+- Thiết kế progress, retry, duplicate checksum và interrupted upload.
 
-## 4.2. Metric/rule engine
+## Storage/data
 
-- Thiết kế metric key.
-- Hỗ trợ numeric metric.
-- Hỗ trợ unit.
-- Hỗ trợ baseline.
-- Hỗ trợ tolerance/action level.
-- Hỗ trợ margin.
-- Hỗ trợ PASS/FAIL/REVIEW_REQUIRED/INVALID_INPUT/NOT_APPLICABLE.
-- Lưu rule snapshot.
-- Không hardcode tolerance trong UI.
+- Chọn S3-compatible object storage bền vững.
+- Artifact metadata, SHA-256, byte size, media type và object key.
+- Original/derived lineage.
+- Signed download URL có hạn.
+- Không dùng Railway ephemeral filesystem làm kho chính.
 
-## 4.3. Machine QA workflow
+## DICOM
 
-- Tạo QA checklist từ protocol.
-- Nhập measurement.
-- Nhập unit.
-- Nhập baseline.
-- Tính deviation.
-- Tính margin.
-- Hiển thị cảnh báo.
-- Tạo metrics.
-- Ghi trend point khi đủ context.
-- Gắn artifact đo.
-
-## 4.4. Test
-
-- Unit test rule.
-- Test unit conversion được cho phép.
-- Test baseline deviation.
-- Test tolerance/action level.
-- Test missing value.
-- Test invalid unit.
-- Test rerun không xóa run cũ.
-- Test worker retry.
-- Test job failure không tạo result hợp lệ.
-
-## 4.5. Deliverables
-
-- Mốc M4.
-- Generic analysis runner.
-- Machine QA vertical slice.
-- Metric/rule engine.
-- Worker dashboard cơ bản.
-- Regression test.
-
-## 4.6. Tiêu chí hoàn thành
-
-- Một Machine QA case đi từ input tới metric.
-- Kết quả có unit, actual, limit, margin và status.
-- Có thể chạy lại với protocol/configuration khác.
-- Run cũ vẫn xem được.
-- Trend point có source pointer về analysis run.
-
----
-
-# PHASE 5 — PSQA Gamma vertical slice
-
-**Thời lượng tham chiếu:** 4–5 tuần  
-**Phụ thuộc:** P4  
-**Mục tiêu:** hoàn thiện workflow Gamma end-to-end trên test/reference dataset.
-
-## 5.1. Gamma contract và configuration
-
-- Implement gamma.measurement.v1.
-- Tạo GammaConfiguration schema.
-- Hỗ trợ:
-  - Dose difference.
-  - DTA.
-  - Absolute/relative.
-  - Global/local.
-  - Dose threshold.
-  - Pass threshold.
-  - 2D/3D.
-  - Per-field/composite.
-  - ROI/mask.
-  - Alignment/shift.
-  - Interpolation.
-  - Search distance.
-  - Max gamma.
-- Lưu configuration snapshot.
-- Validate configuration trước khi enqueue.
-
-## 5.2. Gamma engine adapter
-
-- Tạo interface GammaEngine.
-- Implement adapter đầu tiên.
-- Chuẩn hóa axes và dose array.
-- Chuẩn hóa unit.
-- Validate shape.
-- Validate alignment.
-- Chạy deterministic mode.
-- Ghi engine version.
-- Tạo gamma map.
-- Tạo histogram.
-- Tính pass rate và summary.
-
-## 5.3. DICOM workflow
-
-- RTDOSE required.
-- Measurement/comparison required.
-- RTSTRUCT optional cho phantom/plane.
-- RTPLAN optional theo selected mode.
-- Reject missing critical input.
-- Warning cho input không critical.
-- Lưu input manifest.
-
-## 5.4. Frontend
-
-- Chọn reference/evaluation.
-- Chọn preset.
-- Chỉnh Gamma configuration.
-- Hiển thị validation trước khi chạy.
-- Hiển thị job progress.
-- Hiển thị pass rate.
-- Hiển thị gamma map.
-- Hiển thị histogram.
-- Hiển thị warnings.
-- Hiển thị configuration.
-- Rerun với configuration khác.
-- So sánh hai Gamma run.
-
-## 5.5. Test/reference dataset
-
-Tạo test case:
-
-- Uniform field.
-- Known shift.
-- Known dose scaling.
-- Different grid spacing.
-- Low dose cutoff.
-- Edge of field.
-- 2D.
-- 3D.
-- Global.
-- Local.
-- Absolute.
-- Relative.
-- Invalid measurement.
-- Missing RTDOSE.
-- Missing comparison dataset.
-- NaN/invalid values.
-
-## 5.6. Deliverables
-
-- Mốc M5.
-- PSQA Gamma vertical slice.
+- pydicom metadata-first parser.
+- CT, RTDOSE, RTSTRUCT, RTPLAN baseline.
+- SOP/Study/Series/Frame UIDs.
+- Dose scaling/grid/orientation/reference validation.
 - gamma.measurement.v1 validator.
-- Gamma output artifacts.
-- Golden/reference tests.
-- User guide cho Gamma.
+- Không ghép bằng filename hoặc PatientID.
 
-## 5.7. Tiêu chí hoàn thành
+## Worker/API/frontend
 
-- PSQA thiếu RTDOSE không chạy.
-- PSQA thiếu RTSTRUCT nhưng workflow phantom/plane vẫn chạy.
-- Measurement mơ hồ không chạy.
-- Gamma configuration lưu đủ tham số.
-- Gamma map/pass rate/reason/warning được lưu.
-- Rerun không xóa result cũ.
-- Golden test đạt.
+- Streaming/multipart upload.
+- Validation job idempotent.
+- Artifact status UPLOADED/VALIDATING/VALID/WARNING/INVALID/ARCHIVED.
+- Manifest role selector.
+- Download và audit.
+
+## Tests
+
+- Byte-for-byte source integrity.
+- Duplicate/retry upload.
+- Valid/invalid DICOM fixtures.
+- Missing UID/scaling/unit.
+- Geometry mismatch.
+- Measurement ambiguous/shape mismatch.
+- Browser refresh trong upload/job.
+
+## Exit criteria
+
+- Upload trên staging tạo checksum và manifest.
+- File tải lại đúng checksum.
+- Validation giải thích được từng warning/error.
+- Measurement mơ hồ không đi tiếp Gamma.
 
 ---
 
-# PHASE 6 — Report Builder, rendering và export
+# PHASE 7 — Machine QA
 
-**Thời lượng tham chiếu:** 3–4 tuần  
-**Phụ thuộc:** P4; Gamma output từ P5 để render block Gamma  
-**Mục tiêu:** report có thể tùy chỉnh toàn diện và tái hiện từ snapshot.
+**Module:** MOD-05
+**Thời lượng:** 2–3 tuần
+**Phụ thuộc:** P6; P7 tạo protocol seed tối thiểu có version, còn thư viện quản trị đầy đủ hoàn thiện ở P11
+**Stitch:** Chưa có screen riêng
+**Mục tiêu:** hoàn thiện Daily/Monthly/Annual/Custom Machine QA vertical slice.
 
-## 6.1. Template model
+## Design
 
-- Tạo ReportTemplate.
-- Tạo ReportTemplateVersion.
-- Tạo ReportBlockConfig.
-- Tạo block registry.
-- Tạo layout config.
-- Tạo conditional display.
-- Tạo selected metric keys.
-- Tạo template clone.
+- Tạo Machine QA checklist, measurement editor, result summary và history screens.
+- Thể hiện actual, unit, baseline, tolerance, action level, margin và status.
 
-## 6.2. Report Builder UI
+## Backend/data
 
-- Block palette.
-- Drag/reorder.
-- Add/remove.
-- Hide/show.
-- Rename title/label.
-- Select metrics.
-- Configure chart period.
-- Add notes.
-- Preview.
-- Save template.
-- Create report revision.
+- Tạo QAProtocolVersion/Rule seed tối thiểu và immutable snapshot để Machine QA hoạt động; CRUD/library đầy đủ để P11.
+- AnalysisConfiguration, AnalysisRun, MetricResult, Warning.
+- Rule engine: <=, >=, range, absolute/percent deviation, N/A và review.
+- Immutable completed run; rerun tạo run mới.
+- TrendPoint projection.
 
-## 6.3. Renderer
+## API/frontend
 
-- Render HTML.
-- Render PNG blocks.
-- Render PDF.
-- Render CSV/JSON.
-- Embed provenance summary.
-- Embed input manifest.
-- Embed warnings/metrics theo cấu hình user.
-- Store render artifact checksum.
-- Handle render failure.
+- Tạo run từ protocol version.
+- Autosave/versioned draft measurement.
+- Evaluate và hiển thị result.
+- Rerun/compare.
+- Gắn artifact và note.
 
-## 6.4. Revision
+## Tests
 
-- Mỗi save report tạo revision.
-- Snapshot configuration.
-- Snapshot analysis result.
-- Snapshot protocol.
-- Snapshot template.
-- View old revision.
-- Compare revision.
-- Export selected revision.
-- Không đọc dữ liệu live khi render old revision.
+- Known rule values.
+- Missing/invalid unit.
+- Baseline deviation.
+- Rerun không xóa run cũ.
+- Failed evaluation không tạo valid result.
+- Trend source pointer.
 
-## 6.5. Test
+## Exit criteria
 
-- Add/remove/hide block.
-- Reorder block.
-- Rename title.
-- Select metric.
-- Conditional block.
-- Gamma map render.
-- Vietnamese font.
-- Large table.
-- Old revision render.
-- Export corrupted/missing artifact.
+- Một Machine QA case đi từ checklist tới metric và history.
+- Result có actual/limit/margin/status/rule snapshot.
+- Staging E2E pass.
+
+---
+
+# PHASE 8 — PSQA Gamma
+
+**Module:** MOD-06
+**Thời lượng:** 4–5 tuần
+**Phụ thuộc:** P6, P7 analysis foundation
+**Stitch:** UI-03 có sẵn
+**Mục tiêu:** PSQA Gamma end-to-end bằng test/reference dataset.
+
+## Infrastructure
+
+- Tạo Railway Redis-compatible queue và worker service ở staging.
+- API chỉ enqueue; không chạy Gamma lớn trong HTTP request.
+- Idempotency, retry, timeout, heartbeat và queue metrics.
+- Theo dõi Railway usage/cost sau khi thêm service.
+
+## Engine
+
+- GammaConfiguration đầy đủ.
+- Adapter interface và deterministic implementation.
+- 2D trước; 3D sau khi cùng contract/golden test đạt.
+- Global/local, absolute/relative, threshold, DTA, normalization, alignment và interpolation.
+- Map, histogram, pass rate, percentiles, warning và provenance.
+
+## Frontend
+
+- Dùng UI-03: reference/evaluation selection, config, preflight validation, job progress, result và rerun.
+- Compare two runs.
+- Job survives refresh/reconnect.
+
+## Tests
+
+- Uniform, known shift, scaling, different grid, low-dose cutoff, edge field.
+- 2D/3D, global/local, absolute/relative.
+- Missing RTDOSE/measurement.
+- RTSTRUCT optional cho phantom/plane.
+- NaN/invalid data.
+- Golden/reference expected result.
+
+## Exit criteria
+
+- RTDOSE + measurement valid chạy end-to-end trên staging worker.
+- Missing critical input bị chặn đúng error code.
+- Configuration snapshot đủ và run cũ không đổi.
+- Golden test pass.
+
+---
+
+# PHASE 9 — Report Builder, Revision và Export
+
+**Module:** MOD-07
+**Thời lượng:** 3–4 tuần
+**Phụ thuộc:** P7; Gamma blocks cần P8
+**Stitch:** UI-04 có sẵn
+**Mục tiêu:** report tùy chỉnh toàn diện và tái hiện từ snapshot.
+
+## Design/frontend
+
+- Đọc UI-04.
+- Bổ sung Report Viewer, Revision History, Compare Revision và Export Progress.
+- Block palette, reorder, hide/show, rename, metric/chart selection và notes.
+- Preview responsive/print.
+
+## Backend/data
+
+- ReportTemplate/Version, Report, ReportRevision và ReportBlockConfig.
+- Snapshot input manifest, analysis, protocol, config, template và render options.
+- Old revision không đọc live state.
+
+## Renderer
+
+- HTML first.
+- PDF, PNG, CSV và JSON.
+- Vietnamese font và chart assets pinned.
+- Renderer ban đầu có thể là worker capability; chỉ tách service sau benchmark.
+- Output checksum và render version.
+
+## Tests
+
+- Add/remove/reorder/hide/rename.
+- Large metric table.
+- Gamma map/chart.
+- Old revision repeatability.
+- Missing/corrupt artifact.
+- PDF visual/snapshot test.
+
+## Exit criteria
+
+- User tạo, sửa và export report trên staging.
+- Old revision tái render đúng snapshot.
+- Render failure không thay AnalysisRun.
+
+---
+
+# PHASE 10 — Trend
+
+**Module:** MOD-08
+**Thời lượng:** 2–3 tuần
+**Phụ thuộc:** P7, P8, P9
+**Stitch:** Chưa có screen riêng
+**Mục tiêu:** biến metric theo thời gian thành trend có drill-down.
+
+## Design
+
+- Tạo Trend Dashboard screen.
+- Filter machine, QA type, metric, period, energy, detector, phantom và protocol.
+- Baseline/tolerance/action/outlier/maintenance marker.
+
+## Backend/frontend
+
+- TrendPoint read model và indexed query.
+- Unit compatibility.
+- MaintenanceEvent.
+- Drill-down point → case → analysis → report.
+- CSV/JSON/chart export.
+
+## Tests
+
+- Không trộn machine.
+- Không vẽ chung unit không tương thích.
+- Baseline/action/tolerance.
+- Outlier không bị xóa.
+- Drill-down source đúng.
+
+## Exit criteria
+
+- Trend thực từ Machine QA/Gamma hiển thị trên staging.
+- Filter và drill-down pass.
+- Screen có empty/large-data/error states.
+
+---
+
+# PHASE 11 — QA Protocol Library
+
+**Module:** MOD-09
+**Thời lượng:** 2–3 tuần
+**Phụ thuộc:** P7, P9
+**Stitch:** Chưa có screen riêng
+**Mục tiêu:** protocol/rule/reference có version và dùng lại được.
+
+## Design
+
+- Tạo library, protocol editor, rule editor, reference panel và version comparison.
+
+## Backend/data
+
+- QAProtocol, Version, Rule và Reference.
+- Clone, version, changelog và effective note.
+- Không update ngược protocol snapshot đã dùng.
+
+## Frontend/API
+
+- Search theo QA type/machine/keyword.
+- Create/clone/version.
+- Gắn protocol version vào QACase/AnalysisConfiguration.
+- Compare versions.
+
+## Tests
+
+- Rule snapshot.
+- Protocol cũ giữ report cũ.
+- Clone không share mutable child.
+- Search/version/audit.
+
+## Exit criteria
+
+- Tạo protocol version và dùng được trong Machine QA/Gamma.
+- Report cũ không thay đổi khi có version mới.
+- R1 Clinical MVP feature-complete trên staging.
+
+---
+
+# PHASE 12 — Biological Hub
+
+**Module:** MOD-10
+**Thời lượng:** 1–2 tuần
+**Phụ thuộc:** P3, P9 cho independent report shell
+**Stitch:** Chưa có screen hoạt động; UI cũ đã deprecated, phải tạo lại
+**Mục tiêu:** tạo bounded context và navigation riêng cho Biological Toolkit.
+
+## Work
+
+- Đọc bốn screen chuẩn và Design System; tạo mới Biological Toolkit Overview trong cùng project.
+- Tạo route namespace /app/biological.
+- BiologicalScenario và CalculationRun base.
+- Calculation history, source, assumption và recent tools.
+- Không có QA case/patient selector mặc định.
+- Independent report entry point.
+
+## Tests
+
+- No automatic QA/patient linkage.
+- Organization scoping cho history.
+- Hub empty/populated/error.
+- Deep-link tới calculator modules.
+
+## Exit criteria
+
+- Biological Hub hoạt động độc lập trên staging.
+- Không có foreign key bắt buộc tới QACase.
+
+---
+
+# PHASE 13 — BED & EQD2
+
+**Module:** MOD-11
+**Thời lượng:** 2–3 tuần
+**Phụ thuộc:** P12
+**Stitch:** Chưa có screen hoạt động; phải tạo lại sau khi P12 design được kiểm tra
+**Mục tiêu:** calculator, graph và history hoàn chỉnh.
+
+## Engine/data
+
+- LQ BED/EQD2 model.
+- Input D, n, d, alpha/beta, tissue, source và assumptions.
+- Consistency validation D = n × d.
+- Calculation snapshot và engine version.
+- Graph theo D range, step và nhiều alpha/beta.
+
+## Frontend
+
+- Dùng Biological Hub mới và bốn screen chuẩn để tạo BED/EQD2 Calculator mới.
+- Calculator, formula explanation, source/assumption panel.
+- Chart/table/marker.
+- PNG/SVG/CSV và independent report export.
+
+## Tests
+
+- Known-answer formula.
+- Invalid n/d/D/alpha-beta.
+- D curve values.
+- Multiple alpha/beta.
 - Snapshot repeatability.
 
-## 6.6. Deliverables
+## Exit criteria
 
-- Mốc M6.
-- Report Builder.
-- HTML/PDF/PNG/CSV/JSON export.
-- Revision viewer.
-- Snapshot/provenance display.
-
-## 6.7. Tiêu chí hoàn thành
-
-- User toàn quyền chỉnh report.
-- Report có thể export.
-- Report revision cũ tái hiện đúng snapshot.
-- Report chứa được metric, warning, map, plot và notes.
-- Render lỗi được báo rõ.
-- Không làm thay đổi analysis result.
+- Known-answer suite pass.
+- User lưu và mở lại calculation.
+- Graph/data/report export đúng snapshot.
 
 ---
 
-# PHASE 7 — Trend và QA Protocol Library
+# PHASE 14 — So sánh phác đồ xạ trị
 
-**Thời lượng tham chiếu:** 2–3 tuần  
-**Phụ thuộc:** P4, P6  
-**Mục tiêu:** biến kết quả rời rạc thành theo dõi lịch sử theo machine và protocol.
+**Module:** MOD-12
+**Thời lượng:** 2 tuần
+**Phụ thuộc:** P13
+**Stitch:** Chưa có screen hoạt động; phải tạo lại sau P13
+**Mục tiêu:** so sánh hai hoặc nhiều fractionation schedules.
 
-## 7.1. Trend
+## Work
 
-- Tạo TrendPoint.
-- Tạo trend query.
-- Filter machine/QA type/metric/time.
-- Filter energy/mode/detector/phantom.
-- Chọn baseline.
-- Hiển thị tolerance/action.
-- Hiển thị outlier.
-- Link point → QA case → analysis → report.
-- Export trend.
-- Tạo maintenance event.
-- Hiển thị maintenance marker.
+- Tạo mới màn hình so sánh phác đồ, kế thừa AppShell và component language đã khóa.
+- Multi-course editor.
+- BED/EQD2 per course.
+- Absolute/percent difference.
+- Context/model mismatch warning.
+- Comparison chart/table.
+- Save/clone/export scenario.
 
-## 7.2. QA Protocol Library
+## Tests
 
-- CRUD protocol.
-- Tạo protocol version.
-- Tạo protocol rule.
-- Gắn reference.
-- Clone protocol.
-- So sánh version.
-- Gắn protocol vào QA case.
-- Giữ snapshot protocol trong analysis/report.
-- Tìm kiếm theo QA type/machine/keyword.
+- Two/multi-course known answers.
+- Different alpha/beta.
+- Inconsistent total dose.
+- Context warning.
+- Export snapshot.
 
-## 7.3. Test
+## Exit criteria
 
-- Trend không trộn machine.
-- Unit khác nhau không vẽ chung.
-- Baseline đúng.
-- Outlier không bị xóa.
-- Maintenance event hiển thị đúng.
-- Protocol version cũ không thay đổi report cũ.
-- Rule snapshot không bị cập nhật ngược.
-
-## 7.4. Deliverables
-
-- Mốc M7.
-- Trend dashboard.
-- QA Protocol Library.
-- Protocol version viewer.
-- Trend export.
-
-## 7.5. Tiêu chí hoàn thành
-
-- Xem được trend theo machine.
-- Drill-down về source QA case.
-- Có tolerance/action/baseline.
-- Có event marker.
-- Protocol cũ vẫn tái hiện đúng trong report cũ.
+- User so sánh và lưu được nhiều course trên staging.
+- Mọi kết quả có source/assumption và engine version.
 
 ---
 
-# PHASE 8 — Biological Toolkit độc lập
+# PHASE 15 — Re-irradiation và bù fraction
 
-**Thời lượng tham chiếu:** 4–6 tuần  
-**Phụ thuộc:** P1, P3 cho artifact tùy chọn, P6 cho calculation report  
-**Mục tiêu:** xây dựng tab tính toán sinh học độc lập, không gắn mặc định với QA hoặc ca bệnh.
+**Module:** MOD-13
+**Thời lượng:** 3–4 tuần
+**Phụ thuộc:** P13, P14
+**Stitch:** Re-irradiation screen cũ đã deprecated; phải tạo lại cùng Fraction Compensation
+**Mục tiêu:** re-irradiation multi-course và interruption scenarios chi tiết.
 
-## 8.1. Biological workspace
+## Design
 
-- Tạo route/module riêng.
-- Tạo scenario list.
-- Tạo scenario editor.
-- Tạo calculation history.
-- Tạo source/assumption panel.
-- Tạo independent report export.
-- Không hiển thị QA case selector mặc định.
-- Không tự truy cập treatment course.
+- Tạo mới Re-irradiation Calculator và Fraction Compensation/Interruption screen.
+- Hiển thị scalar/spatial mode, recovery/no-recovery và limitations.
 
-## 8.2. BED/EQD2
+## Engine/data
 
-- Implement model cơ bản.
-- Validate n, d, D, alpha/beta.
-- Hiển thị formula.
-- Hiển thị unit.
-- Hiển thị source.
-- Hiển thị assumptions.
-- Lưu calculation run.
-- Tạo test values known-answer.
-
-## 8.3. Đồ thị theo tổng liều D
-
-- D range.
-- Step.
-- N.
-- Alpha/beta series.
-- Target/OAR labels.
-- BED/EQD2 selection.
-- Data table.
-- PNG/SVG/CSV export.
-- Snapshot chart configuration.
-
-## 8.4. So sánh phác đồ
-
-- Nhập course A/B/multiple.
-- Tính BED/EQD2.
-- Tính difference.
-- Vẽ chart.
-- Warning khi context không tương đương.
-- Export comparison report.
-
-## 8.5. Bảng giới hạn liều
-
-- Disease.
-- Anatomy.
-- OAR/target.
-- Metric.
-- Limit/unit.
-- Fractionation.
-- Source.
-- Evidence.
-- Applicability.
-- Search/filter.
-- Version.
-
-## 8.6. Protocol và knowledge library
-
-- Treatment protocol reference.
-- Phác đồ điều trị.
-- Theory article.
-- Formula entry.
-- Alpha/beta entry.
-- DOI/URL.
-- Internal summary.
-- Version.
-- Date update.
-- Search by disease/anatomy/topic.
-
-## 8.7. Re-irradiation
-
-- Multi-course input.
-- Dates/time interval.
-- Dose/fractions.
-- Tissue/OAR/target.
-- Alpha/beta per tissue.
-- Recovery assumption.
-- Scenario copy/compare.
+- Course dates/ranges, interval, D/n/d, tissue, alpha/beta và source.
+- Recovery assumption model/version.
 - Scalar cumulative BED/EQD2.
-- Optional standalone RTDOSE/RTSTRUCT input.
-- Geometry/registration note.
-- No spatial accumulation when contract missing.
-- Warnings and limitation display.
-- Independent report.
+- Scenario copy/compare.
+- Spatial accumulation chỉ khi có geometry/registration contract; không nằm trong bản scalar mặc định.
 
-## 8.8. Bù fraction
+## Tests
 
-- Original schedule.
-- Delivered fractions.
-- Missing fractions.
-- Remaining fractions.
-- Gap duration.
-- Overall treatment time.
-- Compare alternatives.
-- Export scenario.
+- Multi-course known answers.
+- Recovery/no-recovery.
+- Missing interval/alpha-beta/source.
+- No spatial accumulation without registration.
+- Fraction delivered/missing/remaining alternatives.
 
-## 8.9. Tests
+## Exit criteria
 
-- Formula unit tests.
-- Known-answer tests.
-- Invalid input tests.
-- Graph values.
-- Multi-course comparison.
-- Recovery assumption.
-- Re-irradiation no-link test.
-- Biological report snapshot.
-- No QA case foreign key by default.
-
-## 8.10. Deliverables
-
-- Mốc M8.
-- Biological Toolkit tab.
-- BED/EQD2 engine.
-- Graphs.
-- Plan comparison.
-- Dose limit table.
-- Treatment protocol/knowledge library.
-- Re-irradiation calculator.
-- Independent calculation report.
-
-## 8.11. Tiêu chí hoàn thành
-
-- Biological Toolkit hoạt động độc lập.
-- Tính BED/EQD2 đúng bộ test.
-- Có đồ thị theo D.
-- Có so sánh phác đồ.
-- Có re-irradiation nhiều course.
-- Có assumptions/source/history.
-- Không tự link QA case/ca bệnh.
-- Không sửa RT Plan hoặc prescription.
-- Export được report độc lập.
+- Multi-course scenario lưu, clone, compare và export được.
+- Scalar/spatial mode không bị nhập nhằng.
+- Không tự tạo prescription hoặc liên kết treatment case.
 
 ---
 
-# PHASE 9 — Integrated verification và hardening
+# PHASE 16 — Dose Limit, Treatment Protocol và Knowledge Library
 
-**Thời lượng tham chiếu:** 3–4 tuần  
-**Phụ thuộc:** P5, P6, P7; P8 nếu release cùng Biological Toolkit  
-**Mục tiêu:** kiểm tra toàn bộ hệ thống như một sản phẩm, không chỉ từng module.
+**Module:** MOD-14
+**Thời lượng:** 3–4 tuần
+**Phụ thuộc:** P12, P13
+**Stitch:** Chưa có screen riêng
+**Mục tiêu:** thư viện tra cứu/version độc lập phục vụ công cụ tính toán.
 
-## 9.1. Integration test
+## Design
 
-Chạy đầy đủ:
+- Tạo Dose Limit Table.
+- Treatment Protocol/Regimen Library.
+- Knowledge Article/Formula/Alpha-Beta Library.
+- Source/evidence/applicability/version comparison.
 
-- Organization → machine → QA case.
-- Folder create/move/archive.
-- Upload → checksum → validation.
-- RTDOSE + measurement → Gamma.
-- Machine QA → metric → trend.
-- Gamma → report → PDF.
-- Rerun → compare revisions.
-- Protocol update → old report remains.
+## Backend/data
+
+- DoseLimitEntry versioned.
+- TreatmentProtocolReference versioned.
+- KnowledgeEntry và AlphaBetaEntry versioned.
+- Search/index disease, anatomy, OAR, metric, technique và topic.
+- Citation/DOI/URL/source type và updated date.
+
+## Frontend/API
+
+- Search/filter/sort.
+- Create/clone/version.
+- Open source/citation.
+- Use entry as calculator input only after user selection.
+- Independent export.
+
+## Tests
+
+- Version immutability.
+- Search/filter.
+- Citation/source presence.
+- User override labeling.
+- No automatic prescription/QA linkage.
+
+## Exit criteria
+
+- R2 Biological Toolkit feature-complete trên staging.
+- Knowledge/version/source workflow pass.
+
+---
+
+# PHASE 17 — Visual Dose và DVH/Plan Review
+
+**Module:** MOD-15
+**Thời lượng:** 4–6 tuần
+**Phụ thuộc:** P6, P8 analysis worker, P9 report
+**Stitch:** Chưa có screen riêng
+**Ưu tiên:** Extension; không chặn Clinical MVP/Biological release
+**Mục tiêu:** structure-level dose review khi geometry hợp lệ.
+
+## Work
+
+- Tạo Visual Dose/DVH screen trên Stitch.
+- RTDOSE + RTSTRUCT linkage; CT khi cần anatomy view.
+- Contour rasterization và explicit resampling.
+- Dmin/Dmax/Dmean/Dx/Vx baseline.
+- Structure mapping manual snapshot.
+- Worker execution và plot artifacts.
+- Report blocks cho DVH/metrics.
+
+## Tests
+
+- Uniform dose/simple geometry.
+- Sphere/box structures.
+- Different spacing/orientation.
+- Contour outside grid.
+- Frame-of-reference mismatch.
+- Repeatable DVH metrics.
+
+## Exit criteria
+
+- Known geometry/golden tests pass.
+- Missing RTSTRUCT/geometry bị chặn.
+- Result có full provenance.
+
+---
+
+# PHASE 18 — Integrated hardening và pilot
+
+**Module:** MOD-16
+**Thời lượng:** 3–6 tuần
+**Phụ thuộc:** R1; R2 nếu phát hành cùng Biological Toolkit
+**Mục tiêu:** kiểm tra sản phẩm như một hệ thống và chạy pilot bằng dataset thật.
+
+## Integrated/E2E
+
+- Auth → organization → machine → folder → case.
+- Upload → checksum → validation → analysis.
+- Machine QA → trend.
+- Gamma → report → revision/export.
+- Protocol update không thay report cũ.
 - Biological scenario → calculation → graph → report.
-- Backup → restore → verify artifact checksum.
+- Backup → restore → checksum.
 
-## 9.2. End-to-end test
+## Reliability/performance
 
-Tạo test script cho:
-
-- PSQA valid.
-- PSQA missing RTDOSE.
-- PSQA missing measurement.
-- PSQA missing RTSTRUCT but phantom mode.
-- DVH missing RTSTRUCT.
-- DICOM geometry mismatch.
-- Report custom block.
-- Biological multi-course.
-- Re-irradiation without registration.
-- Worker failure/retry.
-- Export failure.
-
-## 9.3. Performance test
-
-Đo:
-
-- API metadata p50/p95.
-- Upload file lớn.
-- DICOM parse time.
+- API p50/p95.
+- Upload lớn.
 - Gamma 2D/3D time.
-- DVH time.
+- Queue throughput/depth.
 - Report render time.
-- Queue throughput.
-- Concurrent user metadata requests.
-- Object storage read/write.
+- API/worker/Redis/PostgreSQL/object-storage restart/failure.
+- Duplicate job/idempotency.
 
-## 9.4. Reliability test
+## Security/data isolation
 
-- Restart API.
-- Restart worker.
-- Redis unavailable.
-- Database unavailable.
-- Object storage unavailable.
-- Job retry.
-- Job duplicate.
-- Partial render.
-- Restore backup.
-- Re-run after failure.
+- Organization A không đọc B.
+- Signed URL expiry.
+- JWT expiry/issuer/audience/signature.
+- Secret scan.
+- Public endpoint exposure check.
 
-## 9.5. Security/tenant isolation test
+## Pilot
 
-- Organization A không đọc được organization B.
-- Signed URL hết hạn.
-- Token hết hạn.
-- Download event được ghi.
-- Không lộ secret trong log.
-- Không lộ patient identifiers trong error message không cần thiết.
+- Chọn site/machine/workflow.
+- Shadow/parallel use.
+- Import dataset thật theo phạm vi.
+- Mọi bug thực tế thành regression fixture trước hoặc cùng bản sửa.
+- Ghi version, limitation và sai khác.
 
-## 9.6. Documentation
+## Exit criteria
 
-- Deployment guide.
-- Backup/restore guide.
-- User guide.
-- Gamma guide.
-- Biological Toolkit guide.
-- Troubleshooting guide.
-- Release notes.
-- Known limitations.
-- Test report.
-
-## 9.7. Deliverables
-
-- Mốc M9.
-- Integrated test report.
-- Performance report.
-- Backup/restore evidence.
-- Security/tenant isolation test.
-- Release candidate checklist.
-
-## 9.8. Tiêu chí hoàn thành
-
-- Không còn lỗi P0/P1 chưa có quyết định xử lý.
-- Tất cả regression test pass.
-- Golden/reference test pass.
-- E2E workflow pass.
-- Restore test pass.
-- Có deployment và rollback instruction.
-- Có danh sách known limitations.
+- Không còn lỗi P0/P1 chưa có quyết định.
+- Golden/contract/integration/E2E pass.
+- Backup/restore rehearsal pass.
+- Pilot findings và known limitations được ghi.
+- Release candidate được khóa bằng manifest.
 
 ---
 
-# PHASE 10 — Pilot, vận hành và chuyển giao
+# PHASE 19 — Production Web và Remote Access
 
-**Thời lượng tham chiếu:** 3–6 tuần tùy quy mô  
-**Phụ thuộc:** P9  
-**Mục tiêu:** đưa bản release candidate vào môi trường pilot, sử dụng dataset thật theo kế hoạch và biến lỗi thực tế thành regression test.
+**Thời lượng:** 1–2 tuần sau P18
+**Phụ thuộc:** P18
+**Mục tiêu:** phát hành URL production qua HTTPS, không expose service nội bộ.
 
-## 10.1. Chuẩn bị pilot
+## Deployment
 
-- Chọn site/machine pilot.
-- Chọn workflow:
-  - Machine QA.
-  - PSQA Gamma.
-  - Report.
-  - Trend.
-- Chuẩn bị test user.
-- Chuẩn bị dataset thật theo phạm vi đã thống nhất.
-- Chuẩn bị backup trước pilot.
-- Chuẩn bị runbook.
-- Chuẩn bị kênh ghi nhận lỗi.
-- Chuẩn bị tiêu chí dừng pilot khi có lỗi nghiêm trọng.
+- Backup production trước migration.
+- Promote exact release manifest từ staging.
+- Chạy Alembic migration.
+- Deploy api-web, Postgres, Redis/worker và renderer theo topology đã benchmark.
+- Cấu hình Supabase production site/redirect/JWT.
+- Cấu hình domain, DNS, HTTPS, CORS, body limit và timeout.
+- Object storage private, signed URL có hạn.
+- PostgreSQL/Redis/worker/renderer không public.
 
-## 10.2. Shadow/parallel use
+## Remote smoke test
 
-Trong thời gian đầu:
+- Mạng ngoài hạ tầng, desktop và mobile browser.
+- Login/logout/refresh/deep-link.
+- Organization isolation.
+- Folder/case/upload/validation.
+- Machine QA/Gamma job sau refresh.
+- Report/revision/export/download.
+- Biological Toolkit độc lập.
+- Error không lộ stack trace/secret.
 
-- Lưu kết quả RT-CONNECT song song với workflow hiện tại.
-- So sánh output.
-- Ghi nhận sai khác.
-- Chọn case đại diện.
-- Bổ sung case sai khác vào regression fixture.
-- Không xóa output cũ khi engine được sửa.
-- Mỗi bản sửa tạo engine/application version mới.
+## Rollback/monitoring
 
-## 10.3. Dataset thật
+- Rollback image/version rehearsal.
+- Database restore procedure.
+- Alert API down, worker backlog, job failure, backup failure và error rate.
+- Cost/usage alert phù hợp với Railway budget.
 
-- Import dataset thật theo từng workflow.
-- Theo dõi DICOM variation.
-- Theo dõi detector/phantom variation.
-- Theo dõi report format.
-- Ghi nhận performance.
-- Ghi nhận lỗi user input.
-- Ghi nhận false warning/false invalid.
-- Chuyển lỗi lặp lại thành test.
+## Exit criteria
 
-## 10.4. Biological Toolkit pilot
-
-Biological Toolkit được pilot riêng:
-
-- Dùng scenario không gắn ca bệnh mặc định.
-- Kiểm tra công thức và đồ thị.
-- Kiểm tra table nguồn.
-- Kiểm tra re-irradiation multi-course.
-- Kiểm tra report độc lập.
-- Ghi nhận giới hạn model và yêu cầu bổ sung.
-- Không dùng Biological output để tự động thay đổi plan.
-
-## 10.5. Bàn giao
-
-- Bàn giao deployment.
-- Bàn giao backup/restore.
-- Bàn giao user guide.
-- Bàn giao test report.
-- Bàn giao release manifest.
-- Bàn giao known limitations.
-- Bàn giao incident/change log.
-- Xác nhận version đang chạy.
-- Tạo kế hoạch release tiếp theo.
-
-## 10.6. Tiêu chí hoàn thành
-
-- Pilot workflow chạy ổn định trong phạm vi chọn.
-- Không mất artifact hoặc report.
-- Sai khác với workflow hiện tại được ghi nhận và giải thích.
-- Lỗi thực tế đã có regression test nếu đã sửa.
-- Có backup/restore thành công.
-- Có tài liệu vận hành.
-- Có backlog cải tiến sau pilot.
+- Public URL/HTTPS pass.
+- Remote E2E trong phạm vi release pass.
+- Backup/restore và rollback có evidence.
+- Release version frontend/API/engine/schema/renderer được ghi.
 
 ---
 
-# PHASE 11 — Public Web Deployment và Remote Access
+# PHASE 20 — Vận hành và cải tiến liên tục
 
-**Thời lượng tham chiếu:** 2–4 tuần  
-**Phụ thuộc:** P10; P9 phải hoàn tất các kiểm thử tích hợp, performance, backup/restore và rollback  
-**Mục tiêu:** phát hành RT-CONNECT thành website có URL public, truy cập được từ xa qua HTTPS và có đủ vận hành production.
+**Thời lượng:** Ongoing
+**Phụ thuộc:** P19
+**Mục tiêu:** duy trì hệ thống và chuyển case thực tế thành chất lượng sản phẩm.
 
-## 11.1. Quyết định mô hình hạ tầng
+## Công việc định kỳ
 
-- Tạo Railway project và tách tối thiểu các environment: staging, pilot và production.
-- Tạo các Railway backend service:
-  - `api` cho FastAPI.
-  - `postgres` cho Railway PostgreSQL database nghiệp vụ.
-  - `worker` cho Gamma/DVH/import/export.
-  - `renderer` nếu report rendering tách service.
-  - Redis nếu dùng Railway cho job queue.
-- Dùng Railway public networking cho API; dùng Railway private networking/reference variables cho API → worker/renderer/Redis.
-- Frontend là static web host riêng hoặc bundle được API Railway phục vụ; phải dùng đúng API URL của environment.
-- Tạo Supabase Auth project/config riêng cho staging, pilot và production; không dùng nhầm redirect URL hoặc key giữa các environment.
-- Chốt Railway PostgreSQL service/connection, private networking/reference variable, migration workflow, backup và restore.
-- Chốt object storage S3-compatible/MinIO có persistence và backup; không dùng filesystem ephemeral của Railway làm kho artifact chính.
-- Chốt domain/subdomain, DNS owner, nơi quản lý certificate và người phụ trách gia hạn.
-- Chốt staging domain và production domain.
-- Chốt nơi lưu log/metrics và cách truy cập log Railway.
-- Chốt dung lượng, băng thông, giới hạn upload, retention, backup schedule và thời gian khôi phục mục tiêu.
+- Theo dõi uptime, error rate, queue, storage, database và cost.
+- Kiểm tra backup và restore định kỳ.
+- Rotate token/secret theo runbook.
+- Cập nhật dependency có test.
+- Triage dataset/vendor variation.
+- Thêm regression fixture trước khi đóng bug.
+- Version engine khi thay đổi kết quả.
+- Không sửa ngược AnalysisRun/ReportRevision cũ.
+- Đọc lại Stitch screen bằng MCP khi thay UI; ghi screen ID/revision trong issue.
+- Tạo screen mới trong đúng Stitch project, không tạo project thiết kế phân tán.
 
-## 11.2. Provisioning và network boundary
+## Exit criteria cho mỗi maintenance release
 
-- Dựng và cấu hình Railway project/environment/service.
-- Cấu hình Railway variables và reference variables; secret không nằm trong repository.
-- Cấu hình Railway public domain/custom domain cho API endpoint cần thiết; cấu hình domain cho frontend theo static host hoặc API-serving topology.
-- Chỉ expose frontend/API cần thiết qua HTTPS.
-- Đặt Redis, worker, renderer và Orthanc ở private network; không public trực tiếp.
-- Kết nối Railway API/worker tới Railway PostgreSQL qua private networking, TLS và connection string/reference variable trong secret; không đưa credential vào frontend.
-- Cấu hình persistence/retention/backup/restore cho Railway PostgreSQL; Redis chỉ là queue state.
-- Object storage phải có persistence riêng.
-- Cấu hình Supabase Auth site URL, redirect URL, provider, email/OTP và JWT verification settings.
-- Cấu hình log, metrics, health check và alert.
-
-## 11.3. Domain, HTTPS và web delivery
-
-- Tạo public domain/custom domain cho frontend và Railway public domain/custom domain cho API.
-- Cấu hình DNS record theo static host/Railway cung cấp và xác nhận domain ownership.
-- Kiểm tra Railway automatic TLS certificate và quy trình renewal.
-- Redirect HTTP → HTTPS.
-- Cấu hình CORS theo domain thật.
-- Cấu hình secure cookie/token, session timeout và CSRF nếu dùng cookie session.
-- Cấu hình frontend deep-link/reload không lỗi 404.
-- Cấu hình cache static assets nhưng không cache nhầm dữ liệu QA/report riêng tư.
-- Cấu hình body limit và timeout đủ cho upload DICOM/measurement lớn.
-- Cấu hình signed URL có thời hạn cho download.
-
-## 11.4. Deploy application
-
-- Build frontend, API, worker và report renderer từ release manifest đã pin version.
-- Deploy frontend lên static web host đã chọn hoặc đóng gói static bundle để API Railway phục vụ, theo đúng topology đã chốt.
-- Deploy các service lên Railway staging environment trước production.
-- Kiểm tra Railway private domain/reference variable giữa API, Redis, worker và renderer.
-- Kiểm tra API/worker kết nối đúng Railway PostgreSQL service/environment qua private networking/TLS.
-- Kiểm tra frontend gọi API qua public HTTPS endpoint; browser không gọi private Railway domain.
-- Kiểm tra Supabase Auth sign-in, refresh, logout, redirect URL và access-token verification.
-- Chạy application migration trên Railway PostgreSQL staging service và kiểm tra dữ liệu mẫu.
-- Kiểm tra API, frontend, queue, worker, object storage và renderer.
-- Backup Railway PostgreSQL/object storage trước production migration.
-- Deploy Railway production environment theo version manifest và environment variables đã review.
-- Smoke test sau deploy.
-- Ghi application version, engine version, schema version, renderer version và commit/release identifier.
-
-## 11.5. Kiểm thử truy cập từ xa
-
-Thực hiện từ ít nhất một mạng ngoài hạ tầng (ví dụ mạng di động hoặc mạng Internet khác) trên desktop và mobile browser:
-
-- Mở public URL, DNS, certificate và HTTPS hoạt động.
-- Đăng nhập/đăng xuất và giữ session đúng.
-- Truy cập đúng organization; không đọc chéo organization.
-- Tạo folder/QA case và upload artifact.
-- Upload file lớn không timeout do reverse proxy.
-- Xem Input Manifest và validation.
-- Tạo, theo dõi và hoàn tất job Gamma/DVH/render sau refresh browser.
-- Xem biểu đồ, report, revision và tải export qua signed URL.
-- Mở Biological Toolkit độc lập với QA case.
-- Refresh/deep-link mọi route chính không lỗi.
-- Mất kết nối tạm thời không làm mất artifact hoặc tạo analysis trùng.
-- Error message không lộ stack trace, secret hoặc định danh không cần thiết.
-
-## 11.6. Backup, monitoring và rollback
-
-- Chạy backup đầu tiên và thử restore Railway PostgreSQL/object storage.
-- Kiểm tra checksum artifact sau restore.
-- Kiểm tra restart Railway API/worker/Redis mà không làm mất dữ liệu.
-- Thiết lập alert cho API down, worker backlog, job failure, disk gần đầy, certificate sắp hết hạn, backup thất bại và error rate tăng.
-- Xác định owner xử lý incident và thời gian phản hồi nội bộ.
-- Thử rollback Railway deployment/image/version ở staging.
-- Có runbook cho deploy, rollback, backup/restore, rotate secret và gia hạn certificate.
-
-## 11.7. Deliverables
-
-- Public URL và DNS record.
-- TLS certificate và quy trình gia hạn.
-- Staging/production deployment manifest.
-- Railway project/service/environment map.
-- Railway public/private networking configuration.
-- Supabase Auth project/config checklist theo environment.
-- Environment/secret/reference-variable template.
-- Object storage persistence/backup configuration.
-- Remote access smoke-test report.
-- Backup/restore evidence.
-- Monitoring/alert checklist.
-- Rollback evidence.
-- Production runbook.
-- Release manifest và known limitations.
-
-## 11.8. Tiêu chí hoàn thành
-
-- Website truy cập được từ mạng ngoài bằng HTTPS.
-- Chỉ web/API cần thiết được expose; service dữ liệu/nội bộ không public trực tiếp.
-- Các workflow Clinical MVP và Biological Toolkit trong phạm vi release chạy được từ xa.
-- Upload, worker job, report/export và signed download đã được kiểm tra.
-- Backup/restore và rollback có bằng chứng thực thi.
-- Monitoring và cảnh báo tối thiểu đã hoạt động.
-- Có người phụ trách vận hành, domain, certificate và incident.
-- Bản phát hành ghi rõ version frontend/API/engine/schema/renderer.
-- Không public release nếu chỉ mới kiểm tra localhost/LAN.
+- Regression/full suite pass.
+- Migration/rollback reviewed.
+- Release note và known limitations cập nhật.
+- Staging smoke test pass trước production.
 
 ---
 
-## 5. Ma trận phase và deliverable
+## 4. Screen gap plan
 
-| Deliverable | Phase chính | Phase kiểm tra |
+| Module | Screen hiện có | Cần bổ sung bằng Stitch MCP | Phase |
+| :--- | :--- | :--- | :--- |
+| MOD-00 | Không | Login, recovery, callback, session error | P3 |
+| MOD-01 | Home Dashboard | Responsive/empty/error variants | P3 |
+| MOD-02 | Không | Organization/Site/Machine management | P4 |
+| MOD-03 | QA Archive | QA case create/detail, folder modals | P5 |
+| MOD-04 | Một phần Gamma Workspace | Upload queue, manifest, validation detail | P6 |
+| MOD-05 | Không | Machine QA checklist/result/history | P7 |
+| MOD-06 | Gamma Workspace | Job failure/retry, compare runs | P8 |
+| MOD-07 | Report Builder | Viewer, revision history/compare/export progress | P9 |
+| MOD-08 | Không | Trend dashboard/drill-down | P10 |
+| MOD-09 | Không | Protocol library/editor/version compare | P11 |
+| MOD-10 | Không; legacy hidden/deprecated | Tạo lại Biological overview + empty/error/history | P12 |
+| MOD-11 | Không; legacy hidden/deprecated | Tạo lại BED/EQD2 + responsive/export/history | P13 |
+| MOD-12 | Không; legacy hidden/deprecated | Tạo lại plan comparison + multi-course/error | P14 |
+| MOD-13 | Không; legacy hidden/deprecated | Tạo lại Re-irradiation + fraction compensation/interruption | P15 |
+| MOD-14 | Không | Dose limit, protocol, knowledge library | P16 |
+| MOD-15 | Không | Visual Dose/DVH workspace | P17 |
+| MOD-16 | Không bắt buộc | Status/maintenance/diagnostic screens khi cần | P18–P20 |
+
+---
+
+## 5. Railway service evolution
+
+| Phase | Railway topology | Lý do |
 | :--- | :--- | :--- |
-| Architecture baseline | P0 | P9 |
-| Local runtime | P1 | P9 |
-| UI/UX design brief and Stitch prompt | P1A | P2–P10 |
-| Supabase Auth integration | P0, P1 | P9, P11 |
-| Railway PostgreSQL schema/migrations | P0, P1, P11 | P9, P11 |
-| Railway service topology | P0, P1, P11 | P9, P11 |
-| UX/UI screen map và design system | P1A | P2–P10 |
-| Google Stitch prototype/design handoff | P1A | P2–P10 |
-| Organization/site/machine | P2 | P9 |
-| Folder/archive | P2 | P9 |
-| QA case | P2 | P9 |
-| Artifact storage | P3 | P9 |
-| DICOM validator | P3 | P5, P9 |
-| Input Manifest | P3 | P5, P9 |
-| Machine QA | P4 | P9 |
-| Metric/rule engine | P4 | P5, P7 |
-| PSQA Gamma | P5 | P9, P10 |
-| Report Builder | P6 | P9, P10 |
-| Trend | P7 | P9, P10 |
-| QA Protocol Library | P7 | P9, P10 |
-| Biological Toolkit | P8 | P9, P10 |
-| Backup/restore | P9 | P10 |
-| Pilot release | P10 | Ongoing |
-| Public web/HTTPS deployment | P11 | P11, ongoing |
-| Remote access smoke test | P11 | P11, ongoing |
-| Production runbook/monitoring/rollback | P11 | P11, ongoing |
+| P2–P7 | api-web/RT-connect + PostgreSQL | Chi phí thấp, đủ CRUD/auth/QA archive/Machine QA nhẹ |
+| P8 | Thêm Redis + worker | Gamma bắt buộc bất đồng bộ |
+| P9 | Renderer trong worker trước | Tách service khi benchmark hoặc isolation yêu cầu |
+| P17 | Worker pool/resource tuning | DVH/Gamma tải lớn |
+| P19 | Topology đã benchmark | Production không dùng cấu hình giả định |
+
+Nguyên tắc:
+
+- Không tạo service chỉ vì có trong sơ đồ kiến trúc.
+- Không chạy analysis lớn trong API để tiết kiệm một service.
+- Xem Railway usage/cost trước và sau mỗi topology change.
+- Có staging trước production.
+- Token deploy không đi vào runtime.
+- PostgreSQL dùng private/reference variable; browser không nhận DATABASE_URL.
 
 ---
 
-## 6. Backlog ưu tiên
+## 6. Bộ test theo release
 
-### P0 — Bắt buộc cho nền tảng
+### R0
 
-- Organization/site/machine.
-- Folder.
-- QA case.
-- Artifact.
-- Checksum.
-- DICOM metadata.
-- Input Manifest.
-- Validation.
-- Analysis Run.
-- Metric/rule.
-- Report revision.
-- Audit/provenance.
-- Test harness.
-- Backup/restore.
+- Repository/CI.
+- Migration.
+- Railway staging health.
+- PostgreSQL private connection.
+- Supabase auth/JWT.
+- Secret/bundle scan.
 
-### P1 — Bắt buộc cho Clinical MVP
+### R1 Clinical MVP
 
-- Frontend foundation theo design handoff P1A.
-- Machine QA.
-- PSQA Gamma.
-- gamma.measurement.v1.
-- Gamma map/pass rate.
-- Report export.
-- Trend.
-- QA Protocol Library.
-- Worker monitoring.
-- Performance baseline.
+- Organization isolation.
+- Folder/archive.
+- Artifact checksum/DICOM validation.
+- Machine QA known rules.
+- Gamma golden suite.
+- Report snapshot/render.
+- Trend drill-down.
+- Protocol version immutability.
+- Worker retry/idempotency.
 
-### P1A — Bắt buộc cho frontend implementation
+### R2 Biological
 
-- `UI-UX.md` design brief/prompt.
-- Google Stitch screen map/prototype.
-- Design tokens.
-- Component inventory.
-- Loading/empty/error/invalid/warning states.
-- Responsive layouts.
-- Route/API/component mapping.
-- Design revision và handoff checklist.
+- BED/EQD2 known answers.
+- D curve.
+- Multi-course comparison.
+- Recovery/no-recovery.
+- Re-irradiation limitations.
+- Dose-limit/knowledge version/source.
+- No automatic QA/patient linkage.
+- Independent report snapshot.
 
-### P2 — Mở rộng
+### R3 Advanced DICOM
 
-- Visual Dose Review.
-- DVH/Plan Review.
-- Structure-level biological view.
-- Orthanc/DICOMweb integration.
-- More vendor measurement adapters.
-- Advanced spatial re-irradiation.
-- More report renderer formats.
+- Geometry/reference fixtures.
+- DVH known geometry.
+- Resampling conventions.
+- Structure mapping.
+- Report blocks/provenance.
 
-### P11 — Bắt buộc cho public release
+### R4 Production
 
-- Railway project và environment.
-- Railway backend `api`, `worker`, `renderer` và Redis/queue services nếu dùng Railway cho queue.
-- Railway public/private networking và reference variables.
-- Frontend static host hoặc static bundle được backend phục vụ.
-- Supabase Auth project/config theo environment.
-- Railway PostgreSQL service, migration, private connection, backup và restore.
-- Domain/DNS.
-- HTTPS/TLS.
-- Staging và production deployment.
-- Private network cho Railway PostgreSQL, Redis/worker/renderer/Orthanc; database chỉ nhận kết nối qua private credential/reference variable của backend.
-- Object storage persistence/backup ngoài filesystem ephemeral của Railway.
-- Upload limit, timeout, signed URL và CORS.
-- Monitoring/alert.
-- Backup/restore.
+- DNS/TLS/CORS.
+- External-network auth/session.
+- Upload/job/report/download after refresh.
+- Private service exposure.
+- Backup/restore/checksum.
 - Rollback.
-- Remote access smoke test trên mạng ngoài.
+- Monitoring/alert.
+- Cost/usage alert.
 
 ---
 
-## 7. Bộ test bắt buộc theo release
+## 7. Rủi ro và kiểm soát
 
-### Release nền tảng
-
-- Domain unit tests.
-- Organization isolation tests.
-- Folder tests.
-- Artifact checksum tests.
-- DICOM metadata tests.
-- Migration tests.
-- API contract tests.
-
-### Release frontend/design handoff
-
-- Screen-to-BR traceability check.
-- Prototype navigation/flow check.
-- Design token/component mapping check.
-- Loading/empty/error/invalid/warning state check.
-- Responsive desktop/tablet/mobile check.
-- No real patient/DICOM data in design artifacts.
-- Stitch export/code review check.
-
-### Release Clinical MVP
-
-- Machine QA golden tests.
-- Gamma 2D/3D golden tests.
-- Global/local tests.
-- Absolute/relative tests.
-- Geometry mismatch tests.
-- Missing input tests.
-- Report snapshot tests.
-- Trend drill-down tests.
-- Worker retry tests.
-- Backup/restore tests.
-
-### Release Biological Toolkit
-
-- BED/EQD2 known-answer tests.
-- D curve tests.
-- Multi-course tests.
-- Recovery assumption tests.
-- Re-irradiation warning tests.
-- Dose limit lookup tests.
-- Knowledge/protocol version tests.
-- Independent report tests.
-- No automatic QA/patient linkage tests.
-
-### Release public web
-
-- Railway service health/deployment check.
-- DNS and HTTPS certificate check.
-- HTTP-to-HTTPS redirect check.
-- Supabase Auth sign-in/refresh/logout/redirect/JWT validation check.
-- Environment isolation check for Railway and Supabase projects/config.
-- External-network login/session check.
-- Organization isolation check from public endpoint.
-- Upload large artifact and proxy timeout check.
-- Queue/worker job after browser refresh or reconnect.
-- Report/export/signed-download check.
-- Frontend deep-link/reload check.
-- Private service exposure scan/check.
-- Backup/restore checksum check.
-- Monitoring/alert check.
-- Staging rollback check.
-
----
-
-## 8. Rủi ro và cách xử lý
-
-| Rủi ro | Ảnh hưởng | Cách xử lý |
-| :--- | :--- | :--- |
-| DICOM vendor variation | Validation/geometry sai | Fixture theo vendor, log metadata, adapter riêng |
-| Gamma định nghĩa khác nhau | Pass rate không so sánh được | Lưu đầy đủ config và engine version |
-| File lớn | Chậm/timeout | Object storage, async worker, streaming |
-| Report tùy chỉnh quá linh hoạt | Khó render/reproduce | Block schema, snapshot, renderer test |
-| Protocol thay đổi | Report cũ thay đổi | Protocol version + snapshot |
-| Dữ liệu measurement mơ hồ | Kết quả sai | Contract bắt buộc, reject ambiguity |
-| Worker lỗi | Thiếu result | Retry, idempotency, failed job visibility |
-| DICOM geometry không khớp | DVH/Gamma sai | Blocking validation cho geometry critical |
-| Model sinh học bị diễn giải quá mức | Hiểu sai scenario | Hiển thị source, assumptions, limitation |
-| Re-irradiation thiếu spatial mapping | Cumulative dose sai | Chỉ scalar khi thiếu registration, không tự cộng spatial |
-| Dataset thật phát hiện case mới | Regression gap | Chuyển case thành fixture trước khi sửa |
-| SQLite bị dùng ngoài demo | Mất ổn định/concurrency | PostgreSQL bắt buộc ở pilot |
-| Render PDF khác môi trường | Report không tái lập | Pin renderer/font/container |
-| Stitch design và frontend implementation lệch nhau | UI không phản ánh workflow/API thật | Screen-to-BR mapping, component contract, design revision và review code export |
-| Public web bị cấu hình như LAN-only | Người dùng ngoài không truy cập được | Staging/public smoke test từ mạng ngoài trước release |
-| Service nội bộ bị expose ra Internet | Tăng nguy cơ mất dữ liệu và khó kiểm soát vận hành | Private network, firewall, chỉ expose HTTPS edge, signed URL |
-| DNS/TLS/certificate hoặc proxy timeout | Website lỗi, upload/report thất bại từ xa | Owner, certificate monitoring, body limit/timeout test và runbook |
-| Public release không có rollback/restore | Khó phục hồi khi deploy lỗi | Version manifest, backup trước migration, restore evidence và rollback rehearsal |
-| Supabase Auth project/config bị dùng nhầm environment | Đăng nhập/redirect sai hoặc lộ nhầm dữ liệu | Tách project/config, biến môi trường, test issuer/audience/redirect và checklist release |
-| Railway service dùng sai private/public networking | API không kết nối nội bộ hoặc database bị expose | Service map, private reference variables, chỉ public web/API và external exposure check |
-| Railway filesystem ephemeral được dùng lưu artifact | Mất file khi redeploy/restart | S3-compatible/MinIO persistence, checksum và restore test |
-| Railway resource/timeout không đủ cho Gamma, DVH hoặc render | Job chậm, bị kill hoặc backlog tăng | Benchmark sớm, worker riêng, resource/timeout target và monitoring backlog |
-
----
-
-## 9. Definition of Done
-
-Một task chỉ được đánh dấu hoàn thành khi:
-
-- Có code hoặc tài liệu đúng phạm vi.
-- Có test phù hợp.
-- Có migration nếu thay đổi schema.
-- Có API contract nếu thay đổi endpoint.
-- Có fixture nếu thêm workflow/input.
-- Có log/error handling.
-- Có provenance nếu tạo result/report.
-- Không ghi đè file/result cũ.
-- Frontend có loading, error và empty state.
-- Có cập nhật technical.md hoặc plan.md khi quyết định thay đổi.
-- CI pass.
-- Không có secret hoặc dữ liệu thật không cần thiết trong repository.
-- Nếu là engine, có golden/reference test.
-- Nếu là report, có snapshot/re-render test.
-- Nếu là DICOM workflow, có fixture valid và invalid.
-- Nếu là Biological Toolkit, có known-answer test.
-- Nếu là frontend, có design handoff và screen-to-BR traceability.
-- Nếu là public release, có remote smoke test qua HTTPS và bằng chứng service nội bộ không bị expose.
-- Nếu dùng Auth, có test Supabase Auth token/session và không có secret trong frontend bundle.
-- Nếu deploy Railway, có service/environment map, reference variables, persistence và rollback evidence.
-
----
-
-## 10. Quy trình quản lý thay đổi
-
-1. Ghi yêu cầu hoặc lỗi thành issue/task.
-2. Xác định BR/technical section liên quan.
-3. Xác định ảnh hưởng tới schema, API, engine, report và test.
-4. Viết hoặc cập nhật test trước khi sửa engine nếu có thể.
-5. Thực hiện thay đổi trong revision.
-6. Chạy test liên quan và full suite.
-7. Cập nhật technical.md/plan.md.
-8. Ghi release note.
-9. Nếu ảnh hưởng kết quả, tăng engine/application version.
-10. Không sửa ngược report/result cũ.
-
----
-
-## 11. Tiêu chí sẵn sàng theo phase
-
-| Phase | Sẵn sàng khi |
+| Rủi ro | Kiểm soát |
 | :--- | :--- |
-| P0 | Baseline và traceability hoàn chỉnh |
-| P1 | Stack chạy được và CI pass |
-| P1A | Design handoff, component map và responsive state checklist hoàn tất |
-| P2 | CRUD archive end-to-end pass |
-| P3 | File gốc, checksum và validation pass |
-| P4 | Machine QA tạo metric đúng |
-| P5 | Gamma vertical slice + golden test pass |
-| P6 | Report tùy chỉnh + snapshot render pass |
-| P7 | Trend và protocol version pass |
-| P8 | Biological known-answer và no-link test pass |
-| P9 | Integrated, performance và restore test pass |
-| P10 | Pilot checklist, runbook và release candidate hoàn tất |
-| P11 | Public URL/HTTPS, remote test, monitoring, restore và rollback evidence hoàn tất |
+| Stitch project public | Chỉ synthetic data; không token, DICOM thật hoặc PatientID |
+| Stitch HTML bị coi là production code | Review, component hóa, typed API và accessibility test |
+| Thiếu screen nhưng vẫn code | Screen gap gate ở đầu phase |
+| Railway production token bị dùng quá sớm | Tạo staging; production chỉ P19 |
+| Deployment hiện tại FAILED | Root-cause ở P2; không lặp deploy mù |
+| Chưa có PostgreSQL | Provision staging ở P2, migration trước domain module |
+| Chi phí Railway vượt ngân sách | Topology theo phase, usage snapshot/alert, benchmark trước scale |
+| Railway filesystem mất file | Object storage persistent từ P6 |
+| Gamma làm nghẽn API | Redis/worker từ P8 |
+| DICOM vendor variation | Fixture/adapter/regression |
+| Report tùy biến khó tái hiện | Snapshot/hash/pinned renderer |
+| Protocol update làm đổi report cũ | Version + snapshot |
+| Biological bị gắn nhầm ca bệnh | Bounded context và no-link tests |
+| Re-irradiation bị hiểu là spatial accumulation | Mode rõ; registration contract bắt buộc |
+| Supabase bị dùng làm business database | Railway PostgreSQL là nguồn dữ liệu nghiệp vụ duy nhất |
+| Secret lọt Git/frontend/log | Ignore, secret store, bundle/log scan |
 
 ---
 
-## 12. Kết quả bàn giao cuối cùng
+## 8. Quản lý thay đổi
 
-Bản bàn giao gồm:
-
-- Source code.
-- Database migrations.
-- Container/deployment files.
-- Configuration template.
-- API/OpenAPI schema.
-- Test suite.
-- DICOM fixtures.
-- Gamma golden/reference fixtures.
-- Biological known-answer fixtures.
-- User guide.
-- Administrator/runbook.
-- Backup/restore guide.
-- Release manifest.
-- Test report.
-- Known limitations.
-- Pilot findings.
-- Post-pilot backlog.
-- Public URL/domain và DNS/TLS configuration.
-- Staging/production deployment manifest.
-- Remote access smoke-test report.
-- Monitoring and alert checklist.
-- Backup/restore evidence cho topology public web.
-- Rollback evidence và production runbook.
-- Railway service/environment map và reference-variable guide.
-- Supabase Auth configuration checklist (không bàn giao secret plaintext).
+1. Tạo issue có BR/MOD/phase.
+2. Đọc screen Stitch hiện hành qua MCP và ghi screen ID.
+3. Xác định ảnh hưởng schema/API/engine/report/test.
+4. Viết hoặc cập nhật test.
+5. Thực hiện migration và code.
+6. Chạy focused test, full suite và staging smoke test.
+7. Cập nhật business-analysis.md nếu requirement đổi.
+8. Cập nhật technical-specification.md nếu contract/architecture đổi.
+9. Cập nhật plan.md nếu dependency/phase/exit criteria đổi.
+10. Ghi release note/version.
+11. Không sửa ngược dữ liệu/result/report cũ.
 
 ---
 
-## 13. Kết luận
+## 9. Bàn giao cuối cùng
 
-RT-CONNECT được triển khai theo vertical slice có thể chạy và kiểm thử ở từng phase. Clinical MVP đi từ archive và artifact integrity đến Machine QA, PSQA Gamma, report và trend. Biological Toolkit được triển khai thành track riêng, có engine, report và lịch sử riêng, không tự liên kết với QA case hoặc ca bệnh.
+- Source frontend/backend/worker/renderer.
+- Database migrations và schema documentation.
+- Typed API/OpenAPI contracts.
+- Google Stitch project/screen mapping và design-to-code traceability.
+- Test suites và fixtures.
+- DICOM/Gamma/DVH/Biological golden data.
+- Railway service/environment map.
+- Supabase Auth configuration checklist.
+- Object storage configuration.
+- CI/CD và release manifest.
+- Staging/production URLs.
+- Backup/restore và rollback evidence.
+- Monitoring/cost alert checklist.
+- User guide, troubleshooting và production runbook.
+- Pilot findings, known limitations và post-pilot backlog.
+- Không bàn giao secret plaintext trong tài liệu hoặc repository.
 
-Test/reference dataset là căn cứ nghiệm thu trong giai đoạn phát triển. Dataset thật được đưa vào pilot và vận hành để mở rộng regression suite, phát hiện variation thực tế và cải tiến workflow. Mọi thay đổi ảnh hưởng kết quả phải có version mới, test mới và không làm mất lịch sử cũ.
+---
 
-Sau pilot, P11 đưa hệ thống lên public web để các thành viên được tổ chức cho phép truy cập từ xa qua HTTPS. Public web chỉ là lớp truy cập; Railway PostgreSQL chỉ được backend truy cập qua private networking/reference variable, còn object storage, Redis, worker và Orthanc không public trực tiếp, có backup/restore, monitoring và rollback. Google Stitch phục vụ thiết kế và handoff UI ở P1A, không phải dependency runtime của production.
+## 10. Kết luận
 
-Trong topology đã chọn, Supabase là auth/identity plane cho Supabase Auth, còn Railway là application/backend/data plane cho backend API/server, PostgreSQL, worker, renderer và queue. Frontend là static web host riêng hoặc static bundle được backend phục vụ. Việc dùng Railway/Supabase phải được kiểm tra theo từng environment, đặc biệt là public/private networking, kết nối Railway PostgreSQL, persistence của artifact, redirect URL, JWT validation, backup và rollback.
+RT-CONNECT được triển khai theo từng module hoàn chỉnh, không theo kiểu dựng toàn bộ giao diện rồi mới nối dữ liệu. Staging Railway được thiết lập sớm để mỗi phase đều được kiểm tra trong môi trường gần thực tế. Clinical MVP hoàn tất lần lượt từ Auth/Home, organization/archive, artifact validation, Machine QA, Gamma, report, trend tới QA Protocol Library. Biological Toolkit được tách thành Hub, BED/EQD2, comparison, re-irradiation và knowledge modules độc lập.
+
+Google Stitch MCP thay thế vai trò của UI-UX.md như nguồn thiết kế trực quan, nhưng không thay thế business requirement, API contract hoặc test. Railway là backend/data plane với PostgreSQL; Supabase chỉ là auth/identity plane. Production public release chỉ diễn ra sau integrated test, pilot, backup/restore và rollback evidence.

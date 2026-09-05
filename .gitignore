@@ -1,1 +1,23 @@
 .env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage.xml
+.coverage
+htmlcov/
+
+# Node and browser tests
+node_modules/
+dist/
+playwright-report/
+test-results/
+
+# Local development data; production artifacts belong in configured object storage.
+.local-data/

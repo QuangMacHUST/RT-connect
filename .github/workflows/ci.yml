@@ -1,0 +1,64 @@
+name: RT-CONNECT CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API quality and contract
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - name: Install locked API dependencies
+        run: python -m pip install --upgrade pip && python -m pip install -r requirements.lock
+      - name: Lint and type-check
+        run: python -m ruff check src tests && python -m mypy src
+      - name: Unit and contract tests
+        run: python -m pytest
+      - name: Verify migration is renderable for PostgreSQL
+        run: alembic upgrade head --sql > /tmp/rt-connect-schema.sql
+      - name: Verify generated OpenAPI contract
+        working-directory: .
+        run: PYTHONPATH=apps/api/src python scripts/export-openapi.py --check
+
+  web:
+    name: Web quality and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install locked web dependencies
+        run: npm ci
+      - name: Lint, type-check, test and build
+        run: npm run lint && npm run typecheck && npm run test && npm run build
+      - name: Dependency inventory
+        run: npm audit --omit=dev --audit-level=high
+
+  secret-scan:
+    name: Repository secret guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Reject private environment files and deployment credentials
+        run: |
+          test ! -f .env
+          ! git ls-files | grep -E '(^|/)(\.env($|\.)|.*\.pem$|.*\.key$)'
