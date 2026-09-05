@@ -3,7 +3,7 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** plan.md
-- **Phiên bản:** 1.1
+- **Phiên bản:** 1.2
 - **Nguồn nghiệp vụ:** business-analysis.md phiên bản 0.5
 - **Nguồn kỹ thuật:** technical-specification.md phiên bản 0.7
 - **Nguồn thiết kế:** Google Stitch MCP, project RT-connect, project ID 14242591911141046021
@@ -70,6 +70,41 @@ Logo và avatar không phải application route. Vì project Stitch đang public
 
 Project Token trỏ vào production. Account/Workspace token truy cập được project và dùng cho provisioning nếu scope cho phép. Không triển khai production trực tiếp từ trạng thái hiện tại.
 
+### 0.3.1. Railway deployment contract — nguồn sự thật duy nhất
+
+Để tránh nhầm giữa repository, Railway dashboard và Config-as-code, mọi deployment phải tuân theo hợp đồng sau:
+
+| Hạng mục | Staging | Production | Quy tắc |
+| :--- | :--- | :--- | :--- |
+| Railway environment | `staging` | `production` | Không dùng nhầm biến hoặc database giữa hai environment |
+| API service | `gleaming-cooperation` | `RT-connect` | Mỗi service có source branch và biến riêng |
+| Source branch | `codex/p2-runtime-resilience` trong giai đoạn P2 | `main` sau khi promote release | Staging pass trước rồi mới promote đúng commit/release manifest |
+| Repository root | `/apps/api` | `/apps/api` | Đây là Root Directory của service, không phải path file cấu hình |
+| Dockerfile | `/apps/api/Dockerfile` | `/apps/api/Dockerfile` | Dockerfile phải lắng nghe biến `PORT`; không hardcode chỉ một cổng Railway |
+| Start command | Từ Dockerfile | Từ Dockerfile | `uvicorn` dùng `${PORT:-8000}`; `8000` chỉ là fallback local |
+| `DATABASE_URL` | Reference tới PostgreSQL staging | Reference tới PostgreSQL production | Không copy password hoặc URL giữa environment |
+| Pre-deploy command | Service Settings: `alembic upgrade head` | Service Settings: `alembic upgrade head` | Kiểm tra command trong Deployment Details và log migration |
+| Healthcheck path | Service Settings: `/api/v1/health` sau khi `$PORT` được sửa | Service Settings: `/api/v1/health` sau khi `$PORT` được sửa | Không dùng `/api/v1/ready` làm healthcheck deployment |
+| Readiness smoke test | `GET /api/v1/ready` phải trả HTTP 200 | `GET /api/v1/ready` phải trả HTTP 200 | Đây là kiểm tra database/migration sau deployment, không phải Railway healthcheck |
+
+#### Quy tắc Config-as-code
+
+- Service Settings trên Railway là nguồn cấu hình vận hành hiện tại của RT-CONNECT.
+- Không coi ô `Config-as-code path` là bắt buộc đối với hai service hiện tại. Railway đã đánh dấu Config-as-code cũ/deprecated và service mới có thể không giữ path sau deployment.
+- File `apps/api/railway.toml` được giữ trong repository như cấu hình tham khảo/legacy; không được coi là bằng chứng rằng Railway đã áp dụng cấu hình đó.
+- Bằng chứng cấu hình thật phải đọc từ Deployment Details/metadata của deployment: `rootDirectory`, `dockerfilePath`, `preDeployCommand`, `healthcheckPath`, source branch và commit.
+- Nếu `railwayConfigFile = null` nhưng `preDeployCommand` đã xuất hiện trong metadata, đó là cấu hình trực tiếp từ Service Settings, không phải Config-as-code.
+- Không chuyển `preDeployCommand` hoặc `healthcheckPath` vào file rồi giả định dashboard sẽ tự cập nhật; phải kiểm tra deployment thực tế.
+
+#### Quy tắc cổng và healthcheck
+
+- API phải bind `0.0.0.0:${PORT}`; Dockerfile được phép dùng `PORT=8000` làm giá trị mặc định khi chạy local.
+- `EXPOSE 8000` chỉ là metadata/fallback, không phải cổng Railway bắt buộc.
+- Healthcheck `/api/v1/health` không truy cập database và phải trả HTTP 200 sau khi process listen đúng `$PORT`.
+- `/api/v1/ready` kiểm tra PostgreSQL và Alembic migration; dùng cho smoke/readiness test, không dùng làm healthcheck lúc container mới khởi động.
+- Nếu Railway báo `service unavailable`, kiểm tra theo thứ tự: `PORT`, bind address, target port, start command, log process, rồi mới kiểm tra path.
+- Không bỏ healthcheck production chỉ vì một deployment healthcheck thất bại; phải ghi nguyên nhân và quyết định trong release evidence. Staging có thể tạm tắt để chẩn đoán, nhưng production phải bật lại trước release clinical.
+
 ### 0.4. Supabase
 
 - Đã chọn Supabase làm Auth/Identity/Session.
@@ -114,6 +149,16 @@ Một module chỉ hoàn thành khi đạt tất cả điều kiện áp dụng:
 15. Tài liệu kỹ thuật, OpenAPI và release note được cập nhật.
 
 Ảnh Stitch đẹp, component tĩnh, API riêng lẻ, test unit riêng lẻ hoặc một deployment thành công đều chưa đủ để đóng module.
+
+### 3.1. Deployment gate bổ sung cho mọi release có Railway
+
+1. CI pass trên đúng source branch của environment.
+2. Deployment Details khớp Root Directory, Dockerfile, source branch và commit dự kiến.
+3. Pre-deploy command `alembic upgrade head` xuất hiện trong metadata/log của deployment.
+4. Healthcheck `/api/v1/health` chỉ được bật sau khi process đã bind `$PORT`; nếu bật thì deployment phải pass HTTP 200.
+5. `/api/v1/ready` trả HTTP 200 từ mạng ngoài và xác nhận migration đã áp dụng.
+6. Chỉ sau khi staging đạt các bước trên mới promote cùng release manifest sang production.
+7. Production phải được kiểm tra lại `/api/v1/health` và `/api/v1/ready`; không suy luận production an toàn chỉ từ staging.
 
 ---
 
@@ -283,7 +328,8 @@ Thời lượng là ước lượng tham chiếu cho một nhóm nhỏ. Phase c�
 - Tạo Railway PostgreSQL cho staging.
 - Cấu hình private reference variable cho DATABASE_URL.
 - Deploy health-only/API shell lên staging.
-- Bật health check, restart policy và structured logs.
+- Cấu hình trực tiếp trong Service Settings: pre-deploy `alembic upgrade head`, restart policy và structured logs.
+- Sau khi Dockerfile bind `$PORT`, cấu hình trực tiếp healthcheck `/api/v1/health`; nếu healthcheck fail thì kiểm tra cổng và process trước, không chữa theo cảm tính bằng Config-as-code path.
 - Chưa tạo worker/Redis/renderer production trước khi phase cần.
 
 ## Supabase
@@ -306,6 +352,7 @@ Thời lượng là ước lượng tham chiếu cho một nhóm nhỏ. Phase c�
 ## Tests
 
 - Railway API health từ mạng ngoài.
+- Railway deployment healthcheck pass trên cổng `$PORT`.
 - Backend kết nối PostgreSQL qua private/reference variable.
 - Alembic migration trên database rỗng.
 - Supabase sign-in test account và JWT verification.
@@ -324,6 +371,7 @@ Thời lượng là ước lượng tham chiếu cho một nhóm nhỏ. Phase c�
 ## Exit criteria
 
 - Staging health qua HTTPS pass.
+- Deployment metadata xác nhận pre-deploy migration và source commit đúng environment.
 - Migration baseline pass trên Railway PostgreSQL.
 - Supabase access token được API xác minh.
 - Production chưa bị thay đổi ngoài thao tác read-only cần thiết.
@@ -1036,6 +1084,7 @@ Thời lượng là ước lượng tham chiếu cho một nhóm nhỏ. Phase c�
 - Backup production trước migration.
 - Promote exact release manifest từ staging.
 - Chạy Alembic migration.
+- Kiểm tra Service Settings production: Root Directory `/apps/api`, Dockerfile `/apps/api/Dockerfile`, pre-deploy `alembic upgrade head`, healthcheck `/api/v1/health` và process bind `$PORT`.
 - Deploy api-web, Postgres, Redis/worker và renderer theo topology đã benchmark.
 - Cấu hình Supabase production site/redirect/JWT.
 - Cấu hình domain, DNS, HTTPS, CORS, body limit và timeout.
@@ -1233,6 +1282,16 @@ Nguyên tắc:
 9. Cập nhật plan.md nếu dependency/phase/exit criteria đổi.
 10. Ghi release note/version.
 11. Không sửa ngược dữ liệu/result/report cũ.
+
+Khi thay đổi deployment hoặc biến môi trường, issue/release note bắt buộc ghi riêng:
+
+- Environment và service bị thay đổi.
+- Source branch và commit/deployment ID.
+- Root Directory và Dockerfile path.
+- `DATABASE_URL` là reference tới service PostgreSQL nào; không ghi secret.
+- Pre-deploy command thực tế trong Service Settings/metadata.
+- Healthcheck path, target port và việc process bind `$PORT`.
+- Kết quả `/api/v1/health`, `/api/v1/ready`, migration revision và rollback decision.
 
 ---
 
