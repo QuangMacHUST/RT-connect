@@ -5,7 +5,7 @@
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
 - **Current phase:** P2 — Railway staging, PostgreSQL và deployment foundation.
 - **Current status:** IN_PROGRESS — P1 local gate closed; Railway staging and production deployment foundations are live and externally verified. Supabase Auth/application smoke remains pending.
-- **Last authoritative check:** 2026-09-06T02:41:18+07:00.
+- **Last authoritative check:** 2026-09-06T02:45:33+07:00.
 - **Next exact step:** complete the remaining P2 Auth/API integration gate, then start the first functional vertical slice from the phase plan.
 
 ## Source documents read
@@ -63,6 +63,8 @@
 ## Live Railway evidence
 
 > Snapshot superseded on 2026-09-06: staging and production now have separate API/PostgreSQL services, both deployments succeeded with `PORT=8000`, healthcheck `/api/v1/health`, pre-deploy `alembic upgrade head`, and public `/api/v1/health` plus `/api/v1/ready` returned HTTP 200. The older lines below are retained as historical P0/P2 evidence.
+
+> Current deployment IDs: staging `bfc15784-6b59-418d-bba4-134f4a8154af` on `2754013`; production `85d1ba15-f45c-4958-8ebd-fcf09cbf75ef` on `a721cff` (runtime code from `5a5069f`).
 
 - Project: `prolific-learning` (`339f2c50-ddd7-491f-8c4e-da2a2d169502`).
 - Workspace: `Mạc Đăng Quang's Projects` (`53fb850d-a59c-4690-816f-01aea06f0645`).

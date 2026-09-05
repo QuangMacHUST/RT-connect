@@ -62,7 +62,7 @@ Logo và avatar không phải application route. Vì project Stitch đang public
 | Environment ID | production `910dff25-75b6-42b2-bf6b-e2601ba9d7d2`; staging `b0ab34e5-0ff4-479d-8232-659d175e9e2f` |
 | Service | production `RT-connect`; staging `gleaming-cooperation` |
 | Service ID | production `9544c3e6-c8bd-4c29-b62e-c6172eb51af3`; staging `9b35bf0b-0419-4679-8af0-e639e5a84713` |
-| Latest deployment | Staging `SUCCESS` trên `2754013`; production `SUCCESS` trên `5a5069f` |
+| Latest deployment | Staging `SUCCESS` trên `2754013`; production `SUCCESS` trên `a721cff` (code runtime từ `5a5069f`) |
 | PostgreSQL service | Staging `Postgres-Q1Hc`; production `Postgres` |
 | Redis/worker/renderer | Chưa có |
 | Railway CLI local | Chưa cài tại thời điểm kiểm tra |
