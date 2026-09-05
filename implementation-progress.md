@@ -6,7 +6,7 @@
 - **Current phase:** P2 — Railway staging, PostgreSQL và deployment foundation.
 - **Current status:** IN_PROGRESS — P1 local gate closed; production API and Railway PostgreSQL now pass external health/readiness checks. Railway staging environment exists but its generated service has no source or deployment; Supabase public configuration remains absent.
 - **Last authoritative check:** 2026-09-06T00:20:46+07:00.
-- **Next exact step:** configure the existing empty staging service to deploy GitHub branch `codex/p2-runtime-resilience` using source root `/apps/api` and config path `/apps/api/railway.toml`; then obtain a cost/usage snapshot before creating any staging PostgreSQL resource.
+- **Next exact step:** configure the existing empty staging service to deploy GitHub branch `codex/p2-runtime-resilience` (published through commit `badf3e3`) using source root `/apps/api` and config path `/apps/api/railway.toml`; then obtain a cost/usage snapshot before creating any staging PostgreSQL resource.
 
 ## Source documents read
 
@@ -131,6 +131,7 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 - P2 PostgreSQL URL resilience: PASS locally — plain `postgres://`/`postgresql://` URLs are normalized to the bundled psycopg v3 dialect; invalid engine initialization is surfaced as controlled 503 readiness failure instead of an unhandled 500. Focused API tests (6), Ruff, strict mypy and Alembic PostgreSQL SQL rendering pass.
 - P2 migration-aware readiness: PASS locally — `/api/v1/ready` now requires a reachable database and an applied Alembic version row. Against a fresh Docker PostgreSQL database it returned 503 `Database migration is not applied`; after in-container `alembic upgrade head` it returned `ready`, and the synthetic seed persisted one machine. The scoped API/web/PostgreSQL/Redis/MinIO test stack and its two newly created volumes were removed after verification. Focused tests (7), Ruff, strict mypy and Alembic PostgreSQL SQL rendering pass.
 - P2 local regression after connection hardening: PASS — 19 API tests, Ruff, strict mypy, Alembic PostgreSQL SQL render, web lint/typecheck/production build and the web component test pass. Vitest is pinned to one worker for deterministic local/CI completion; the prior default parallel runner left an orphan worker after the test had passed.
+- CI branch gate: `RT-CONNECT CI` now runs for every GitHub branch push, not only `main`/pull requests. The staging source branch `codex/p2-runtime-resilience` is published at `badf3e3`; Railway must not deploy it until its branch CI run is green.
 
 ## Blockers
 
