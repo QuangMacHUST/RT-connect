@@ -20,7 +20,7 @@ The latest Railway build log reports:
 
 ## Root cause
 
-The Railway service was connected to the repository before P1 created application source and a build/start contract. This is a deterministic source-baseline failure, not an intermittent infrastructure failure.
+The Railway service was connected to the repository before P1 created application source and a build/start contract. The recorded failed deployment used commit `aa5dce6` (`set up enviroment`), which contains only the document tree shown in the log. The current `origin/main` commit is `dc6ee79` and contains the API/web source and deployment files. The new deployment for `dc6ee79` was skipped because the GitHub CI check suite failed in the repository secret guard; API and web jobs passed. This is a source/configuration gate failure, not an intermittent infrastructure failure.
 
 ## Control
 
@@ -28,6 +28,11 @@ The Railway service was connected to the repository before P1 created applicatio
 - Do not change production while P1/P2 are incomplete.
 - P1 must create the FastAPI/React source, pinned manifests, health/version endpoints and deployment files.
 - P2 must create a separate staging environment and deploy the health-only/API shell there first.
+- The API Railway service must use monorepo root directory `/apps/api` and config path
+  `/apps/api/railway.toml`; otherwise Railway continues analyzing the repository root and will
+  not find the API Dockerfile.
+- The reviewed source is now committed and pushed to `main`; the CI secret guard must pass
+  before Railway will deploy it.
 - A regression check must confirm Railpack/Docker can build the selected root and start command before any production promotion.
 
 ## Acceptance evidence for closure
@@ -38,4 +43,3 @@ The Railway service was connected to the repository before P1 created applicatio
 4. Staging health/readiness/version endpoints pass over HTTPS.
 5. The deployment manifest records commit/image, start command and migration version.
 6. No production redeploy occurs until the P19 promotion gate.
-

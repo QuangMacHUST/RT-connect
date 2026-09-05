@@ -6,7 +6,7 @@
 - **Current phase:** P2 — Railway staging, PostgreSQL và deployment foundation.
 - **Current status:** IN_PROGRESS — P1 local gate closed; both Railway tokens verified live from root .env. Supabase public configuration remains empty.
 - **Last authoritative check:** 2026-09-05T07:05:00+07:00.
-- **Next exact step:** obtain a Railway credential with project write access and a non-production Supabase Auth project configuration, then provision staging PostgreSQL/API and execute the remote migration/auth smoke gate.
+- **Next exact step:** push the CI guard fix through the user's reviewed Git workflow, configure the Railway service root as `/apps/api` in a non-production target, then provision staging PostgreSQL/API and execute the remote migration/auth smoke gate.
 
 ## Source documents read
 
@@ -119,6 +119,7 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 - P2 JWT security contract: PASS — 17 API tests cover missing Bearer, missing configuration, valid asymmetric token, expiry, issuer, audience, role, signature and JWKS-client failure; Ruff and strict mypy pass. This is local cryptographic evidence, not a live Supabase sign-in result.
 - P2 deployment preparation: PASS — `apps/api/railway.toml` now applies the baseline migration before deploy; staging Railway/Supabase variable contracts and runbooks are in `deployment/`.
 - P2 Railway permission audit: account token can read production status but `railway link`/environment mutation is rejected with `UNAUTHORIZED`; usage query is also unauthorized. No Railway resource was created or changed.
+- P2 Railway source audit: the old failed deployment analyzed `aa5dce6`, but `origin/main` now points to `dc6ee79` and contains the API/web source. The deployment for `dc6ee79` was skipped because the GitHub secret-guard job failed; API and web jobs passed. The CI guard has been corrected to allow `.env.example` templates while rejecting private environment files and credentials.
 - P2 post-change local regression: PASS — full `scripts/verify-p1.ps1 -WithContainers` completed after JWT, CORS and Railway manifest changes: 17 API tests, lint/type checks, migration SQL, web checks, five healthy Compose services, in-container migration, synthetic seed persistence, API readiness and web health. The scoped stack and test volumes were removed.
 - P2 Stitch recheck: PASS — project `RT-connect` remains public with the Clinical Precision Interface design system, the four active QA application screens, and four hidden/deprecated Biological screen instances. No Stitch design was altered during P2.
 
@@ -128,6 +129,8 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 - Supabase URL and publishable key are present as names but have empty values. This is the remaining Auth configuration dependency.
 - Actual credentials were found in `.env.example` and replaced with empty placeholders; the user's `.env` was preserved.
 - Railway account token lacks the write scope needed to create/link staging and the usage scope needed to view costs. A project-write credential is required before any billable Railway resource can be provisioned.
+- The current Railway production service has not deployed `dc6ee79`; it still reports the old failed deployment and the new deployment as skipped. After the CI fix is pushed and green, verify Railway sees `dc6ee79` before any staging/production deployment decision.
+- The live Railway service metadata still reports `rootDirectory=null` and `dockerfilePath=null`. Configure `/apps/api` on a staging service/environment before testing the Railway Dockerfile; do not use the current production service as the P2 test target.
 
 ## Known limitations
 

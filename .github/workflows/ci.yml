@@ -61,4 +61,6 @@ jobs:
       - name: Reject private environment files and deployment credentials
         run: |
           test ! -f .env
-          ! git ls-files | grep -E '(^|/)(\.env($|\.)|.*\.pem$|.*\.key$)'
+          tracked_private_files="$(git ls-files | grep -E '(^|/)\.env($|\.)|.*\.(pem|key)$' || true)"
+          violations="$(printf '%s\n' "$tracked_private_files" | grep -Ev '(^|/)\.env\.example$' || true)"
+          test -z "$violations"

@@ -7,8 +7,30 @@ production environment.
 
 - A Railway account credential with write access to project `prolific-learning`.
 - A selected non-production Supabase Auth project.
-- The API source available in the connected GitHub repository.
+- The current API source committed and pushed to the connected GitHub repository. Railway
+  cannot build uncommitted files on the developer workstation.
 - Synthetic data only.
+
+## GitHub source and monorepo configuration
+
+The old failed deployment analyzed commit `aa5dce6` (`set up enviroment`), which predates the
+`apps/api` source tree. The current `origin/main` commit `dc6ee79` contains the application
+source and deployment files. Before triggering another deployment, confirm that the Railway
+service is connected to `main` and that its CI check suite is green. Confirm that the selected
+deployment commit contains `apps/api/Dockerfile`, `apps/api/railway.toml`,
+`apps/api/requirements.lock`, `apps/api/alembic.ini` and `apps/api/src`.
+
+For the API service, set these Railway build settings:
+
+| Setting | Value |
+| :--- | :--- |
+| Root Directory | `/apps/api` |
+| Config-as-code path | `/apps/api/railway.toml` |
+| Watch paths | `/apps/api/**` |
+| Dockerfile | `Dockerfile` relative to `/apps/api` |
+
+Railway's monorepo behavior requires a service root directory. Its config file path is specified
+as an absolute repository path when the file is outside the default root configuration lookup.
 
 ## Railway steps
 
