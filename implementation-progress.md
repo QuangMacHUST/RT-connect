@@ -4,9 +4,9 @@
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
 - **Current phase:** P2 — Railway staging, PostgreSQL và deployment foundation.
-- **Current status:** IN_PROGRESS — P1 local gate closed; both Railway tokens verified live from root .env. Supabase public configuration remains empty.
-- **Last authoritative check:** 2026-09-05T07:05:00+07:00.
-- **Next exact step:** push the CI guard fix through the user's reviewed Git workflow, configure the Railway service root as `/apps/api` in a non-production target, then provision staging PostgreSQL/API and execute the remote migration/auth smoke gate.
+- **Current status:** IN_PROGRESS — P1 local gate closed; Railway staging and production deployment foundations are live and externally verified. Supabase Auth/application smoke remains pending.
+- **Last authoritative check:** 2026-09-06T02:41:18+07:00.
+- **Next exact step:** complete the remaining P2 Auth/API integration gate, then start the first functional vertical slice from the phase plan.
 
 ## Source documents read
 
@@ -14,7 +14,7 @@
 | :--- | :--- | :--- |
 | `business-analysis.md` | 0.5 | Read; business source |
 | `technical-specification.md` | 0.7 | Read; technical contract |
-| `plan.md` | 1.1 | Read; phase order and gates |
+| `plan.md` | 1.3 | Read; phase order and deployment contract |
 
 ## Phase status
 
@@ -22,7 +22,7 @@
 | :--- | :--- | :--- |
 | P0 | DONE | Exit audit passed on 2026-09-05; baseline, traceability, module/route/environment registries and Railway failure issue recorded |
 | P1 | DONE | Full local Compose build/health, in-container PostgreSQL migration, synthetic seed persistence, API readiness and web health passed on 2026-09-05 |
-| P2 | IN_PROGRESS | JWT contract, deployment manifest and runbooks are ready; staging provisioning needs Railway project-write access plus Supabase configuration |
+| P2 | IN_PROGRESS | JWT contract, PostgreSQL, staging/production deployment foundation and public health/readiness smoke are ready; Supabase Auth/application integration remains |
 | P3 | NOT_STARTED | Depends on P2 |
 | P4 | NOT_STARTED | Depends on P3 |
 | P5 | NOT_STARTED | Depends on P4 |
@@ -61,6 +61,8 @@
 `get_project` still exposes the four old Biological instances as `hidden`. They are deprecated and must not be restored or used as design-to-code sources. P12–P15 will create new screens one at a time in the same project.
 
 ## Live Railway evidence
+
+> Snapshot superseded on 2026-09-06: staging and production now have separate API/PostgreSQL services, both deployments succeeded with `PORT=8000`, healthcheck `/api/v1/health`, pre-deploy `alembic upgrade head`, and public `/api/v1/health` plus `/api/v1/ready` returned HTTP 200. The older lines below are retained as historical P0/P2 evidence.
 
 - Project: `prolific-learning` (`339f2c50-ddd7-491f-8c4e-da2a2d169502`).
 - Workspace: `Mạc Đăng Quang's Projects` (`53fb850d-a59c-4690-816f-01aea06f0645`).
@@ -118,7 +120,9 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 - P1 Compose verification: PASS — Docker Desktop Linux engine built the complete stack; all five services healthy; clean PostgreSQL migration, synthetic seed persistence, API readiness and web health passed. The scoped test stack and volumes were removed by the verifier.
 - P2 JWT security contract: PASS — 17 API tests cover missing Bearer, missing configuration, valid asymmetric token, expiry, issuer, audience, role, signature and JWKS-client failure; Ruff and strict mypy pass. This is local cryptographic evidence, not a live Supabase sign-in result.
 - P2 deployment preparation: PASS — `apps/api/railway.toml` now applies the baseline migration before deploy; staging Railway/Supabase variable contracts and runbooks are in `deployment/`.
+- P2 Railway deployment foundation: PASS — effective settings were applied directly in staging and production; both deployments use `PORT=8000`, `/api/v1/health`, `alembic upgrade head`, and both public `/health` plus `/ready` smoke checks returned HTTP 200.
 - P2 Railway permission audit: account token can read production status but `railway link`/environment mutation is rejected with `UNAUTHORIZED`; usage query is also unauthorized. No Railway resource was created or changed.
+- The permission-audit snapshot above is historical; the current Railway service settings were successfully changed through the dashboard and are recorded in the superseding live evidence note above.
 - P2 Railway source audit: the old failed deployment analyzed `aa5dce6`, but `origin/main` now points to `dc6ee79` and contains the API/web source. The deployment for `dc6ee79` was skipped because the GitHub secret-guard job failed; API and web jobs passed. The CI guard has been corrected to allow `.env.example` templates while rejecting private environment files and credentials.
 - P2 post-change local regression: PASS — full `scripts/verify-p1.ps1 -WithContainers` completed after JWT, CORS and Railway manifest changes: 17 API tests, lint/type checks, migration SQL, web checks, five healthy Compose services, in-container migration, synthetic seed persistence, API readiness and web health. The scoped stack and test volumes were removed.
 - P2 Stitch recheck: PASS — project `RT-connect` remains public with the Clinical Precision Interface design system, the four active QA application screens, and four hidden/deprecated Biological screen instances. No Stitch design was altered during P2.

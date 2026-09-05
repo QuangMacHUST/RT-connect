@@ -3,7 +3,7 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** plan.md
-- **Phiên bản:** 1.2
+- **Phiên bản:** 1.3
 - **Nguồn nghiệp vụ:** business-analysis.md phiên bản 0.5
 - **Nguồn kỹ thuật:** technical-specification.md phiên bản 0.7
 - **Nguồn thiết kế:** Google Stitch MCP, project RT-connect, project ID 14242591911141046021
@@ -58,17 +58,17 @@ Logo và avatar không phải application route. Vì project Stitch đang public
 | :--- | :--- |
 | Project | prolific-learning |
 | Project ID | 339f2c50-ddd7-491f-8c4e-da2a2d169502 |
-| Environment | production |
-| Environment ID | 910dff25-75b6-42b2-bf6b-e2601ba9d7d2 |
-| Service | RT-connect |
-| Service ID | 9544c3e6-c8bd-4c29-b62e-c6172eb51af3 |
-| Latest deployment | FAILED |
-| PostgreSQL service | Chưa có |
+| Environment | staging và production |
+| Environment ID | production `910dff25-75b6-42b2-bf6b-e2601ba9d7d2`; staging `b0ab34e5-0ff4-479d-8232-659d175e9e2f` |
+| Service | production `RT-connect`; staging `gleaming-cooperation` |
+| Service ID | production `9544c3e6-c8bd-4c29-b62e-c6172eb51af3`; staging `9b35bf0b-0419-4679-8af0-e639e5a84713` |
+| Latest deployment | Staging `SUCCESS` trên `2754013`; production `SUCCESS` trên `5a5069f` |
+| PostgreSQL service | Staging `Postgres-Q1Hc`; production `Postgres` |
 | Redis/worker/renderer | Chưa có |
 | Railway CLI local | Chưa cài tại thời điểm kiểm tra |
 | Ngân sách/credit khởi điểm do user cung cấp | 5 USD; phải theo dõi usage thực tế, không coi là tài nguyên không giới hạn |
 
-Project Token trỏ vào production. Account/Workspace token truy cập được project và dùng cho provisioning nếu scope cho phép. Không triển khai production trực tiếp từ trạng thái hiện tại.
+Project Token trỏ vào production. Account/Workspace token truy cập được project và dùng cho provisioning nếu scope cho phép. Production chỉ nhận đúng commit đã qua staging smoke test.
 
 ### 0.3.1. Railway deployment contract — nguồn sự thật duy nhất
 
@@ -81,6 +81,7 @@ Project Token trỏ vào production. Account/Workspace token truy cập được
 | Source branch | `codex/p2-runtime-resilience` trong giai đoạn P2 | `main` sau khi promote release | Staging pass trước rồi mới promote đúng commit/release manifest |
 | Repository root | `/apps/api` | `/apps/api` | Đây là Root Directory của service, không phải path file cấu hình |
 | Dockerfile | `/apps/api/Dockerfile` | `/apps/api/Dockerfile` | Dockerfile phải lắng nghe biến `PORT`; không hardcode chỉ một cổng Railway |
+| Railway `PORT` | `8000` | `8000` | Phải khớp với Target port của public domain và cổng process bind; khai báo riêng trong từng environment |
 | Start command | Từ Dockerfile | Từ Dockerfile | `uvicorn` dùng `${PORT:-8000}`; `8000` chỉ là fallback local |
 | `DATABASE_URL` | Reference tới PostgreSQL staging | Reference tới PostgreSQL production | Không copy password hoặc URL giữa environment |
 | Pre-deploy command | Service Settings: `alembic upgrade head` | Service Settings: `alembic upgrade head` | Kiểm tra command trong Deployment Details và log migration |
@@ -99,6 +100,7 @@ Project Token trỏ vào production. Account/Workspace token truy cập được
 #### Quy tắc cổng và healthcheck
 
 - API phải bind `0.0.0.0:${PORT}`; Dockerfile được phép dùng `PORT=8000` làm giá trị mặc định khi chạy local.
+- Khi public domain của Railway dùng Target port `8000`, cả staging và production phải có service variable `PORT=8000`. Không để staging hoặc production dùng `PORT=3000` hay một giá trị khác; `PORT`, Target port và cổng process bind phải cùng một giá trị.
 - `EXPOSE 8000` chỉ là metadata/fallback, không phải cổng Railway bắt buộc.
 - Healthcheck `/api/v1/health` không truy cập database và phải trả HTTP 200 sau khi process listen đúng `$PORT`.
 - `/api/v1/ready` kiểm tra PostgreSQL và Alembic migration; dùng cho smoke/readiness test, không dùng làm healthcheck lúc container mới khởi động.
