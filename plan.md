@@ -3,7 +3,7 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** plan.md
-- **Phiên bản:** 1.2
+- **Phiên bản:** 1.4
 - **Nguồn nghiệp vụ:** business-analysis.md phiên bản 0.5
 - **Nguồn kỹ thuật:** technical-specification.md phiên bản 0.7
 - **Nguồn thiết kế:** Google Stitch MCP, project RT-connect, project ID 14242591911141046021
@@ -18,9 +18,9 @@ Tài liệu này thay thế lộ trình cũ phụ thuộc UI-UX.md. UI-UX.md và
 
 ### 0.1. Repository
 
-- Repository hiện chỉ có tài liệu Markdown, chưa có source frontend/backend.
-- Chưa có migration, test suite, Dockerfile, Railway manifest hoặc CI pipeline.
-- .env có tên biến cho Google Stitch MCP và hai Railway token; không ghi giá trị token vào tài liệu.
+- Repository hiện đã có backend API trong `apps/api`, frontend web trong `apps/web`, migration Alembic, Dockerfile, test suite và CI.
+- `apps/api/railway.toml` chỉ là file tham khảo/legacy; Railway Service Settings và deployment metadata mới là nguồn cấu hình vận hành thật.
+- `.env` có thể chứa biến local cho Google Stitch, Supabase và Railway; không ghi giá trị token, password hoặc private URL vào tài liệu hay Git.
 - .env đã được Git ignore và không bị Git theo dõi.
 - Các file UI-UX.md, DESIGN.md và Biological-toolkit.html đã được user xóa; giữ nguyên trạng thái xóa.
 
@@ -54,21 +54,16 @@ Logo và avatar không phải application route. Vì project Stitch đang public
 
 ### 0.3. Railway
 
-| Thuộc tính | Trạng thái hiện tại |
-| :--- | :--- |
-| Project | prolific-learning |
-| Project ID | 339f2c50-ddd7-491f-8c4e-da2a2d169502 |
-| Environment | production |
-| Environment ID | 910dff25-75b6-42b2-bf6b-e2601ba9d7d2 |
-| Service | RT-connect |
-| Service ID | 9544c3e6-c8bd-4c29-b62e-c6172eb51af3 |
-| Latest deployment | FAILED |
-| PostgreSQL service | Chưa có |
-| Redis/worker/renderer | Chưa có |
-| Railway CLI local | Chưa cài tại thời điểm kiểm tra |
-| Ngân sách/credit khởi điểm do user cung cấp | 5 USD; phải theo dõi usage thực tế, không coi là tài nguyên không giới hạn |
+Project `prolific-learning` (ID `339f2c50-ddd7-491f-8c4e-da2a2d169502`) hiện có:
 
-Project Token trỏ vào production. Account/Workspace token truy cập được project và dùng cho provisioning nếu scope cho phép. Không triển khai production trực tiếp từ trạng thái hiện tại.
+| Environment | Service API | PostgreSQL | API source | API region | Deployment đã kiểm tra |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| staging | `gleaming-cooperation` (`9b35bf0b-0419-4679-8af0-e639e5a84713`) | `Postgres-Q1Hc` (`8fc8201e-417d-4fd7-9a6d-17ad51b72dcf`) | `codex/p2-runtime-resilience` | `us-west2` | `SUCCESS`, commit `9bf96e9`, deployment `2b5270d1-9704-49b3-b3d8-0f8be130d02e` |
+| production | `RT-connect` (`9544c3e6-c8bd-4c29-b62e-c6172eb51af3`) | `Postgres` (`5709f18d-c92d-461a-9f73-478dd7748d80`) | `main` | `us-west2` | `SUCCESS`, commit `c52b614`, deployment `ec813793-4e29-4edb-b5d7-f323264da403` |
+
+Environment IDs: production `910dff25-75b6-42b2-bf6b-e2601ba9d7d2`; staging `b0ab34e5-0ff4-479d-8232-659d175e9e2f`. PostgreSQL production và staging hiện vẫn đang chạy bằng volume riêng. Redis/worker/renderer chưa được provision trước phase cần chúng. Ngân sách/credit khởi điểm do user cung cấp là 5 USD; phải theo dõi usage thực tế.
+
+Ngày 2026-09-06 đã xử lý incident deployment: Railway từ chối deployment production vì `multiRegionConfig` dùng alias cũ `sfo`. Hai API service đã được chuyển sang region identifier hợp lệ `us-west2`; sau đó staging và production đều deploy `SUCCESS`. PostgreSQL chưa đổi region để tránh di chuyển volume dữ liệu khi chưa có bằng chứng backup/restore tương ứng.
 
 ### 0.3.1. Railway deployment contract — nguồn sự thật duy nhất
 
@@ -79,6 +74,7 @@ Project Token trỏ vào production. Account/Workspace token truy cập được
 | Railway environment | `staging` | `production` | Không dùng nhầm biến hoặc database giữa hai environment |
 | API service | `gleaming-cooperation` | `RT-connect` | Mỗi service có source branch và biến riêng |
 | Source branch | `codex/p2-runtime-resilience` trong giai đoạn P2 | `main` sau khi promote release | Staging pass trước rồi mới promote đúng commit/release manifest |
+| API deployment region | `us-west2` | `us-west2` | Dùng region identifier đầy đủ; không dùng alias cũ `sfo` |
 | Repository root | `/apps/api` | `/apps/api` | Đây là Root Directory của service, không phải path file cấu hình |
 | Dockerfile | `/apps/api/Dockerfile` | `/apps/api/Dockerfile` | Dockerfile phải lắng nghe biến `PORT`; không hardcode chỉ một cổng Railway |
 | Start command | Từ Dockerfile | Từ Dockerfile | `uvicorn` dùng `${PORT:-8000}`; `8000` chỉ là fallback local |
@@ -95,6 +91,7 @@ Project Token trỏ vào production. Account/Workspace token truy cập được
 - Bằng chứng cấu hình thật phải đọc từ Deployment Details/metadata của deployment: `rootDirectory`, `dockerfilePath`, `preDeployCommand`, `healthcheckPath`, source branch và commit.
 - Nếu `railwayConfigFile = null` nhưng `preDeployCommand` đã xuất hiện trong metadata, đó là cấu hình trực tiếp từ Service Settings, không phải Config-as-code.
 - Không chuyển `preDeployCommand` hoặc `healthcheckPath` vào file rồi giả định dashboard sẽ tự cập nhật; phải kiểm tra deployment thực tế.
+- Không dùng `apps/api/railway.toml` để sửa region vận hành một cách ngầm định. Nếu đổi region, cập nhật bằng Railway Service Settings/API, ghi region identifier và deployment evidence vào phần snapshot của tài liệu này.
 
 #### Quy tắc cổng và healthcheck
 
@@ -112,6 +109,13 @@ Project Token trỏ vào production. Account/Workspace token truy cập được
 - Không sửa hostname, port, tên database, user hoặc password bằng code. Mỗi environment phải dùng reference/private URL do **PostgreSQL service cùng environment** cung cấp.
 - Không lưu giá trị URL hoặc password trong Git, `plan.md`, log CI hay browser. Chỉ ghi service nguồn và trạng thái kiểm tra `GET /api/v1/ready`.
 - Sau mọi thay đổi database variable: redeploy service, xác nhận deployment healthcheck `/api/v1/health` pass, rồi kiểm tra riêng `/api/v1/ready` HTTP 200. Nếu readiness fail, xem log migration/connection; không bỏ healthcheck để che lỗi.
+
+#### Quy tắc Railway region và PostgreSQL volume
+
+- API staging và production hiện dùng `us-west2` — đây là region identifier hợp lệ tương ứng khu vực US West hiện tại.
+- Không dùng `sfo` trong `multiRegionConfig`; `sfo` là alias cũ đã từng khiến production deployment bị chặn.
+- PostgreSQL staging/production vẫn giữ region key cũ trong deployment metadata trong lúc volume đang hoạt động. Không tự ý đổi PostgreSQL region chỉ để làm đồng nhất với API; trước tiên phải có backup, restore test hoặc kế hoạch di chuyển volume được ghi nhận.
+- Mọi thay đổi region phải được kiểm tra theo thứ tự: service vẫn `Online`, deployment status `SUCCESS`, `/api/v1/health` HTTP 200, `/api/v1/ready` HTTP 200, rồi mới ghi nhận là đã hoàn tất.
 
 ### 0.4. Supabase
 
