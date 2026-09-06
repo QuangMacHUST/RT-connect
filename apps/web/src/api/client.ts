@@ -54,6 +54,32 @@ export type MachineResource = {
   is_archived: boolean
 }
 export type Collection<T> = { items: T[]; total: number; offset: number; limit: number }
+export type FolderResource = {
+  id: string
+  organization_id: string
+  parent_folder_id: string | null
+  name: string
+  path: string
+  depth: number
+  is_archived: boolean
+}
+export type QACaseResource = {
+  id: string
+  organization_id: string
+  site_id: string
+  machine_id: string
+  primary_folder_id: string
+  qa_type: string
+  qa_cycle: string
+  performed_at: string
+  scheduled_at: string | null
+  title: string
+  description: string | null
+  protocol_version_id: string | null
+  status_note: string | null
+  case_status: string
+  is_archived: boolean
+}
 
 const makeCorrelationId = () => crypto.randomUUID()
 
@@ -194,6 +220,69 @@ export class ApiClient {
       id: z.string().uuid(), organization_id: z.string().uuid(), site_id: z.string().uuid(),
       stable_machine_id: z.string(), display_name: z.string(), manufacturer: z.string().nullable(),
       model: z.string().nullable(), status: z.string(), is_archived: z.boolean()
+    }), accessToken, { method: 'PATCH', body: JSON.stringify(body) })
+  }
+
+  folders(accessToken: string, organizationId: string, includeArchived = false): Promise<{ items: FolderResource[]; total: number; include_archived: boolean }> {
+    return this.get(`/organizations/${organizationId}/folders/tree?include_archived=${includeArchived}`, z.object({
+      items: z.array(z.object({
+        id: z.string().uuid(), organization_id: z.string().uuid(), parent_folder_id: z.string().uuid().nullable(),
+        name: z.string(), path: z.string(), depth: z.number().int().nonnegative(), is_archived: z.boolean()
+      })), total: z.number().int(), include_archived: z.boolean()
+    }), accessToken)
+  }
+
+  createFolder(accessToken: string, organizationId: string, body: { name: string; parent_folder_id?: string }): Promise<FolderResource> {
+    return this.request(`/organizations/${organizationId}/folders`, z.object({
+      id: z.string().uuid(), organization_id: z.string().uuid(), parent_folder_id: z.string().uuid().nullable(),
+      name: z.string(), path: z.string(), depth: z.number().int().nonnegative(), is_archived: z.boolean()
+    }), accessToken, { method: 'POST', body: JSON.stringify(body) })
+  }
+
+  updateFolder(accessToken: string, folderId: string, body: { name?: string; parent_folder_id?: string | null; is_archived?: boolean }): Promise<FolderResource> {
+    return this.request(`/folders/${folderId}`, z.object({
+      id: z.string().uuid(), organization_id: z.string().uuid(), parent_folder_id: z.string().uuid().nullable(),
+      name: z.string(), path: z.string(), depth: z.number().int().nonnegative(), is_archived: z.boolean()
+    }), accessToken, { method: 'PATCH', body: JSON.stringify(body) })
+  }
+
+  qaCases(accessToken: string, organizationId: string, params: { q?: string; folder_id?: string; include_archived?: boolean } = {}): Promise<Collection<QACaseResource> & { include_archived: boolean }> {
+    const query = new URLSearchParams()
+    if (params.q) query.set('q', params.q)
+    if (params.folder_id) query.set('folder_id', params.folder_id)
+    if (params.include_archived) query.set('include_archived', 'true')
+    const suffix = query.toString() ? `?${query.toString()}` : ''
+    return this.get(`/organizations/${organizationId}/qa-cases${suffix}`, z.object({
+      items: z.array(z.object({
+        id: z.string().uuid(), organization_id: z.string().uuid(), site_id: z.string().uuid(), machine_id: z.string().uuid(),
+        primary_folder_id: z.string().uuid(), qa_type: z.string(), qa_cycle: z.string(), performed_at: z.string(),
+        scheduled_at: z.string().nullable(), title: z.string(), description: z.string().nullable(),
+        protocol_version_id: z.string().uuid().nullable(), status_note: z.string().nullable(),
+        case_status: z.string(), is_archived: z.boolean()
+      })), total: z.number().int(), offset: z.number().int(), limit: z.number().int(), include_archived: z.boolean()
+    }), accessToken)
+  }
+
+  createQACase(accessToken: string, organizationId: string, body: {
+    site_id: string; machine_id: string; primary_folder_id: string; qa_type: string; qa_cycle: string;
+    performed_at: string; title: string
+  }): Promise<QACaseResource> {
+    return this.request(`/organizations/${organizationId}/qa-cases`, z.object({
+      id: z.string().uuid(), organization_id: z.string().uuid(), site_id: z.string().uuid(), machine_id: z.string().uuid(),
+      primary_folder_id: z.string().uuid(), qa_type: z.string(), qa_cycle: z.string(), performed_at: z.string(),
+      scheduled_at: z.string().nullable(), title: z.string(), description: z.string().nullable(),
+      protocol_version_id: z.string().uuid().nullable(), status_note: z.string().nullable(),
+      case_status: z.string(), is_archived: z.boolean()
+    }), accessToken, { method: 'POST', body: JSON.stringify(body) })
+  }
+
+  updateQACase(accessToken: string, caseId: string, body: { is_archived?: boolean; title?: string }): Promise<QACaseResource> {
+    return this.request(`/qa-cases/${caseId}`, z.object({
+      id: z.string().uuid(), organization_id: z.string().uuid(), site_id: z.string().uuid(), machine_id: z.string().uuid(),
+      primary_folder_id: z.string().uuid(), qa_type: z.string(), qa_cycle: z.string(), performed_at: z.string(),
+      scheduled_at: z.string().nullable(), title: z.string(), description: z.string().nullable(),
+      protocol_version_id: z.string().uuid().nullable(), status_note: z.string().nullable(),
+      case_status: z.string(), is_archived: z.boolean()
     }), accessToken, { method: 'PATCH', body: JSON.stringify(body) })
   }
 }

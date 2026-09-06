@@ -12,7 +12,7 @@ export type RouteDefinition = {
 export const routeRegistry: readonly RouteDefinition[] = [
   { path: '/app', label: 'Trang chủ', module: 'MOD-01', phase: 'P3', nav: 'workspace', available: true },
   { path: '/app/organization', label: 'Organization / Site / Machine', module: 'MOD-02', phase: 'P4', nav: 'workspace', available: true },
-  { path: '/app/qa', label: 'Kho lưu trữ QA', module: 'MOD-03', phase: 'P5', nav: 'workspace', available: false },
+  { path: '/app/qa', label: 'Kho lưu trữ QA', module: 'MOD-03', phase: 'P5', nav: 'workspace', available: true },
   { path: '/app/qa-protocols', label: 'QA Protocols', module: 'MOD-09', phase: 'P11', nav: 'workspace', available: false },
   { path: '/app/trend', label: 'Xu hướng', module: 'MOD-08', phase: 'P10', nav: 'workspace', available: false },
   { path: '/app/biological', label: 'Biological Toolkit', module: 'MOD-10', phase: 'P12', nav: 'biological', available: false },

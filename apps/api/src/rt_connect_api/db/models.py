@@ -100,6 +100,58 @@ class Machine(TimestampedIdMixin, Base):
     site: Mapped[Site] = relationship(back_populates="machines")
 
 
+class Folder(TimestampedIdMixin, Base):
+    """User-defined organization folder; archive never deletes its records."""
+
+    __tablename__ = "folders"
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    parent_folder_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("folders.id"), nullable=True, index=True
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+    parent: Mapped[Folder | None] = relationship(
+        "Folder", remote_side="Folder.id", back_populates="children"
+    )
+    children: Mapped[list[Folder]] = relationship("Folder", back_populates="parent")
+
+
+class QACase(TimestampedIdMixin, Base):
+    """A QA record that remains stable while folders are renamed or moved."""
+
+    __tablename__ = "qa_cases"
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    site_id: Mapped[UUID] = mapped_column(ForeignKey("sites.id"), nullable=False, index=True)
+    machine_id: Mapped[UUID] = mapped_column(ForeignKey("machines.id"), nullable=False, index=True)
+    primary_folder_id: Mapped[UUID] = mapped_column(
+        ForeignKey("folders.id"), nullable=False, index=True
+    )
+    qa_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    qa_cycle: Mapped[str] = mapped_column(String(40), nullable=False)
+    performed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    scheduled_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    title: Mapped[str] = mapped_column(String(240), nullable=False)
+    description: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    protocol_version_id: Mapped[UUID | None] = mapped_column(
+        PostgreSQLUUID(as_uuid=True), nullable=True
+    )
+    status_note: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    case_status: Mapped[str] = mapped_column(String(40), nullable=False, server_default="OPEN")
+    is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+
+
 class AuditEvent(TimestampedIdMixin, Base):
     """Append-only lifecycle evidence for organization-scoped changes."""
 

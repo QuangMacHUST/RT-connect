@@ -12,7 +12,7 @@ All routes are typed in source during P1. This registry is the P0 contract draft
 | `/app/organization` | MOD-02 | Local P4 management screen; Stitch screen still missing | `/api/v1/organizations`, `/api/v1/organizations/{id}/sites`, `/api/v1/organizations/{id}/sites/{siteId}/machines` | P4 |
 | `/app/sites/:siteId` | MOD-02 | Embedded in `/app/organization` | `/api/v1/organizations/{id}/sites/{siteId}` | P4 |
 | `/app/machines/:machineId` | MOD-02 | Embedded in `/app/organization` | `/api/v1/organizations/{id}/sites/{siteId}/machines/{machineId}` | P4 |
-| `/app/qa` | MOD-03 | QA Archive `4c9ec57310fd404cbae3b53b0bab2368` | folders tree + QA case search | P5 |
+| `/app/qa` | MOD-03 | QA Archive `4c9ec57310fd404cbae3b53b0bab2368`; local P5 implementation | folders tree + QA case CRUD/search | P5 |
 | `/app/qa/cases/new` | MOD-03 | Missing | `POST /api/v1/organizations/{id}/qa-cases` | P5 |
 | `/app/qa/cases/:caseId` | MOD-03/MOD-04 | Missing | QA case detail/history/artifacts | P5–P6 |
 | `/app/qa/cases/:caseId/validation` | MOD-04 | Missing | artifact validation/manifest | P6 |

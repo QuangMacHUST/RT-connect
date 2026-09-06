@@ -520,6 +520,15 @@ Thời lượng là ước lượng tham chiếu cho một nhóm nhỏ. Phase c�
 - Search theo site, machine, cycle, type, protocol, time và data status.
 - Breadcrumb và deep-link.
 
+## Implementation contract
+
+- `include_archived=false` chỉ trả folder/QA case đang active; `include_archived=true` trả cả active và archived để phục vụ history.
+- Archive folder là soft-archive và cascade trạng thái archive xuống subtree; không hard-delete folder hoặc QA case. QA case giữ nguyên ID và vẫn truy xuất được qua history.
+- Một tên folder active chỉ được dùng một lần trong cùng parent folder của organization; folder có thể di chuyển về root bằng `parent_folder_id=null`.
+- QA case phải tham chiếu site active, machine active thuộc đúng site và folder active thuộc cùng organization tại thời điểm tạo hoặc di chuyển.
+- Mọi endpoint nhận resource ID phải resolve organization context từ verified identity trước khi đọc resource; không dùng lookup toàn cục rồi mới kiểm tra membership.
+- Không tạo action-level role hierarchy giữa bác sĩ/kỹ sư; audit ghi nhận actor và thay đổi nhưng không thay đổi mô hình quyền ngang hàng trong cùng organization.
+
 ## Tests
 
 - Folder nhiều cấp.
