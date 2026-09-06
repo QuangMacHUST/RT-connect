@@ -5,6 +5,7 @@ import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { HomeDashboardPage } from './pages/HomeDashboardPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
+import { OrganizationManagementPage } from './pages/OrganizationManagementPage'
 import { PasswordRecoveryPage } from './pages/PasswordRecoveryPage'
 import { PlatformStatusPage } from './pages/PlatformStatusPage'
 import { SessionErrorPage } from './pages/SessionErrorPage'
@@ -18,6 +19,7 @@ export function ApplicationRoutes() {
       <Route path="/auth/recovery" element={<PasswordRecoveryPage />} />
       <Route path="/auth/session-error" element={<SessionErrorPage />} />
       <Route path="/app" element={<ProtectedRoute><HomeDashboardPage /></ProtectedRoute>} />
+      <Route path="/app/organization" element={<ProtectedRoute><OrganizationManagementPage /></ProtectedRoute>} />
       <Route path="/app/system/status" element={<PlatformStatusPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

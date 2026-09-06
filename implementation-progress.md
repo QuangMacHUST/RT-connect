@@ -3,10 +3,10 @@
 ## Current checkpoint
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
-- **Current phase:** P2/P3 — Supabase Auth staging gate và App Shell/Home Dashboard implementation.
-- **Current status:** IN_PROGRESS — Railway deployment foundation is live; P3 backend identity/membership, session bootstrap, dashboard API and Supabase-aware frontend are implemented locally. A separate Supabase staging Auth project and live test identity remain required before P2/P3 can close.
-- **Last authoritative check:** 2026-09-06 — Railway metadata and public endpoint verification after region correction.
-- **Next exact step:** configure a non-production Supabase Auth project, create a synthetic test identity, deploy the P3 branch to Railway staging, seed its organization membership, and execute live sign-in/session/dashboard smoke tests.
+- **Current phase:** P4 — Organization, Site và Machine implementation; P2/P3 live Auth gate remains open.
+- **Current status:** IN_PROGRESS — Railway deployment foundation is live; P3 identity/session/dashboard and P4 organization/site/machine API plus management screen are implemented and verified locally. A separate Supabase staging Auth project and live test identity remain required before the P2/P3 staging gates can close.
+- **Last authoritative check:** 2026-09-06 — P4 backend/frontend local quality gates passed; Railway metadata and public endpoint verification remain valid.
+- **Next exact step:** review P4 API/UI diff, then configure a non-production Supabase Auth project, create a synthetic test identity, deploy this branch to Railway staging, run Alembic `20260906_0003`, seed/verify the organization context, and execute live organization → site → machine smoke tests.
 
 ## Source documents read
 
@@ -24,7 +24,7 @@
 | P1 | DONE | Full local Compose build/health, in-container PostgreSQL migration, synthetic seed persistence, API readiness and web health passed on 2026-09-05 |
 | P2 | IN_PROGRESS | JWT contract, PostgreSQL, staging/production deployment foundation and public health/readiness smoke are ready; Supabase Auth/application integration remains |
 | P3 | IMPLEMENTED ON RELEASE BRANCH | Auth/API bootstrap, organization-scoped dashboard foundation and auth screens are implemented on `codex/p3-auth-dashboard`; live Supabase Auth, web deployment and staging E2E remain pending |
-| P4 | NOT_STARTED | Depends on P3 |
+| P4 | IMPLEMENTED LOCALLY | Migration `20260906_0003`, organization/site/machine CRUD, archive lifecycle, audit events, scoped API tests and `/app/organization` management UI pass locally; staging/Auth E2E pending |
 | P5 | NOT_STARTED | Depends on P4 |
 | P6 | NOT_STARTED | Depends on P5 |
 | P7 | NOT_STARTED | Depends on P6 |
@@ -142,6 +142,7 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 - P2 Stitch recheck: PASS — project `RT-connect` remains public with the Clinical Precision Interface design system, the four active QA application screens, and four hidden/deprecated Biological screen instances. No Stitch design was altered during P2.
 - P3 design: Login screen `3b857ee77e7a434d8cfdcda32fd62cdb` generated in the active RT-connect Stitch project using the Clinical Precision Interface design system; no patient data or secret was sent to Stitch.
 - P3 local implementation: PASS — `UserIdentity`/`OrganizationMembership`, session bootstrap and organization-scoped dashboard endpoints; migration `20260906_0002`; backend lint, strict mypy and 20 tests pass. Frontend Supabase session/auth routes, protected dashboard and API-backed empty/populated/error states lint/type-check/test/build successfully.
+- P4 local implementation: PASS — migration `20260906_0003` adds organization/site/machine lifecycle fields and append-only audit events; all CRUD/list/archive mutations resolve organization scope from the verified identity before resource lookup. Rename preserves `stable_machine_id`; duplicate IDs and second ambiguous organization contexts return explicit conflicts. Backend Ruff, strict mypy and 26 tests pass; frontend organization management page, API client, lint, TypeScript check, Vitest and Vite build pass. No live Auth or staging P4 workflow has been claimed.
 
 ## Blockers
 

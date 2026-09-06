@@ -32,6 +32,7 @@ def resolve_session_context(session: Session, identity: AuthenticatedIdentity) -
             UserIdentity.supabase_user_id == identity.subject,
             UserIdentity.is_active.is_(True),
             OrganizationMembership.is_active.is_(True),
+            Organization.is_archived.is_(False),
         )
         .order_by(Organization.name)
     ).first()

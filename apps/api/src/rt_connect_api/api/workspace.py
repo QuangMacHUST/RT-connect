@@ -75,12 +75,12 @@ def organization_dashboard(
     site_count = session.scalar(
         select(func.count())
         .select_from(Site)
-        .where(Site.organization_id == context.organization_id)
+        .where(Site.organization_id == context.organization_id, Site.is_archived.is_(False))
     )
     machine_count = session.scalar(
         select(func.count())
         .select_from(Machine)
-        .where(Machine.organization_id == context.organization_id)
+        .where(Machine.organization_id == context.organization_id, Machine.is_archived.is_(False))
     )
     return DashboardSummaryResponse(
         organization=OrganizationContextResponse(

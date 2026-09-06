@@ -6,7 +6,7 @@ This P0 matrix defines the minimum traceability spine. Detailed endpoint and tes
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | MOD-00 | BR-001, BR-002, BR-026, BR-029, BR-030, BR-031 | Auth screens missing | `/auth/*`, `/app` bootstrap | session/bootstrap, Supabase token verifier, memberships | valid/expired/wrong JWT; membership isolation; login/refresh/deep-link E2E |
 | MOD-01 | BR-001, BR-026, BR-031, BR-032 | Home active | `/app` | organization dashboard read model | empty/populated/error; organization scoping; staging visual/E2E |
-| MOD-02 | BR-003, BR-004, BR-019 | Management screens missing | `/app/organization`, `/app/sites/*`, `/app/machines/*` | organization/site/machine CRUD | hierarchy, stable machine ID, cross-organization rejection, audit |
+| MOD-02 | BR-003, BR-004, BR-019 | P4 management screen implemented locally; Stitch source still missing | `/app/organization` (site/machine embedded) | organization/site/machine CRUD, archive lifecycle, audit events | hierarchy, stable machine ID, cross-organization rejection, duplicate policy, audit, staging E2E |
 | MOD-03 | BR-005, BR-006, BR-019, BR-020 | QA Archive active; case/detail gaps | `/app/qa/*` | folders tree and QA cases | nested folder, move/archive/rename, search, history, reload |
 | MOD-04 | BR-007, BR-008, BR-009, BR-022, BR-023, BR-031 | Upload/validation gaps; Gamma partial | QA case artifact/validation routes | artifact, manifest and validation APIs | byte integrity, duplicate retry, DICOM/measurement invalid cases, checksum |
 | MOD-05 | BR-003, BR-004, BR-021, BR-023, BR-025 | Machine QA screens missing | machine QA route | machine QA run/evaluate APIs | known rules, unit/baseline errors, immutable rerun, trend source |
@@ -21,4 +21,3 @@ This P0 matrix defines the minimum traceability spine. Detailed endpoint and tes
 | MOD-14 | BR-014, BR-017, BR-024 | Knowledge screens missing | biological library routes | dose-limit/protocol/knowledge APIs | version/source/citation, search/filter, user override label, no auto prescription |
 | MOD-15 | BR-009, BR-022, BR-023, BR-025 | Visual Dose/DVH screen missing | dose review route | DVH/dose APIs | known geometry, spacing/orientation, outside-grid, Frame mismatch, provenance |
 | MOD-16 | BR-001, BR-019, BR-020, BR-026, BR-029–BR-033 | Operational screens as needed | status/diagnostic routes | audit/health/backup manifests | remote E2E, backup/restore, rollback, exposure scan, monitoring/cost evidence |
-

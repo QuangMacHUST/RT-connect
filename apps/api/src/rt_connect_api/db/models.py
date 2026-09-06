@@ -1,11 +1,21 @@
-"""Foundational scoped entities needed by P1 synthetic data only."""
+"""Organization-scoped RT-CONNECT entities and lifecycle evidence."""
 
 from __future__ import annotations
 
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, func, true
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    String,
+    UniqueConstraint,
+    false,
+    func,
+    true,
+)
 from sqlalchemy.dialects.postgresql import UUID as PostgreSQLUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -24,10 +34,9 @@ class Organization(TimestampedIdMixin, Base):
     __tablename__ = "organizations"
 
     name: Mapped[str] = mapped_column(String(200), unique=True, nullable=False)
+    is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
     sites: Mapped[list[Site]] = relationship(back_populates="organization")
-    memberships: Mapped[list[OrganizationMembership]] = relationship(
-        back_populates="organization"
-    )
+    memberships: Mapped[list[OrganizationMembership]] = relationship(back_populates="organization")
 
 
 class UserIdentity(TimestampedIdMixin, Base):
@@ -39,9 +48,7 @@ class UserIdentity(TimestampedIdMixin, Base):
     email: Mapped[str | None] = mapped_column(String(320), nullable=True)
     display_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=true())
-    memberships: Mapped[list[OrganizationMembership]] = relationship(
-        back_populates="user_identity"
-    )
+    memberships: Mapped[list[OrganizationMembership]] = relationship(back_populates="user_identity")
 
 
 class OrganizationMembership(TimestampedIdMixin, Base):
@@ -72,6 +79,7 @@ class Site(TimestampedIdMixin, Base):
         ForeignKey("organizations.id"), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
+    is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
     organization: Mapped[Organization] = relationship(back_populates="sites")
     machines: Mapped[list[Machine]] = relationship(back_populates="site")
 
@@ -82,9 +90,30 @@ class Machine(TimestampedIdMixin, Base):
     organization_id: Mapped[UUID] = mapped_column(
         ForeignKey("organizations.id"), nullable=False, index=True
     )
-    site_id: Mapped[UUID] = mapped_column(
-        ForeignKey("sites.id"), nullable=False, index=True
-    )
+    site_id: Mapped[UUID] = mapped_column(ForeignKey("sites.id"), nullable=False, index=True)
     stable_machine_id: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     display_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    manufacturer: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    model: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, server_default="ACTIVE")
+    is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
     site: Mapped[Site] = relationship(back_populates="machines")
+
+
+class AuditEvent(TimestampedIdMixin, Base):
+    """Append-only lifecycle evidence for organization-scoped changes."""
+
+    __tablename__ = "audit_events"
+
+    organization_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("organizations.id"), nullable=True, index=True
+    )
+    actor_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+    event_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    entity_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    entity_id: Mapped[UUID | None] = mapped_column(
+        PostgreSQLUUID(as_uuid=True), nullable=True, index=True
+    )
+    payload: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)

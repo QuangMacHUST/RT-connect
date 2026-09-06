@@ -9,9 +9,9 @@ All routes are typed in source during P1. This registry is the P0 contract draft
 | `/auth/callback` | MOD-00 | Callback `accb55e3ab3e4d718ba3a4407e3f9368` | Supabase Auth callback | P3 |
 | `/auth/session-error` | MOD-00 | Session error `3ee1eb026899432392f40ff945649ac9` | Shared auth error contract | P3 |
 | `/app` | MOD-01 | Home `70b9f1d256884221ae20e63b5244db11` | `/api/v1/organizations/{id}/dashboard` | P3 |
-| `/app/organization` | MOD-02 | Missing | `/api/v1/organizations` | P4 |
-| `/app/sites/:siteId` | MOD-02 | Missing | `/api/v1/organizations/{id}/sites` | P4 |
-| `/app/machines/:machineId` | MOD-02 | Missing | `/api/v1/sites/{id}/machines` | P4 |
+| `/app/organization` | MOD-02 | Local P4 management screen; Stitch screen still missing | `/api/v1/organizations`, `/api/v1/organizations/{id}/sites`, `/api/v1/organizations/{id}/sites/{siteId}/machines` | P4 |
+| `/app/sites/:siteId` | MOD-02 | Embedded in `/app/organization` | `/api/v1/organizations/{id}/sites/{siteId}` | P4 |
+| `/app/machines/:machineId` | MOD-02 | Embedded in `/app/organization` | `/api/v1/organizations/{id}/sites/{siteId}/machines/{machineId}` | P4 |
 | `/app/qa` | MOD-03 | QA Archive `4c9ec57310fd404cbae3b53b0bab2368` | folders tree + QA case search | P5 |
 | `/app/qa/cases/new` | MOD-03 | Missing | `POST /api/v1/organizations/{id}/qa-cases` | P5 |
 | `/app/qa/cases/:caseId` | MOD-03/MOD-04 | Missing | QA case detail/history/artifacts | P5–P6 |
