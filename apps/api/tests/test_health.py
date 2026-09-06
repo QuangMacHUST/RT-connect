@@ -1,12 +1,22 @@
 from fastapi.testclient import TestClient
 
 from rt_connect_api.core.config import Settings
+from rt_connect_api.db.session import normalize_database_url
 
 
 def test_comma_separated_cors_origins_are_supported() -> None:
     settings = Settings(cors_allowed_origins="http://localhost:5173, https://staging.example.test")
 
     assert settings.cors_allowed_origins == ["http://localhost:5173", "https://staging.example.test"]
+
+
+def test_plain_postgresql_url_uses_the_pinned_psycopg_driver() -> None:
+    plain_url = "postgresql://postgres:example@postgres.internal:5432/railway"
+    psycopg_url = "postgresql+psycopg://postgres:example@postgres.internal:5432/railway"
+
+    assert normalize_database_url(plain_url) == psycopg_url
+    assert normalize_database_url(psycopg_url) == psycopg_url
+    assert normalize_database_url("sqlite+pysqlite:///:memory:") == "sqlite+pysqlite:///:memory:"
 
 
 def test_health_returns_correlation_id(client: TestClient) -> None:
