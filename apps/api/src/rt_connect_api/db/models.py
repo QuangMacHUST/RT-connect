@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, ForeignKey, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, String, UniqueConstraint, func, true
 from sqlalchemy.dialects.postgresql import UUID as PostgreSQLUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -25,6 +25,44 @@ class Organization(TimestampedIdMixin, Base):
 
     name: Mapped[str] = mapped_column(String(200), unique=True, nullable=False)
     sites: Mapped[list[Site]] = relationship(back_populates="organization")
+    memberships: Mapped[list[OrganizationMembership]] = relationship(
+        back_populates="organization"
+    )
+
+
+class UserIdentity(TimestampedIdMixin, Base):
+    """Application projection of a Supabase identity; password material is never stored here."""
+
+    __tablename__ = "user_identities"
+
+    supabase_user_id: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
+    email: Mapped[str | None] = mapped_column(String(320), nullable=True)
+    display_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=true())
+    memberships: Mapped[list[OrganizationMembership]] = relationship(
+        back_populates="user_identity"
+    )
+
+
+class OrganizationMembership(TimestampedIdMixin, Base):
+    """Membership defines organization scope, not an action-level role hierarchy."""
+
+    __tablename__ = "organization_memberships"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id", "user_identity_id", name="uq_organization_memberships_identity"
+        ),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    user_identity_id: Mapped[UUID] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=False, index=True
+    )
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=true())
+    organization: Mapped[Organization] = relationship(back_populates="memberships")
+    user_identity: Mapped[UserIdentity] = relationship(back_populates="memberships")
 
 
 class Site(TimestampedIdMixin, Base):

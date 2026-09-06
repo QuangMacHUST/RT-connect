@@ -7,6 +7,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from rt_connect_api.api.auth import router as auth_router
 from rt_connect_api.api.health import router as health_router
+from rt_connect_api.api.workspace import router as workspace_router
 from rt_connect_api.core.config import Settings, get_settings
 from rt_connect_api.core.errors import (
     DomainError,
@@ -46,6 +47,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_exception_handler(Exception, unhandled_error_handler)
     app.include_router(health_router, prefix="/api/v1")
     app.include_router(auth_router, prefix="/api/v1")
+    app.include_router(workspace_router, prefix="/api/v1")
     return app
 
 

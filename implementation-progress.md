@@ -3,10 +3,10 @@
 ## Current checkpoint
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
-- **Current phase:** P2 — Railway staging, PostgreSQL và deployment foundation.
-- **Current status:** IN_PROGRESS — P1 local gate closed; Railway staging and production deployment foundations are live and externally verified. Supabase Auth/application smoke remains pending.
+- **Current phase:** P2/P3 — Supabase Auth staging gate và App Shell/Home Dashboard implementation.
+- **Current status:** IN_PROGRESS — Railway deployment foundation is live; P3 backend identity/membership, session bootstrap, dashboard API and Supabase-aware frontend are implemented locally. A separate Supabase staging Auth project and live test identity remain required before P2/P3 can close.
 - **Last authoritative check:** 2026-09-06T02:45:33+07:00.
-- **Next exact step:** complete the remaining P2 Auth/API integration gate, then start the first functional vertical slice from the phase plan.
+- **Next exact step:** configure a non-production Supabase Auth project, create a synthetic test identity, deploy the P3 branch to Railway staging, seed its organization membership, and execute live sign-in/session/dashboard smoke tests.
 
 ## Source documents read
 
@@ -128,11 +128,14 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 - P2 Railway source audit: the old failed deployment analyzed `aa5dce6`, but `origin/main` now points to `dc6ee79` and contains the API/web source. The deployment for `dc6ee79` was skipped because the GitHub secret-guard job failed; API and web jobs passed. The CI guard has been corrected to allow `.env.example` templates while rejecting private environment files and credentials.
 - P2 post-change local regression: PASS — full `scripts/verify-p1.ps1 -WithContainers` completed after JWT, CORS and Railway manifest changes: 17 API tests, lint/type checks, migration SQL, web checks, five healthy Compose services, in-container migration, synthetic seed persistence, API readiness and web health. The scoped stack and test volumes were removed.
 - P2 Stitch recheck: PASS — project `RT-connect` remains public with the Clinical Precision Interface design system, the four active QA application screens, and four hidden/deprecated Biological screen instances. No Stitch design was altered during P2.
+- P3 design: Login screen `3b857ee77e7a434d8cfdcda32fd62cdb` generated in the active RT-connect Stitch project using the Clinical Precision Interface design system; no patient data or secret was sent to Stitch.
+- P3 local implementation: PASS — `UserIdentity`/`OrganizationMembership`, session bootstrap and organization-scoped dashboard endpoints; migration `20260906_0002`; backend lint, strict mypy and 20 tests pass. Frontend Supabase session/auth routes, protected dashboard and API-backed empty/populated/error states lint/type-check/test/build successfully.
 
 ## Blockers
 
 - Correction on 2026-09-05: both Railway tokens are present in root `.env` and authenticate successfully through the Railway API. Account-token access resolves project `prolific-learning`; project-token scope resolves its production environment. The earlier missing-token report was incorrect. Standard dotenv parsing supports spaces around `=` and quoted values.
 - Supabase URL and publishable key are present as names but have empty values. This is the remaining Auth configuration dependency.
+- Current Supabase project `RT-connect` is the production `main` branch. Preview branching requires a paid Supabase Pro upgrade, so it is not a suitable free staging isolation mechanism. Do not silently use that production Auth project as the formal staging identity plane; create a separate staging project or explicitly accept a documented temporary shared-auth exception.
 - Actual credentials were found in `.env.example` and replaced with empty placeholders; the user's `.env` was preserved.
 - Railway account token lacks the write scope needed to create/link staging and the usage scope needed to view costs. A project-write credential is required before any billable Railway resource can be provisioned.
 - The current Railway production service has not deployed `dc6ee79`; it still reports the old failed deployment and the new deployment as skipped. After the CI fix is pushed and green, verify Railway sees `dc6ee79` before any staging/production deployment decision.

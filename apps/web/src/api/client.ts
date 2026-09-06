@@ -30,17 +30,32 @@ export type Version = {
   renderer_version: string
 }
 
+export type OrganizationContext = { id: string; name: string }
+export type SessionBootstrap = { subject: string; email: string | null; organization: OrganizationContext }
+export type DashboardSummary = {
+  organization: OrganizationContext
+  site_count: number
+  machine_count: number
+  recent_qa_count: number
+  active_job_count: number
+  warnings: string[]
+}
+
 const makeCorrelationId = () => crypto.randomUUID()
 
 export class ApiClient {
   constructor(private readonly baseUrl = environment.VITE_API_BASE_URL) {}
 
-  async get<T>(path: string, schema: z.ZodType<T>): Promise<T> {
+  async get<T>(path: string, schema: z.ZodType<T>, accessToken?: string): Promise<T> {
     const correlationId = makeCorrelationId()
     let response: Response
     try {
       response = await fetch(`${this.baseUrl}${path}`, {
-        headers: { Accept: 'application/json', 'X-Correlation-ID': correlationId }
+        headers: {
+          Accept: 'application/json',
+          'X-Correlation-ID': correlationId,
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {})
+        }
       })
     } catch {
       throw new ApiClientError('Không thể kết nối tới RT-CONNECT API.', 'NETWORK_ERROR', correlationId)
@@ -75,6 +90,25 @@ export class ApiClient {
         renderer_version: z.string()
       })
     )
+  }
+
+  bootstrap(accessToken: string): Promise<SessionBootstrap> {
+    return this.get('/session/bootstrap', z.object({
+      subject: z.string(),
+      email: z.string().nullable(),
+      organization: z.object({ id: z.string().uuid(), name: z.string() })
+    }), accessToken)
+  }
+
+  dashboard(accessToken: string, organizationId: string): Promise<DashboardSummary> {
+    return this.get(`/organizations/${organizationId}/dashboard`, z.object({
+      organization: z.object({ id: z.string().uuid(), name: z.string() }),
+      site_count: z.number().int().nonnegative(),
+      machine_count: z.number().int().nonnegative(),
+      recent_qa_count: z.number().int().nonnegative(),
+      active_job_count: z.number().int().nonnegative(),
+      warnings: z.array(z.string())
+    }), accessToken)
   }
 }
 

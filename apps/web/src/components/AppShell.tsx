@@ -3,9 +3,11 @@ import { Link, useLocation } from 'react-router-dom'
 
 import { environment } from '../env'
 import { routeRegistry } from '../routeRegistry'
+import { useAuth } from '../auth/AuthProvider'
 
 export function AppShell({ children }: PropsWithChildren) {
   const location = useLocation()
+  const { session, signOut } = useAuth()
   return (
     <div className="app-shell">
       <aside aria-label="Điều hướng chính" className="sidebar">
@@ -17,7 +19,7 @@ export function AppShell({ children }: PropsWithChildren) {
         <nav>
           {routeRegistry.map((route) => {
             const isCurrent = location.pathname === route.path
-            const isAvailable = route.phase === 'P1'
+            const isAvailable = route.available
             return isAvailable ? (
               <Link aria-current={isCurrent ? 'page' : undefined} className="nav-item" key={route.path} to={route.path}>
                 <span>{route.label}</span><small>{route.module}</small>
@@ -29,6 +31,7 @@ export function AppShell({ children }: PropsWithChildren) {
             )
           })}
         </nav>
+        {session && <button className="sidebar__signout" onClick={() => void signOut()}>Đăng xuất</button>}
         <div className="sidebar__footer">Build {environment.VITE_APP_VERSION}</div>
       </aside>
       <main className="workspace">{children}</main>

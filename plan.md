@@ -385,7 +385,7 @@ Thời lượng là ước lượng tham chiếu cho một nhóm nhỏ. Phase c�
 **Module:** MOD-00, MOD-01
 **Thời lượng:** 1–2 tuần
 **Phụ thuộc:** P2
-**Stitch:** UI-01 có sẵn; Login/Auth screen còn thiếu
+**Stitch:** UI-01 `70b9f1d256884221ae20e63b5244db11`; Login `3b857ee77e7a434d8cfdcda32fd62cdb`; Recovery `b4fb9071a0614f3a9272d2a8a8b7337c`; Callback `accb55e3ab3e4d718ba3a4407e3f9368`; Session Error `3ee1eb026899432392f40ff945649ac9`
 **Mục tiêu:** user đăng nhập và vào được Home Dashboard của đúng organization.
 
 ## Stitch/design

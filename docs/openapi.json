@@ -1,6 +1,59 @@
 {
   "components": {
     "schemas": {
+      "DashboardSummaryResponse": {
+        "properties": {
+          "active_job_count": {
+            "default": 0,
+            "title": "Active Job Count",
+            "type": "integer"
+          },
+          "machine_count": {
+            "title": "Machine Count",
+            "type": "integer"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/OrganizationContextResponse"
+          },
+          "recent_qa_count": {
+            "default": 0,
+            "title": "Recent Qa Count",
+            "type": "integer"
+          },
+          "site_count": {
+            "title": "Site Count",
+            "type": "integer"
+          },
+          "warnings": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "organization",
+          "site_count",
+          "machine_count"
+        ],
+        "title": "DashboardSummaryResponse",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
       "HealthResponse": {
         "properties": {
           "correlation_id": {
@@ -23,6 +76,54 @@
           "correlation_id"
         ],
         "title": "HealthResponse",
+        "type": "object"
+      },
+      "OrganizationContextResponse": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "OrganizationContextResponse",
+        "type": "object"
+      },
+      "SessionBootstrapResponse": {
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/OrganizationContextResponse"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subject",
+          "email",
+          "organization"
+        ],
+        "title": "SessionBootstrapResponse",
         "type": "object"
       },
       "SessionIdentityResponse": {
@@ -48,6 +149,46 @@
           "email"
         ],
         "title": "SessionIdentityResponse",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
         "type": "object"
       },
       "VersionResponse": {
@@ -145,6 +286,54 @@
         ]
       }
     },
+    "/api/v1/organizations/{organization_id}/dashboard": {
+      "get": {
+        "operationId": "organization_dashboard_api_v1_organizations__organization_id__dashboard_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Organization Dashboard",
+        "tags": [
+          "workspace"
+        ]
+      }
+    },
     "/api/v1/ready": {
       "get": {
         "operationId": "readiness_api_v1_ready_get",
@@ -163,6 +352,32 @@
         "summary": "Readiness",
         "tags": [
           "system"
+        ]
+      }
+    },
+    "/api/v1/session/bootstrap": {
+      "get": {
+        "operationId": "session_bootstrap_api_v1_session_bootstrap_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionBootstrapResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Session Bootstrap",
+        "tags": [
+          "workspace"
         ]
       }
     },

@@ -9,7 +9,9 @@
 body { margin: 0; min-width: 320px; min-height: 100vh; }
 button, .button-link { border: 1px solid #0d6b75; border-radius: 4px; background: #0d6b75; color: #fff; cursor: pointer; font: inherit; padding: .62rem .85rem; text-decoration: none; }
 button:hover, .button-link:hover { background: #095660; }
+button:disabled { cursor: not-allowed; opacity: .58; }
 button:focus-visible, a:focus-visible { outline: 3px solid #64b6c4; outline-offset: 2px; }
+input:focus-visible { border-color: #0d9488; outline: 3px solid rgb(13 148 136 / 22%); outline-offset: 1px; }
 
 .app-shell { display: grid; grid-template-columns: 264px minmax(0, 1fr); min-height: 100vh; }
 .sidebar { background: #102a43; color: #dce7ee; display: flex; flex-direction: column; padding: 1.25rem 1rem; }
@@ -23,6 +25,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #64b6c4; outline-offs
 .nav-item small { color: #92c6cd; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .65rem; }
 .nav-item--planned { color: #9bb0bf; cursor: not-allowed; }
 .sidebar__footer { color: #82a0b2; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .7rem; margin-top: auto; padding: 1rem .6rem 0; }
+.sidebar__signout { background: transparent; border-color: #4c687d; color: #dce7ee; font-size: .82rem; margin-top: auto; text-align: left; }
 .workspace { min-width: 0; padding: clamp(1.25rem, 4vw, 3.5rem); }
 .page { margin: 0 auto; max-width: 1160px; }
 .page-header { align-items: flex-start; border-bottom: 1px solid #c8d5de; display: flex; gap: 1rem; justify-content: space-between; padding-bottom: 1.25rem; }
@@ -43,6 +46,44 @@ h2 { font-size: 1.05rem; margin-bottom: .5rem; }
 .alert--error { border-left: 4px solid #bd3a3a; }
 .alert p, .provenance-panel p { color: #496373; line-height: 1.55; margin-bottom: 1rem; }
 .provenance-panel { border-left: 4px solid #247eaa; }
+.metric-grid { display: grid; gap: 12px; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 24px; }
+.metric-card, .panel { background: #fff; border: 1px solid #c8d5de; border-radius: 4px; }
+.metric-card { border-left: 3px solid #0d9488; display: grid; gap: 8px; min-height: 138px; padding: 16px; }
+.metric-card p { color: #597182; font-size: .72rem; letter-spacing: .06em; margin: 0; text-transform: uppercase; }
+.metric-card strong { color: #102a43; font-size: 2rem; font-variant-numeric: tabular-nums; line-height: 1; }
+.metric-card small, .panel p { color: #526e80; line-height: 1.5; }
+.dashboard-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 12px; }
+.panel { min-height: 170px; padding: 16px; }
+.panel h2 { color: #102a43; margin-bottom: 10px; }
+
+.auth-layout { display: grid; grid-template-columns: minmax(300px, 42%) minmax(0, 58%); min-height: 100vh; }
+.auth-brand { background: #0f2744; color: #eaf1ff; display: flex; flex-direction: column; gap: 32px; justify-content: center; min-height: 100%; padding: clamp(32px, 6vw, 88px); }
+.auth-brand .product-mark { color: #fff; }
+.auth-brand h1 { color: #fff; max-width: 420px; }
+.auth-brand p { color: #c5d7eb; line-height: 1.6; max-width: 440px; }
+.auth-brand__eyebrow { color: #86f2e4; }
+.auth-brand ul { display: grid; gap: 12px; list-style: square; margin: 0; padding-left: 22px; }
+.auth-brand li { color: #eaf1ff; font-size: .94rem; }
+.auth-brand__footer { border-top: 1px solid #44617d; color: #b2c8ed; display: grid; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .75rem; gap: 8px; margin-top: 32px; padding-top: 16px; }
+.auth-panel { align-items: center; background: #f8f9ff; display: flex; justify-content: center; padding: 32px; }
+.auth-card { background: #fff; border: 1px solid #c8d5de; border-radius: 4px; box-shadow: 0 4px 12px -2px rgb(15 39 68 / 8%); display: grid; gap: 10px; max-width: 420px; padding: 28px; width: 100%; }
+.auth-card h1, .auth-card h2 { color: #102a43; margin: 0; }
+.auth-card__lead, .auth-card__footnote { color: #526e80; font-size: .86rem; line-height: 1.5; margin: 0 0 8px; }
+.auth-card label { color: #334155; font-size: .84rem; font-weight: 600; }
+.auth-card input { border: 1px solid #c8d5de; border-radius: 4px; color: #0f172a; font: inherit; min-height: 38px; padding: 8px 10px; }
+.checkbox-row { align-items: center; display: flex; font-weight: 400 !important; gap: 8px; margin: 4px 0 8px; }
+.checkbox-row input { min-height: 14px; height: 14px; width: 14px; }
+.auth-card button { background: #0f2744; border-color: #0f2744; }
+.auth-card button:hover { background: #1e3a8a; }
+.button-secondary { background: #fff !important; border-color: #c8d5de !important; color: #334155 !important; }
+.text-link { color: #006a61; font-size: .84rem; font-weight: 600; text-decoration: none; }
+.auth-divider { align-items: center; color: #64748b; display: flex; font-size: .75rem; gap: 8px; margin: 6px 0; text-align: center; }
+.auth-divider::before, .auth-divider::after { background: #e2e8f0; content: ''; height: 1px; flex: 1; }
+.auth-card footer { align-items: center; border-top: 1px solid #e2e8f0; display: flex; font-size: .72rem; justify-content: space-between; margin-top: 8px; padding-top: 14px; }
+.auth-card footer code { color: #64748b; }
+.auth-card footer a { color: #006a61; }
+.auth-state { align-items: center; background: #f8f9ff; color: #334155; display: flex; flex-direction: column; gap: 16px; justify-content: center; min-height: 100vh; padding: 32px; text-align: center; }
+.alert--success { border-left: 4px solid #059669; }
 
 @media (max-width: 900px) {
   .app-shell { grid-template-columns: 1fr; }
@@ -51,10 +92,16 @@ h2 { font-size: 1.05rem; margin-bottom: .5rem; }
   .nav-item { min-width: max-content; }
   .sidebar__caption, .sidebar__footer { display: none; }
   .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .auth-layout { grid-template-columns: 1fr; }
+  .auth-brand { min-height: auto; padding: 32px; }
 }
 
 @media (max-width: 540px) {
   .workspace { padding: 1rem; }
   .page-header { flex-direction: column; }
   .status-grid { grid-template-columns: 1fr; }
+  .metric-grid, .dashboard-grid { grid-template-columns: 1fr; }
+  .auth-panel { padding: 16px; }
+  .auth-brand { gap: 20px; }
 }

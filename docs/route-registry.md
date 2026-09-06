@@ -4,10 +4,10 @@ All routes are typed in source during P1. This registry is the P0 contract draft
 
 | Route | Module | Active Stitch source | Main API boundary | Phase |
 | :--- | :--- | :--- | :--- | :--- |
-| `/auth/login` | MOD-00 | Missing | Supabase Auth + `/api/v1/session/bootstrap` | P3 |
-| `/auth/recovery` | MOD-00 | Missing | Supabase Auth recovery | P3 |
-| `/auth/callback` | MOD-00 | Missing | Supabase Auth callback | P3 |
-| `/auth/session-error` | MOD-00 | Missing | Shared auth error contract | P3 |
+| `/auth/login` | MOD-00 | Login `3b857ee77e7a434d8cfdcda32fd62cdb` | Supabase Auth + `/api/v1/session/bootstrap` | P3 |
+| `/auth/recovery` | MOD-00 | Recovery `b4fb9071a0614f3a9272d2a8a8b7337c` | Supabase Auth recovery | P3 |
+| `/auth/callback` | MOD-00 | Callback `accb55e3ab3e4d718ba3a4407e3f9368` | Supabase Auth callback | P3 |
+| `/auth/session-error` | MOD-00 | Session error `3ee1eb026899432392f40ff945649ac9` | Shared auth error contract | P3 |
 | `/app` | MOD-01 | Home `70b9f1d256884221ae20e63b5244db11` | `/api/v1/organizations/{id}/dashboard` | P3 |
 | `/app/organization` | MOD-02 | Missing | `/api/v1/organizations` | P4 |
 | `/app/sites/:siteId` | MOD-02 | Missing | `/api/v1/organizations/{id}/sites` | P4 |
@@ -32,4 +32,3 @@ All routes are typed in source during P1. This registry is the P0 contract draft
 | `/app/biological/knowledge` | MOD-14 | Missing | knowledge APIs | P16 |
 | `/app/dose-review/:analysisId` | MOD-15 | Missing | DVH/dose review APIs | P17 |
 | `/app/system/status` | MOD-16 | Optional gap | health/readiness/job summaries | P18–P20 |
-
