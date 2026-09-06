@@ -5,7 +5,7 @@
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
 - **Current phase:** P2/P3 — Supabase Auth staging gate và App Shell/Home Dashboard implementation.
 - **Current status:** IN_PROGRESS — Railway deployment foundation is live; P3 backend identity/membership, session bootstrap, dashboard API and Supabase-aware frontend are implemented locally. A separate Supabase staging Auth project and live test identity remain required before P2/P3 can close.
-- **Last authoritative check:** 2026-09-06T02:45:33+07:00.
+- **Last authoritative check:** 2026-09-06 — Railway metadata and public endpoint verification after region correction.
 - **Next exact step:** configure a non-production Supabase Auth project, create a synthetic test identity, deploy the P3 branch to Railway staging, seed its organization membership, and execute live sign-in/session/dashboard smoke tests.
 
 ## Source documents read
@@ -14,7 +14,7 @@
 | :--- | :--- | :--- |
 | `business-analysis.md` | 0.5 | Read; business source |
 | `technical-specification.md` | 0.7 | Read; technical contract |
-| `plan.md` | 1.3 | Read; phase order and deployment contract |
+| `plan.md` | 1.4 | Read; phase order and deployment contract |
 
 ## Phase status
 
@@ -23,7 +23,7 @@
 | P0 | DONE | Exit audit passed on 2026-09-05; baseline, traceability, module/route/environment registries and Railway failure issue recorded |
 | P1 | DONE | Full local Compose build/health, in-container PostgreSQL migration, synthetic seed persistence, API readiness and web health passed on 2026-09-05 |
 | P2 | IN_PROGRESS | JWT contract, PostgreSQL, staging/production deployment foundation and public health/readiness smoke are ready; Supabase Auth/application integration remains |
-| P3 | NOT_STARTED | Depends on P2 |
+| P3 | IMPLEMENTED ON RELEASE BRANCH | Auth/API bootstrap, organization-scoped dashboard foundation and auth screens are implemented on `codex/p3-auth-dashboard`; live Supabase Auth, web deployment and staging E2E remain pending |
 | P4 | NOT_STARTED | Depends on P3 |
 | P5 | NOT_STARTED | Depends on P4 |
 | P6 | NOT_STARTED | Depends on P5 |
@@ -60,7 +60,19 @@
 
 `get_project` still exposes the four old Biological instances as `hidden`. They are deprecated and must not be restored or used as design-to-code sources. P12–P15 will create new screens one at a time in the same project.
 
-## Live Railway evidence
+## Live Railway evidence — verified 2026-09-06
+
+- Project: `prolific-learning` (`339f2c50-ddd7-491f-8c4e-da2a2d169502`).
+- Production: environment `910dff25-75b6-42b2-bf6b-e2601ba9d7d2`, API `RT-connect`, PostgreSQL `Postgres`.
+- Staging: environment `b0ab34e5-0ff4-479d-8232-659d175e9e2f`, API `gleaming-cooperation`, PostgreSQL `Postgres-Q1Hc`.
+- API region in both environments: `us-west2`; the obsolete `sfo` alias was removed from API service configuration after blocking a production deployment.
+- Production deployment `ec813793-4e29-4edb-b5d7-f323264da403`: `SUCCESS`, commit `c52b61412c1e1e65b7fca53d7e4d600f85a2dd7e`.
+- Staging deployment `2b5270d1-9704-49b3-b3d8-0f8be130d02e`: `SUCCESS`, commit `9bf96e92f6853d5650312c5fcd82ff67a7f85c1b`.
+- Both API services use `/apps/api`, `/apps/api/Dockerfile`, `PORT=8000`, `/api/v1/health` and `alembic upgrade head`.
+- Public smoke: production and staging both returned HTTP 200 with `status=ok` from `/api/v1/health` and `status=ready` from `/api/v1/ready`; correlation IDs were present.
+- PostgreSQL services retain their current persistent-volume region configuration; no database region migration was performed without backup/restore evidence.
+
+## Historical Railway evidence (superseded)
 
 > Snapshot superseded on 2026-09-06: staging and production now have separate API/PostgreSQL services, both deployments succeeded with `PORT=8000`, healthcheck `/api/v1/health`, pre-deploy `alembic upgrade head`, and public `/api/v1/health` plus `/api/v1/ready` returned HTTP 200. The older lines below are retained as historical P0/P2 evidence.
 
