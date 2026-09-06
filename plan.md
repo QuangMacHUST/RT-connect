@@ -105,6 +105,14 @@ Project Token trỏ vào production. Account/Workspace token truy cập được
 - Nếu Railway báo `service unavailable`, kiểm tra theo thứ tự: `PORT`, bind address, target port, start command, log process, rồi mới kiểm tra path.
 - Không bỏ healthcheck production chỉ vì một deployment healthcheck thất bại; phải ghi nguyên nhân và quyết định trong release evidence. Staging có thể tạm tắt để chẩn đoán, nhưng production phải bật lại trước release clinical.
 
+#### Quy tắc `DATABASE_URL` và PostgreSQL driver
+
+- Railway PostgreSQL có thể cung cấp private URL với hai tiền tố hợp lệ: `postgresql://...` hoặc `postgresql+psycopg://...`. Cả hai đều được backend chấp nhận.
+- Backend chuẩn hoá riêng tiền tố `postgresql://` thành `postgresql+psycopg://` trước khi tạo SQLAlchemy engine. Vì vậy staging không còn vô tình phụ thuộc vào driver PostgreSQL mặc định/legacy, còn production dùng sẵn `postgresql+psycopg://` vẫn giữ nguyên.
+- Không sửa hostname, port, tên database, user hoặc password bằng code. Mỗi environment phải dùng reference/private URL do **PostgreSQL service cùng environment** cung cấp.
+- Không lưu giá trị URL hoặc password trong Git, `plan.md`, log CI hay browser. Chỉ ghi service nguồn và trạng thái kiểm tra `GET /api/v1/ready`.
+- Sau mọi thay đổi database variable: redeploy service, xác nhận deployment healthcheck `/api/v1/health` pass, rồi kiểm tra riêng `/api/v1/ready` HTTP 200. Nếu readiness fail, xem log migration/connection; không bỏ healthcheck để che lỗi.
+
 ### 0.4. Supabase
 
 - Đã chọn Supabase làm Auth/Identity/Session.
