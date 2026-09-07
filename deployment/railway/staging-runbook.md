@@ -54,14 +54,16 @@ After the API has deployed the Gamma migration, create a separate service named
 | Setting | Value |
 | :--- | :--- |
 | Root Directory | `/apps/api` |
-| Config-as-code path | `/apps/api/railway.worker.toml` |
+| Config-as-code path | Not set in the current staging service; Railway's legacy `railwayConfigFile` API is deprecated/rejected |
 | Start command (effective config) | `python -m rt_connect_api.worker` |
 | Public domain | None |
 | Healthcheck | None; this is a non-HTTP worker |
 | `GAMMA_WORKER_POLL_SECONDS` | `2` in staging |
 | `GAMMA_WORKER_ONCE` | unset |
 
-Copy/reference the API's staging values for `DATABASE_URL`, `SUPABASE_JWT_*`, `S3_*` and
+Apply the root/start/healthcheck settings directly in the worker service (or through the
+supported Railway IaC mechanism when adopted); do not assume that merely committing
+`railway.worker.toml` changes the service. Copy/reference the API's staging values for `DATABASE_URL`, `SUPABASE_JWT_*`, `S3_*` and
 `MAX_UPLOAD_BYTES` without exposing their secret values. Do not add the API's
 `/apps/api/railway.toml` to this worker: it would run the API healthcheck and could cause a
 non-HTTP worker deployment to fail. Verify worker logs show polling and that a Gamma run moves

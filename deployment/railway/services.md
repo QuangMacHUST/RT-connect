@@ -19,9 +19,13 @@ database domain. Those are introduced only in their scheduled phases after workl
 
 P8 adds a separate non-public worker service. It uses the same repository, image and private
 staging database/object-storage variables as the API, but it must not reuse the API's
-`railway.toml`: that file runs the HTTP healthcheck and Alembic pre-deploy command. Configure
-the worker with `/apps/api/railway.worker.toml`, whose start command is
-`python -m rt_connect_api.worker` and which deliberately has no HTTP healthcheck.
+`railway.toml`: that file runs the HTTP healthcheck and Alembic pre-deploy command. The repo
+contains `/apps/api/railway.worker.toml` as a declarative reference, but the current Railway
+API rejects the legacy `railwayConfigFile` mutation because config-as-code is deprecated.
+Therefore the effective staging worker settings are applied directly to the service instance:
+root `/apps/api`, start command `python -m rt_connect_api.worker`, empty healthcheck and no
+pre-deploy migration. If Railway later accepts the file through its supported IaC workflow,
+the effective settings must remain identical.
 
 | Resource | Railway name | Exposure | Purpose |
 | :--- | :--- | :--- | :--- |
