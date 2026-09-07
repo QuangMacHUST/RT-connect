@@ -10,7 +10,7 @@ from typing import Literal
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, Form, Query, Request, Response, UploadFile, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -63,6 +63,7 @@ class ArtifactResponse(BaseModel):
     data_status: str
     parent_artifact_id: UUID | None
     metadata_snapshot: dict[str, object]
+    logical_roles: list[str] = Field(default_factory=list)
 
 
 class ArtifactUploadResponse(ArtifactResponse):
@@ -163,7 +164,11 @@ def _artifact_or_error(session: Session, context: SessionContext, artifact_id: U
     return artifact
 
 
-def _artifact_response(artifact: Artifact, duplicate: bool = False) -> ArtifactUploadResponse:
+def _artifact_response(
+    artifact: Artifact,
+    duplicate: bool = False,
+    logical_roles: list[str] | None = None,
+) -> ArtifactUploadResponse:
     return ArtifactUploadResponse(
         id=artifact.id,
         organization_id=artifact.organization_id,
@@ -184,8 +189,30 @@ def _artifact_response(artifact: Artifact, duplicate: bool = False) -> ArtifactU
         data_status=artifact.data_status,
         parent_artifact_id=artifact.parent_artifact_id,
         metadata_snapshot=artifact.metadata_snapshot,
+        logical_roles=logical_roles or [],
         duplicate=duplicate,
     )
+
+
+def _artifact_roles(
+    session: Session, organization_id: UUID, artifact_ids: list[UUID]
+) -> dict[UUID, list[str]]:
+    if not artifact_ids:
+        return {}
+    roles: dict[UUID, list[str]] = {}
+    rows = session.execute(
+        select(InputManifest.artifact_id, InputManifest.logical_role)
+        .where(
+            InputManifest.organization_id == organization_id,
+            InputManifest.artifact_id.in_(artifact_ids),
+        )
+        .order_by(InputManifest.created_at)
+    )
+    for artifact_id, logical_role in rows:
+        roles.setdefault(artifact_id, [])
+        if logical_role not in roles[artifact_id]:
+            roles[artifact_id].append(logical_role)
+    return roles
 
 
 def _validation_response(run: ValidationRun) -> ValidationRunResponse:
@@ -342,7 +369,7 @@ def upload_artifact(
             )
             _commit_or_raise(session)
         response.status_code = status.HTTP_200_OK
-        return _artifact_response(existing, duplicate=True)
+        return _artifact_response(existing, duplicate=True, logical_roles=[logical_role])
 
     artifact_id = uuid4()
     media_type = file.content_type or "application/octet-stream"
@@ -421,7 +448,7 @@ def upload_artifact(
     )
     _commit_or_raise(session)
     response.status_code = status.HTTP_201_CREATED
-    return _artifact_response(artifact)
+    return _artifact_response(artifact, logical_roles=[logical_role])
 
 
 @router.get("/qa-cases/{case_id}/artifacts", response_model=ArtifactCollectionResponse)
@@ -441,6 +468,7 @@ def list_artifacts(
     items = session.scalars(
         query.order_by(Artifact.created_at.desc()).offset(offset).limit(limit)
     ).all()
+    roles = _artifact_roles(session, context.organization_id, [item.id for item in items])
     total = (
         session.scalar(
             select(func.count())
@@ -453,7 +481,7 @@ def list_artifacts(
         or 0
     )
     return ArtifactCollectionResponse(
-        items=[_artifact_response(item) for item in items],
+        items=[_artifact_response(item, logical_roles=roles.get(item.id, [])) for item in items],
         total=total,
         offset=offset,
         limit=limit,
@@ -467,7 +495,9 @@ def get_artifact(
     session: Session = Depends(get_session),  # noqa: B008
 ) -> ArtifactResponse:
     context = _context(identity, session)
-    return _artifact_response(_artifact_or_error(session, context, artifact_id))
+    artifact = _artifact_or_error(session, context, artifact_id)
+    roles = _artifact_roles(session, context.organization_id, [artifact.id])
+    return _artifact_response(artifact, logical_roles=roles.get(artifact.id, []))
 
 
 @router.get("/artifacts/{artifact_id}/download", response_model=DownloadResponse)

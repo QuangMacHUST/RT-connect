@@ -100,6 +100,7 @@ export type ArtifactResource = {
   data_status: string
   parent_artifact_id: string | null
   metadata_snapshot: Record<string, unknown>
+  logical_roles: string[]
 }
 export type ValidationResource = {
   id: string
@@ -470,7 +471,7 @@ export class ApiClient {
         study_instance_uid: z.string().nullable(), series_instance_uid: z.string().nullable(),
         frame_of_reference_uid: z.string().nullable(), source_system: z.string().nullable(),
         uploaded_at: z.string(), data_status: z.string(), parent_artifact_id: z.string().uuid().nullable(),
-        metadata_snapshot: z.record(z.string(), z.unknown())
+        metadata_snapshot: z.record(z.string(), z.unknown()), logical_roles: z.array(z.string())
       })), total: z.number().int(), offset: z.number().int(), limit: z.number().int()
     }), accessToken)
   }
@@ -488,7 +489,7 @@ export class ApiClient {
       study_instance_uid: z.string().nullable(), series_instance_uid: z.string().nullable(),
       frame_of_reference_uid: z.string().nullable(), source_system: z.string().nullable(),
       uploaded_at: z.string(), data_status: z.string(), parent_artifact_id: z.string().uuid().nullable(),
-      metadata_snapshot: z.record(z.string(), z.unknown()), duplicate: z.boolean()
+      metadata_snapshot: z.record(z.string(), z.unknown()), logical_roles: z.array(z.string()), duplicate: z.boolean()
     }), accessToken, { method: 'POST', body })
   }
 

@@ -89,12 +89,16 @@ export function GammaPage() {
     ),
     [artifacts.data]
   )
+  const roleReferenceId = eligibleArtifacts.find((item) => item.logical_roles.includes('REFERENCE'))?.id
+  const roleEvaluationId = eligibleArtifacts.find((item) => item.logical_roles.includes('EVALUATION'))?.id
   const selectedReferenceId = referenceId && eligibleArtifacts.some((item) => item.id === referenceId)
     ? referenceId
-    : eligibleArtifacts[0]?.id ?? ''
+    : roleReferenceId ?? eligibleArtifacts[0]?.id ?? ''
   const selectedEvaluationId = evaluationId && evaluationId !== selectedReferenceId && eligibleArtifacts.some((item) => item.id === evaluationId)
     ? evaluationId
-    : eligibleArtifacts.find((item) => item.id !== selectedReferenceId)?.id ?? ''
+    : (roleEvaluationId && roleEvaluationId !== selectedReferenceId
+      ? roleEvaluationId
+      : eligibleArtifacts.find((item) => item.id !== selectedReferenceId)?.id ?? '')
   const runs = useQuery({
     queryKey: ['gamma-runs', caseId, accessToken],
     queryFn: () => apiClient.gammaRuns(accessToken!, caseId!),
