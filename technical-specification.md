@@ -948,6 +948,20 @@ Machine QA dùng cùng Analysis Run contract nhưng có endpoint nghiệp vụ r
 | POST | `/machine-qa-runs/{id}/evaluate` | Evaluate rule và tạo immutable result run |
 | GET | `/machine-qa-runs/{id}` | Xem checklist, measurement, metric, warning và provenance |
 
+P7 triển khai thêm các endpoint và snapshot contract sau:
+
+| Method | Path | Mục đích |
+| :--- | :--- | :--- |
+| GET | `/organizations/{id}/machine-qa/protocols` | Liệt kê protocol version trong organization, kèm rule đã sắp thứ tự |
+| POST | `/organizations/{id}/machine-qa/protocols/seed` | Tạo protocol seed `MACHINE_QA_BASELINE` v1 cho staging/local khi organization chưa có protocol |
+| GET | `/qa-cases/{id}/machine-qa-runs` | Liệt kê các lượt Machine QA theo QA case |
+| POST | `/machine-qa-runs/{id}/rerun` | Tạo lượt mới từ measurement của run đã hoàn tất; không sửa hoặc xóa run nguồn |
+| GET | `/machine-qa-runs/{id}/compare?other_run_id=...` | So sánh metric snapshot của hai run cùng organization |
+
+P7 lưu bốn nhóm dữ liệu: `qa_protocol_versions` và `qa_protocol_rules` là cấu hình có version; `machine_qa_runs` là measurement draft và kết quả đã chốt; `trend_points` là projection từ metric thực tế của run hoàn tất. Khi evaluate, result snapshot giữ lại protocol/rule snapshot, actual, baseline, tolerance, action level, margin, status và thời điểm đánh giá. Run `COMPLETED` hoặc `FAILED` không được sửa; rerun luôn sinh `machine_qa_runs` mới với `supersedes_run_id`. Mọi lookup đầu tiên đều kèm `organization_id` lấy từ membership của identity, không dùng truy vấn resource-ID toàn cục rồi mới kiểm tra scope.
+
+Rule engine P7 hỗ trợ `RANGE`, `MIN`, `MAX`, `ABSOLUTE_DEVIATION`, `PERCENT_DEVIATION` và `NA`. Thiếu metric bắt buộc, sai unit hoặc giá trị không hợp lệ làm run `FAILED` và lưu `error_snapshot`; lệch trong action band tạo metric `WARNING`; kết quả nằm trong tolerance tạo `PASS`. Protocol seed chỉ là fixture kỹ thuật cho vertical slice, không phải giới hạn lâm sàng mặc định; thư viện protocol được quản trị/version hóa đầy đủ ở P11.
+
 ### 6.6. Report và trend
 
 | Method | Path | Mục đích |

@@ -3,10 +3,10 @@
 ## Current checkpoint
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
-- **Current phase:** P6 — Artifact, Upload, Input Manifest và DICOM Validation; persistent storage is deployed and the authenticated artifact smoke test is the remaining gate.
-- **Current status:** IN_PROGRESS — P6 has a working local vertical slice: multipart upload, byte checksum, immutable artifact metadata, Input Manifest, duplicate detection, signed-download port, metadata-first CT/RTDOSE/RTSTRUCT/RTPLAN and `gamma.measurement.v1` validation, plus QA Archive artifact UI. Staging now has a deployed Railway S3-compatible bucket and the API is healthy; the final authenticated upload → validation → download proof still needs one synthetic file-selection action.
-- **Last authoritative check:** 2026-09-07 — P6 focused API tests, full API regression, container build/migration, frontend test/build/typecheck and lint passed locally; the staging bucket was deployed and probed through both S3 addressing styles without exposing credentials; staging `/api/v1/health` and `/api/v1/ready` returned HTTP 200; live OpenAPI exposes P6 endpoints; the authenticated staging browser opened the organization dashboard and QA case.
-- **Next exact step:** select `docs/fixtures/gamma-measurement-v1-smoke.json` in the authenticated staging QA Archive, click Upload artifact, Validate, and Download; record the returned `VALID` result and signed-download response before starting P7.
+- **Current phase:** P7 — Machine QA protocol, measurement, evaluation, rerun and history; P6 storage and authenticated artifact validation are complete on staging.
+- **Current status:** IN_PROGRESS — P7 has a working local vertical slice: versioned protocol/rules, draft measurement revision, rule evaluation, immutable result snapshot, rerun/compare and trend-point projection, plus a protected Machine QA page connected to the real API. Staging deployment and authenticated Machine QA smoke remain the next gate.
+- **Last authoritative check:** 2026-09-07 — P6 staging artifact `gamma-measurement-v1-smoke.json` uploaded successfully (572 bytes, checksum prefix `007751b0f8127af3`), validation returned `VALID` with `0` errors and `0` warnings, and the signed Download action was invoked; P7 focused API tests (3), full API regression (36), strict mypy, Ruff, OpenAPI regeneration/check, frontend test, lint, typecheck and production build passed locally.
+- **Next exact step:** commit and push P7; wait for the staging API/web deployment to complete; use the authenticated Machine QA page to seed the protocol, create a run, enter the three synthetic values, evaluate PASS, create a rerun and compare history; record the live result before starting P8.
 
 ## Source documents read
 
@@ -26,8 +26,8 @@
 | P3 | STAGING E2E PASS | Auth/API bootstrap, organization-scoped dashboard, first-use organization onboarding and protected web routes are deployed; authenticated staging session reached the real organization dashboard |
 | P4 | STAGING E2E PASS | Organization/site/machine lifecycle is deployed; staging smoke created and displayed `Hong ngoc general hospital`, `Staging Synthetic Site` and `Synthetic QA Linac` |
 | P5 | STAGING E2E PASS | Nested folder/QA case flow is deployed; staging smoke created `Staging P6 Smoke` and QA case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24` |
-| P6 | STAGING STORAGE DEPLOYED + E2E PENDING | Migration `20260907_0005`, artifact metadata/checksum, Input Manifest, duplicate upload, signed-download port, DICOM/measurement validator and QA Archive upload panel are deployed; Railway bucket and S3 probe pass; authenticated upload/validation/download is the remaining gate |
-| P7 | NOT_STARTED | Depends on P6 |
+| P6 | STAGING E2E PASS | Migration `20260907_0005`, artifact metadata/checksum, Input Manifest, duplicate upload, Railway S3-compatible storage, DICOM/measurement validator and QA Archive upload panel are deployed; authenticated synthetic upload created the manifest, validation returned `VALID` with 0 errors/0 warnings and the signed Download action was invoked |
+| P7 | LOCAL PASS + STAGING PENDING | Migration `20260907_0006`; protocol/rule seed, scoped Machine QA run lifecycle, draft revision, evaluation, immutable result/rerun/compare and trend projection are implemented and locally tested; staging deploy and authenticated case-level smoke are next |
 | P8 | NOT_STARTED | Depends on P6/P7 |
 | P9 | NOT_STARTED | Depends on P7/P8 for Gamma blocks |
 | P10 | NOT_STARTED | Depends on P7–P9 |
@@ -153,14 +153,16 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 - P5 local implementation: PASS — migration `20260906_0004` adds nested organization folders and QA cases; folder rename/move/archive preserves QA case identity, archive does not hard-delete history, case references require an active site/machine/folder in the same organization, and searches support text, folder and QA-cycle filtering. Backend Ruff, strict mypy and 29 tests pass; frontend QA Archive route/API client, lint, TypeScript check, Vitest and Vite build pass. No live Auth or staging P5 workflow has been claimed.
 - P6 local implementation: PASS — migration `20260907_0005` adds `artifacts`, `input_manifests` and `validation_runs`; MinIO/S3 storage port, byte-for-byte SHA-256 upload, duplicate detection, signed-download contract, metadata-first DICOM validation and `gamma.measurement.v1` validation are implemented. Focused artifact tests, full API regression, strict mypy, Ruff and frontend checks pass.
 - P6 staging evidence: PARTIAL PASS — commit `5b6bf78` deployed successfully to `Railway-API-staging`; the live API exposes the artifact/upload/validation paths; the web staging bundle contains P6 upload UI; the authenticated dashboard, organization, site, machine, folder and QA case are reachable; the persistent Railway bucket is deployed and S3 operations pass. Live artifact upload/validation/download is pending the synthetic fixture selection in the browser.
+- P6 authenticated staging evidence: PASS — the user-selected `docs/fixtures/gamma-measurement-v1-smoke.json` appeared as `gamma-measurement-v1-smoke.json` (572 bytes) in QA Archive; upload created the Input Manifest, validation displayed `VALID: 0 lỗi, 0 cảnh báo`, the artifact status changed to `VALID`, and the UI invoked its signed Download action.
+- P7 local implementation: PASS — migration `20260907_0006` adds organization-scoped protocol versions/rules, `machine_qa_runs` and `trend_points`; the rule engine covers range/min/max/absolute or percent deviation and N/A, records missing/unit errors, snapshots protocol rules, prevents edits after evaluation, and projects numeric metrics to trend points. Focused P7 tests (3), full API regression (36), strict mypy, Ruff, OpenAPI regeneration/check, frontend lint/typecheck/test/build all pass.
 
 ## Current blockers and required gates
 
 The older Railway-history bullets below are retained as evidence of earlier incidents. The current gates are:
 
 - The authenticated staging user and organization onboarding path are working. A fresh browser test should still be repeated after session expiry before treating the auth path as operationally stable.
-- P6 requires one final authenticated web smoke using `docs/fixtures/gamma-measurement-v1-smoke.json`; the storage service itself is deployed and already passed a non-PHI S3 probe.
-- The current P6 branch has not been promoted to production. Production promotion remains blocked until staging upload/validation/download, backup and rollback evidence exist.
+- P7 requires one authenticated staging Machine QA smoke: seed protocol, create draft, save three finite values with the protocol units, evaluate, verify PASS/result snapshot, rerun and compare without changing the source run.
+- The P7 branch has not been promoted to production. Production promotion remains blocked until Machine QA staging evidence, later Gamma/report/trend/protocol gates, backup and rollback evidence exist.
 
 - Correction on 2026-09-05: both Railway tokens are present in root `.env` and authenticate successfully through the Railway API. Account-token access resolves project `prolific-learning`; project-token scope resolves its production environment. The earlier missing-token report was incorrect. Standard dotenv parsing supports spaces around `=` and quoted values.
 - Supabase URL and publishable key are present as names but have empty values. This is the remaining Auth configuration dependency.

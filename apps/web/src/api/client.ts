@@ -115,6 +115,88 @@ export type ValidationResource = {
   errors: Array<Record<string, unknown>>
   input_manifest_snapshot: Record<string, unknown>
 }
+export type QAProtocolRuleResource = {
+  id: string
+  metric_key: string
+  display_name: string
+  unit: string
+  rule_type: string
+  target_value: number | null
+  lower_limit: number | null
+  upper_limit: number | null
+  tolerance: number | null
+  action_level: number | null
+  required: boolean
+  sort_order: number
+  note: string | null
+}
+export type QAProtocolResource = {
+  id: string
+  organization_id: string
+  protocol_key: string
+  name: string
+  qa_type: string
+  version_number: number
+  status: string
+  effective_note: string | null
+  rules: QAProtocolRuleResource[]
+}
+export type MachineQAMeasurement = {
+  metric_key: string
+  value: number | null
+  unit: string
+  note: string | null
+}
+export type MachineQARunResource = {
+  id: string
+  organization_id: string
+  qa_case_id: string
+  machine_id: string
+  protocol_version_id: string
+  status: string
+  overall_status: string | null
+  measurement_revision: number
+  measurements: Array<Record<string, unknown>>
+  result_snapshot: Record<string, unknown>
+  error_snapshot: Array<Record<string, unknown>>
+  supersedes_run_id: string | null
+  started_at: string | null
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+  protocol: QAProtocolResource
+}
+export type MachineQACompareResource = {
+  left_run_id: string
+  right_run_id: string
+  items: Array<{
+    metric_key: string
+    left: Record<string, unknown> | null
+    right: Record<string, unknown> | null
+  }>
+}
+
+const qaProtocolRuleSchema = z.object({
+  id: z.string().uuid(), metric_key: z.string(), display_name: z.string(), unit: z.string(),
+  rule_type: z.string(), target_value: z.number().nullable(), lower_limit: z.number().nullable(),
+  upper_limit: z.number().nullable(), tolerance: z.number().nullable(), action_level: z.number().nullable(),
+  required: z.boolean(), sort_order: z.number().int(), note: z.string().nullable()
+})
+const qaProtocolSchema = z.object({
+  id: z.string().uuid(), organization_id: z.string().uuid(), protocol_key: z.string(), name: z.string(),
+  qa_type: z.string(), version_number: z.number().int(), status: z.string(), effective_note: z.string().nullable(),
+  rules: z.array(qaProtocolRuleSchema)
+})
+const machineQARunSchema = z.object({
+  id: z.string().uuid(), organization_id: z.string().uuid(), qa_case_id: z.string().uuid(),
+  machine_id: z.string().uuid(), protocol_version_id: z.string().uuid(), status: z.string(),
+  overall_status: z.string().nullable(), measurement_revision: z.number().int(),
+  measurements: z.array(z.record(z.string(), z.unknown())),
+  result_snapshot: z.record(z.string(), z.unknown()),
+  error_snapshot: z.array(z.record(z.string(), z.unknown())),
+  supersedes_run_id: z.string().uuid().nullable(), started_at: z.string().nullable(),
+  completed_at: z.string().nullable(), created_at: z.string(), updated_at: z.string(), protocol: qaProtocolSchema
+})
 
 const makeCorrelationId = () => crypto.randomUUID()
 
@@ -374,6 +456,49 @@ export class ApiClient {
   downloadArtifact(accessToken: string, artifactId: string): Promise<{ artifact_id: string; url: string; expires_at: string }> {
     return this.get(`/artifacts/${artifactId}/download`, z.object({
       artifact_id: z.string().uuid(), url: z.string(), expires_at: z.string()
+    }), accessToken)
+  }
+
+  machineQAProtocols(accessToken: string, organizationId: string): Promise<{ items: QAProtocolResource[]; total: number }> {
+    return this.get(`/organizations/${organizationId}/machine-qa/protocols`, z.object({
+      items: z.array(qaProtocolSchema), total: z.number().int()
+    }), accessToken)
+  }
+
+  seedMachineQAProtocol(accessToken: string, organizationId: string): Promise<QAProtocolResource> {
+    return this.request(`/organizations/${organizationId}/machine-qa/protocols/seed`, qaProtocolSchema, accessToken, { method: 'POST' })
+  }
+
+  createMachineQARun(accessToken: string, caseId: string, protocolVersionId: string, measurements: MachineQAMeasurement[] = []): Promise<MachineQARunResource> {
+    return this.request(`/qa-cases/${caseId}/machine-qa-runs`, machineQARunSchema, accessToken, {
+      method: 'POST', body: JSON.stringify({ protocol_version_id: protocolVersionId, measurements })
+    })
+  }
+
+  machineQARuns(accessToken: string, caseId: string): Promise<{ items: MachineQARunResource[]; total: number }> {
+    return this.get(`/qa-cases/${caseId}/machine-qa-runs`, z.object({
+      items: z.array(machineQARunSchema), total: z.number().int()
+    }), accessToken)
+  }
+
+  updateMachineQAMeasurements(accessToken: string, runId: string, expectedRevision: number, measurements: MachineQAMeasurement[]): Promise<MachineQARunResource> {
+    return this.request(`/machine-qa-runs/${runId}/measurements`, machineQARunSchema, accessToken, {
+      method: 'PATCH', body: JSON.stringify({ expected_revision: expectedRevision, measurements })
+    })
+  }
+
+  evaluateMachineQARun(accessToken: string, runId: string): Promise<MachineQARunResource> {
+    return this.request(`/machine-qa-runs/${runId}/evaluate`, machineQARunSchema, accessToken, { method: 'POST' })
+  }
+
+  rerunMachineQARun(accessToken: string, runId: string): Promise<MachineQARunResource> {
+    return this.request(`/machine-qa-runs/${runId}/rerun`, machineQARunSchema, accessToken, { method: 'POST' })
+  }
+
+  compareMachineQARuns(accessToken: string, runId: string, otherRunId: string): Promise<MachineQACompareResource> {
+    return this.get(`/machine-qa-runs/${runId}/compare?other_run_id=${encodeURIComponent(otherRunId)}`, z.object({
+      left_run_id: z.string().uuid(), right_run_id: z.string().uuid(),
+      items: z.array(z.object({ metric_key: z.string(), left: z.record(z.string(), z.unknown()).nullable(), right: z.record(z.string(), z.unknown()).nullable() }))
     }), accessToken)
   }
 }

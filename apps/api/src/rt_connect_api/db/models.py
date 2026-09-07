@@ -9,6 +9,7 @@ from sqlalchemy import (
     JSON,
     Boolean,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -152,6 +153,131 @@ class QACase(TimestampedIdMixin, Base):
     created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("user_identities.id"), nullable=True, index=True
     )
+
+
+class QAProtocolVersion(TimestampedIdMixin, Base):
+    """Immutable protocol header used to create a reproducible QA run."""
+
+    __tablename__ = "qa_protocol_versions"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "protocol_key",
+            "version_number",
+            name="uq_qa_protocol_versions_key_version",
+        ),
+        Index("ix_qa_protocol_versions_organization_status", "organization_id", "status"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    protocol_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    name: Mapped[str] = mapped_column(String(240), nullable=False)
+    qa_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="ACTIVE")
+    effective_note: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+
+
+class QAProtocolRule(TimestampedIdMixin, Base):
+    """A versioned rule snapshot; child rows are never edited in place."""
+
+    __tablename__ = "qa_protocol_rules"
+    __table_args__ = (
+        UniqueConstraint(
+            "protocol_version_id", "metric_key", name="uq_qa_protocol_rules_metric"
+        ),
+        Index("ix_qa_protocol_rules_protocol_order", "protocol_version_id", "sort_order"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    protocol_version_id: Mapped[UUID] = mapped_column(
+        ForeignKey("qa_protocol_versions.id"), nullable=False, index=True
+    )
+    metric_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    display_name: Mapped[str] = mapped_column(String(240), nullable=False)
+    unit: Mapped[str] = mapped_column(String(40), nullable=False)
+    rule_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    target_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    lower_limit: Mapped[float | None] = mapped_column(Float, nullable=True)
+    upper_limit: Mapped[float | None] = mapped_column(Float, nullable=True)
+    tolerance: Mapped[float | None] = mapped_column(Float, nullable=True)
+    action_level: Mapped[float | None] = mapped_column(Float, nullable=True)
+    required: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=true())
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    note: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+
+
+class MachineQARun(TimestampedIdMixin, Base):
+    """Draft or completed Machine QA run with immutable result snapshots."""
+
+    __tablename__ = "machine_qa_runs"
+    __table_args__ = (
+        Index("ix_machine_qa_runs_organization_case", "organization_id", "qa_case_id"),
+        Index("ix_machine_qa_runs_organization_status", "organization_id", "status"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    qa_case_id: Mapped[UUID] = mapped_column(ForeignKey("qa_cases.id"), nullable=False, index=True)
+    machine_id: Mapped[UUID] = mapped_column(ForeignKey("machines.id"), nullable=False, index=True)
+    protocol_version_id: Mapped[UUID] = mapped_column(
+        ForeignKey("qa_protocol_versions.id"), nullable=False, index=True
+    )
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="DRAFT")
+    overall_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    measurement_revision: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    measurements: Mapped[list[dict[str, object]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    result_snapshot: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    error_snapshot: Mapped[list[dict[str, object]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    supersedes_run_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("machine_qa_runs.id"), nullable=True, index=True
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+
+
+class TrendPoint(TimestampedIdMixin, Base):
+    """Small read-model projection pointing back to a completed QA run."""
+
+    __tablename__ = "trend_points"
+    __table_args__ = (
+        Index(
+            "ix_trend_points_organization_machine_metric",
+            "organization_id",
+            "machine_id",
+            "metric_key",
+        ),
+        Index("ix_trend_points_source_run", "source_run_id"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    machine_id: Mapped[UUID] = mapped_column(ForeignKey("machines.id"), nullable=False, index=True)
+    qa_case_id: Mapped[UUID] = mapped_column(ForeignKey("qa_cases.id"), nullable=False, index=True)
+    source_run_id: Mapped[UUID] = mapped_column(
+        ForeignKey("machine_qa_runs.id"), nullable=False, index=True
+    )
+    metric_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    value: Mapped[float] = mapped_column(Float, nullable=False)
+    unit: Mapped[str] = mapped_column(String(40), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    measured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class Artifact(TimestampedIdMixin, Base):

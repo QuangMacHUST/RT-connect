@@ -16,7 +16,7 @@ All routes are typed in source during P1. This registry is the P0 contract draft
 | `/app/qa/cases/new` | MOD-03 | Missing | `POST /api/v1/organizations/{id}/qa-cases` | P5 |
 | `/app/qa/cases/:caseId` | MOD-03/MOD-04 | Missing | QA case detail/history/artifacts | P5–P6 |
 | `/app/qa/cases/:caseId/validation` | MOD-04 | Missing | artifact validation/manifest | P6 |
-| `/app/qa/cases/:caseId/machine-qa` | MOD-05 | Missing | machine QA run APIs | P7 |
+| `/app/qa/cases/:caseId/machine-qa` | MOD-05 | Local P7 implementation; no dedicated Stitch screen | protocol, measurement, evaluation, history and compare APIs | P7 |
 | `/app/qa/cases/:caseId/gamma` | MOD-04/MOD-06 | Gamma `ffb87901b3194bd3aff8760c54c2f9f4` | analysis run APIs | P8 |
 | `/app/reports/:reportId` | MOD-07 | Missing viewer | report/revision APIs | P9 |
 | `/app/reports/:reportId/edit` | MOD-07 | Builder `a1478466ace843c5aaf9a15dfc58273e` | report template/revision APIs | P9 |

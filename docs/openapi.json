@@ -435,6 +435,73 @@
         "title": "Body_upload_artifact_api_v1_qa_cases__case_id__artifacts_post",
         "type": "object"
       },
+      "CompareMetricResponse": {
+        "properties": {
+          "left": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left"
+          },
+          "metric_key": {
+            "title": "Metric Key",
+            "type": "string"
+          },
+          "right": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Right"
+          }
+        },
+        "required": [
+          "metric_key",
+          "left",
+          "right"
+        ],
+        "title": "CompareMetricResponse",
+        "type": "object"
+      },
+      "CompareResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CompareMetricResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "left_run_id": {
+            "format": "uuid",
+            "title": "Left Run Id",
+            "type": "string"
+          },
+          "right_run_id": {
+            "format": "uuid",
+            "title": "Right Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "left_run_id",
+          "right_run_id",
+          "items"
+        ],
+        "title": "CompareResponse",
+        "type": "object"
+      },
       "DashboardSummaryResponse": {
         "properties": {
           "active_job_count": {
@@ -923,6 +990,170 @@
         "title": "MachinePatchRequest",
         "type": "object"
       },
+      "MachineQARunCreateRequest": {
+        "properties": {
+          "measurements": {
+            "items": {
+              "$ref": "#/components/schemas/MeasurementInput"
+            },
+            "title": "Measurements",
+            "type": "array"
+          },
+          "protocol_version_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Version Id"
+          }
+        },
+        "title": "MachineQARunCreateRequest",
+        "type": "object"
+      },
+      "MachineQARunResponse": {
+        "properties": {
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error_snapshot": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Error Snapshot",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "machine_id": {
+            "format": "uuid",
+            "title": "Machine Id",
+            "type": "string"
+          },
+          "measurement_revision": {
+            "title": "Measurement Revision",
+            "type": "integer"
+          },
+          "measurements": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Measurements",
+            "type": "array"
+          },
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "overall_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overall Status"
+          },
+          "protocol": {
+            "$ref": "#/components/schemas/ProtocolResponse"
+          },
+          "protocol_version_id": {
+            "format": "uuid",
+            "title": "Protocol Version Id",
+            "type": "string"
+          },
+          "qa_case_id": {
+            "format": "uuid",
+            "title": "Qa Case Id",
+            "type": "string"
+          },
+          "result_snapshot": {
+            "additionalProperties": true,
+            "title": "Result Snapshot",
+            "type": "object"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "supersedes_run_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supersedes Run Id"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "organization_id",
+          "qa_case_id",
+          "machine_id",
+          "protocol_version_id",
+          "status",
+          "overall_status",
+          "measurement_revision",
+          "measurements",
+          "result_snapshot",
+          "error_snapshot",
+          "supersedes_run_id",
+          "started_at",
+          "completed_at",
+          "created_at",
+          "updated_at",
+          "protocol"
+        ],
+        "title": "MachineQARunResponse",
+        "type": "object"
+      },
       "MachineResponse": {
         "properties": {
           "display_name": {
@@ -991,6 +1222,76 @@
           "is_archived"
         ],
         "title": "MachineResponse",
+        "type": "object"
+      },
+      "MeasurementInput": {
+        "properties": {
+          "metric_key": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Metric Key",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "unit": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "metric_key",
+          "unit"
+        ],
+        "title": "MeasurementInput",
+        "type": "object"
+      },
+      "MeasurementPatchRequest": {
+        "properties": {
+          "expected_revision": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "measurements": {
+            "items": {
+              "$ref": "#/components/schemas/MeasurementInput"
+            },
+            "title": "Measurements",
+            "type": "array"
+          }
+        },
+        "title": "MeasurementPatchRequest",
         "type": "object"
       },
       "OrganizationContextResponse": {
@@ -1079,6 +1380,208 @@
           "is_archived"
         ],
         "title": "OrganizationResponse",
+        "type": "object"
+      },
+      "ProtocolCollectionResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ProtocolResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ProtocolCollectionResponse",
+        "type": "object"
+      },
+      "ProtocolResponse": {
+        "properties": {
+          "effective_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Note"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "protocol_key": {
+            "title": "Protocol Key",
+            "type": "string"
+          },
+          "qa_type": {
+            "title": "Qa Type",
+            "type": "string"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/ProtocolRuleResponse"
+            },
+            "title": "Rules",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "version_number": {
+            "title": "Version Number",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "organization_id",
+          "protocol_key",
+          "name",
+          "qa_type",
+          "version_number",
+          "status",
+          "effective_note",
+          "rules"
+        ],
+        "title": "ProtocolResponse",
+        "type": "object"
+      },
+      "ProtocolRuleResponse": {
+        "properties": {
+          "action_level": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Level"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "lower_limit": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lower Limit"
+          },
+          "metric_key": {
+            "title": "Metric Key",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          },
+          "rule_type": {
+            "title": "Rule Type",
+            "type": "string"
+          },
+          "sort_order": {
+            "title": "Sort Order",
+            "type": "integer"
+          },
+          "target_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Value"
+          },
+          "tolerance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tolerance"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "upper_limit": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upper Limit"
+          }
+        },
+        "required": [
+          "id",
+          "metric_key",
+          "display_name",
+          "unit",
+          "rule_type",
+          "target_value",
+          "lower_limit",
+          "upper_limit",
+          "tolerance",
+          "action_level",
+          "required",
+          "sort_order",
+          "note"
+        ],
+        "title": "ProtocolRuleResponse",
         "type": "object"
       },
       "QACaseCollectionResponse": {
@@ -1488,6 +1991,27 @@
           "is_archived"
         ],
         "title": "QACaseResponse",
+        "type": "object"
+      },
+      "RunCollectionResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MachineQARunResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "RunCollectionResponse",
         "type": "object"
       },
       "SessionBootstrapResponse": {
@@ -2252,6 +2776,266 @@
         ]
       }
     },
+    "/api/v1/machine-qa-runs/{run_id}": {
+      "get": {
+        "operationId": "get_run_api_v1_machine_qa_runs__run_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MachineQARunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Run",
+        "tags": [
+          "machine-qa"
+        ]
+      }
+    },
+    "/api/v1/machine-qa-runs/{run_id}/compare": {
+      "get": {
+        "operationId": "compare_runs_api_v1_machine_qa_runs__run_id__compare_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "other_run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Other Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompareResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Compare Runs",
+        "tags": [
+          "machine-qa"
+        ]
+      }
+    },
+    "/api/v1/machine-qa-runs/{run_id}/evaluate": {
+      "post": {
+        "operationId": "evaluate_run_api_v1_machine_qa_runs__run_id__evaluate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MachineQARunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Evaluate Run",
+        "tags": [
+          "machine-qa"
+        ]
+      }
+    },
+    "/api/v1/machine-qa-runs/{run_id}/measurements": {
+      "patch": {
+        "operationId": "update_measurements_api_v1_machine_qa_runs__run_id__measurements_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeasurementPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MachineQARunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Measurements",
+        "tags": [
+          "machine-qa"
+        ]
+      }
+    },
+    "/api/v1/machine-qa-runs/{run_id}/rerun": {
+      "post": {
+        "operationId": "rerun_api_v1_machine_qa_runs__run_id__rerun_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MachineQARunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rerun",
+        "tags": [
+          "machine-qa"
+        ]
+      }
+    },
     "/api/v1/organizations": {
       "post": {
         "description": "Create an organization and make the verified caller its first member.",
@@ -2564,6 +3348,102 @@
         "summary": "List Folder Tree",
         "tags": [
           "qa-archive"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/machine-qa/protocols": {
+      "get": {
+        "operationId": "list_protocols_api_v1_organizations__organization_id__machine_qa_protocols_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolCollectionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Protocols",
+        "tags": [
+          "machine-qa"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/machine-qa/protocols/seed": {
+      "post": {
+        "operationId": "seed_protocol_api_v1_organizations__organization_id__machine_qa_protocols_seed_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Seed Protocol",
+        "tags": [
+          "machine-qa"
         ]
       }
     },
@@ -3547,6 +4427,120 @@
         "summary": "Upload Artifact",
         "tags": [
           "artifacts"
+        ]
+      }
+    },
+    "/api/v1/qa-cases/{case_id}/machine-qa-runs": {
+      "get": {
+        "operationId": "list_runs_api_v1_qa_cases__case_id__machine_qa_runs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_failed",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Include Failed",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunCollectionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Runs",
+        "tags": [
+          "machine-qa"
+        ]
+      },
+      "post": {
+        "operationId": "create_run_api_v1_qa_cases__case_id__machine_qa_runs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MachineQARunCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MachineQARunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Run",
+        "tags": [
+          "machine-qa"
         ]
       }
     },

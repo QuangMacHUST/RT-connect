@@ -7,12 +7,11 @@ from typing import Any
 
 import numpy as np
 from fastapi.testclient import TestClient
-from pydicom import Dataset, FileDataset, FileMetaDataset
+from pydicom import FileDataset, FileMetaDataset
 from pydicom.uid import CTImageStorage, ExplicitVRLittleEndian, generate_uid
 
 from rt_connect_api.api.artifacts import _storage
 from rt_connect_api.services.object_storage import InMemoryObjectStorage
-
 from test_workspace import _workspace_client
 
 
@@ -145,7 +144,9 @@ def test_measurement_validation_explains_missing_units_and_grid() -> None:
         case_id = _case(client, str(organization.id))
         uploaded = client.post(
             f"/api/v1/qa-cases/{case_id}/artifacts",
-            files={"file": ("ambiguous.json", _measurement_bytes(complete=False), "application/json")},
+            files={
+                "file": ("ambiguous.json", _measurement_bytes(complete=False), "application/json")
+            },
             data={"artifact_type": "MEASUREMENT", "logical_role": "MEASUREMENT"},
         )
         assert uploaded.status_code == 201, uploaded.text

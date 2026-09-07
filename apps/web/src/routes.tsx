@@ -4,6 +4,7 @@ import { ProtectedRoute } from './auth/ProtectedRoute'
 import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { HomeDashboardPage } from './pages/HomeDashboardPage'
 import { LoginPage } from './pages/LoginPage'
+import { MachineQAPage } from './pages/MachineQAPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { OrganizationManagementPage } from './pages/OrganizationManagementPage'
 import { QAArchivePage } from './pages/QAArchivePage'
@@ -22,6 +23,7 @@ export function ApplicationRoutes() {
       <Route path="/app" element={<ProtectedRoute><HomeDashboardPage /></ProtectedRoute>} />
       <Route path="/app/organization" element={<ProtectedRoute><OrganizationManagementPage /></ProtectedRoute>} />
       <Route path="/app/qa" element={<ProtectedRoute><QAArchivePage /></ProtectedRoute>} />
+      <Route path="/app/qa/cases/:caseId/machine-qa" element={<ProtectedRoute><MachineQAPage /></ProtectedRoute>} />
       <Route path="/app/system/status" element={<PlatformStatusPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
