@@ -3,10 +3,10 @@
 ## Current checkpoint
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
-- **Current phase:** P6 — Artifact, Upload, Input Manifest và DICOM Validation; P2/P3 live organization onboarding and P6 durable-storage gates remain open.
-- **Current status:** IN_PROGRESS — P6 has a working local vertical slice: multipart upload, byte checksum, immutable artifact metadata, Input Manifest, duplicate detection, signed-download port, metadata-first CT/RTDOSE/RTSTRUCT/RTPLAN and `gamma.measurement.v1` validation, plus QA Archive artifact UI. Staging currently proves public web/API reachability and authenticated identity, but the P6 object-storage service and live upload smoke test are not yet configured/evidenced.
-- **Last authoritative check:** 2026-09-07 — P6 focused API tests (2 passed), full API suite, API Ruff/type/import checks and frontend TypeScript check passed locally; public staging bundle contains the organization-onboarding form, while the browser screenshot still requires a cache/deployment-context recheck.
-- **Next exact step:** commit and push P6, deploy API/web staging through Alembic `20260907_0005`, configure a persistent S3-compatible bucket for staging, then run authenticated organization → site → machine → folder → QA case → upload → checksum → validation → signed-download smoke tests before starting P7.
+- **Current phase:** P6 — Artifact, Upload, Input Manifest và DICOM Validation; persistent storage is deployed and the authenticated artifact smoke test is the remaining gate.
+- **Current status:** IN_PROGRESS — P6 has a working local vertical slice: multipart upload, byte checksum, immutable artifact metadata, Input Manifest, duplicate detection, signed-download port, metadata-first CT/RTDOSE/RTSTRUCT/RTPLAN and `gamma.measurement.v1` validation, plus QA Archive artifact UI. Staging now has a deployed Railway S3-compatible bucket and the API is healthy; the final authenticated upload → validation → download proof still needs one synthetic file-selection action.
+- **Last authoritative check:** 2026-09-07 — P6 focused API tests, full API regression, container build/migration, frontend test/build/typecheck and lint passed locally; the staging bucket was deployed and probed through both S3 addressing styles without exposing credentials; staging `/api/v1/health` and `/api/v1/ready` returned HTTP 200; live OpenAPI exposes P6 endpoints; the authenticated staging browser opened the organization dashboard and QA case.
+- **Next exact step:** select `docs/fixtures/gamma-measurement-v1-smoke.json` in the authenticated staging QA Archive, click Upload artifact, Validate, and Download; record the returned `VALID` result and signed-download response before starting P7.
 
 ## Source documents read
 
@@ -22,11 +22,11 @@
 | :--- | :--- | :--- |
 | P0 | DONE | Exit audit passed on 2026-09-05; baseline, traceability, module/route/environment registries and Railway failure issue recorded |
 | P1 | DONE | Full local Compose build/health, in-container PostgreSQL migration, synthetic seed persistence, API readiness and web health passed on 2026-09-05 |
-| P2 | IN_PROGRESS | JWT contract, PostgreSQL, staging/production deployment foundation and public health/readiness smoke are ready; Supabase Auth/application integration remains |
-| P3 | IMPLEMENTED ON RELEASE BRANCH | Auth/API bootstrap, organization-scoped dashboard foundation and auth screens are implemented on `codex/p3-auth-dashboard`; live Supabase Auth, web deployment and staging E2E remain pending |
-| P4 | IMPLEMENTED LOCALLY | Migration `20260906_0003`, organization/site/machine CRUD, archive lifecycle, audit events, scoped API tests and `/app/organization` management UI pass locally; staging/Auth E2E pending |
-| P5 | IMPLEMENTED LOCALLY | Migration `20260906_0004`, nested folder tree, archive cascade, QA case CRUD/search/filter, scoped route lookups and `/app/qa` screen pass locally; staging/Auth E2E pending |
-| P6 | IN_PROGRESS LOCALLY | Migration `20260907_0005`, artifact metadata/checksum, Input Manifest, duplicate upload, signed-download port, DICOM/measurement validator, focused API tests and QA Archive upload panel implemented; persistent staging object storage and live E2E pending |
+| P2 | FOUNDATION READY + LIVE SMOKE PASS | JWT contract, PostgreSQL, Railway staging/production deployment foundation, Supabase Auth configuration and public health/readiness smoke are evidenced; production promotion remains gated by later clinical modules |
+| P3 | STAGING E2E PASS | Auth/API bootstrap, organization-scoped dashboard, first-use organization onboarding and protected web routes are deployed; authenticated staging session reached the real organization dashboard |
+| P4 | STAGING E2E PASS | Organization/site/machine lifecycle is deployed; staging smoke created and displayed `Hong ngoc general hospital`, `Staging Synthetic Site` and `Synthetic QA Linac` |
+| P5 | STAGING E2E PASS | Nested folder/QA case flow is deployed; staging smoke created `Staging P6 Smoke` and QA case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24` |
+| P6 | STAGING STORAGE DEPLOYED + E2E PENDING | Migration `20260907_0005`, artifact metadata/checksum, Input Manifest, duplicate upload, signed-download port, DICOM/measurement validator and QA Archive upload panel are deployed; Railway bucket and S3 probe pass; authenticated upload/validation/download is the remaining gate |
 | P7 | NOT_STARTED | Depends on P6 |
 | P8 | NOT_STARTED | Depends on P6/P7 |
 | P9 | NOT_STARTED | Depends on P7/P8 for Gamma blocks |
@@ -71,6 +71,13 @@
 - Both API services use `/apps/api`, `/apps/api/Dockerfile`, `PORT=8000`, `/api/v1/health` and `alembic upgrade head`.
 - Public smoke: production and staging both returned HTTP 200 with `status=ok` from `/api/v1/health` and `status=ready` from `/api/v1/ready`; correlation IDs were present.
 - PostgreSQL services retain their current persistent-volume region configuration; no database region migration was performed without backup/restore evidence.
+
+## Live Railway storage evidence — verified 2026-09-07
+
+- A persistent Railway S3-compatible storage bucket was deployed in the staging environment for P6 artifact objects; it is not the API container filesystem.
+- The bucket was provisioned in Railway's default US West region and exposes an S3-compatible endpoint with automatic region handling. The six staging API variables required by `MinioObjectStorage` were configured without printing their secret values, and the API service was redeployed afterward.
+- A direct non-PHI storage probe passed for both path-style and virtual-host-style addressing: put, get, presigned URL generation and delete all succeeded. The bucket remained empty after the probe.
+- Staging API health and readiness remained HTTP 200 after the storage-variable redeploy. The remaining evidence is the authenticated web upload → validation → signed download smoke test using the repository fixture.
 
 ## Historical Railway evidence (superseded)
 
@@ -144,14 +151,15 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 - P3 local implementation: PASS — `UserIdentity`/`OrganizationMembership`, session bootstrap and organization-scoped dashboard endpoints; migration `20260906_0002`; backend lint, strict mypy and 20 tests pass. Frontend Supabase session/auth routes, protected dashboard and API-backed empty/populated/error states lint/type-check/test/build successfully.
 - P4 local implementation: PASS — migration `20260906_0003` adds organization/site/machine lifecycle fields and append-only audit events; all CRUD/list/archive mutations resolve organization scope from the verified identity before resource lookup. Rename preserves `stable_machine_id`; duplicate IDs and second ambiguous organization contexts return explicit conflicts. Backend Ruff, strict mypy and 26 tests pass; frontend organization management page, API client, lint, TypeScript check, Vitest and Vite build pass. No live Auth or staging P4 workflow has been claimed.
 - P5 local implementation: PASS — migration `20260906_0004` adds nested organization folders and QA cases; folder rename/move/archive preserves QA case identity, archive does not hard-delete history, case references require an active site/machine/folder in the same organization, and searches support text, folder and QA-cycle filtering. Backend Ruff, strict mypy and 29 tests pass; frontend QA Archive route/API client, lint, TypeScript check, Vitest and Vite build pass. No live Auth or staging P5 workflow has been claimed.
-- P6 local implementation: IN PROGRESS — migration `20260907_0005` adds `artifacts`, `input_manifests` and `validation_runs`; MinIO/S3 storage port, byte-for-byte SHA-256 upload, duplicate detection, signed-download contract, metadata-first DICOM validation and `gamma.measurement.v1` validation are implemented. Two focused artifact API tests pass, full API regression and frontend TypeScript checks pass. Persistent staging object storage, migration deployment and authenticated staging upload/validation/download evidence remain open.
+- P6 local implementation: PASS — migration `20260907_0005` adds `artifacts`, `input_manifests` and `validation_runs`; MinIO/S3 storage port, byte-for-byte SHA-256 upload, duplicate detection, signed-download contract, metadata-first DICOM validation and `gamma.measurement.v1` validation are implemented. Focused artifact tests, full API regression, strict mypy, Ruff and frontend checks pass.
+- P6 staging evidence: PARTIAL PASS — commit `5b6bf78` deployed successfully to `Railway-API-staging`; the live API exposes the artifact/upload/validation paths; the web staging bundle contains P6 upload UI; the authenticated dashboard, organization, site, machine, folder and QA case are reachable; the persistent Railway bucket is deployed and S3 operations pass. Live artifact upload/validation/download is pending the synthetic fixture selection in the browser.
 
 ## Current blockers and required gates
 
 The older Railway-history bullets below are retained as evidence of earlier incidents. The current gates are:
 
-- An authenticated Supabase identity can reach the staging app, but the user-visible membership/onboarding flow still needs one successful live test: create the first organization, refresh the session and open `/app`.
-- Staging API/web services and PostgreSQL are present, but P6 has no verified persistent S3-compatible object-storage service yet. Do not point P6 at Railway ephemeral filesystem.
+- The authenticated staging user and organization onboarding path are working. A fresh browser test should still be repeated after session expiry before treating the auth path as operationally stable.
+- P6 requires one final authenticated web smoke using `docs/fixtures/gamma-measurement-v1-smoke.json`; the storage service itself is deployed and already passed a non-PHI S3 probe.
 - The current P6 branch has not been promoted to production. Production promotion remains blocked until staging upload/validation/download, backup and rollback evidence exist.
 
 - Correction on 2026-09-05: both Railway tokens are present in root `.env` and authenticate successfully through the Railway API. Account-token access resolves project `prolific-learning`; project-token scope resolves its production environment. The earlier missing-token report was incorrect. Standard dotenv parsing supports spaces around `=` and quoted values.
@@ -164,6 +172,6 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 
 ## Known limitations
 
-- No staging Railway environment or PostgreSQL service exists yet; these belong to P2.
-- No Supabase configuration keys are present in `.env`; Auth project/configuration is required by P2/P3.
+- Production has not yet received the P6 artifact branch; promotion remains intentionally gated by the staging artifact E2E and later clinical-module gates.
+- The current browser automation cannot inject a local file into the file chooser; the final P6 web smoke therefore requires a manual selection of the repository's synthetic fixture or an equivalent user-driven browser action.
 - Four Biological designs must be regenerated in P12–P15.
