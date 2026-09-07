@@ -5,7 +5,7 @@
 - **Tên sản phẩm:** RT-CONNECT
 - **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
 - **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
-- **Phiên bản tài liệu:** 0.5 — đồng bộ lại baseline Google Stitch sau khi loại bốn thiết kế Biological cũ
+- **Phiên bản tài liệu:** 0.6 — bổ sung luồng khởi tạo organization cho identity đã xác thực nhưng chưa có membership
 - **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
 Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Các quyết định về framework, database, server, cấu trúc source code và cách triển khai được mô tả trong `technical-specification.md`; trình tự thực hiện và tiêu chí đóng từng module được mô tả trong `plan.md`.
@@ -217,6 +217,15 @@ Trong cùng một organization, các thành viên được sử dụng ngang nha
 - Ghi nhận nhận xét, scenario và lịch sử tính toán.
 
 `doctor` và `physicist` chỉ mô tả chuyên môn của user, không tạo ra quyền cao thấp trong sản phẩm.
+
+### 5.2.1. Khởi tạo organization lần đầu
+
+- Supabase Auth xác thực identity trước; RT-CONNECT không tự tạo quyền truy cập dữ liệu chỉ từ việc đăng nhập.
+- Nếu identity hợp lệ nhưng chưa có membership đang hoạt động, hệ thống hiển thị màn hình khởi tạo thay vì hiển thị dữ liệu organization.
+- Người dùng đầu tiên có thể nhập tên bệnh viện/organization trên màn hình khởi tạo để tạo organization và được gắn membership đầu tiên.
+- Identity đã có membership không được tạo thêm organization theo cùng luồng khởi tạo, tránh tạo nhiều context không rõ ràng.
+- Membership chỉ xác định phạm vi organization; không tạo role hierarchy hoặc quyền hành động khác nhau giữa bác sĩ, kỹ sư và thành viên chuyên môn.
+- Sau khi organization được tạo, người dùng tiếp tục thiết lập site/hospital và machine trong module Organization / Site / Machine.
 
 ### 5.3. Trách nhiệm giải trình bằng lịch sử
 
@@ -922,12 +931,19 @@ Mỗi lần tính phải lưu:
 | BR-031 | Mỗi module phải được nghiệm thu theo workflow end-to-end, không chỉ bằng ảnh Stitch, component tĩnh, API đơn lẻ hoặc deploy thành công. |
 | BR-032 | Mỗi screen Stitch được triển khai phải map được tới module, route, dữ liệu, event, trạng thái và tiêu chí nghiệm thu tương ứng. |
 | BR-033 | Release production phải đi qua staging, migration, backup/restore, remote smoke test và rollback evidence trước khi được coi là hoàn tất. |
+| BR-034 | Identity đã xác thực nhưng chưa có membership phải được đưa vào luồng khởi tạo organization, không được xem dữ liệu organization như anonymous user. |
+| BR-035 | Luồng khởi tạo organization gắn identity hiện tại làm thành viên đầu tiên và không tạo action-level role hierarchy. |
 
 ---
 
 ## 18. Tiêu chí nghiệm thu nghiệp vụ
 
 ### 18.1. Organization và machine
+
+- Identity mới đăng nhập được hướng dẫn tạo organization nếu chưa có membership.
+- Tạo organization thành công phải tạo đồng thời `UserIdentity`, `OrganizationMembership` và organization context.
+- Sau khi tạo organization, user có thể tạo site/hospital và machine trong cùng workflow.
+- Identity đã có organization context không được tạo thêm organization qua luồng khởi tạo lần đầu.
 
 - Tạo được một organization có nhiều site/hospital.
 - Một site/hospital tạo được nhiều machine.

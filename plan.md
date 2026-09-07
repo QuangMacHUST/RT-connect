@@ -3,9 +3,9 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** plan.md
-- **Phiên bản:** 1.4
-- **Nguồn nghiệp vụ:** business-analysis.md phiên bản 0.5
-- **Nguồn kỹ thuật:** technical-specification.md phiên bản 0.7
+- **Phiên bản:** 1.5
+- **Nguồn nghiệp vụ:** business-analysis.md phiên bản 0.6
+- **Nguồn kỹ thuật:** technical-specification.md phiên bản 0.8
 - **Nguồn thiết kế:** Google Stitch MCP, project RT-connect, project ID 14242591911141046021
 - **Hạ tầng mục tiêu:** Supabase Auth; Railway backend và PostgreSQL; object storage bền vững; frontend web truy cập từ xa
 - **Mục tiêu:** hoàn thiện từng module thành một vertical slice có thể chạy, kiểm thử, bàn giao và triển khai trên staging trước khi chuyển sang module tiếp theo
@@ -412,7 +412,8 @@ Thời lượng là ước lượng tham chiếu cho một nhóm nhỏ. Phase c�
 - Tạo UserIdentity và OrganizationMembership.
 - Tạo session bootstrap endpoint.
 - Tạo dashboard read model: machine count, QA gần đây, warning, job và quick action.
-- Seed organization và membership synthetic.
+- Seed organization và membership synthetic trong test fixture; không phụ thuộc seed giả để mở staging.
+- Cho phép identity đã xác thực nhưng chưa có membership tạo organization đầu tiên qua `POST /organizations`; identity đó được gắn membership đầu tiên.
 
 ## Frontend
 
@@ -421,12 +422,14 @@ Thời lượng là ước lượng tham chiếu cho một nhóm nhỏ. Phase c�
 - Organization context.
 - Home Dashboard nối API thật.
 - Loading/empty/error/offline/session-expired state.
+- Session Error có luồng khởi tạo organization cho identity chưa có membership.
 
 ## Tests
 
 - Login/logout/refresh.
 - Deep-link sau login.
 - Membership không hợp lệ.
+- Identity chưa có membership có thể tạo organization đầu tiên và mở lại workspace.
 - Organization context không bị giả mạo từ client.
 - Dashboard empty và populated state.
 - Accessibility keyboard/focus/label.
@@ -437,6 +440,7 @@ Thời lượng là ước lượng tham chiếu cho một nhóm nhỏ. Phase c�
 - AppShell component library.
 - Home Dashboard.
 - Session/bootstrap API.
+- First-use organization onboarding trên Session Error.
 
 ## Exit criteria
 
@@ -444,6 +448,7 @@ Thời lượng là ước lượng tham chiếu cho một nhóm nhỏ. Phase c�
 - Chỉ thấy organization mình thuộc.
 - Refresh browser giữ hoặc phục hồi session đúng.
 - UI không chứa mock data trong production path.
+- Identity đã xác thực nhưng chưa có membership không bị kẹt ở màn hình lỗi; có thể hoàn tất organization context bằng workflow được kiểm tra.
 
 ---
 
@@ -467,6 +472,7 @@ Thời lượng là ước lượng tham chiếu cho một nhóm nhỏ. Phase c�
 - Stable machine ID, display name, code, manufacturer/model và status.
 - Organization isolation cho mọi query/mutation.
 - Audit event create/update/archive.
+- First organization onboarding tạo organization và membership đầu tiên trong một transaction nghiệp vụ.
 
 ## API/frontend
 

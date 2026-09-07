@@ -3,8 +3,8 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 0.7
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.5
+- **Phiên bản:** 0.8
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.6
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
@@ -864,6 +864,16 @@ Không có bước tự động tìm hoặc gắn QA case/ca bệnh.
 - Token hết hạn, user bị logout/revoke hoặc Supabase Auth không khả dụng phải trả error contract rõ ràng; không fallback sang user giả hoặc anonymous access cho dữ liệu QA.
 - Redirect URL, site URL, email template/provider và provider được phép phải tách theo dev, staging, pilot và production.
 - Test phải bao gồm token hợp lệ, hết hạn, sai issuer/audience, sai signature, user không thuộc organization và membership bị vô hiệu hóa.
+
+#### 6.1.1. First-use organization onboarding
+
+- `GET /session/bootstrap` chỉ trả context khi identity đã có `UserIdentity`, membership active và organization chưa archive.
+- Nếu identity hợp lệ nhưng chưa có membership, API trả error contract `ORGANIZATION_MEMBERSHIP_REQUIRED` với HTTP 403; không trả organization giả hoặc dữ liệu synthetic trong production path.
+- Frontend hiển thị Session Error onboarding form để người dùng nhập tên organization.
+- `POST /organizations` tạo organization, tạo hoặc cập nhật `UserIdentity`, tạo `OrganizationMembership` active cho identity hiện tại và ghi audit event trong cùng transaction.
+- Identity đã có membership active bị từ chối với `ORGANIZATION_CONTEXT_ALREADY_ASSIGNED`; không tự động tạo organization thứ hai.
+- Sau khi tạo thành công, frontend loại cache bootstrap lỗi, gọi lại bootstrap và mở Home Dashboard.
+- Membership là organization scope; không có role hierarchy hoặc action-level permission giữa các thành viên trong organization.
 
 ### 6.1.2. Session bootstrap và Home Dashboard
 

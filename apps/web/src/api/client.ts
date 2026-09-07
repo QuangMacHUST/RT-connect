@@ -152,6 +152,12 @@ export class ApiClient {
     }), accessToken)
   }
 
+  createOrganization(accessToken: string, name: string): Promise<OrganizationResource> {
+    return this.request('/organizations', z.object({
+      id: z.string().uuid(), name: z.string(), is_archived: z.boolean()
+    }), accessToken, { method: 'POST', body: JSON.stringify({ name }) })
+  }
+
   dashboard(accessToken: string, organizationId: string): Promise<DashboardSummary> {
     return this.get(`/organizations/${organizationId}/dashboard`, z.object({
       organization: z.object({ id: z.string().uuid(), name: z.string() }),
