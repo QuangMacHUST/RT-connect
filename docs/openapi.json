@@ -715,6 +715,359 @@
         "title": "FolderTreeResponse",
         "type": "object"
       },
+      "GammaCompareItem": {
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "left": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left"
+          },
+          "right": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Right"
+          }
+        },
+        "required": [
+          "key",
+          "left",
+          "right"
+        ],
+        "title": "GammaCompareItem",
+        "type": "object"
+      },
+      "GammaCompareResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GammaCompareItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "left_run_id": {
+            "format": "uuid",
+            "title": "Left Run Id",
+            "type": "string"
+          },
+          "right_run_id": {
+            "format": "uuid",
+            "title": "Right Run Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "left_run_id",
+          "right_run_id",
+          "items"
+        ],
+        "title": "GammaCompareResponse",
+        "type": "object"
+      },
+      "GammaConfigurationRequest": {
+        "properties": {
+          "absolute_dose_difference_gy": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Absolute Dose Difference Gy"
+          },
+          "dimensionality": {
+            "const": "2D",
+            "default": "2D",
+            "title": "Dimensionality",
+            "type": "string"
+          },
+          "distance_to_agreement_mm": {
+            "default": 3.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Distance To Agreement Mm",
+            "type": "number"
+          },
+          "dose_difference_mode": {
+            "default": "RELATIVE",
+            "enum": [
+              "ABSOLUTE",
+              "RELATIVE"
+            ],
+            "title": "Dose Difference Mode",
+            "type": "string"
+          },
+          "dose_difference_percent": {
+            "default": 3.0,
+            "exclusiveMinimum": 0.0,
+            "maximum": 100.0,
+            "title": "Dose Difference Percent",
+            "type": "number"
+          },
+          "dose_threshold_percent": {
+            "default": 10.0,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Dose Threshold Percent",
+            "type": "number"
+          },
+          "histogram_bins": {
+            "default": 10,
+            "maximum": 100.0,
+            "minimum": 2.0,
+            "title": "Histogram Bins",
+            "type": "integer"
+          },
+          "interpolation": {
+            "default": "GRID",
+            "enum": [
+              "GRID",
+              "BILINEAR"
+            ],
+            "title": "Interpolation",
+            "type": "string"
+          },
+          "normalization": {
+            "default": "GLOBAL",
+            "enum": [
+              "GLOBAL",
+              "LOCAL"
+            ],
+            "title": "Normalization",
+            "type": "string"
+          },
+          "pass_rate_threshold_percent": {
+            "default": 95.0,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Pass Rate Threshold Percent",
+            "type": "number"
+          }
+        },
+        "title": "GammaConfigurationRequest",
+        "type": "object"
+      },
+      "GammaRunCollectionResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GammaRunResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "GammaRunCollectionResponse",
+        "type": "object"
+      },
+      "GammaRunCreateRequest": {
+        "properties": {
+          "configuration": {
+            "$ref": "#/components/schemas/GammaConfigurationRequest"
+          },
+          "evaluation_artifact_id": {
+            "format": "uuid",
+            "title": "Evaluation Artifact Id",
+            "type": "string"
+          },
+          "idempotency_key": {
+            "maxLength": 200,
+            "minLength": 8,
+            "title": "Idempotency Key",
+            "type": "string"
+          },
+          "reference_artifact_id": {
+            "format": "uuid",
+            "title": "Reference Artifact Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "reference_artifact_id",
+          "evaluation_artifact_id",
+          "idempotency_key"
+        ],
+        "title": "GammaRunCreateRequest",
+        "type": "object"
+      },
+      "GammaRunResponse": {
+        "properties": {
+          "attempt_count": {
+            "title": "Attempt Count",
+            "type": "integer"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "config_snapshot": {
+            "additionalProperties": true,
+            "title": "Config Snapshot",
+            "type": "object"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "engine_version": {
+            "title": "Engine Version",
+            "type": "string"
+          },
+          "error_snapshot": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Error Snapshot",
+            "type": "array"
+          },
+          "evaluation_artifact_id": {
+            "format": "uuid",
+            "title": "Evaluation Artifact Id",
+            "type": "string"
+          },
+          "heartbeat_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heartbeat At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "idempotency_key": {
+            "title": "Idempotency Key",
+            "type": "string"
+          },
+          "input_manifest_snapshot": {
+            "additionalProperties": true,
+            "title": "Input Manifest Snapshot",
+            "type": "object"
+          },
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "progress_percent": {
+            "title": "Progress Percent",
+            "type": "integer"
+          },
+          "qa_case_id": {
+            "format": "uuid",
+            "title": "Qa Case Id",
+            "type": "string"
+          },
+          "queued_at": {
+            "format": "date-time",
+            "title": "Queued At",
+            "type": "string"
+          },
+          "reference_artifact_id": {
+            "format": "uuid",
+            "title": "Reference Artifact Id",
+            "type": "string"
+          },
+          "result_snapshot": {
+            "additionalProperties": true,
+            "title": "Result Snapshot",
+            "type": "object"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "warning_snapshot": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Warning Snapshot",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "organization_id",
+          "qa_case_id",
+          "reference_artifact_id",
+          "evaluation_artifact_id",
+          "idempotency_key",
+          "status",
+          "progress_percent",
+          "attempt_count",
+          "engine_version",
+          "config_snapshot",
+          "input_manifest_snapshot",
+          "result_snapshot",
+          "error_snapshot",
+          "warning_snapshot",
+          "queued_at",
+          "started_at",
+          "heartbeat_at",
+          "completed_at",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "GammaRunResponse",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -2755,6 +3108,160 @@
         ]
       }
     },
+    "/api/v1/gamma-runs/{run_id}": {
+      "get": {
+        "operationId": "get_gamma_run_api_v1_gamma_runs__run_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GammaRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Gamma Run",
+        "tags": [
+          "gamma"
+        ]
+      }
+    },
+    "/api/v1/gamma-runs/{run_id}/compare": {
+      "get": {
+        "operationId": "compare_gamma_runs_api_v1_gamma_runs__run_id__compare_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "other_run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Other Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GammaCompareResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Compare Gamma Runs",
+        "tags": [
+          "gamma"
+        ]
+      }
+    },
+    "/api/v1/gamma-runs/{run_id}/retry": {
+      "post": {
+        "operationId": "retry_gamma_run_api_v1_gamma_runs__run_id__retry_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GammaRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Retry Gamma Run",
+        "tags": [
+          "gamma"
+        ]
+      }
+    },
     "/api/v1/health": {
       "get": {
         "operationId": "health_api_v1_health_get",
@@ -4427,6 +4934,110 @@
         "summary": "Upload Artifact",
         "tags": [
           "artifacts"
+        ]
+      }
+    },
+    "/api/v1/qa-cases/{case_id}/gamma-runs": {
+      "get": {
+        "operationId": "list_gamma_runs_api_v1_qa_cases__case_id__gamma_runs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GammaRunCollectionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Gamma Runs",
+        "tags": [
+          "gamma"
+        ]
+      },
+      "post": {
+        "operationId": "enqueue_gamma_run_api_v1_qa_cases__case_id__gamma_runs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GammaRunCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GammaRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Enqueue Gamma Run",
+        "tags": [
+          "gamma"
         ]
       }
     },

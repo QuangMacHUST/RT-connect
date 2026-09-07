@@ -280,6 +280,58 @@ class TrendPoint(TimestampedIdMixin, Base):
     measured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
+class GammaAnalysisRun(TimestampedIdMixin, Base):
+    """Queued PSQA Gamma analysis with immutable input/config/result snapshots."""
+
+    __tablename__ = "gamma_analysis_runs"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "idempotency_key",
+            name="uq_gamma_analysis_runs_organization_idempotency",
+        ),
+        Index("ix_gamma_analysis_runs_organization_case", "organization_id", "qa_case_id"),
+        Index("ix_gamma_analysis_runs_organization_status", "organization_id", "status"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    qa_case_id: Mapped[UUID] = mapped_column(ForeignKey("qa_cases.id"), nullable=False, index=True)
+    reference_artifact_id: Mapped[UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False, index=True
+    )
+    evaluation_artifact_id: Mapped[UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False, index=True
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(200), nullable=False)
+    request_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="QUEUED")
+    progress_percent: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    engine_version: Mapped[str] = mapped_column(String(100), nullable=False)
+    config_snapshot: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    input_manifest_snapshot: Mapped[dict[str, object]] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
+    result_snapshot: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    error_snapshot: Mapped[list[dict[str, object]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    warning_snapshot: Mapped[list[dict[str, object]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    queued_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+
+
 class Artifact(TimestampedIdMixin, Base):
     """Immutable source or derived file metadata; bytes live in object storage."""
 

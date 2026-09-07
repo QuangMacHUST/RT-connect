@@ -4,9 +4,9 @@
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
 - **Current phase:** P8 — PSQA Gamma queue, deterministic engine contract and result artifacts; P7 Machine QA is complete on staging.
-- **Current status:** IN_PROGRESS — P0–P7 now have local evidence and P2–P7 staging evidence at their declared scope. P8 is the next implementation slice: a queued Gamma job with explicit reference/evaluation inputs, configuration, preflight, progress, deterministic result and provenance.
-- **Last authoritative check:** 2026-09-07 — P6 staging artifact `gamma-measurement-v1-smoke.json` uploaded successfully (572 bytes, checksum prefix `007751b0f8127af3`), validation returned `VALID` with `0` errors and `0` warnings, and the signed Download action was invoked; P7 focused API tests (3), full API regression (36), strict mypy, Ruff, OpenAPI regeneration/check, frontend test, lint, typecheck and production build passed locally; staging P7 evaluate/rerun/compare smoke passed.
-- **Next exact step:** design and implement P8 preflight/configuration/job/result contracts against the P6 manifest and P7 case/run model; keep the engine deterministic and start with the synthetic measurement contract before adding a worker service.
+- **Current status:** IN_PROGRESS — P0–P7 now have local evidence and P2–P7 staging evidence at their declared scope. P8 has a local queue/engine/UI vertical slice; migration, worker deployment and authenticated staging golden smoke remain open gates.
+- **Last authoritative check:** 2026-09-08 — P8 local Gamma golden/shift/queue/worker tests passed together with the full API suite (41 tests), strict mypy and Ruff; frontend Gamma route typecheck/lint/test/build passed. No P8 staging result is claimed yet.
+- **Next exact step:** export/check OpenAPI, commit the P8 local slice, deploy API/web and a worker to staging, then run two validated synthetic measurement artifacts through QUEUED → RUNNING → COMPLETED and verify result snapshot, provenance, retry and compare after refresh.
 
 ## Source documents read
 
@@ -28,7 +28,7 @@
 | P5 | STAGING E2E PASS | Nested folder/QA case flow is deployed; staging smoke created `Staging P6 Smoke` and QA case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24` |
 | P6 | STAGING E2E PASS | Migration `20260907_0005`, artifact metadata/checksum, Input Manifest, duplicate upload, Railway S3-compatible storage, DICOM/measurement validator and QA Archive upload panel are deployed; authenticated synthetic upload created the manifest, validation returned `VALID` with 0 errors/0 warnings and the signed Download action was invoked |
 | P7 | STAGING E2E PASS | Migration `20260907_0006`; protocol/rule seed, scoped Machine QA run lifecycle, draft revision, evaluation, immutable result/rerun/compare and trend projection are implemented; staging evaluate returned PASS for `output_factor=100`, `symmetry=1`, `flatness=100`, then rerun and compare preserved both histories |
-| P8 | NEXT | Depends on P6/P7; implement preflight, Gamma configuration, queued job state and deterministic 2D engine before worker/3D expansion |
+| P8 | LOCAL PASS + STAGING PENDING | Migration `20260907_0007`; organization/case-scoped preflight, idempotent Gamma job snapshot, deterministic 2D engine, DB-backed worker entrypoint, result map/metrics/warnings and Gamma Workspace are implemented locally; worker deployment and authenticated staging golden smoke are next |
 | P9 | NOT_STARTED | Depends on P7/P8 for Gamma blocks |
 | P10 | NOT_STARTED | Depends on P7–P9 |
 | P11 | NOT_STARTED | Depends on P7/P9 |
@@ -156,13 +156,14 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 - P6 authenticated staging evidence: PASS — the user-selected `docs/fixtures/gamma-measurement-v1-smoke.json` appeared as `gamma-measurement-v1-smoke.json` (572 bytes) in QA Archive; upload created the Input Manifest, validation displayed `VALID: 0 lỗi, 0 cảnh báo`, the artifact status changed to `VALID`, and the UI invoked its signed Download action.
 - P7 local implementation: PASS — migration `20260907_0006` adds organization-scoped protocol versions/rules, `machine_qa_runs` and `trend_points`; the rule engine covers range/min/max/absolute or percent deviation and N/A, records missing/unit errors, snapshots protocol rules, prevents edits after evaluation, and projects numeric metrics to trend points. Focused P7 tests (3), full API regression (36), strict mypy, Ruff, OpenAPI regeneration/check, frontend lint/typecheck/test/build all pass.
 - P7 staging evidence: PASS — deployments `483f1a30-af73-46ea-be9f-a70627802a3a` (API) and `b16a2e5c-f2ea-414e-9c92-d85bf1aea57c` (web) reported successful; authenticated Machine QA seeded `MACHINE_QA_BASELINE` v1, created run `9b18fa2f-7a02-4154-853a-270e890fcabe`, evaluated `100 / 1 / 100` as `PASS`, created rerun `5ac1a1c1-a985-4a40-97e4-0c8a8b6864c0`, evaluated it as `PASS`, and the compare table returned all three metric snapshots.
+- P8 local implementation: PASS — migration `20260907_0007` adds `gamma_analysis_runs`; preflight requires two organization/case-scoped measurement/JSON artifacts with `VALID` Input Manifests; idempotency keys return the existing run; configuration, checksums and engine version are snapshotted; the deterministic 2D engine supports global/local, absolute/relative, threshold, DTA and grid/bilinear sampling for `gamma.measurement.v1`; result snapshots include map, histogram, pass rate, percentiles and warnings; the separate worker entrypoint persists heartbeat/progress/failure/retry state. Gamma/API worker tests plus full API suite (41), mypy and Ruff pass; frontend Gamma route typecheck/lint/test/build pass.
 
 ## Current blockers and required gates
 
 The older Railway-history bullets below are retained as evidence of earlier incidents. The current gates are:
 
 - The authenticated staging user and organization onboarding path are working. A fresh browser test should still be repeated after session expiry before treating the auth path as operationally stable.
-- P8 requires a deterministic Gamma slice: validated reference/evaluation measurement inputs, explicit DTA/dose-difference/threshold/normalization configuration, idempotent job/result snapshots and a reproducible synthetic golden result; the worker/queue deployment is a later gate in the same phase.
+- P8 requires staging evidence still outstanding: deploy migration `20260907_0007`, API/web and the worker; use two validated synthetic measurement artifacts; verify QUEUED → RUNNING → COMPLETED, result checksum/provenance, retry, compare and browser refresh/reconnect. Redis-compatible queue wiring and 3D/large-input expansion remain subsequent P8 gates, so P8 is not complete yet.
 - The P7 branch has not been promoted to production. Production promotion remains blocked until Gamma/report/trend/protocol gates, backup and rollback evidence exist.
 
 - Correction on 2026-09-05: both Railway tokens are present in root `.env` and authenticate successfully through the Railway API. Account-token access resolves project `prolific-learning`; project-token scope resolves its production environment. The earlier missing-token report was incorrect. Standard dotenv parsing supports spaces around `=` and quoted values.

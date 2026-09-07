@@ -96,6 +96,21 @@ td code { color: #075e67; font-size: .78rem; }
 .artifact-upload input, .artifact-upload select { border: 1px solid #c8d5de; border-radius: 4px; color: #0f172a; font: inherit; min-height: 38px; padding: 8px 10px; }
 .page-header__actions { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
 .machine-qa-panel { margin-top: 18px; }
+.gamma-panel { margin-top: 18px; }
+.gamma-input-grid, .gamma-config-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 16px; }
+.gamma-input-grid label, .gamma-config-grid label { color: #334155; display: grid; font-size: .82rem; font-weight: 600; gap: 6px; }
+.gamma-input-grid select, .gamma-config-grid input, .gamma-config-grid select { border: 1px solid #c8d5de; border-radius: 4px; color: #0f172a; font: inherit; min-height: 38px; padding: 8px 10px; }
+.gamma-input-summary, .gamma-run-meta { align-items: center; color: #617787; display: flex; flex-wrap: wrap; font-size: .78rem; gap: 12px; margin-top: 16px; }
+.gamma-input-summary strong { color: #0f2744; }
+.gamma-run-meta code { color: #075e67; font-size: .7rem; }
+.gamma-progress { background: #edf2f6; border: 1px solid #dce5ea; margin-top: 16px; padding: 8px; }
+.gamma-progress > div { background: #0b7d78; height: 9px; transition: width .2s ease; }
+.gamma-progress p { color: #617787; font-size: .8rem; margin: 8px 0 0; }
+.gamma-result-banner { align-items: center; background: #f2fbf9; border: 1px solid #9bd8cf; display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; padding: 14px; }
+.gamma-result-banner strong { color: #075e67; font-size: 1.3rem; }
+.gamma-metrics { margin-top: 16px; }
+.gamma-map-table { min-width: 680px; }
+.form-hint { color: #617787; font-size: .8rem; margin: 14px 0; }
 .machine-qa-protocol-controls { align-items: end; display: grid; gap: 14px; grid-template-columns: minmax(250px, .75fr) minmax(0, 1.25fr); margin-top: 16px; }
 .machine-qa-protocol-controls label, .compare-controls label { color: #334155; display: grid; font-size: .82rem; font-weight: 600; gap: 6px; }
 .machine-qa-protocol-controls select, .compare-controls select { border: 1px solid #c8d5de; border-radius: 4px; color: #0f172a; font: inherit; min-height: 38px; padding: 8px 10px; }
@@ -169,7 +184,7 @@ td code { color: #075e67; font-size: .78rem; }
   .inline-form { align-items: stretch; flex-direction: column; }
   .filter-row { grid-template-columns: 1fr; }
   .artifact-upload { grid-template-columns: 1fr; }
-  .machine-qa-protocol-controls { grid-template-columns: 1fr; }
+  .machine-qa-protocol-controls, .gamma-input-grid, .gamma-config-grid { grid-template-columns: 1fr; }
   .auth-panel { padding: 16px; }
   .auth-brand { gap: 20px; }
 }

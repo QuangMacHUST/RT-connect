@@ -962,6 +962,31 @@ P7 lưu bốn nhóm dữ liệu: `qa_protocol_versions` và `qa_protocol_rules` 
 
 Rule engine P7 hỗ trợ `RANGE`, `MIN`, `MAX`, `ABSOLUTE_DEVIATION`, `PERCENT_DEVIATION` và `NA`. Thiếu metric bắt buộc, sai unit hoặc giá trị không hợp lệ làm run `FAILED` và lưu `error_snapshot`; lệch trong action band tạo metric `WARNING`; kết quả nằm trong tolerance tạo `PASS`. Protocol seed chỉ là fixture kỹ thuật cho vertical slice, không phải giới hạn lâm sàng mặc định; thư viện protocol được quản trị/version hóa đầy đủ ở P11.
 
+P8 local implementation slice hiện có migration `20260907_0007` và entity
+`gamma_analysis_runs`. Các endpoint thực tế là:
+
+| Method | Path | Mục đích |
+| :--- | :--- | :--- |
+| POST | `/qa-cases/{id}/gamma-runs` | Preflight input, snapshot configuration/manifest và enqueue job bằng idempotency key |
+| GET | `/qa-cases/{id}/gamma-runs` | Liệt kê job/result theo QA case và organization |
+| GET | `/gamma-runs/{id}` | Poll status, progress, heartbeat, errors, warnings và result snapshot |
+| POST | `/gamma-runs/{id}/retry` | Đưa job `FAILED` trở lại queue mà không đổi input/config snapshot |
+| GET | `/gamma-runs/{id}/compare?other_run_id=...` | So sánh result snapshots của hai run cùng organization |
+
+API không gọi engine trong request. `rt_connect_api.worker` claim các row
+`QUEUED/RETRYING`, đọc object storage, cập nhật `RUNNING`/heartbeat/progress rồi lưu
+`COMPLETED` hoặc `FAILED`. Initial worker dùng database-backed polling để kiểm thử
+contract; Railway Redis-compatible queue và worker service là gate triển khai staging
+tiếp theo, không được suy luận là đã hoàn thành chỉ từ local test.
+
+Engine `gamma-2d-p8.1` hiện nhận subset đã khóa của `gamma.measurement.v1`: JSON
+`data_type=dose`, dose `GY`, position `mm`, grid 2D, `inline-float32` finite values.
+Nó không tự đoán đơn vị, không đổi shape và không đọc DICOM RTDOSE trong slice này.
+Kết quả lưu map điểm, số điểm evaluated/passing/excluded/no-candidate, pass rate,
+percentile, histogram, warning, configuration, input checksum và engine version.
+Đây là deterministic engineering/golden slice; chưa phải bằng chứng commissioning
+hoặc clinical release.
+
 ### 6.6. Report và trend
 
 | Method | Path | Mục đích |
@@ -1201,6 +1226,12 @@ Ví dụ contract kỹ thuật:
 ~~~
 
 Values có thể nằm trong JSON nhỏ hoặc object riêng. Contract phải có schema validator và fixture.
+
+P8 initial adapter dùng một profile hẹp hơn để tạo golden test lặp lại: `data_type`
+phải là `dose`, units phải là `GY` và `mm`, encoding phải là `inline-float32`, shape
+phải là ma trận 2D và số value phải khớp chính xác với shape. Profile này được lưu
+trong provenance của từng run; các profile DICOM RTDOSE, cGy/object-key và 3D chỉ
+được mở sau khi có adapter, fixture và golden test riêng.
 
 ### 8.3. Pipeline
 

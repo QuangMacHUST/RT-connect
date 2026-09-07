@@ -175,6 +175,46 @@ export type MachineQACompareResource = {
     right: Record<string, unknown> | null
   }>
 }
+export type GammaConfiguration = {
+  dimensionality: '2D'
+  dose_difference_percent: number
+  dose_difference_mode: 'ABSOLUTE' | 'RELATIVE'
+  absolute_dose_difference_gy: number | null
+  distance_to_agreement_mm: number
+  dose_threshold_percent: number
+  normalization: 'GLOBAL' | 'LOCAL'
+  interpolation: 'GRID' | 'BILINEAR'
+  pass_rate_threshold_percent: number
+  histogram_bins: number
+}
+export type GammaRunResource = {
+  id: string
+  organization_id: string
+  qa_case_id: string
+  reference_artifact_id: string
+  evaluation_artifact_id: string
+  idempotency_key: string
+  status: string
+  progress_percent: number
+  attempt_count: number
+  engine_version: string
+  config_snapshot: Record<string, unknown>
+  input_manifest_snapshot: Record<string, unknown>
+  result_snapshot: Record<string, unknown>
+  error_snapshot: Array<Record<string, unknown>>
+  warning_snapshot: Array<Record<string, unknown>>
+  queued_at: string
+  started_at: string | null
+  heartbeat_at: string | null
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+}
+export type GammaCompareResource = {
+  left_run_id: string
+  right_run_id: string
+  items: Array<{ key: string; left: unknown; right: unknown }>
+}
 
 const qaProtocolRuleSchema = z.object({
   id: z.string().uuid(), metric_key: z.string(), display_name: z.string(), unit: z.string(),
@@ -196,6 +236,17 @@ const machineQARunSchema = z.object({
   error_snapshot: z.array(z.record(z.string(), z.unknown())),
   supersedes_run_id: z.string().uuid().nullable(), started_at: z.string().nullable(),
   completed_at: z.string().nullable(), created_at: z.string(), updated_at: z.string(), protocol: qaProtocolSchema
+})
+const gammaRunSchema = z.object({
+  id: z.string().uuid(), organization_id: z.string().uuid(), qa_case_id: z.string().uuid(),
+  reference_artifact_id: z.string().uuid(), evaluation_artifact_id: z.string().uuid(),
+  idempotency_key: z.string(), status: z.string(), progress_percent: z.number().int(),
+  attempt_count: z.number().int(), engine_version: z.string(),
+  config_snapshot: z.record(z.string(), z.unknown()), input_manifest_snapshot: z.record(z.string(), z.unknown()),
+  result_snapshot: z.record(z.string(), z.unknown()), error_snapshot: z.array(z.record(z.string(), z.unknown())),
+  warning_snapshot: z.array(z.record(z.string(), z.unknown())), queued_at: z.string(),
+  started_at: z.string().nullable(), heartbeat_at: z.string().nullable(), completed_at: z.string().nullable(),
+  created_at: z.string(), updated_at: z.string()
 })
 
 const makeCorrelationId = () => crypto.randomUUID()
@@ -499,6 +550,34 @@ export class ApiClient {
     return this.get(`/machine-qa-runs/${runId}/compare?other_run_id=${encodeURIComponent(otherRunId)}`, z.object({
       left_run_id: z.string().uuid(), right_run_id: z.string().uuid(),
       items: z.array(z.object({ metric_key: z.string(), left: z.record(z.string(), z.unknown()).nullable(), right: z.record(z.string(), z.unknown()).nullable() }))
+    }), accessToken)
+  }
+
+  gammaRuns(accessToken: string, caseId: string): Promise<{ items: GammaRunResource[]; total: number }> {
+    return this.get(`/qa-cases/${caseId}/gamma-runs`, z.object({
+      items: z.array(gammaRunSchema), total: z.number().int()
+    }), accessToken)
+  }
+
+  createGammaRun(accessToken: string, caseId: string, body: {
+    reference_artifact_id: string
+    evaluation_artifact_id: string
+    idempotency_key: string
+    configuration: GammaConfiguration
+  }): Promise<GammaRunResource> {
+    return this.request(`/qa-cases/${caseId}/gamma-runs`, gammaRunSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  retryGammaRun(accessToken: string, runId: string): Promise<GammaRunResource> {
+    return this.request(`/gamma-runs/${runId}/retry`, gammaRunSchema, accessToken, { method: 'POST' })
+  }
+
+  compareGammaRuns(accessToken: string, runId: string, otherRunId: string): Promise<GammaCompareResource> {
+    return this.get(`/gamma-runs/${runId}/compare?other_run_id=${encodeURIComponent(otherRunId)}`, z.object({
+      left_run_id: z.string().uuid(), right_run_id: z.string().uuid(),
+      items: z.array(z.object({ key: z.string(), left: z.unknown().nullable(), right: z.unknown().nullable() }))
     }), accessToken)
   }
 }

@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { HomeDashboardPage } from './pages/HomeDashboardPage'
+import { GammaPage } from './pages/GammaPage'
 import { LoginPage } from './pages/LoginPage'
 import { MachineQAPage } from './pages/MachineQAPage'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -24,6 +25,7 @@ export function ApplicationRoutes() {
       <Route path="/app/organization" element={<ProtectedRoute><OrganizationManagementPage /></ProtectedRoute>} />
       <Route path="/app/qa" element={<ProtectedRoute><QAArchivePage /></ProtectedRoute>} />
       <Route path="/app/qa/cases/:caseId/machine-qa" element={<ProtectedRoute><MachineQAPage /></ProtectedRoute>} />
+      <Route path="/app/qa/cases/:caseId/gamma" element={<ProtectedRoute><GammaPage /></ProtectedRoute>} />
       <Route path="/app/system/status" element={<PlatformStatusPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

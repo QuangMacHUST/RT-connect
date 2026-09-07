@@ -7,6 +7,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from rt_connect_api.api.artifacts import router as artifacts_router
 from rt_connect_api.api.auth import router as auth_router
+from rt_connect_api.api.gamma import router as gamma_router
 from rt_connect_api.api.health import router as health_router
 from rt_connect_api.api.machine_qa import router as machine_qa_router
 from rt_connect_api.api.organization import router as organization_router
@@ -56,6 +57,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(qa_archive_router, prefix="/api/v1")
     app.include_router(artifacts_router, prefix="/api/v1")
     app.include_router(machine_qa_router, prefix="/api/v1")
+    app.include_router(gamma_router, prefix="/api/v1")
     return app
 
 

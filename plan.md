@@ -671,6 +671,12 @@ Thời lượng là ước lượng tham chiếu cho một nhóm nhỏ. Phase c�
 - Idempotency, retry, timeout, heartbeat và queue metrics.
 - Theo dõi Railway usage/cost sau khi thêm service.
 
+P8 implementation checkpoint: the first local slice uses a persisted database-backed
+queue row and a separate `python -m rt_connect_api.worker` process so that the HTTP
+API already only enqueues and polls. This is not the final queue gate: before P8 can
+close, the worker must run in staging, Redis-compatible queue/claim wiring and queue
+metrics must be verified, and the synthetic golden flow must pass over HTTPS.
+
 ## Engine
 
 - GammaConfiguration đầy đủ.
