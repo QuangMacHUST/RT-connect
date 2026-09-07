@@ -676,9 +676,18 @@ P8 implementation checkpoint: the local slice has a persisted database-backed qu
 row and a separate `python -m rt_connect_api.worker` process. The current implementation
 adds a Redis Streams adapter using consumer-group claim, acknowledgement and stale-message
 reclaim; when `REDIS_URL` is absent, local development deliberately falls back to database
-polling. The staging Redis service and `REDIS_URL` references must still be verified with
-the new deployed commit, and P8 remains open until the queue metrics, failed-job/retry path,
-RTDOSE/measurement scope and any retained 3D/large-input scope have evidence.
+polling. Staging now has the Redis service, the private `REDIS_URL` reference on both API and
+worker, and a live worker-consumed 2D run with `pending=0` after acknowledgement. P8 remains
+open until the authenticated queue-metrics endpoint, failed-job/retry path, RTDOSE/measurement
+scope and any retained 3D/large-input scope have evidence.
+
+### P8 staging verification record — 2026-09-08
+
+- Worker deployment `fb446c0e-2a1b-4a17-88f3-aeb8b5318e3c` from commit `5ec12fb` succeeded.
+- Worker startup log selected `redis_stream` with stream `rt-connect:gamma` and consumer group `rt-connect-gamma`.
+- Authenticated Gamma Workspace run `e084529d-6bb1-4119-ae0a-f4da7d371cac` reached `COMPLETED / PASS`, 100% (4/4) on `gamma-2d-p8.1`.
+- Redis staging reported `XLEN=2`; `rt-connect-gamma` reported 2 consumers, `entries-read=2`, `pending=0` and `lag=0`.
+- This closes the live Redis transport publish/claim/ack evidence for the current 2D synthetic adapter. It does not close the `/gamma/queue-metrics` authenticated API smoke, failure/retry test, RTDOSE/3D test or clinical commissioning scope.
 
 ## Engine
 
@@ -710,9 +719,9 @@ RTDOSE/measurement scope and any retained 3D/large-input scope have evidence.
 - Configuration snapshot đủ và run cũ không đổi.
 - Golden test pass.
 
-The current staging golden evidence covers the locked 2D synthetic JSON adapter. It does not
-close the RTDOSE/3D commissioning gate by itself; those tests remain explicit work unless the
-scope is revised and recorded before P8 closure.
+The current staging golden evidence covers the locked 2D synthetic JSON adapter. The live Redis
+transport is now evidenced, but neither result is sufficient to close the RTDOSE/3D commissioning
+gate; those tests remain explicit work unless the scope is revised and recorded before P8 closure.
 
 ---
 

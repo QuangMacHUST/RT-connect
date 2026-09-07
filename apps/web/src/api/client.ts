@@ -216,6 +216,19 @@ export type GammaCompareResource = {
   right_run_id: string
   items: Array<{ key: string; left: unknown; right: unknown }>
 }
+export type GammaQueueMetrics = {
+  backend: string
+  configured: boolean
+  available: boolean
+  stream_length: number | null
+  pending_count: number | null
+  consumer_count: number | null
+  queued_runs: number
+  running_runs: number
+  retrying_runs: number
+  failed_runs: number
+  error: string | null
+}
 
 const qaProtocolRuleSchema = z.object({
   id: z.string().uuid(), metric_key: z.string(), display_name: z.string(), unit: z.string(),
@@ -248,6 +261,13 @@ const gammaRunSchema = z.object({
   warning_snapshot: z.array(z.record(z.string(), z.unknown())), queued_at: z.string(),
   started_at: z.string().nullable(), heartbeat_at: z.string().nullable(), completed_at: z.string().nullable(),
   created_at: z.string(), updated_at: z.string()
+})
+const gammaQueueMetricsSchema = z.object({
+  backend: z.string(), configured: z.boolean(), available: z.boolean(),
+  stream_length: z.number().int().nullable(), pending_count: z.number().int().nullable(),
+  consumer_count: z.number().int().nullable(), queued_runs: z.number().int(),
+  running_runs: z.number().int(), retrying_runs: z.number().int(), failed_runs: z.number().int(),
+  error: z.string().nullable()
 })
 
 const makeCorrelationId = () => crypto.randomUUID()
@@ -573,6 +593,10 @@ export class ApiClient {
 
   retryGammaRun(accessToken: string, runId: string): Promise<GammaRunResource> {
     return this.request(`/gamma-runs/${runId}/retry`, gammaRunSchema, accessToken, { method: 'POST' })
+  }
+
+  gammaQueueMetrics(accessToken: string): Promise<GammaQueueMetrics> {
+    return this.get('/gamma/queue-metrics', gammaQueueMetricsSchema, accessToken)
   }
 
   compareGammaRuns(accessToken: string, runId: string, otherRunId: string): Promise<GammaCompareResource> {

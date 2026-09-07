@@ -4,15 +4,16 @@ import { BrowserRouter } from 'react-router-dom'
 import { expect, test, vi } from 'vitest'
 
 import { apiClient } from '../api/client'
+import { AuthProvider } from '../auth/AuthProvider'
 import { PlatformStatusPage } from './PlatformStatusPage'
 
 vi.mock('../api/client', () => ({
-  apiClient: { health: vi.fn(), version: vi.fn() }
+  apiClient: { health: vi.fn(), version: vi.fn(), gammaQueueMetrics: vi.fn() }
 }))
 
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return render(<QueryClientProvider client={queryClient}><BrowserRouter><PlatformStatusPage /></BrowserRouter></QueryClientProvider>)
+  return render(<QueryClientProvider client={queryClient}><BrowserRouter><AuthProvider><PlatformStatusPage /></AuthProvider></BrowserRouter></QueryClientProvider>)
 }
 
 test('renders an API-backed platform health state', async () => {
