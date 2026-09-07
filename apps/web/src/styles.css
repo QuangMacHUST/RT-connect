@@ -90,6 +90,10 @@ td code { color: #075e67; font-size: .78rem; }
 .case-form { border-top: 1px solid #dce5ea; margin-top: 18px; padding-top: 16px; }
 .table-subtitle { color: #718596; display: block; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .64rem; margin-top: 4px; }
 .empty-state { color: #617787; font-style: italic; padding: 18px 0; }
+.artifact-panel { border-top: 1px solid #dce5ea; margin-top: 24px; padding-top: 18px; }
+.artifact-upload { align-items: end; border: 1px solid #dce5ea; display: grid; gap: 10px; grid-template-columns: minmax(0, 2fr) minmax(130px, .7fr) minmax(150px, .8fr) auto; margin-top: 14px; padding: 12px; }
+.artifact-upload label { color: #334155; display: grid; font-size: .78rem; font-weight: 600; gap: 6px; }
+.artifact-upload input, .artifact-upload select { border: 1px solid #c8d5de; border-radius: 4px; color: #0f172a; font: inherit; min-height: 38px; padding: 8px 10px; }
 
 .auth-layout { display: grid; grid-template-columns: minmax(300px, 42%) minmax(0, 58%); min-height: 100vh; }
 .auth-brand { background: #0f2744; color: #eaf1ff; display: flex; flex-direction: column; gap: 32px; justify-content: center; min-height: 100%; padding: clamp(32px, 6vw, 88px); }
@@ -146,6 +150,7 @@ td code { color: #075e67; font-size: .78rem; }
   .metric-grid, .dashboard-grid { grid-template-columns: 1fr; }
   .inline-form { align-items: stretch; flex-direction: column; }
   .filter-row { grid-template-columns: 1fr; }
+  .artifact-upload { grid-template-columns: 1fr; }
   .auth-panel { padding: 16px; }
   .auth-brand { gap: 20px; }
 }

@@ -22,6 +22,12 @@ class Settings(BaseSettings):
     correlation_id_header: str = "X-Correlation-ID"
     request_timeout_seconds: int = 30
     max_upload_bytes: int = 104_857_600
+    s3_endpoint: str | None = None
+    s3_region: str = "us-east-1"
+    s3_bucket: str = "rt-connect-artifacts"
+    s3_access_key_id: str | None = None
+    s3_secret_access_key: str | None = None
+    s3_signed_url_ttl_seconds: int = 900
     engine_version: str = "unavailable-in-p1"
     renderer_version: str = "unavailable-in-p1"
     supabase_jwt_issuer: str | None = None

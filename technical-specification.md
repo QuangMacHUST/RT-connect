@@ -917,6 +917,7 @@ Dashboard endpoint là read model tổng hợp; không chạy analysis khi rende
 | Method | Path | Mục đích |
 | :--- | :--- | :--- |
 | POST | /qa-cases/{id}/artifacts | Upload artifact |
+| GET | /qa-cases/{id}/artifacts | Liệt kê artifact trong QA case |
 | GET | /artifacts/{id} | Xem metadata |
 | GET | /artifacts/{id}/download | Tải file theo organization |
 | POST | /artifacts/{id}/validate | Chạy validation |

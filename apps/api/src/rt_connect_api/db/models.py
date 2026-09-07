@@ -10,6 +10,8 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    Index,
+    Integer,
     String,
     UniqueConstraint,
     false,
@@ -149,6 +151,104 @@ class QACase(TimestampedIdMixin, Base):
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
     created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+
+
+class Artifact(TimestampedIdMixin, Base):
+    """Immutable source or derived file metadata; bytes live in object storage."""
+
+    __tablename__ = "artifacts"
+    __table_args__ = (
+        Index("ix_artifacts_organization_checksum", "organization_id", "sha256"),
+        Index("ix_artifacts_organization_status", "organization_id", "data_status"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    qa_case_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("qa_cases.id"), nullable=True, index=True
+    )
+    artifact_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    modality: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    original_filename: Mapped[str] = mapped_column(String(512), nullable=False)
+    object_key: Mapped[str] = mapped_column(String(768), nullable=False, unique=True)
+    byte_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    media_type: Mapped[str] = mapped_column(String(255), nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    sop_class_uid: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    sop_instance_uid: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    study_instance_uid: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    series_instance_uid: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    frame_of_reference_uid: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    source_system: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    uploaded_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+    uploaded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    data_status: Mapped[str] = mapped_column(
+        String(30), nullable=False, server_default="UPLOADED", index=True
+    )
+    parent_artifact_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=True, index=True
+    )
+    metadata_snapshot: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+
+
+class InputManifest(TimestampedIdMixin, Base):
+    """Organization-scoped declaration of how an artifact may be used."""
+
+    __tablename__ = "input_manifests"
+    __table_args__ = (
+        Index("ix_input_manifests_organization_artifact", "organization_id", "artifact_id"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    analysis_run_id: Mapped[UUID | None] = mapped_column(
+        PostgreSQLUUID(as_uuid=True), nullable=True, index=True
+    )
+    artifact_id: Mapped[UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False, index=True
+    )
+    logical_role: Mapped[str] = mapped_column(String(30), nullable=False)
+    checksum_at_use: Mapped[str] = mapped_column(String(64), nullable=False)
+    selected_metadata: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    geometry_summary: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    unit_summary: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    validation_summary: Mapped[dict[str, object]] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
+
+
+class ValidationRun(TimestampedIdMixin, Base):
+    """A reproducible validation result for one uploaded artifact or manifest."""
+
+    __tablename__ = "validation_runs"
+    __table_args__ = (
+        Index("ix_validation_runs_organization_subject", "organization_id", "subject_id"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    subject_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    subject_id: Mapped[UUID] = mapped_column(PostgreSQLUUID(as_uuid=True), nullable=False)
+    validation_type: Mapped[str] = mapped_column(String(60), nullable=False)
+    validator_version: Mapped[str] = mapped_column(String(80), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    result: Mapped[str] = mapped_column(String(20), nullable=False)
+    checks: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False, default=list)
+    warnings: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False, default=list)
+    errors: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False, default=list)
+    input_manifest_snapshot: Mapped[dict[str, object]] = mapped_column(
+        JSON, nullable=False, default=dict
     )
 
 

@@ -80,6 +80,41 @@ export type QACaseResource = {
   case_status: string
   is_archived: boolean
 }
+export type ArtifactResource = {
+  id: string
+  organization_id: string
+  qa_case_id: string | null
+  artifact_type: string
+  modality: string | null
+  original_filename: string
+  byte_size: number
+  media_type: string
+  sha256: string
+  sop_class_uid: string | null
+  sop_instance_uid: string | null
+  study_instance_uid: string | null
+  series_instance_uid: string | null
+  frame_of_reference_uid: string | null
+  source_system: string | null
+  uploaded_at: string
+  data_status: string
+  parent_artifact_id: string | null
+  metadata_snapshot: Record<string, unknown>
+}
+export type ValidationResource = {
+  id: string
+  subject_type: string
+  subject_id: string
+  validation_type: string
+  validator_version: string
+  started_at: string
+  completed_at: string | null
+  result: string
+  checks: Array<Record<string, unknown>>
+  warnings: Array<Record<string, unknown>>
+  errors: Array<Record<string, unknown>>
+  input_manifest_snapshot: Record<string, unknown>
+}
 
 const makeCorrelationId = () => crypto.randomUUID()
 
@@ -103,7 +138,7 @@ export class ApiClient {
         ...init,
         headers: {
           Accept: 'application/json',
-          ...(init.body ? { 'Content-Type': 'application/json' } : {}),
+          ...(init.body && !(init.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
           'X-Correlation-ID': correlationId,
           ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
           ...init.headers
@@ -290,6 +325,56 @@ export class ApiClient {
       protocol_version_id: z.string().uuid().nullable(), status_note: z.string().nullable(),
       case_status: z.string(), is_archived: z.boolean()
     }), accessToken, { method: 'PATCH', body: JSON.stringify(body) })
+  }
+
+  artifacts(accessToken: string, caseId: string): Promise<{ items: ArtifactResource[]; total: number; offset: number; limit: number }> {
+    return this.get(`/qa-cases/${caseId}/artifacts`, z.object({
+      items: z.array(z.object({
+        id: z.string().uuid(), organization_id: z.string().uuid(), qa_case_id: z.string().uuid().nullable(),
+        artifact_type: z.string(), modality: z.string().nullable(), original_filename: z.string(),
+        byte_size: z.number().int().nonnegative(), media_type: z.string(), sha256: z.string(),
+        sop_class_uid: z.string().nullable(), sop_instance_uid: z.string().nullable(),
+        study_instance_uid: z.string().nullable(), series_instance_uid: z.string().nullable(),
+        frame_of_reference_uid: z.string().nullable(), source_system: z.string().nullable(),
+        uploaded_at: z.string(), data_status: z.string(), parent_artifact_id: z.string().uuid().nullable(),
+        metadata_snapshot: z.record(z.string(), z.unknown())
+      })), total: z.number().int(), offset: z.number().int(), limit: z.number().int()
+    }), accessToken)
+  }
+
+  uploadArtifact(accessToken: string, caseId: string, file: File, artifactType: string, logicalRole: string): Promise<ArtifactResource & { duplicate: boolean }> {
+    const body = new FormData()
+    body.append('file', file)
+    body.append('artifact_type', artifactType)
+    body.append('logical_role', logicalRole)
+    return this.request(`/qa-cases/${caseId}/artifacts`, z.object({
+      id: z.string().uuid(), organization_id: z.string().uuid(), qa_case_id: z.string().uuid().nullable(),
+      artifact_type: z.string(), modality: z.string().nullable(), original_filename: z.string(),
+      byte_size: z.number().int().nonnegative(), media_type: z.string(), sha256: z.string(),
+      sop_class_uid: z.string().nullable(), sop_instance_uid: z.string().nullable(),
+      study_instance_uid: z.string().nullable(), series_instance_uid: z.string().nullable(),
+      frame_of_reference_uid: z.string().nullable(), source_system: z.string().nullable(),
+      uploaded_at: z.string(), data_status: z.string(), parent_artifact_id: z.string().uuid().nullable(),
+      metadata_snapshot: z.record(z.string(), z.unknown()), duplicate: z.boolean()
+    }), accessToken, { method: 'POST', body })
+  }
+
+  validateArtifact(accessToken: string, artifactId: string, force = false): Promise<ValidationResource> {
+    return this.request(`/artifacts/${artifactId}/validate?force=${force}`, z.object({
+      id: z.string().uuid(), subject_type: z.string(), subject_id: z.string().uuid(),
+      validation_type: z.string(), validator_version: z.string(), started_at: z.string(),
+      completed_at: z.string().nullable(), result: z.string(),
+      checks: z.array(z.record(z.string(), z.unknown())),
+      warnings: z.array(z.record(z.string(), z.unknown())),
+      errors: z.array(z.record(z.string(), z.unknown())),
+      input_manifest_snapshot: z.record(z.string(), z.unknown())
+    }), accessToken, { method: 'POST' })
+  }
+
+  downloadArtifact(accessToken: string, artifactId: string): Promise<{ artifact_id: string; url: string; expires_at: string }> {
+    return this.get(`/artifacts/${artifactId}/download`, z.object({
+      artifact_id: z.string().uuid(), url: z.string(), expires_at: z.string()
+    }), accessToken)
   }
 }
 
