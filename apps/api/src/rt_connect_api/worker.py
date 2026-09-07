@@ -98,6 +98,10 @@ def process_gamma_queue_message(
 
 def main() -> None:
     settings = get_settings()
+    logging.basicConfig(
+        level=getattr(logging, settings.log_level.upper(), logging.INFO),
+        format="%(asctime)s %(levelname)s %(name)s %(message)s",
+    )
     engine = get_engine()
     if engine is None:
         raise RuntimeError("DATABASE_URL is not configured for the Gamma worker")
@@ -106,6 +110,12 @@ def main() -> None:
     run_once = os.getenv("GAMMA_WORKER_ONCE", "0") == "1"
     factory = Session
     queue = get_gamma_queue(settings, consumer_name=os.getenv("GAMMA_QUEUE_CONSUMER"))
+    logger.info(
+        "Gamma worker starting queue_backend=%s stream=%s group=%s",
+        "redis_stream" if queue is not None else "database_polling",
+        settings.gamma_queue_stream,
+        settings.gamma_queue_group,
+    )
     if queue is not None:
         queue.ensure_ready()
         logger.info("Gamma worker using Redis Streams queue")
