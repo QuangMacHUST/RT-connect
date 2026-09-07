@@ -687,7 +687,7 @@ scope and any retained 3D/large-input scope have evidence.
 - Worker startup log selected `redis_stream` with stream `rt-connect:gamma` and consumer group `rt-connect-gamma`.
 - Authenticated Gamma Workspace run `e084529d-6bb1-4119-ae0a-f4da7d371cac` reached `COMPLETED / PASS`, 100% (4/4) on `gamma-2d-p8.1`.
 - Redis staging reported `XLEN=2`; `rt-connect-gamma` reported 2 consumers, `entries-read=2`, `pending=0` and `lag=0`.
-- This closes the live Redis transport publish/claim/ack evidence for the current 2D synthetic adapter. It does not close the `/gamma/queue-metrics` authenticated API smoke, failure/retry test, RTDOSE/3D test or clinical commissioning scope.
+- The deployed web Status page also called the authenticated `/api/v1/gamma/queue-metrics` endpoint and displayed `redis_stream`, `available`, `configured`, stream `2`, pending `0`, consumers `3`, and zero organization-scoped queued/running/retrying/failed runs. This closes the live Redis transport and queue-metrics evidence for the current 2D synthetic adapter. It does not close the failure/retry test, RTDOSE/3D test or clinical commissioning scope.
 
 ## Engine
 

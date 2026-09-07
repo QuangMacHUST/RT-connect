@@ -6,7 +6,7 @@
 - **Current phase:** P8 — PSQA Gamma queue, deterministic engine contract and result artifacts; P7 Machine QA is complete on staging.
 - **Current status:** IN_PROGRESS — P8 has passed the authenticated 2D synthetic staging E2E flow through the deployed Redis Streams worker, including worker completion, result snapshot, compare and refresh persistence. The full P8 exit gate remains open for the authenticated queue-metrics endpoint, failure/retry evidence and broader RTDOSE/3D/large-input coverage.
 - **Last authoritative check:** 2026-09-08 — backend full suite `45/45`, strict mypy/Ruff and frontend typecheck/lint/test/build passed. Worker deployment `fb446c0e-2a1b-4a17-88f3-aeb8b5318e3c` from commit `5ec12fb` reported successful and logged `queue_backend=redis_stream`, stream `rt-connect:gamma`, group `rt-connect-gamma`. Staging Gamma run `e084529d-6bb1-4119-ae0a-f4da7d371cac` completed `PASS` on `gamma-2d-p8.1` with 100% (4/4); Redis reported stream length `2`, consumer-group `pending=0`, `lag=0`, `entries-read=2` and two consumers.
-- **Next exact step:** exercise the authenticated `/api/v1/gamma/queue-metrics` response and the deployed `FAILED → retry → COMPLETED` path, then decide and document the RTDOSE/3D scope gate before starting P9.
+- **Next exact step:** exercise the deployed `FAILED → retry → COMPLETED` path, then decide and document the RTDOSE/3D scope gate before starting P9.
 
 ## Source documents read
 
@@ -85,6 +85,7 @@
 - Worker deployment `fb446c0e-2a1b-4a17-88f3-aeb8b5318e3c` from commit `5ec12fb` is active and successful. Its deployment log records `Gamma worker starting queue_backend=redis_stream stream=rt-connect:gamma group=rt-connect-gamma` followed by `Gamma worker using Redis Streams queue`.
 - After the worker restart, the authenticated Gamma Workspace submitted run `e084529d-6bb1-4119-ae0a-f4da7d371cac`; the run reached `COMPLETED`, `PASS`, 100% (4/4 evaluated and passing points), target 95%, excluded 0 and Gamma P95 `0.0708333333333318`.
 - Redis console evidence for the same staging queue: `XLEN rt-connect:gamma = 2`; consumer group `rt-connect-gamma` has 2 consumers, `pending = 0`, `entries-read = 2` and `lag = 0`. This proves publish → claim → analysis completion → acknowledge for the current 2D synthetic scope. It does not by itself close the authenticated queue-metrics API, failure/retry or RTDOSE/3D commissioning gates.
+- The deployed web Status page called the authenticated `/api/v1/gamma/queue-metrics` endpoint successfully and displayed `redis_stream · available · configured`, stream `2`, pending `0`, consumers `3`, and organization run counts queued/running/retrying/failed all `0`.
 
 ## Historical Railway evidence (superseded)
 
@@ -174,7 +175,7 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 The older Railway-history bullets below are retained as evidence of earlier incidents. The current gates are:
 
 - The authenticated staging user and organization onboarding path are working. A fresh browser test should still be repeated after session expiry before treating the auth path as operationally stable.
-- P8 current remaining gates: the 2D synthetic worker flow, Redis Streams claim/ack, result snapshot, compare and browser refresh persistence are evidenced. The authenticated `/api/v1/gamma/queue-metrics` smoke, an explicit failed-job/retry staging evidence path, and any RTDOSE/3D/large-input scope retained in `plan.md` are still open; P8 is not complete until those gates are either implemented and verified or the plan scope is explicitly revised.
+- P8 current remaining gates: the 2D synthetic worker flow, Redis Streams claim/ack, queue-metrics API, result snapshot, compare and browser refresh persistence are evidenced. An explicit failed-job/retry staging evidence path and any RTDOSE/3D/large-input scope retained in `plan.md` are still open; P8 is not complete until those gates are either implemented and verified or the plan scope is explicitly revised.
 - The P7 branch has not been promoted to production. Production promotion remains blocked until Gamma/report/trend/protocol gates, backup and rollback evidence exist.
 
 - Correction on 2026-09-05: both Railway tokens are present in root `.env` and authenticate successfully through the Railway API. Account-token access resolves project `prolific-learning`; project-token scope resolves its production environment. The earlier missing-token report was incorrect. Standard dotenv parsing supports spaces around `=` and quoted values.

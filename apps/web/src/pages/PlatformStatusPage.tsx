@@ -50,7 +50,7 @@ export function PlatformStatusPage() {
       {session?.access_token && queueMetrics.isError && (
         <section className="alert alert--error" aria-live="polite"><h2>Không thể đọc Gamma queue</h2><p>{queueMetrics.error instanceof Error ? queueMetrics.error.message : 'API queue metrics chưa trả về dữ liệu.'}</p><button onClick={() => void queueMetrics.refetch()}>Thử lại</button></section>
       )}
-      <section className="provenance-panel"><h2>Nguyên tắc dữ liệu</h2><p>Không có dữ liệu bệnh nhân, token hay mật khẩu trong giao diện. Supabase Auth và Railway PostgreSQL sẽ được cấu hình ở P2; các module chuyên môn chỉ được mở sau khi API, database và kiểm thử tương ứng đã sẵn sàng.</p></section>
+      <section className="provenance-panel"><h2>Nguyên tắc dữ liệu</h2><p>Không có dữ liệu bệnh nhân, token hay mật khẩu trong giao diện. Supabase Auth quản lý identity/session, còn Railway PostgreSQL lưu dữ liệu ứng dụng; các module chuyên môn chỉ được mở sau khi API, database và kiểm thử tương ứng đã sẵn sàng.</p></section>
     </div>
   )
 }
