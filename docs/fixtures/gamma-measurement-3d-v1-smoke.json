@@ -1,0 +1,29 @@
+{
+  "schema_version": "gamma.measurement.v1",
+  "dataset_id": "synthetic-staging-p8-3d-evaluation-001",
+  "data_type": "dose",
+  "units": {
+    "dose": "GY",
+    "position": "mm"
+  },
+  "grid": {
+    "shape": [2, 2, 2],
+    "spacing_mm": [1.0, 1.0, 1.0],
+    "origin_mm": [0.0, 0.0, 0.0],
+    "orientation": "ROW_MAJOR_ZYX",
+    "values_order": "frame-row-column"
+  },
+  "values": {
+    "encoding": "inline-float32",
+    "inline": [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+  },
+  "acquisition": {
+    "detector": "synthetic-3d-array",
+    "phantom": "synthetic-3d-phantom",
+    "measured_at": "2026-09-08T00:00:00Z"
+  },
+  "source": {
+    "filename": "gamma-measurement-3d-v1-smoke.json",
+    "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  }
+}
