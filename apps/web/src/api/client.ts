@@ -177,7 +177,7 @@ export type MachineQACompareResource = {
   }>
 }
 export type GammaConfiguration = {
-  dimensionality: '2D'
+  dimensionality: '2D' | '3D'
   dose_difference_percent: number
   dose_difference_mode: 'ABSOLUTE' | 'RELATIVE'
   absolute_dose_difference_gy: number | null

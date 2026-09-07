@@ -1,25 +1,33 @@
-"""Deterministic 2D Gamma engine for the first P8 measurement contract.
+"""Deterministic 2D/3D Gamma engine for the P8 input contract.
 
-This module deliberately accepts only the validated ``gamma.measurement.v1`` JSON
-contract. It does not infer units, reshape ambiguous arrays, or read DICOM pixel
-data. Those adapters can be added later without changing the persisted Gamma
-configuration/result contract.
+The engine accepts the validated ``gamma.measurement.v1`` JSON contract and
+validated DICOM RTDOSE objects. JSON values are intentionally inline for this
+worker slice; object-storage references are resolved by the API worker before
+the engine is called. DICOM dose values are scaled to Gy and the supported
+RTDOSE geometry is normalized to the same row-major ``(z, y, x)`` convention
+used by the 3D measurement contract.
+
+This is a deterministic engineering engine with explicit input and geometry
+checks. It is not, by itself, evidence of clinical commissioning.
 """
 
 from __future__ import annotations
 
+import itertools
 import json
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import cast
 
 import numpy as np
+import pydicom
 from numpy.typing import NDArray
 
-ENGINE_VERSION = "gamma-2d-p8.1"
+ENGINE_VERSION = "gamma-nd-p8.2"
 FloatArray = NDArray[np.float64]
+Coordinate = tuple[float, ...]
 
 
 class GammaEngineError(ValueError):
@@ -52,9 +60,10 @@ class GammaConfiguration:
 class MeasurementDataset:
     dataset_id: str
     values: FloatArray
-    spacing_mm: tuple[float, float]
-    origin_mm: tuple[float, float]
+    spacing_mm: Coordinate
+    origin_mm: Coordinate
     units: dict[str, str]
+    source_format: str = "measurement_json"
 
 
 def _mapping(value: object, field: str) -> Mapping[str, object]:
@@ -72,17 +81,38 @@ def _finite_float(value: object, field: str, *, positive: bool = False) -> float
     return converted
 
 
-def _pair(value: object, field: str, *, positive: bool) -> tuple[float, float]:
-    if not isinstance(value, list) or len(value) != 2:
-        raise GammaEngineError("GAMMA_GRID_INVALID", f"{field} must contain exactly two values.")
-    first = _finite_float(value[0], f"{field}[0]", positive=positive)
-    second = _finite_float(value[1], f"{field}[1]", positive=positive)
-    return first, second
+def _coordinate(value: object, field: str, dimension: int, *, positive: bool) -> Coordinate:
+    if not isinstance(value, Sequence) or isinstance(value, str) or len(value) != dimension:
+        raise GammaEngineError(
+            "GAMMA_GRID_INVALID", f"{field} must contain exactly {dimension} values."
+        )
+    return tuple(
+        _finite_float(item, f"{field}[{index}]", positive=positive)
+        for index, item in enumerate(value)
+    )
 
 
-def load_measurement(path: Path) -> MeasurementDataset:
-    """Load one unambiguous 2D measurement dataset from a JSON artifact."""
+def _shape(value: object, field: str) -> tuple[int, ...]:
+    if not isinstance(value, list) or len(value) not in {2, 3}:
+        raise GammaEngineError(
+            "GAMMA_GRID_INVALID", f"{field} must contain two or three integer dimensions."
+        )
+    if any(isinstance(item, bool) or not isinstance(item, int) or item <= 0 for item in value):
+        raise GammaEngineError("GAMMA_GRID_INVALID", f"{field} dimensions must be positive.")
+    return tuple(int(item) for item in value)
 
+
+def _dose_unit_scale(value: object, field: str) -> tuple[str, float]:
+    if value == "GY":
+        return "GY", 1.0
+    if value == "CGY":
+        return "GY", 0.01
+    raise GammaEngineError(
+        "GAMMA_UNITS_UNSUPPORTED", f"{field} must be GY or CGY; units are never inferred."
+    )
+
+
+def _load_inline_measurement(path: Path) -> MeasurementDataset:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -94,52 +124,46 @@ def load_measurement(path: Path) -> MeasurementDataset:
         raise GammaEngineError(
             "GAMMA_SCHEMA_UNSUPPORTED", "Only gamma.measurement.v1 is supported by the P8 engine."
         )
-    if root.get("data_type") != "dose":
-        raise GammaEngineError("GAMMA_DATA_TYPE_UNSUPPORTED", "Gamma input data_type must be dose.")
+    if root.get("data_type") not in {"dose", "PLANAR_DOSE"}:
+        raise GammaEngineError(
+            "GAMMA_DATA_TYPE_UNSUPPORTED", "Gamma input data_type must be dose or PLANAR_DOSE."
+        )
     dataset_id = root.get("dataset_id")
     if not isinstance(dataset_id, str) or not dataset_id.strip():
         raise GammaEngineError("GAMMA_DATASET_ID_MISSING", "Gamma input dataset_id is required.")
 
     units = _mapping(root.get("units"), "units")
-    dose_unit = units.get("dose")
-    position_unit = units.get("position")
-    if dose_unit != "GY" or position_unit != "mm":
+    dose_unit, dose_scale = _dose_unit_scale(units.get("dose"), "units.dose")
+    if units.get("position") != "mm":
         raise GammaEngineError(
-            "GAMMA_UNITS_UNSUPPORTED",
-            "P8 requires dose=GY and position=mm; units are never inferred.",
+            "GAMMA_UNITS_UNSUPPORTED", "units.position must be mm; units are never inferred."
         )
 
     grid = _mapping(root.get("grid"), "grid")
-    shape_value = grid.get("shape")
-    if (
-        not isinstance(shape_value, list)
-        or len(shape_value) != 2
-        or any(isinstance(item, bool) or not isinstance(item, int) for item in shape_value)
-    ):
-        raise GammaEngineError(
-            "GAMMA_GRID_INVALID", "grid.shape must contain two integer dimensions."
-        )
-    rows, columns = int(shape_value[0]), int(shape_value[1])
-    if rows < 1 or columns < 1:
-        raise GammaEngineError("GAMMA_GRID_INVALID", "grid.shape dimensions must be positive.")
-    spacing = _pair(grid.get("spacing_mm"), "grid.spacing_mm", positive=True)
-    origin = _pair(grid.get("origin_mm", [0.0, 0.0]), "grid.origin_mm", positive=False)
+    shape = _shape(grid.get("shape"), "grid.shape")
+    dimension = len(shape)
+    spacing = _coordinate(grid.get("spacing_mm"), "grid.spacing_mm", dimension, positive=True)
+    origin = _coordinate(
+        grid.get("origin_mm", [0.0] * dimension), "grid.origin_mm", dimension, positive=False
+    )
 
     values = _mapping(root.get("values"), "values")
-    if values.get("encoding") != "inline-float32":
+    if values.get("encoding") not in {"inline-float32", "float32"}:
         raise GammaEngineError(
-            "GAMMA_ENCODING_UNSUPPORTED", "P8 requires inline-float32 measurement values."
+            "GAMMA_ENCODING_UNSUPPORTED",
+            "P8 requires inline float32 measurement values for the worker slice.",
         )
     inline = values.get("inline")
-    if not isinstance(inline, list) or len(inline) != rows * columns:
+    expected_count = math.prod(shape)
+    if not isinstance(inline, list) or len(inline) != expected_count:
         raise GammaEngineError(
             "GAMMA_GRID_VALUE_COUNT_MISMATCH",
             "The number of dose values must exactly match grid.shape.",
         )
-    numeric_values: list[float] = []
-    for index, item in enumerate(inline):
-        numeric_values.append(_finite_float(item, f"values.inline[{index}]"))
-    array = np.asarray(numeric_values, dtype=np.float64).reshape((rows, columns))
+    numeric_values = [
+        _finite_float(item, f"values.inline[{index}]") for index, item in enumerate(inline)
+    ]
+    array = np.asarray(numeric_values, dtype=np.float64).reshape(shape) * dose_scale
     if np.any(array < 0):
         raise GammaEngineError("GAMMA_DOSE_NEGATIVE", "Dose values must be non-negative.")
     return MeasurementDataset(
@@ -147,8 +171,122 @@ def load_measurement(path: Path) -> MeasurementDataset:
         values=array,
         spacing_mm=spacing,
         origin_mm=origin,
-        units={"dose": str(dose_unit), "position": str(position_unit)},
+        units={"dose": dose_unit, "position": "mm"},
     )
+
+
+def _uniform_spacing(offsets: Sequence[object], field: str) -> float:
+    numeric = [_finite_float(item, f"{field}[{index}]") for index, item in enumerate(offsets)]
+    if len(numeric) < 2:
+        raise GammaEngineError("GAMMA_DICOM_GRID_INVALID", f"{field} needs at least two frames.")
+    differences = np.diff(np.asarray(numeric, dtype=np.float64))
+    if np.any(differences <= 0) or not np.allclose(
+        differences, differences[0], rtol=1e-6, atol=1e-6
+    ):
+        raise GammaEngineError(
+            "GAMMA_DICOM_GRID_INVALID",
+            "RTDOSE GridFrameOffsetVector must be strictly increasing and uniformly spaced.",
+        )
+    return float(differences[0])
+
+
+def _load_rtdose(path: Path) -> MeasurementDataset:
+    try:
+        dataset = pydicom.dcmread(path, force=False)
+    except Exception as exc:
+        raise GammaEngineError(
+            "GAMMA_DICOM_UNREADABLE", "The RTDOSE artifact is not readable."
+        ) from exc
+    if getattr(dataset, "Modality", None) != "RTDOSE":
+        raise GammaEngineError("GAMMA_DICOM_MODALITY_INVALID", "Gamma DICOM input must be RTDOSE.")
+    try:
+        pixel_array = np.asarray(dataset.pixel_array, dtype=np.float64)
+    except Exception as exc:
+        raise GammaEngineError(
+            "GAMMA_DICOM_PIXEL_DATA_INVALID", "RTDOSE pixel data could not be decoded."
+        ) from exc
+    scaling = _finite_float(
+        getattr(dataset, "DoseGridScaling", None), "DoseGridScaling", positive=True
+    )
+    dose_units, dose_scale = _dose_unit_scale(getattr(dataset, "DoseUnits", None), "DoseUnits")
+    array = pixel_array * scaling * dose_scale
+    if array.ndim not in {2, 3} or np.any(~np.isfinite(array)) or np.any(array < 0):
+        raise GammaEngineError(
+            "GAMMA_DICOM_PIXEL_DATA_INVALID", "RTDOSE pixel values must be finite and non-negative."
+        )
+
+    spacing_value = getattr(dataset, "PixelSpacing", None)
+    spacing_xy = _coordinate(spacing_value, "PixelSpacing", 2, positive=True)
+    position = _coordinate(
+        getattr(dataset, "ImagePositionPatient", None),
+        "ImagePositionPatient",
+        3,
+        positive=False,
+    )
+    orientation = _coordinate(
+        getattr(dataset, "ImageOrientationPatient", None),
+        "ImageOrientationPatient",
+        6,
+        positive=False,
+    )
+    if not np.allclose(orientation, (1.0, 0.0, 0.0, 0.0, 1.0, 0.0), rtol=0, atol=1e-6):
+        raise GammaEngineError(
+            "GAMMA_DICOM_ORIENTATION_UNSUPPORTED",
+            "P8 RTDOSE adapter currently supports an axial IEC-aligned orientation only.",
+        )
+    frames = int(getattr(dataset, "NumberOfFrames", 1))
+    origin: Coordinate
+    spacing: Coordinate
+    if array.ndim == 3:
+        if array.shape[0] != frames:
+            raise GammaEngineError(
+                "GAMMA_DICOM_GRID_INVALID", "NumberOfFrames does not match RTDOSE pixel data."
+            )
+        offsets_value = getattr(dataset, "GridFrameOffsetVector", None)
+        if not isinstance(offsets_value, Sequence) or isinstance(offsets_value, str):
+            raise GammaEngineError(
+                "GAMMA_DICOM_GRID_INVALID", "RTDOSE GridFrameOffsetVector is required for 3D input."
+            )
+        if len(offsets_value) != frames:
+            raise GammaEngineError(
+                "GAMMA_DICOM_GRID_INVALID", "GridFrameOffsetVector must match NumberOfFrames."
+            )
+        z_spacing = _uniform_spacing(offsets_value, "GridFrameOffsetVector")
+        origin = (
+            position[2] + _finite_float(offsets_value[0], "GridFrameOffsetVector[0]"),
+            position[1],
+            position[0],
+        )
+        spacing = (z_spacing, spacing_xy[0], spacing_xy[1])
+    else:
+        origin = (position[1], position[0])
+        spacing = spacing_xy
+    return MeasurementDataset(
+        dataset_id=str(getattr(dataset, "SOPInstanceUID", path.stem)),
+        values=array,
+        spacing_mm=spacing,
+        origin_mm=origin,
+        units={"dose": dose_units, "position": "mm"},
+        source_format="dicom_rtdose",
+    )
+
+
+def load_measurement(path: Path) -> MeasurementDataset:
+    """Load a validated JSON measurement dataset, including 2D or 3D grids."""
+
+    return _load_inline_measurement(path)
+
+
+def load_gamma_dataset(path: Path) -> MeasurementDataset:
+    """Load either the JSON measurement contract or a DICOM RTDOSE artifact."""
+
+    try:
+        prefix = path.read_bytes()[:256]
+    except OSError as exc:
+        raise GammaEngineError("GAMMA_INPUT_UNREADABLE", "Gamma input could not be read.") from exc
+    if prefix[128:132] == b"DICM" or not prefix.lstrip().startswith((b"{", b"[")):
+        return _load_rtdose(path)
+    return _load_inline_measurement(path)
 
 
 def _configuration_from_mapping(payload: Mapping[str, object]) -> GammaConfiguration:
@@ -156,8 +294,8 @@ def _configuration_from_mapping(payload: Mapping[str, object]) -> GammaConfigura
     dose_mode = payload.get("dose_difference_mode", "RELATIVE")
     normalization = payload.get("normalization", "GLOBAL")
     interpolation = payload.get("interpolation", "GRID")
-    if dimensionality != "2D":
-        raise GammaEngineError("GAMMA_DIMENSIONALITY_UNSUPPORTED", "P8 supports 2D Gamma only.")
+    if dimensionality not in {"2D", "3D"}:
+        raise GammaEngineError("GAMMA_DIMENSIONALITY_UNSUPPORTED", "P8 supports 2D and 3D Gamma.")
     if dose_mode not in {"ABSOLUTE", "RELATIVE"}:
         raise GammaEngineError("GAMMA_CONFIGURATION_INVALID", "dose_difference_mode is invalid.")
     if normalization not in {"GLOBAL", "LOCAL"}:
@@ -175,7 +313,7 @@ def _configuration_from_mapping(payload: Mapping[str, object]) -> GammaConfigura
         payload.get("pass_rate_threshold_percent"), "pass_rate_threshold_percent"
     )
     if threshold < 0 or threshold > 100 or pass_rate < 0 or pass_rate > 100:
-        raise GammaEngineError("GAMMA_CONFIGURATION_INVALID", "Percentage values must be 0–100.")
+        raise GammaEngineError("GAMMA_CONFIGURATION_INVALID", "Percentage values must be 0–100%.")
     absolute_value = payload.get("absolute_dose_difference_gy")
     absolute = None if absolute_value is None else _finite_float(
         absolute_value, "absolute_dose_difference_gy", positive=True
@@ -206,68 +344,83 @@ def _configuration_from_mapping(payload: Mapping[str, object]) -> GammaConfigura
     )
 
 
-def _sample_bilinear(
-    dataset: MeasurementDataset, row_position: float, column_position: float
-) -> float | None:
-    row = (row_position - dataset.origin_mm[0]) / dataset.spacing_mm[0]
-    column = (column_position - dataset.origin_mm[1]) / dataset.spacing_mm[1]
-    if (
-        row < 0
-        or column < 0
-        or row > dataset.values.shape[0] - 1
-        or column > dataset.values.shape[1] - 1
+def _sample_linear(dataset: MeasurementDataset, position: Coordinate) -> float | None:
+    coordinates = [
+        (position[axis] - dataset.origin_mm[axis]) / dataset.spacing_mm[axis]
+        for axis in range(dataset.values.ndim)
+    ]
+    if any(
+        coordinate < 0 or coordinate > dataset.values.shape[axis] - 1
+        for axis, coordinate in enumerate(coordinates)
     ):
         return None
-    row0, column0 = int(math.floor(row)), int(math.floor(column))
-    row1, column1 = min(row0 + 1, dataset.values.shape[0] - 1), min(
-        column0 + 1, dataset.values.shape[1] - 1
+    lower = [int(math.floor(coordinate)) for coordinate in coordinates]
+    upper = [min(index + 1, dataset.values.shape[axis] - 1) for axis, index in enumerate(lower)]
+    weights = [coordinate - index for coordinate, index in zip(coordinates, lower, strict=True)]
+    total = 0.0
+    for corner in itertools.product((0, 1), repeat=dataset.values.ndim):
+        indices = tuple(
+            upper[axis] if corner[axis] else lower[axis] for axis in range(dataset.values.ndim)
+        )
+        weight = 1.0
+        for axis, bit in enumerate(corner):
+            weight *= weights[axis] if bit else 1.0 - weights[axis]
+        total += float(dataset.values[indices]) * weight
+    return total
+
+
+def _point_position(dataset: MeasurementDataset, indices: tuple[int, ...]) -> Coordinate:
+    return tuple(
+        dataset.origin_mm[axis] + indices[axis] * dataset.spacing_mm[axis]
+        for axis in range(dataset.values.ndim)
     )
-    row_weight, column_weight = row - row0, column - column0
-    top = (1 - column_weight) * dataset.values[row0, column0] + column_weight * dataset.values[
-        row0, column1
-    ]
-    bottom = (1 - column_weight) * dataset.values[row1, column0] + column_weight * dataset.values[
-        row1, column1
-    ]
-    return float((1 - row_weight) * top + row_weight * bottom)
 
 
 def _candidate_gammas(
     reference: MeasurementDataset,
     evaluation: MeasurementDataset,
-    reference_row: int,
-    reference_column: int,
+    reference_indices: tuple[int, ...],
     reference_value: float,
     configuration: GammaConfiguration,
 ) -> list[float]:
-    ref_row_position = reference.origin_mm[0] + reference_row * reference.spacing_mm[0]
-    ref_column_position = reference.origin_mm[1] + reference_column * reference.spacing_mm[1]
+    reference_position = _point_position(reference, reference_indices)
+    dose_scale = _dose_scale(reference_value, float(np.max(reference.values)), configuration)
     if configuration.interpolation == "GRID":
-        row_positions = evaluation.origin_mm[0] + np.arange(
-            evaluation.values.shape[0]
-        ) * evaluation.spacing_mm[0]
-        column_positions = evaluation.origin_mm[1] + np.arange(
-            evaluation.values.shape[1]
-        ) * evaluation.spacing_mm[1]
+        index_ranges: list[range] = []
+        for axis in range(evaluation.values.ndim):
+            minimum = math.ceil(
+                (reference_position[axis]
+                 - configuration.distance_to_agreement_mm
+                 - evaluation.origin_mm[axis])
+                / evaluation.spacing_mm[axis]
+            )
+            maximum = math.floor(
+                (reference_position[axis]
+                 + configuration.distance_to_agreement_mm
+                 - evaluation.origin_mm[axis])
+                / evaluation.spacing_mm[axis]
+            )
+            start = max(0, minimum)
+            stop = min(evaluation.values.shape[axis] - 1, maximum)
+            index_ranges.append(range(start, stop + 1) if start <= stop else range(0))
         gammas: list[float] = []
-        for row_index, row_position in enumerate(row_positions):
-            for column_index, column_position in enumerate(column_positions):
-                distance = math.hypot(
-                    float(row_position) - ref_row_position,
-                    float(column_position) - ref_column_position,
+        for evaluation_indices in itertools.product(*index_ranges):
+            evaluation_position = _point_position(evaluation, tuple(evaluation_indices))
+            distance = math.sqrt(
+                sum(
+                    (evaluation_position[axis] - reference_position[axis]) ** 2
+                    for axis in range(reference.values.ndim)
                 )
-                if distance > configuration.distance_to_agreement_mm:
-                    continue
-                evaluation_value = float(evaluation.values[row_index, column_index])
-                dose_scale = _dose_scale(
-                    reference_value, float(np.max(reference.values)), configuration
+            )
+            if distance > configuration.distance_to_agreement_mm:
+                continue
+            evaluation_value = float(evaluation.values[tuple(evaluation_indices)])
+            gammas.append(
+                math.sqrt(
+                    ((evaluation_value - reference_value) / dose_scale) ** 2
+                    + (distance / configuration.distance_to_agreement_mm) ** 2
                 )
-                gammas.append(
-                    math.sqrt(
-                        ((evaluation_value - reference_value) / dose_scale) ** 2
-                        + (distance / configuration.distance_to_agreement_mm) ** 2
-                    )
-                )
+            )
         return gammas
 
     step = min(*reference.spacing_mm, *evaluation.spacing_mm) / 2
@@ -276,26 +429,24 @@ def _candidate_gammas(
         configuration.distance_to_agreement_mm + step / 2,
         step,
     )
-    dose_scale = _dose_scale(reference_value, float(np.max(reference.values)), configuration)
     gammas = []
-    for row_offset in offsets:
-        for column_offset in offsets:
-            distance = math.hypot(float(row_offset), float(column_offset))
-            if distance > configuration.distance_to_agreement_mm:
-                continue
-            sampled_value = _sample_bilinear(
-                evaluation,
-                ref_row_position + float(row_offset),
-                ref_column_position + float(column_offset),
+    for offset_tuple in itertools.product(offsets, repeat=reference.values.ndim):
+        distance = math.sqrt(sum(float(offset) ** 2 for offset in offset_tuple))
+        if distance > configuration.distance_to_agreement_mm:
+            continue
+        position = tuple(
+            reference_position[axis] + float(offset_tuple[axis])
+            for axis in range(reference.values.ndim)
+        )
+        sampled_value = _sample_linear(evaluation, position)
+        if sampled_value is None:
+            continue
+        gammas.append(
+            math.sqrt(
+                ((sampled_value - reference_value) / dose_scale) ** 2
+                + (distance / configuration.distance_to_agreement_mm) ** 2
             )
-            if sampled_value is None:
-                continue
-            gammas.append(
-                math.sqrt(
-                    ((sampled_value - reference_value) / dose_scale) ** 2
-                    + (distance / configuration.distance_to_agreement_mm) ** 2
-                )
-            )
+        )
     return gammas
 
 
@@ -321,8 +472,26 @@ def calculate_gamma(
     evaluation: MeasurementDataset,
     configuration: GammaConfiguration,
 ) -> dict[str, object]:
-    """Calculate a reproducible 2D Gamma map and summary statistics."""
+    """Calculate a reproducible 2D or 3D Gamma map and summary statistics."""
 
+    if reference.values.ndim != evaluation.values.ndim:
+        raise GammaEngineError(
+            "GAMMA_DIMENSIONALITY_MISMATCH",
+            "Reference and evaluation grids must have the same dimension.",
+        )
+    expected_dimension = 2 if configuration.dimensionality == "2D" else 3
+    if reference.values.ndim != expected_dimension:
+        raise GammaEngineError(
+            "GAMMA_DIMENSIONALITY_MISMATCH",
+            f"Configuration {configuration.dimensionality} requires a {expected_dimension}D grid.",
+        )
+    if (
+        len(reference.spacing_mm) != reference.values.ndim
+        or len(evaluation.spacing_mm) != evaluation.values.ndim
+    ):
+        raise GammaEngineError(
+            "GAMMA_GRID_INVALID", "Grid spacing dimensionality does not match values."
+        )
     reference_max = float(np.max(reference.values))
     if reference_max <= 0:
         raise GammaEngineError("GAMMA_REFERENCE_ZERO", "Reference dose maximum must be positive.")
@@ -331,37 +500,38 @@ def calculate_gamma(
     gamma_values: list[float] = []
     excluded = 0
     no_candidate = 0
-    for row_index, column_index in np.ndindex(reference.values.shape):
-        reference_value = float(reference.values[row_index, column_index])
+    for raw_indices in np.ndindex(reference.values.shape):
+        reference_indices = tuple(int(index) for index in raw_indices)
+        reference_value = float(reference.values[reference_indices])
         if reference_value < threshold:
             excluded += 1
             continue
         candidates = _candidate_gammas(
-            reference, evaluation, row_index, column_index, reference_value, configuration
+            reference, evaluation, reference_indices, reference_value, configuration
         )
-        if not candidates:
-            no_candidate += 1
-            map_items.append(
+        item: dict[str, object] = {
+            "index": list(reference_indices),
+            "reference_dose_gy": reference_value,
+        }
+        if reference.values.ndim == 2:
+            item.update({"row": reference_indices[0], "column": reference_indices[1]})
+        else:
+            item.update(
                 {
-                    "row": row_index,
-                    "column": column_index,
-                    "reference_dose_gy": reference_value,
-                    "gamma": None,
-                    "status": "NO_CANDIDATE",
+                    "frame": reference_indices[0],
+                    "row": reference_indices[1],
+                    "column": reference_indices[2],
                 }
             )
+        if not candidates:
+            no_candidate += 1
+            item.update({"gamma": None, "status": "NO_CANDIDATE"})
+            map_items.append(item)
             continue
         gamma = min(candidates)
         gamma_values.append(gamma)
-        map_items.append(
-            {
-                "row": row_index,
-                "column": column_index,
-                "reference_dose_gy": reference_value,
-                "gamma": gamma,
-                "status": "PASS" if gamma <= 1 else "FAIL",
-            }
-        )
+        item.update({"gamma": gamma, "status": "PASS" if gamma <= 1 else "FAIL"})
+        map_items.append(item)
 
     if not gamma_values:
         raise GammaEngineError(
@@ -398,18 +568,21 @@ def calculate_gamma(
             }
         )
     return {
-        "algorithm": "deterministic-2d-node-search",
+        "algorithm": "deterministic-nd-node-search",
+        "dimensionality": configuration.dimensionality,
         "reference_dataset_id": reference.dataset_id,
         "evaluation_dataset_id": evaluation.dataset_id,
         "reference_grid": {
             "shape": list(reference.values.shape),
             "spacing_mm": list(reference.spacing_mm),
             "origin_mm": list(reference.origin_mm),
+            "source_format": reference.source_format,
         },
         "evaluation_grid": {
             "shape": list(evaluation.values.shape),
             "spacing_mm": list(evaluation.spacing_mm),
             "origin_mm": list(evaluation.origin_mm),
+            "source_format": evaluation.source_format,
         },
         "metrics": {
             "evaluated_points": len(gamma_values),
@@ -434,11 +607,11 @@ def calculate_gamma(
 def calculate_gamma_from_paths(
     reference_path: Path, evaluation_path: Path, configuration_payload: Mapping[str, object]
 ) -> dict[str, object]:
-    """Worker entry point: load both immutable artifacts and calculate the result."""
+    """Worker entry point: load immutable JSON/DICOM artifacts and calculate the result."""
 
     configuration = _configuration_from_mapping(configuration_payload)
-    reference = load_measurement(reference_path)
-    evaluation = load_measurement(evaluation_path)
+    reference = load_gamma_dataset(reference_path)
+    evaluation = load_gamma_dataset(evaluation_path)
     result = calculate_gamma(reference, evaluation, configuration)
     result["configuration"] = dict(configuration_payload)
     result["engine_version"] = ENGINE_VERSION

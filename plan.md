@@ -702,7 +702,8 @@ followed by the corresponding commissioning decision.
 
 - GammaConfiguration đầy đủ.
 - Adapter interface và deterministic implementation.
-- 2D trước; 3D sau khi cùng contract/golden test đạt.
+- 2D và 3D dùng cùng contract/golden test; RTDOSE DICOM và measurement JSON là hai
+  profile input được phép ghép trong một run khi geometry sau chuẩn hóa khớp.
 - Global/local, absolute/relative, threshold, DTA, normalization, alignment và interpolation.
 - Map, histogram, pass rate, percentiles, warning và provenance.
 
@@ -728,10 +729,11 @@ followed by the corresponding commissioning decision.
 - Configuration snapshot đủ và run cũ không đổi.
 - Golden test pass.
 
-The current staging golden evidence covers the locked 2D synthetic JSON adapter. The live Redis
-transport and recovery are now evidenced, but neither result is sufficient to close the RTDOSE/3D
-commissioning gate; those tests remain explicit work unless the scope is revised and recorded
-before P8 closure.
+The current staging golden evidence covers the locked 2D synthetic JSON adapter. The local
+engine now also has deterministic 3D JSON and RTDOSE DICOM adapter tests, including cGy-to-Gy
+normalization and mixed RTDOSE/measurement comparison. The live Redis transport and recovery
+are evidenced, but staging RTDOSE + measurement execution, larger 3D input behavior and the
+commissioning gate remain explicit work before P8 closure.
 
 ---
 

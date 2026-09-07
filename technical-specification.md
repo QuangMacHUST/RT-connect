@@ -991,13 +991,27 @@ log khởi động bằng Redis Streams thay vì polling, một run Gamma đi qu
 không âm thầm chạy phân tích trong HTTP request: nó trả lỗi queue rõ ràng, lưu trạng thái run
 phù hợp và cho phép retry có kiểm soát.
 
-Engine `gamma-2d-p8.1` hiện nhận subset đã khóa của `gamma.measurement.v1`: JSON
-`data_type=dose`, dose `GY`, position `mm`, grid 2D, `inline-float32` finite values.
-Nó không tự đoán đơn vị, không đổi shape và không đọc DICOM RTDOSE trong slice này.
-Kết quả lưu map điểm, số điểm evaluated/passing/excluded/no-candidate, pass rate,
-percentile, histogram, warning, configuration, input checksum và engine version.
-Đây là deterministic engineering/golden slice; chưa phải bằng chứng commissioning
-hoặc clinical release.
+Engine `gamma-nd-p8.2` nhận profile đã khóa của `gamma.measurement.v1` và DICOM RTDOSE:
+
+- JSON measurement có `data_type=dose` hoặc `PLANAR_DOSE`, dose `GY`/`CGY`, position
+  `mm`, grid 2D hoặc 3D và giá trị inline finite theo row-major shape. `CGY` được
+  chuẩn hóa rõ ràng sang `GY`; engine không đoán đơn vị, không tự đổi shape và không
+  tự đọc `object_key` trong JSON ở slice này.
+- DICOM RTDOSE được đọc pixel data sau khi artifact đã qua metadata validation. Adapter
+  kiểm tra modality, pixel data, `DoseGridScaling`, `DoseUnits`, `PixelSpacing`,
+  `ImagePositionPatient`, `ImageOrientationPatient`, `NumberOfFrames` và
+  `GridFrameOffsetVector`; chỉ nhận orientation axial IEC-aligned và grid z-spacing
+  đều. DICOM `CGY` cũng được chuẩn hóa sang `GY`.
+- Grid 3D dùng thứ tự `(frame/z, row/y, column/x)` với spacing và origin cùng thứ tự.
+  Reference và evaluation phải cùng số chiều, còn configuration `2D`/`3D` phải khớp
+  grid. Measurement JSON và RTDOSE DICOM có thể là hai input của cùng một run.
+- Gamma node search giới hạn vùng candidate theo DTA; interpolation `GRID` và
+  multidimensional linear interpolation được snapshot trong configuration.
+
+Kết quả lưu dimensionality, source format, grid summary, map điểm, số điểm
+evaluated/passing/excluded/no-candidate, pass rate, percentile, histogram, warning,
+configuration, input checksum và engine version. Đây là deterministic engineering/golden
+slice; test local không thay thế commissioning hoặc clinical release.
 
 ### 6.6. Report và trend
 

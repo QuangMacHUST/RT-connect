@@ -85,7 +85,11 @@ export function GammaPage() {
   })
   const eligibleArtifacts = useMemo(
     () => (artifacts.data?.items ?? []).filter((item) =>
-      item.data_status === 'VALID' && (item.artifact_type === 'MEASUREMENT' || item.artifact_type === 'JSON')
+      item.data_status === 'VALID' && (
+        item.artifact_type === 'MEASUREMENT' ||
+        item.artifact_type === 'JSON' ||
+        (item.artifact_type === 'DICOM' && item.modality === 'RTDOSE')
+      )
     ),
     [artifacts.data]
   )
@@ -166,14 +170,14 @@ export function GammaPage() {
   return (
     <div className="page">
       <header className="page-header">
-        <div><p className="eyebrow">P8 · MOD-06</p><h1>Phân tích PSQA Gamma Workspace</h1><p>{selectedCase.title} · chọn hai input đã VALID, cấu hình Gamma 2D và theo dõi job/result có provenance.</p></div>
+        <div><p className="eyebrow">P8 · MOD-06</p><h1>Phân tích PSQA Gamma Workspace</h1><p>{selectedCase.title} · chọn hai input đã VALID (measurement JSON hoặc RTDOSE), cấu hình Gamma 2D/3D và theo dõi job/result có provenance.</p></div>
         <div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">QA Archive</Link><span className="status-badge">API THẬT</span></div>
       </header>
       {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
 
       <section className="panel gamma-panel">
         <div className="panel-heading"><div><p className="eyebrow">INPUT PREFLIGHT</p><h2>Reference / Evaluation</h2></div><strong>{eligibleArtifacts.length}</strong></div>
-        {artifacts.isPending ? <p>Đang tải artifact…</p> : artifacts.error ? <div className="alert alert--error"><p>{errorMessage(artifacts.error)}</p><Link className="button-link" to="/app/qa">Mở QA Archive để kiểm tra artifact</Link></div> : eligibleArtifacts.length < 2 ? <div className="empty-state"><p>Cần ít nhất hai artifact measurement/JSON có trạng thái VALID. Hãy upload và Validate ở QA Archive trước khi đưa vào Gamma.</p><Link className="button-link" to="/app/qa">Đi tới QA Archive</Link></div> : <>
+        {artifacts.isPending ? <p>Đang tải artifact…</p> : artifacts.error ? <div className="alert alert--error"><p>{errorMessage(artifacts.error)}</p><Link className="button-link" to="/app/qa">Mở QA Archive để kiểm tra artifact</Link></div> : eligibleArtifacts.length < 2 ? <div className="empty-state"><p>Cần ít nhất hai artifact measurement/JSON hoặc RTDOSE có trạng thái VALID. Hãy upload và Validate ở QA Archive trước khi đưa vào Gamma.</p><Link className="button-link" to="/app/qa">Đi tới QA Archive</Link></div> : <>
           <div className="gamma-input-grid">
             <label>Reference<select value={selectedReferenceId} onChange={(event) => setReferenceId(event.target.value)}>{eligibleArtifacts.map((artifact) => <option key={artifact.id} value={artifact.id}>{artifact.original_filename} · {artifact.sha256.slice(0, 12)}…</option>)}</select></label>
             <label>Evaluation<select value={selectedEvaluationId} onChange={(event) => setEvaluationId(event.target.value)}>{eligibleArtifacts.filter((item) => item.id !== selectedReferenceId).map((artifact) => <option key={artifact.id} value={artifact.id}>{artifact.original_filename} · {artifact.sha256.slice(0, 12)}…</option>)}</select></label>
@@ -183,8 +187,9 @@ export function GammaPage() {
       </section>
 
       <section className="panel gamma-panel">
-        <div className="panel-heading"><div><p className="eyebrow">GAMMA CONFIGURATION</p><h2>Tham số tính toán</h2></div><span className="status-badge">2D · P8</span></div>
+        <div className="panel-heading"><div><p className="eyebrow">GAMMA CONFIGURATION</p><h2>Tham số tính toán</h2></div><span className="status-badge">{configuration.dimensionality} · P8</span></div>
         <div className="gamma-config-grid">
+          <label>Dimensionality<select value={configuration.dimensionality} onChange={(event) => setConfiguration((current) => ({ ...current, dimensionality: event.target.value as GammaConfiguration['dimensionality'] }))}><option value="2D">2D planar/grid</option><option value="3D">3D volume</option></select></label>
           <label>Dose difference (%)<input type="number" min="0.01" step="0.1" value={configuration.dose_difference_percent} onChange={(event) => updateNumber('dose_difference_percent', event.target.value)} /></label>
           <label>DTA (mm)<input type="number" min="0.01" step="0.1" value={configuration.distance_to_agreement_mm} onChange={(event) => updateNumber('distance_to_agreement_mm', event.target.value)} /></label>
           <label>Dose threshold (%)<input type="number" min="0" max="100" step="1" value={configuration.dose_threshold_percent} onChange={(event) => updateNumber('dose_threshold_percent', event.target.value)} /></label>

@@ -36,7 +36,7 @@ router = APIRouter(tags=["gamma"])
 
 
 class GammaConfigurationRequest(BaseModel):
-    dimensionality: Literal["2D"] = "2D"
+    dimensionality: Literal["2D", "3D"] = "2D"
     dose_difference_percent: float = Field(default=3.0, gt=0, le=100)
     dose_difference_mode: Literal["ABSOLUTE", "RELATIVE"] = "RELATIVE"
     absolute_dose_difference_gy: float | None = Field(default=None, gt=0)
@@ -234,10 +234,16 @@ def _preflight_artifact(
             f"The {label} artifact is not part of the selected QA case and organization.",
             422,
         )
-    if artifact.artifact_type not in {"MEASUREMENT", "JSON"}:
+    if artifact.artifact_type not in {"MEASUREMENT", "JSON", "DICOM"}:
         raise DomainError(
             "GAMMA_ARTIFACT_TYPE_INVALID",
-            f"The {label} artifact must be a measurement JSON artifact.",
+            f"The {label} artifact must be a measurement JSON or RTDOSE DICOM artifact.",
+            422,
+        )
+    if artifact.artifact_type == "DICOM" and artifact.modality != "RTDOSE":
+        raise DomainError(
+            "GAMMA_ARTIFACT_TYPE_INVALID",
+            f"The {label} DICOM artifact must have Modality RTDOSE.",
             422,
         )
     if artifact.data_status != "VALID":
@@ -566,11 +572,11 @@ def process_gamma_run(session: Session, run: GammaAnalysisRun, storage: ObjectSt
     evaluation_path: Path | None = None
     try:
         with tempfile.NamedTemporaryFile(
-            prefix="rt-connect-gamma-reference-", suffix=".json", delete=False
+            prefix="rt-connect-gamma-reference-", suffix=".bin", delete=False
         ) as reference_file:
             reference_path = Path(reference_file.name)
         with tempfile.NamedTemporaryFile(
-            prefix="rt-connect-gamma-evaluation-", suffix=".json", delete=False
+            prefix="rt-connect-gamma-evaluation-", suffix=".bin", delete=False
         ) as evaluation_file:
             evaluation_path = Path(evaluation_file.name)
         storage.download_to_path(

@@ -12,7 +12,7 @@ from typing import Any
 import pydicom
 from pydicom.dataset import Dataset
 
-VALIDATOR_VERSION = "p6.1"
+VALIDATOR_VERSION = "p6.2"
 SUPPORTED_MODALITIES = {"CT", "RTDOSE", "RTSTRUCT", "RTPLAN"}
 
 
@@ -272,6 +272,41 @@ def _validate_rtdose(
                 "RTDOSE frame offsets are valid.",
                 "GridFrameOffsetVector",
             )
+    image_position = _value(dataset, "ImagePositionPatient")
+    image_orientation = _value(dataset, "ImageOrientationPatient")
+    try:
+        position_values = [_number(item) for item in image_position] if image_position else None
+        orientation_values = (
+            [_number(item) for item in image_orientation] if image_orientation else None
+        )
+    except TypeError:
+        position_values = None
+        orientation_values = None
+    if (
+        position_values is None
+        or len(position_values) != 3
+        or any(item is None for item in position_values)
+        or orientation_values is None
+        or len(orientation_values) != 6
+        or any(item is None for item in orientation_values)
+    ):
+        _check(
+            checks,
+            "RTDOSE_GEOMETRY_INVALID",
+            "ERROR",
+            "RTDOSE ImagePositionPatient and ImageOrientationPatient are required and finite.",
+            "geometry",
+        )
+    else:
+        metadata["image_position_patient"] = position_values
+        metadata["image_orientation_patient"] = orientation_values
+        _check(
+            checks,
+            "RTDOSE_GEOMETRY_VALID",
+            "PASS",
+            "RTDOSE patient geometry is present.",
+            "geometry",
+        )
     scaling = _number(_value(dataset, "DoseGridScaling"))
     if scaling is None or scaling <= 0:
         _check(
