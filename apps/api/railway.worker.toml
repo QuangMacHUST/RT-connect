@@ -1,0 +1,8 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "python -m rt_connect_api.worker"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

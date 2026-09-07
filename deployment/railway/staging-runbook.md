@@ -46,6 +46,27 @@ as an absolute repository path when the file is outside the default root configu
 6. Deploy the API. The pre-deploy command applies the Alembic baseline. Review logs for the
    migration and healthcheck, then run the five post-provision checks in `services.md`.
 
+## P8 Gamma worker
+
+After the API has deployed the Gamma migration, create a separate service named
+`RT-connect-gamma-worker-staging` from the same repository and staging branch. Configure:
+
+| Setting | Value |
+| :--- | :--- |
+| Root Directory | `/apps/api` |
+| Config-as-code path | `/apps/api/railway.worker.toml` |
+| Start command (effective config) | `python -m rt_connect_api.worker` |
+| Public domain | None |
+| Healthcheck | None; this is a non-HTTP worker |
+| `GAMMA_WORKER_POLL_SECONDS` | `2` in staging |
+| `GAMMA_WORKER_ONCE` | unset |
+
+Copy/reference the API's staging values for `DATABASE_URL`, `SUPABASE_JWT_*`, `S3_*` and
+`MAX_UPLOAD_BYTES` without exposing their secret values. Do not add the API's
+`/apps/api/railway.toml` to this worker: it would run the API healthcheck and could cause a
+non-HTTP worker deployment to fail. Verify worker logs show polling and that a Gamma run moves
+from `QUEUED` to `RUNNING` to `COMPLETED`.
+
 ## Supabase handoff
 
 Set the staging Site URL and redirect URLs to the future staging web origin. Supply the API with
