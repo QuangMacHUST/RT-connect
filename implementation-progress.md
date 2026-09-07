@@ -4,9 +4,9 @@
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
 - **Current phase:** P8 — PSQA Gamma queue, deterministic engine contract and result artifacts; P7 Machine QA is complete on staging.
-- **Current status:** IN_PROGRESS — P8 has passed the authenticated 2D synthetic staging E2E flow through the deployed Redis Streams worker, including worker completion, result snapshot, compare and refresh persistence. The full P8 exit gate remains open for the authenticated queue-metrics endpoint, failure/retry evidence and broader RTDOSE/3D/large-input coverage.
-- **Last authoritative check:** 2026-09-08 — backend full suite `45/45`, strict mypy/Ruff and frontend typecheck/lint/test/build passed. Worker deployment `fb446c0e-2a1b-4a17-88f3-aeb8b5318e3c` from commit `5ec12fb` reported successful and logged `queue_backend=redis_stream`, stream `rt-connect:gamma`, group `rt-connect-gamma`. Staging Gamma run `e084529d-6bb1-4119-ae0a-f4da7d371cac` completed `PASS` on `gamma-2d-p8.1` with 100% (4/4); Redis reported stream length `2`, consumer-group `pending=0`, `lag=0`, `entries-read=2` and two consumers.
-- **Next exact step:** exercise the deployed `FAILED → retry → COMPLETED` path, then decide and document the RTDOSE/3D scope gate before starting P9.
+- **Current status:** IN_PROGRESS — P8 has passed the authenticated 2D synthetic staging E2E flow through the deployed Redis Streams worker, including worker completion, result snapshot, compare, refresh persistence, queue metrics and a controlled `FAILED → retry → COMPLETED` recovery. The full P8 exit gate remains open only for the retained RTDOSE/measurement, 3D and large-input scope plus the corresponding commissioning decision.
+- **Last authoritative check:** 2026-09-08 — backend full suite `45/45`, strict mypy/Ruff and frontend typecheck/lint/test/build passed. Worker deployment `fb446c0e-2a1b-4a17-88f3-aeb8b5318e3c` from commit `5ec12fb` reported successful and logged `queue_backend=redis_stream`, stream `rt-connect:gamma`, group `rt-connect-gamma`. Staging Gamma run `e084529d-6bb1-4119-ae0a-f4da7d371cac` completed `PASS` on `gamma-2d-p8.1` with 100% (4/4); Redis reported stream length `2`, consumer-group `pending=0`, `lag=0`, `entries-read=2` and two consumers. Controlled failure/recovery run `26a54046-1f20-454c-b3f4-e766937f30d6` failed with `GAMMA_STORAGE_UNAVAILABLE` at attempt 1 after a temporary worker storage fault, then completed `PASS` at attempt 2 after restoration and retry.
+- **Next exact step:** close the retained RTDOSE/measurement, 3D and large-input scope gate with implementation and staging evidence, or record an explicit scope decision with its validation boundary before starting P9.
 
 ## Source documents read
 
@@ -28,7 +28,7 @@
 | P5 | STAGING E2E PASS | Nested folder/QA case flow is deployed; staging smoke created `Staging P6 Smoke` and QA case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24` |
 | P6 | STAGING E2E PASS | Migration `20260907_0005`, artifact metadata/checksum, Input Manifest, duplicate upload, Railway S3-compatible storage, DICOM/measurement validator and QA Archive upload panel are deployed; authenticated synthetic upload created the manifest, validation returned `VALID` with 0 errors/0 warnings and the signed Download action was invoked |
 | P7 | STAGING E2E PASS | Migration `20260907_0006`; protocol/rule seed, scoped Machine QA run lifecycle, draft revision, evaluation, immutable result/rerun/compare and trend projection are implemented; staging evaluate returned PASS for `output_factor=100`, `symmetry=1`, `flatness=100`, then rerun and compare preserved both histories |
-| P8 | STAGING REDIS STREAM E2E PASS; FULL EXIT GATE OPEN | Migration `20260907_0007`; organization/case-scoped preflight, idempotent Gamma job snapshot, deterministic 2D engine, Redis-capable worker entrypoint with DB fallback, result map/metrics/warnings, logical-role-aware artifact contract and Gamma Workspace are implemented; staging worker completed validated JSON runs with PASS, compare and refresh persistence; the live Redis consumer group acknowledged the deployed run with zero pending messages. Authenticated queue-metrics endpoint smoke, failure/retry evidence and any retained RTDOSE/3D gate remain |
+| P8 | STAGING REDIS STREAM + FAILURE/RETRY PASS; FULL EXIT GATE OPEN | Migration `20260907_0007`; organization/case-scoped preflight, idempotent Gamma job snapshot, deterministic 2D engine, Redis-capable worker entrypoint with DB fallback, result map/metrics/warnings, logical-role-aware artifact contract and Gamma Workspace are implemented; staging worker completed validated JSON runs with PASS, compare and refresh persistence; queue metrics are visible; controlled storage failure produced `GAMMA_STORAGE_UNAVAILABLE`, restoration plus retry completed the same run at attempt 2 with PASS. Only the retained RTDOSE/measurement, 3D, large-input and commissioning gate remains |
 | P9 | NOT_STARTED | Depends on P7/P8 for Gamma blocks |
 | P10 | NOT_STARTED | Depends on P7–P9 |
 | P11 | NOT_STARTED | Depends on P7/P9 |
@@ -86,6 +86,14 @@
 - After the worker restart, the authenticated Gamma Workspace submitted run `e084529d-6bb1-4119-ae0a-f4da7d371cac`; the run reached `COMPLETED`, `PASS`, 100% (4/4 evaluated and passing points), target 95%, excluded 0 and Gamma P95 `0.0708333333333318`.
 - Redis console evidence for the same staging queue: `XLEN rt-connect:gamma = 2`; consumer group `rt-connect-gamma` has 2 consumers, `pending = 0`, `entries-read = 2` and `lag = 0`. This proves publish → claim → analysis completion → acknowledge for the current 2D synthetic scope. It does not by itself close the authenticated queue-metrics API, failure/retry or RTDOSE/3D commissioning gates.
 - The deployed web Status page called the authenticated `/api/v1/gamma/queue-metrics` endpoint successfully and displayed `redis_stream · available · configured`, stream `2`, pending `0`, consumers `3`, and organization run counts queued/running/retrying/failed all `0`.
+
+## Live Railway P8 failure/retry evidence — verified 2026-09-08
+
+- The test used the existing valid synthetic reference/evaluation artifacts in QA case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`; no patient data was used.
+- To create a controlled staging failure, the private Gamma worker's object-storage bucket setting was temporarily pointed to a nonexistent staging-only bucket. The API accepted the job and run `26a54046-1f20-454c-b3f4-e766937f30d6` reached `FAILED`, progress `100%`, attempt `1`, with error `GAMMA_STORAGE_UNAVAILABLE` and message `Gamma input could not be read from object storage.`
+- The real staging bucket setting was restored. Railway showed the worker Online with no staged variable changes remaining.
+- From the authenticated Gamma Workspace, `Retry job` re-enqueued the same run. It reached `COMPLETED` / `PASS` at attempt `2`, with `100%` (4/4 evaluated and passing points), excluded `0` and Gamma P95 `0.0708333333333318`.
+- This closes the live staging failure/retry/recovery evidence for the current 2D synthetic adapter. It does not close the RTDOSE/measurement, 3D, large-input or clinical commissioning gates.
 
 ## Historical Railway evidence (superseded)
 
@@ -175,7 +183,7 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 The older Railway-history bullets below are retained as evidence of earlier incidents. The current gates are:
 
 - The authenticated staging user and organization onboarding path are working. A fresh browser test should still be repeated after session expiry before treating the auth path as operationally stable.
-- P8 current remaining gates: the 2D synthetic worker flow, Redis Streams claim/ack, queue-metrics API, result snapshot, compare and browser refresh persistence are evidenced. An explicit failed-job/retry staging evidence path and any RTDOSE/3D/large-input scope retained in `plan.md` are still open; P8 is not complete until those gates are either implemented and verified or the plan scope is explicitly revised.
+- P8 current remaining gates: the 2D synthetic worker flow, Redis Streams claim/ack, queue-metrics API, result snapshot, compare and browser refresh persistence are evidenced, as is a controlled staging `FAILED → retry → COMPLETED` recovery. RTDOSE/measurement, 3D, large-input and clinical commissioning scope retained in `plan.md` remain open; P8 is not complete until those gates are implemented and verified or the plan scope is explicitly revised.
 - The P7 branch has not been promoted to production. Production promotion remains blocked until Gamma/report/trend/protocol gates, backup and rollback evidence exist.
 
 - Correction on 2026-09-05: both Railway tokens are present in root `.env` and authenticate successfully through the Railway API. Account-token access resolves project `prolific-learning`; project-token scope resolves its production environment. The earlier missing-token report was incorrect. Standard dotenv parsing supports spaces around `=` and quoted values.

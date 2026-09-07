@@ -677,9 +677,10 @@ row and a separate `python -m rt_connect_api.worker` process. The current implem
 adds a Redis Streams adapter using consumer-group claim, acknowledgement and stale-message
 reclaim; when `REDIS_URL` is absent, local development deliberately falls back to database
 polling. Staging now has the Redis service, the private `REDIS_URL` reference on both API and
-worker, and a live worker-consumed 2D run with `pending=0` after acknowledgement. P8 remains
-open until the authenticated queue-metrics endpoint, failed-job/retry path, RTDOSE/measurement
-scope and any retained 3D/large-input scope have evidence.
+worker, and a live worker-consumed 2D run with `pending=0` after acknowledgement. Queue metrics
+and a controlled failed-job/retry path are now evidenced. P8 remains open until the
+RTDOSE/measurement scope and any retained 3D/large-input scope have implementation evidence,
+followed by the corresponding commissioning decision.
 
 ### P8 staging verification record — 2026-09-08
 
@@ -688,6 +689,14 @@ scope and any retained 3D/large-input scope have evidence.
 - Authenticated Gamma Workspace run `e084529d-6bb1-4119-ae0a-f4da7d371cac` reached `COMPLETED / PASS`, 100% (4/4) on `gamma-2d-p8.1`.
 - Redis staging reported `XLEN=2`; `rt-connect-gamma` reported 2 consumers, `entries-read=2`, `pending=0` and `lag=0`.
 - The deployed web Status page also called the authenticated `/api/v1/gamma/queue-metrics` endpoint and displayed `redis_stream`, `available`, `configured`, stream `2`, pending `0`, consumers `3`, and zero organization-scoped queued/running/retrying/failed runs. This closes the live Redis transport and queue-metrics evidence for the current 2D synthetic adapter. It does not close the failure/retry test, RTDOSE/3D test or clinical commissioning scope.
+
+### P8 controlled failure/retry verification — 2026-09-08
+
+- The test used the existing valid synthetic reference/evaluation artifacts in QA case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`; no patient data was used.
+- A temporary staging-only worker object-storage fault was introduced by pointing its bucket setting to a nonexistent bucket. Run `26a54046-1f20-454c-b3f4-e766937f30d6` was accepted by the API and reached `FAILED`, progress `100%`, attempt `1`, with `GAMMA_STORAGE_UNAVAILABLE` because the worker could not read the Gamma input.
+- The real staging bucket setting was restored and the worker returned Online with no staged variable changes. The authenticated Gamma Workspace `Retry job` action re-enqueued the same run.
+- The retry reached `COMPLETED / PASS` at attempt `2`, with `100%` (4/4 evaluated and passing points), excluded `0` and Gamma P95 `0.0708333333333318`.
+- This closes failure/retry/recovery evidence for the current 2D synthetic adapter. It does not close RTDOSE/measurement, 3D, large-input or clinical commissioning scope.
 
 ## Engine
 
@@ -720,8 +729,9 @@ scope and any retained 3D/large-input scope have evidence.
 - Golden test pass.
 
 The current staging golden evidence covers the locked 2D synthetic JSON adapter. The live Redis
-transport is now evidenced, but neither result is sufficient to close the RTDOSE/3D commissioning
-gate; those tests remain explicit work unless the scope is revised and recorded before P8 closure.
+transport and recovery are now evidenced, but neither result is sufficient to close the RTDOSE/3D
+commissioning gate; those tests remain explicit work unless the scope is revised and recorded
+before P8 closure.
 
 ---
 
