@@ -285,17 +285,62 @@ def upload_artifact(
             digest.update(chunk)
             handle.write(chunk)
     sha256 = digest.hexdigest()
+    # A checksum identifies the bytes, but the declared artifact type is part of
+    # the input contract.  The same bytes can be uploaded once as a raw DICOM
+    # object and once as a validated JSON/measurement representation.  Reusing
+    # an artifact across those declarations would make the UI appear to accept
+    # JSON while Gamma later sees the old DICOM metadata.
     existing = session.scalar(
         select(Artifact)
         .where(
             Artifact.organization_id == context.organization_id,
             Artifact.qa_case_id == case.id,
             Artifact.sha256 == sha256,
+            Artifact.artifact_type == artifact_type,
         )
         .order_by(Artifact.created_at.desc())
     )
     if existing is not None:
         temp_path.unlink(missing_ok=True)
+        manifest = session.scalar(
+            select(InputManifest)
+            .where(
+                InputManifest.organization_id == context.organization_id,
+                InputManifest.artifact_id == existing.id,
+                InputManifest.logical_role == logical_role,
+            )
+            .order_by(InputManifest.created_at.desc())
+        )
+        if manifest is None:
+            source_manifest = session.scalar(
+                select(InputManifest)
+                .where(
+                    InputManifest.organization_id == context.organization_id,
+                    InputManifest.artifact_id == existing.id,
+                )
+                .order_by(InputManifest.created_at.desc())
+            )
+            session.add(
+                InputManifest(
+                    organization_id=context.organization_id,
+                    artifact_id=existing.id,
+                    logical_role=logical_role,
+                    checksum_at_use=sha256,
+                    selected_metadata=existing.metadata_snapshot,
+                    geometry_summary=(
+                        source_manifest.geometry_summary if source_manifest is not None else {}
+                    ),
+                    unit_summary=(
+                        source_manifest.unit_summary if source_manifest is not None else {}
+                    ),
+                    validation_summary=(
+                        source_manifest.validation_summary
+                        if source_manifest is not None
+                        else {"state": "PENDING"}
+                    ),
+                )
+            )
+            _commit_or_raise(session)
         response.status_code = status.HTTP_200_OK
         return _artifact_response(existing, duplicate=True)
 

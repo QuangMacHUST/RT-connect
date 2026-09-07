@@ -36,7 +36,7 @@ def health(request: Request) -> HealthResponse:
 
 @router.get("/ready", response_model=HealthResponse)
 def readiness(request: Request) -> HealthResponse | JSONResponse:
-    is_ready, reason = database_ready()
+    is_ready, reason = database_ready(request.app.state.settings)
     if not is_ready:
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

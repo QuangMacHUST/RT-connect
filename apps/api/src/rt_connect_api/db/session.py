@@ -8,7 +8,7 @@ from functools import lru_cache
 from sqlalchemy import Engine, create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
-from rt_connect_api.core.config import get_settings
+from rt_connect_api.core.config import Settings, get_settings
 
 
 def normalize_database_url(database_url: str) -> str:
@@ -44,8 +44,12 @@ def get_session() -> Generator[Session]:
         yield session
 
 
-def database_ready() -> tuple[bool, str | None]:
-    engine = get_engine()
+def database_ready(settings: Settings | None = None) -> tuple[bool, str | None]:
+    # Health/readiness must inspect the settings attached to the current app.
+    # Falling back to the process-wide cached settings is appropriate for the
+    # normal server entrypoint, but would make app-factory tests (and any
+    # embedded deployment) probe a different database than the app uses.
+    engine = get_engine() if settings is None else _engine_for_settings(settings)
     if engine is None:
         return False, "DATABASE_URL is not configured"
     try:
@@ -54,3 +58,9 @@ def database_ready() -> tuple[bool, str | None]:
     except Exception:
         return False, "Database connection failed"
     return True, None
+
+
+def _engine_for_settings(settings: Settings) -> Engine | None:
+    if settings.database_url is None:
+        return None
+    return create_engine(normalize_database_url(settings.database_url), pool_pre_ping=True)

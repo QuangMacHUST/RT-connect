@@ -158,3 +158,28 @@ def test_measurement_validation_explains_missing_units_and_grid() -> None:
         codes = {item["code"] for item in body["errors"]}
         assert {"MEASUREMENT_UNITS_MISSING", "MEASUREMENT_GRID_INVALID"}.issubset(codes)
         assert client.get(f"/api/v1/artifacts/{artifact_id}").json()["data_status"] == "INVALID"
+
+
+def test_same_bytes_with_different_declared_type_are_not_silently_reused() -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+        payload = _measurement_bytes(complete=True)
+
+        stored_as_dicom = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={"file": ("measurement.json", payload, "application/json")},
+            data={"artifact_type": "DICOM", "logical_role": "REFERENCE"},
+        )
+        assert stored_as_dicom.status_code == 201, stored_as_dicom.text
+
+        stored_as_json = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={"file": ("measurement.json", payload, "application/json")},
+            data={"artifact_type": "JSON", "logical_role": "REFERENCE"},
+        )
+        assert stored_as_json.status_code == 201, stored_as_json.text
+        assert stored_as_json.json()["duplicate"] is False
+        assert stored_as_json.json()["artifact_type"] == "JSON"
+        assert stored_as_json.json()["id"] != stored_as_dicom.json()["id"]
