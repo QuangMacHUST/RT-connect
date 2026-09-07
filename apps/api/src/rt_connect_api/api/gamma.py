@@ -15,7 +15,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, Response, status
 from pydantic import BaseModel, Field, model_validator
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -29,6 +29,7 @@ from rt_connect_api.services.gamma_engine import (
     calculate_gamma_from_paths,
 )
 from rt_connect_api.services.object_storage import ObjectStorage, ObjectStorageError
+from rt_connect_api.services.redis_queue import RedisQueueError, get_gamma_queue
 from rt_connect_api.services.session_context import SessionContext, resolve_session_context
 
 router = APIRouter(tags=["gamma"])
@@ -99,6 +100,20 @@ class GammaCompareResponse(BaseModel):
     left_run_id: UUID
     right_run_id: UUID
     items: list[GammaCompareItem]
+
+
+class GammaQueueMetricsResponse(BaseModel):
+    backend: str
+    configured: bool
+    available: bool
+    stream_length: int | None = None
+    pending_count: int | None = None
+    consumer_count: int | None = None
+    queued_runs: int
+    running_runs: int
+    retrying_runs: int
+    failed_runs: int
+    error: str | None = None
 
 
 def _storage(request: Request) -> ObjectStorage:
@@ -278,6 +293,38 @@ def _fingerprint(payload: GammaRunCreateRequest) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _dispatch_gamma_run(request: Request, session: Session, run: GammaAnalysisRun) -> None:
+    """Publish a run after its database row is committed.
+
+    Local development can deliberately omit ``REDIS_URL`` and keep the DB polling
+    worker. Staging/production configure Redis, so a publish failure is visible as
+    a failed run that can be retried instead of silently remaining queued forever.
+    """
+
+    queue = get_gamma_queue(request.app.state.settings)
+    if queue is None:
+        return
+    try:
+        queue.enqueue(run.id, run.organization_id, run.attempt_count)
+    except RedisQueueError as exc:
+        run.status = "FAILED"
+        run.progress_percent = 100
+        run.error_snapshot = [
+            {
+                "code": "GAMMA_QUEUE_UNAVAILABLE",
+                "message": "The configured Gamma queue is unavailable.",
+            }
+        ]
+        run.completed_at = datetime.now(UTC)
+        run.heartbeat_at = run.completed_at
+        session.commit()
+        raise DomainError(
+            "GAMMA_QUEUE_UNAVAILABLE",
+            "The configured Gamma queue is unavailable; the run can be retried after recovery.",
+            503,
+        ) from exc
+
+
 @router.post(
     "/qa-cases/{case_id}/gamma-runs",
     response_model=GammaRunResponse,
@@ -286,6 +333,7 @@ def _fingerprint(payload: GammaRunCreateRequest) -> str:
 def enqueue_gamma_run(
     case_id: UUID,
     payload: GammaRunCreateRequest,
+    request: Request,
     response: Response,
     identity: AuthenticatedIdentity = Depends(require_identity),
     session: Session = Depends(get_session),
@@ -318,6 +366,8 @@ def enqueue_gamma_run(
                 "The idempotency key was already used for a different Gamma request.",
                 409,
             )
+        if existing.status in {"QUEUED", "RETRYING"}:
+            _dispatch_gamma_run(request, session, existing)
         response.status_code = status.HTTP_200_OK
         return _run_response(existing)
 
@@ -353,6 +403,7 @@ def enqueue_gamma_run(
             409,
         ) from exc
     session.refresh(run)
+    _dispatch_gamma_run(request, session, run)
     return _run_response(run)
 
 
@@ -389,6 +440,7 @@ def get_gamma_run(
 @router.post("/gamma-runs/{run_id}/retry", response_model=GammaRunResponse)
 def retry_gamma_run(
     run_id: UUID,
+    request: Request,
     identity: AuthenticatedIdentity = Depends(require_identity),
     session: Session = Depends(get_session),
 ) -> GammaRunResponse:
@@ -409,7 +461,61 @@ def retry_gamma_run(
     run.completed_at = None
     session.commit()
     session.refresh(run)
+    _dispatch_gamma_run(request, session, run)
     return _run_response(run)
+
+
+@router.get("/gamma/queue-metrics", response_model=GammaQueueMetricsResponse)
+def gamma_queue_metrics(
+    request: Request,
+    identity: AuthenticatedIdentity = Depends(require_identity),
+    session: Session = Depends(get_session),
+) -> GammaQueueMetricsResponse:
+    """Return organization-scoped queue counters without exposing Redis details."""
+
+    context = _context(identity, session)
+    count_rows = session.execute(
+        select(GammaAnalysisRun.status, func.count())
+        .where(GammaAnalysisRun.organization_id == context.organization_id)
+        .group_by(GammaAnalysisRun.status)
+    ).all()
+    counts: dict[str, int] = {str(row[0]): int(row[1]) for row in count_rows}
+    queue = get_gamma_queue(request.app.state.settings)
+    if queue is None:
+        return GammaQueueMetricsResponse(
+            backend="database_polling",
+            configured=False,
+            available=True,
+            queued_runs=int(counts.get("QUEUED", 0)),
+            running_runs=int(counts.get("RUNNING", 0)),
+            retrying_runs=int(counts.get("RETRYING", 0)),
+            failed_runs=int(counts.get("FAILED", 0)),
+        )
+    try:
+        metrics = queue.metrics()
+    except RedisQueueError:
+        return GammaQueueMetricsResponse(
+            backend="redis_stream",
+            configured=True,
+            available=False,
+            queued_runs=int(counts.get("QUEUED", 0)),
+            running_runs=int(counts.get("RUNNING", 0)),
+            retrying_runs=int(counts.get("RETRYING", 0)),
+            failed_runs=int(counts.get("FAILED", 0)),
+            error="GAMMA_QUEUE_UNAVAILABLE",
+        )
+    return GammaQueueMetricsResponse(
+        backend=str(metrics["backend"]),
+        configured=True,
+        available=True,
+        stream_length=int(metrics["stream_length"]),
+        pending_count=int(metrics["pending_count"]),
+        consumer_count=int(metrics["consumer_count"]),
+        queued_runs=int(counts.get("QUEUED", 0)),
+        running_runs=int(counts.get("RUNNING", 0)),
+        retrying_runs=int(counts.get("RETRYING", 0)),
+        failed_runs=int(counts.get("FAILED", 0)),
+    )
 
 
 @router.get("/gamma-runs/{run_id}/compare", response_model=GammaCompareResponse)

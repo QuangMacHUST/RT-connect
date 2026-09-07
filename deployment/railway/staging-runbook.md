@@ -60,14 +60,16 @@ After the API has deployed the Gamma migration, create a separate service named
 | Healthcheck | None; this is a non-HTTP worker |
 | `GAMMA_WORKER_POLL_SECONDS` | `2` in staging |
 | `GAMMA_WORKER_ONCE` | unset |
+| `REDIS_URL` | Railway private reference `${{Redis.REDIS_URL}}`, same value source as API |
 
 Apply the root/start/healthcheck settings directly in the worker service (or through the
 supported Railway IaC mechanism when adopted); do not assume that merely committing
 `railway.worker.toml` changes the service. Copy/reference the API's staging values for `DATABASE_URL`, `SUPABASE_JWT_*`, `S3_*` and
 `MAX_UPLOAD_BYTES` without exposing their secret values. Do not add the API's
 `/apps/api/railway.toml` to this worker: it would run the API healthcheck and could cause a
-non-HTTP worker deployment to fail. Verify worker logs show polling and that a Gamma run moves
-from `QUEUED` to `RUNNING` to `COMPLETED`.
+non-HTTP worker deployment to fail. With `REDIS_URL` set, verify worker logs show Redis
+Streams/consumer-group startup rather than database polling, then verify a Gamma run moves
+from `QUEUED` to `RUNNING` to `COMPLETED` and the Redis pending count is acknowledged.
 
 ## Supabase handoff
 

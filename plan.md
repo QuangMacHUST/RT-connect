@@ -61,7 +61,7 @@ Logo và avatar không phải application route. Vì project Stitch đang public
 | staging | `gleaming-cooperation` (`9b35bf0b-0419-4679-8af0-e639e5a84713`) | `Postgres-Q1Hc` (`8fc8201e-417d-4fd7-9a6d-17ad51b72dcf`) | `codex/p2-runtime-resilience` | `us-west2` | `SUCCESS`, commit `9bf96e9`, deployment `2b5270d1-9704-49b3-b3d8-0f8be130d02e` |
 | production | `RT-connect` (`9544c3e6-c8bd-4c29-b62e-c6172eb51af3`) | `Postgres` (`5709f18d-c92d-461a-9f73-478dd7748d80`) | `main` | `us-west2` | `SUCCESS`, commit `c52b614`, deployment `ec813793-4e29-4edb-b5d7-f323264da403` |
 
-Environment IDs: production `910dff25-75b6-42b2-bf6b-e2601ba9d7d2`; staging `b0ab34e5-0ff4-479d-8232-659d175e9e2f`. PostgreSQL production và staging hiện vẫn đang chạy bằng volume riêng. Redis/worker/renderer chưa được provision trước phase cần chúng. Ngân sách/credit khởi điểm do user cung cấp là 5 USD; phải theo dõi usage thực tế.
+Environment IDs: production `910dff25-75b6-42b2-bf6b-e2601ba9d7d2`; staging `b0ab34e5-0ff4-479d-8232-659d175e9e2f`. PostgreSQL production và staging hiện vẫn đang chạy bằng volume riêng. Trong P8, staging đã được provision thêm Redis và worker; renderer chưa được provision vì chưa tới phase Report/Export và vẫn phải dựa trên benchmark. Ngân sách/credit khởi điểm do user cung cấp là 5 USD; phải theo dõi usage thực tế.
 
 Ngày 2026-09-06 đã xử lý incident deployment: Railway từ chối deployment production vì `multiRegionConfig` dùng alias cũ `sfo`. Hai API service đã được chuyển sang region identifier hợp lệ `us-west2`; sau đó staging và production đều deploy `SUCCESS`. PostgreSQL chưa đổi region để tránh di chuyển volume dữ liệu khi chưa có bằng chứng backup/restore tương ứng.
 
@@ -669,13 +669,16 @@ Thời lượng là ước lượng tham chiếu cho một nhóm nhỏ. Phase c�
 - Tạo Railway Redis-compatible queue và worker service ở staging.
 - API chỉ enqueue; không chạy Gamma lớn trong HTTP request.
 - Idempotency, retry, timeout, heartbeat và queue metrics.
+- API và worker dùng cùng `REDIS_URL` reference tới Redis staging. Redis Streams là transport/dispatch layer; PostgreSQL vẫn là nguồn sự thật của `GammaAnalysisRun`.
 - Theo dõi Railway usage/cost sau khi thêm service.
 
-P8 implementation checkpoint: the first local slice uses a persisted database-backed
-queue row and a separate `python -m rt_connect_api.worker` process so that the HTTP
-API already only enqueues and polls. This is not the final queue gate: before P8 can
-close, the worker must run in staging, Redis-compatible queue/claim wiring and queue
-metrics must be verified, and the synthetic golden flow must pass over HTTPS.
+P8 implementation checkpoint: the local slice has a persisted database-backed queue
+row and a separate `python -m rt_connect_api.worker` process. The current implementation
+adds a Redis Streams adapter using consumer-group claim, acknowledgement and stale-message
+reclaim; when `REDIS_URL` is absent, local development deliberately falls back to database
+polling. The staging Redis service and `REDIS_URL` references must still be verified with
+the new deployed commit, and P8 remains open until the queue metrics, failed-job/retry path,
+RTDOSE/measurement scope and any retained 3D/large-input scope have evidence.
 
 ## Engine
 
@@ -706,6 +709,10 @@ metrics must be verified, and the synthetic golden flow must pass over HTTPS.
 - Missing critical input bị chặn đúng error code.
 - Configuration snapshot đủ và run cũ không đổi.
 - Golden test pass.
+
+The current staging golden evidence covers the locked 2D synthetic JSON adapter. It does not
+close the RTDOSE/3D commissioning gate by itself; those tests remain explicit work unless the
+scope is revised and recorded before P8 closure.
 
 ---
 

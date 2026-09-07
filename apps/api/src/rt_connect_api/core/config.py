@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     app_version: str = "0.1.0-dev"
     log_level: str = "INFO"
     database_url: str | None = None
+    redis_url: str | None = None
+    gamma_queue_stream: str = "rt-connect:gamma"
+    gamma_queue_group: str = "rt-connect-gamma"
+    gamma_queue_visibility_timeout_seconds: int = Field(default=900, ge=30)
+    gamma_queue_maxlen: int = Field(default=10_000, ge=100)
     cors_allowed_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:5173"]
     )

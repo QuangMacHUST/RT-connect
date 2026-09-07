@@ -48,13 +48,13 @@ Vì project Stitch hiện là `PUBLIC`, chỉ được dùng dữ liệu giả l
 | :--- | :--- |
 | Railway project name | `prolific-learning` |
 | Railway project ID | `339f2c50-ddd7-491f-8c4e-da2a2d169502` |
-| Environment hiện có | `production` |
+| Environment hiện có | `production` và `staging` |
 | Environment ID | `910dff25-75b6-42b2-bf6b-e2601ba9d7d2` |
 | Service hiện có | `RT-connect` |
 | Service ID | `9544c3e6-c8bd-4c29-b62e-c6172eb51af3` |
 | Latest deployment tại thời điểm kiểm tra | `FAILED` |
-| PostgreSQL service | Chưa có trong project |
-| Worker/Redis/Renderer service | Chưa có trong project |
+| PostgreSQL service | Có service riêng cho production và staging |
+| Worker/Redis/Renderer service | Staging đã có Gamma worker và Redis; renderer chưa provision |
 | Ngân sách/credit khởi điểm do user cung cấp | 5 USD; usage/cost phải được kiểm tra theo service và environment |
 
 Project Token hiện trỏ đúng vào environment `production`. Token cấp rộng hơn có thể liệt kê project và được dùng để provisioning environment/service nếu phạm vi Railway thực tế cho phép. Không ghi giá trị token vào tài liệu, source, log hoặc Railway runtime variables của ứng dụng.
@@ -972,12 +972,24 @@ P8 local implementation slice hiện có migration `20260907_0007` và entity
 | GET | `/gamma-runs/{id}` | Poll status, progress, heartbeat, errors, warnings và result snapshot |
 | POST | `/gamma-runs/{id}/retry` | Đưa job `FAILED` trở lại queue mà không đổi input/config snapshot |
 | GET | `/gamma-runs/{id}/compare?other_run_id=...` | So sánh result snapshots của hai run cùng organization |
+| GET | `/gamma/queue-metrics` | Kiểm tra backend queue, Redis stream/pending/consumer metrics và số run theo organization |
 
 API không gọi engine trong request. `rt_connect_api.worker` claim các row
 `QUEUED/RETRYING`, đọc object storage, cập nhật `RUNNING`/heartbeat/progress rồi lưu
-`COMPLETED` hoặc `FAILED`. Initial worker dùng database-backed polling để kiểm thử
-contract; Railway Redis-compatible queue và worker service là gate triển khai staging
-tiếp theo, không được suy luận là đã hoàn thành chỉ từ local test.
+`COMPLETED` hoặc `FAILED`. Khi `REDIS_URL` được cấu hình, API dispatch run vào Redis
+Stream bằng consumer group; worker dùng `XREADGROUP`, reclaim message quá visibility timeout
+bằng `XAUTOCLAIM`, rồi `XACK` sau khi PostgreSQL đã được cập nhật. PostgreSQL vẫn giữ trạng
+thái nghiệp vụ, retry count, heartbeat, result và error snapshot; Redis không phải nguồn dữ
+liệu nghiệp vụ duy nhất. Khi không có `REDIS_URL`, local worker dùng database polling để
+giữ môi trường phát triển đơn giản. Queue metrics không trả payload bệnh nhân; các bộ đếm
+stream là operational metrics của queue, còn bộ đếm Gamma run trong response được scope theo
+organization.
+
+Staging phải chứng minh cả hai service API và worker nhận cùng reference `REDIS_URL`, worker
+log khởi động bằng Redis Streams thay vì polling, một run Gamma đi qua queue thật, message
+được acknowledge sau khi hoàn tất, và pending count trở về 0. Nếu Redis không khả dụng, API
+không âm thầm chạy phân tích trong HTTP request: nó trả lỗi queue rõ ràng, lưu trạng thái run
+phù hợp và cho phép retry có kiểm soát.
 
 Engine `gamma-2d-p8.1` hiện nhận subset đã khóa của `gamma.measurement.v1`: JSON
 `data_type=dose`, dose `GY`, position `mm`, grid 2D, `inline-float32` finite values.

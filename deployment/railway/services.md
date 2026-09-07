@@ -30,15 +30,24 @@ the effective settings must remain identical.
 | Resource | Railway name | Exposure | Purpose |
 | :--- | :--- | :--- | :--- |
 | API | `Railway-API-staging` | Public HTTPS | Authenticated REST API, migrations and job enqueue/poll |
-| Worker | `RT-connect-gamma-worker-staging` | Private only | Database-backed Gamma queue consumer |
+| Worker | `RT-connect-gamma-worker-staging` | Private only | Redis Streams Gamma queue consumer; PostgreSQL remains source of truth |
 | PostgreSQL | `Postgres-Q1Hc` | Private only | Gamma run rows and application data |
 | Bucket | `orderly-pail` | Private only | Validated Gamma input artifacts |
+| Redis | `Redis` | Private only | Redis Streams dispatch, consumer groups, pending/reclaim and queue metrics |
 
 The worker must receive the same `DATABASE_URL`, Supabase JWT settings and S3-compatible
 storage settings as the API. Set `GAMMA_WORKER_POLL_SECONDS` to a small staging value such as
-`2`; leave `GAMMA_WORKER_ONCE` unset for the long-running worker. Do not generate a public
-domain or healthcheck for this service. P8 currently uses a persisted database queue; Redis
-claim/metrics remain a later hardening gate documented in `plan.md`.
+`2`; leave `GAMMA_WORKER_ONCE` unset for the long-running worker. API and worker must both
+receive `REDIS_URL=${{Redis.REDIS_URL}}` (or the equivalent Railway private reference), with
+the same stream/group defaults from `apps/api/.env.example`. Do not generate a public domain
+or healthcheck for this service. `REDIS_URL` selects the Redis Streams path; when it is absent
+only local development may use the persisted database-polling fallback.
+
+The queue contract is intentionally split: PostgreSQL owns run status, attempt count,
+heartbeat, result and error snapshots; Redis only dispatches work. A worker acknowledges a
+message only after the database update succeeds. Stale pending messages are reclaimed with
+the configured visibility timeout, and the authenticated API endpoint
+`GET /api/v1/gamma/queue-metrics` exposes non-patient operational counters.
 
 ## Environment boundaries
 
