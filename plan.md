@@ -757,7 +757,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - Renderer: output JSON/CSV/PDF/PNG được hash và lưu object storage; PDF fallback ghi warning font Unicode thay vì coi là không có cảnh báo.
 - Frontend: `/app/reports` đã có history, tạo report, chọn source/template, chỉnh block, preview snapshot và export actions; lint/typecheck/test/build PASS local.
 - Chưa đóng P9: storage failure/retry, byte-level visual review và xác nhận build SHA trên staging candidate mới.
-- Chưa đóng P10: deploy/migration `20260908_0010`, authenticated staging trend workflow, large-series budget, baseline/event persistence trên staging và source drill-down sau refresh.
+- Chưa đóng P10: complete current-candidate negative matrix, large-series budget, baseline/event update/archive UI, source drill-down/export verification sau refresh và visual/accessibility evidence.
 
 <a id="phase-10"></a>
 
@@ -769,7 +769,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - **Mục tiêu:** Theo dõi phép đo tương thích theo thời gian và drill-down đúng nguồn.
 - **Contract:** specification §8 / SPEC-P10; các contract chung §2–§7 áp dụng khi có liên quan.
 - **Owner thực thi:** người/agent phụ trách module ghi tên trong checkpoint; người dùng cung cấp dữ liệu hoặc đánh giá workflow khi cần, không có cấp phê duyệt theo chức danh.
-- **Trạng thái test v2:** `LOCAL_VERIFIED` cho implementation slice trên schema `20260908_0010`; staging, large-series budget và visual/accessibility evidence vẫn `NOT_RUN` cho đến khi có evidence đúng release.
+- **Trạng thái test v2:** `STAGING_SMOKE_PARTIAL` cho implementation slice trên schema `20260908_0010`; authenticated basic trend/baseline/maintenance/rebuild/day-aggregate smoke đã đạt trên candidate `d15738f`, nhưng large-series budget, complete S/E/C matrix và visual/accessibility evidence vẫn `NOT_RUN` cho đến khi có evidence đúng release.
 
 ### Workflow P10
 
@@ -784,7 +784,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - [x] P10-W01 — Projection unique source_run/metric; index organization/machine/time; rebuild idempotent. `LOCAL_VERIFIED`.
 - [x] P10-W02 — Compatibility signature unit + energy + detector + protocol meaning; explicit normalization. `LOCAL_VERIFIED`.
 - [x] P10-W03 — Raw versus day/week aggregate contract, extrema/source-ID preservation, timezone/range handling. `LOCAL_VERIFIED` cho contract và test; large-series budget còn mở.
-- [x] P10-W04 — Baseline version/event CRUD; chart keyboard/table fallback/export metadata. `LOCAL_VERIFIED` cho API/UI và test; visual/accessibility evidence staging còn mở.
+- [x] P10-W04 — Baseline version/event CRUD; chart keyboard/table fallback/export metadata. `LOCAL_VERIFIED` cho API/UI và test; basic authenticated staging create/read smoke đạt, nhưng update/archive UI và visual/accessibility evidence staging còn mở.
 - [ ] P10-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P10-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
 
@@ -835,6 +835,12 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - **Exit gate:** Không trộn máy/unit; baseline/outlier/timezone/filter/export/drill-down và rebuild pass; TC-P10-S01–S08 và TC-P10-E01–E12 phải có kết quả; riêng S04/S05–S08 phải có workload/evidence tương ứng chứ không được suy ra từ test unit nhỏ.
 - **Kiểm tra chéo:** C03–C09 về scope, retry, đồng thời, mất mạng, session và version phải có evidence hoặc lý do không áp dụng; thêm C10–C16 theo module.
 - **Nếu gate fail:** mở issue với testcase thất bại, giữ evidence/bản dữ liệu trước đó và sửa package liên quan; không thay expected để hợp thức hóa output. Có thể làm task độc lập tiếp theo, nhưng phase vẫn mở.
+
+### Checkpoint staging P10 ngày 2026-09-08
+
+- API candidate từ commit `b8c7911` đã chạy migration `20260908_0010`; public `/api/v1/ready` trả `status=ready`, schema `20260908_0010`.
+- Web candidate từ commit `d15738f` đã deploy thành công; authenticated `/app/trend` hiển thị Build `9262bfd`, API thật, 6 trend points và 3 compatible series.
+- Smoke đã kiểm: baseline có mốc hiệu lực rõ ràng và outlier/delta, maintenance marker revision `1`, rebuild `0 mới/6 đã có`, aggregate day giữ 2 source runs mỗi bucket. Đây chỉ là `STAGING_SMOKE_PARTIAL`; chưa đánh dấu `DONE-v2`.
 
 <a id="phase-11"></a>
 
