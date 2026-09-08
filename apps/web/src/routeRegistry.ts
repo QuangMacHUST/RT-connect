@@ -14,7 +14,7 @@ export const routeRegistry: readonly RouteDefinition[] = [
   { path: '/app/organization', label: 'Organization / Site / Machine', module: 'MOD-02', phase: 'P4', nav: 'workspace', available: true },
   { path: '/app/qa', label: 'Kho lưu trữ QA', module: 'MOD-03', phase: 'P5', nav: 'workspace', available: true },
   { path: '/app/reports', label: 'Report Builder', module: 'MOD-07', phase: 'P9', nav: 'workspace', available: true },
-  { path: '/app/qa-protocols', label: 'QA Protocols', module: 'MOD-09', phase: 'P11', nav: 'workspace', available: false },
+  { path: '/app/qa-protocols', label: 'QA Protocols', module: 'MOD-09', phase: 'P11', nav: 'workspace', available: true },
   { path: '/app/trend', label: 'Xu hướng', module: 'MOD-08', phase: 'P10', nav: 'workspace', available: true },
   { path: '/app/biological', label: 'Biological Toolkit', module: 'MOD-10', phase: 'P12', nav: 'biological', available: false },
   { path: '/app/biological/bed-eqd2', label: 'BED & EQD2', module: 'MOD-11', phase: 'P13', nav: 'biological', available: false },

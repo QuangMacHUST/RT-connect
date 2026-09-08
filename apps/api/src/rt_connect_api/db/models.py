@@ -156,7 +156,13 @@ class QACase(TimestampedIdMixin, Base):
 
 
 class QAProtocolVersion(TimestampedIdMixin, Base):
-    """Immutable protocol header used to create a reproducible QA run."""
+    """Versioned protocol header used to create a reproducible QA run.
+
+    Draft versions can be edited.  Once active, the version and its rules are
+    immutable; a changed protocol is represented by a new version.  Archived
+    versions remain readable so historical QA runs and reports retain their
+    original provenance.
+    """
 
     __tablename__ = "qa_protocol_versions"
     __table_args__ = (
@@ -177,7 +183,17 @@ class QAProtocolVersion(TimestampedIdMixin, Base):
     qa_type: Mapped[str] = mapped_column(String(100), nullable=False)
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="ACTIVE")
+    description: Mapped[str | None] = mapped_column(String(4000), nullable=True)
     effective_note: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    applicability: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    source_type: Mapped[str] = mapped_column(
+        String(40), nullable=False, server_default="USER_DEFINED"
+    )
+    source_reference: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    source_protocol_version_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("qa_protocol_versions.id"), nullable=True, index=True
+    )
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
     created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("user_identities.id"), nullable=True, index=True
     )
@@ -188,9 +204,7 @@ class QAProtocolRule(TimestampedIdMixin, Base):
 
     __tablename__ = "qa_protocol_rules"
     __table_args__ = (
-        UniqueConstraint(
-            "protocol_version_id", "metric_key", name="uq_qa_protocol_rules_metric"
-        ),
+        UniqueConstraint("protocol_version_id", "metric_key", name="uq_qa_protocol_rules_metric"),
         Index("ix_qa_protocol_rules_protocol_order", "protocol_version_id", "sort_order"),
     )
 
@@ -212,6 +226,7 @@ class QAProtocolRule(TimestampedIdMixin, Base):
     required: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=true())
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     note: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    reference: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
 
 class MachineQARun(TimestampedIdMixin, Base):
@@ -285,9 +300,7 @@ class TrendPoint(TimestampedIdMixin, Base):
     unit: Mapped[str] = mapped_column(String(40), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     measured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    context_snapshot: Mapped[dict[str, object]] = mapped_column(
-        JSON, nullable=False, default=dict
-    )
+    context_snapshot: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
 
 
 class BaselineVersion(TimestampedIdMixin, Base):
@@ -327,9 +340,7 @@ class BaselineVersion(TimestampedIdMixin, Base):
     status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="ACTIVE")
     source_type: Mapped[str] = mapped_column(String(40), nullable=False, server_default="MANUAL")
     source_id: Mapped[UUID | None] = mapped_column(PostgreSQLUUID(as_uuid=True), nullable=True)
-    context_snapshot: Mapped[dict[str, object]] = mapped_column(
-        JSON, nullable=False, default=dict
-    )
+    context_snapshot: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
     created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("user_identities.id"), nullable=True, index=True
     )
@@ -360,9 +371,7 @@ class MaintenanceEvent(TimestampedIdMixin, Base):
     notes: Mapped[str | None] = mapped_column(String(4000), nullable=True)
     revision_number: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
     status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="ACTIVE")
-    metadata_snapshot: Mapped[dict[str, object]] = mapped_column(
-        JSON, nullable=False, default=dict
-    )
+    metadata_snapshot: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
     created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("user_identities.id"), nullable=True, index=True
     )
@@ -398,9 +407,7 @@ class MaintenanceEventRevision(TimestampedIdMixin, Base):
     ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     notes: Mapped[str | None] = mapped_column(String(4000), nullable=True)
     status: Mapped[str] = mapped_column(String(30), nullable=False)
-    metadata_snapshot: Mapped[dict[str, object]] = mapped_column(
-        JSON, nullable=False, default=dict
-    )
+    metadata_snapshot: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
     created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("user_identities.id"), nullable=True, index=True
     )

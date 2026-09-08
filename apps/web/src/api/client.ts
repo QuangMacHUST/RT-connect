@@ -131,6 +131,7 @@ export type QAProtocolRuleResource = {
   required: boolean
   sort_order: number
   note: string | null
+  reference: string | null
 }
 export type QAProtocolResource = {
   id: string
@@ -140,8 +141,42 @@ export type QAProtocolResource = {
   qa_type: string
   version_number: number
   status: string
+  revision: number
+  description: string | null
   effective_note: string | null
+  applicability: Record<string, unknown>
+  source_type: string
+  source_reference: string | null
+  source_protocol_version_id: string | null
+  created_by_user_identity_id: string | null
+  created_at: string
+  updated_at: string
   rules: QAProtocolRuleResource[]
+}
+export type QAProtocolRuleInput = Omit<QAProtocolRuleResource, 'id'>
+export type QAProtocolDefinitionInput = {
+  protocol_key: string
+  name: string
+  qa_type: string
+  description?: string | null
+  effective_note?: string | null
+  applicability?: Record<string, unknown>
+  source_type?: 'USER_DEFINED' | 'REFERENCE' | 'INTERNAL' | 'SITE_APPROVED'
+  source_reference?: string | null
+  rules: QAProtocolRuleInput[]
+}
+export type QAProtocolCreateInput = QAProtocolDefinitionInput & { activate?: boolean }
+export type QAProtocolValidationResource = {
+  valid: boolean
+  errors: Array<{ code: string; field: string | null; message: string }>
+  warnings: Array<{ code: string; field: string | null; message: string }>
+}
+export type QAProtocolCompareResource = {
+  left: QAProtocolResource
+  right: QAProtocolResource
+  same_family: boolean
+  metadata_diffs: Array<{ field: string; left: unknown; right: unknown }>
+  rule_diffs: Array<{ field: string; left: unknown; right: unknown }>
 }
 export type MachineQAMeasurement = {
   metric_key: string
@@ -407,12 +442,29 @@ const qaProtocolRuleSchema = z.object({
   id: z.string().uuid(), metric_key: z.string(), display_name: z.string(), unit: z.string(),
   rule_type: z.string(), target_value: z.number().nullable(), lower_limit: z.number().nullable(),
   upper_limit: z.number().nullable(), tolerance: z.number().nullable(), action_level: z.number().nullable(),
-  required: z.boolean(), sort_order: z.number().int(), note: z.string().nullable()
+  required: z.boolean(), sort_order: z.number().int(), note: z.string().nullable(), reference: z.string().nullable()
 })
 const qaProtocolSchema = z.object({
   id: z.string().uuid(), organization_id: z.string().uuid(), protocol_key: z.string(), name: z.string(),
-  qa_type: z.string(), version_number: z.number().int(), status: z.string(), effective_note: z.string().nullable(),
+  qa_type: z.string(), version_number: z.number().int(), status: z.string(), revision: z.number().int(),
+  description: z.string().nullable(), effective_note: z.string().nullable(),
+  applicability: z.record(z.string(), z.unknown()), source_type: z.string(), source_reference: z.string().nullable(),
+  source_protocol_version_id: z.string().uuid().nullable(), created_by_user_identity_id: z.string().uuid().nullable(),
+  created_at: z.string(), updated_at: z.string(),
   rules: z.array(qaProtocolRuleSchema)
+})
+const qaProtocolCollectionSchema = z.object({
+  items: z.array(qaProtocolSchema), total: z.number().int(), offset: z.number().int(), limit: z.number().int(), include_archived: z.boolean()
+})
+const qaProtocolValidationSchema = z.object({
+  valid: z.boolean(),
+  errors: z.array(z.object({ code: z.string(), field: z.string().nullable(), message: z.string() })),
+  warnings: z.array(z.object({ code: z.string(), field: z.string().nullable(), message: z.string() }))
+})
+const qaProtocolCompareSchema = z.object({
+  left: qaProtocolSchema, right: qaProtocolSchema, same_family: z.boolean(),
+  metadata_diffs: z.array(z.object({ field: z.string(), left: z.unknown().nullable(), right: z.unknown().nullable() })),
+  rule_diffs: z.array(z.object({ field: z.string(), left: z.unknown().nullable(), right: z.unknown().nullable() }))
 })
 const machineQARunSchema = z.object({
   id: z.string().uuid(), organization_id: z.string().uuid(), qa_case_id: z.string().uuid(),
@@ -789,6 +841,70 @@ export class ApiClient {
     return this.get(`/organizations/${organizationId}/machine-qa/protocols`, z.object({
       items: z.array(qaProtocolSchema), total: z.number().int()
     }), accessToken)
+  }
+
+  qaProtocols(accessToken: string, organizationId: string, params: {
+    q?: string
+    status?: 'DRAFT' | 'ACTIVE' | 'ARCHIVED'
+    include_archived?: boolean
+  } = {}): Promise<{ items: QAProtocolResource[]; total: number; offset: number; limit: number; include_archived: boolean }> {
+    const query = new URLSearchParams()
+    if (params.q) query.set('q', params.q)
+    if (params.status) query.set('status', params.status)
+    if (params.include_archived) query.set('include_archived', 'true')
+    const suffix = query.toString() ? `?${query.toString()}` : ''
+    return this.get(`/organizations/${organizationId}/qa-protocols${suffix}`, qaProtocolCollectionSchema, accessToken)
+  }
+
+  validateQAProtocol(accessToken: string, organizationId: string, body: QAProtocolDefinitionInput): Promise<QAProtocolValidationResource> {
+    return this.request(`/organizations/${organizationId}/qa-protocols/validate`, qaProtocolValidationSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  createQAProtocol(accessToken: string, organizationId: string, body: QAProtocolCreateInput): Promise<QAProtocolResource> {
+    return this.request(`/organizations/${organizationId}/qa-protocols`, qaProtocolSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  updateQAProtocol(accessToken: string, organizationId: string, protocolId: string, body: {
+    expected_revision: number
+    protocol_key?: string
+    name?: string
+    qa_type?: string
+    description?: string | null
+    effective_note?: string | null
+    applicability?: Record<string, unknown>
+    source_type?: QAProtocolCreateInput['source_type']
+    source_reference?: string | null
+    rules?: QAProtocolRuleInput[]
+  }): Promise<QAProtocolResource> {
+    return this.request(`/organizations/${organizationId}/qa-protocols/${protocolId}`, qaProtocolSchema, accessToken, {
+      method: 'PATCH', body: JSON.stringify(body)
+    })
+  }
+
+  cloneQAProtocol(accessToken: string, organizationId: string, protocolId: string, body: { name?: string; protocol_key?: string; activate?: boolean } = {}): Promise<QAProtocolResource> {
+    return this.request(`/organizations/${organizationId}/qa-protocols/${protocolId}/clone`, qaProtocolSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  activateQAProtocol(accessToken: string, organizationId: string, protocolId: string, expectedRevision: number): Promise<QAProtocolResource> {
+    return this.request(`/organizations/${organizationId}/qa-protocols/${protocolId}/activate`, qaProtocolSchema, accessToken, {
+      method: 'POST', body: JSON.stringify({ expected_revision: expectedRevision })
+    })
+  }
+
+  archiveQAProtocol(accessToken: string, organizationId: string, protocolId: string, expectedRevision: number): Promise<QAProtocolResource> {
+    return this.request(`/organizations/${organizationId}/qa-protocols/${protocolId}/archive`, qaProtocolSchema, accessToken, {
+      method: 'POST', body: JSON.stringify({ expected_revision: expectedRevision })
+    })
+  }
+
+  compareQAProtocols(accessToken: string, organizationId: string, protocolId: string, otherId: string): Promise<QAProtocolCompareResource> {
+    return this.get(`/organizations/${organizationId}/qa-protocols/${protocolId}/compare?other_id=${encodeURIComponent(otherId)}`, qaProtocolCompareSchema, accessToken)
   }
 
   seedMachineQAProtocol(accessToken: string, organizationId: string): Promise<QAProtocolResource> {

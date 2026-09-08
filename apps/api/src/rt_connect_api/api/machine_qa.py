@@ -62,6 +62,7 @@ class ProtocolRuleResponse(BaseModel):
     required: bool
     sort_order: int
     note: str | None
+    reference: str | None
 
 
 class ProtocolResponse(BaseModel):
@@ -72,7 +73,16 @@ class ProtocolResponse(BaseModel):
     qa_type: str
     version_number: int
     status: str
+    revision: int
+    description: str | None
     effective_note: str | None
+    applicability: dict[str, object]
+    source_type: str
+    source_reference: str | None
+    source_protocol_version_id: UUID | None
+    created_by_user_identity_id: UUID | None
+    created_at: datetime
+    updated_at: datetime
     rules: list[ProtocolRuleResponse]
 
 
@@ -164,7 +174,16 @@ def _protocol_response(
         qa_type=protocol.qa_type,
         version_number=protocol.version_number,
         status=protocol.status,
+        revision=protocol.revision,
+        description=protocol.description,
         effective_note=protocol.effective_note,
+        applicability=protocol.applicability,
+        source_type=protocol.source_type,
+        source_reference=protocol.source_reference,
+        source_protocol_version_id=protocol.source_protocol_version_id,
+        created_by_user_identity_id=protocol.created_by_user_identity_id,
+        created_at=protocol.created_at,
+        updated_at=protocol.updated_at,
         rules=[
             ProtocolRuleResponse(
                 id=rule.id,
@@ -180,6 +199,7 @@ def _protocol_response(
                 required=rule.required,
                 sort_order=rule.sort_order,
                 note=rule.note,
+                reference=rule.reference,
             )
             for rule in rules or []
         ],
@@ -619,6 +639,7 @@ def list_protocols(
         session.scalars(
             select(QAProtocolVersion)
             .where(QAProtocolVersion.organization_id == organization_id)
+            .where(QAProtocolVersion.status == "ACTIVE")
             .order_by(QAProtocolVersion.protocol_key, QAProtocolVersion.version_number.desc())
         )
     )

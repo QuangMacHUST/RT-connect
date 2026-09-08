@@ -1,9 +1,9 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.3**; ngày 2026-09-08.
-- Nguồn nghiệp vụ: business-analysis.md v0.9.
-- Kế hoạch triển khai: plan.md v2.3, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.1.
+- File: specification.md; version **1.4**; ngày 2026-09-08.
+- Nguồn nghiệp vụ: business-analysis.md v0.10.
+- Kế hoạch triển khai: plan.md v2.4, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.2.
 - Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
@@ -638,18 +638,71 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 | Hạng mục | Đặc tả |
 | :--- | :--- |
 | Module/requirement | MOD-09; FR-P11-01 đến FR-P11-04 |
-| Input và dữ liệu hiển thị | Protocol code/title/type/cycle/applicability; version/changelog; rule key/type/unit/baseline/limits/required; reference citation/source type; archive flag. |
-| Model/storage | Protocol family + immutable version/rules/reference version; explicit bindings to runs. |
-| Operation/API surface | Target /qa-protocols, /qa-protocols/{id}/versions, compare/archive; tương thích endpoint Machine QA hiện có. |
-| Transaction/invariant | Version number cấp transaction; clone không chia mutable child; không update snapshot đã dùng. |
-| Output bàn giao | Library/editor/version compare/source panel; tích hợp R1 end-to-end. |
-| Success oracle | TC-P11-S01 đến TC-P11-S04 trong plan |
-| Error/recovery oracle | TC-P11-E01 đến TC-P11-E05 trong plan |
-| Exit | Create/clone/version/use/archive và report-old-version tests pass; R1 còn gap phải ghi riêng. |
+| Mục đích | Quản lý protocol family/version/rule có nguồn và applicability; cho phép dùng version cụ thể cho run mới mà không thay đổi run/report/trend cũ. |
+| Status | `DRAFT` có thể sửa; `ACTIVE` được chọn cho run mới; `ARCHIVED` chỉ đọc lịch sử và không được chọn cho run mới. `ACTIVE`/`ARCHIVED` immutable. |
+| Input/header | `protocol_key`, `name`, `qa_type`, `description`, `effective_note`, `applicability`, `source_type`, `source_reference`, `rules[]`; create mặc định DRAFT, có thể activate sau validation. |
+| Rule | `metric_key`, `display_name`, `unit`, `rule_type`, `target_value`, `lower_limit`, `upper_limit`, `tolerance`, `action_level`, `required`, `sort_order`, `note`, `reference`. Rule key lowercase ổn định và unique trong version. |
+| Applicability | Chỉ nhận các dimension công bố: `site_ids`, `machine_ids`, `qa_cycles`, `qa_types`, `energies`, `beam_qualities`, `techniques`, `detectors`, `phantoms`; mỗi dimension là danh sách string không rỗng. Không có dimension nghĩa là không ràng buộc theo chiều đó, không tự suy ra machine/site. |
+| Source | `USER_DEFINED`, `REFERENCE`, `INTERNAL`, `SITE_APPROVED`. `REFERENCE` bắt buộc `source_reference`; `SITE_APPROVED` là mô tả nội bộ, không tạo thêm cấp phê duyệt hay role. |
+| Model/storage | `QAProtocolVersion` thuộc organization, có `version_number`, `revision`, status, actor/timestamps, lineage `source_protocol_version_id`; `QAProtocolRule` thuộc version và organization. Migration hiện thực `20260908_0011`. |
+| Lineage/snapshot | Clone deep-copy rule thành ID mới và ghi source version. P7/P8/P9/P10 phải snapshot protocol/rule/limit/source lúc operation được accepted; không resolve lại live version khi mở history. |
+| Transaction/invariant | Validate-only không ghi DB. Create/update/clone/activate/archive ghi header, rules và audit atomically. Version number monotonic trong family; optimistic `expected_revision` bắt buộc cho PATCH/transition. Không hard-delete version đã được dùng. |
+| Operation/API surface | Xem bảng route bên dưới; base prefix là `/api/v1`. Existing Machine QA protocol list chỉ trả protocol `ACTIVE` cho run mới. |
+| Output bàn giao | Library/editor, validate preview, clone, lifecycle command, compare diff, source/applicability panel, Machine QA consumer và history snapshot. |
+| Success oracle | TC-P11-S01 đến TC-P11-S09 trong `plan.md`. |
+| Error/recovery oracle | TC-P11-E01 đến TC-P11-E16 trong `plan.md`; đồng thời áp dụng C01–C11 và C15/C16 khi phù hợp. |
+| Exit | Local migration/tests/build/OpenAPI pass; staging browser và consumer E2E chứng minh create→validate→save→activate→use→clone→compare→archive, old snapshot, scope, conflict, persistence uncertain và capability errors. |
 
-**Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer cần recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
+#### SPEC-P11.1 — API routes và request/response contract
 
-**Failure contract:** PROTOCOL_RULE_INVALID; PROTOCOL_VERSION_CONFLICT; REFERENCE_REQUIRED; PROTOCOL_NOT_AVAILABLE; PROTOCOL_CAPABILITY_MISMATCH. Đây là taxonomy target; mapping sang error codes thực tế phải được ghi trong contract test trước khi triển khai.
+| Method | Route | Request chính | Response/side effect |
+| :--- | :--- | :--- | :--- |
+| POST | `/organizations/{organization_id}/qa-protocols/validate` | `ProtocolDefinitionFields` | `200 {valid, errors[], warnings[]}`; không tạo protocol/rule/audit. |
+| GET | `/organizations/{organization_id}/qa-protocols` | `q`, `status`, `include_archived`, `offset`, `limit` | `ProtocolCollectionResponse`; list mặc định chỉ DRAFT/ACTIVE, archive chỉ khi explicit. |
+| POST | `/organizations/{organization_id}/qa-protocols` | Definition + `activate?` | `201 ProtocolResponse`; version tiếp theo của family, DRAFT hoặc ACTIVE. |
+| GET | `/organizations/{organization_id}/qa-protocols/{protocol_id}` | path ID | `200 ProtocolResponse`; kiểm organization trước lookup. |
+| PATCH | `/organizations/{organization_id}/qa-protocols/{protocol_id}` | `expected_revision` + field muốn đổi | `200 ProtocolResponse`; chỉ DRAFT, revision tăng; field nullable đã gửi có thể clear. |
+| POST | `/{protocol_id}/clone` | `name?`, `protocol_key?`, `activate?` | `201 ProtocolResponse`; version mới và child rules độc lập. |
+| POST | `/{protocol_id}/activate` | `expected_revision` | `200 ProtocolResponse`; DRAFT hợp lệ thành ACTIVE, revision tăng. |
+| POST | `/{protocol_id}/archive` | `expected_revision` | `200 ProtocolResponse`; ACTIVE/DRAFT thành ARCHIVED, detail/history vẫn đọc. |
+| GET | `/{protocol_id}/compare?other_id={id}` | hai ID cùng organization | `ProtocolCompareResponse`; metadata/rule diff, không mutation. |
+
+`ProtocolResponse` tối thiểu gồm: `id`, `organization_id`, `protocol_key`, `name`, `qa_type`, `version_number`, `status`, `revision`, `description`, `effective_note`, `applicability`, `source_type`, `source_reference`, `source_protocol_version_id`, actor/timestamps và `rules[]`. `ProtocolRuleResponse` phải trả stable rule ID, key, display/unit/type, numeric limits, required/order/note/reference.
+
+#### SPEC-P11.2 — Validation và error mapping
+
+| Điều kiện | Error/status | Invariant và phục hồi |
+| :--- | :--- | :--- |
+| Request shape, key/name/type/field whitespace hoặc format sai | `REQUEST_VALIDATION_FAILED` hoặc `PROTOCOL_RULE_INVALID` / 422 | Giữ form; không mutation. |
+| Applicability key lạ, không phải string list, item rỗng | `PROTOCOL_APPLICABILITY_INVALID` / 422 | Chỉ rõ `applicability.<dimension>`; không coi là wildcard. |
+| Rule key trùng/sai format, unit/display rỗng, type không support | `PROTOCOL_RULE_INVALID` hoặc duplicate là `PROTOCOL_VERSION_CONFLICT` / 422 | Không lưu một phần; giữ các rule hợp lệ trong draft UI. |
+| RANGE thiếu lower/upper hoặc lower > upper | `PROTOCOL_RULE_INVALID` / 422 | Không tự đảo/clamp giới hạn. |
+| MIN/MAX thiếu giới hạn; tolerance/action âm; deviation thiếu target/tolerance | `PROTOCOL_RULE_INVALID` / 422 | Field-level error; activate bị chặn. |
+| Percent target bằng 0 hoặc numeric non-finite | `PROTOCOL_RULE_INVALID` / 422 | Không chia 0/serialize NaN/Infinity. |
+| `REFERENCE` thiếu `source_reference` | `REFERENCE_REQUIRED` / 422 | Bổ sung citation hoặc đổi source type explicit. |
+| Conflict version/key/unique hoặc request cùng operation khác payload | `PROTOCOL_VERSION_CONFLICT` / 409 | Reload/query kết quả; không overwrite. |
+| `expected_revision` cũ hoặc hai tab cùng sửa | `PROTOCOL_VERSION_CONFLICT` / 409 | Giữ draft local, show diff/clone, retry với revision mới. |
+| Edit ACTIVE/ARCHIVED | `PROTOCOL_VERSION_IMMUTABLE` / 409 | Clone hoặc tạo version mới; lịch sử vẫn đọc. |
+| Activate ARCHIVED/chọn inactive cho run mới | `PROTOCOL_NOT_AVAILABLE` / 409 | Chọn ACTIVE explicit; không biến archive thành active bằng retry mù. |
+| Consumer không hỗ trợ rule/capability | `PROTOCOL_CAPABILITY_MISMATCH` / 409 hoặc preflight error | Nêu rule/capability; không drop rule và không tạo PASS giả. |
+| Organization ngoài membership hoặc ID không tồn tại | `ORGANIZATION_SCOPE_MISMATCH` / 403 hoặc `PROTOCOL_NOT_FOUND` / 404 | Không lộ existence/detail/rules ngoài scope. |
+| DB/audit/rule persistence lỗi | `PROTOCOL_PERSISTENCE_FAILED` / 503 | Rollback header+rules+audit; retry bounded sau khi kiểm tra kết quả. |
+| Mất mạng sau commit trước response | `MUTATION_RESULT_UNKNOWN` / client recovery | Tra list/detail bằng request context/ID trước khi gửi lại. |
+| Timeout/session expired/response schema sai | `SERVICE_UNAVAILABLE` hoặc `SESSION_UNAVAILABLE` | Stop spinner, refresh session tối đa theo policy, giữ filter/draft và retry có giới hạn. |
+
+#### SPEC-P11.3 — Consumer contract
+
+1. Machine QA chỉ nhận protocol `ACTIVE`; endpoint library mặc định không đưa `ARCHIVED` vào danh sách lựa chọn run mới.
+2. Run creation phải pin `protocol_version_id` và copy `protocol_key`, `version_number`, rule key/type/unit/limits, applicability, source và engine capability result vào snapshot. Không được chỉ lưu family key rồi resolve version mới khi evaluate.
+3. Khi protocol bị archive hoặc có version mới, run/report/trend cũ vẫn mở đúng snapshot; run mới phải chọn lại version active explicit.
+4. P8 Gamma chỉ dùng protocol rule nếu preflight capability xác nhận; rule không hỗ trợ là lỗi rõ ràng. P9 report có thể trình bày snapshot theo layout tùy người dùng nhưng không được đổi source snapshot. P10 trend giữ protocol version/context trong compatibility signature.
+5. Mọi member active trong organization có cùng đường đi API/UI. `created_by`, audit và revision dùng cho provenance/concurrency, không phải phân quyền hành động.
+
+**Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer phải recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
+
+**Failure contract:** Các mã ở SPEC-P11.2 là taxonomy có thể kiểm chứng. Nếu code triển khai dùng tên tương đương, phải cập nhật OpenAPI, test mapping và plan cùng commit; không để tài liệu và response thực tế lệch nhau.
+
+**P11 implementation status 2026-09-08:** migration `20260908_0011` đã ở head trên PostgreSQL local. Backend full suite `81/81`, focused `test_protocol_library.py` `3/3`, Ruff/mypy, frontend lint/typecheck/Vitest `1/1` và build đã pass local. Đây mới là local implementation evidence; staging browser, consumer snapshot qua P7/P8/P9/P10, complete error/boundary matrix, visual/accessibility và release manifest vẫn mở.
 
 <a id="spec-p12"></a>
 
@@ -894,7 +947,7 @@ Các phase contract ở mục 8 đã nêu trường chi tiết. Bảng dưới �
 | P8 | Gamma profile, artifact roles, config, enqueue/outbox | Gamma result/plots/counts/attempt diagnostics | `RTDOSE_REQUIRED_OR_COMPARISON_REQUIRED`, `GAMMA_INPUT_INCOMPATIBLE`, `GAMMA_CONFIG_UNSUPPORTED`, `GAMMA_NO_EVALUATED_POINTS`, `GAMMA_LOCAL_ZERO_REFERENCE`, `GAMMA_DISPATCH_UNAVAILABLE`, `GAMMA_EXECUTION_INTERRUPTED`, `GAMMA_DICOM_UNSUPPORTED`, `GAMMA_RESOURCE_LIMIT`, `GAMMA_SOURCE_CHANGED`; bounded retry/dead-letter | Numeric oracle, coverage/denominator, DICOM 3D, lease fencing, crash/ack, large workload và schema staging pass |
 | P9 | Template/report/revision/block/export command | Immutable report revision, deterministic output, object/hash/signed download | `REPORT_REVISION_CONFLICT`, `REPORT_SOURCE_UNAVAILABLE`, `REPORT_CONTENT_INVALID`, `REPORT_RENDER_FAILED`, `EXPORT_FORMAT_UNSUPPORTED`, `DOWNLOAD_LINK_EXPIRED`, `REPORT_STORAGE_UNAVAILABLE`, `EXPORT_IDEMPOTENCY_CONFLICT`; retry safe | Schema `20260908_0009`, full customization, snapshot immutability, 4-format export, visual and staging evidence |
 | P10 | Trend query, compatibility signature, baseline/event | Raw/aggregate trend + source drill-down | `TREND_SERIES_INCOMPATIBLE`, `DATE_RANGE_INVALID`, `TREND_EMPTY`, `TREND_BASELINE_INVALID`, `TREND_DUPLICATE_SOURCE`, `TREND_SOURCE_ARCHIVED`; rebuild projection | Unit/timezone/filter/export equality and large query pass |
-| P11 | Protocol/rule/reference editor and version command | Immutable internal version with applicability/source | `PROTOCOL_RULE_INVALID`, `PROTOCOL_VERSION_CONFLICT`, `REFERENCE_REQUIRED`, `PROTOCOL_NOT_AVAILABLE`, `PROTOCOL_CAPABILITY_MISMATCH`; clone/version mới | Old run/report snapshot and deep-copy/version compare pass |
+| P11 | Protocol/rule/reference editor and version command | Immutable internal version with applicability/source; schema `20260908_0011` | `REQUEST_VALIDATION_FAILED`, `PROTOCOL_APPLICABILITY_INVALID`, `PROTOCOL_RULE_INVALID`, `PROTOCOL_VERSION_CONFLICT`, `REFERENCE_REQUIRED`, `PROTOCOL_VERSION_IMMUTABLE`, `PROTOCOL_NOT_AVAILABLE`, `PROTOCOL_CAPABILITY_MISMATCH`, `PROTOCOL_NOT_FOUND`, `PROTOCOL_PERSISTENCE_FAILED`, `MUTATION_RESULT_UNKNOWN`; clone/version mới | Old run/report snapshot, active-only consumer, scope, deep-copy/version compare and uncertain mutation recovery pass |
 | P12 | Biological scenario/tool selection and calculation request | Independent scenario/revision/history | `SCENARIO_NOT_FOUND`, `BIOLOGICAL_CONTEXT_INVALID`, `SCENARIO_REVISION_CONFLICT`, `MODEL_VERSION_UNAVAILABLE`, `MODULE_UNAVAILABLE`; giữ scenario và availability | No-QA-case namespace, scoped history, clone/export pass |
 | P13 | Fractionation + alpha/beta + curve range | BED/EQD2 values, curve dataset, table/export | `BIOLOGICAL_INPUT_INVALID`, `FRACTIONATION_INCONSISTENT`, `CALCULATION_NONFINITE`, `CURVE_RANGE_INVALID`, `ALPHA_BETA_SOURCE_REQUIRED`, `CALCULATION_PERSISTENCE_FAILED`; sửa input/retry | Known answer, precision, source/override, curve and persistence pass |
 | P14 | Options 2–10, baseline, context | Absolute/% delta, chart/table/history | `COMPARISON_OPTIONS_REQUIRED`, `COMPARISON_PERCENT_UNDEFINED`, `COMPARISON_OPTION_INVALID`, `COMPARISON_CONTEXT_MISMATCH`, `COMPARISON_BASELINE_REQUIRED`, `COMPARISON_LIMIT_EXCEEDED`; giữ options hợp lệ | Same model/context/revision, baseline mutation và zero handling pass |
@@ -945,7 +998,7 @@ Một test chỉ được đánh dấu đạt khi kiểm đủ lớp mà contrac
 | Artifact | Upload/list/metadata/validate/download/manifest/history | Type mismatch, interrupted/batch, atomic object/DB reconciliation, checksum round-trip evidence. |
 | Machine QA | Protocol seed, run create/measurements/evaluate/rerun/compare | Autosave races, full library and boundary coverage. |
 | Gamma | Run enqueue/list/detail/retry/compare; queue metrics | PSQA profile, extra config capabilities, denominator/search, leases/outbox, proper DICOM fixtures. |
-| Report/trend/protocol library | Report P9 và Trend P10 đã có API/UI slice; protocol library còn target | P9/P10 phải revalidate staging theo schema mới; P11 vẫn cần library/version/consumer E2E. |
+| Report/trend/protocol library | Report P9, Trend P10 và Protocol Library P11 đã có API/UI slice local; P11 migration `20260908_0011` | P9/P10/P11 phải revalidate staging theo schema mới; P11 vẫn cần library/version/consumer E2E và source snapshot evidence. |
 | Biological/knowledge/DVH | Requirement/architecture | P12–P17 target; cần source, schema, API, UI và tests. |
 
 Mutation mới phải có typed request/response, operation ID, error mapping, organization scope và idempotency/revision khi phù hợp. Async create trả 202 + run/export ID khi chưa xong; synchronous create có thể 201. List response giữ collection metadata; server không nhúng dump DB/raw patient payload.
@@ -977,11 +1030,11 @@ Danh sách errors là baseline có giới hạn, không chứng minh bao phủ m
 1. Đối soát FR mới và evidence cũ; đánh dấu NEEDS_REVALIDATION cho phạm vi chưa đủ.
 2. Đã có local closure cho GAP-01/GAP-02/GAP-03/GAP-04/GAP-07 và implementation slice GAP-05; giữ các gate staging/oracle/benchmark mở.
 3. Hoàn thiện mapping error flat cho GAP-08 và release/build manifest cho GAP-09; schema revision readiness cho GAP-06 đã có local implementation, cần chứng minh trên staging.
-4. Kiểm tra staging chạy đúng migration `20260908_0009`; RTDOSE+measurement 3D end-to-end với source đúng frame/profile đã PASS trên run `df38e7d5-bb4b-4e2b-b949-2310acb1875c`, còn P8 queue/outbox/stale-worker negative behavior và P9 browser/export evidence cần kiểm đúng candidate.
+4. Kiểm tra staging chạy đúng migration `20260908_0011`; RTDOSE+measurement 3D end-to-end với source đúng frame/profile đã PASS trên run `df38e7d5-bb4b-4e2b-b949-2310acb1875c`, còn P8 queue/outbox/stale-worker negative behavior, P9 browser/export revalidation và P11 library/consumer evidence cần kiểm đúng candidate.
 5. Bổ sung staging crash/ack/dead-letter và resource/large-input benchmark trước khi đóng P8; oracle độc lập, bounded retry và preflight đã có local test.
-6. P9/P10 implementation slice có thể được kiểm local song song, nhưng chỉ gọi phase hoàn tất sau staging schema `20260908_0010`, authenticated report/trend workflow, export/download/source drill-down và visual checks; không triển khai hoặc thay cấu hình cloud chỉ vì tài liệu có checklist.
+6. P9/P10/P11 implementation slice có thể được kiểm local song song, nhưng chỉ gọi phase hoàn tất sau staging schema `20260908_0011`, authenticated report/trend/protocol workflow, export/download/source drill-down, consumer snapshot và visual checks; không triển khai hoặc thay cấu hình cloud chỉ vì tài liệu có checklist.
 
-**Cập nhật thực thi 2026-09-08:** dòng 4 ở trên là snapshot lịch sử được giữ để truy nguyên. Checkpoint hiện hành phải dùng migration `20260908_0010`; P9 browser/export đã có smoke evidence và P10 đang ở `LOCAL_VERIFIED`, còn staging trend, P8 negative/reliability và visual/release checks vẫn mở.
+**Cập nhật thực thi 2026-09-08:** các dòng lịch sử ở trên được giữ để truy nguyên. Checkpoint hiện hành phải dùng migration `20260908_0011`; P9/P10 có implementation slice và evidence staging từng phần, P11 đã verified local nhưng chưa có staging browser/consumer evidence; P8 negative/reliability, P10 complete matrix và visual/release checks vẫn mở.
 
 ## 12. Nguồn kỹ thuật đã kiểm tra khi viết
 

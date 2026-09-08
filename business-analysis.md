@@ -5,10 +5,10 @@
 - **Tên sản phẩm:** RT-CONNECT
 - **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
 - **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
-- **Phiên bản tài liệu:** 0.9 — catalogue tính năng, workflow, ngoại lệ, phục hồi và tiêu chí nghiệm thu theo P0–P20 (2026-09-08)
+- **Phiên bản tài liệu:** 0.10 — catalogue tính năng, workflow, ngoại lệ, phục hồi và tiêu chí nghiệm thu theo P0–P20; bổ sung contract vận hành QA Protocol Library (2026-09-08)
 - **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
-Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.9 tại mục 21 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
+Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.10 tại mục 21 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
 
 ---
 
@@ -678,6 +678,69 @@ Bệnh viện có thể:
 
 Protocol tham khảo không tự động trở thành protocol áp dụng. User phải biết đâu là nội dung tham khảo và đâu là protocol nội bộ.
 
+### 14.3. Vòng đời, cấu trúc và cách dùng protocol
+
+Protocol được tổ chức thành hai lớp: **protocol family** và **protocol version**.
+`protocol_key` là định danh ổn định của family trong một organization; mỗi lần thay đổi
+rule, unit, applicability, nguồn hoặc ý nghĩa kiểm tra phải sinh `version_number` mới.
+Không tái sử dụng số version, không sửa ngược version đã được dùng bởi một run, và không
+hard-delete version đã lưu trong lịch sử.
+
+Mỗi version có các nhóm thông tin sau:
+
+- **Header:** protocol key, tên hiển thị, QA type, mô tả, ghi chú hiệu lực, người tạo và
+  thời điểm tạo/cập nhật.
+- **Applicability:** các chiều áp dụng tùy chọn như site, machine, QA cycle, QA type,
+  energy, beam quality, technique, detector và phantom. Giá trị là danh sách explicit;
+  hệ thống không tự suy ra một machine hoặc bệnh viện từ tên protocol.
+- **Nguồn:** `USER_DEFINED`, `REFERENCE`, `INTERNAL` hoặc `SITE_APPROVED`; nếu chọn
+  `REFERENCE` phải có citation/URL/DOI hoặc định danh tài liệu tương ứng. `SITE_APPROVED`
+  chỉ mô tả nguồn/trạng thái nội bộ, không tạo thêm cấp quyền hay bước phê duyệt.
+- **Rule:** metric key ổn định, tên hiển thị, unit, loại rule, target/min/max/tolerance/
+  action level, bắt buộc hay không, thứ tự, ghi chú và reference riêng của rule.
+- **Lineage:** clone phải chỉ rõ version nguồn; các child rule của clone là bản sao độc
+  lập, không dùng chung ID hoặc mutable row với nguồn.
+
+Các loại rule được công bố trong P11 gồm `RANGE`, `MIN`, `MAX`, `ABSOLUTE_DEVIATION`,
+`PERCENT_DEVIATION` và `NA`. Hành vi nghiệp vụ của chúng là:
+
+| Rule | Dữ liệu bắt buộc | Kết quả hợp lệ |
+| :--- | :--- | :--- |
+| `RANGE` | lower và upper, lower ≤ upper | PASS trong khoảng; WARNING/FAIL theo action band nếu được khai báo |
+| `MIN` | lower hoặc giới hạn tương đương | PASS khi actual ≥ limit |
+| `MAX` | upper hoặc giới hạn tương đương | PASS khi actual ≤ limit |
+| `ABSOLUTE_DEVIATION` | target và tolerance không âm | Tính độ lệch tuyệt đối; action level không nhỏ hơn tolerance nếu có |
+| `PERCENT_DEVIATION` | target khác 0 và tolerance không âm | Tính phần trăm lệch theo target; không chia cho 0 |
+| `NA` | rule/note mô tả lý do không áp dụng | Không tính số; phải hiển thị rõ trạng thái N/A, không biến thành PASS giả |
+
+Vòng đời kỹ thuật của version là `DRAFT → ACTIVE → ARCHIVED`. DRAFT được sửa và kiểm
+tra sample; ACTIVE được chọn cho run mới nhưng không sửa tại chỗ; ARCHIVED không được
+chọn cho run mới nhưng vẫn phải mở được trong report/history. `revision` bảo vệ việc sửa
+đồng thời; nếu revision gửi lên không còn mới, hệ thống giữ bản hiện tại và yêu cầu tải
+lại hoặc clone. ACTIVE/ARCHIVED ở đây là trạng thái sử dụng trong hệ thống, không phải
+phân cấp quyền giữa bác sĩ và kỹ sư.
+
+Luồng người dùng đầy đủ là: tìm kiếm → xem version/nguồn/applicability → tạo mới hoặc
+clone → sửa rule → validate không ghi dữ liệu → lưu DRAFT → activate khi muốn dùng →
+chọn explicit version trong Machine QA → evaluate tạo snapshot → compare version hoặc
+mở report cũ. Không có protocol seed nào được coi là giới hạn lâm sàng mặc định; seed chỉ
+phục vụ vertical test khi organization chưa có protocol.
+
+Các tình huống phải được xử lý ngay tại màn hình: key/rule trùng, giới hạn đảo chiều,
+giá trị vô hạn/NaN, unit trống, action band mâu thuẫn, reference bắt buộc nhưng thiếu,
+applicability sai cấu trúc, sửa DRAFT trên revision cũ, sửa ACTIVE/ARCHIVED, chọn
+ARCHIVED cho run mới và rule mà consumer engine chưa hỗ trợ. Lỗi phải trả field cụ thể,
+giữ draft hợp lệ và không âm thầm đảo số hoặc bỏ rule. Khi mất mạng sau thao tác tạo,
+user phải tra cứu protocol/version trước khi gửi lại để tránh tạo version trùng.
+
+### 14.4. Nguyên tắc sử dụng của các thành viên
+
+Mọi thành viên đang hoạt động trong cùng organization được tìm, tạo, clone, sửa DRAFT,
+activate, archive, chọn và compare protocol theo cùng một workflow. Hệ thống không tạo
+doctor role, engineer role, action-level permission hoặc approval queue. `created_by`,
+timestamp, revision, source và audit chỉ trả lời câu hỏi “nội dung này đến từ đâu và đã
+thay đổi thế nào”; chúng không biến lịch sử thành rào cản sử dụng.
+
 ---
 
 ## 15. Biological Toolkit độc lập
@@ -1115,9 +1178,9 @@ Clinical MVP tập trung vào Machine QA, PSQA Gamma, report, trend, input valid
 `specification.md`, `technical-specification.md` và `plan.md` được xây dựng từ các yêu cầu, quy tắc và tiêu chí nghiệm thu trong tài liệu này. Google Stitch cung cấp thiết kế trực quan; Railway và Supabase cung cấp hạ tầng đã chọn; không nguồn nào trong số đó được tự thay thế hoặc làm mất requirement nghiệp vụ.
 
 
-## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.8
+## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.10
 
-Bổ sung ngày 2026-09-08 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi và phạm vi nghiệm thu. `specification.md` v1.2 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v2.2 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
+Bổ sung ngày 2026-09-08 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi và phạm vi nghiệm thu. `specification.md` v1.4 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v2.4 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
 
 ### 21.1. Các quyết định sản phẩm giữ nguyên
 

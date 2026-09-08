@@ -2,30 +2,26 @@
 
 ## Documentation and implementation rebaseline — 2026-09-08
 
-`business-analysis.md` v0.9, `specification.md` v1.3, `technical-specification.md` v1.1 và `plan.md` v2.3 bổ sung requirement, contract, testcase và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
+`business-analysis.md` v0.10, `specification.md` v1.4, `technical-specification.md` v1.2 và `plan.md` v2.4 bổ sung requirement, contract, testcase và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
 
-Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness và staging Trend vẫn phải được đối soát theo plan §1.2–§1.3. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Next work lấy từ plan v2.3 và specification §11; P10 mới chỉ `LOCAL_VERIFIED`.
+Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness, staging Trend và staging Protocol consumer vẫn phải được đối soát theo plan §1.2–§1.3. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Next work lấy từ plan v2.4 và specification §11; P11 hiện mới `LOCAL_VERIFIED`.
 
 ## Current checkpoint
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
-- **Current phase:** P10 — Trend, baseline, maintenance revision and source drill-down; P7 Machine QA and the current P9 report slice are available as dependencies, while P8/P9 remaining release gates stay open.
-- **Current status:** IN_PROGRESS — P10 has a local implementation slice with migration `20260908_0010`, organization-scoped trend query, raw/day/week aggregation, compatibility context/signature, versioned baseline, maintenance event revisions, rebuild, export and source drill-down. Backend full suite `68/68` and focused P10 `7/7` pass locally. Basic authenticated staging smoke now passes on the deployed web/API candidate: real trend data, compatible-series separation, historical baseline/outlier behavior, maintenance marker persistence, idempotent rebuild and day aggregation were observed. Large-series budget, complete negative matrix, visual/accessibility evidence and P8/P9 remaining release gates are not yet closed.
-- **Last authoritative check:** 2026-09-08 — commit `e71e8e1` (web snapshot display) is pushed to `origin/codex/p4-org-site-machine`; web deployment `7f104141-0fe4-4527-b455-a503beaceb20` is active and successful. Fresh staging browser verification after reload showed run `df38e7d5-bb4b-4e2b-b949-2310acb1875c` with profile `PSQA_GAMMA`, config snapshot `3D · FULL_ROI · max γ 2`, `COMPLETED/PASS`, 8/8 evaluated/passing, 0 excluded, coverage `1`, Gamma P95 `0`, attempt 1. Backend full suite `64/64`, including the independent Gamma oracle, bounded retry/replay and readiness revision tests, strict mypy/Ruff and frontend lint/typecheck/Vitest `1/1`/build passed locally; RTDOSE fixture SHA-256 remains `CA5C9168EB9B045E30A375EDC6B76118EFD754A35815C2860B17CA8944C4480B`. The API/worker deployments from `ec5191e` were already active; the new API/worker release and migration/readiness plus remaining staging reliability gates must still be verified.
-- **Next exact step:** commit/push P10, wait for API/web staging deployments, verify `/api/v1/ready` reports schema `20260908_0010`, then run authenticated `/app/trend` query/filter/baseline/event/rebuild/export/source smoke and record IDs before starting P11.
-
-- **Current local verification supersedes the older snapshot above:** backend full suite `68/68`, focused P10 `7/7`, Ruff/mypy and frontend lint/typecheck/Vitest `1/1`/build pass; PostgreSQL migration `20260908_0009 → 20260908_0010` pass. The older P9 staging browser evidence remains valid for its candidate but does not prove the current P10 release.
-
-The older `Last authoritative check` line above is retained as a historical pointer to the P8/P9 candidate. For the current checkpoint, use the local verification line immediately above and the P10 staging gates below; do not interpret the older deployment SHA as evidence for the uncommitted P10 slice.
+- **Current phase:** P11 — QA Protocol Library và rule version; P7/P9/P10 là consumer dependencies, còn P8/P9/P10 remaining release gates vẫn mở.
+- **Current status:** IN_PROGRESS — P11 có migration `20260908_0011`, protocol lifecycle/validation/clone/compare API, library UI và Machine QA active-only selection. Backend full suite `81/81`, focused P11 `3/3`, Ruff/mypy, frontend lint/typecheck/Vitest `1/1` và build pass local. Staging browser/consumer snapshot, complete P11 S/E/C matrix, visual/accessibility và release manifest chưa đóng.
+- **Last authoritative check:** 2026-09-08 — local PostgreSQL đã ở migration head `20260908_0011`; working tree hiện tại đã pass các gate local nêu trên. Evidence staging P8/P10 bên dưới vẫn có giá trị cho candidate tương ứng, nhưng không được dùng để suy ra P11 staging hoặc production readiness.
+- **Next exact step:** commit/push P11 cùng tài liệu v0.10/v1.4/v1.2/v2.4; cập nhật `SCHEMA_REVISION=20260908_0011` cho API/worker staging nếu biến đang pin, chờ API/web deploy, kiểm `/api/v1/ready` và chạy browser protocol lifecycle + Machine QA consumer snapshot trên đúng SHA.
 
 ## Source documents read
 
 | Source | Version | Status |
 | :--- | :--- | :--- |
-| `business-analysis.md` | 0.9 | Business source; detailed workflow/error/recovery matrix and feature-completion definition |
-| `specification.md` | 1.3 | Behavior/data/error/numeric contracts; exact P10 API/model/aggregation contract added |
-| `technical-specification.md` | 1.1 | Architecture reference; P10 projection/baseline/maintenance implementation addendum |
-| `plan.md` | 2.3 | Phase/workflow/S-E tests, execution packet, P10 local checkpoint and staging gates |
+| `business-analysis.md` | 0.10 | Business source; detailed workflow/error/recovery matrix, protocol lifecycle and feature-completion definition |
+| `specification.md` | 1.4 | Behavior/data/error/numeric contracts; exact P10/P11 API, model, validation and consumer contracts |
+| `technical-specification.md` | 1.2 | Architecture reference; P10 projection/baseline/maintenance and P11 implementation addendum |
+| `plan.md` | 2.4 | Phase/workflow/S-E/C tests, DoR/DoD, execution packet, P10/P11 checkpoints and staging gates |
 
 ## Phase status
 
@@ -42,7 +38,7 @@ The older `Last authoritative check` line above is retained as a historical poin
 | P8 | STAGING 2D/3D REDIS STREAM + FAILURE/RETRY PASS; FULL EXIT GATE OPEN | Migrations `20260907_0007` + reliability slice `20260908_0008`; organization/case-scoped preflight, PSQA/ENGINE_TEST profile, deterministic 2D/3D engine with standard-GY RTDOSE adapter, coverage/censor metrics, logical-role-aware artifact contract and database-fenced lease/attempt/outbox slice are implemented and locally tested. Staging has validated 2D and RTDOSE+measurement 3D PASS runs, compare/refresh persistence and controlled storage retry. Independent oracle, crash/ack/bounded retry/resource/large-input evidence and schema/release gates remain open. |
 | P9 | STAGING E2E PARTIAL / LOCAL VERIFIED | Report revision/export browser smoke on staging; recheck current candidate, visual/export failure gate remains |
 | P10 | STAGING SMOKE PARTIAL / EXIT OPEN | Migration `20260908_0010`, API/UI slice, 7 focused tests and authenticated staging trend smoke pass; large-series, complete negative matrix, visual/accessibility and release evidence remain |
-| P11 | NOT_STARTED | Depends on P7/P9 |
+| P11 | LOCAL VERIFIED / STAGING OPEN | Migration `20260908_0011`, library API/UI and local `3/3`; staging browser/consumer snapshot and full S/E/C evidence remain |
 | P12 | NOT_STARTED | Biological screen must be regenerated |
 | P13 | NOT_STARTED | Depends on P12 |
 | P14 | NOT_STARTED | Depends on P13 |
@@ -114,6 +110,14 @@ The older `Last authoritative check` line above is retained as a historical poin
 - Maintenance workflow: `Staging QA maintenance smoke` was created for the synthetic machine and appeared in the organization timeline as revision `1`, status `ACTIVE`; the trend point values were unchanged.
 - Rebuild workflow: authenticated `Rebuild projection` returned `0` new and `6` existing points, demonstrating the current projection is idempotent for this staging dataset. Day aggregation displayed three buckets, each with count `2`, preserved min/max and two source runs.
 - This evidence closes only the basic authenticated P10 staging smoke. Source drill-down/aggregate export download, large-series budget, full P10 S/E/C matrix, visual/accessibility review and P8/P9 remaining release gates must still be recorded before `DONE-v2`.
+
+## Local P11 QA Protocol Library evidence — verified 2026-09-08
+
+- Migration `20260908_0011_protocol_library.py` upgraded successfully on local PostgreSQL and is the current Alembic head. It adds protocol description/applicability/source/lineage/revision fields and rule references without changing the old P7 snapshot semantics.
+- `tests/test_protocol_library.py` passed **3/3**. The focused suite covered validate-only with no mutation, create DRAFT, DRAFT edit with optimistic revision conflict, activation, immutable ACTIVE behavior, clone deep-copy and lineage, compare, archive, default archived filtering, organization scope and Machine QA active-only selection.
+- Backend full suite passed **81/81**; Ruff and strict mypy passed. Frontend lint/typecheck/Vitest `1/1` and production build passed; the build emits only the known large-bundle warning.
+- OpenAPI was regenerated after registering the P11 router. The P11 UI route is `/app/qa-protocols`; the API base surface is `/api/v1/organizations/{organization_id}/qa-protocols`.
+- This is local evidence only. P11 staging still requires deployment with schema `20260908_0011`, authenticated browser lifecycle, active protocol consumed by a new Machine QA/Gamma run, old snapshot readback, negative scope/conflict/persistence/capability cases, and release-manifest evidence.
 
 ## Historical Railway evidence (superseded)
 

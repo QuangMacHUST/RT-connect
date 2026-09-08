@@ -2119,7 +2119,7 @@
             "title": "Overall Status"
           },
           "protocol": {
-            "$ref": "#/components/schemas/ProtocolResponse"
+            "$ref": "#/components/schemas/rt_connect_api__api__machine_qa__ProtocolResponse"
           },
           "protocol_version_id": {
             "format": "uuid",
@@ -2780,32 +2780,108 @@
         "title": "OrganizationResponse",
         "type": "object"
       },
-      "ProtocolCollectionResponse": {
+      "ProtocolCloneRequest": {
         "properties": {
-          "items": {
+          "activate": {
+            "default": false,
+            "title": "Activate",
+            "type": "boolean"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 240,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "protocol_key": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Key"
+          }
+        },
+        "title": "ProtocolCloneRequest",
+        "type": "object"
+      },
+      "ProtocolCompareResponse": {
+        "properties": {
+          "left": {
+            "$ref": "#/components/schemas/rt_connect_api__api__protocols__ProtocolResponse"
+          },
+          "metadata_diffs": {
             "items": {
-              "$ref": "#/components/schemas/ProtocolResponse"
+              "$ref": "#/components/schemas/ProtocolDiffResponse"
             },
-            "title": "Items",
+            "title": "Metadata Diffs",
             "type": "array"
           },
-          "total": {
-            "title": "Total",
-            "type": "integer"
+          "right": {
+            "$ref": "#/components/schemas/rt_connect_api__api__protocols__ProtocolResponse"
+          },
+          "rule_diffs": {
+            "items": {
+              "$ref": "#/components/schemas/ProtocolDiffResponse"
+            },
+            "title": "Rule Diffs",
+            "type": "array"
+          },
+          "same_family": {
+            "title": "Same Family",
+            "type": "boolean"
           }
         },
         "required": [
-          "items",
-          "total"
+          "left",
+          "right",
+          "same_family",
+          "metadata_diffs",
+          "rule_diffs"
         ],
-        "title": "ProtocolCollectionResponse",
+        "title": "ProtocolCompareResponse",
         "type": "object"
       },
-      "ProtocolResponse": {
+      "ProtocolCreateRequest": {
         "properties": {
+          "activate": {
+            "default": false,
+            "title": "Activate",
+            "type": "boolean"
+          },
+          "applicability": {
+            "additionalProperties": true,
+            "title": "Applicability",
+            "type": "object"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
           "effective_note": {
             "anyOf": [
               {
+                "maxLength": 4000,
                 "type": "string"
               },
               {
@@ -2814,56 +2890,357 @@
             ],
             "title": "Effective Note"
           },
-          "id": {
-            "format": "uuid",
-            "title": "Id",
-            "type": "string"
-          },
           "name": {
+            "maxLength": 240,
+            "minLength": 1,
             "title": "Name",
             "type": "string"
           },
-          "organization_id": {
-            "format": "uuid",
-            "title": "Organization Id",
-            "type": "string"
-          },
           "protocol_key": {
+            "maxLength": 120,
+            "minLength": 1,
             "title": "Protocol Key",
             "type": "string"
           },
           "qa_type": {
+            "maxLength": 100,
+            "minLength": 1,
             "title": "Qa Type",
             "type": "string"
           },
           "rules": {
             "items": {
-              "$ref": "#/components/schemas/ProtocolRuleResponse"
+              "$ref": "#/components/schemas/ProtocolRuleInput"
             },
+            "maxItems": 500,
+            "minItems": 1,
             "title": "Rules",
             "type": "array"
           },
-          "status": {
-            "title": "Status",
-            "type": "string"
+          "source_reference": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Reference"
           },
-          "version_number": {
-            "title": "Version Number",
-            "type": "integer"
+          "source_type": {
+            "default": "USER_DEFINED",
+            "enum": [
+              "USER_DEFINED",
+              "REFERENCE",
+              "INTERNAL",
+              "SITE_APPROVED"
+            ],
+            "title": "Source Type",
+            "type": "string"
           }
         },
         "required": [
-          "id",
-          "organization_id",
           "protocol_key",
           "name",
           "qa_type",
-          "version_number",
-          "status",
-          "effective_note",
           "rules"
         ],
-        "title": "ProtocolResponse",
+        "title": "ProtocolCreateRequest",
+        "type": "object"
+      },
+      "ProtocolDiffResponse": {
+        "properties": {
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "left": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Left"
+          },
+          "right": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Right"
+          }
+        },
+        "required": [
+          "field",
+          "left",
+          "right"
+        ],
+        "title": "ProtocolDiffResponse",
+        "type": "object"
+      },
+      "ProtocolPatchRequest": {
+        "properties": {
+          "applicability": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Applicability"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "effective_note": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Note"
+          },
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 240,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "protocol_key": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Key"
+          },
+          "qa_type": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qa Type"
+          },
+          "rules": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ProtocolRuleInput"
+                },
+                "maxItems": 500,
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rules"
+          },
+          "source_reference": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Reference"
+          },
+          "source_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "USER_DEFINED",
+                  "REFERENCE",
+                  "INTERNAL",
+                  "SITE_APPROVED"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "ProtocolPatchRequest",
+        "type": "object"
+      },
+      "ProtocolRuleInput": {
+        "properties": {
+          "action_level": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Level"
+          },
+          "display_name": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "lower_limit": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lower Limit"
+          },
+          "metric_key": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Metric Key",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
+          },
+          "required": {
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          },
+          "rule_type": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Rule Type",
+            "type": "string"
+          },
+          "sort_order": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Sort Order",
+            "type": "integer"
+          },
+          "target_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Value"
+          },
+          "tolerance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tolerance"
+          },
+          "unit": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          },
+          "upper_limit": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Upper Limit"
+          }
+        },
+        "required": [
+          "metric_key",
+          "display_name",
+          "unit",
+          "rule_type"
+        ],
+        "title": "ProtocolRuleInput",
         "type": "object"
       },
       "ProtocolRuleResponse": {
@@ -2913,6 +3290,17 @@
               }
             ],
             "title": "Note"
+          },
+          "reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference"
           },
           "required": {
             "title": "Required",
@@ -2977,9 +3365,173 @@
           "action_level",
           "required",
           "sort_order",
-          "note"
+          "note",
+          "reference"
         ],
         "title": "ProtocolRuleResponse",
+        "type": "object"
+      },
+      "ProtocolTransitionRequest": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "ProtocolTransitionRequest",
+        "type": "object"
+      },
+      "ProtocolValidationIssue": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ProtocolValidationIssue",
+        "type": "object"
+      },
+      "ProtocolValidationRequest": {
+        "properties": {
+          "applicability": {
+            "additionalProperties": true,
+            "title": "Applicability",
+            "type": "object"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "effective_note": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Note"
+          },
+          "name": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "protocol_key": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Protocol Key",
+            "type": "string"
+          },
+          "qa_type": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Qa Type",
+            "type": "string"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/ProtocolRuleInput"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Rules",
+            "type": "array"
+          },
+          "source_reference": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Reference"
+          },
+          "source_type": {
+            "default": "USER_DEFINED",
+            "enum": [
+              "USER_DEFINED",
+              "REFERENCE",
+              "INTERNAL",
+              "SITE_APPROVED"
+            ],
+            "title": "Source Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "protocol_key",
+          "name",
+          "qa_type",
+          "rules"
+        ],
+        "title": "ProtocolValidationRequest",
+        "type": "object"
+      },
+      "ProtocolValidationResponse": {
+        "properties": {
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/ProtocolValidationIssue"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/ProtocolValidationIssue"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "valid",
+          "errors",
+          "warnings"
+        ],
+        "title": "ProtocolValidationResponse",
         "type": "object"
       },
       "QACaseCollectionResponse": {
@@ -4956,6 +5508,354 @@
         ],
         "title": "VersionResponse",
         "type": "object"
+      },
+      "rt_connect_api__api__machine_qa__ProtocolCollectionResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/rt_connect_api__api__machine_qa__ProtocolResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ProtocolCollectionResponse",
+        "type": "object"
+      },
+      "rt_connect_api__api__machine_qa__ProtocolResponse": {
+        "properties": {
+          "applicability": {
+            "additionalProperties": true,
+            "title": "Applicability",
+            "type": "object"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by_user_identity_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By User Identity Id"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "effective_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Note"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "protocol_key": {
+            "title": "Protocol Key",
+            "type": "string"
+          },
+          "qa_type": {
+            "title": "Qa Type",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/ProtocolRuleResponse"
+            },
+            "title": "Rules",
+            "type": "array"
+          },
+          "source_protocol_version_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Protocol Version Id"
+          },
+          "source_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Reference"
+          },
+          "source_type": {
+            "title": "Source Type",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version_number": {
+            "title": "Version Number",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "organization_id",
+          "protocol_key",
+          "name",
+          "qa_type",
+          "version_number",
+          "status",
+          "revision",
+          "description",
+          "effective_note",
+          "applicability",
+          "source_type",
+          "source_reference",
+          "source_protocol_version_id",
+          "created_by_user_identity_id",
+          "created_at",
+          "updated_at",
+          "rules"
+        ],
+        "title": "ProtocolResponse",
+        "type": "object"
+      },
+      "rt_connect_api__api__protocols__ProtocolCollectionResponse": {
+        "properties": {
+          "include_archived": {
+            "title": "Include Archived",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/rt_connect_api__api__protocols__ProtocolResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "offset",
+          "limit",
+          "include_archived"
+        ],
+        "title": "ProtocolCollectionResponse",
+        "type": "object"
+      },
+      "rt_connect_api__api__protocols__ProtocolResponse": {
+        "properties": {
+          "applicability": {
+            "additionalProperties": true,
+            "title": "Applicability",
+            "type": "object"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by_user_identity_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By User Identity Id"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "effective_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Note"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "protocol_key": {
+            "title": "Protocol Key",
+            "type": "string"
+          },
+          "qa_type": {
+            "title": "Qa Type",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/ProtocolRuleResponse"
+            },
+            "title": "Rules",
+            "type": "array"
+          },
+          "source_protocol_version_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Protocol Version Id"
+          },
+          "source_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Reference"
+          },
+          "source_type": {
+            "title": "Source Type",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "DRAFT",
+              "ACTIVE",
+              "ARCHIVED"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version_number": {
+            "title": "Version Number",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "organization_id",
+          "protocol_key",
+          "name",
+          "qa_type",
+          "version_number",
+          "status",
+          "revision",
+          "description",
+          "effective_note",
+          "applicability",
+          "source_type",
+          "source_reference",
+          "source_protocol_version_id",
+          "created_by_user_identity_id",
+          "created_at",
+          "updated_at",
+          "rules"
+        ],
+        "title": "ProtocolResponse",
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -6149,7 +7049,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProtocolCollectionResponse"
+                  "$ref": "#/components/schemas/rt_connect_api__api__machine_qa__ProtocolCollectionResponse"
                 }
               }
             },
@@ -6197,7 +7097,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProtocolResponse"
+                  "$ref": "#/components/schemas/rt_connect_api__api__machine_qa__ProtocolResponse"
                 }
               }
             },
@@ -6500,6 +7400,635 @@
         "summary": "Create Qa Case",
         "tags": [
           "qa-archive"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/qa-protocols": {
+      "get": {
+        "operationId": "list_protocols_api_v1_organizations__organization_id__qa_protocols_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 120,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "DRAFT",
+                    "ACTIVE",
+                    "ARCHIVED"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Archived",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rt_connect_api__api__protocols__ProtocolCollectionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Protocols",
+        "tags": [
+          "qa-protocols"
+        ]
+      },
+      "post": {
+        "operationId": "create_protocol_api_v1_organizations__organization_id__qa_protocols_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProtocolCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rt_connect_api__api__protocols__ProtocolResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Protocol",
+        "tags": [
+          "qa-protocols"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/qa-protocols/validate": {
+      "post": {
+        "operationId": "validate_protocol_api_v1_organizations__organization_id__qa_protocols_validate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProtocolValidationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolValidationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Validate Protocol",
+        "tags": [
+          "qa-protocols"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/qa-protocols/{protocol_id}": {
+      "get": {
+        "operationId": "get_protocol_api_v1_organizations__organization_id__qa_protocols__protocol_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "protocol_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Protocol Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rt_connect_api__api__protocols__ProtocolResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Protocol",
+        "tags": [
+          "qa-protocols"
+        ]
+      },
+      "patch": {
+        "operationId": "update_protocol_api_v1_organizations__organization_id__qa_protocols__protocol_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "protocol_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Protocol Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProtocolPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rt_connect_api__api__protocols__ProtocolResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Protocol",
+        "tags": [
+          "qa-protocols"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/qa-protocols/{protocol_id}/activate": {
+      "post": {
+        "operationId": "activate_protocol_api_v1_organizations__organization_id__qa_protocols__protocol_id__activate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "protocol_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Protocol Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProtocolTransitionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rt_connect_api__api__protocols__ProtocolResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Activate Protocol",
+        "tags": [
+          "qa-protocols"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/qa-protocols/{protocol_id}/archive": {
+      "post": {
+        "operationId": "archive_protocol_api_v1_organizations__organization_id__qa_protocols__protocol_id__archive_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "protocol_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Protocol Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProtocolTransitionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rt_connect_api__api__protocols__ProtocolResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Archive Protocol",
+        "tags": [
+          "qa-protocols"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/qa-protocols/{protocol_id}/clone": {
+      "post": {
+        "operationId": "clone_protocol_api_v1_organizations__organization_id__qa_protocols__protocol_id__clone_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "protocol_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Protocol Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProtocolCloneRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/rt_connect_api__api__protocols__ProtocolResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Clone Protocol",
+        "tags": [
+          "qa-protocols"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/qa-protocols/{protocol_id}/compare": {
+      "get": {
+        "operationId": "compare_protocols_api_v1_organizations__organization_id__qa_protocols__protocol_id__compare_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "protocol_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Protocol Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "other_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Other Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProtocolCompareResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Compare Protocols",
+        "tags": [
+          "qa-protocols"
         ]
       }
     },

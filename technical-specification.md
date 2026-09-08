@@ -3,15 +3,15 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.1 — đồng bộ specification.md v1.3 và plan.md v2.3 (2026-09-08)
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.9
+- **Phiên bản:** 1.2 — đồng bộ specification.md v1.4 và plan.md v2.4, bổ sung P11 QA Protocol Library (2026-09-08)
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.10
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
 
 Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
-> Đồng bộ v1.1: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§8 là authority cho hành vi/validation/error/thuật toán. P6–P10 hiện đã có các slice code được ghi rõ trong mục 0.4; phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+> Đồng bộ v1.2: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§8 là authority cho hành vi/validation/error/thuật toán. P6–P11 hiện đã có các slice code được ghi rõ trong mục 0.4; phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -87,8 +87,9 @@ Phần 0.1–0.3 là baseline lịch sử ngày 2026-09-04 và không được �
 | P8 | Gamma 2D/3D adapter, RTDOSE GY/scaling, Redis Streams, lease/attempt/outbox, retry/dead-letter/resource guard | `20260907_0007` + `20260908_0008` |
 | P9 | Report template/revision/block/export renderer | `20260908_0009` |
 | P10 | Trend query/aggregate/export/rebuild, BaselineVersion, MaintenanceEvent/Revisions, source drill-down | `20260908_0010` |
+| P11 | QA Protocol Library, rule validation, lifecycle, clone/compare and active-only Machine QA consumer | `20260908_0011` |
 
-Ngày 2026-09-08, backend full suite **68/68**, test P10 **7/7**, Ruff/mypy và frontend lint/typecheck/Vitest/build đã đạt local; migration `20260908_0010` đã upgrade trên PostgreSQL local. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
+Ngày 2026-09-08, P11 đã bổ sung model/API/UI và migration `20260908_0011`. Checkpoint local hiện có backend full suite **81/81 PASS**, focused P11 **3/3 PASS**, Ruff/mypy PASS, frontend lint/typecheck/Vitest **1/1**/build PASS; build còn cảnh báo bundle lớn. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser/consumer workflow trước khi đổi trạng thái phase.
 
 ---
 
@@ -604,6 +605,47 @@ QAProtocolVersion phải chứa:
 - Changelog.
 
 Một report cũ tham chiếu đúng QAProtocolVersion đã dùng.
+
+#### 4.10.1. P11 implementation contract
+
+P11 hiện thực protocol theo `QAProtocolVersion` trong một organization; `protocol_key` là
+stable family key còn `version_number` là số tăng dần trong family. Version có các trạng thái:
+
+- `DRAFT`: mutable, dùng để nhập và validate; không được consumer coi là protocol đang áp dụng.
+- `ACTIVE`: immutable và được chọn cho run mới.
+- `ARCHIVED`: immutable, không được chọn cho run mới nhưng vẫn đọc được trong history.
+
+Các trường P11 đã có trong model là `description`, `applicability`, `source_type`,
+`source_reference`, `source_protocol_version_id` và `revision`; `QAProtocolRule` có thêm
+`reference`. Applicability chỉ nhận các dimension được công bố (site, machine, cycle, QA type,
+energy, beam quality, technique, detector, phantom), mỗi dimension là string list explicit.
+Source type gồm `USER_DEFINED`, `REFERENCE`, `INTERNAL`, `SITE_APPROVED`; `REFERENCE` phải có
+source reference. Rule types gồm `RANGE`, `MIN`, `MAX`, `ABSOLUTE_DEVIATION`,
+`PERCENT_DEVIATION` và `NA`. Backend kiểm finite numeric, duplicate key, unit/type,
+min/max, target/tolerance/action ordering và reference trước khi commit.
+
+Migration `20260908_0011_protocol_library.py` thêm các field/index/self-reference lineage.
+Create/update/clone/transition ghi header, child rule và audit trong một transaction; PATCH và
+transition dùng `expected_revision`. Clone deep-copy child rule và ghi source version. Các
+consumer mới phải pin `protocol_version_id` và snapshot rule/limit/source; không resolve lại
+version live khi mở run/report/trend cũ.
+
+API implementation P11 (base prefix `/api/v1`):
+
+| Method | Path | Mục đích |
+| :--- | :--- | :--- |
+| POST | `/organizations/{id}/qa-protocols/validate` | Validate-only, không mutation |
+| GET/POST | `/organizations/{id}/qa-protocols` | List hoặc tạo version |
+| GET/PATCH | `/organizations/{id}/qa-protocols/{protocol_id}` | Detail hoặc sửa DRAFT với revision |
+| POST | `/organizations/{id}/qa-protocols/{protocol_id}/clone` | Clone version, deep-copy rules |
+| POST | `/organizations/{id}/qa-protocols/{protocol_id}/activate` | DRAFT thành ACTIVE |
+| POST | `/organizations/{id}/qa-protocols/{protocol_id}/archive` | Chuyển ARCHIVED |
+| GET | `/organizations/{id}/qa-protocols/{protocol_id}/compare?other_id=...` | So sánh metadata/rule |
+
+`GET /organizations/{id}/machine-qa/protocols` chỉ trả version `ACTIVE` cho run mới; detail
+protocol vẫn có thể trả version archived nếu caller thuộc đúng organization. Các mã lỗi chính
+được định nghĩa trong `specification.md` SPEC-P11.2. P11 local code/test không tự chứng minh
+staging consumer E2E hay clinical readiness; các bằng chứng đó thuộc plan P11/P18/P19.
 
 ### 4.11. Analysis Configuration
 

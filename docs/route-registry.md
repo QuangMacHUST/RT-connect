@@ -21,7 +21,7 @@ All routes are typed in source during P1. This registry is the P0 contract draft
 | `/app/reports/:reportId` | MOD-07 | Missing viewer | report/revision APIs | P9 |
 | `/app/reports/:reportId/edit` | MOD-07 | Builder `a1478466ace843c5aaf9a15dfc58273e` | report template/revision APIs | P9 |
 | `/app/trend` | MOD-08 | Missing | `/api/v1/trend` | P10 |
-| `/app/qa-protocols` | MOD-09 | Missing | `/api/v1/qa-protocols` | P11 |
+| `/app/qa-protocols` | MOD-09 | Local P11 implementation; dedicated Stitch screen still optional | `/api/v1/organizations/{id}/qa-protocols` | P11 |
 | `/app/biological` | MOD-10 | Missing; regenerate | `/api/v1/biological/scenarios` | P12 |
 | `/app/biological/bed-eqd2` | MOD-11 | Missing; regenerate | biological calculation/chart APIs | P13 |
 | `/app/biological/compare` | MOD-12 | Missing; regenerate | `/api/v1/biological/comparisons` | P14 |

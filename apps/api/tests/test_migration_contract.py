@@ -88,3 +88,21 @@ def test_trend_migration_declares_projection_baseline_and_event_schema() -> None
     assert '"maintenance_event_revisions"' in source
     assert '"uq_trend_points_source_metric"' in source
     assert "def downgrade()" in source
+
+
+def test_protocol_library_migration_declares_version_source_and_revision_fields() -> None:
+    migration = (
+        Path(__file__).parents[1]
+        / "alembic"
+        / "versions"
+        / "20260908_0011_protocol_library.py"
+    )
+    source = migration.read_text(encoding="utf-8")
+
+    assert 'revision: str = "20260908_0011"' in source
+    assert 'down_revision: str | Sequence[str] | None = "20260908_0010"' in source
+    assert '"applicability"' in source
+    assert '"source_protocol_version_id"' in source
+    assert '"revision"' in source
+    assert '"reference"' in source
+    assert "def downgrade()" in source
