@@ -8,6 +8,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = REPO_ROOT / "scripts" / "create-release-manifest.py"
+FIXTURE = REPO_ROOT / "docs" / "fixtures" / "p17-ct-v1-smoke.dcm"
 SOURCE_SHA = "a" * 40
 
 
@@ -65,17 +66,16 @@ def _run_manifest(output: Path, fixture: Path, *extra: str) -> subprocess.Comple
 
 
 def test_release_manifest_is_deterministic_and_valid(tmp_path: Path) -> None:
-    fixture = tmp_path / "fixture.json"
-    fixture.write_text('{"fixture":"ok"}', encoding="utf-8")
     output = tmp_path / "manifest.json"
 
-    result = _run_manifest(output, fixture)
+    result = _run_manifest(output, FIXTURE)
 
     assert result.returncode == 0, result.stderr
     manifest = json.loads(output.read_text(encoding="utf-8"))
     assert manifest["release_gate"] == "ELIGIBLE"
     assert manifest["service_sha_parity"] is True
-    assert manifest["fixture_hashes"][0]["bytes"] == 16
+    assert manifest["fixture_hashes"][0]["path"] == "docs/fixtures/p17-ct-v1-smoke.dcm"
+    assert manifest["fixture_hashes"][0]["bytes"] > 0
 
     verified = subprocess.run(
         [sys.executable, str(SCRIPT), "--verify-manifest", str(output)],
@@ -89,11 +89,9 @@ def test_release_manifest_is_deterministic_and_valid(tmp_path: Path) -> None:
 
 
 def test_mixed_service_sha_is_written_but_blocks_promotion(tmp_path: Path) -> None:
-    fixture = tmp_path / "fixture.json"
-    fixture.write_text("fixture", encoding="utf-8")
     output = tmp_path / "blocked.json"
 
-    result = _run_manifest(output, fixture, "--web-sha", "b" * 40)
+    result = _run_manifest(output, FIXTURE, "--web-sha", "b" * 40)
 
     assert result.returncode == 2
     manifest = json.loads(output.read_text(encoding="utf-8"))
@@ -102,11 +100,9 @@ def test_mixed_service_sha_is_written_but_blocks_promotion(tmp_path: Path) -> No
 
 
 def test_secret_like_backup_reference_is_rejected(tmp_path: Path) -> None:
-    fixture = tmp_path / "fixture.json"
-    fixture.write_text("fixture", encoding="utf-8")
     output = tmp_path / "rejected.json"
 
-    result = _run_manifest(output, fixture, "--backup-before-change", "postgresql://secret")
+    result = _run_manifest(output, FIXTURE, "--backup-before-change", "postgresql://secret")
 
     assert result.returncode == 2
     assert not output.exists()
