@@ -2,7 +2,7 @@
 
 - File: specification.md; version **1.14**; ngày 2026-09-09.
 - Nguồn nghiệp vụ: business-analysis.md v0.20.
-- Kế hoạch triển khai: plan.md v3.8, P0–P20.
+- Kế hoạch triển khai: plan.md v3.9, P0–P20.
 - Kiến trúc nền: technical-specification.md v1.12.
 - Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime. Bản 1.14 bổ sung CT preview/overlay bounded contract, frame navigation, HU/window semantics, LPS mapping và warning/error/recovery cho SPEC-P17; explicit P11/P16 limit binding, actual/limit/margin evaluation, DVH report-source contract, state machine, coverage contract B01–B12 và acceptance evidence schema vẫn giữ nguyên.
 

@@ -3,7 +3,7 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.12 — đồng bộ specification.md v1.14, plan.md v3.8 và business-analysis.md v0.20; bổ sung P17 CT preview/overlay contract, giới hạn tài nguyên, P18 local backup/restore verification harness và local browser/timezone support matrix (2026-09-09)
+- **Phiên bản:** 1.12 — đồng bộ specification.md v1.14, plan.md v3.9 và business-analysis.md v0.20; bổ sung P17 CT preview/overlay contract, giới hạn tài nguyên, P18 local backup/restore verification harness và local browser/timezone support matrix, P20 operations/production runbook support (2026-09-09)
 - **Nguồn yêu cầu:** business-analysis.md phiên bản 0.20
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
@@ -1221,7 +1221,7 @@ evaluated/passing/nonpassing/excluded/no-candidate/censored, pass rate, coverage
 percentile exactness, histogram, warning, configuration, input checksum và engine version.
 Đây là deterministic engineering/golden slice; test local hiện có exhaustive independent node
 oracle và các guard resource/retry, nhưng không thay thế benchmark theo phần cứng hoặc
-commissioning. Gate phát triển, pilot và release theo plan.md v3.8. Coordinate frame mở rộng,
+commissioning. Gate phát triển, pilot và release theo plan.md v3.9. Coordinate frame mở rộng,
 crash/ack/dead-letter injection, large workload benchmark và evidence effective schema/release
 trên staging vẫn là điều kiện đóng P8.
 

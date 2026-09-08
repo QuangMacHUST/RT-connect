@@ -2,7 +2,7 @@
 
 ## Documentation and implementation rebaseline — 2026-09-09
 
-`business-analysis.md` v0.20, `specification.md` v1.14, `technical-specification.md` v1.12 và `plan.md` v3.8 bổ sung requirement, state contract, testcase, workflow, error/recovery contract và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
+`business-analysis.md` v0.20, `specification.md` v1.14, `technical-specification.md` v1.12 và `plan.md` v3.9 bổ sung requirement, state contract, testcase, workflow, error/recovery contract và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
 
 Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness, staging Trend và staging Protocol consumer vẫn phải được đối soát theo plan §1.2–§1.6. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Checkpoint trước đã xác minh browser staging P13/P14 trên candidate `31a5900`; PostgreSQL row query trực tiếp, organization-scope negative probe và release-manifest closure vẫn là gate riêng. P15 hiện đã có staging browser smoke trên candidate `09acb90`, nhưng direct PostgreSQL/scope/replay/release gates còn mở.
 
@@ -21,6 +21,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - `scripts/verify-public-deployment.ps1` bổ sung verifier không dùng credential: kiểm HTTP health/readiness, schema revision, release version, OpenAPI CT preview route, public web index/bundle, CT preview marker và build label; có thể ghi JSON evidence bằng `-OutputPath`. Lần chạy staging ngày 2026-09-09 với version `65dd52b` và schema `20260908_0017` đạt **10/10 checks**. Script chỉ là public smoke tool, không thay authenticated E2E, rollback rehearsal hoặc production gate.
 - `scripts/verify-local-backup-restore.py` bổ sung P18-W03a: local PostgreSQL custom dump và MinIO object inventory được restore vào database/bucket tạm, row/object inventory hash khớp, rồi cleanup database/bucket đạt. Evidence tại `docs/evidence/p18-local-backup-restore-20260909.json`; đây là local support, không thay provider backup/restore staging hoặc RPO/RTO.
 - Evidence tương ứng được lưu tại `docs/evidence/p19-staging-public-smoke-20260909.json`; file chỉ chứa public URL, HTTP/result metadata, bundle hash và không chứa credential, database URL hay dữ liệu bệnh nhân.
+- `docs/runbooks/p20-initial-operations-package.md` và `deployment/railway/production-runbook.md` bổ sung P20-W00 support artifact: vận hành, thresholds target, backup/restore, incident, maintenance, promotion/rollback và handoff template. Đây là tài liệu hỗ trợ `LOCAL_SUPPORT_ONLY`; alert thật, provider restore/RPO-RTO, owner handoff và production release vẫn chưa có evidence.
 
 ## Source documents read
 
@@ -29,7 +30,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | `business-analysis.md` | 0.20 | Business source; detailed feature behavior/workflow/error/recovery/state matrix, P0–P20 contracts and P17 limit/report/CT preview requirements |
 | `specification.md` | 1.14 | Behavior/data/error/state/numeric contracts; feature operation matrix, operation envelope, evidence schema and exact P10/P11/P12/P13/P14/P15/P16/P17 contracts including binding/report/CT preview |
 | `technical-specification.md` | 1.12 | Architecture reference; P10/P11/P12 plus P13/P14/P15/P16/P17 bounded-context implementation addenda, resource policy, CT preview adapter and P18 local backup/restore support |
-| `plan.md` | 3.8 | Phase/workflow/S-E/C/B tests, DoR/DoD, execution gates, execution ledger, full coverage matrix, P10–P18 checkpoints, binding/report/CT work packages, backup/restore support, local browser matrix and staging gates |
+| `plan.md` | 3.9 | Phase/workflow/S-E/C/B tests, DoR/DoD, execution gates, execution ledger, full coverage matrix, P10–P20 checkpoints, binding/report/CT work packages, backup/restore support, local browser matrix, operations runbooks and staging gates |
 
 ## Phase status
 
@@ -55,7 +56,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | P17 | LOCAL CT/BINDING/REPORT READY / STAGING DATA OPEN | Engine/API/UI/migration, bounded CT preview, explicit P11/P16 limit binding and DVH report-source local gates pass; RTSTRUCT/CT fixture upload + DVH run, staging binding/report/CT, fault/volume and release evidence remain |
 | P18 | LOCAL SUPPORT ONLY | `P18-W00` integrated API pack, `P18-W01a` local browser matrix và `P18-W03a` local backup/restore pass; authenticated tenant/dataset matrix, fault/load, provider restore/RPO/RTO và pilot remain open |
 | P19 | PUBLIC SMOKE TOOL READY | Public deployment verifier exists and passed current staging candidate; promotion, remote E2E, DNS/TLS/Auth and rollback remain open |
-| P20 | NOT_STARTED | Initial operations package after P19 |
+| P20 | LOCAL SUPPORT ONLY | Initial operations and production rollback runbooks exist; alert, provider backup/restore, owner handoff and maintenance regression evidence remain open |
 
 ## Live Google Stitch evidence
 
