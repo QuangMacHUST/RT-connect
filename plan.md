@@ -1,12 +1,12 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
-- Phiên bản: **3.3**, ngày 2026-09-08.
-- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.18.
-- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.12.
-- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.9.
+- Phiên bản: **3.4**, ngày 2026-09-08.
+- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.19.
+- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.13.
+- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.10.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
-- Phạm vi lần cập nhật này: chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20; bổ sung ma trận hành vi ở cấp tính năng, tiêu chuẩn bao phủ B01–B12, từ điển trạng thái thống nhất, phase scenario index và đồng bộ slice implementation P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, migration schema `20260908_0017`, engine/API/UI Visual Dose/DVH và kết quả kiểm thử local ngày 2026-09-08. Bổ sung checkpoint deploy/readiness staging P17 và fixture RTSTRUCT known-answer; staging DVH saved-run E2E vẫn là gate riêng vì case hiện chưa có RTSTRUCT. Không suy diễn từ test local hoặc một lần Railway báo Online.
+- Phạm vi lần cập nhật này: chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20; bổ sung ma trận hành vi ở cấp tính năng, tiêu chuẩn bao phủ B01–B12, từ điển trạng thái thống nhất, phase scenario index và đồng bộ slice implementation P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, migration schema `20260908_0017`, engine/API/UI Visual Dose/DVH, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local ngày 2026-09-08. Bổ sung checkpoint deploy/readiness staging P17 và fixture RTSTRUCT known-answer; staging DVH saved-run E2E vẫn là gate riêng vì case hiện chưa có RTSTRUCT. Không suy diễn từ test local hoặc một lần Railway báo Online.
 
 ## 1. Cách thực hiện kế hoạch
 
@@ -47,7 +47,7 @@ Test chỉ dùng NOT_RUN / PASS / FAIL / BLOCKED / NOT_APPLICABLE. NOT_APPLICABL
 | P14 | Có implementation slice local và staging smoke trên candidate `31a5900`; final gate còn direct DB/scope và release manifest | Revalidate nếu candidate/schema/contract đổi; hoàn tất browser/API/PostgreSQL E2E, negative matrix và manifest. |
 | P15 | Có implementation slice local và staging browser smoke trên candidate `09acb90`; final gate còn replay, direct DB/scope và release manifest | Đối chiếu schema `20260908_0015`, authenticated browser workflow, replay cùng key, PostgreSQL snapshot/checksum/scope và release manifest. |
 | P16 | Có browser smoke staging nhưng chưa closure dữ liệu/scope/fault/release | Hoàn thành direct PostgreSQL, compare/history/export, negative/fault matrix và manifest. |
-| P17 | Có engine/API/UI/migration/test local; chưa có staging E2E, renderer anatomy, report/limit binding | Đóng P17-W05–W07 và P17 staging/volume/fault/release gates. |
+| P17 | Có engine/API/UI/migration/test local; explicit P11/P16 binding và DVH report source đã có local evidence; chưa có staging E2E, renderer anatomy hoặc binding/report cloud evidence | Đóng P17-W05b/W06/W07b và P17 staging/volume/fault/release gates. |
 | P18–P20 | Chưa có evidence integrated release/operations đầy đủ | Không đóng bằng việc Railway báo Online hoặc /health trả 200. |
 
 Các smoke run lịch sử giữ tại progress log: Gamma 2D `e084529d-6bb1-4119-ae0a-f4da7d371cac`; failure/retry `26a54046-1f20-454c-b3f4-e766937f30d6`. Đây là evidence đã ghi, không phải kết quả được chạy lại ngày sửa tài liệu.
@@ -267,7 +267,7 @@ thao tác nào, và (5) bằng chứng nằm ở đâu. Nếu không trả lời
 
 ### Trường hợp lỗi và phục hồi P0
 
-Các mã dưới đây là contract đã dùng cho P17; `HTTP 422` là lỗi input/engine validation, `409` là archive/idempotency/source conflict, `403/404` là boundary/resource, `503` là storage/persistence. `validate` trả `200` với `valid=false` cho lỗi engine đã phân loại; không gộp warning thành PASS/FAIL QA.
+Các quy tắc dưới đây là contract HTTP chung của plan; mỗi phase phải bổ sung mã lỗi chuyên biệt trong phần riêng của mình. `HTTP 422` là lỗi input/engine validation, `409` là archive/idempotency/source conflict, `403/404` là boundary/resource, `503` là storage/persistence. `validate` trả `200` với `valid=false` cho lỗi engine đã phân loại; không gộp warning thành PASS/FAIL QA.
 
 | Test ID | Trigger — điều kiện lỗi | Phân loại | Expected và đường phục hồi |
 | :--- | :--- | :--- | :--- |
@@ -1393,7 +1393,7 @@ Các mã dưới đây là error/warning code thực tế của P16 contract. Sc
 - **Bàn giao:** Library/editor/version comparison/source preview; migration `20260908_0016`; API/UI/OpenAPI; validator fixtures; import report; explicit-use snapshot.
 - **Exit gate local:** Filter/context/no-match, typed metric/unit, source warning, lifecycle/history/compare/export, import row-level, explicit-use, scope/concurrency/persistence có test.
 - **Exit gate staging:** Cùng candidate có readiness `schema_revision=20260908_0016`, browser/API lifecycle, import/use/export, direct DB aggregate/hash/scope, negative matrix và redacted deployment manifest.
-- **Integration gap:** P13–P15/P17 hiện nhận explicit-use contract ở mức snapshot endpoint/UI; việc tự prefill calculator phải là work package riêng, không tuyên bố đã tích hợp chỉ vì snapshot tạo thành công.
+- **Integration gap:** P17 đã có adapter riêng nhận explicit P11/P16 snapshot và có thể đưa DVH run vào Report Builder ở local candidate; P13–P15 vẫn chỉ nhận explicit-use snapshot ở mức contract/UI. Việc prefill P13–P15 và staging verification P17 vẫn là work package riêng, không tuyên bố đã tích hợp chỉ vì snapshot tồn tại.
 - **Kiểm tra chéo:** C03–C16 về scope, retry, đồng thời, mất mạng, session, version, persistence và export phải có evidence hoặc lý do không áp dụng. Không thay expected để ép PASS.
 - **Nếu gate fail:** mở issue với testcase thất bại, giữ evidence/bản dữ liệu trước đó và sửa package liên quan; không thay expected để hợp thức hóa output. Có thể làm task độc lập tiếp theo, nhưng phase vẫn mở.
 
@@ -1402,11 +1402,11 @@ Các mã dưới đây là error/warning code thực tế của P16 contract. Sc
 ## P17 — Visual Dose, DVH và structure review
 
 - **Module:** MOD-15.
-- **Requirement:** FR-P17-01 đến FR-P17-04, xem business-analysis §21.3.
+- **Requirement:** FR-P17-01 đến FR-P17-06, xem business-analysis §21.3.
 - **Dependency/entry gate:** P6 phải cung cấp artifact/manifest/checksum; P8/P9/P11/P16 chỉ được dùng khi contract nguồn đã stable. Không dùng record/secret của môi trường khác.
 - **Mục tiêu:** Xem dose trên geometry đúng và tính DVH/metric có volume, unit, coverage, source lineage và khả năng export.
 - **Cách thực thi hiện tại:** P17 local/staging slice là API đồng bộ: preflight và engine chạy trong request, kết quả lưu snapshot sau khi tính. Chưa gọi đây là worker/async hoặc anatomy viewer đầy đủ; async/large-workload và CT image overlay là work package mở.
-- **Trạng thái hiện tại:** `STAGING_DEPLOYED_DVH_DATA_OPEN`; engine/API/UI/migration/test local đã có, staging API/web/worker đã deploy với schema `20260908_0017` và readiness pass. Case smoke hiện mới có RTDOSE hợp lệ, chưa có RTSTRUCT nên browser DVH run chưa được tạo; report/limit binding, volume/fault/performance và release evidence chưa đóng.
+- **Trạng thái hiện tại:** `LOCAL_BINDING_REPORT_READY_STAGING_DATA_OPEN`; engine/API/UI/migration/test local đã có, explicit P11/P16 limit binding và DVH report source đã có code/test local. Staging API/web/worker đã deploy với schema `20260908_0017` và readiness pass. Case smoke hiện mới có RTDOSE hợp lệ, chưa có RTSTRUCT nên browser DVH run chưa được tạo; CT anatomy, volume/fault/performance, staging binding/report và release evidence chưa đóng.
 - **Contract:** specification §8 / SPEC-P17; các contract chung §2–§7 áp dụng khi có liên quan.
 - **Owner thực thi:** người/agent phụ trách module ghi tên trong checkpoint; người dùng cung cấp dữ liệu hoặc đánh giá workflow khi cần, không có cấp phê duyệt theo chức danh.
 - **Trạng thái test v2:** local slice đã kiểm; staging và các gate mở vẫn `NOT_RUN` cho đến khi có evidence trực tiếp trên cùng candidate.
@@ -1418,7 +1418,9 @@ Các mã dưới đây là error/warning code thực tế của P16 contract. Sc
 3. Preflight modality, checksum, Frame of Reference, orientation/origin/spacing/z-offset, dose units/scaling, ROI và resource limit.
 4. Chọn ROI bằng `ROINumber`, coverage policy và metric list; không dùng ROIName làm khóa.
 5. Validate-preview tải bytes và tính nhưng không insert run; lưu run mới tạo snapshot/fingerprint/audit và replay được bằng idempotency key.
-6. Review dose-native preview, ROI mask, curve, metrics, coverage, warning, engine/version/checksum; history/export đọc từ snapshot. CT anatomy renderer, async và report/limit binding là work package sau.
+6. Review dose-native preview, ROI mask, curve, metrics, coverage, warning, engine/version/checksum; history/export đọc từ snapshot.
+7. Nếu cần so sánh giới hạn, user chọn đúng một P16 `DOSE_LIMIT` hoặc P11 protocol rule `ACTIVE`; hệ thống validate compatibility, tạo binding snapshot, tính actual/limit/margin và giữ `rule_status` tách khỏi warning/status.
+8. Nếu cần report, user chọn DVH run đã lưu; Report Builder lưu source snapshot theo run ID/org, không rerun và không lấy bản “latest” khác.
 
 ### Work packages P17
 
@@ -1426,10 +1428,12 @@ Các mã dưới đây là error/warning code thực tế của P16 contract. Sc
 - [x] P17-W02 — RTSTRUCT ROI lookup, duplicate-name handling, polygon parity cho hole/disjoint, contour geometry và coverage policy.
 - [x] P17-W03 — Weighted Dmin/Dmean/Dmax, D(x), V(x) cc/%, cumulative curve, dose-native visual preview và deterministic result hash.
 - [x] P17-W04 — API inputs/validate/runs/history/export, organization/case scope, manifest/source checksum, idempotency, immutable snapshot, React route/UI.
-- [ ] P17-W05 — CT anatomy renderer, crosshair/slice navigation, transform/registration artifact và report source binding; UI hiện mới hiển thị dose-native grid/CT frame summary.
+- [x] P17-W05a — DVH run làm report source: API snapshot theo organization, web chọn QA case/run, report revision giữ result/input/limit evaluation; đã có focused test local.
+- [ ] P17-W05b — CT anatomy renderer, crosshair/slice navigation và transform/registration artifact; UI hiện mới hiển thị dose-native grid/CT frame summary.
 - [ ] P17-W06 — Large workload/async execution hoặc explicit resource policy, storage/dependency fault injection, volume benchmark và staging browser E2E.
-- [ ] P17-W07 — Protocol/Knowledge explicit-use adapter để hiện actual/limit/margin; không đọc trực tiếp bảng P16 và không auto-apply.
-- [x] P17-VERIFY-LOCAL — `test_dvh_engine.py` 8 test và `test_dvh.py` 2 workflow test; full backend, Ruff, mypy, frontend lint/typecheck/build đã pass trên working tree candidate.
+- [x] P17-W07a — Protocol/Knowledge explicit-use adapter: lookup ban đầu có organization scope, chỉ một nguồn, P16 override whitelist, P11 ACTIVE rule, actual/limit/margin và source/effective snapshot; không auto-apply.
+- [ ] P17-W07b — Staging/browser compatibility matrix, protocol rule fixtures mở rộng, warning/status review và direct PostgreSQL/source hash evidence.
+- [x] P17-VERIFY-LOCAL — `test_dvh_engine.py` 8 test, `test_dvh.py` 2 workflow test và `test_reports.py` 4 test liên quan; focused P17/P16/report, full backend, Ruff, mypy, frontend lint/typecheck/build đã pass trên working tree candidate.
 - [ ] P17-VERIFY-STAGING — migration `20260908_0017`, readiness/schema, authenticated browser input→validate→save→refresh→export, PostgreSQL row/checksum/scope, negative/fault/volume evidence. Deployment/readiness đã pass; còn thiếu RTSTRUCT upload và DVH run evidence.
 - [ ] P17-HANDOFF — cập nhật contract/OpenAPI, migration/release notes, route registry, implementation progress, redacted manifest và backlog integration còn lại.
 
@@ -1445,6 +1449,9 @@ Các mã dưới đây là error/warning code thực tế của P16 contract. Sc
 | TC-P17-S06 | CT cùng Frame of Reference | Preflight ghi CT frame link và mode; CT không làm đổi dose values/DVH. Anatomy rendering chỉ PASS khi P17-W05 hoàn tất. |
 | TC-P17-S07 | Contour ngoài grid với `OVERLAP_ONLY` | Run hoàn tất có `DVH_PARTIAL_COVERAGE`, selected volume/outside count/frame counts; không gán ngoài grid bằng 0. |
 | TC-P17-S08 | Validate → save → refresh → history → JSON/CSV | Validate không tạo row; save có ID/input/result SHA; refresh/export khớp snapshot và không tính lại. |
+| TC-P17-S09 | Chọn P16 `DOSE_LIMIT` compatible và yêu cầu đủ metric | `limit_binding` có source/effective values/hash; result có actual/limit/margin, `rule_status` và `status`; không thay đổi engine hash gốc ngoài lớp adapter. |
+| TC-P17-S10 | Chọn P11 protocol `ACTIVE` với rule `d95` | Lookup đúng organization và metric key; result có evaluation và protocol/rule snapshot bất biến; sửa protocol sau đó không đổi run cũ. |
+| TC-P17-S11 | Chọn DVH run đã lưu trong Report Builder | Report revision tạo từ run đúng scope; source snapshot giữ result/input/limit evaluation; refresh/export không rerun DVH. |
 
 ### Trường hợp lỗi và phục hồi P17
 
@@ -1469,6 +1476,12 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 | TC-P17-E15 | Client timeout sau commit, double-click hoặc reconnect | replay `200`/same run ID | Query key trước retry; không tạo duplicate; UI mở history. |
 | TC-P17-E16 | DB/audit commit hoặc export persistence lỗi không chắc chắn | `DVH_PERSISTENCE_FAILED` | Không success giả; query/reconcile trước retry; giữ source và result cũ. |
 | TC-P17-E17 | Run ID không thuộc case/org hoặc format export không hỗ trợ | `DVH_RUN_NOT_FOUND`, `EXPORT_FORMAT_UNSUPPORTED` | 404/422 boundary-safe; chọn run/format hợp lệ; không lộ run khác organization. |
+| TC-P17-E18 | Gửi cả P16 entry và P11 protocol, hoặc gửi override không có source | `DVH_LIMIT_BINDING_CONFLICT`, `DVH_LIMIT_OVERRIDE_INVALID` | Validate false/422 tùy operation; không engine/row; user chọn một nguồn hoặc bỏ override. |
+| TC-P17-E19 | Entry không tồn tại/ARCHIVED/sai loại/khác organization | `DVH_LIMIT_ENTRY_NOT_FOUND`, `DVH_LIMIT_NOT_AVAILABLE`, `DVH_LIMIT_ENTRY_INVALID` | Boundary-safe, không fallback sang limit khác; chọn entry/version hợp lệ. |
+| TC-P17-E20 | Protocol không tồn tại/không ACTIVE/thiếu rule/unsupported rule | `DVH_PROTOCOL_NOT_FOUND`, `DVH_PROTOCOL_NOT_AVAILABLE`, `DVH_PROTOCOL_RULE_REQUIRED`, `DVH_PROTOCOL_RULE_NOT_FOUND`, `DVH_PROTOCOL_RULE_UNSUPPORTED` | Chặn binding; chọn protocol/rule ACTIVE tương thích; không dùng rule gần giống. |
+| TC-P17-E21 | Metric không request đủ Dx/Vx, Dxcc chưa hỗ trợ hoặc unit mismatch | `DVH_LIMIT_METRIC_NOT_COMPUTED`, `DVH_LIMIT_METRIC_UNSUPPORTED`, `DVH_LIMIT_UNIT_MISMATCH` | Không tạo evaluation giả; bổ sung metric/chọn rule khác/sửa source có version; không đổi unit ngầm. |
+| TC-P17-E22 | Limit numeric/range/operator/override invalid hoặc source warning | `DVH_LIMIT_DEFINITION_INVALID`, `DVH_LIMIT_ENTRY_INVALID` và warning | Definition error chặn; warning giữ result nhưng `status=REVIEW_REQUIRED`, `rule_status` vẫn tách PASS/FAIL. |
+| TC-P17-E23 | Report Builder gửi DVH run sai org/case hoặc source type/ID không khớp | `REPORT_SOURCE_UNAVAILABLE`, `DVH_RUN_NOT_FOUND` | Giữ report draft, không lộ metadata và không tạo report từ nguồn ngoài scope. |
 
 ### Bất biến và điều kiện đóng P17
 
@@ -1477,7 +1490,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - **Tính số học:** dose là Gy vật lý; Vx dùng `>=`; D(x), volume weighting, interpolation, preview limit và coverage được snapshot; không tự chuyển NaN/ngoài grid/unit mơ hồ thành 0.
 - **Local exit hiện tại:** pure engine/API/UI/migration/static checks đã pass; đây mới là `LOCAL_SLICE_ONLY`, chưa là `DONE-v2`.
 - **Staging exit:** đúng commit/schema `20260908_0017`; browser→API→Railway PostgreSQL/object storage; direct DB row/hash/scope; positive/negative/idempotency/reconnect/export; fault injection và workload trong budget.
-- **Full-project exit bổ sung:** CT anatomy renderer, protocol/knowledge actual-limit binding, report integration và independent/reference DVH oracle phải có evidence hoặc được ghi rõ là capability ngoài release.
+- **Full-project exit bổ sung:** CT anatomy renderer, staging evidence cho explicit binding/report source, independent/reference DVH oracle và các gate workload/fault phải có evidence hoặc được ghi rõ là capability ngoài release. Local binding/report code không thay cho staging evidence.
 - **Kiểm tra chéo:** C03–C16 áp dụng cho scope, retry, đồng thời, mất mạng, session, version, persistence và export. Không đóng P17 chỉ vì `/ready` HTTP 200, service Online hoặc màn hình Stitch hiển thị được.
 - **Nếu gate fail:** giữ run/evidence cũ, mở issue có testcase/fixture/hash/expected/observed/root cause, sửa đúng package và chạy lại regression; không đổi expected để ép PASS.
 
@@ -1785,7 +1798,7 @@ Bảng này là chỉ mục điều hành ngắn gọn; mỗi phase vẫn phải
 | P14 | P13 engine và common biological context đã stable | 2–10 options → common context/model → baseline → calculate delta/chart → reorder/clone/export | Missing/invalid option, context mismatch, baseline missing/zero, alpha/beta mismatch, idempotency conflict, persistence uncertainty, limit/truncate | Same revision/context, `null + BASELINE_ZERO`, warning/ranking policy, option IDs/order, no-truncate evidence; giữ options hợp lệ | Comparison known delta, zero handling, history/export/clone pass |
 | P15 | P13/P14 scalar result và time/course model đã stable | Courses → tissue/alpha-beta → no-recovery/recovery → cumulative/sensitivity → interruption → compensation alternatives → export | Interval/recovery/source/context, nonuniform schedule, overlap, noninteger, missing spatial registration/OAR dose | Assumption/source/sensitivity snapshot, scalar-vs-spatial capability, integer schedule; chặn nhánh unsupported, không sửa treatment | Scalar/recovery/compensation negative matrix và independent export pass |
 | P16 | P12/P13 source/applicability contract đã stable; migration `20260908_0016` và validator candidate đã pass local | Bootstrap scope → search/filter exact → detail/source → validate/create DRAFT → clone/publish/archive/history/compare/export → import preview/commit → explicit-use snapshot | Request/schema, missing source, metric/unit/operator/volume, no-match, broken/unverified reference, duplicate/import, unsafe content, stale revision, immutable lifecycle, cross-scope/not-found, unsupported override, version conflict, persistence uncertainty | Local: 3 focused tests + full backend + Ruff/mypy + frontend + migration/OpenAPI. Staging smoke: web build `9262bfd`, API schema `20260908_0016`, DRAFT/publish/archive, invalid import row and explicit-use snapshot `1de9704f6b061e35…`. Closure: DB row/hash/scope, compare/history/export, full negative matrix and manifest | P16 implementation and browser smoke pass; database/scope/fault/release closure and direct calculator binding remain open |
-| P17 | P6 artifact/manifest contract và DICOM geometry fixtures đã stable; P8/P9/P11/P16 chỉ là optional source bindings | Resolve scope → discover VALID RTDOSE/RTSTRUCT/CT → checksum/preflight → ROI/policy/metrics → validate preview → save snapshot → history/export; CT anatomy/limit binding mở riêng | Missing/wrong artifact or manifest, source drift/storage, unit/scaling, dimensions/orientation/frame/ROI/contour, empty/partial coverage, CT mismatch, metric/resource, idempotency/persistence/reconnect | Local: engine/API/health `17 passed`, full backend/Ruff/mypy/frontend checks, migration/OpenAPI. Staging: schema `20260908_0017`, browser/API/DB/object/scope/checksum/idempotency, negative/fault/volume/export; giữ raw source và retry sau reconcile | Supported geometry/DVH oracle, staging E2E, fault/volume, CT renderer và explicit report/limit binding pass or are explicitly excluded from release |
+| P17 | P6 artifact/manifest contract và DICOM geometry fixtures đã stable; P8/P9/P11/P16 là optional source bindings có contract riêng | Resolve scope → discover VALID RTDOSE/RTSTRUCT/CT → checksum/preflight → ROI/policy/metrics → optional explicit P11/P16 binding → validate preview → save snapshot → history/export/report source; CT anatomy mở riêng | Missing/wrong artifact or manifest, source drift/storage, unit/scaling, dimensions/orientation/frame/ROI/contour, empty/partial coverage, CT mismatch, metric/resource, binding conflict/source/rule/unit errors, idempotency/persistence/reconnect | Local: engine/API/explicit binding/report `17 passed`, full backend/Ruff/mypy/frontend checks, migration/OpenAPI. Staging: schema `20260908_0017`, browser/API/DB/object/scope/checksum/idempotency, negative/fault/volume/export and binding/report evidence; giữ raw source và retry sau reconcile | Supported geometry/DVH oracle, staging E2E, fault/volume, CT renderer, protocol/knowledge compatibility and report-source evidence pass or are explicitly excluded from release |
 | P18 | P0–P17 release contracts và candidate manifest đã khóa | RC → integrated E2E → golden → failure/restart/concurrency/load → backup/restore → pilot → regression | Result regression, restore incomplete, duplicate replay, capacity, unsupported pilot data, evidence mismatch | Immutable RC manifest, workload/log/restore/checksum/pilot issues; giữ candidate, mở issue/regression, không sửa expected | MUST E2E/restore/performance/pilot pass, không SEV0/1 |
 | P19 | P18 RC, production backup, DNS/TLS/Auth/CORS và service IDs đã kiểm | Backup → migration compatible → API/worker/renderer/web → public smoke → remote E2E → monitor/rollback rehearsal | Domain/TLS, build config, schema/version mismatch, private dependency, remote E2E/resource | Promotion manifest, public URLs, service/schema/engine versions, rollback record; không promote partial, giữ last-good | Website HTTPS và workflow từ mạng ngoài pass, rollback/backup evidence pass |
 | P20 | P19 release và owner/runbook inventory đã bàn giao | Monitor/alert → backup/restore drill → guide/support → incident triage → maintenance staging → regression | Backup/retention, alert delivery, capacity, engine result change, recurring incident | Alert/restore timestamps, runbook execution, incident/RCA/regression/release notes; không xóa last-good | Initial operations package có config thật, owner, alert/restore evidence và backlog |
@@ -1901,9 +1914,9 @@ Trước code UI: ghi screen ID/revision, route, API event và FR. Sau code: đ�
 Template checkpoint (cần điền giá trị thật):
 
 ~~~yaml
-plan_version: "3.3"
+plan_version: "3.4"
 current_phase: P17
-current_work_package: P17-W05
+current_work_package: P17-W05b
 status: IN_PROGRESS
 source_commit: "<actual-sha>"
 implemented_requirements: []
@@ -1931,7 +1944,7 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 ### 7.2. Kết quả lần sửa tài liệu này
 
-Đã rebaseline tài liệu thành BA v0.18, specification v1.12 và plan v3.3; bổ sung ma trận hành vi ở cấp tính năng, từ điển trạng thái, error taxonomy, operation/evidence contract, B01–B12 và ma trận bao phủ P0–P20. P16 đã có implementation local và staging browser smoke trên migration `20260908_0016`: DRAFT/publish/archive, import row-level error và explicit-use snapshot đã được kiểm bằng dữ liệu tổng hợp; direct PostgreSQL/scope/fault/release closure vẫn mở. P17 đã có pure engine/API/UI/migration và local tests; staging E2E, CT anatomy renderer, report/limit binding, fault/volume và release evidence vẫn mở. P15 replay/direct PostgreSQL/scope/full error/release gates cũng vẫn mở theo progress log. Không phase nào được đánh dấu `DONE-v2` chỉ vì local test, HTTP 200 hoặc Railway báo Online.
+Đã rebaseline tài liệu thành BA v0.19, specification v1.13 và plan v3.4; bổ sung ma trận hành vi ở cấp tính năng, từ điển trạng thái, error taxonomy, operation/evidence contract, B01–B12 và ma trận bao phủ P0–P20. P16 đã có implementation local và staging browser smoke trên migration `20260908_0016`: DRAFT/publish/archive, import row-level error và explicit-use snapshot đã được kiểm bằng dữ liệu tổng hợp; direct PostgreSQL/scope/fault/release closure vẫn mở. P17 đã có pure engine/API/UI/migration, explicit P11/P16 limit binding, DVH report source và local tests; staging E2E, CT anatomy renderer, protocol compatibility, fault/volume và release evidence vẫn mở. P15 replay/direct PostgreSQL/scope/full error/release gates cũng vẫn mở theo progress log. Không phase nào được đánh dấu `DONE-v2` chỉ vì local test, HTTP 200 hoặc Railway báo Online.
 
 
 ## 8. Ma trận FR → contract → testcase ban đầu
@@ -2012,6 +2025,8 @@ Mỗi FR có testcase cụ thể dưới đây; Cxx là ma trận chung §3, Gxx
 | FR-P17-02 | SPEC-P17 | TC-P17-S01, TC-P17-E01, TC-P17-E03, TC-P17-E04 |
 | FR-P17-03 | SPEC-P17 | TC-P17-S03, TC-P17-S04, TC-P17-E02, TC-P17-E05 |
 | FR-P17-04 | SPEC-P17 | TC-P17-S04, C09, C13 |
+| FR-P17-05 | SPEC-P17 | TC-P17-S09, TC-P17-S10, TC-P17-E18, TC-P17-E19, TC-P17-E20, TC-P17-E21, TC-P17-E22 |
+| FR-P17-06 | SPEC-P17 | TC-P17-S11, TC-P17-E23, C09, C13 |
 | FR-P18-01 | SPEC-P18 | TC-P18-S01, TC-P18-S02, TC-P18-E01, TC-P18-E06 |
 | FR-P18-02 | SPEC-P18 | TC-P18-S04, TC-P18-E03 |
 | FR-P18-03 | SPEC-P18 | TC-P18-S03, TC-P18-E02 |
@@ -2069,7 +2084,7 @@ Mỗi dòng dưới đây là danh sách hành động tối thiểu, không ph�
 | **P14** | 2–10 options → common context → baseline → validate → delta/chart → reorder/clone/export. | `S01–S06`, absolute/% delta, zero baseline null, option identity/order. | `E01–E10`, C03–C05/C07/C09/C11/C13: option/context/alpha-beta/baseline/overflow/truncate/persistence. | Comparison snapshot, compatibility/warning, result/chart hash, no-QA linkage. | Mở P15/P16 khi mismatch không bị tính như compatible và old comparison giữ nguyên. |
 | **P15** | Courses/time → tissue/model → recovery/no-recovery → cumulative/sensitivity → interruption → compensation alternatives/export. | `S01–S08`, nonuniform fractions, recovery sensitivity, delivered prefix. | `E01–E14`, C02–C09/C11/C13: interval/recovery/schedule/context/spatial unavailable/persistence. | Course/assumption/source/model snapshot, scalar-vs-spatial capability, alternatives. | Không cho spatial/prescription action nếu contract thiếu; mở P16/P17 chỉ khi boundary rõ. |
 | **P16** | Search/filter → source/applicability → create/clone/version → import preview/commit → explicit-use snapshot → compare/export/archive. | `S01–S04`, citation, no-match, draft/published, explicit use/replay. | `E01–E10`, C03–C13/C15: source/metric/content/import/scope/version/persistence. | Entry/version/content hash, import report, explicit-use snapshot, DB/scope/export evidence. | Không gọi limit là QA PASS; mở P17 binding khi snapshot có compatibility contract. |
-| **P17** | Resolve dose/structure/CT → preflight geometry/checksum → dose-native/overlay → ROI/coverage → validate → save DVH → history/export/report. | `S01–S04`, dose-only, ROI by ROINumber, FULL/OVERLAP policy, DVH oracle. | `E01–E17`, C03–C16 plus geometry/volume: manifest/source/grid/frame/ROI/contour/coverage/CT/resource/idempotency. | Schema `20260908_0017`, engine/result hash, ROI/coverage metrics, DB/object/scope, browser run. | Không đóng nếu CT renderer, actual-limit binding hoặc staging saved-run gate còn mở; mở P18 khi release scope ghi rõ. |
+| **P17** | Resolve dose/structure/CT → preflight geometry/checksum → dose-native/overlay → ROI/coverage → optional explicit P11/P16 binding → validate → save DVH → history/export/report. | `S01–S11`, dose-only, ROI by ROINumber, FULL/OVERLAP policy, DVH oracle, actual/limit/margin và report source. | `E01–E23`, C03–C16 plus geometry/volume/binding: manifest/source/grid/frame/ROI/contour/coverage/CT/resource/unit/protocol/idempotency. | Schema `20260908_0017`, engine/binding/result hash, ROI/coverage/limit metrics, DB/object/scope, browser run/report. | Không đóng nếu CT renderer, staging saved-run/binding/report, independent oracle hoặc volume/fault gate còn mở; mở P18 khi release scope ghi rõ. |
 | **P18** | Lock RC → QA/Biological/P17 integrated journeys → golden → fault/restart/concurrency/load → backup/restore → pilot → regression. | `S01–S04`, R1/R2/R3, restore equality, no SEV0/1. | `E01–E06`, C03–C16: regression/restore/duplicate/performance/capability/evidence mismatch. | RC manifest, test matrix, benchmark, fault log, restore checksum/RPO/RTO, pilot issues. | Dừng promotion nếu bất kỳ MUST/SEV0/1/restore gate fail; mở P19 chỉ khi RC reproducible. |
 | **P19** | Backup → promote API/web/worker/schema → DNS/TLS/Auth/CORS → remote E2E → monitor → rollback rehearsal. | `S01–S04`, external HTTPS, deep-link, job reconnect, version parity. | `E01–E06`, C03/C06/C08/C12/C14/C16: domain/config/schema/version/remote/budget. | Production manifest, service/image SHA, schema, config redacted, remote IDs, rollback record. | Không promote partial hoặc coi Online/health là E2E; mở P20 khi public workflow và rollback pass. |
 | **P20** | Monitoring/alert → backup/restore drill → runbook → incident triage → maintenance through staging → regression/release note. | `S01–S04`, alert delivery, restore, handoff, old result preservation. | `E01–E05`, C08/C12/C14/C15/C16: backup/alert/capacity/engine change/recurring incident. | Operational config, alert timestamp, backup manifest/checksum, runbook owner, RCA/regression. | P20 initial package đóng theo evidence hiện tại; continuous operation luôn tạo backlog/revalidation mới. |

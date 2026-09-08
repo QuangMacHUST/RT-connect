@@ -2,7 +2,7 @@
 
 ## Documentation and implementation rebaseline — 2026-09-08
 
-`business-analysis.md` v0.18, `specification.md` v1.12, `technical-specification.md` v1.9 và `plan.md` v3.3 bổ sung requirement, state contract, testcase và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
+`business-analysis.md` v0.19, `specification.md` v1.13, `technical-specification.md` v1.10 và `plan.md` v3.4 bổ sung requirement, state contract, testcase và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
 
 Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness, staging Trend và staging Protocol consumer vẫn phải được đối soát theo plan §1.2–§1.6. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Checkpoint trước đã xác minh browser staging P13/P14 trên candidate `31a5900`; PostgreSQL row query trực tiếp, organization-scope negative probe và release-manifest closure vẫn là gate riêng. P15 hiện đã có staging browser smoke trên candidate `09acb90`, nhưng direct PostgreSQL/scope/replay/release gates còn mở.
 
@@ -10,7 +10,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
 - **Current phase:** P17 — Visual Dose, DVH và structure review; P17 đã deploy staging đúng schema nhưng browser E2E còn chờ bổ sung RTSTRUCT tổng hợp vào QA case. P16 browser smoke đã pass nhưng database/scope/fault/release closure còn mở, cùng các gate P8/P9/P10/P11/P12/P13/P14/P15 và các phase tích hợp sau.
-- **Current status:** IN_PROGRESS — P17 local slice đã có pure RTDOSE/RTSTRUCT engine, migration `20260908_0017`, API inputs/validate/save/history/export, organization/case scope, checksum/idempotency snapshot và route `/app/qa/cases/:caseId/dvh`. Staging API/web/worker deploy `SUCCESS`, `/api/v1/ready` trả `schema_revision=20260908_0017`, web build `9262bfd`; staging case hiện có RTDOSE hợp lệ nhưng chưa có RTSTRUCT nên nút tính vẫn bị khóa. CT anatomy renderer, report/limit binding, fault/volume/release evidence chưa đóng. P16/P15 replay/DB/scope gates vẫn mở độc lập.
+- **Current status:** IN_PROGRESS — P17 local slice đã có pure RTDOSE/RTSTRUCT engine, migration `20260908_0017`, API inputs/validate/save/history/export, organization/case scope, checksum/idempotency snapshot, explicit P11/P16 limit binding, DVH report source và route `/app/qa/cases/:caseId/dvh`. Staging API/web/worker deploy `SUCCESS`, `/api/v1/ready` trả `schema_revision=20260908_0017`, web build `9262bfd`; staging case hiện có RTDOSE hợp lệ nhưng chưa có RTSTRUCT nên nút tính vẫn bị khóa. CT anatomy renderer, staging binding/report E2E, fault/volume/release evidence chưa đóng. P16/P15 replay/DB/scope gates vẫn mở độc lập.
 - **Last authoritative check:** 2026-09-08 — local P17 engine/API/health focused tests `17 passed`, full backend, Ruff/mypy, frontend lint/typecheck/build, migration/OpenAPI pass; staging `/health`, `/ready`, `/version` và web root đều HTTP 200. Fixture `docs/fixtures/p17-rtstruct-v1-smoke.dcm` được kiểm tra local với `FULL_ROI`, 4 voxels, mean `6.5 Gy`, D95 `5.15 Gy`, SHA-256 `16a79df3129757d9df8b48bd095f0b4b70b24713ea5255e24719d46e6808d401`.
 - **Next exact step:** upload fixture RTSTRUCT tổng hợp vào case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`, validate và tạo Input Manifest `RTSTRUCT`; sau đó chạy browser DVH validate→save→replay→refresh→JSON/CSV trên staging. Giữ P16 closure checklist song song; chỉ chuyển P17 sang staging smoke verified sau khi có run ID và result checksum.
 
@@ -18,10 +18,10 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 
 | Source | Version | Status |
 | :--- | :--- | :--- |
-| `business-analysis.md` | 0.18 | Business source; detailed feature behavior/workflow/error/recovery/state matrix, P0–P20 contracts and coverage index |
-| `specification.md` | 1.12 | Behavior/data/error/state/numeric contracts; feature operation matrix, operation envelope, evidence schema and exact P10/P11/P12/P13/P14/P15/P16/P17 contracts |
-| `technical-specification.md` | 1.9 | Architecture reference; P10/P11/P12 plus P13/P14/P15/P16/P17 bounded-context implementation addenda |
-| `plan.md` | 3.3 | Phase/workflow/S-E/C/B tests, DoR/DoD, execution gates, execution ledger, full coverage matrix, P10–P17 checkpoints and staging gates |
+| `business-analysis.md` | 0.19 | Business source; detailed feature behavior/workflow/error/recovery/state matrix, P0–P20 contracts and P17 limit/report requirements |
+| `specification.md` | 1.13 | Behavior/data/error/state/numeric contracts; feature operation matrix, operation envelope, evidence schema and exact P10/P11/P12/P13/P14/P15/P16/P17 contracts including binding/report source |
+| `technical-specification.md` | 1.10 | Architecture reference; P10/P11/P12 plus P13/P14/P15/P16/P17 bounded-context implementation addenda and P17 adapter contract |
+| `plan.md` | 3.4 | Phase/workflow/S-E/C/B tests, DoR/DoD, execution gates, execution ledger, full coverage matrix, P10–P17 checkpoints, binding/report work packages and staging gates |
 
 ## Phase status
 
@@ -44,7 +44,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | P14 | STAGING SMOKE VERIFIED / FINAL GATE OPEN | Migration `20260908_0014`, browser validate-only/no mutation, save, preview reorder không persist, clone, JSON/CSV export và refresh history đã chạy; direct PostgreSQL row/checksum, organization-scope negative probe và release evidence còn mở |
 | P15 | STAGING SMOKE VERIFIED / FINAL GATE OPEN | Migration `20260908_0015`, scalar re-irradiation/fraction-compensation engine/API/UI, recovery/sensitivity, nonuniform schedule, delivered-prefix alternatives, interruption/time model, immutable snapshot và JSON/CSV export; browser happy path đã pass trên deployment `008ec1d1-3215-44c7-9d64-fb06dc024e58`; replay/DB/scope/full S-E/release evidence còn mở |
 | P16 | STAGING SMOKE VERIFIED / EXIT OPEN | Migration `20260908_0016`, web build `9262bfd`; staging DRAFT/publish/archive, import row-level invalid, explicit-use snapshot đã pass; direct PostgreSQL/hash/scope, compare/history/export, full fault matrix và release evidence còn mở |
-| P17 | STAGING DEPLOYED / DVH E2E DATA OPEN | Engine/API/UI/migration/local gates and staging readiness pass; RTSTRUCT fixture upload + DVH run, CT renderer, report/limit binding, fault/volume and release evidence remain |
+| P17 | LOCAL BINDING/REPORT READY / STAGING DATA OPEN | Engine/API/UI/migration, explicit P11/P16 limit binding and DVH report-source local gates pass; RTSTRUCT fixture upload + DVH run, staging binding/report, CT renderer, fault/volume and release evidence remain |
 | P18 | NOT_STARTED | Integrated hardening and pilot |
 | P19 | NOT_STARTED | Production remote web release |
 | P20 | NOT_STARTED | Initial operations package after P19 |
@@ -283,7 +283,15 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 - **API/storage:** migration `20260908_0017_dvh_analysis.py` adds immutable `dvh_analysis_runs`; `apps/api/src/rt_connect_api/api/dvh.py` provides scoped inputs, validate-only, save/replay, history/detail and JSON/CSV export. Every saved run pins artifact/manifest IDs, byte checksums, normalized request, engine version, result/warning/error snapshots and actor.
 - **Web:** route `/app/qa/cases/:caseId/dvh` and QA Archive quick link provide input selection, ROI discovery, coverage policy, metric entry, validation preview, save, visual preview, result/history/provenance and export. The route is case-specific and hidden from the global sidebar.
 - **Local checks:** P17 engine/API/health focused suite `17 passed`; full backend suite, Ruff, strict mypy, frontend lint/typecheck/build passed on the same working tree candidate. Vite still reports the existing bundle-size warning; it is recorded as a performance follow-up, not treated as a functional pass.
-- **Not yet evidenced:** migration on staging with schema `20260908_0017`, authenticated staging browser flow, direct PostgreSQL row/checksum/scope query, object-storage drift/fault recovery, volume/resource benchmark, full negative matrix, CT anatomy renderer/crosshair/registration, P11/P16 actual-limit binding, report integration and independent/reference DVH oracle.
+- **Not yet evidenced:** migration on staging with schema `20260908_0017`, authenticated staging browser flow, direct PostgreSQL row/checksum/scope query, object-storage drift/fault recovery, volume/resource benchmark, full negative matrix, CT anatomy renderer/crosshair/registration, staging P11/P16 actual-limit binding/report source and independent/reference DVH oracle.
+
+## P17 explicit limit binding and Report Builder source — local candidate verified 2026-09-08
+
+- `apps/api/src/rt_connect_api/services/dvh_limit_adapter.py` now provides the explicit boundary from P17 to P16 `DOSE_LIMIT` entries and P11 `ACTIVE` protocol rules. The adapter scopes the initial lookup by `organization_id`, rejects simultaneous sources, rejects override without a P16 source, validates P16 override fields, requires an explicit P11 metric rule, and never searches or auto-applies a different reference.
+- The adapter evaluates supported DMIN/DMEAN/DMAX, Dx and Vx metrics against the already computed DVH result, checks request coverage of Dx/Vx and unit compatibility, preserves the pure engine hash as `engine_result_sha256`, and writes a separate binding/evaluation hash. Source warnings are preserved; `rule_status` is separate from display `status=REVIEW_REQUIRED`.
+- `apps/api/src/rt_connect_api/api/reports.py` accepts a saved DVH run as `source_type=DVH` and snapshots it only when the run belongs to the current organization. `ReportBuilderPage.tsx` can select a QA case and its DVH history; report creation does not rerun DVH or resolve a different latest run.
+- **Local evidence:** focused suite `17 passed` (8 DVH engine + 2 DVH API workflows + 4 report tests + 3 Biological Library tests), Ruff and strict mypy pass; frontend lint/typecheck/Vitest pass. Added coverage includes P16 D95 binding, P11 lowercase rule lookup, binding conflict, missing metric and invalid override.
+- **Not yet evidenced:** staging deployment of this candidate, authenticated browser selection of a real saved DVH run, PostgreSQL source/evaluation hash query, CT anatomy renderer, resource/fault/volume gates and independent/reference DVH oracle. The local contract is not a staging or clinical-readiness claim.
 
 ## Live Railway P17 deployment/readiness evidence — verified 2026-09-08
 

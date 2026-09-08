@@ -1,10 +1,10 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.12**; ngày 2026-09-08.
-- Nguồn nghiệp vụ: business-analysis.md v0.18.
-- Kế hoạch triển khai: plan.md v3.3, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.9.
-- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime. Bản 1.12 bổ sung ma trận operation ở cấp phase/tính năng, quy tắc đóng feature và liên kết chặt giữa success/error/recovery với snapshot, scope, trạng thái và evidence; các ràng buộc state machine, coverage contract B01–B12, acceptance evidence schema, quy tắc xử lý “unknown outcome” và hợp đồng P17 Visual Dose/DVH của bản trước vẫn giữ nguyên.
+- File: specification.md; version **1.13**; ngày 2026-09-08.
+- Nguồn nghiệp vụ: business-analysis.md v0.19.
+- Kế hoạch triển khai: plan.md v3.4, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.10.
+- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime. Bản 1.13 bổ sung explicit P11/P16 limit binding, actual/limit/margin evaluation và DVH report-source contract vào SPEC-P17; các ràng buộc state machine, coverage contract B01–B12, acceptance evidence schema, quy tắc xử lý “unknown outcome” và hợp đồng Visual Dose/DVH của bản trước vẫn giữ nguyên.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
 
@@ -1073,11 +1073,11 @@ Validation errors are not QA `FAIL`; a valid dose-limit result is not a clinical
 | ROI | Chọn theo positive unique `ROINumber`; CLOSED_PLANAR/CLOSEDPLANAR_XOR; disjoint/hole dùng parity; contour non-finite, self-intersection/unsupported hoặc ROI không tồn tại là lỗi rõ ràng. |
 | Metrics | Physical dose Gy; weighted volume cc; Dmin/Dmean/Dmax, D(x) quantile tuyến tính, V(x) cc/% với `dose >= threshold`; preset D2/D50/D95/D98 và V0/V20/V30/V40/V50; input custom được normalize/deduplicate. |
 | Coverage | `FULL_ROI` chặn contour ngoài dose grid; `OVERLAP_ONLY` trả result có warning `DVH_PARTIAL_COVERAGE`, selected volume/outside count/frame counts; không gán vùng ngoài grid bằng zero. |
-| Operation/API surface | `/api/v1/organizations/{organization_id}/qa-cases/{case_id}/dvh/inputs`; `POST /validate`; `POST /runs`; `GET /runs`; `GET /runs/{run_id}`; `GET /runs/{run_id}/export?export_format=JSON|CSV`. |
+| Operation/API surface | `/api/v1/organizations/{organization_id}/qa-cases/{case_id}/dvh/inputs`; `POST /validate`; `POST /runs`; `GET /runs`; `GET /runs/{run_id}`; `GET /runs/{run_id}/export?export_format=JSON|CSV`; Report Builder accepts a saved run as `source_type=DVH`. |
 | Model/storage | `dvh_analysis_runs`: organization/case/input artifact IDs, ROI, idempotency key/fingerprint, engine/schema version, input/result/warning/error snapshots, actor/timestamps; migration `20260908_0017_dvh_analysis.py`. Raw DICOM remains immutable. |
 | Transaction/invariant | Resolve scope before first resource query; validate/checksum before engine; validate-only creates no row; saved run pins all input/geometry/config/source hashes; unique `(organization_id,idempotency_key)` prevents duplicate; export serializes snapshot. |
-| Execution | Current slice is synchronous API execution. Async worker/large workload, CT image renderer/crosshair/registration artifact and protocol/knowledge limit binding are explicit follow-up packages, not implied by this API. |
-| Output | `DvhInputsResponse`, `DvhValidationResponse`, `DvhRunResponse`, dose-native visual preview, curve, metrics, coverage, warning, provenance and JSON/CSV export. `actual/limit/margin` is `N/A` unless an explicit compatible P11/P16 snapshot is supplied. |
+| Execution | Current slice is synchronous API execution. An explicit P11/P16 adapter may resolve one selected source, snapshot it and evaluate actual/limit/margin; it never searches or auto-applies a reference. Async worker/large workload and CT image renderer/crosshair/registration artifact remain explicit follow-up packages. |
+| Output | `DvhInputsResponse`, `DvhValidationResponse`, `DvhRunResponse`, dose-native visual preview, curve, metrics, coverage, warning, provenance, optional `limit_binding`, optional `limit_evaluation` and JSON/CSV export. Without an explicit compatible source, `actual/limit/margin` is absent/N/A. A selected source warning may make display `status=REVIEW_REQUIRED` while `rule_status` remains PASS/FAIL. |
 | Success oracle | TC-P17-S01 đến TC-P17-S08 trong plan |
 | Error/recovery oracle | TC-P17-E01 đến TC-P17-E17 trong plan; generic B01–B12 and C03–C16 apply where relevant. |
 | Exit | Local engine/API/UI/migration checks pass; staging browser→API→PostgreSQL/object storage, geometry/DVH oracle, scope/checksum/idempotency, negative/fault/volume/export evidence pass. |
@@ -1096,11 +1096,19 @@ Validation errors are not QA `FAIL`; a valid dose-limit result is not a clinical
   "slice_thickness_mm": null,
   "dx_percentages": [2, 50, 95, 98],
   "vx_doses_gy": [0, 20, 30, 40, 50],
-  "preview_limit": 4096
+  "preview_limit": 4096,
+  "limit_entry_id": "uuid|null",
+  "protocol_version_id": "uuid|null",
+  "protocol_metric_key": "D95|null",
+  "limit_override": {}
 }
 ~~~
 
 Rules: dose and structure IDs are required and different; `roi_number > 0`; policy is `FULL_ROI|OVERLAP_ONLY`; optional thickness is positive; Dx values are finite `[0,100]`; Vx values are finite non-negative Gy; each list has 1–20 values; preview limit is 64–16384. `DvhRunCreateRequest` adds an idempotency key length 8–200. Pydantic/schema errors are HTTP 422 and create no side effect.
+
+Limit binding is optional but explicit: send neither source for a pure DVH, or exactly one of `limit_entry_id` and `protocol_version_id`. `protocol_metric_key` requires `protocol_version_id`; `limit_override` requires `limit_entry_id` and accepts only `limit_value`, `lower_limit`, `upper_limit`, `unit`, `alpha_beta_gy`, `fractions` and `metric_parameter`. A P16 source must be a non-archived `DOSE_LIMIT`; a P11 source must be `ACTIVE` and its selected rule must be explicit. The initial source and rule lookups are organization-scoped. There is no fallback to another entry/rule.
+
+The selected metric must be computable by the request: `DMIN`, `DMEAN` and `DMAX` use the corresponding scalar; `Dxx` (for example `D95`) must be present in `dx_percentages`; `Vx` must be present in `vx_doses_gy` and agree with `metric_parameter`. `Dxcc` is not enabled in this P17 slice. Actual and limit units must match. Invalid source, metric, operator, range, override or unit is a validation failure, not a null/zero comparison.
 
 #### SPEC-P17.2 — Normal response and snapshot
 
@@ -1116,7 +1124,9 @@ Rules: dose and structure IDs are required and different; `roi_number > 0`; poli
 }
 ~~~
 
-When `valid=false`, `errors` contains `{code, field, message}` and `preview`/normalized output may be null; no `dvh_analysis_runs` row is inserted. `POST /runs` returns HTTP 201 for a new completed run and HTTP 200 for an exact idempotent replay. `DvhRunResponse` must expose IDs, status, engine key/version, complete `input_snapshot`, `result_snapshot`, warning/error snapshots and timestamps. The input snapshot contains artifact filename/type/modality/size/hash, manifest ID/checksum, selected metadata/geometry/unit/validation summary, normalized request and request fingerprint. The result snapshot contains dose, ROI, geometry, coverage, metrics, curve, visual preview, CT summary, warnings and `result_sha256`.
+When `valid=false`, `errors` contains `{code, field, message}` and `preview`/normalized output may be null; no `dvh_analysis_runs` row is inserted. `POST /runs` returns HTTP 201 for a new completed run and HTTP 200 for an exact idempotent replay. `DvhRunResponse` must expose IDs, status, engine key/version, complete `input_snapshot`, `result_snapshot`, warning/error snapshots and timestamps. The input snapshot contains artifact filename/type/modality/size/hash, manifest ID/checksum, selected metadata/geometry/unit/validation summary, normalized request, optional `limit_binding` and request fingerprint. The result snapshot contains dose, ROI, geometry, coverage, metrics, curve, visual preview, CT summary, warnings and `result_sha256`.
+
+When a binding is present, `result_snapshot.limit_evaluation` contains `source_type`, `source_id`, `metric_key`, `actual`, `actual_unit`, `operator`, `limit`, `limit_unit`, `margin`, `margin_unit`, `margin_definition`, `rule_status`, `status`, `explicit_selection=true`, `auto_applied=false` and source warnings. The pure engine hash is preserved as `engine_result_sha256`; the final `result_sha256` covers the evaluated result. The binding snapshot contains schema version, source identity/version/status/hash, effective values, user override (if any), warning list and `binding_sha256`. A saved DVH run used by Report Builder is copied into the report source snapshot; report rendering does not rerun DVH.
 
 #### SPEC-P17.3 — Metric and geometry semantics
 
@@ -1142,6 +1152,12 @@ When `valid=false`, `errors` contains `{code, field, message}` and `preview`/nor
 | Metrics/resource | 422 | `DVH_COVERAGE_POLICY_INVALID`, `DVH_METRIC_INVALID`, `DVH_RESOURCE_LIMIT` | Correct range/reduce workload; no OOM or side effect. |
 | Idempotency | 409 or 200 replay | `DVH_IDEMPOTENCY_CONFLICT` | Same fingerprint replay; different fingerprint uses new key. |
 | Persistence/export/run lookup | 503/404/422 | `DVH_PERSISTENCE_FAILED`, `DVH_RUN_NOT_FOUND`, `EXPORT_FORMAT_UNSUPPORTED` | Query/reconcile before retry; snapshot remains immutable. |
+| Binding source conflict/no source for override | 200 `valid=false` on validate; 422 on run | `DVH_LIMIT_BINDING_CONFLICT`, `DVH_LIMIT_OVERRIDE_INVALID` | Select exactly one source; remove unsupported override; no engine/row on invalid binding. |
+| P16 source unavailable/wrong type/archive/scope | 200 `valid=false` on validate; 422 on run | `DVH_LIMIT_ENTRY_NOT_FOUND`, `DVH_LIMIT_NOT_AVAILABLE`, `DVH_LIMIT_ENTRY_INVALID` | Select a non-archived `DOSE_LIMIT` in the current organization; never fallback to another entry. |
+| P11 source/rule unavailable or unsupported | 200 `valid=false` on validate; 422 on run | `DVH_PROTOCOL_NOT_FOUND`, `DVH_PROTOCOL_NOT_AVAILABLE`, `DVH_PROTOCOL_RULE_REQUIRED`, `DVH_PROTOCOL_RULE_NOT_FOUND`, `DVH_PROTOCOL_RULE_UNSUPPORTED`, `DVH_PROTOCOL_RULE_INVALID` | Select an `ACTIVE` protocol and explicit compatible rule, or create a new version. |
+| Limit metric not computed/unsupported or unit mismatch | 200 `valid=false` on validate; 422 on run | `DVH_LIMIT_METRIC_NOT_COMPUTED`, `DVH_LIMIT_METRIC_UNSUPPORTED`, `DVH_LIMIT_UNIT_MISMATCH` | Request the Dx/Vx value explicitly, choose a supported metric or correct the versioned source unit. |
+| Limit numeric/operator/range invalid | 200 `valid=false` on validate; 422 on run | `DVH_LIMIT_DEFINITION_INVALID`, `DVH_LIMIT_ENTRY_INVALID` | Correct the definition; do not coerce null, NaN, range inversion or unsupported operator. |
+| DVH source unavailable to Report Builder | 404 | `REPORT_SOURCE_UNAVAILABLE`, `DVH_RUN_NOT_FOUND` | Keep report draft; choose a DVH run in the current organization/case and do not reveal another source. |
 
 `DVH_DOSE_ONLY_MODE` is a warning when CT is omitted; it is not an error. A valid result with `DVH_PARTIAL_COVERAGE` is not a full-ROI clinical conclusion. No P17 response may label a valid numeric result as QA PASS without a separate protocol rule evaluation.
 
@@ -1350,7 +1366,7 @@ Nếu phase có output nhưng chưa có một lớp required, status cao nhất 
 | Machine QA | Protocol seed, run create/measurements/evaluate/rerun/compare | Autosave races, full library and boundary coverage. |
 | Gamma | Run enqueue/list/detail/retry/compare; queue metrics | PSQA profile, extra config capabilities, denominator/search, leases/outbox, proper DICOM fixtures. |
 | Report/trend/protocol library | Report P9, Trend P10 và Protocol Library P11 đã có API/UI slice local; P11 migration `20260908_0011` | P9/P10/P11 phải revalidate staging theo schema mới; P11 vẫn cần library/version/consumer E2E và source snapshot evidence. |
-| Biological/knowledge/DVH | Requirement/architecture | P12–P17; P17 có local source/schema/API/UI/test slice, staging/renderer/limit-binding vẫn là gate. |
+| Biological/knowledge/DVH | Requirement/architecture | P12–P17; P17 có local source/schema/API/UI/test slice và explicit binding/report code, còn staging/renderer/binding-report evidence là gate. |
 
 Mutation mới phải có typed request/response, operation ID, error mapping, organization scope và idempotency/revision khi phù hợp. Async create trả 202 + run/export ID khi chưa xong; synchronous create có thể 201. List response giữ collection metadata; server không nhúng dump DB/raw patient payload.
 
@@ -1395,7 +1411,7 @@ Danh sách errors là baseline có giới hạn, không chứng minh bao phủ m
 - Source repository: core/errors.py, db/session.py, alembic/env.py, api/gamma.py, services/gamma_engine.py, services/artifact_validation.py, worker.py, web env/routes và fixture generator.
 - Công thức LQ cơ bản xuất phát từ business-analysis §15.3; recovery profile ở §6.3 là giả định user-defined của sản phẩm, không phải bảng hướng dẫn điều trị.
 
-## 13. Ma trận contract ở cấp operation và tính năng v1.12
+## 13. Ma trận contract ở cấp operation và tính năng v1.13
 
 Mục này là lớp nối giữa yêu cầu `FR-Pxx-yy` trong `business-analysis.md` và testcase `TC-Pxx-*` trong `plan.md`. Nó quy định mỗi phase phải expose hành vi nào, điều gì được coi là thành công, lỗi nào phải phân biệt và dữ liệu nào phải được giữ. Đây vẫn là contract mục tiêu; nội dung chưa có trong source phải được ghi `TARGET`, không được đọc như bằng chứng đã triển khai.
 
@@ -1465,7 +1481,7 @@ Quy tắc bắt buộc:
 | **P14** | Multi-option comparison, compatibility, baseline, absolute/% delta, chart/table/reorder/clone/export. | 2–10 completed P13 snapshots hoặc input hợp lệ; common context/model; stable option IDs. | Options giữ input; delta đúng; baseline zero trả `null` + reason; reorder chỉ đổi thứ tự. | Option/context/alpha-beta/baseline/idempotency/persistence/overflow error hoặc warning; giữ option hợp lệ, không phát hành ranking khi context không tương thích. | Snapshot copy values; no-QA linkage; same comparison replay same hash. |
 | **P15** | Course/recovery/no-recovery, cumulative scalar, sensitivity, interruption, compensation alternatives/export. | Course dates/fractions/dose; tissue/alpha-beta; explicit recovery/time/source assumptions. | Mỗi course và tổng scalar giải thích được; delivered/remaining schedule và alternatives đúng integer; export independent. | Interval/schedule/recovery/context/spatial/persistence error; chặn field, warning assumption, `UNAVAILABLE` spatial, tạo scenario mới; không sửa prescription/RTPLAN. | Scalar result không được gọi là spatial cumulative dose; source/assumption/time model snapshot. |
 | **P16** | Dose-limit/treatment-protocol/knowledge search, validate/import, draft/clone/publish/archive/compare, explicit-use binding. | Typed context/metric/operator/unit/volume; citation/source; safe content; import preview. | Entry version/citation/applicability rõ; published immutable; valid rows import; explicit-use snapshot được tool chọn chủ động. | Source/unit/operator/content/link/import/version/scope/persistence error; sửa row/clone/retry sau reconcile; không auto-select conflict/limit hoặc biến thành QA PASS. | Content hash, effective values và source revision lưu cùng snapshot; internal/user-defined label giữ nguyên. |
-| **P17** | DVH input discovery, geometry/ROI validation, dose-native/CT overlay, preview/save/history/export/report binding. | VALID RTDOSE + RTSTRUCT cùng case/org; CT chỉ khi overlay; checksum/manifest hợp lệ. | Dose-native không cần CT; ROI theo ROINumber; full/overlap policy; metrics/coverage/result hash tái hiện. | Manifest/source/unit/grid/frame/ROI/contour/coverage/CT/resource/idempotency error; FULL chặn coverage thiếu, OVERLAP warning; không clip/gán zero/đoán transform. | `dvh_analysis_runs` immutable, schema/engine/input hash; limit/margin chỉ có explicit compatible snapshot. |
+| **P17** | DVH input discovery, geometry/ROI validation, dose-native/CT overlay, preview/save/history/export, explicit P11/P16 limit evaluation và DVH report binding. | VALID RTDOSE + RTSTRUCT cùng case/org; CT chỉ khi overlay; checksum/manifest hợp lệ; limit source nếu có phải được user chọn rõ. | Dose-native không cần CT; ROI theo ROINumber; full/overlap policy; metrics/coverage/result hash tái hiện; actual/limit/margin và report source snapshot khi binding explicit. | Manifest/source/unit/grid/frame/ROI/contour/coverage/CT/resource/binding/idempotency/report-source error; FULL chặn coverage thiếu, OVERLAP warning; không clip/gán zero/đoán transform/fallback limit. | `dvh_analysis_runs` immutable, schema/engine/input/binding/result hash; ReportRevision sao chép DVH source snapshot và không rerun. |
 | **P18** | RC manifest, integrated QA/Biological/P17 journeys, golden, fault/restart/concurrency/load, backup/restore, pilot/regression. | Candidate SHA/config/schema/fixtures locked; staging safe fault target; restore point. | E2E UI→service→storage/queue/worker; restore count/hash/source equality; workload measured; pilot issue becomes regression. | Regression/restore/duplicate/performance/capability/evidence mismatch; chặn RC, giữ artifact, RCA/fix/rerun, không sửa expected. | Test evidence immutable and tied to candidate; no destructive fault test on production. |
 | **P19** | Production promotion, migration, DNS/TLS/CORS/Auth, public web/API, remote E2E, monitor/rollback. | Approved RC + backup + compatible schema; private DB/Redis/worker; public web config. | External HTTPS, login/deep-link/upload/job/report/toolkit, service version parity and rollback proof. | Domain/config/schema/version/remote/budget error; no partial promote, keep last-good, rollback or rebuild public config; health alone insufficient. | Expand/contract migration; public bundle never contains secret; backup precedes destructive/config-changing step. |
 | **P20** | Monitor/alert, backup/restore runbook, support guide, incident/RCA, maintenance release/regression. | Production observability/config, owner/contact, retention/budget and staging path. | Alert received; restore drill meets recorded target; operator follows guide; old results remain after maintenance. | Backup/alert/capacity/engine-change/recurring incident; keep last-good, correct policy/channel, RCA + regression + runbook update. | Maintenance never rewrites history; backup cleanup only after valid retention/restore evidence. |

@@ -22,6 +22,7 @@ from sqlalchemy.orm import Session
 from rt_connect_api.core.errors import DomainError
 from rt_connect_api.db.models import (
     AuditEvent,
+    DVHAnalysisRun,
     ExportJob,
     GammaAnalysisRun,
     MachineQARun,
@@ -50,7 +51,7 @@ from rt_connect_api.services.session_context import SessionContext, resolve_sess
 
 router = APIRouter(tags=["reports"])
 
-ReportSourceType = Literal["CUSTOM", "QA_CASE", "MACHINE_QA", "GAMMA", "BIOLOGICAL"]
+ReportSourceType = Literal["CUSTOM", "QA_CASE", "MACHINE_QA", "GAMMA", "DVH", "BIOLOGICAL"]
 ReportBlockType = Literal[
     "TEXT",
     "METADATA",
@@ -86,7 +87,7 @@ _BLOCK_TYPES: frozenset[str] = frozenset(
         "WARNING",
     }
 )
-_SOURCE_IDS_REQUIRED: frozenset[str] = frozenset({"QA_CASE", "MACHINE_QA", "GAMMA"})
+_SOURCE_IDS_REQUIRED: frozenset[str] = frozenset({"QA_CASE", "MACHINE_QA", "GAMMA", "DVH"})
 
 
 class ReportBlockInput(BaseModel):
@@ -723,6 +724,34 @@ def _source_snapshot(
             "completed_at": gamma_run.completed_at.isoformat() if gamma_run.completed_at else None,
             "created_at": gamma_run.created_at.isoformat(),
             "updated_at": gamma_run.updated_at.isoformat(),
+        }
+    elif source_type == "DVH":
+        dvh_run = session.scalar(
+            select(DVHAnalysisRun).where(
+                DVHAnalysisRun.id == source_id,
+                DVHAnalysisRun.organization_id == context.organization_id,
+            )
+        )
+        if dvh_run is None:
+            raise DomainError("REPORT_SOURCE_UNAVAILABLE", "The DVH source was not found.", 404)
+        payload = {
+            "id": str(dvh_run.id),
+            "organization_id": str(dvh_run.organization_id),
+            "qa_case_id": str(dvh_run.qa_case_id),
+            "dose_artifact_id": str(dvh_run.dose_artifact_id),
+            "structure_artifact_id": str(dvh_run.structure_artifact_id),
+            "ct_artifact_id": str(dvh_run.ct_artifact_id) if dvh_run.ct_artifact_id else None,
+            "roi_number": dvh_run.roi_number,
+            "status": dvh_run.status,
+            "engine_key": dvh_run.engine_key,
+            "engine_version": dvh_run.engine_version,
+            "request_fingerprint": dvh_run.request_fingerprint,
+            "input_snapshot": dvh_run.input_snapshot,
+            "result_snapshot": dvh_run.result_snapshot,
+            "warning_snapshot": dvh_run.warning_snapshot,
+            "error_snapshot": dvh_run.error_snapshot,
+            "created_at": dvh_run.created_at.isoformat(),
+            "updated_at": dvh_run.updated_at.isoformat(),
         }
     elif source_type == "BIOLOGICAL":
         payload = {

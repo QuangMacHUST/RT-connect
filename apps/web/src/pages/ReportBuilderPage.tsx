@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import {
   ApiClientError,
   apiClient,
+  type DvhRunResource,
   type ReportBlock,
   type ReportRevision,
   type ReportSummary
@@ -15,7 +16,7 @@ const blockTypes = [
   'TEXT', 'METADATA', 'METRICS', 'GAMMA_MAP', 'DOSE_PROFILE', 'DVH', 'TREND_CHART',
   'COMPARISON', 'BIOLOGICAL', 'COMMENTS', 'PROVENANCE', 'TABLE', 'IMAGE', 'WARNING'
 ] as const
-const sourceTypes = ['CUSTOM', 'QA_CASE', 'MACHINE_QA', 'GAMMA', 'BIOLOGICAL'] as const
+const sourceTypes = ['CUSTOM', 'QA_CASE', 'MACHINE_QA', 'GAMMA', 'DVH', 'BIOLOGICAL'] as const
 type SourceType = (typeof sourceTypes)[number]
 type EditableBlock = ReportBlock & { sort_order: number }
 
@@ -57,6 +58,7 @@ export function ReportBuilderPage() {
   const [title, setTitle] = useState('Clinical report')
   const [sourceType, setSourceType] = useState<SourceType>('CUSTOM')
   const [sourceId, setSourceId] = useState('')
+  const [dvhCaseId, setDvhCaseId] = useState('')
   const [templateId, setTemplateId] = useState('')
   const [blocks, setBlocks] = useState<EditableBlock[]>(defaultBlocks)
   const [message, setMessage] = useState<string>()
@@ -83,6 +85,11 @@ export function ReportBuilderPage() {
     queryFn: () => apiClient.qaCases(accessToken!, organizationId!),
     enabled: Boolean(accessToken && organizationId), retry: false
   })
+  const dvhRuns = useQuery({
+    queryKey: ['dvh-runs-for-report', organizationId, dvhCaseId, accessToken],
+    queryFn: () => apiClient.dvhRuns(accessToken!, organizationId!, dvhCaseId!),
+    enabled: Boolean(accessToken && organizationId && sourceType === 'DVH' && dvhCaseId), retry: false
+  })
   const revisions = useQuery({
     queryKey: ['report-revisions', selectedReportKey, accessToken],
     queryFn: () => apiClient.reportRevisions(accessToken!, selectedReportKey!),
@@ -101,6 +108,12 @@ export function ReportBuilderPage() {
     setTitle(currentRevision.title)
     setSourceType(currentRevision.source_type as SourceType)
     setSourceId(currentRevision.source_id ?? '')
+    const payload = currentRevision.source_snapshot.payload
+    if (currentRevision.source_type === 'DVH' && typeof payload === 'object' && payload !== null && 'qa_case_id' in payload && typeof payload.qa_case_id === 'string') {
+      setDvhCaseId(payload.qa_case_id)
+    } else {
+      setDvhCaseId('')
+    }
     setTemplateId(currentRevision.template_version_id ?? '')
     setBlocks(currentRevision.blocks.map(blockFromRevision))
     setEditorError(undefined)
@@ -195,6 +208,7 @@ export function ReportBuilderPage() {
     setTitle('Clinical report')
     setSourceType('CUSTOM')
     setSourceId('')
+    setDvhCaseId('')
     setTemplateId('')
     setBlocks(defaultBlocks())
     setMessage('Đã mở report mới; chưa ghi vào database.')
@@ -219,7 +233,7 @@ export function ReportBuilderPage() {
         </aside>
         <section className="panel report-editor-panel">
           <div className="panel-heading"><div><p className="eyebrow">EDITOR</p><h2>{selectedReport ? `Revision tiếp theo của ${selectedReport.title}` : 'Report draft mới'}</h2></div>{currentRevision && <span className="status-badge">REV {currentRevision.revision_number}</span>}</div>
-          <div className="report-form-grid"><label>Tiêu đề report<input value={title} onChange={(event) => setTitle(event.target.value)} /></label><label>Loại source<select value={sourceType} onChange={(event) => setSourceType(event.target.value as SourceType)}>{sourceTypes.map((type) => <option key={type}>{type}</option>)}</select></label><label>Source ID<input value={sourceId} onChange={(event) => setSourceId(event.target.value)} placeholder={sourceType === 'CUSTOM' || sourceType === 'BIOLOGICAL' ? 'Không bắt buộc' : 'UUID của source run/case'} /></label>{sourceType === 'QA_CASE' && cases.data && <label>Chọn nhanh QA case<select value={sourceId} onChange={(event) => setSourceId(event.target.value)}><option value="">Chọn QA case</option>{cases.data.items.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}</div>
+          <div className="report-form-grid"><label>Tiêu đề report<input value={title} onChange={(event) => setTitle(event.target.value)} /></label><label>Loại source<select value={sourceType} onChange={(event) => { const next = event.target.value as SourceType; setSourceType(next); setSourceId(''); setDvhCaseId('') }}>{sourceTypes.map((type) => <option key={type}>{type}</option>)}</select></label><label>Source ID<input value={sourceId} onChange={(event) => setSourceId(event.target.value)} placeholder={sourceType === 'CUSTOM' || sourceType === 'BIOLOGICAL' ? 'Không bắt buộc' : sourceType === 'DVH' ? 'UUID của DVH run' : 'UUID của source run/case'} /></label>{sourceType === 'QA_CASE' && cases.data && <label>Chọn nhanh QA case<select value={sourceId} onChange={(event) => setSourceId(event.target.value)}><option value="">Chọn QA case</option>{cases.data.items.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}{sourceType === 'DVH' && cases.data && <label>QA case chứa DVH run<select value={dvhCaseId} onChange={(event) => { setDvhCaseId(event.target.value); setSourceId('') }}><option value="">Chọn QA case</option>{cases.data.items.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}{sourceType === 'DVH' && dvhCaseId && <label>Chọn DVH run<select value={sourceId} onChange={(event) => setSourceId(event.target.value)}><option value="">Chọn DVH run</option>{(dvhRuns.data?.items ?? []).map((run: DvhRunResource) => <option key={run.id} value={run.id}>ROI #{run.roi_number} · {run.id.slice(0, 8)}… · {run.status}</option>)}</select>{dvhRuns.error && <small className="form-hint">Không tải được lịch sử DVH; có thể nhập UUID thủ công.</small>}</label>}</div>
           <p className="form-hint">Source snapshot chỉ được chụp khi lưu revision. Source thay đổi sau đó không sửa report cũ; revision tiếp theo có thể chụp dữ liệu mới.</p>
           {editorError && <div className="alert alert--error"><p>{editorError}</p></div>}
           <div className="report-block-heading"><div><p className="eyebrow">BLOCK CANVAS</p><h2>Cấu trúc report</h2></div><button className="button-secondary" onClick={addBlock}>+ Thêm block</button></div>

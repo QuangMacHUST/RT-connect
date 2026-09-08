@@ -2122,12 +2122,54 @@
             "title": "Dx Percentages",
             "type": "array"
           },
+          "limit_entry_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Entry Id"
+          },
+          "limit_override": {
+            "additionalProperties": true,
+            "title": "Limit Override",
+            "type": "object"
+          },
           "preview_limit": {
             "default": 4096,
             "maximum": 16384.0,
             "minimum": 64.0,
             "title": "Preview Limit",
             "type": "integer"
+          },
+          "protocol_metric_key": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Metric Key"
+          },
+          "protocol_version_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Version Id"
           },
           "roi_number": {
             "exclusiveMinimum": 0.0,
@@ -2234,12 +2276,54 @@
             "title": "Idempotency Key",
             "type": "string"
           },
+          "limit_entry_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Entry Id"
+          },
+          "limit_override": {
+            "additionalProperties": true,
+            "title": "Limit Override",
+            "type": "object"
+          },
           "preview_limit": {
             "default": 4096,
             "maximum": 16384.0,
             "minimum": 64.0,
             "title": "Preview Limit",
             "type": "integer"
+          },
+          "protocol_metric_key": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Metric Key"
+          },
+          "protocol_version_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Version Id"
           },
           "roi_number": {
             "exclusiveMinimum": 0.0,
@@ -8422,6 +8506,7 @@
               "QA_CASE",
               "MACHINE_QA",
               "GAMMA",
+              "DVH",
               "BIOLOGICAL"
             ],
             "title": "Source Type",
@@ -8621,6 +8706,7 @@
                   "QA_CASE",
                   "MACHINE_QA",
                   "GAMMA",
+                  "DVH",
                   "BIOLOGICAL"
                 ],
                 "type": "string"
@@ -16273,6 +16359,7 @@
                     "QA_CASE",
                     "MACHINE_QA",
                     "GAMMA",
+                    "DVH",
                     "BIOLOGICAL"
                   ],
                   "type": "string"

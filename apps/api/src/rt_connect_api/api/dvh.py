@@ -48,6 +48,12 @@ from rt_connect_api.services.dose_dvh_engine import (
     list_structure_rois,
     request_fingerprint,
 )
+from rt_connect_api.services.dvh_limit_adapter import (
+    DvhLimitAdapterError,
+    DvhLimitBinding,
+    evaluate_dvh_limit,
+    resolve_dvh_limit_binding,
+)
 from rt_connect_api.services.object_storage import ObjectStorage, ObjectStorageError, get_storage
 from rt_connect_api.services.session_context import SessionContext, resolve_session_context
 
@@ -79,6 +85,10 @@ class DvhRequest(BaseModel):
         default_factory=lambda: list(DEFAULT_VX_DOSES_GY), min_length=1, max_length=20
     )
     preview_limit: int = Field(default=4096, ge=64, le=16_384)
+    limit_entry_id: UUID | None = None
+    protocol_version_id: UUID | None = None
+    protocol_metric_key: str | None = Field(default=None, min_length=1, max_length=120)
+    limit_override: dict[str, object] = Field(default_factory=dict)
 
 
 class DvhRunCreateRequest(DvhRequest):
@@ -337,6 +347,7 @@ def _input_snapshot(
         "structure": _artifact_snapshot(inputs.structure),
         "ct": _artifact_snapshot(inputs.ct) if inputs.ct is not None else None,
         "analysis": analysis.normalized_input,
+        "limit_binding": analysis.normalized_input.get("limit_binding"),
     }
     snapshot["request_fingerprint"] = request_fingerprint(snapshot)
     return snapshot
@@ -355,6 +366,40 @@ def _engine_errors(exc: DVHEngineError) -> list[dict[str, object]]:
         }
         for item in _engine_details(exc)
     ] or [{"code": exc.code, "field": exc.field, "message": exc.message}]
+
+
+def _limit_errors(exc: DvhLimitAdapterError) -> list[dict[str, object]]:
+    return [
+        {
+            "code": exc.code,
+            "field": item.get("field") if isinstance(item.get("field"), str) else exc.field,
+            "message": item.get("message")
+            if isinstance(item.get("message"), str)
+            else exc.message,
+        }
+        for item in exc.details
+    ] or [{"code": exc.code, "field": exc.field, "message": exc.message}]
+
+
+def _apply_limit_binding(
+    analysis: DVHAnalysis, binding: DvhLimitBinding | None
+) -> DVHAnalysis:
+    """Add explicit limit evaluation without changing the pure DVH engine."""
+
+    if binding is None:
+        return analysis
+    evaluation = evaluate_dvh_limit(analysis.result, binding)
+    warnings = [*analysis.warnings, *binding.warnings]
+    result = dict(analysis.result)
+    engine_result_sha = result.pop("result_sha256", None)
+    if isinstance(engine_result_sha, str):
+        result["engine_result_sha256"] = engine_result_sha
+    result["limit_evaluation"] = evaluation
+    result["warnings"] = warnings
+    result["result_sha256"] = request_fingerprint(result)
+    normalized = dict(analysis.normalized_input)
+    normalized["limit_binding"] = binding.snapshot
+    return DVHAnalysis(normalized_input=normalized, result=result, warnings=warnings)
 
 
 @contextmanager
@@ -589,16 +634,31 @@ def validate_dvh(
     case = _case_or_error(session, context, case_id)
     inputs = _resolve_inputs(session, context, case, request)
     try:
+        binding = resolve_dvh_limit_binding(
+            session,
+            context.organization_id,
+            limit_entry_id=request.limit_entry_id,
+            protocol_version_id=request.protocol_version_id,
+            protocol_metric_key=request.protocol_metric_key,
+            override=request.limit_override,
+        )
         analysis = _analyze(
             request,
             inputs,
             storage,
             int(getattr(http_request.app.state.settings, "gamma_max_voxels", 2_000_000)),
         )
+        analysis = _apply_limit_binding(analysis, binding)
     except DVHEngineError as exc:
         return DvhValidationResponse(
             valid=False,
             errors=_engine_errors(exc),
+            warnings=[],
+        )
+    except DvhLimitAdapterError as exc:
+        return DvhValidationResponse(
+            valid=False,
+            errors=_limit_errors(exc),
             warnings=[],
         )
     return DvhValidationResponse(
@@ -634,6 +694,14 @@ def create_dvh_run(
     case = _case_or_error(session, context, case_id)
     inputs = _resolve_inputs(session, context, case, request)
     try:
+        binding = resolve_dvh_limit_binding(
+            session,
+            context.organization_id,
+            limit_entry_id=request.limit_entry_id,
+            protocol_version_id=request.protocol_version_id,
+            protocol_metric_key=request.protocol_metric_key,
+            override=request.limit_override,
+        )
         analysis = _analyze(
             request,
             inputs,
@@ -642,6 +710,12 @@ def create_dvh_run(
         )
     except DVHEngineError as exc:
         raise DomainError(exc.code, exc.message, 422, _engine_details(exc)) from exc
+    except DvhLimitAdapterError as exc:
+        raise DomainError(exc.code, exc.message, 422, _limit_errors(exc)) from exc
+    try:
+        analysis = _apply_limit_binding(analysis, binding)
+    except DvhLimitAdapterError as exc:
+        raise DomainError(exc.code, exc.message, 422, _limit_errors(exc)) from exc
     snapshot = _input_snapshot(case, request, inputs, analysis)
     fingerprint = str(snapshot["request_fingerprint"])
     existing = session.scalar(

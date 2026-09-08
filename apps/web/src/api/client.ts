@@ -281,6 +281,10 @@ export type DvhRequest = {
   dx_percentages: number[]
   vx_doses_gy: number[]
   preview_limit: number
+  limit_entry_id?: string | null
+  protocol_version_id?: string | null
+  protocol_metric_key?: string | null
+  limit_override?: Record<string, unknown>
 }
 export type DvhRunInput = DvhRequest & { idempotency_key: string }
 export type DvhArtifactChoice = {
@@ -2056,7 +2060,7 @@ export class ApiClient {
   }
 
   createReport(accessToken: string, organizationId: string, body: {
-    source_type: 'CUSTOM' | 'QA_CASE' | 'MACHINE_QA' | 'GAMMA' | 'BIOLOGICAL'
+    source_type: 'CUSTOM' | 'QA_CASE' | 'MACHINE_QA' | 'GAMMA' | 'DVH' | 'BIOLOGICAL'
     source_id?: string
     title: string
     template_version_id?: string
@@ -2077,7 +2081,7 @@ export class ApiClient {
 
   createReportRevision(accessToken: string, reportKey: string, body: {
     expected_revision?: number
-    source_type?: 'CUSTOM' | 'QA_CASE' | 'MACHINE_QA' | 'GAMMA' | 'BIOLOGICAL'
+    source_type?: 'CUSTOM' | 'QA_CASE' | 'MACHINE_QA' | 'GAMMA' | 'DVH' | 'BIOLOGICAL'
     source_id?: string
     title?: string
     template_version_id?: string

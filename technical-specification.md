@@ -3,15 +3,15 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.9 — đồng bộ specification.md v1.12, plan.md v3.3 và business-analysis.md v0.18; bổ sung ma trận contract ở cấp tính năng/phase (2026-09-08)
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.18
+- **Phiên bản:** 1.10 — đồng bộ specification.md v1.13, plan.md v3.4 và business-analysis.md v0.19; bổ sung P17 limit adapter và DVH report-source integration (2026-09-08)
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.19
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
 
 Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
-> Đồng bộ v1.9: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§13 là authority cho hành vi/validation/error/thuật toán. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+> Đồng bộ v1.10: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§13 là authority cho hành vi/validation/error/thuật toán. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; explicit P11/P16 binding và DVH report source mới chỉ có local evidence cho đến khi staging được kiểm lại. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -935,11 +935,11 @@ Explicit-use override whitelist chỉ gồm `limit_value`, `lower_limit`, `upper
 
 `REQUEST_VALIDATION_FAILED`/field schema là 422; engine validation trên validate-only là 200 với `valid=false`, còn mutation là 422; source/unit/content/applicability dùng các mã `KNOWLEDGE_SOURCE_REQUIRED`, `DOSE_LIMIT_UNIT_INVALID`, `DOSE_LIMIT_NOT_APPLICABLE`, `KNOWLEDGE_CONTENT_INVALID`; import dùng `KNOWLEDGE_IMPORT_INVALID`; reference warning là `REFERENCE_NOT_VERIFIED`/`REFERENCE_LINK_UNAVAILABLE`; revision/lifecycle dùng `KNOWLEDGE_REVISION_CONFLICT`, `KNOWLEDGE_VERSION_IMMUTABLE`, `KNOWLEDGE_NOT_AVAILABLE`; scope/not-found dùng shared `ORGANIZATION_SCOPE_MISMATCH`/`KNOWLEDGE_ENTRY_NOT_FOUND`; DB/unique failure dùng `KNOWLEDGE_VERSION_CONFLICT`/`KNOWLEDGE_PERSISTENCE_FAILED` với 409/503.
 
-Every mutation audit payload tối thiểu có organization, actor, entry ID, type/key/version/status và source lineage. Log không ghi content nhạy cảm hoặc token. Snapshot use/export phải có schema version, source version/hash và correlation ID trong response envelope. P16 chỉ cung cấp reference snapshot; P13/P14/P15/P17 phải có adapter riêng nếu muốn prefill, không được đọc trực tiếp bảng P16.
+Every mutation audit payload tối thiểu có organization, actor, entry ID, type/key/version/status và source lineage. Log không ghi content nhạy cảm hoặc token. Snapshot use/export phải có schema version, source version/hash và correlation ID trong response envelope. P16 chỉ cung cấp reference snapshot; P13/P14/P15/P17 phải có adapter riêng nếu muốn prefill, không được đọc trực tiếp bảng P16. P17 hiện có adapter riêng cho explicit source binding; P13/P14/P15 vẫn chưa được coi là đã prefill chỉ vì P16 snapshot tồn tại.
 
 #### Local verification checkpoint
 
-Candidate working tree đã pass P16 focused tests `3/3`, P17 engine/API/health focused tests `17 passed`, full backend, Ruff, strict mypy, frontend lint/typecheck/Vitest/build. Migration/OpenAPI phải được regenerate/check trên cùng SHA; staging readiness `20260908_0016` cho P16 và `20260908_0017` cho P17, browser lifecycle, import/use/export, direct PostgreSQL row/hash/scope và full negative matrix vẫn là gate trước STAGING_VERIFIED.
+Candidate working tree đã pass P16 focused tests `3/3`, P17 engine/API/health focused tests `17 passed` và focused P17 binding/report cases trong `test_dvh.py`/`test_reports.py`, full backend, Ruff, strict mypy, frontend lint/typecheck/Vitest/build. Migration/OpenAPI phải được regenerate/check trên cùng SHA; staging readiness `20260908_0016` cho P16 và `20260908_0017` cho P17, browser lifecycle, import/use/export, explicit binding/report source, direct PostgreSQL row/hash/scope và full negative matrix vẫn là gate trước STAGING_VERIFIED.
 
 ### 4.18. Audit Event
 
@@ -1221,7 +1221,7 @@ evaluated/passing/nonpassing/excluded/no-candidate/censored, pass rate, coverage
 percentile exactness, histogram, warning, configuration, input checksum và engine version.
 Đây là deterministic engineering/golden slice; test local hiện có exhaustive independent node
 oracle và các guard resource/retry, nhưng không thay thế benchmark theo phần cứng hoặc
-commissioning. Gate phát triển, pilot và release theo plan.md v3.3. Coordinate frame mở rộng,
+commissioning. Gate phát triển, pilot và release theo plan.md v3.4. Coordinate frame mở rộng,
 crash/ack/dead-letter injection, large workload benchmark và evidence effective schema/release
 trên staging vẫn là điều kiện đóng P8.
 
@@ -1311,7 +1311,7 @@ Các mã còn lại là target và phải được map bằng contract test, kh�
 - REPORT_RENDER_FAILED.
 - EXPORT_FAILED.
 
-P17 hiện đã có các mã engine/API cụ thể sau và phải giữ nguyên khi mở rộng UI hoặc worker: `DVH_INPUT_MANIFEST_REQUIRED`, `DVH_INPUT_NOT_VALIDATED`, `DVH_INPUT_MANIFEST_INVALID`, `DVH_INPUT_SCOPE_MISMATCH`, `DVH_INPUTS_MUST_DIFFER`, `DVH_DOSE_ARTIFACT_INVALID`, `DVH_STRUCTURE_ARTIFACT_INVALID`, `DVH_ANATOMY_ARTIFACT_INVALID`, `DICOM_GEOMETRY_INVALID`, `DICOM_CAPABILITY_UNSUPPORTED`, `DICOM_FRAME_MISMATCH`, `DVH_DOSE_UNITS_UNSUPPORTED`, `DVH_DOSE_VALUES_INVALID`, `DVH_ROI_INVALID`, `CONTOUR_GEOMETRY_INVALID`, `DVH_EMPTY_STRUCTURE`, `DVH_INCOMPLETE_COVERAGE`, `DVH_PARTIAL_COVERAGE`, `DVH_COVERAGE_POLICY_INVALID`, `DVH_METRIC_INVALID`, `DVH_RESOURCE_LIMIT`, `DVH_SOURCE_CHANGED`, `DVH_IDEMPOTENCY_CONFLICT`, `DVH_STORAGE_UNAVAILABLE`, `DVH_EXECUTION_FAILED`, `DVH_PERSISTENCE_FAILED` và `DVH_RUN_NOT_FOUND`. `DVH_DOSE_ONLY_MODE` là warning; `QA_CASE_ARCHIVED` và `ORGANIZATION_SCOPE_MISMATCH` là boundary/lifecycle errors dùng chung. Mọi code mới phải có mapping HTTP, field details, UI message, recovery và test ID trong specification/plan.
+P17 hiện đã có các mã engine/API cụ thể sau và phải giữ nguyên khi mở rộng UI hoặc worker: `DVH_INPUT_MANIFEST_REQUIRED`, `DVH_INPUT_NOT_VALIDATED`, `DVH_INPUT_MANIFEST_INVALID`, `DVH_INPUT_SCOPE_MISMATCH`, `DVH_INPUTS_MUST_DIFFER`, `DVH_DOSE_ARTIFACT_INVALID`, `DVH_STRUCTURE_ARTIFACT_INVALID`, `DVH_ANATOMY_ARTIFACT_INVALID`, `DICOM_GEOMETRY_INVALID`, `DICOM_CAPABILITY_UNSUPPORTED`, `DICOM_FRAME_MISMATCH`, `DVH_DOSE_UNITS_UNSUPPORTED`, `DVH_DOSE_VALUES_INVALID`, `DVH_ROI_INVALID`, `CONTOUR_GEOMETRY_INVALID`, `DVH_EMPTY_STRUCTURE`, `DVH_INCOMPLETE_COVERAGE`, `DVH_PARTIAL_COVERAGE`, `DVH_COVERAGE_POLICY_INVALID`, `DVH_METRIC_INVALID`, `DVH_RESOURCE_LIMIT`, `DVH_SOURCE_CHANGED`, `DVH_IDEMPOTENCY_CONFLICT`, `DVH_STORAGE_UNAVAILABLE`, `DVH_EXECUTION_FAILED`, `DVH_PERSISTENCE_FAILED`, `DVH_RUN_NOT_FOUND`, `DVH_LIMIT_BINDING_CONFLICT`, `DVH_LIMIT_OVERRIDE_INVALID`, `DVH_LIMIT_ENTRY_NOT_FOUND`, `DVH_LIMIT_NOT_AVAILABLE`, `DVH_LIMIT_ENTRY_INVALID`, `DVH_PROTOCOL_NOT_FOUND`, `DVH_PROTOCOL_NOT_AVAILABLE`, `DVH_PROTOCOL_RULE_REQUIRED`, `DVH_PROTOCOL_RULE_NOT_FOUND`, `DVH_PROTOCOL_RULE_UNSUPPORTED`, `DVH_PROTOCOL_RULE_INVALID`, `DVH_LIMIT_METRIC_NOT_COMPUTED`, `DVH_LIMIT_METRIC_UNSUPPORTED`, `DVH_LIMIT_UNIT_MISMATCH` và `DVH_LIMIT_DEFINITION_INVALID`. `DVH_DOSE_ONLY_MODE` là warning; `QA_CASE_ARCHIVED` và `ORGANIZATION_SCOPE_MISMATCH` là boundary/lifecycle errors dùng chung. Mọi code mới phải có mapping HTTP, field details, UI message, recovery và test ID trong specification/plan.
 
 ---
 
@@ -1590,13 +1590,14 @@ Mỗi metric phải có định nghĩa, percentile convention, interpolation met
 
 ### 9.5. P17 implementation contract — current code
 
-P17 hiện được hiện thực bởi ba lớp tách biệt, để phần số học không phụ thuộc HTTP hay database:
+P17 hiện được hiện thực bởi bốn lớp tách biệt, để phần số học không phụ thuộc HTTP hay database và việc gắn giới hạn không làm thay đổi engine thuần:
 
 | Lớp | Thành phần | Trách nhiệm |
 | :--- | :--- | :--- |
 | Domain engine | `apps/api/src/rt_connect_api/services/dose_dvh_engine.py` | Đọc RTDOSE/RTSTRUCT, giải affine patient LPS, rasterize ROI, tính coverage/metrics/curve/preview và hash kết quả. Không biết organization, auth hay storage. |
+| Limit adapter | `apps/api/src/rt_connect_api/services/dvh_limit_adapter.py` | Resolve đúng một P16 `DOSE_LIMIT` hoặc P11 rule `ACTIVE` theo organization; validate override/metric/unit; tạo source/effective snapshot và tính actual/limit/margin. Không tự search, rank hoặc auto-apply. |
 | API/persistence | `apps/api/src/rt_connect_api/api/dvh.py`, `DVHAnalysisRun`, migration `20260908_0017_dvh_analysis.py` | Resolve scope trước query, kiểm artifact/manifest/checksum, tải object, gọi engine, idempotency, audit, snapshot và export. |
-| Web | `apps/web/src/pages/DVHPage.tsx`, route `/app/qa/cases/:caseId/dvh` | Chọn input/ROI/policy, validate-preview, save, hiển thị metric/curve/dose-native mask/history/provenance và JSON/CSV download. Route không nằm trong global sidebar. |
+| Report integration/web | `apps/api/src/rt_connect_api/api/reports.py`, `apps/web/src/pages/ReportBuilderPage.tsx`, route `/app/qa/cases/:caseId/dvh` | DVH route chọn input/ROI/policy, validate-preview, save, hiển thị metric/curve/dose-native mask/history/provenance và JSON/CSV; Report Builder chọn run DVH theo case và lưu source snapshot. Route DVH không nằm trong global sidebar. |
 
 #### 9.5.1. Input resolution và boundary
 
@@ -1626,11 +1627,23 @@ JWT -> resolve membership/org -> resolve case
 
 `POST .../dvh/validate` không mutation. `POST .../dvh/runs` tính xong mới flush `DVHAnalysisRun` và audit; unique `(organization_id, idempotency_key)` cùng request fingerprint bảo vệ double-click/retry. Nếu race commit gặp unique conflict, API query key và trả run cùng fingerprint với HTTP 200; fingerprint khác trả HTTP 409. Export JSON/CSV lấy dữ liệu đã lưu, không rerun engine.
 
-`DVHAnalysisRun` lưu `organization_id`, `qa_case_id`, dose/structure/CT artifact IDs, `roi_number`, idempotency key/fingerprint, engine key/version, status, input/result/warning/error snapshots, actor và timestamps. Snapshot phải giữ source artifact/manifest IDs, filename/type/modality/byte size/SHA, selected metadata, validation summary, normalized request, geometry, coverage, metrics, curve, preview và result SHA.
+`DVHAnalysisRun` lưu `organization_id`, `qa_case_id`, dose/structure/CT artifact IDs, `roi_number`, idempotency key/fingerprint, engine key/version, status, input/result/warning/error snapshots, actor và timestamps. Snapshot phải giữ source artifact/manifest IDs, filename/type/modality/byte size/SHA, selected metadata, validation summary, normalized request, geometry, coverage, metrics, curve, preview và result SHA. Khi user chọn limit source, `input_snapshot.limit_binding` pin source type/id, version/status/hash, effective values, override, warnings và binding hash; `result_snapshot.limit_evaluation` pin actual/limit/margin/rule status và giữ `engine_result_sha256` trước lớp binding.
 
-#### 9.5.4. Capability boundary và phần chưa hoàn tất
+#### 9.5.4. Explicit P11/P16 limit binding
 
-- P17 current slice là synchronous, physical-dose, dose-native grid. Chưa có worker queue cho DVH lớn, chưa có CT pixel renderer/crosshair/registration artifact và chưa tích hợp tự động actual/limit/margin từ P11/P16 vào result.
+`resolve_dvh_limit_binding()` là boundary duy nhất nối P17 với P11/P16 trong candidate hiện tại:
+
+1. Không có `limit_entry_id` và `protocol_version_id`: chạy pure DVH, không có comparison evaluation. `protocol_metric_key` hoặc `limit_override` đi kèm không source là lỗi.
+2. Có `limit_entry_id`: lookup bằng `(organization_id, id)`, yêu cầu `entry_type=DOSE_LIMIT`, không archived; chỉ override whitelist được nhận và phải qua validator P16. Draft/reference chưa available tạo warning được snapshot, không tự chặn nếu definition vẫn hợp lệ.
+3. Có `protocol_version_id`: lookup bằng `(organization_id, id)`, yêu cầu `status=ACTIVE`, `protocol_metric_key` bắt buộc và rule được lookup trong cùng organization/protocol. Chỉ `MAX`, `MIN`, `RANGE`, `TARGET` có limit rõ ràng được evaluate; protocol không nhận override tự do.
+4. Metric mapping: DMIN/DMEAN/DMAX đọc scalar; `Dxx` đọc key trong `Dx_gy`; `Vx` đọc `Vx_percent` hoặc `Vx_cc` theo unit và kiểm tra `metric_parameter`; Dxcc chưa được bật. Actual/limit unit mismatch hoặc metric không có trong request là lỗi rõ ràng.
+5. Evaluation dùng margin có dấu: MAX=`limit-actual`, MIN=`actual-limit`, RANGE=`min(actual-lower,upper-actual)`, TARGET=`-abs(actual-target)`. `rule_status` là PASS/FAIL của rule; source warning làm display `status=REVIEW_REQUIRED`, không làm mất rule status. `auto_applied=false` luôn được lưu.
+
+`Report Builder` cho phép `source_type=DVH` với `source_id` là một run đã lưu. API report lookup phải có `organization_id`; payload source snapshot chứa run/input/result/warning/error snapshot và engine/fingerprint. Report revision không rerun DVH, không đọc latest pointer và không làm thay đổi run.
+
+#### 9.5.5. Capability boundary và phần chưa hoàn tất
+
+- P17 current slice là synchronous, physical-dose, dose-native grid. Đã có explicit P11/P16 actual/limit/margin adapter và DVH report source ở local candidate; chưa có worker queue cho DVH lớn, chưa có CT pixel renderer/crosshair/registration artifact và chưa có staging evidence cho binding/report.
 - `CT` được kiểm tra modality/frame/geometry summary và được ghi vào result; việc hiển thị anatomy overlay chỉ được bật sau khi có renderer/transform contract và test riêng.
 - P17 không tính deformable cumulative dose, không tự cộng dose giữa course, không sửa prescription/RTPLAN/TPS/PACS và không tự tạo QA PASS.
 - Các phần mở phải có package/test/evidence riêng ở P17/P18; không dùng ảnh Stitch hoặc `/ready` 200 làm bằng chứng thay thế.

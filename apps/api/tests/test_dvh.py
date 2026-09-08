@@ -96,10 +96,141 @@ def test_dvh_api_validates_saves_replays_exports_and_scopes_inputs(tmp_path: Pat
         assert run["result_snapshot"]["result_sha256"]
         assert run["input_snapshot"]["dose"]["manifest_checksum_at_use"] == dose["sha256"]
 
+        limit = client.post(
+            f"/api/v1/organizations/{organization.id}/biological/library",
+            json={
+                "entry_key": "TARGET_D95_LIMIT",
+                "entry_type": "DOSE_LIMIT",
+                "name": "Synthetic target D95 minimum",
+                "tissue_or_oar": "Target",
+                "metric_key": "D95",
+                "operator": "MIN",
+                "limit_value": 1.5,
+                "unit": "Gy",
+                "source_type": "INTERNAL",
+                "reference_status": "AVAILABLE",
+                "publish": True,
+            },
+        )
+        assert limit.status_code == 201, limit.text
+        limited_body = dict(body)
+        limited_body.update(
+            {
+                "idempotency_key": "dvh-api-limit-001",
+                "limit_entry_id": limit.json()["id"],
+            }
+        )
+        limited_validation = client.post(
+            f"{base}/validate",
+            json=_validation_body(limited_body),
+        )
+        assert limited_validation.status_code == 200, limited_validation.text
+        assert limited_validation.json()["valid"] is True
+        assert limited_validation.json()["preview"]["limit_evaluation"]["actual"] == 2.0
+        assert limited_validation.json()["preview"]["limit_evaluation"]["margin"] == 0.5
+        assert limited_validation.json()["preview"]["limit_evaluation"]["status"] == "PASS"
+
+        limited = client.post(f"{base}/runs", json=limited_body)
+        assert limited.status_code == 201, limited.text
+        limited_run = limited.json()
+        assert limited_run["input_snapshot"]["limit_binding"]["source_type"] == (
+            "BIOLOGICAL_LIBRARY"
+        )
+        assert limited_run["result_snapshot"]["limit_evaluation"]["rule_status"] == "PASS"
+        assert limited_run["result_snapshot"]["engine_result_sha256"]
+        assert limited_run["result_snapshot"]["result_sha256"] != (
+            limited_run["result_snapshot"]["engine_result_sha256"]
+        )
+
+        protocol = client.post(
+            f"/api/v1/organizations/{organization.id}/qa-protocols",
+            json={
+                "protocol_key": "DVH_TARGET_REVIEW",
+                "name": "Synthetic DVH target review",
+                "qa_type": "DVH",
+                "source_type": "INTERNAL",
+                "rules": [
+                    {
+                        "metric_key": "d95",
+                        "display_name": "Target D95 minimum",
+                        "unit": "Gy",
+                        "rule_type": "MIN",
+                        "lower_limit": 1.5,
+                        "required": True,
+                        "sort_order": 0,
+                    }
+                ],
+                "activate": True,
+            },
+        )
+        assert protocol.status_code == 201, protocol.text
+        protocol_body = dict(body)
+        protocol_body.update(
+            {
+                "idempotency_key": "dvh-api-protocol-001",
+                "protocol_version_id": protocol.json()["id"],
+                "protocol_metric_key": "D95",
+            }
+        )
+        protocol_validation = client.post(
+            f"{base}/validate",
+            json=_validation_body(protocol_body),
+        )
+        assert protocol_validation.status_code == 200, protocol_validation.text
+        assert protocol_validation.json()["valid"] is True
+        assert protocol_validation.json()["preview"]["limit_evaluation"]["source_type"] == (
+            "QA_PROTOCOL"
+        )
+        protocol_run = client.post(f"{base}/runs", json=protocol_body)
+        assert protocol_run.status_code == 201, protocol_run.text
+        assert protocol_run.json()["input_snapshot"]["limit_binding"]["source_type"] == (
+            "QA_PROTOCOL"
+        )
+
+        conflict_binding = _validation_body(limited_body)
+        conflict_binding["protocol_version_id"] = protocol.json()["id"]
+        conflict_response = client.post(f"{base}/validate", json=conflict_binding)
+        assert conflict_response.status_code == 200, conflict_response.text
+        assert conflict_response.json()["valid"] is False
+        assert conflict_response.json()["errors"][0]["code"] == "DVH_LIMIT_BINDING_CONFLICT"
+
+        missing_metric = _validation_body(limited_body)
+        missing_metric["dx_percentages"] = [2, 50]
+        missing_metric_response = client.post(f"{base}/validate", json=missing_metric)
+        assert missing_metric_response.status_code == 200, missing_metric_response.text
+        assert missing_metric_response.json()["valid"] is False
+        assert missing_metric_response.json()["errors"][0]["code"] == (
+            "DVH_LIMIT_METRIC_NOT_COMPUTED"
+        )
+
+        invalid_override = _validation_body(limited_body)
+        invalid_override["limit_override"] = {"operator": "MAX"}
+        invalid_override_response = client.post(f"{base}/validate", json=invalid_override)
+        assert invalid_override_response.status_code == 200, invalid_override_response.text
+        assert invalid_override_response.json()["valid"] is False
+        assert invalid_override_response.json()["errors"][0]["code"] == (
+            "DVH_LIMIT_OVERRIDE_INVALID"
+        )
+
+        report = client.post(
+            f"/api/v1/organizations/{organization.id}/reports",
+            json={
+                "source_type": "DVH",
+                "source_id": limited_run["id"],
+                "title": "Synthetic DVH report",
+            },
+        )
+        assert report.status_code == 201, report.text
+        assert report.json()["source_snapshot"]["source_type"] == "DVH"
+        assert report.json()["source_snapshot"]["payload"]["id"] == limited_run["id"]
+        assert report.json()["source_snapshot"]["payload"]["result_snapshot"][
+            "limit_evaluation"
+        ]["margin"] == 0.5
+
         replay = client.post(f"{base}/runs", json=body)
         assert replay.status_code == 200, replay.text
         assert replay.json()["id"] == run["id"]
-        assert client.get(f"{base}/runs").json()["total"] == 1
+        assert client.get(f"{base}/runs").json()["total"] == 3
         assert client.get(f"{base}/runs/{run['id']}").json()["id"] == run["id"]
 
         conflict = deepcopy(body)
