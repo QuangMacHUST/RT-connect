@@ -24,7 +24,7 @@ All routes are typed in source during P1. This registry is the P0 contract draft
 | `/app/qa-protocols` | MOD-09 | Local P11 implementation; dedicated Stitch screen still optional | `/api/v1/organizations/{id}/qa-protocols` | P11 |
 | `/app/biological` | MOD-10 | Stitch Biological Hub `b32ef9de691f48449ec23e491a6b634d`; P12 implementation | `/api/v1/organizations/{id}/biological/tools`, `/summary`, `/scenarios`, `/calculations` | P12 |
 | `/app/biological/bed-eqd2` | MOD-11 | P13 implementation using Clinical Precision Interface tokens; Stitch generation attempted but service unavailable, so existing design system is used | `/api/v1/organizations/{id}/biological/scenarios/{scenario_id}/calculations/validate`, `/calculations`, `/calculations/{id}/charts`, `/calculations/{id}/export` | P13 |
-| `/app/biological/compare` | MOD-12 | Implemented locally in P14; deploy/recheck staging pending | `/api/v1/organizations/{id}/biological/comparisons` and child validate/detail/chart/clone/export routes | P14 |
+| `/app/biological/compare` | MOD-12 | Implemented and staging-smoke verified on candidate `31a5900`; final DB/scope/release evidence pending | `/api/v1/organizations/{id}/biological/comparisons` and child validate/detail/chart/clone/export routes | P14 |
 | `/app/biological/re-irradiation` | MOD-13 | Missing; regenerate | re-irradiation API | P15 |
 | `/app/biological/fraction-compensation` | MOD-13 | Missing | fraction-compensation API | P15 |
 | `/app/biological/dose-limits` | MOD-14 | Missing | dose-limit APIs | P16 |

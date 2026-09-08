@@ -1083,7 +1083,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - **Mục tiêu:** Tính LQ minh bạch, kiểm tính nhất quán và export đồ thị/data từ cùng snapshot.
 - **Contract:** specification §8 / SPEC-P13; các contract chung §2–§7 áp dụng khi có liên quan.
 - **Owner thực thi:** người/agent phụ trách module ghi tên trong checkpoint; người dùng cung cấp dữ liệu hoặc đánh giá workflow khi cần, không có cấp phê duyệt theo chức danh.
-- **Trạng thái test v2:** LOCAL_VERIFIED trên working tree ngày 2026-09-08; staging E2E và release-manifest evidence vẫn mở, không suy diễn từ test local.
+- **Trạng thái test v2:** STAGING_SMOKE_VERIFIED trên candidate `31a5900` ngày 2026-09-08; browser/API workflow đã pass. Direct PostgreSQL row/checksum, no-QA-linkage query và release-manifest evidence vẫn mở, nên chưa phải `DONE-v2`.
 
 ### Workflow P13
 
@@ -1139,7 +1139,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - **Dữ liệu phải giữ/transaction:** Tính từ input revision đã chọn; thay input làm kết quả hiện tại stale, không đổi history.
 - **Bàn giao:** Calculator, curves, table/marker, known-answer fixtures và exports.
 - **Exit gate local:** Known answers/invalid/curve equality/history/export API pass; limits/model assumptions có nguồn hoặc user-defined; migration `20260908_0013` và schema contract đồng bộ.
-- **Exit gate staging:** Browser → API → Railway PostgreSQL phải chứng minh validate-only không mutation, calculation commit/replay không duplicate, chart preview không ghi đè history, JSON/CSV đúng checksum và route không tạo liên kết QA/patient tự động. Chỉ khi gate này cùng với release manifest pass mới chuyển P13 sang `STAGING_VERIFIED`.
+- **Exit gate staging:** Browser → API → Railway PostgreSQL phải chứng minh validate-only không mutation, calculation commit/replay không duplicate, chart preview không ghi đè history, JSON/CSV đúng checksum và route không tạo liên kết QA/patient tự động. Browser smoke đã pass trên candidate `31a5900`; vẫn phải bổ sung direct PostgreSQL row/checksum, no-QA-linkage và release-manifest evidence trước khi chuyển P13 sang `STAGING_VERIFIED`.
 - **Kiểm tra chéo:** C03–C09 về scope, retry, đồng thời, mất mạng, session và version phải có evidence hoặc lý do không áp dụng; thêm C10–C16 theo module.
 - **Nếu gate fail:** mở issue với testcase thất bại, giữ evidence/bản dữ liệu trước đó và sửa package liên quan; không thay expected để hợp thức hóa output. Có thể làm task độc lập tiếp theo, nhưng phase vẫn mở.
 
@@ -1153,7 +1153,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - **Mục tiêu:** So sánh các phương án fractionation một cách nhất quán về mô, model và context.
 - **Contract:** specification §8 / SPEC-P14; các contract chung §2–§7 áp dụng khi có liên quan.
 - **Owner thực thi:** người/agent phụ trách module ghi tên trong checkpoint; người dùng cung cấp dữ liệu hoặc đánh giá workflow khi cần, không có cấp phê duyệt theo chức danh.
-- **Trạng thái test v2:** LOCAL_VERIFIED trên candidate hiện tại; staging E2E/PostgreSQL/release-manifest chưa chạy nên chưa phải `STAGING_VERIFIED` hoặc `DONE-v2`.
+- **Trạng thái test v2:** STAGING_SMOKE_VERIFIED trên candidate `31a5900` ngày 2026-09-08; browser/API flow đã pass, nhưng direct PostgreSQL/scope/release-manifest gate còn mở nên chưa phải `DONE-v2`.
 
 ### Workflow P14
 
@@ -1170,7 +1170,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - [x] P14-W02 — Tái dùng P13; same scenario/revision/tissue/model contract; alpha/beta mismatch warning và không auto-rank.
 - [x] P14-W03 — Zero denominator policy `null + BASELINE_ZERO`; baseline selection bằng stable option ID; không phát Infinity/NaN.
 - [x] P14-W04 — Comparison idempotency/history/chart/export/clone; reorder preview không đổi baseline hoặc result persisted.
-- [ ] P14-VERIFY — local S/E/C đã pass; còn staging browser/API/PostgreSQL/checksum, remote export và release-manifest evidence.
+- [ ] P14-VERIFY — browser staging validate/save/preview-reorder/clone/export/refresh đã pass trên candidate `31a5900`; còn direct PostgreSQL row/fingerprint/checksum, organization-scope negative probe và release-manifest evidence.
 - [x] P14-HANDOFF — API/UI/OpenAPI/migration `20260908_0014` và bốn tài liệu đã đồng bộ; sau deploy phải bổ sung deployment ID/evidence, không đóng gate bằng health 200.
 
 ### Trường hợp chạy đúng P14
@@ -1206,7 +1206,7 @@ Mã ở cột “Phân loại” là contract được kiểm chứng trong P14.
 - **Dữ liệu phải giữ/transaction:** Một comparison dùng cùng scenario revision/tissue/model của toàn bộ options; option values được copy vào snapshot; không ghép result cũ/mới; create/clone + audit atomic.
 - **Bàn giao:** Multi-option editor/table/chart/compatibility/history/export/clone và route registry/OpenAPI.
 - **Exit gate local:** migration `20260908_0014`, engine/API `15/15` focused, full backend, Ruff/mypy, frontend lint/typecheck/Vitest/build, OpenAPI check; known delta, zero baseline, warning, context, idempotency, history, reorder, clone/export đều pass.
-- **Exit gate staging:** browser → API → Railway PostgreSQL chứng minh validate/no-mutation, persisted result/replay, DB row/checksum, zero/warning, reorder non-persist, clone/export và organization scope trên đúng candidate SHA. Chỉ khi đủ mới chuyển `STAGING_VERIFIED`.
+- **Exit gate staging:** browser → API → Railway PostgreSQL chứng minh validate/no-mutation, persisted result/replay, DB row/checksum, zero/warning, reorder non-persist, clone/export và organization scope trên đúng candidate SHA. Browser smoke trên candidate `31a5900` đã chứng minh phần UI/API; direct PostgreSQL row/checksum, explicit organization-scope negative probe và release manifest vẫn là điều kiện trước `STAGING_VERIFIED`.
 - **Kiểm tra chéo:** C03–C09 về scope, retry, đồng thời, mất mạng, session và version phải có evidence hoặc lý do không áp dụng; thêm C10–C16 theo module.
 - **Nếu gate fail:** mở issue với testcase thất bại, giữ evidence/bản dữ liệu trước đó và sửa package liên quan; không thay expected để hợp thức hóa output. Có thể làm task độc lập tiếp theo, nhưng phase vẫn mở.
 
