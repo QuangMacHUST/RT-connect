@@ -3,15 +3,15 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.12 — đồng bộ specification.md v1.14, plan.md v3.9 và business-analysis.md v0.20; bổ sung P17 CT preview/overlay contract, giới hạn tài nguyên, P18 local backup/restore verification harness và local browser/timezone support matrix, P20 operations/production runbook support (2026-09-09)
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.20
+- **Phiên bản:** 1.14 — đồng bộ specification.md v1.16, plan.md v4.1 và business-analysis.md v0.21; bổ sung reference tới feature-card/handoff, operation/error/evidence record, dependency graph và change-impact gate; mô tả status dashboard/readiness surface P20; giữ P17 CT preview/overlay contract, giới hạn tài nguyên, P18 local backup/restore verification harness, local browser/timezone support matrix và P20 operations/production runbook support (2026-09-09)
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.21
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
 
 Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
-> Đồng bộ v1.12: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§13 là authority cho hành vi/validation/error/thuật toán. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; P17 có CT pixel preview local nhưng explicit P11/P16 binding, DVH report source và CT/staging evidence vẫn phải kiểm theo candidate. P18 có local route-to-persistence và local backup/restore support nhưng chưa thay fault/restore/pilot staging gate. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+> Đồng bộ v1.14: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§14 là authority cho hành vi/validation/error/thuật toán/phase handoff. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; P17 có CT pixel preview local nhưng explicit P11/P16 binding, DVH report source và CT/staging evidence vẫn phải kiểm theo candidate. P18 có local route-to-persistence và local backup/restore support nhưng chưa thay fault/restore/pilot staging gate. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -1221,7 +1221,7 @@ evaluated/passing/nonpassing/excluded/no-candidate/censored, pass rate, coverage
 percentile exactness, histogram, warning, configuration, input checksum và engine version.
 Đây là deterministic engineering/golden slice; test local hiện có exhaustive independent node
 oracle và các guard resource/retry, nhưng không thay thế benchmark theo phần cứng hoặc
-commissioning. Gate phát triển, pilot và release theo plan.md v3.9. Coordinate frame mở rộng,
+commissioning. Gate phát triển, pilot và release theo plan.md v4.1. Coordinate frame mở rộng,
 crash/ack/dead-letter injection, large workload benchmark và evidence effective schema/release
 trên staging vẫn là điều kiện đóng P8.
 

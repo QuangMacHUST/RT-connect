@@ -1,10 +1,10 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.14**; ngày 2026-09-09.
-- Nguồn nghiệp vụ: business-analysis.md v0.20.
-- Kế hoạch triển khai: plan.md v3.9, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.12.
-- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime. Bản 1.14 bổ sung CT preview/overlay bounded contract, frame navigation, HU/window semantics, LPS mapping và warning/error/recovery cho SPEC-P17; explicit P11/P16 limit binding, actual/limit/margin evaluation, DVH report-source contract, state machine, coverage contract B01–B12 và acceptance evidence schema vẫn giữ nguyên.
+- File: specification.md; version **1.16**; ngày 2026-09-09.
+- Nguồn nghiệp vụ: business-analysis.md v0.21.
+- Kế hoạch triển khai: plan.md v4.1, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.14.
+- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.16 giữ toàn bộ contract v1.15, làm rõ operation surface của dashboard vận hành P20 (`/health`, `/ready`, `/version` và queue metrics có xác thực) và quy tắc không được hiển thị nền tảng là sẵn sàng khi readiness/schema thất bại.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
 
@@ -1282,7 +1282,7 @@ Mã CT preview phải được map như sau: `DVH_INPUT_SCOPE_MISMATCH`, `DVH_IN
 | Module/requirement | MOD-16; FR-P20-01 đến FR-P20-04 |
 | Input và dữ liệu hiển thị | Owner/contact; monitoring thresholds; backup schedule/retention/restore drill; cost budget; incident severity; release notes; engine version; maintenance calendar. |
 | Model/storage | Operations config, backup manifests, runbooks, incident and release records. |
-| Operation/API surface | Status/metrics phù hợp đối tượng; alert/backup tích hợp hạ tầng theo cấu hình được triển khai. |
+| Operation/API surface | `GET /api/v1/health` (liveness, không đọc DB); `GET /api/v1/ready` (database + `schema_revision`); `GET /api/v1/version` (release/environment/engine/renderer/schema); `GET /api/v1/gamma/queue-metrics` có Bearer và organization scope cho queue/job metrics; alert/backup tích hợp hạ tầng theo cấu hình được triển khai. Dashboard web phải hiển thị rõ từng contract, không gộp `health=ok` thành `ready`. |
 | Transaction/invariant | Maintenance không rewrite history; backup cleanup chỉ sau retention và có bản phục hồi đã kiểm. |
 | Output bàn giao | Monitoring+backup cấu hình, alert/restore evidence, guides, ownership và maintenance backlog. |
 | Success oracle | TC-P20-S01 đến TC-P20-S04 trong plan |
@@ -1483,7 +1483,7 @@ Danh sách errors là baseline có giới hạn, không chứng minh bao phủ m
 - Source repository: core/errors.py, db/session.py, alembic/env.py, api/gamma.py, services/gamma_engine.py, services/artifact_validation.py, worker.py, web env/routes và fixture generator.
 - Công thức LQ cơ bản xuất phát từ business-analysis §15.3; recovery profile ở §6.3 là giả định user-defined của sản phẩm, không phải bảng hướng dẫn điều trị.
 
-## 13. Ma trận contract ở cấp operation và tính năng v1.14
+## 13. Ma trận contract ở cấp operation và tính năng (baseline v1.15, retained in v1.16)
 
 Mục này là lớp nối giữa yêu cầu `FR-Pxx-yy` trong `business-analysis.md` và testcase `TC-Pxx-*` trong `plan.md`. Nó quy định mỗi phase phải expose hành vi nào, điều gì được coi là thành công, lỗi nào phải phân biệt và dữ liệu nào phải được giữ. Đây vẫn là contract mục tiêu; nội dung chưa có trong source phải được ghi `TARGET`, không được đọc như bằng chứng đã triển khai.
 
@@ -1592,3 +1592,168 @@ Không được gọi operation là `COMPLETED` nếu chưa có output bền v�
 3. **Report/export:** renderer chỉ đọc snapshot; export cũ không bị thay bởi live data; format không hỗ trợ phải báo rõ; byte/hash/determinism và Unicode/bảng dài là một phần acceptance.
 4. **Trend:** chỉ aggregate các source có compatibility signature; điểm thiếu không được biến thành zero; drill-down phải quay về source run/case đúng organization.
 5. **Public deployment:** web/API/worker/schema/Auth/queue phải được kiểm theo cùng release manifest; PostgreSQL, Redis, worker và object bucket private theo topology; URL public không chứng minh workflow đã pass.
+
+## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.16
+
+Phần này biến các contract theo phase thành cấu trúc có thể dùng khi viết code, test và bàn giao. Nó không thay thế các field/algorithm contract ở mục 2–8; nó quy định cách chứng minh rằng các contract đó đã được thực thi trên một candidate cụ thể.
+
+### 14.1. Hợp đồng operation tối thiểu
+
+Mỗi operation có side effect hoặc tạo output phải có các trường sau trong response, database snapshot hoặc record tương đương. Với operation đồng bộ, `technical_status` có thể chuyển thẳng sang `COMPLETED` hoặc `FAILED`; với operation bất đồng bộ, phải giữ toàn bộ chuỗi trung gian.
+
+| Trường | Required | Quy tắc |
+| :--- | :---: | :--- |
+| `operation_id` | Có | Ổn định sau khi server chấp nhận; được dùng để query sau timeout. |
+| `organization_id` | Có với dữ liệu nghiệp vụ | Được resolve từ active membership; không lấy global resource rồi mới lọc. |
+| `request_fingerprint` | Có với mutation/calculation/export | Hash của payload chuẩn hóa, source revision/checksum và config có ý nghĩa. |
+| `lifecycle_status` | Có | Trạng thái resource/command; không đại diện cho chất lượng phép tính. |
+| `technical_status` | Có với calculation/job/render | `NOT_STARTED`, `QUEUED`, `RUNNING`, `RETRYING`, `COMPLETED`, `FAILED`. |
+| `quality_status` | Khi có rule/metric | `PASS`, `WARNING`, `FAIL`, `N/A`, `INVALID` hoặc `null`; `FAIL` không phải server error. |
+| `input_snapshot` | Có với calculation/report/export | Input, unit, source ID, checksum, context và version tại thời điểm dùng. |
+| `output_snapshot` | Có khi thành công | Kết quả đã lưu; history/export không được resolve dữ liệu `latest`. |
+| `warnings` | Có khi có cảnh báo | Mỗi warning có code, field/location, impact và không bị rơi khi refresh/export. |
+| `errors` | Có khi từ chối/thất bại | Mỗi error có code, field/location, retryable và next action; không có secret/stack trace. |
+| `provenance` | Có với output | Engine/model/protocol/template/renderer version, source revision và hash. |
+| `next_action` | Có khi chưa terminal hoặc recovery cần thiết | Hành động cụ thể: sửa field, query, retry, reconcile, restore, clone hoặc tạo revision. |
+
+Không được coi `operation_id` là bằng chứng operation đã hoàn tất; nó chỉ chứng minh server đã có một điểm để truy vấn. Không được coi `technical_status=COMPLETED` là `quality_status=PASS`. Không được tạo `output_snapshot` trước khi kiểm tra source/checksum và commit thành công.
+
+### 14.2. Error/recovery record chuẩn
+
+Mọi testcase lỗi và mọi lỗi quan sát được trong staging/production phải có record có thể đối chiếu với operation. Cấu trúc tối thiểu:
+
+~~~json
+{
+  "error_id": "EV-Pxx-Eyy-001",
+  "operation_id": "uuid-or-null",
+  "phase": "Pxx",
+  "feature_ids": ["FR-Pxx-yy"],
+  "code": "ONE_CANONICAL_ERROR_CODE",
+  "http_status": 422,
+  "retryable": false,
+  "field_or_location": "body.input.field",
+  "lifecycle_before": "DRAFT",
+  "technical_before": "NOT_STARTED",
+  "quality_status": null,
+  "side_effect_expected": "no_resource_or_job",
+  "side_effect_observed": "verified_no_row_no_object",
+  "user_message": "Nêu dữ liệu cần sửa, không lộ chi tiết nội bộ",
+  "recovery_action": "Sửa field và validate lại",
+  "expected": "Không tạo side effect",
+  "observed": "...",
+  "fixture_hashes": ["sha256"],
+  "source_sha": "git-sha",
+  "schema_revision": "alembic-or-null",
+  "evidence_paths": ["docs/evidence/..."],
+  "outcome": "PASS"
+}
+~~~
+
+`side_effect_expected` và `side_effect_observed` là bắt buộc vì HTTP 4xx/5xx đúng chưa đủ để chứng minh database, object store, queue hoặc worker không bị ghi một phần. Nếu response mất sau commit, `code` không được tự chuyển thành lỗi tạo mới; record phải thể hiện `OUTCOME_UNKNOWN` và hành động query/reconcile.
+
+Các lớp lỗi và hành vi thực thi:
+
+| Lớp | HTTP thường dùng | `retryable` mặc định | Phải chứng minh |
+| :--- | :---: | :---: | :--- |
+| Request/schema/field | 400/422 | `false` | Không có resource/job/result mới; draft và field hợp lệ còn nguyên. |
+| Auth/membership/scope | 401/403/404 | `false` | Không lộ tồn tại record ngoài scope; không tạo organization thay cho outage. |
+| Lifecycle/revision/idempotency | 409 | `false` | Không overwrite; same fingerprint replay đúng, khác fingerprint conflict. |
+| Source/geometry/unit/capability | 415/422 | `false` | Không đoán unit/transform, không bỏ điểm hoặc tạo output giả. |
+| Dependency/timeout | 502/503/504 | Có giới hạn | Accepted ID và snapshot còn truy vấn được; retry/backoff/dead-letter bounded. |
+| Persistence uncertain | 409/503 | Chỉ sau reconcile | DB/object/queue inventory được đối chiếu trước khi retry hoặc cleanup. |
+| Resource/rate limit | 413/429/422 | Theo policy | Không OOM dây chuyền; Retry-After/deadline/giới hạn được hiển thị. |
+| Render/export/download | 409/422/503 | Có điều kiện | Source revision/export cũ không đổi; output mới có format/hash/version. |
+| Release/config/schema | 503 hoặc gate fail | Không trong request user | Promote bị dừng hoặc rollback về last-good; manifest ghi diff. |
+
+Một request chỉ được `retryable=true` khi server đã biết side effect an toàn và có operation/idempotency contract. Client không được suy `retryable` từ việc status bắt đầu bằng `5`. Một mã error chỉ đại diện một nguyên nhân chính; các chuỗi dạng `A_OR_B` trong plan là taxonomy/nhóm test, phải được map thành code cụ thể trong implementation.
+
+### 14.3. Hợp đồng đầy đủ của testcase và phase packet
+
+Một testcase `S`, `E`, `C`, `B` hoặc `G` chỉ được xem là đã chạy khi record có đủ:
+
+1. phase, FR, contract section và testcase ID;
+2. branch/source SHA, schema revision, environment và service version;
+3. organization/context synthetic hoặc redacted; fixture và checksum;
+4. precondition, từng bước thực hiện và expected định lượng;
+5. observed, response/error, UI state và state assertions ở DB/object/queue/worker nếu áp dụng;
+6. recovery/cleanup, outcome và severity nếu assertion fail;
+7. đường dẫn evidence không chứa token, password, database URL hoặc PHI không cần thiết;
+8. `next_exact_action` nếu outcome không phải PASS hoặc NOT_APPLICABLE.
+
+`NOT_RUN` là trạng thái trung thực cho testcase chưa thực hiện; không được đổi thành `NOT_APPLICABLE` chỉ vì khó dựng dependency. `NOT_APPLICABLE` phải có lý do nghiệp vụ và không được dùng để bỏ qua mutation, calculation, export, scope, persistence hoặc restart đang áp dụng. `BLOCKED` phải có owner/dependency; phần độc lập vẫn có thể chạy nhưng phase chưa đóng.
+
+Phase packet chuẩn dùng các trường sau:
+
+~~~yaml
+phase: Pxx
+document_versions:
+  business_analysis: "0.21"
+  specification: "1.15"
+  technical_specification: "1.13"
+  plan: "4.0"
+candidate:
+  source_sha: "git-sha"
+  schema_revision: "alembic-or-null"
+  environment: "local|staging|production"
+entry_gate:
+  dependencies: ["Pyy-DONE-v2-or-explicit-slice"]
+  design_reference: "project/screen/version-or-null"
+work_packages:
+  - id: Pxx-W01
+    requirements: [FR-Pxx-01]
+    commit: "git-sha"
+    status: "OPEN|PASS|BLOCKED"
+test_summary:
+  success: {pass: 0, fail: 0, blocked: 0, not_run: 0}
+  error: {pass: 0, fail: 0, blocked: 0, not_run: 0}
+  common: {pass: 0, fail: 0, blocked: 0, not_run: 0}
+evidence_paths: []
+open_issues: []
+exit_decision: "OPEN|LOCAL_VERIFIED|STAGING_VERIFIED|DONE-v2|BLOCKED"
+next_exact_action: "Một hành động cụ thể"
+~~~
+
+`test_summary` là số đếm để phát hiện testcase bị bỏ sót, không phải bằng chứng thay thế cho từng record. `DONE-v2` chỉ hợp lệ khi mọi testcase MUST có record PASS, không có SEV0/SEV1 và candidate/schema/config trong evidence trùng với candidate bàn giao.
+
+### 14.4. Quy tắc tương thích và lan truyền thay đổi
+
+Các thay đổi sau đều là contract change, phải tạo revision hoặc migration phù hợp, cập nhật OpenAPI và chạy affected tests:
+
+| Thay đổi | Artefact phải cập nhật | Test tối thiểu phải chạy lại |
+| :--- | :--- | :--- |
+| Field, unit, null/range, metric semantics | BA, specification, API schema, UI, engine, export | C01/C02, feature S/E, calculation/round-trip nếu liên quan. |
+| Error code/status/retry/state transition | Error envelope, client mapping, worker/UI | C04/C06/C08/C12 và mọi E case của operation. |
+| Source role, DICOM geometry, transform, coverage | Manifest, validator, Gamma/DVH, fixture/oracle | C03/C09/C13/C14, geometry/denominator/no-overlap tests. |
+| Formula/model/alpha-beta/recovery | Calculation contract, model version, source snapshot | Known-answer, curve/table, comparison, re-irradiation replay. |
+| Template/renderer/export | Report snapshot, renderer metadata, format adapter | Unicode/long report, hash/replay, visual and download tests. |
+| Auth/org/deployment topology | Scope lookup, cache/session, service manifest/runbook | C03/C07/C12/C15/C16, remote E2E and rollback. |
+| Resource/timeout/retention policy | API/worker/renderer limits, alerts, runbook | C08/C14, fault/load, backup/restore and alert evidence. |
+
+Thứ tự đồng bộ bắt buộc là **business-analysis → specification → technical-specification → implementation → tests → plan → implementation-progress/evidence**. Nếu code hiện tại khác contract, ghi `IMPLEMENTATION_GAP` hoặc `DOCUMENT_CONFLICT`; không sửa expected cũ, không xóa evidence và không hạ yêu cầu để làm cho build xanh. Thay đổi chỉ ở layout vẫn phải chạy visual/accessibility nếu có thể làm người dùng hiểu sai metric, unit hoặc status.
+
+### 14.5. Quy tắc phát hành dựa trên manifest
+
+Một candidate release phải có manifest bất biến với tối thiểu:
+
+~~~json
+{
+  "release_id": "R4-candidate-YYYYMMDD-HHMM",
+  "source_sha": "git-sha",
+  "services": {
+    "api": {"deployment_id": "...", "sha": "..."},
+    "web": {"deployment_id": "...", "sha": "..."},
+    "worker": {"deployment_id": "...", "sha": "..."},
+    "renderer": {"version": "..."}
+  },
+  "schema_revision": "...",
+  "engine_versions": {"gamma": "...", "dvh": "...", "biological": "..."},
+  "auth_environment": "staging|production",
+  "database_environment": "staging|production",
+  "fixture_hashes": [],
+  "tests": {"local": [], "staging": [], "production": []},
+  "backup_before_change": "path-or-provider-id",
+  "rollback_target": "last-good-release-id"
+}
+~~~
+
+Manifest không được lưu secret. `source_sha`, service SHA, schema, engine/renderer version và Auth/database environment phải được đối chiếu trước khi gọi một workflow là staging hoặc production. Mismatch phải hạ trạng thái thành `NEEDS_REVALIDATION` hoặc `RELEASE_BLOCKED`; không sửa manifest sau khi test để che lệch candidate.

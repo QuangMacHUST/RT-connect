@@ -22,6 +22,12 @@ export class ApiClientError extends Error {
 }
 
 export type Health = { status: string; timestamp: string; correlation_id: string }
+export type Readiness = {
+  status: string
+  timestamp: string
+  correlation_id: string
+  schema_revision?: string
+}
 export type Version = {
   application: string
   version: string
@@ -1295,6 +1301,18 @@ export class ApiClient {
 
   health(): Promise<Health> {
     return this.get('/health', z.object({ status: z.string(), timestamp: z.string(), correlation_id: z.string() }))
+  }
+
+  ready(): Promise<Readiness> {
+    return this.get(
+      '/ready',
+      z.object({
+        status: z.string(),
+        timestamp: z.string(),
+        correlation_id: z.string(),
+        schema_revision: z.string().optional()
+      })
+    )
   }
 
   version(): Promise<Version> {

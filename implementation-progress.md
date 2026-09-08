@@ -2,7 +2,11 @@
 
 ## Documentation and implementation rebaseline — 2026-09-09
 
-`business-analysis.md` v0.20, `specification.md` v1.14, `technical-specification.md` v1.12 và `plan.md` v3.9 bổ sung requirement, state contract, testcase, workflow, error/recovery contract và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
+Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.21, `specification.md` v1.16,
+`technical-specification.md` v1.14 và `plan.md` v4.1. Dòng rebaseline lịch sử ngay dưới đây
+giữ nguyên để truy vết; không dùng các phiên bản cũ đó làm authority.
+
+`business-analysis.md` v0.21, `specification.md` v1.15, `technical-specification.md` v1.13 và `plan.md` v4.0 bổ sung feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate, state contract, testcase, workflow, error/recovery contract và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
 
 Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness, staging Trend và staging Protocol consumer vẫn phải được đối soát theo plan §1.2–§1.6. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Checkpoint trước đã xác minh browser staging P13/P14 trên candidate `31a5900`; PostgreSQL row query trực tiếp, organization-scope negative probe và release-manifest closure vẫn là gate riêng. P15 hiện đã có staging browser smoke trên candidate `09acb90`, nhưng direct PostgreSQL/scope/replay/release gates còn mở.
 
@@ -23,15 +27,16 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - Evidence tương ứng được lưu tại `docs/evidence/p19-staging-public-smoke-20260909.json`; file chỉ chứa public URL, HTTP/result metadata, bundle hash và không chứa credential, database URL hay dữ liệu bệnh nhân.
 - `docs/runbooks/p20-initial-operations-package.md` và `deployment/railway/production-runbook.md` bổ sung P20-W00 support artifact: vận hành, thresholds target, backup/restore, incident, maintenance, promotion/rollback và handoff template. Đây là tài liệu hỗ trợ `LOCAL_SUPPORT_ONLY`; alert thật, provider restore/RPO-RTO, owner handoff và production release vẫn chưa có evidence.
 - `scripts/verify-planning-contract.py` bổ sung verifier fail-closed cho P0: kiểm bốn version tài liệu, cross-reference plan, đủ 21 phase P0–P20 trong BA/spec/plan, workflow/success/error/exit section, FR mapping, testcase S/E, B01–B12, G0–G7 và các support artifact. Evidence `docs/evidence/p0-planning-contract-20260909.json` đạt **pass=true, failed_check_count=0**; đây là consistency evidence, không phải runtime/clinical evidence.
+- P20-W01 local support slice: `apps/web/src/api/client.ts` có `ready()` và `PlatformStatusPage.tsx` đọc riêng `/health`, `/ready`, `/version` cùng authenticated `/gamma/queue-metrics`; frontend test readiness failure không cho phép hiển thị nền tảng là ready. Local test **2/2**, lint, typecheck và production build PASS; đây chưa phải alert delivery hoặc P20 exit evidence.
 
 ## Source documents read
 
 | Source | Version | Status |
 | :--- | :--- | :--- |
-| `business-analysis.md` | 0.20 | Business source; detailed feature behavior/workflow/error/recovery/state matrix, P0–P20 contracts and P17 limit/report/CT preview requirements |
-| `specification.md` | 1.14 | Behavior/data/error/state/numeric contracts; feature operation matrix, operation envelope, evidence schema and exact P10/P11/P12/P13/P14/P15/P16/P17 contracts including binding/report/CT preview |
-| `technical-specification.md` | 1.12 | Architecture reference; P10/P11/P12 plus P13/P14/P15/P16/P17 bounded-context implementation addenda, resource policy, CT preview adapter and P18 local backup/restore support |
-| `plan.md` | 3.9 | Phase/workflow/S-E/C/B tests, DoR/DoD, execution gates, execution ledger, full coverage matrix, P10–P20 checkpoints, binding/report/CT work packages, backup/restore support, local browser matrix, operations runbooks and staging gates |
+| `business-analysis.md` | 0.21 | Business source; detailed feature behavior/workflow/error/recovery/state matrix, business feature cards, phase handoff and P0–P20 contracts |
+| `specification.md` | 1.16 | Behavior/data/error/state/numeric contracts; operation/evidence record, change-impact/release manifest, P20 status/readiness surface and exact P10/P11/P12/P13/P14/P15/P16/P17 contracts including binding/report/CT preview |
+| `technical-specification.md` | 1.14 | Architecture reference; bounded-context implementation addenda, P20 status/readiness dashboard boundary, resource policy, CT preview adapter, P18 local backup/restore support and cross-document execution references |
+| `plan.md` | 4.1 | Phase/workflow/S-E/C/B tests, DoR/DoD, dependency graph, execution gates, execution ledger, full coverage matrix, P20 status/readiness dashboard package, binding/report/CT work packages, backup/restore support, local browser matrix, operations runbooks and staging gates |
 
 ## Phase status
 

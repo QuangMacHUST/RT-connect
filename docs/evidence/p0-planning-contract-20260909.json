@@ -1,12 +1,12 @@
 {
   "schema_version": "rt-connect.planning-contract-verification.v1",
-  "captured_at_utc": "2026-09-08T19:44:14.965503+00:00",
+  "captured_at_utc": "2026-09-08T20:09:48.567580+00:00",
   "repository": "E:\\hoctap\\2026\\RT-connect",
   "document_versions": {
-    "business": "0.20",
-    "specification": "1.14",
-    "technical": "1.12",
-    "plan": "3.9"
+    "business": "0.21",
+    "specification": "1.16",
+    "technical": "1.14",
+    "plan": "4.1"
   },
   "phase_count": 21,
   "passed": true,
@@ -40,37 +40,77 @@
     {
       "name": "version.business",
       "ok": true,
-      "details": "expected=0.20; observed=0.20"
+      "details": "expected=0.21; observed=0.21"
     },
     {
       "name": "version.specification",
       "ok": true,
-      "details": "expected=1.14; observed=1.14"
+      "details": "expected=1.16; observed=1.16"
     },
     {
       "name": "version.technical",
       "ok": true,
-      "details": "expected=1.12; observed=1.12"
+      "details": "expected=1.14; observed=1.14"
     },
     {
       "name": "version.plan",
       "ok": true,
-      "details": "expected=3.9; observed=3.9"
+      "details": "expected=4.1; observed=4.1"
+    },
+    {
+      "name": "reference.business.plan",
+      "ok": true,
+      "details": "required=plan.md v4.1 or `plan.md` v4.1"
     },
     {
       "name": "reference.specification.plan",
       "ok": true,
-      "details": "required=plan.md v3.9 or `plan.md` v3.9"
+      "details": "required=plan.md v4.1 or `plan.md` v4.1"
     },
     {
       "name": "reference.technical.plan",
       "ok": true,
-      "details": "required=plan.md v3.9 or `plan.md` v3.9"
+      "details": "required=plan.md v4.1 or `plan.md` v4.1"
     },
     {
       "name": "reference.progress.plan",
       "ok": true,
-      "details": "required=plan.md v3.9 or `plan.md` v3.9"
+      "details": "required=plan.md v4.1 or `plan.md` v4.1"
+    },
+    {
+      "name": "marker.business.feature_card",
+      "ok": true,
+      "details": "required=## 23. Hợp đồng bàn giao nghiệp vụ v0.21"
+    },
+    {
+      "name": "marker.business.change_propagation",
+      "ok": true,
+      "details": "required=### 23.5. Quy tắc lan truyền thay đổi"
+    },
+    {
+      "name": "marker.specification.operation_contract",
+      "ok": true,
+      "details": "required=### 14.1. Hợp đồng operation tối thiểu"
+    },
+    {
+      "name": "marker.specification.error_record",
+      "ok": true,
+      "details": "required=### 14.2. Error/recovery record chuẩn"
+    },
+    {
+      "name": "marker.specification.release_manifest",
+      "ok": true,
+      "details": "required=### 14.5. Quy tắc phát hành dựa trên manifest"
+    },
+    {
+      "name": "marker.plan.dependency_graph",
+      "ok": true,
+      "details": "required=### 2.1. Đồ thị phụ thuộc bắt buộc và các lane có thể chạy song song"
+    },
+    {
+      "name": "marker.plan.package_states",
+      "ok": true,
+      "details": "required=### 2.2. Quy tắc phân rã và trạng thái work package"
     },
     {
       "name": "phase.0.plan_heading",
@@ -123,6 +163,36 @@
       "details": "pattern=FR-P00-01..04"
     },
     {
+      "name": "phase.0.package.w01",
+      "ok": true,
+      "details": "package=P00-W01"
+    },
+    {
+      "name": "phase.0.package.w02",
+      "ok": true,
+      "details": "package=P00-W02"
+    },
+    {
+      "name": "phase.0.package.w03",
+      "ok": true,
+      "details": "package=P00-W03"
+    },
+    {
+      "name": "phase.0.package.w04",
+      "ok": true,
+      "details": "package=P00-W04"
+    },
+    {
+      "name": "phase.0.package.verify",
+      "ok": true,
+      "details": "package=P00-VERIFY"
+    },
+    {
+      "name": "phase.0.package.handoff",
+      "ok": true,
+      "details": "package=P00-HANDOFF"
+    },
+    {
       "name": "phase.1.plan_heading",
       "ok": true,
       "details": "heading=## P1 —"
@@ -171,6 +241,36 @@
       "name": "phase.1.fr_mapping",
       "ok": true,
       "details": "pattern=FR-P01-01..04"
+    },
+    {
+      "name": "phase.1.package.w01",
+      "ok": true,
+      "details": "package=P01-W01"
+    },
+    {
+      "name": "phase.1.package.w02",
+      "ok": true,
+      "details": "package=P01-W02"
+    },
+    {
+      "name": "phase.1.package.w03",
+      "ok": true,
+      "details": "package=P01-W03"
+    },
+    {
+      "name": "phase.1.package.w04",
+      "ok": true,
+      "details": "package=P01-W04"
+    },
+    {
+      "name": "phase.1.package.verify",
+      "ok": true,
+      "details": "package=P01-VERIFY"
+    },
+    {
+      "name": "phase.1.package.handoff",
+      "ok": true,
+      "details": "package=P01-HANDOFF"
     },
     {
       "name": "phase.2.plan_heading",
@@ -223,6 +323,36 @@
       "details": "pattern=FR-P02-01..04"
     },
     {
+      "name": "phase.2.package.w01",
+      "ok": true,
+      "details": "package=P02-W01"
+    },
+    {
+      "name": "phase.2.package.w02",
+      "ok": true,
+      "details": "package=P02-W02"
+    },
+    {
+      "name": "phase.2.package.w03",
+      "ok": true,
+      "details": "package=P02-W03"
+    },
+    {
+      "name": "phase.2.package.w04",
+      "ok": true,
+      "details": "package=P02-W04"
+    },
+    {
+      "name": "phase.2.package.verify",
+      "ok": true,
+      "details": "package=P02-VERIFY"
+    },
+    {
+      "name": "phase.2.package.handoff",
+      "ok": true,
+      "details": "package=P02-HANDOFF"
+    },
+    {
       "name": "phase.3.plan_heading",
       "ok": true,
       "details": "heading=## P3 —"
@@ -271,6 +401,36 @@
       "name": "phase.3.fr_mapping",
       "ok": true,
       "details": "pattern=FR-P03-01..04"
+    },
+    {
+      "name": "phase.3.package.w01",
+      "ok": true,
+      "details": "package=P03-W01"
+    },
+    {
+      "name": "phase.3.package.w02",
+      "ok": true,
+      "details": "package=P03-W02"
+    },
+    {
+      "name": "phase.3.package.w03",
+      "ok": true,
+      "details": "package=P03-W03"
+    },
+    {
+      "name": "phase.3.package.w04",
+      "ok": true,
+      "details": "package=P03-W04"
+    },
+    {
+      "name": "phase.3.package.verify",
+      "ok": true,
+      "details": "package=P03-VERIFY"
+    },
+    {
+      "name": "phase.3.package.handoff",
+      "ok": true,
+      "details": "package=P03-HANDOFF"
     },
     {
       "name": "phase.4.plan_heading",
@@ -323,6 +483,36 @@
       "details": "pattern=FR-P04-01..04"
     },
     {
+      "name": "phase.4.package.w01",
+      "ok": true,
+      "details": "package=P04-W01"
+    },
+    {
+      "name": "phase.4.package.w02",
+      "ok": true,
+      "details": "package=P04-W02"
+    },
+    {
+      "name": "phase.4.package.w03",
+      "ok": true,
+      "details": "package=P04-W03"
+    },
+    {
+      "name": "phase.4.package.w04",
+      "ok": true,
+      "details": "package=P04-W04"
+    },
+    {
+      "name": "phase.4.package.verify",
+      "ok": true,
+      "details": "package=P04-VERIFY"
+    },
+    {
+      "name": "phase.4.package.handoff",
+      "ok": true,
+      "details": "package=P04-HANDOFF"
+    },
+    {
       "name": "phase.5.plan_heading",
       "ok": true,
       "details": "heading=## P5 —"
@@ -371,6 +561,36 @@
       "name": "phase.5.fr_mapping",
       "ok": true,
       "details": "pattern=FR-P05-01..04"
+    },
+    {
+      "name": "phase.5.package.w01",
+      "ok": true,
+      "details": "package=P05-W01"
+    },
+    {
+      "name": "phase.5.package.w02",
+      "ok": true,
+      "details": "package=P05-W02"
+    },
+    {
+      "name": "phase.5.package.w03",
+      "ok": true,
+      "details": "package=P05-W03"
+    },
+    {
+      "name": "phase.5.package.w04",
+      "ok": true,
+      "details": "package=P05-W04"
+    },
+    {
+      "name": "phase.5.package.verify",
+      "ok": true,
+      "details": "package=P05-VERIFY"
+    },
+    {
+      "name": "phase.5.package.handoff",
+      "ok": true,
+      "details": "package=P05-HANDOFF"
     },
     {
       "name": "phase.6.plan_heading",
@@ -423,6 +643,36 @@
       "details": "pattern=FR-P06-01..04"
     },
     {
+      "name": "phase.6.package.w01",
+      "ok": true,
+      "details": "package=P06-W01"
+    },
+    {
+      "name": "phase.6.package.w02",
+      "ok": true,
+      "details": "package=P06-W02"
+    },
+    {
+      "name": "phase.6.package.w03",
+      "ok": true,
+      "details": "package=P06-W03"
+    },
+    {
+      "name": "phase.6.package.w04",
+      "ok": true,
+      "details": "package=P06-W04"
+    },
+    {
+      "name": "phase.6.package.verify",
+      "ok": true,
+      "details": "package=P06-VERIFY"
+    },
+    {
+      "name": "phase.6.package.handoff",
+      "ok": true,
+      "details": "package=P06-HANDOFF"
+    },
+    {
       "name": "phase.7.plan_heading",
       "ok": true,
       "details": "heading=## P7 —"
@@ -471,6 +721,36 @@
       "name": "phase.7.fr_mapping",
       "ok": true,
       "details": "pattern=FR-P07-01..04"
+    },
+    {
+      "name": "phase.7.package.w01",
+      "ok": true,
+      "details": "package=P07-W01"
+    },
+    {
+      "name": "phase.7.package.w02",
+      "ok": true,
+      "details": "package=P07-W02"
+    },
+    {
+      "name": "phase.7.package.w03",
+      "ok": true,
+      "details": "package=P07-W03"
+    },
+    {
+      "name": "phase.7.package.w04",
+      "ok": true,
+      "details": "package=P07-W04"
+    },
+    {
+      "name": "phase.7.package.verify",
+      "ok": true,
+      "details": "package=P07-VERIFY"
+    },
+    {
+      "name": "phase.7.package.handoff",
+      "ok": true,
+      "details": "package=P07-HANDOFF"
     },
     {
       "name": "phase.8.plan_heading",
@@ -523,6 +803,36 @@
       "details": "pattern=FR-P08-01..04"
     },
     {
+      "name": "phase.8.package.w01",
+      "ok": true,
+      "details": "package=P08-W01"
+    },
+    {
+      "name": "phase.8.package.w02",
+      "ok": true,
+      "details": "package=P08-W02"
+    },
+    {
+      "name": "phase.8.package.w03",
+      "ok": true,
+      "details": "package=P08-W03"
+    },
+    {
+      "name": "phase.8.package.w04",
+      "ok": true,
+      "details": "package=P08-W04"
+    },
+    {
+      "name": "phase.8.package.verify",
+      "ok": true,
+      "details": "package=P08-VERIFY"
+    },
+    {
+      "name": "phase.8.package.handoff",
+      "ok": true,
+      "details": "package=P08-HANDOFF"
+    },
+    {
       "name": "phase.9.plan_heading",
       "ok": true,
       "details": "heading=## P9 —"
@@ -571,6 +881,36 @@
       "name": "phase.9.fr_mapping",
       "ok": true,
       "details": "pattern=FR-P09-01..04"
+    },
+    {
+      "name": "phase.9.package.w01",
+      "ok": true,
+      "details": "package=P09-W01"
+    },
+    {
+      "name": "phase.9.package.w02",
+      "ok": true,
+      "details": "package=P09-W02"
+    },
+    {
+      "name": "phase.9.package.w03",
+      "ok": true,
+      "details": "package=P09-W03"
+    },
+    {
+      "name": "phase.9.package.w04",
+      "ok": true,
+      "details": "package=P09-W04"
+    },
+    {
+      "name": "phase.9.package.verify",
+      "ok": true,
+      "details": "package=P09-VERIFY"
+    },
+    {
+      "name": "phase.9.package.handoff",
+      "ok": true,
+      "details": "package=P09-HANDOFF"
     },
     {
       "name": "phase.10.plan_heading",
@@ -623,6 +963,36 @@
       "details": "pattern=FR-P10-01..04"
     },
     {
+      "name": "phase.10.package.w01",
+      "ok": true,
+      "details": "package=P10-W01"
+    },
+    {
+      "name": "phase.10.package.w02",
+      "ok": true,
+      "details": "package=P10-W02"
+    },
+    {
+      "name": "phase.10.package.w03",
+      "ok": true,
+      "details": "package=P10-W03"
+    },
+    {
+      "name": "phase.10.package.w04",
+      "ok": true,
+      "details": "package=P10-W04"
+    },
+    {
+      "name": "phase.10.package.verify",
+      "ok": true,
+      "details": "package=P10-VERIFY"
+    },
+    {
+      "name": "phase.10.package.handoff",
+      "ok": true,
+      "details": "package=P10-HANDOFF"
+    },
+    {
       "name": "phase.11.plan_heading",
       "ok": true,
       "details": "heading=## P11 —"
@@ -671,6 +1041,36 @@
       "name": "phase.11.fr_mapping",
       "ok": true,
       "details": "pattern=FR-P11-01..04"
+    },
+    {
+      "name": "phase.11.package.w01",
+      "ok": true,
+      "details": "package=P11-W01"
+    },
+    {
+      "name": "phase.11.package.w02",
+      "ok": true,
+      "details": "package=P11-W02"
+    },
+    {
+      "name": "phase.11.package.w03",
+      "ok": true,
+      "details": "package=P11-W03"
+    },
+    {
+      "name": "phase.11.package.w04",
+      "ok": true,
+      "details": "package=P11-W04"
+    },
+    {
+      "name": "phase.11.package.verify",
+      "ok": true,
+      "details": "package=P11-VERIFY"
+    },
+    {
+      "name": "phase.11.package.handoff",
+      "ok": true,
+      "details": "package=P11-HANDOFF"
     },
     {
       "name": "phase.12.plan_heading",
@@ -723,6 +1123,36 @@
       "details": "pattern=FR-P12-01..04"
     },
     {
+      "name": "phase.12.package.w01",
+      "ok": true,
+      "details": "package=P12-W01"
+    },
+    {
+      "name": "phase.12.package.w02",
+      "ok": true,
+      "details": "package=P12-W02"
+    },
+    {
+      "name": "phase.12.package.w03",
+      "ok": true,
+      "details": "package=P12-W03"
+    },
+    {
+      "name": "phase.12.package.w04",
+      "ok": true,
+      "details": "package=P12-W04"
+    },
+    {
+      "name": "phase.12.package.verify",
+      "ok": true,
+      "details": "package=P12-VERIFY"
+    },
+    {
+      "name": "phase.12.package.handoff",
+      "ok": true,
+      "details": "package=P12-HANDOFF"
+    },
+    {
       "name": "phase.13.plan_heading",
       "ok": true,
       "details": "heading=## P13 —"
@@ -771,6 +1201,36 @@
       "name": "phase.13.fr_mapping",
       "ok": true,
       "details": "pattern=FR-P13-01..04"
+    },
+    {
+      "name": "phase.13.package.w01",
+      "ok": true,
+      "details": "package=P13-W01"
+    },
+    {
+      "name": "phase.13.package.w02",
+      "ok": true,
+      "details": "package=P13-W02"
+    },
+    {
+      "name": "phase.13.package.w03",
+      "ok": true,
+      "details": "package=P13-W03"
+    },
+    {
+      "name": "phase.13.package.w04",
+      "ok": true,
+      "details": "package=P13-W04"
+    },
+    {
+      "name": "phase.13.package.verify",
+      "ok": true,
+      "details": "package=P13-VERIFY"
+    },
+    {
+      "name": "phase.13.package.handoff",
+      "ok": true,
+      "details": "package=P13-HANDOFF"
     },
     {
       "name": "phase.14.plan_heading",
@@ -823,6 +1283,36 @@
       "details": "pattern=FR-P14-01..04"
     },
     {
+      "name": "phase.14.package.w01",
+      "ok": true,
+      "details": "package=P14-W01"
+    },
+    {
+      "name": "phase.14.package.w02",
+      "ok": true,
+      "details": "package=P14-W02"
+    },
+    {
+      "name": "phase.14.package.w03",
+      "ok": true,
+      "details": "package=P14-W03"
+    },
+    {
+      "name": "phase.14.package.w04",
+      "ok": true,
+      "details": "package=P14-W04"
+    },
+    {
+      "name": "phase.14.package.verify",
+      "ok": true,
+      "details": "package=P14-VERIFY"
+    },
+    {
+      "name": "phase.14.package.handoff",
+      "ok": true,
+      "details": "package=P14-HANDOFF"
+    },
+    {
       "name": "phase.15.plan_heading",
       "ok": true,
       "details": "heading=## P15 —"
@@ -871,6 +1361,36 @@
       "name": "phase.15.fr_mapping",
       "ok": true,
       "details": "pattern=FR-P15-01..04"
+    },
+    {
+      "name": "phase.15.package.w01",
+      "ok": true,
+      "details": "package=P15-W01"
+    },
+    {
+      "name": "phase.15.package.w02",
+      "ok": true,
+      "details": "package=P15-W02"
+    },
+    {
+      "name": "phase.15.package.w03",
+      "ok": true,
+      "details": "package=P15-W03"
+    },
+    {
+      "name": "phase.15.package.w04",
+      "ok": true,
+      "details": "package=P15-W04"
+    },
+    {
+      "name": "phase.15.package.verify",
+      "ok": true,
+      "details": "package=P15-VERIFY"
+    },
+    {
+      "name": "phase.15.package.handoff",
+      "ok": true,
+      "details": "package=P15-HANDOFF"
     },
     {
       "name": "phase.16.plan_heading",
@@ -923,6 +1443,36 @@
       "details": "pattern=FR-P16-01..04"
     },
     {
+      "name": "phase.16.package.w01",
+      "ok": true,
+      "details": "package=P16-W01"
+    },
+    {
+      "name": "phase.16.package.w02",
+      "ok": true,
+      "details": "package=P16-W02"
+    },
+    {
+      "name": "phase.16.package.w03",
+      "ok": true,
+      "details": "package=P16-W03"
+    },
+    {
+      "name": "phase.16.package.w04",
+      "ok": true,
+      "details": "package=P16-W04"
+    },
+    {
+      "name": "phase.16.package.verify",
+      "ok": true,
+      "details": "package=P16-VERIFY"
+    },
+    {
+      "name": "phase.16.package.handoff",
+      "ok": true,
+      "details": "package=P16-HANDOFF"
+    },
+    {
       "name": "phase.17.plan_heading",
       "ok": true,
       "details": "heading=## P17 —"
@@ -971,6 +1521,36 @@
       "name": "phase.17.fr_mapping",
       "ok": true,
       "details": "pattern=FR-P17-01..04"
+    },
+    {
+      "name": "phase.17.package.w01",
+      "ok": true,
+      "details": "package=P17-W01"
+    },
+    {
+      "name": "phase.17.package.w02",
+      "ok": true,
+      "details": "package=P17-W02"
+    },
+    {
+      "name": "phase.17.package.w03",
+      "ok": true,
+      "details": "package=P17-W03"
+    },
+    {
+      "name": "phase.17.package.w04",
+      "ok": true,
+      "details": "package=P17-W04"
+    },
+    {
+      "name": "phase.17.package.verify",
+      "ok": true,
+      "details": "package=P17-VERIFY"
+    },
+    {
+      "name": "phase.17.package.handoff",
+      "ok": true,
+      "details": "package=P17-HANDOFF"
     },
     {
       "name": "phase.18.plan_heading",
@@ -1023,6 +1603,36 @@
       "details": "pattern=FR-P18-01..04"
     },
     {
+      "name": "phase.18.package.w01",
+      "ok": true,
+      "details": "package=P18-W01"
+    },
+    {
+      "name": "phase.18.package.w02",
+      "ok": true,
+      "details": "package=P18-W02"
+    },
+    {
+      "name": "phase.18.package.w03",
+      "ok": true,
+      "details": "package=P18-W03"
+    },
+    {
+      "name": "phase.18.package.w04",
+      "ok": true,
+      "details": "package=P18-W04"
+    },
+    {
+      "name": "phase.18.package.verify",
+      "ok": true,
+      "details": "package=P18-VERIFY"
+    },
+    {
+      "name": "phase.18.package.handoff",
+      "ok": true,
+      "details": "package=P18-HANDOFF"
+    },
+    {
       "name": "phase.19.plan_heading",
       "ok": true,
       "details": "heading=## P19 —"
@@ -1073,6 +1683,36 @@
       "details": "pattern=FR-P19-01..04"
     },
     {
+      "name": "phase.19.package.w01",
+      "ok": true,
+      "details": "package=P19-W01"
+    },
+    {
+      "name": "phase.19.package.w02",
+      "ok": true,
+      "details": "package=P19-W02"
+    },
+    {
+      "name": "phase.19.package.w03",
+      "ok": true,
+      "details": "package=P19-W03"
+    },
+    {
+      "name": "phase.19.package.w04",
+      "ok": true,
+      "details": "package=P19-W04"
+    },
+    {
+      "name": "phase.19.package.verify",
+      "ok": true,
+      "details": "package=P19-VERIFY"
+    },
+    {
+      "name": "phase.19.package.handoff",
+      "ok": true,
+      "details": "package=P19-HANDOFF"
+    },
+    {
       "name": "phase.20.plan_heading",
       "ok": true,
       "details": "heading=## P20 —"
@@ -1121,6 +1761,36 @@
       "name": "phase.20.fr_mapping",
       "ok": true,
       "details": "pattern=FR-P20-01..04"
+    },
+    {
+      "name": "phase.20.package.w01",
+      "ok": true,
+      "details": "package=P20-W01"
+    },
+    {
+      "name": "phase.20.package.w02",
+      "ok": true,
+      "details": "package=P20-W02"
+    },
+    {
+      "name": "phase.20.package.w03",
+      "ok": true,
+      "details": "package=P20-W03"
+    },
+    {
+      "name": "phase.20.package.w04",
+      "ok": true,
+      "details": "package=P20-W04"
+    },
+    {
+      "name": "phase.20.package.verify",
+      "ok": true,
+      "details": "package=P20-VERIFY"
+    },
+    {
+      "name": "phase.20.package.handoff",
+      "ok": true,
+      "details": "package=P20-HANDOFF"
     },
     {
       "name": "coverage.B01",

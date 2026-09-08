@@ -1,12 +1,12 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
-- Phiên bản: **3.9**, ngày 2026-09-09.
-- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.20.
-- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.14.
-- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.12.
+- Phiên bản: **4.1**, ngày 2026-09-09.
+- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.21.
+- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.16.
+- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.14.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
-- Phạm vi lần cập nhật này: chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20; bổ sung ma trận hành vi ở cấp tính năng, tiêu chuẩn bao phủ B01–B12, từ điển trạng thái thống nhất, phase scenario index và đồng bộ slice implementation P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, migration schema `20260908_0017`, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local ngày 2026-09-09. Bổ sung checkpoint deploy/readiness staging P17, fixture RTSTRUCT/CT known-answer và hash tái lập; staging DVH saved-run/CT E2E vẫn là gate riêng vì case hiện chưa có RTSTRUCT/CT. Bổ sung local P18 integrated journey test, local backup/restore verifier cho P18, ma trận browser/device/timezone/viewport local, script kiểm public deployment cho P19 và gói runbook vận hành/production rollback support cho P20; các artifact này chỉ là công cụ/evidence hỗ trợ, không tự đóng phase. Không suy diễn từ test local hoặc một lần Railway báo Online.
+- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.0 và bổ sung operation surface/readiness contract cho P20 dashboard; tiếp tục chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20. Các slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, migration schema `20260908_0017`, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local ngày 2026-09-09 được giữ nguyên theo progress log. Staging DVH saved-run/CT E2E vẫn là gate riêng vì case hiện chưa có RTSTRUCT/CT. P18 local integrated journey, local backup/restore verifier, ma trận browser/device/timezone/viewport, script kiểm public deployment P19 và gói runbook P20 chỉ là công cụ/evidence hỗ trợ, không tự đóng phase. Không suy diễn từ test local hoặc một lần Railway báo Online.
 
 ## 1. Cách thực hiện kế hoạch
 
@@ -61,7 +61,7 @@ Các smoke run lịch sử giữ tại progress log: Gamma 2D `e084529d-6bb1-411
 | GAP-03: Gamma bỏ NO_CANDIDATE khỏi mẫu số | `calculate_gamma` có `FULL_ROI`/`OVERLAP_ONLY`, counts coverage và không loại điểm thiếu candidate khỏi FULL_ROI; independent oracle enumerates all comparison nodes. | P8 | Policy coverage/no-candidate theo specification §5; test chứng minh không tăng PASS giả. | `LOCAL_VERIFIED`; staging negative coverage/convergence còn mở. |
 | GAP-04: Search giới hạn 1×DTA nhưng vẫn xuất percentile gamma | `_candidate_gammas` dùng `max_gamma × DTA`; điểm vượt bound được đánh dấu censored và percentile không giả exact; oracle kiểm tra denominator/status. | P8 | Full gamma search theo max_gamma hoặc output bound có nhãn; percentile không giả exact. | `LOCAL_VERIFIED`; benchmark large workload còn mở. |
 | GAP-05: Lease/attempt/outbox chưa đủ hợp đồng v2 | Models/migration/API/worker đã có lease token, attempt history, dispatch outbox, conditional fencing, bounded retry, backoff và lease-expiry reclaim. | P8 | Hai worker/reclaim/commit/ack failure injection không duplicate hoặc mất accepted job. | `LOCAL_VERIFIED` cho race/reclaim/retry/replay; staging crash/ack/dead-letter/resource policy còn mở. |
-| GAP-06: /ready chỉ kiểm DB connection | `db/session.py::database_ready` hiện kiểm `SELECT 1` và đối chiếu đúng một dòng `alembic_version` với `Settings.schema_revision`. | P2/P19 | Có kiểm schema revision riêng hoặc readiness mở rộng; không nói SELECT 1 xác minh migration. | `LOCAL_VERIFIED`; cần staging evidence với schema hiện hành `20260908_0013`. |
+| GAP-06: /ready chỉ kiểm DB connection | `db/session.py::database_ready` hiện kiểm `SELECT 1` và đối chiếu đúng một dòng `alembic_version` với `Settings.schema_revision`. | P2/P19 | Có kiểm schema revision riêng hoặc readiness mở rộng; không nói SELECT 1 xác minh migration. | `LOCAL_VERIFIED`; staging evidence hiện hành phải đối chiếu schema `20260908_0017` và release manifest. |
 | GAP-07: Fixture RTDOSE sử dụng CGY và SOP Class tham chiếu ngẫu nhiên | Fixture generator đã chuyển sang GY + `DoseGridScaling=0.01`, RTPlanStorage SOP Class và UID ổn định; fixture tái tạo byte-identical. | P6/P8 | Tạo fixture chuẩn GY + DoseGridScaling tương ứng, RTPlanStorage SOP Class đúng; CGY raw fixture chỉ compatibility/negative test. | `STAGING_VERIFIED` cho fixture RTDOSE GY + measurement 3D trên run `df38e7d5-bb4b-4e2b-b949-2310acb1875c`; geometry/scale negative cases còn mở. |
 | GAP-08: Old error example khác API thật | `core/errors.py`, `specification.md` và technical contract đang được đồng bộ về flat envelope. | P0/P1 | Tài liệu và consumer tests cùng schema flat, không còn ví dụ nested gây hiểu sai. | `DOC_SYNCED`; vẫn giữ contract test chống hồi quy. |
 | GAP-09: Build label không chứng minh source deployed | VITE build label và deployment SHA vẫn là hai nguồn; chưa có release manifest bắt buộc nối chúng. | P3/P19 | Hiển thị build metadata đúng artifact và ghi SHA của từng service. | `OPEN`. |
@@ -133,7 +133,51 @@ Phase chỉ được chuyển `DONE-v2` khi toàn bộ testcase MUST, B01–B12 
 
 P7 có protocol seed tối thiểu versioned; không chờ P11 để làm rule engine. P11 hoàn thiện quản trị library. P9 có thể làm block cơ bản từ P7, nhưng Gamma block/exit P9 cần P8. P12 cần report shell P9 và Auth P3; làm độc lập khi P8 chờ dataset không đồng nghĩa bỏ exit P8. P17 tùy chọn cho R1 sớm, bắt buộc trong mục tiêu hoàn thiện toàn dự án. P18 full-release cần R1+R2+R3.
 
-Mỗi phase có bốn work package W01–W04. Có thể chia nhỏ package thành issue, nhưng mọi issue phải giữ phase/FR/contract/test reference. Không ước lượng ngày như cam kết khi chưa phân rã, đo tốc độ thực và đánh giá gap. Sau mỗi package, cập nhật remaining tasks; sau mỗi phase, tính lại thời lượng/cost dựa trên evidence.
+Mỗi phase có bốn work package lõi W01–W04 và các package kiểm soát `VERIFY`/`HANDOFF`; có thể chia nhỏ từng package thành issue. Mọi issue phải giữ phase/FR/contract/test reference. Không ước lượng ngày như cam kết khi chưa phân rã, đo tốc độ thực và đánh giá gap. Sau mỗi package, cập nhật remaining tasks; sau mỗi phase, tính lại thời lượng/cost dựa trên evidence.
+
+### 2.1. Đồ thị phụ thuộc bắt buộc và các lane có thể chạy song song
+
+Đây là thứ tự phụ thuộc logic, không phải lịch thời gian cứng. Một phase chỉ được dùng output của phase trước khi entry gate của nó đã có evidence phù hợp; không dùng chữ “đang làm song song” để bỏ qua dependency.
+
+```text
+P0 → P1 → P2 → P3 → P4 → P5 → P6 → P7 → P8 → P9 → P10
+                                     ├─ P7 + P9 ───→ P11
+                                     ├─ P3 + P9 ───→ P12 → P13 → P14 → P15
+                                     └─ P12 + P11 ─→ P16
+P3 + P6 ─────────────────────────────→ P17 core
+P11 + P16 ───────────────(optional)──→ P17 limit/protocol binding paths
+P10 + P11 + P15 + P17 ───────────────→ P18 → P19 → P20
+```
+
+| Nhánh | Có thể bắt đầu khi | Không được bỏ qua |
+| :--- | :--- | :--- |
+| Nền tảng | P0 đạt baseline | P1 phải chứng minh clean setup, migration và CI trước P2. |
+| QA core | P4/P5 đã có context và case | P6 phải có object/manifest trước P7; P7 phải có result contract trước P8. |
+| Protocol library | P7 có rule consumer tối thiểu | P11 có thể phát triển song song P8/P9, nhưng phải chứng minh consumer dùng version snapshot. |
+| Biological | P3/Auth và P9/report shell đạt | P12 phải tạo namespace độc lập; P13/P14/P15 chỉ dùng scenario/calculation snapshot. |
+| Knowledge | P12 có hub/scenario context | P16 không tự tạo QA PASS/FAIL và không tự bind vào case. |
+| Visual Dose/DVH | P6 artifact/manifest và P3 route/auth đạt; binding cần P11/P16 | P17 không được đoán frame/transform hoặc coi CT preview là DVH authority. |
+| Integrated release | P10/P11/P15/P17 đã khóa scope cần release | P18 phải chạy full candidate, fault, restore và pilot/regression trước P19. |
+| Public/operations | P18 có RC manifest và backup point | P19 phải remote E2E/rollback; P20 phải có alert/restore/owner evidence. |
+
+Các lane có thể triển khai đồng thời là P8 với P11, P9 với P11, P12 với phần đang chờ dữ liệu QA và P16 với P13–P15 khi không thay đổi cùng schema/contract. Nếu một lane sửa field, unit, error code, status, migration hoặc engine mà lane khác đang dùng, phải dừng lane bị ảnh hưởng, tạo revision và chạy lại impact matrix trước khi tiếp tục.
+
+### 2.2. Quy tắc phân rã và trạng thái work package
+
+Mỗi work package phải có một dòng giao việc độc lập với các trường: `package_id`, FR liên quan, contract section, input/dependency, files/artifacts dự kiến, success tests, error tests, recovery, evidence path và `next_exact_action`. Có thể có nhiều người cùng thực hiện vì các thành viên trong organization ngang quyền; trường owner chỉ dùng để biết ai đang giữ việc, không tạo quyền bác sĩ/kỹ sư khác nhau.
+
+| Trạng thái package | Ý nghĩa | Điều kiện chuyển tiếp |
+| :--- | :--- | :--- |
+| `OPEN` | Đã có scope và dependency, chưa code/test | Chỉ chuyển `IN_PROGRESS` khi entry gate được ghi. |
+| `IN_PROGRESS` | Đang triển khai hoặc kiểm thử | Phải có commit/artifact tạm và issue nếu bị dừng. |
+| `IMPLEMENTED` | Code/config/migration/UI/engine đã có trên SHA | Chưa có nghĩa đã qua test hoặc staging. |
+| `VERIFIED_LOCAL` | S/E/C và regression local áp dụng đạt | Không được suy ra staging/production. |
+| `VERIFIED_STAGING` | Đường đi thật trên staging đúng manifest đạt | Vẫn có thể còn gate volume/oracle/pilot. |
+| `BLOCKED` | Dependency hoặc dữ liệu ngoài phạm vi chưa sẵn sàng | Phải ghi blocker, owner và phần độc lập có thể tiếp tục. |
+| `REOPENED` | Contract/candidate/downstream thay đổi làm evidence cũ mất hiệu lực | Tạo revalidation record; không xóa evidence lịch sử. |
+| `CLOSED` | Package đã có output, evidence và handoff | Chỉ đóng phase khi mọi MUST package và exit gate cùng đạt. |
+
+Không được đánh dấu `CLOSED` chỉ vì pull request merge, build xanh, container `Online` hoặc endpoint health trả 200. Những tín hiệu đó chỉ là một assertion tương ứng và phải được ghi đúng lớp evidence.
 
 ## 3. Ma trận kiểm thử chung bắt buộc
 
@@ -1044,6 +1088,7 @@ Mã ở cột “Phân loại” là contract code. Mọi lỗi phải có HTTP 
 - [ ] P12-W04 — Tái dùng renderer P9 bằng source_type BIOLOGICAL; placeholder module có availability rõ.
 - [x] P12-LOCAL-VERIFY — focused `apps/api/tests/test_biological.py`, full backend, Ruff/mypy, frontend lint/typecheck/Vitest/build và local PostgreSQL migration head đều pass trên candidate hiện tại.
 - [ ] P12-STAGING-VERIFY — deploy đúng SHA; browser create→validate→save→edit/clone/archive/filter/history; kiểm response/DB state và không có QA linkage.
+- [ ] P12-VERIFY — chạy đủ TC-P12-S01..S09, TC-P12-E01..E12 và C/B áp dụng; kiểm namespace độc lập, persistence, scope, refresh/reconnect, export và capability states trên candidate được manifest pin.
 - [ ] P12-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
 
 ### API surface và trạng thái triển khai P12
@@ -1145,6 +1190,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - [x] P13-W04 — Snapshot model/source/curve parameters; charts dùng chính dữ liệu table/export.
 - [x] P13-LOCAL-VERIFY — engine/API suite, full backend, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head local pass.
 - [ ] P13-STAGING-VERIFY — deploy đúng SHA; browser validate→calculate→history→chart preview→export với PostgreSQL state và no-QA-linkage evidence.
+- [ ] P13-VERIFY — chạy đủ TC-P13-S01..S08, TC-P13-E01..E10 và C/B áp dụng; đối chiếu known-answer, precision, curve/table/hash, idempotency, replay và persistence trên candidate được manifest pin.
 - [ ] P13-HANDOFF — sau staging, cập nhật release manifest, OpenAPI, migration/release notes, checkpoint và backlog còn lại.
 
 ### Trường hợp chạy đúng P13
@@ -1704,7 +1750,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 ### Work packages P20
 
 - [x] P20-W00 — Tạo support artifact ban đầu tại `docs/runbooks/p20-initial-operations-package.md` và `deployment/railway/production-runbook.md`: topology, thresholds target, backup/restore, incident, maintenance, promotion/rollback và handoff record. Đây là `LOCAL_SUPPORT_ONLY`; chưa có alert channel/restore provider/owner evidence nên không đóng P20.
-- [ ] P20-W01 — Tạo operational dashboard và alert test bằng sự kiện synthetic.
+- [ ] P20-W01 — Tạo operational dashboard và alert test bằng sự kiện synthetic. Dashboard phải đọc riêng `/api/v1/health`, `/api/v1/ready`, `/api/v1/version` và, khi có session hợp lệ, `/api/v1/gamma/queue-metrics`; nếu `/ready` lỗi hoặc schema lệch thì trạng thái là degraded/needs review dù `/health` vẫn `ok`.
 - [ ] P20-W02 — Thiết lập backup retention/runbook; restore schedule và evidence template.
 - [ ] P20-W03 — User guides theo task, incident taxonomy và support correlation without secrets.
 - [ ] P20-W04 — Dependency/engine updates có impact set, staging tests và compatibility rollback.
@@ -1715,7 +1761,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 
 | Test ID | Given/When — tình huống trong workflow | Then — kết quả phải kiểm chứng |
 | :--- | :--- | :--- |
-| TC-P20-S01 | Alert thử | Alert đến kênh đã cấu hình và người vận hành biết bước xử lý; ghi thời gian. |
+| TC-P20-S01 | Dashboard + alert thử | Dashboard phân biệt health/readiness/version/queue; alert đến kênh đã cấu hình và người vận hành biết bước xử lý; ghi thời gian. |
 | TC-P20-S02 | Backup định kỳ | Lần chạy thành công có manifest/checksum; restore drill đúng RPO/RTO mục tiêu. |
 | TC-P20-S03 | Maintenance release | Bug có regression trước đóng; source/result version cũ vẫn truy cập. |
 | TC-P20-S04 | Bàn giao | Người phụ trách thực hiện được runbook bằng hướng dẫn, không cần hỏi lại tác giả. |
@@ -1759,13 +1805,13 @@ Template phase packet tối thiểu:
 
 ~~~yaml
 phase: Pxx
-phase_version: "3.7"
+phase_version: "4.0"
 status: IN_PROGRESS
 branch: "codex/<branch>"
 source_commit: "<sha>"
-business_analysis_version: "0.20"
-specification_version: "1.14"
-technical_specification_version: "1.12"
+business_analysis_version: "0.21"
+specification_version: "1.15"
+technical_specification_version: "1.13"
 entry_gate:
   dependencies: []
   schema_revision: "<revision-or-null>"
@@ -2007,8 +2053,20 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 ### 7.2. Kết quả lần sửa tài liệu này
 
-Đợt rebaseline ban đầu đã tạo BA v0.20, specification v1.14, technical-specification v1.11 và plan v3.5; các bản cập nhật kế tiếp giữ lịch sử đó và nâng plan hiện tại lên v3.9/technical-specification v1.12. Bộ tài liệu hiện có ma trận hành vi ở cấp tính năng, từ điển trạng thái, error taxonomy, operation/evidence contract, B01–B12 và ma trận bao phủ P0–P20. P16 đã có implementation local và staging browser smoke trên migration `20260908_0016`, còn direct PostgreSQL/scope/fault/release closure vẫn mở. P17 đã có pure engine/API/UI/migration, explicit P11/P16 limit binding, DVH report source và bounded CT preview local với S12–S16/E24–E30; staging DVH/CT E2E, protocol compatibility, fault/volume, independent oracle và release evidence vẫn mở. P18 hiện có local integrated journey, local browser support matrix và local backup/restore support nhưng staging fault/restore/pilot vẫn mở. P20 đã có runbook support artifact nhưng alert/restore/owner evidence chưa có. Không phase nào được đánh dấu `DONE-v2` chỉ vì local test, HTTP 200 hoặc Railway báo Online.
+> Đoạn này là mô tả của revision v4.0 trước đó; trạng thái hiện hành của bộ tài liệu nằm ở mục 7.3.
 
+Đợt rebaseline ban đầu đã tạo BA v0.20, specification v1.14, technical-specification v1.11 và plan v3.5; các bản cập nhật kế tiếp giữ lịch sử đó và đã nâng plan lên v3.9/technical-specification v1.12. Revision hiện tại là BA v0.21, specification v1.15, technical-specification v1.13 và plan v4.0, bổ sung feature-card/handoff, operation/error/evidence record, dependency graph và change-impact gate. Bộ tài liệu hiện có ma trận hành vi ở cấp tính năng, từ điển trạng thái, error taxonomy, operation/evidence contract, B01–B12 và ma trận bao phủ P0–P20. P16 đã có implementation local và staging browser smoke trên migration `20260908_0016`, còn direct PostgreSQL/scope/fault/release closure vẫn mở. P17 đã có pure engine/API/UI/migration, explicit P11/P16 limit binding, DVH report source và bounded CT preview local với S12–S16/E24–E30; staging DVH/CT E2E, protocol compatibility, fault/volume, independent oracle và release evidence vẫn mở. P18 hiện có local integrated journey, local browser support matrix và local backup/restore support nhưng staging fault/restore/pilot vẫn mở. P20 đã có runbook support artifact nhưng alert/restore/owner evidence chưa có. Không phase nào được đánh dấu `DONE-v2` chỉ vì local test, HTTP 200 hoặc Railway báo Online.
+
+
+### 7.3. Revision hiện hành v4.1
+
+Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.21, `specification.md` v1.16,
+`technical-specification.md` v1.14 và `plan.md` v4.1. Revision v4.1 làm rõ status/readiness
+surface của P20: dashboard phải đọc riêng `/api/v1/health`, `/api/v1/ready`, `/api/v1/version`
+và queue metrics có xác thực; `/health=ok` không được hiển thị thành `ready` nếu `/ready`
+thất bại hoặc schema lệch. Slice local tương ứng đã có test frontend; alert thật, backup/restore,
+owner handoff và production evidence vẫn là gate mở. Các đoạn nêu candidate/schema cũ ở phần
+lịch sử chỉ là evidence của lần chạy trước, không phải release hiện tại.
 
 ## 8. Ma trận FR → contract → testcase ban đầu
 

@@ -1,15 +1,19 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
-import { expect, test, vi } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
 
 import { apiClient } from '../api/client'
 import { AuthProvider } from '../auth/AuthProvider'
 import { PlatformStatusPage } from './PlatformStatusPage'
 
 vi.mock('../api/client', () => ({
-  apiClient: { health: vi.fn(), version: vi.fn(), gammaQueueMetrics: vi.fn() }
+  apiClient: { health: vi.fn(), ready: vi.fn(), version: vi.fn(), gammaQueueMetrics: vi.fn() }
 }))
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -18,11 +22,25 @@ function renderPage() {
 
 test('renders an API-backed platform health state', async () => {
   vi.mocked(apiClient.health).mockResolvedValue({ status: 'ok', timestamp: '2026-09-05T00:00:00Z', correlation_id: 'test-id' })
+  vi.mocked(apiClient.ready).mockResolvedValue({ status: 'ready', timestamp: '2026-09-05T00:00:00Z', correlation_id: 'ready-id', schema_revision: 'test-schema' })
   vi.mocked(apiClient.version).mockResolvedValue({ application: 'rt-connect-api', version: '0.1.0', environment: 'test', engine_version: 'not-yet', renderer_version: 'not-yet', schema_revision: 'test-schema' })
 
   renderPage()
 
   expect(await screen.findByText('OK')).toBeInTheDocument()
+  expect(screen.getByText('READY')).toBeInTheDocument()
+  expect(screen.getByText(/Schema: test-schema/)).toBeInTheDocument()
   expect(screen.getByText('0.1.0')).toBeInTheDocument()
   expect(screen.getByText(/Không có dữ liệu bệnh nhân/)).toBeInTheDocument()
+})
+
+test('surfaces readiness failure instead of claiming the platform is ready', async () => {
+  vi.mocked(apiClient.health).mockResolvedValue({ status: 'ok', timestamp: '2026-09-05T00:00:00Z', correlation_id: 'test-id' })
+  vi.mocked(apiClient.ready).mockRejectedValue(new Error('schema mismatch'))
+  vi.mocked(apiClient.version).mockResolvedValue({ application: 'rt-connect-api', version: '0.1.0', environment: 'test', engine_version: 'not-yet', renderer_version: 'not-yet', schema_revision: 'test-schema' })
+
+  renderPage()
+
+  expect(await screen.findByText('Không thể đọc trạng thái API', {}, { timeout: 5000 })).toBeInTheDocument()
+  expect(screen.getByText('schema mismatch')).toBeInTheDocument()
 })

@@ -54,10 +54,10 @@ def verify(root: Path) -> dict[str, object]:
             texts[name] = path.read_text(encoding="utf-8")
 
     expected_versions = {
-        "business": (r"\*\*Phiên bản tài liệu:\*\*\s*([0-9]+\.[0-9]+)", "0.20"),
-        "specification": (r"version \*\*([0-9]+\.[0-9]+)\*\*", "1.14"),
-        "technical": (r"\*\*Phiên bản:\*\*\s*([0-9]+\.[0-9]+)", "1.12"),
-        "plan": (r"Phiên bản:\s*\*\*([0-9]+\.[0-9]+)\*\*", "3.9"),
+        "business": (r"\*\*Phiên bản tài liệu:\*\*\s*([0-9]+\.[0-9]+)", "0.21"),
+        "specification": (r"version \*\*([0-9]+\.[0-9]+)\*\*", "1.16"),
+        "technical": (r"\*\*Phiên bản:\*\*\s*([0-9]+\.[0-9]+)", "1.14"),
+        "plan": (r"Phiên bản:\s*\*\*([0-9]+\.[0-9]+)\*\*", "4.1"),
     }
     for name, (pattern, expected) in expected_versions.items():
         observed = _version(pattern, texts.get(name, ""))
@@ -69,9 +69,10 @@ def verify(root: Path) -> dict[str, object]:
         )
 
     references = {
-        "specification": "plan.md v3.9",
-        "technical": "plan.md v3.9",
-        "progress": "plan.md v3.9",
+        "business": "plan.md v4.1",
+        "specification": "plan.md v4.1",
+        "technical": "plan.md v4.1",
+        "progress": "plan.md v4.1",
     }
     for name, reference in references.items():
         code_span_reference = f"`{reference.split()[0]}` {reference.split()[1]}"
@@ -85,6 +86,18 @@ def verify(root: Path) -> dict[str, object]:
     plan = texts.get("plan", "")
     business = texts.get("business", "")
     specification = texts.get("specification", "")
+
+    required_markers = {
+        "business.feature_card": (business, "## 23. Hợp đồng bàn giao nghiệp vụ v0.21"),
+        "business.change_propagation": (business, "### 23.5. Quy tắc lan truyền thay đổi"),
+        "specification.operation_contract": (specification, "### 14.1. Hợp đồng operation tối thiểu"),
+        "specification.error_record": (specification, "### 14.2. Error/recovery record chuẩn"),
+        "specification.release_manifest": (specification, "### 14.5. Quy tắc phát hành dựa trên manifest"),
+        "plan.dependency_graph": (plan, "### 2.1. Đồ thị phụ thuộc bắt buộc và các lane có thể chạy song song"),
+        "plan.package_states": (plan, "### 2.2. Quy tắc phân rã và trạng thái work package"),
+    }
+    for name, (document, marker) in required_markers.items():
+        _check(checks, f"marker.{name}", marker in document, f"required={marker}")
 
     for phase in PHASES:
         phase_code = f"P{phase:02d}"
@@ -137,6 +150,13 @@ def verify(root: Path) -> dict[str, object]:
             _has(rf"FR-{phase_code}-0[1-4]", business),
             f"pattern=FR-{phase_code}-01..04",
         )
+        for package in ("W01", "W02", "W03", "W04", "VERIFY", "HANDOFF"):
+            _check(
+                checks,
+                f"phase.{phase}.package.{package.lower()}",
+                _has(rf"^[-*] \[[ xX]\] {phase_code}-{package}(?:\s|—|-)", plan),
+                f"package={phase_code}-{package}",
+            )
 
     for marker in ("B01", "B02", "B03", "B04", "B05", "B06", "B07", "B08", "B09", "B10", "B11", "B12"):
         _check(checks, f"coverage.{marker}", marker in plan and marker in business, "present in plan and business analysis")

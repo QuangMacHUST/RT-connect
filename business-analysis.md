@@ -5,10 +5,10 @@
 - **Tên sản phẩm:** RT-CONNECT
 - **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
 - **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
-- **Phiên bản tài liệu:** 0.20 — catalogue tính năng, workflow, ngoại lệ, phục hồi, từ điển trạng thái và tiêu chí nghiệm thu theo P0–P20; bổ sung CT preview/overlay có giới hạn, transform LPS và contract staging P17 (2026-09-09)
+- **Phiên bản tài liệu:** 0.21 — catalogue tính năng, workflow, ngoại lệ, phục hồi, từ điển trạng thái và tiêu chí nghiệm thu theo P0–P20; bổ sung hợp đồng bàn giao nghiệp vụ, ma trận dừng/tiếp tục và quy tắc lan truyền thay đổi (2026-09-09)
 - **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
-Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.20 tại mục 21–22 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
+Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.21 tại mục 21–23 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
 
 ---
 
@@ -1178,9 +1178,13 @@ Clinical MVP tập trung vào Machine QA, PSQA Gamma, report, trend, input valid
 `specification.md`, `technical-specification.md` và `plan.md` được xây dựng từ các yêu cầu, quy tắc và tiêu chí nghiệm thu trong tài liệu này. Google Stitch cung cấp thiết kế trực quan; Railway và Supabase cung cấp hạ tầng đã chọn; không nguồn nào trong số đó được tự thay thế hoặc làm mất requirement nghiệp vụ.
 
 
-## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.20
+## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.21
 
-Bổ sung ngày 2026-09-09 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu; mục 22 chuẩn hóa hành vi ở cấp tính năng để không bỏ sót tiền điều kiện, side effect và bằng chứng. `specification.md` v1.14 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v3.5 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
+Bổ sung ngày 2026-09-09 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu; mục 22 chuẩn hóa hành vi ở cấp tính năng; mục 23 chuẩn hóa gói bàn giao nghiệp vụ và cách quyết định dừng/tiếp tục để không bỏ sót tiền điều kiện, side effect và bằng chứng. `specification.md` v1.15 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v4.0 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
+
+> Ghi chú đồng bộ: đoạn trên mô tả revision trước. Revision hiện hành dùng `specification.md` v1.16,
+> `technical-specification.md` v1.14 và `plan.md` v4.1; các contract mới làm rõ dashboard
+> health/readiness/version/queue của P20 nhưng không thay đổi nguyên tắc nghiệp vụ.
 
 ### 21.1. Các quyết định sản phẩm giữ nguyên
 
@@ -2061,7 +2065,7 @@ Bảng này là bản đồ ngắn gọn để không bỏ sót phase. `S` là w
 
 Không được dùng cột `S` để bỏ qua cột `E`; một workflow chỉ được gọi là “hoàn thiện” khi cả hai đã có expected/observed/evidence. Khi implementation chưa tồn tại, các mã này vẫn là target và phải giữ `NOT_RUN`, không tạo screenshot hoặc dữ liệu giả để lấp checklist.
 
-## 22. Ma trận hành vi ở cấp tính năng v0.20
+## 22. Ma trận hành vi ở cấp tính năng v0.21
 
 Mục này chuyển catalogue phase ở mục 21 thành một hợp đồng dễ dùng khi thiết kế màn hình, viết API và lập testcase. Mỗi `FR-Pxx-yy` là một nhóm tính năng có thể truy vết; không được coi một nhóm là hoàn thiện chỉ vì một nút trên giao diện đã xuất hiện. Các mô tả dưới đây là yêu cầu nghiệp vụ; field/API/transaction cụ thể được chuẩn hóa tiếp trong `specification.md`.
 
@@ -2145,3 +2149,108 @@ Không thể dự đoán mọi lỗi vendor, dataset hoặc hành vi người d�
 6. chỉ đóng issue sau khi kiểm cả lỗi ban đầu, invariant dữ liệu và workflow phục hồi.
 
 Một lỗi thực tế có thể được phát hiện ở production nhưng không được sửa trực tiếp bằng cách sửa DB hoặc xóa history. Phải tái hiện ở môi trường an toàn, phát hành bản sửa qua staging, kiểm chứng rollback/backup và sau đó mới promote. Điều này không tạo phân quyền; đó là quy trình bảo toàn dữ liệu và khả năng tái hiện của sản phẩm.
+
+## 23. Hợp đồng bàn giao nghiệp vụ v0.21
+
+Mục này là lớp điều hành cuối của tài liệu nghiệp vụ. Mục tiêu không phải tạo thêm vai trò hoặc thủ tục phê duyệt, mà là buộc mỗi tính năng phải có một đường đi hoàn chỉnh từ ý định của người dùng đến kết quả có thể kiểm chứng. Một màn hình có đủ nút, một API trả HTTP 200 hoặc một deployment báo `Online` chưa được coi là hoàn thành nghiệp vụ.
+
+### 23.1. Business feature card bắt buộc
+
+Trước khi một `FR-Pxx-yy` được đưa sang trạng thái hoàn thiện, phase owner phải điền một feature card với đúng các trường sau. Feature card có thể nằm trong issue, phase packet hoặc evidence record, nhưng phải có đường dẫn truy vết từ `plan.md`.
+
+| Trường | Câu hỏi phải trả lời | Ví dụ đầu ra có thể chấp nhận |
+| :--- | :--- | :--- |
+| Intent | Người dùng đang cố hoàn thành việc gì? | “Tạo một QA case thuộc đúng machine để lưu toàn bộ input.” |
+| Context | Identity, organization, site, machine, case hoặc scenario nào đang được chọn? | `organization A → site A1 → machine M1 → case C1`. |
+| Preconditions | Dữ liệu, membership, service, capability và version nào phải sẵn sàng? | Active membership, parent không archive, artifact đã validate, schema đúng. |
+| Input contract | Những field nào bắt buộc/tùy chọn; đơn vị, giới hạn, null, 0 và ngày được hiểu thế nào? | `dose_gy` finite; `0` là giá trị hợp lệ; thiếu field là lỗi khác với `0`. |
+| Main flow | Người dùng đi qua các bước nào từ route ban đầu tới output? | Mở route → chọn input → validate → submit → xem result → history/export. |
+| Valid variants | Biến thể hợp lệ nào phải chạy? | Empty state, nhiều item, min/max, optional omitted, refresh, reconnect, mobile. |
+| Error variants | Các lỗi field, context, state, dependency, persistence và output nào có thể xảy ra? | Sai ROI, khác Frame of Reference, timeout sau commit, renderer unavailable. |
+| Recovery | Người dùng phải sửa, refresh, retry, reconcile, clone hay tạo revision mới? | Query operation trước retry; sửa field; tạo run mới nếu đổi input. |
+| Side effects | Thành phần nào được tạo hoặc không được tạo? | Artifact + manifest + validation; invalid input không tạo run/job. |
+| Invariants | Điều gì tuyệt đối không được thay đổi hoặc lộ ra? | `organization_id`, source checksum, old snapshot, stable ID, không lộ secret. |
+| User-visible states | Loading, empty, ready, warning, error, conflict, offline hiển thị gì? | Có message cụ thể và một hành động tiếp theo; không spinner vô hạn. |
+| Output meaning | Kết quả là success, warning, quality FAIL hay technical failure? | `COMPLETED + quality_status=FAIL` khác `technical_status=FAILED`. |
+| Provenance | Người dùng xem lại source, version, assumption và thời điểm ở đâu? | History mở đúng revision, không trỏ “latest” thay snapshot. |
+| Evidence | Test, fixture/hash, commit, environment và assertion nào chứng minh? | `TC-P08-S01`, golden hash, run ID, schema/engine version. |
+| Handoff | Việc tiếp theo duy nhất là gì nếu card chưa đóng? | “Upload RTSTRUCT synthetic vào case C1 rồi chạy P17-S05.” |
+
+Thiếu một trường không phải là thiếu tài liệu nhỏ; đó là dấu hiệu feature chưa đủ thông tin để triển khai hoặc nghiệm thu. Không được dùng mock, screenshot Stitch, seed không ghi nhãn hoặc lời xác nhận miệng để lấp trường `Output`, `Provenance` hay `Evidence`.
+
+### 23.2. Bốn kết quả nghiệp vụ phải được phân biệt
+
+Mọi workflow của P0–P20 phải đưa được kết quả vào đúng một trong bốn nhóm dưới đây. Cùng một HTTP status không được dùng để đại diện cho cả bốn nhóm.
+
+| Nhóm | Ý nghĩa | Hành vi UI bắt buộc | Không được làm |
+| :--- | :--- | :--- | :--- |
+| Valid success | Input hợp lệ, thao tác/tính toán hoàn tất, output đã lưu | Hiển thị output, ID/revision, source/version và next action | Không gọi kết quả này là clinical safety hoặc tự sinh approval. |
+| Valid result with warning | Output hợp lệ nhưng có assumption, coverage, applicability hoặc capability warning | Hiển thị warning cạnh phần bị ảnh hưởng; giữ warning trong history/export | Không ẩn warning, biến thành PASS hoặc tự chọn phương án tốt nhất. |
+| Rejected input | Input hoặc quan hệ chéo không hợp lệ, chưa tạo side effect | Đánh dấu field/dataset, giữ phần nhập được và hướng dẫn sửa | Không clamp, đổi unit, đoán transform, tạo job rồi mới báo lỗi. |
+| Dependency/state failure | Auth, DB, object, queue, worker, renderer, version hoặc persistence không sẵn sàng | Nêu trạng thái chưa biết/đã nhận/thất bại, correlation ID và recovery | Không báo “không có tổ chức”, “upload thành công” hoặc “PASS” khi nguyên nhân là outage. |
+
+Đối với job bất đồng bộ, bốn nhóm trên được biểu diễn cùng lifecycle: `ACCEPTED/QUEUED/RUNNING/RETRYING/COMPLETED/FAILED`. Đối với phép tính, `quality_status=FAIL` là kết quả hợp lệ nếu phép tính đã hoàn tất; nó không được trộn với `technical_status=FAILED`. Đối với Biological Toolkit, `COMPLETED` chỉ nói phép tính theo model/assumption đã chọn đã chạy xong, không phải một chỉ định điều trị.
+
+### 23.3. Ma trận quyết định khi gặp lỗi
+
+Đây là quy tắc nghiệp vụ chung để chọn hành động tiếp theo. Mã chi tiết được đặc tả ở `specification.md`; phase phải dùng mã riêng của mình nhưng không được làm ngược ý nghĩa của ma trận.
+
+| Điểm phát hiện | Dấu hiệu người dùng thấy | Quyết định nghiệp vụ | Dữ liệu phải giữ | Hành động tiếp theo |
+| :--- | :--- | :--- | :--- | :--- |
+| Trước khi gửi | Field đỏ, file chưa hợp lệ, quan hệ chéo sai | `REJECTED_INPUT` | Input hợp lệ và draft hiện tại | Sửa field, chọn nguồn/role đúng, validate lại. |
+| Sau khi server nhận | Có operation/run ID nhưng browser mất mạng | `OUTCOME_UNKNOWN` ở giao diện | Request fingerprint, operation và snapshot đã commit | Tra cứu ID/key; chỉ retry nếu server xác định an toàn. |
+| Trong khi xử lý | Job queued/running/retrying | `IN_PROGRESS` | Accepted input, attempt, lease và progress | Refresh/reconnect; chờ hoặc retry theo policy, không submit job mới mù. |
+| Tính xong nhưng không đạt rule | Output có actual/limit/margin và quality FAIL | `VALID_RESULT` | Result, protocol/rule snapshot và provenance | Người dùng xem drill-down, ghi nhận hoặc tạo run mới; không gọi lỗi hệ thống. |
+| Tính xong có hạn chế | Warning coverage/assumption/applicability | `VALID_WITH_WARNING` | Warning và impact trong result/export | Người dùng đọc warning, chọn policy khác explicit hoặc tạo revision. |
+| DB/object/queue lệch | Response timeout, object thiếu hoặc duplicate nghi ngờ | `PERSISTENCE_UNCERTAIN` | Object, row, key và log đối soát | Reconcile trước retry; không xóa object đang có reference. |
+| Sai context/lifecycle | Resource khác organization, archived hoặc parent đã đổi | `CONTEXT_CONFLICT` | Draft và lịch sử cũ | Tải context hiện tại, chọn resource đúng hoặc tạo revision; không fallback. |
+| Capability không hỗ trợ | Format, transform, model hoặc metric ngoài phạm vi | `UNAVAILABLE` | Input và lý do capability | Hiển thị giới hạn, dùng nhánh được hỗ trợ hoặc ghi backlog; không giả output. |
+| Deployment lệch | Web/API/worker/schema khác version | `RELEASE_BLOCKED` | Last-good manifest và evidence cũ | Dừng promote, sửa config/migration hoặc rollback theo runbook. |
+
+### 23.4. Gói bàn giao tối thiểu của một phase
+
+Mỗi phase P0–P20 phải bàn giao đủ bảy nhóm đầu ra dưới đây. Bảng testcase riêng của phase trong `plan.md` vẫn là danh sách kiểm bắt buộc; bảng này định nghĩa ý nghĩa của gói bàn giao.
+
+| Nhóm đầu ra | Nội dung bắt buộc | Điều kiện chưa đạt |
+| :--- | :--- | :--- |
+| Scope packet | FR/MOD liên quan, dependency, ngoài phạm vi và quyết định thay đổi | Có requirement mồ côi hoặc scope conflict chưa có decision. |
+| Workflow packet | Main flow, valid variants, state UI và route/command bắt đầu | Chỉ có mock/screenshot hoặc không biết điểm kết thúc. |
+| Failure packet | S/E, B01–B12 và failure injection phù hợp với file/job/renderer/geometry | Có happy path nhưng error case còn `NOT_RUN` không có lý do. |
+| Data packet | Input, source, unit, identity, parent, snapshot, checksum và side effect | Không chứng minh được row/object/queue/result thuộc đúng context. |
+| Contract packet | API/schema/status/error/retry/idempotency/version mapping | Frontend và backend hiểu cùng một field khác nhau. |
+| Evidence packet | Expected/observed, SHA/schema/engine/renderer, fixture/hash, IDs và cleanup | Chỉ có HTTP 200, screenshot hoặc log không có candidate. |
+| Handoff packet | Trạng thái phase, issue, remaining work và một `next_exact_action` | Người tiếp nhận phải đoán làm gì hoặc phải chạy lại việc đã đạt. |
+
+Phase được xem là có gói bàn giao đầy đủ khi cả bảy nhóm có evidence. `DONE-v2` vẫn phụ thuộc công thức exit trong `plan.md`; gói bàn giao không tự nâng trạng thái khi testcase MUST, oracle, staging, restore hoặc pilot còn mở.
+
+### 23.5. Quy tắc lan truyền thay đổi
+
+Một thay đổi nghiệp vụ không dừng ở file được sửa đầu tiên. Khi thay đổi một trong các mục dưới đây, phải đánh giá downstream theo chuỗi **business analysis → specification → technical-specification → implementation → tests → plan → progress/evidence**:
+
+| Thay đổi | Phải rà soát tối thiểu |
+| :--- | :--- |
+| Tên field, đơn vị, range hoặc ý nghĩa metric | UI label/input, API schema, engine, export, trend/DVH/report và boundary tests. |
+| Thay đổi source/role/Frame/geometry | Manifest, validator, Gamma/DVH, fixture/oracle, storage và cross-module binding. |
+| Thay đổi công thức/model/alpha-beta/recovery | Known-answer, curve/table, comparison, re-irradiation assumptions và old-result snapshot. |
+| Thay đổi lifecycle/status/retry | API response, worker/queue, UI state, idempotency, refresh/reconnect và recovery. |
+| Thay đổi report block/template/renderer | Snapshot, export formats, hash/determinism, Unicode, visual regression và history. |
+| Thay đổi Auth/organization/deployment | Cache/session, initial scoped lookup, CORS, environment manifest, migration, remote E2E và rollback. |
+| Thay đổi giới hạn tài nguyên | API upload, worker, renderer, UI timeout, workload benchmark, alert và runbook. |
+
+Evidence của candidate cũ được giữ nguyên và đánh dấu lịch sử; không sửa expected hoặc hash cũ để làm cho nó khớp với code mới. Candidate mới phải có test revalidation, version hoặc migration tương ứng nếu semantic output thay đổi. Nếu thay đổi chỉ là layout nhưng có thể làm người dùng hiểu sai metric, nó vẫn phải chạy UI/accessibility regression.
+
+### 23.6. Điều kiện “không được tuyên bố hoàn thành”
+
+Dù các màn hình đã dựng xong hoặc website đã truy cập được, dự án vẫn chưa hoàn thiện nếu còn một trong các điều kiện sau:
+
+- bất kỳ phase nào còn testcase MUST ở `NOT_RUN`, `BLOCKED` hoặc `FAIL` mà không có quyết định scope được ghi rõ;
+- workflow chỉ chạy qua endpoint smoke, không đi từ UI/API đến persistence/queue/renderer tương ứng;
+- kết quả Gamma/DVH/BED/EQD2 chưa có expected độc lập, snapshot input và version engine/model;
+- upload chưa có checksum round-trip hoặc DB/object chưa được reconcile;
+- report/history/export có thể đọc dữ liệu live thay cho revision đã lưu;
+- refresh, reconnect, retry hoặc worker restart có thể tạo duplicate, mất operation hoặc ghi đè snapshot;
+- staging/production web, API, worker và schema không cùng release manifest;
+- backup/restore, alert hoặc rollback chưa có evidence phù hợp với phase P18–P20;
+- xuất hiện cross-organization data, secret trong client/log/evidence hoặc capability bị quảng cáo vượt contract.
+
+Đây là điều kiện kiểm soát phạm vi và chất lượng của dự án, không phải một hệ thống phân quyền giữa bác sĩ và kỹ sư. Mọi thành viên active trong cùng organization vẫn sử dụng các nghiệp vụ ngang nhau; lịch sử, snapshot và error/recovery chỉ bảo đảm sản phẩm có thể giải thích và tiếp tục an toàn.
