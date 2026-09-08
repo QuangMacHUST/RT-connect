@@ -22,6 +22,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - `scripts/verify-local-backup-restore.py` bổ sung P18-W03a: local PostgreSQL custom dump và MinIO object inventory được restore vào database/bucket tạm, row/object inventory hash khớp, rồi cleanup database/bucket đạt. Evidence tại `docs/evidence/p18-local-backup-restore-20260909.json`; đây là local support, không thay provider backup/restore staging hoặc RPO/RTO.
 - Evidence tương ứng được lưu tại `docs/evidence/p19-staging-public-smoke-20260909.json`; file chỉ chứa public URL, HTTP/result metadata, bundle hash và không chứa credential, database URL hay dữ liệu bệnh nhân.
 - `docs/runbooks/p20-initial-operations-package.md` và `deployment/railway/production-runbook.md` bổ sung P20-W00 support artifact: vận hành, thresholds target, backup/restore, incident, maintenance, promotion/rollback và handoff template. Đây là tài liệu hỗ trợ `LOCAL_SUPPORT_ONLY`; alert thật, provider restore/RPO-RTO, owner handoff và production release vẫn chưa có evidence.
+- `scripts/verify-planning-contract.py` bổ sung verifier fail-closed cho P0: kiểm bốn version tài liệu, cross-reference plan, đủ 21 phase P0–P20 trong BA/spec/plan, workflow/success/error/exit section, FR mapping, testcase S/E, B01–B12, G0–G7 và các support artifact. Evidence `docs/evidence/p0-planning-contract-20260909.json` đạt **pass=true, failed_check_count=0**; đây là consistency evidence, không phải runtime/clinical evidence.
 
 ## Source documents read
 
