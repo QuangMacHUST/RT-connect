@@ -1556,7 +1556,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 
 - [x] P18-W00 — Local route-to-persistence integration pack tại `apps/api/tests/test_p18_integration.py`: QA journey và Biological journey pass; đây là `LOCAL_VERIFIED` support evidence, không thay staging/pilot/restore gate.
 - [ ] P18-W01 — Test matrix theo browser/device/timezone/tenant/dataset, ưu tiên cross-boundary failures; local browser matrix là support evidence, không thay tenant/dataset staging.
-- [x] P18-W01a — Local browser support matrix tại `apps/web/playwright.config.ts`: Chromium desktop/mobile với timezone `Asia/Ho_Chi_Minh` và desktop UTC; `npm run test:e2e` đạt **3 passed**. Chỉ đóng phần local responsive/timezone support, không đóng authenticated tenant/dataset, remote browser hay production compatibility.
+- [x] P18-W01a — Local browser support matrix tại `apps/web/playwright.config.ts` trên commit `4f9028f`: Chromium desktop/mobile với timezone `Asia/Ho_Chi_Minh` và desktop UTC; `npm run test:e2e` đạt **3 passed**. Chỉ đóng phần local responsive/timezone support, không đóng authenticated tenant/dataset, remote browser hay production compatibility.
 - [ ] P18-W02 — Fault injection API/DB/Redis/storage/worker/renderer trên staging có restore plan.
 - [ ] P18-W03 — Backup database+objects+manifest, restore isolated và kiểm lineage/checksum.
 - [x] P18-W03a — Local backup/restore harness tại `scripts/verify-local-backup-restore.py`: PostgreSQL custom dump và MinIO object inventory được restore vào tài nguyên tạm, so sánh row/object SHA rồi dọn database/bucket; chỉ là `LOCAL_VERIFIED` support, chưa thay provider backup/restore staging.
