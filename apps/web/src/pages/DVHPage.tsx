@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 
 import {
   ApiClientError,
   apiClient,
+  type DvhCtPreviewResource,
   type DvhRequest,
   type DvhRunInput,
   type DvhRunResource,
@@ -95,6 +96,99 @@ function PreviewGrid({ result }: { result: JsonRecord | undefined }) {
   </div>
 }
 
+function CtPreviewCanvas({ preview }: { preview: DvhCtPreviewResource }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const { rows, columns } = preview.ct.output_grid
+    const pixels = preview.ct.display_pixels
+    if (pixels.length !== rows * columns) return
+    canvas.width = columns
+    canvas.height = rows
+    const context = canvas.getContext('2d')
+    if (!context) return
+    context.imageSmoothingEnabled = false
+    const image = context.createImageData(columns, rows)
+    pixels.forEach((value, index) => {
+      const offset = index * 4
+      image.data[offset] = value
+      image.data[offset + 1] = value
+      image.data[offset + 2] = value
+      image.data[offset + 3] = 255
+    })
+    context.putImageData(image, 0, 0)
+
+    const dose = preview.overlay.dose_gy
+    const finiteDose = dose.filter((value): value is number => value !== null && Number.isFinite(value))
+    if (finiteDose.length > 0) {
+      const minimum = Math.min(...finiteDose)
+      const maximum = Math.max(...finiteDose)
+      const span = maximum - minimum || 1
+      dose.forEach((value, index) => {
+        if (value === null || !Number.isFinite(value)) return
+        const intensity = (value - minimum) / span
+        const x = index % columns
+        const y = Math.floor(index / columns)
+        context.fillStyle = `rgba(${Math.round(255 * intensity)}, ${Math.round(110 + 100 * (1 - intensity))}, 40, .42)`
+        context.fillRect(x, y, 1, 1)
+      })
+    }
+    if (preview.overlay.roi_mask?.some(Boolean)) {
+      preview.overlay.roi_mask.forEach((selected, index) => {
+        if (!selected) return
+        const x = index % columns
+        const y = Math.floor(index / columns)
+        context.fillStyle = 'rgba(10, 148, 136, .62)'
+        context.fillRect(x, y, 1, 1)
+      })
+    }
+    const stride = preview.ct.output_grid.stride
+    const crosshair = preview.registration.crosshair.nearest_pixel
+    if (crosshair.length >= 3 && preview.registration.crosshair.visible) {
+      const x = crosshair[2] / stride
+      const y = crosshair[1] / stride
+      context.strokeStyle = '#f8fafc'
+      context.lineWidth = Math.max(1, 1 / Math.max(columns, rows) * 100)
+      context.beginPath()
+      context.moveTo(x, 0)
+      context.lineTo(x, rows)
+      context.moveTo(0, y)
+      context.lineTo(columns, y)
+      context.stroke()
+    }
+  }, [preview])
+
+  return <canvas className="dvh-ct-canvas" ref={canvasRef} role="img" aria-label={`CT slice ${preview.ct.frame_index + 1}`} />
+}
+
+function CtPreviewPanel({
+  preview,
+  onFrameChange,
+  isPending,
+  error,
+  onRetry
+}: {
+  preview: DvhCtPreviewResource | undefined
+  onFrameChange: (value: number) => void
+  isPending: boolean
+  error: string | undefined
+  onRetry: () => void
+}) {
+  if (isPending) return <section className="dvh-subpanel"><div className="panel-heading"><div><p className="eyebrow">CT ANATOMY PREVIEW</p><h3>Đang đọc lát cắt CT…</h3></div></div><p className="empty-state">Đang tải pixel CT và kiểm tra mapping theo patient LPS.</p></section>
+  if (error) return <section className="dvh-subpanel"><div className="panel-heading"><div><p className="eyebrow">CT ANATOMY PREVIEW</p><h3>Không thể hiển thị CT</h3></div></div><div className="alert alert--error"><p>{error}</p><button onClick={onRetry}>Thử lại</button></div></section>
+  if (!preview) return <section className="dvh-subpanel"><div className="panel-heading"><div><p className="eyebrow">CT ANATOMY PREVIEW</p><h3>Chưa chọn CT</h3></div></div><p className="empty-state">Chọn một CT đã VALID để mở anatomy preview; dose-native DVH vẫn có thể chạy mà không cần CT.</p></section>
+  const warnings = preview.warnings
+  return <section className="dvh-subpanel dvh-ct-panel">
+    <div className="panel-heading"><div><p className="eyebrow">CT ANATOMY PREVIEW</p><h3>CT + dose/ROI overlay</h3></div><span className={preview.registration.overlay_available ? 'status-badge' : 'status-badge status-badge--warning'}>{preview.registration.overlay_available ? 'LPS LINKED' : 'NO DOSE OVERLAP'}</span></div>
+    <div className="dvh-ct-controls"><label>Lát cắt CT<select value={preview.ct.frame_index} onChange={(event) => onFrameChange(Number(event.target.value))}>{Array.from({ length: preview.ct.frame_count }, (_, index) => <option value={index} key={index}>#{index + 1} · offset {formatNumber(preview.ct.slice_offset_mm)} mm{index === preview.ct.frame_index ? ' · đang xem' : ''}</option>)}</select></label><span className="form-hint">{preview.ct.value_unit} · window {formatNumber(preview.ct.window_center)} / {formatNumber(preview.ct.window_width)} · {preview.ct.output_grid.rows}×{preview.ct.output_grid.columns}</span></div>
+    <div className="dvh-ct-view"><CtPreviewCanvas preview={preview} /></div>
+    <div className="dvh-chart-legend"><span>Overlay: {preview.registration.overlay_algorithm}</span><span>ROI: {preview.roi ? `#${preview.roi.roi_number} · ${preview.roi.name}` : 'chưa chọn'}</span><span>Crosshair: {preview.registration.crosshair.visible ? 'dose grid center' : 'ngoài CT'}</span></div>
+    <p className="form-hint">Frame of Reference: {preview.registration.source_frame_of_reference_uid}. Mapping là nearest-neighbor trong patient LPS; đây không phải deformable registration.</p>
+    {warnings.length > 0 && <div className="alert alert--warning"><strong>Cảnh báo CT</strong><ul>{warnings.map((item, index) => <li key={`${textValue(asRecord(item).code)}-${index}`}>{textValue(asRecord(item).message, JSON.stringify(item))}</li>)}</ul></div>}
+  </section>
+}
+
 function ResultPanel({ result }: { result: JsonRecord | undefined }) {
   if (!result) return <p className="empty-state">Chưa có kết quả. Chạy Validate để xem preview hoặc lưu một DVH run.</p>
   const dose = asRecord(result.dose)
@@ -139,6 +233,7 @@ export function DVHPage() {
   const [selectedDoseId, setSelectedDoseId] = useState<string>()
   const [selectedStructureId, setSelectedStructureId] = useState<string>()
   const [selectedCtId, setSelectedCtId] = useState<string>('')
+  const [ctFrameIndex, setCtFrameIndex] = useState(0)
   const [roiNumber, setRoiNumber] = useState(0)
   const [coveragePolicy, setCoveragePolicy] = useState<DvhRequest['coverage_policy']>('FULL_ROI')
   const [sliceThickness, setSliceThickness] = useState('')
@@ -161,6 +256,16 @@ export function DVHPage() {
   const structureId = selectedStructureId && inputs.data?.structure_artifacts.some((item) => item.id === selectedStructureId) ? selectedStructureId : inputs.data?.structure_artifacts[0]?.id ?? ''
   const roiOptions = useMemo(() => (inputs.data?.rois ?? []).map((item) => ({ number: numberValue(item.roi_number), name: textValue(item.name), contours: numberValue(item.contour_count) })).filter((item): item is { number: number; name: string; contours: number | undefined } => item.number !== undefined), [inputs.data?.rois])
   const effectiveRoi = roiOptions.some((item) => item.number === roiNumber) ? roiNumber : roiOptions[0]?.number ?? 0
+  const ctPreview = useQuery({
+    queryKey: ['dvh-ct-preview', organizationId, caseId, doseId, selectedCtId, structureId, effectiveRoi, ctFrameIndex, accessToken],
+    queryFn: () => apiClient.dvhCtPreview(accessToken!, organizationId!, caseId!, {
+      dose_artifact_id: doseId,
+      ct_artifact_id: selectedCtId,
+      ...(structureId && effectiveRoi ? { structure_artifact_id: structureId, roi_number: effectiveRoi } : {}),
+      frame_index: ctFrameIndex
+    }),
+    enabled: Boolean(accessToken && organizationId && caseId && doseId && selectedCtId), retry: false
+  })
   const runs = useQuery({ queryKey: ['dvh-runs', organizationId, caseId, accessToken], queryFn: () => apiClient.dvhRuns(accessToken!, organizationId!, caseId!), enabled: Boolean(accessToken && organizationId && caseId && selectedCase), retry: false })
   const activeRun: DvhRunResource | undefined = useMemo(() => runs.data?.items.find((item) => item.id === selectedRunId) ?? runs.data?.items[0], [runs.data, selectedRunId])
   const buildRequest = (): DvhRequest | null => {
@@ -241,7 +346,7 @@ export function DVHPage() {
       {inputError ? <div className="alert alert--error"><p>{inputError}</p><button onClick={() => void inputs.refetch()}>Thử lại</button></div> : inputs.isPending ? <p>Đang tải input manifest…</p> : <div className="dvh-input-grid">
         <label>RTDOSE · dose<select value={doseId} onChange={(event) => setSelectedDoseId(event.target.value)}><option value="">Chọn RTDOSE</option>{(inputs.data?.dose_artifacts ?? []).map((item) => <option key={item.id} value={item.id}>{item.original_filename} · {item.sha256.slice(0, 12)}…</option>)}</select></label>
         <label>RTSTRUCT · structures<select value={structureId} onChange={(event) => { setSelectedStructureId(event.target.value); setRoiNumber(0); setValidation(undefined) }}><option value="">Chọn RTSTRUCT</option>{(inputs.data?.structure_artifacts ?? []).map((item) => <option key={item.id} value={item.id}>{item.original_filename} · {item.sha256.slice(0, 12)}…</option>)}</select></label>
-        <label>CT · optional overlay<select value={selectedCtId} onChange={(event) => setSelectedCtId(event.target.value)}><option value="">Không chọn CT · dose-native</option>{(inputs.data?.ct_artifacts ?? []).map((item) => <option key={item.id} value={item.id}>{item.original_filename} · {item.sha256.slice(0, 12)}…</option>)}</select></label>
+        <label>CT · optional overlay<select value={selectedCtId} onChange={(event) => { setSelectedCtId(event.target.value); setCtFrameIndex(0); setValidation(undefined) }}><option value="">Không chọn CT · dose-native</option>{(inputs.data?.ct_artifacts ?? []).map((item) => <option key={item.id} value={item.id}>{item.original_filename} · {item.sha256.slice(0, 12)}…</option>)}</select></label>
         <label>ROI · chọn theo ROINumber<select value={effectiveRoi || ''} onChange={(event) => setRoiNumber(Number(event.target.value))}><option value="">Chọn ROI</option>{roiOptions.map((item) => <option key={item.number} value={item.number}>#{item.number} · {item.name} · {item.contours ?? 0} contour</option>)}</select></label>
       </div>}
       {structureId && inputs.data?.rois.length === 0 && <p className="form-hint">RTSTRUCT đã chọn nhưng chưa có ROI để chọn hoặc chưa đọc được contour definition.</p>}
@@ -255,6 +360,7 @@ export function DVHPage() {
     </div><p className="form-hint">D(x) dùng quantile tuyến tính; V(x) là thể tích nhận ít nhất ngưỡng x Gy. Danh sách sẽ được chuẩn hóa và snapshot cùng run.</p><div className="dvh-actions"><button disabled={busy || !doseId || !structureId || !effectiveRoi} onClick={runValidation}>{validateMutation.isPending ? 'Đang validate…' : 'Validate & preview'}</button><button className="button-secondary" disabled={busy || !doseId || !structureId || !effectiveRoi} onClick={saveRun}>{createMutation.isPending ? 'Đang lưu…' : 'Tính và lưu DVH run'}</button></div></section>
     {validation && !validation.valid && <section className="alert alert--error"><h3>DVH không hợp lệ</h3><ul>{validation.errors.map((item, index) => <li key={`${textValue(asRecord(item).code)}-${index}`}><strong>{textValue(asRecord(item).code)}</strong> · {textValue(asRecord(item).message, JSON.stringify(item))}</li>)}</ul></section>}
     <section className="panel dvh-panel"><div className="panel-heading"><div><p className="eyebrow">RESULT / PROVENANCE</p><h2>Kết quả DVH</h2></div><div className="page-header__actions">{activeRun && <><button className="button-secondary" onClick={() => void download('JSON')}>JSON</button><button className="button-secondary" onClick={() => void download('CSV')}>CSV</button></>}</div></div><ResultPanel result={result} />
+      <div className="dvh-ct-workspace"><CtPreviewPanel preview={ctPreview.data} onFrameChange={setCtFrameIndex} isPending={ctPreview.isPending} error={ctPreview.error ? errorMessage(ctPreview.error) : undefined} onRetry={() => void ctPreview.refetch()} /></div>
       {activeRun && <div className="dvh-provenance"><span>Run <code>{activeRun.id}</code></span><span>Input fingerprint <code>{textValue(activeRun.input_snapshot.request_fingerprint)}</code></span><span>Result SHA <code>{textValue(activeRun.result_snapshot.result_sha256)}</code></span><span>Saved {new Date(activeRun.created_at).toLocaleString('vi-VN')}</span></div>}
     </section>
     <section className="panel dvh-panel"><div className="panel-heading"><div><p className="eyebrow">RUN HISTORY</p><h2>Lịch sử DVH của case</h2></div><strong>{runs.data?.total ?? '—'}</strong></div>{runs.error ? <div className="alert alert--error"><p>{errorMessage(runs.error)}</p><button onClick={() => void runs.refetch()}>Thử lại</button></div> : runs.isPending ? <p>Đang tải lịch sử…</p> : runs.data?.items.length ? <div className="table-wrap"><table><thead><tr><th>Run</th><th>ROI</th><th>Coverage</th><th>Engine</th><th>Created</th><th /></tr></thead><tbody>{runs.data.items.map((run) => <tr key={run.id}><td><button className={run.id === activeRun?.id ? 'history-button history-button--selected' : 'history-button'} onClick={() => setSelectedRunId(run.id)}><code>{run.id.slice(0, 8)}…</code></button></td><td>#{run.roi_number}</td><td><span className="status-badge">{textValue(asRecord(run.result_snapshot.coverage).status)}</span></td><td>{run.engine_version}</td><td>{new Date(run.created_at).toLocaleString('vi-VN')}</td><td>{run.id === activeRun?.id && <strong>Đang xem</strong>}</td></tr>)}</tbody></table></div> : <p className="empty-state">Chưa có DVH run. Validate chỉ tạo preview; dùng “Tính và lưu” để tạo snapshot truy vết được.</p>}</section>

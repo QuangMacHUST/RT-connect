@@ -3,15 +3,15 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.10 — đồng bộ specification.md v1.13, plan.md v3.4 và business-analysis.md v0.19; bổ sung P17 limit adapter và DVH report-source integration (2026-09-08)
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.19
+- **Phiên bản:** 1.11 — đồng bộ specification.md v1.14, plan.md v3.5 và business-analysis.md v0.20; bổ sung P17 CT preview/overlay contract, giới hạn tài nguyên và LPS mapping (2026-09-09)
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.20
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
 
 Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
-> Đồng bộ v1.10: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§13 là authority cho hành vi/validation/error/thuật toán. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; explicit P11/P16 binding và DVH report source mới chỉ có local evidence cho đến khi staging được kiểm lại. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+> Đồng bộ v1.11: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§13 là authority cho hành vi/validation/error/thuật toán. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; P17 có CT pixel preview local nhưng explicit P11/P16 binding, DVH report source và CT/staging evidence vẫn phải kiểm theo candidate. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -93,7 +93,7 @@ Phần 0.1–0.3 là baseline lịch sử ngày 2026-09-04 và không được �
 | P14 | Plan Comparison engine, immutable comparison snapshot, baseline/delta table-chart, clone and JSON/CSV export | `20260908_0014` |
 | P15 | Re-irradiation/fraction-compensation scalar engine, recovery/sensitivity, schedule alternatives, immutable snapshot and JSON/CSV export | `20260908_0015` |
 | P16 | Organization-scoped Biological Knowledge Library: dose limits, treatment-protocol references, knowledge/alpha-beta entries, validation, import, versioning, explicit-use snapshots and export | `20260908_0016` |
-| P17 | RTDOSE/RTSTRUCT physical-dose DVH engine, LPS geometry/ROI rasterization, coverage/metrics, immutable run snapshots, API/UI and JSON/CSV export | `20260908_0017` |
+| P17 | RTDOSE/RTSTRUCT physical-dose DVH engine, bounded CT HU/slice/dose/ROI overlay in patient LPS, coverage/metrics, immutable run snapshots, API/UI and JSON/CSV export | `20260908_0017` |
 
 Ngày 2026-09-08, P11–P17 đã bổ sung model/API/UI và migrations `20260908_0011`/`20260908_0012`/`20260908_0013`/`20260908_0014`/`20260908_0015`/`20260908_0016`/`20260908_0017`. P12–P16 giữ Biological như bounded context độc lập, không có FK bắt buộc tới QACase/patient; P17 thuộc QA case và giữ raw DICOM immutable. Checkpoint local phải ghi đủ full suite, focused phase tests, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head trên cùng SHA; build warning không được coi là lỗi chức năng nhưng phải theo dõi bundle budget. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
 
@@ -1221,7 +1221,7 @@ evaluated/passing/nonpassing/excluded/no-candidate/censored, pass rate, coverage
 percentile exactness, histogram, warning, configuration, input checksum và engine version.
 Đây là deterministic engineering/golden slice; test local hiện có exhaustive independent node
 oracle và các guard resource/retry, nhưng không thay thế benchmark theo phần cứng hoặc
-commissioning. Gate phát triển, pilot và release theo plan.md v3.4. Coordinate frame mở rộng,
+commissioning. Gate phát triển, pilot và release theo plan.md v3.5. Coordinate frame mở rộng,
 crash/ack/dead-letter injection, large workload benchmark và evidence effective schema/release
 trên staging vẫn là điều kiện đóng P8.
 
@@ -1311,7 +1311,7 @@ Các mã còn lại là target và phải được map bằng contract test, kh�
 - REPORT_RENDER_FAILED.
 - EXPORT_FAILED.
 
-P17 hiện đã có các mã engine/API cụ thể sau và phải giữ nguyên khi mở rộng UI hoặc worker: `DVH_INPUT_MANIFEST_REQUIRED`, `DVH_INPUT_NOT_VALIDATED`, `DVH_INPUT_MANIFEST_INVALID`, `DVH_INPUT_SCOPE_MISMATCH`, `DVH_INPUTS_MUST_DIFFER`, `DVH_DOSE_ARTIFACT_INVALID`, `DVH_STRUCTURE_ARTIFACT_INVALID`, `DVH_ANATOMY_ARTIFACT_INVALID`, `DICOM_GEOMETRY_INVALID`, `DICOM_CAPABILITY_UNSUPPORTED`, `DICOM_FRAME_MISMATCH`, `DVH_DOSE_UNITS_UNSUPPORTED`, `DVH_DOSE_VALUES_INVALID`, `DVH_ROI_INVALID`, `CONTOUR_GEOMETRY_INVALID`, `DVH_EMPTY_STRUCTURE`, `DVH_INCOMPLETE_COVERAGE`, `DVH_PARTIAL_COVERAGE`, `DVH_COVERAGE_POLICY_INVALID`, `DVH_METRIC_INVALID`, `DVH_RESOURCE_LIMIT`, `DVH_SOURCE_CHANGED`, `DVH_IDEMPOTENCY_CONFLICT`, `DVH_STORAGE_UNAVAILABLE`, `DVH_EXECUTION_FAILED`, `DVH_PERSISTENCE_FAILED`, `DVH_RUN_NOT_FOUND`, `DVH_LIMIT_BINDING_CONFLICT`, `DVH_LIMIT_OVERRIDE_INVALID`, `DVH_LIMIT_ENTRY_NOT_FOUND`, `DVH_LIMIT_NOT_AVAILABLE`, `DVH_LIMIT_ENTRY_INVALID`, `DVH_PROTOCOL_NOT_FOUND`, `DVH_PROTOCOL_NOT_AVAILABLE`, `DVH_PROTOCOL_RULE_REQUIRED`, `DVH_PROTOCOL_RULE_NOT_FOUND`, `DVH_PROTOCOL_RULE_UNSUPPORTED`, `DVH_PROTOCOL_RULE_INVALID`, `DVH_LIMIT_METRIC_NOT_COMPUTED`, `DVH_LIMIT_METRIC_UNSUPPORTED`, `DVH_LIMIT_UNIT_MISMATCH` và `DVH_LIMIT_DEFINITION_INVALID`. `DVH_DOSE_ONLY_MODE` là warning; `QA_CASE_ARCHIVED` và `ORGANIZATION_SCOPE_MISMATCH` là boundary/lifecycle errors dùng chung. Mọi code mới phải có mapping HTTP, field details, UI message, recovery và test ID trong specification/plan.
+P17 hiện đã có các mã engine/API cụ thể sau và phải giữ nguyên khi mở rộng UI hoặc worker: `DVH_INPUT_MANIFEST_REQUIRED`, `DVH_INPUT_NOT_VALIDATED`, `DVH_INPUT_MANIFEST_INVALID`, `DVH_INPUT_SCOPE_MISMATCH`, `DVH_INPUTS_MUST_DIFFER`, `DVH_DOSE_ARTIFACT_INVALID`, `DVH_STRUCTURE_ARTIFACT_INVALID`, `DVH_ANATOMY_ARTIFACT_INVALID`, `DICOM_GEOMETRY_INVALID`, `DICOM_CAPABILITY_UNSUPPORTED`, `DICOM_FRAME_MISMATCH`, `DVH_DOSE_UNITS_UNSUPPORTED`, `DVH_DOSE_VALUES_INVALID`, `DVH_ROI_INVALID`, `CONTOUR_GEOMETRY_INVALID`, `DVH_EMPTY_STRUCTURE`, `DVH_INCOMPLETE_COVERAGE`, `DVH_PARTIAL_COVERAGE`, `DVH_COVERAGE_POLICY_INVALID`, `DVH_METRIC_INVALID`, `DVH_RESOURCE_LIMIT`, `DVH_SOURCE_CHANGED`, `DVH_IDEMPOTENCY_CONFLICT`, `DVH_STORAGE_UNAVAILABLE`, `DVH_EXECUTION_FAILED`, `DVH_PERSISTENCE_FAILED`, `DVH_RUN_NOT_FOUND`, `DVH_LIMIT_BINDING_CONFLICT`, `DVH_LIMIT_OVERRIDE_INVALID`, `DVH_LIMIT_ENTRY_NOT_FOUND`, `DVH_LIMIT_NOT_AVAILABLE`, `DVH_LIMIT_ENTRY_INVALID`, `DVH_PROTOCOL_NOT_FOUND`, `DVH_PROTOCOL_NOT_AVAILABLE`, `DVH_PROTOCOL_RULE_REQUIRED`, `DVH_PROTOCOL_RULE_NOT_FOUND`, `DVH_PROTOCOL_RULE_UNSUPPORTED`, `DVH_PROTOCOL_RULE_INVALID`, `DVH_LIMIT_METRIC_NOT_COMPUTED`, `DVH_LIMIT_METRIC_UNSUPPORTED`, `DVH_LIMIT_UNIT_MISMATCH` và `DVH_LIMIT_DEFINITION_INVALID`. `DVH_DOSE_ONLY_MODE` là warning; CT preview bổ sung warning `CT_RESCALE_DEFAULTED`, `CT_WINDOW_DEFAULTED`, `CT_SLICE_SPACING_DEFAULTED`, `CT_DOSE_NO_OVERLAP`. `QA_CASE_ARCHIVED` và `ORGANIZATION_SCOPE_MISMATCH` là boundary/lifecycle errors dùng chung. Mọi code mới phải có mapping HTTP, field details, UI message, recovery và test ID trong specification/plan.
 
 ---
 
@@ -1597,7 +1597,8 @@ P17 hiện được hiện thực bởi bốn lớp tách biệt, để phần s
 | Domain engine | `apps/api/src/rt_connect_api/services/dose_dvh_engine.py` | Đọc RTDOSE/RTSTRUCT, giải affine patient LPS, rasterize ROI, tính coverage/metrics/curve/preview và hash kết quả. Không biết organization, auth hay storage. |
 | Limit adapter | `apps/api/src/rt_connect_api/services/dvh_limit_adapter.py` | Resolve đúng một P16 `DOSE_LIMIT` hoặc P11 rule `ACTIVE` theo organization; validate override/metric/unit; tạo source/effective snapshot và tính actual/limit/margin. Không tự search, rank hoặc auto-apply. |
 | API/persistence | `apps/api/src/rt_connect_api/api/dvh.py`, `DVHAnalysisRun`, migration `20260908_0017_dvh_analysis.py` | Resolve scope trước query, kiểm artifact/manifest/checksum, tải object, gọi engine, idempotency, audit, snapshot và export. |
-| Report integration/web | `apps/api/src/rt_connect_api/api/reports.py`, `apps/web/src/pages/ReportBuilderPage.tsx`, route `/app/qa/cases/:caseId/dvh` | DVH route chọn input/ROI/policy, validate-preview, save, hiển thị metric/curve/dose-native mask/history/provenance và JSON/CSV; Report Builder chọn run DVH theo case và lưu source snapshot. Route DVH không nằm trong global sidebar. |
+| CT preview/web | `create_ct_preview`, `GET .../dvh/ct-preview`, `apps/web/src/pages/DVHPage.tsx` | Đọc CT bounded single-file/multi-frame, rescale HU, window/level, chọn frame, map dose/ROI bằng patient LPS nearest-neighbor, vẽ grayscale/overlay/crosshair. Read-only, không tạo DVH run. |
+| Report integration/web | `apps/api/src/rt_connect_api/api/reports.py`, `apps/web/src/pages/ReportBuilderPage.tsx`, route `/app/qa/cases/:caseId/dvh` | DVH route chọn input/ROI/policy, validate-preview, save, hiển thị metric/curve/dose-native mask/CT preview/history/provenance và JSON/CSV; Report Builder chọn run DVH theo case và lưu source snapshot. Route DVH không nằm trong global sidebar. |
 
 #### 9.5.1. Input resolution và boundary
 
@@ -1613,6 +1614,19 @@ P17 hiện được hiện thực bởi bốn lớp tách biệt, để phần s
 - `GridFrameOffsetVector` được chuẩn hóa thành một vector kể cả trường hợp single-frame pydicom trả scalar. Slice thickness lấy metadata hợp lệ hoặc request override dương cho single-frame; nhiều frame phải có spacing/thickness hợp lệ.
 - ROI contour được chọn bằng `ROINumber`; polygon kín rasterize trên frame gần z-offset nhất. Contour `CLOSED_PLANAR_XOR` và hole/disjoint dùng parity; không phụ thuộc contour winding. Contour ngoài grid được đếm để áp dụng coverage policy, không silently clip thành zero dose.
 - Voxel volume dùng `row_spacing × column_spacing × slice_thickness / 1000` cc. `Dmean` là weighted average; `D(x)` dùng `np.quantile(values, 1-x/100, method="linear")`; `V(x)` cộng volume của voxel có dose `>= x` và trả cả cc/%.
+
+#### 9.5.2a. CT preview và patient-LPS overlay
+
+CT preview dùng chung dose loader/geometry của P17 nhưng là operation riêng, không đưa pixel CT vào phép tính DVH:
+
+1. `load_ct_volume()` chỉ nhận CT DICOM single-file hoặc multi-frame có `Modality=CT`, top-level `ImagePositionPatient`/`ImageOrientationPatient`/`PixelSpacing`, frame offsets tăng dần, `SamplesPerPixel=1` và photometric `MONOCHROME1` hoặc `MONOCHROME2`. `CTGeometry` giữ shape `(frames, rows, columns)`, direction cosines, origin, spacing, offsets, thickness, Frame UID và photometric.
+2. Pixel array được giới hạn bởi `Settings.dvh_max_ct_pixels` (`DVH_MAX_CT_PIXELS`, mặc định 8,000,000). `create_ct_preview()` giới hạn số pixel output bởi `Settings.dvh_max_ct_preview_pixels` (`DVH_MAX_CT_PREVIEW_PIXELS`, mặc định 65,536; API cho phép 256–262,144 nhưng không được vượt cấu hình). Vượt ngưỡng trả `DVH_RESOURCE_LIMIT` trước khi cấp output lớn.
+3. Giá trị hiển thị là HU: `stored × RescaleSlope + RescaleIntercept`. Slope/intercept thiếu hoàn toàn có default `1/0` kèm warning `CT_RESCALE_DEFAULTED`; field sai kiểu, non-finite hoặc slope bằng 0 là lỗi. Thiếu cả window center/width dùng percentile 1–99 cho display và warning `CT_WINDOW_DEFAULTED`; width không dương là lỗi. Các default này chỉ dành cho preview, không được ghi ngược thành metadata DICOM.
+4. `_grid_points()` tạo patient-LPS point cho từng pixel output của lát `frame_index`; `DoseGeometry.world_to_continuous_indices()` map point về dose continuous `(frame,row,column,normal)`. Dose và ROI dùng nearest-neighbor với kiểm tra bounds; pixel ngoài dose là `null/false`, không clip và không gán 0.
+5. `registration` luôn ghi `mode=SHARED_FRAME_OF_REFERENCE`, `patient_coordinate_system=LPS`, `overlay_algorithm=NEAREST_NEIGHBOR_IN_PATIENT_LPS`, source/target Frame UID, selected dose frame, mapping matrix và crosshair từ tâm dose grid. Đây là rigid shared-frame mapping, không phải deformable registration, image registration tối ưu hay dose accumulation.
+6. `CT_PREVIEW_SCHEMA_VERSION=visual-dose-ct-preview.v1`, `CT_PREVIEW_ENGINE_KEY=visual-dose.ct-preview` và `CT_PREVIEW_ENGINE_VERSION=p17-ct-preview-1.0.0` được trả trong response. `result_sha256` hash canonical JSON gồm CT display, registration, overlay, ROI và warnings. Endpoint không insert DB, không enqueue worker, không tạo audit mutation và không được dùng làm source để tính DVH.
+
+API adapter tải dose/CT/structure bằng `_download_resolved_artifact()`, kiểm `Artifact.sha256` và `InputManifest.checksum_at_use` trước khi gọi engine. Nếu structure/ROI được gửi, hai tham số phải cùng tồn tại; nếu không, `DVH_ROI_INVALID`. CT cùng Frame UID là điều kiện bắt buộc; không có overlap trả `CT_DOSE_NO_OVERLAP` warning với `overlay_available=false`, vẫn cho hiển thị CT grayscale.
 
 #### 9.5.3. Persistence và API sequence
 
@@ -1643,8 +1657,8 @@ JWT -> resolve membership/org -> resolve case
 
 #### 9.5.5. Capability boundary và phần chưa hoàn tất
 
-- P17 current slice là synchronous, physical-dose, dose-native grid. Đã có explicit P11/P16 actual/limit/margin adapter và DVH report source ở local candidate; chưa có worker queue cho DVH lớn, chưa có CT pixel renderer/crosshair/registration artifact và chưa có staging evidence cho binding/report.
-- `CT` được kiểm tra modality/frame/geometry summary và được ghi vào result; việc hiển thị anatomy overlay chỉ được bật sau khi có renderer/transform contract và test riêng.
+- P17 current slice là synchronous, physical-dose, dose-native grid; CT preview cũng synchronous/read-only. Đã có explicit P11/P16 actual/limit/margin adapter, DVH report source và CT pixel renderer/crosshair/LPS registration payload ở local candidate; chưa có worker queue cho DVH/CT workload lớn, deformable registration, CT series aggregation hoặc staging evidence đầy đủ cho binding/report/CT.
+- CT preview chỉ là bounded visual overlay trên shared Frame of Reference. Không suy ra image registration thành công từ UID giống nhau, không dùng default window/rescale làm clinical metadata, không cho phép output vượt resource policy và không biến overlay warning thành QA result.
 - P17 không tính deformable cumulative dose, không tự cộng dose giữa course, không sửa prescription/RTPLAN/TPS/PACS và không tự tạo QA PASS.
 - Các phần mở phải có package/test/evidence riêng ở P17/P18; không dùng ảnh Stitch hoặc `/ready` 200 làm bằng chứng thay thế.
 

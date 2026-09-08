@@ -332,6 +332,62 @@ export type DvhRunResource = {
   created_at: string
   updated_at: string
 }
+export type DvhCtPreviewResource = {
+  schema_version: string
+  engine_key: string
+  engine_version: string
+  ct: {
+    modality: string
+    frame_index: number
+    frame_count: number
+    source_grid: { rows: number; columns: number }
+    output_grid: { rows: number; columns: number; stride: number }
+    pixel_spacing_mm: number[]
+    slice_offset_mm: number
+    slice_thickness_mm: number
+    image_position_patient: number[]
+    image_orientation_patient: number[]
+    frame_of_reference_uid: string
+    photometric_interpretation: string
+    value_unit: string
+    rescale_slope: number
+    rescale_intercept: number
+    window_center: number
+    window_width: number
+    display_range_hu: number[]
+    display_pixels: number[]
+  }
+  registration: {
+    mode: string
+    status: string
+    patient_coordinate_system: string
+    source_frame_of_reference_uid: string
+    target_frame_of_reference_uid: string
+    overlay_algorithm: string
+    overlay_available: boolean
+    dose_frame_index: number
+    plane_mapping_matrix_dose_row_col_to_ct_frame_row_column: number[][]
+    crosshair: {
+      source: string
+      patient_lps_mm: number[]
+      ct_index: number[]
+      nearest_pixel: number[]
+      visible: boolean
+    }
+  }
+  overlay: {
+    rows: number
+    columns: number
+    stride: number
+    dose_gy: Array<number | null>
+    roi_mask: boolean[] | null
+    valid_pixel_count: number
+    outside_pixel_count: number
+  }
+  roi: { roi_number: number; name: string; contour_count: number } | null
+  warnings: Array<Record<string, unknown>>
+  result_sha256: string
+}
 
 export type ReportBlock = {
   stable_block_id: string
@@ -936,6 +992,33 @@ const dvhRunSchema = z.object({
   created_by_user_identity_id: z.string().uuid().nullable(), created_at: z.string(), updated_at: z.string()
 })
 const dvhRunCollectionSchema = z.object({ items: z.array(dvhRunSchema), total: z.number().int() })
+const dvhCtPreviewSchema = z.object({
+  schema_version: z.string(), engine_key: z.string(), engine_version: z.string(),
+  ct: z.object({
+    modality: z.string(), frame_index: z.number().int(), frame_count: z.number().int().positive(),
+    source_grid: z.object({ rows: z.number().int().positive(), columns: z.number().int().positive() }),
+    output_grid: z.object({ rows: z.number().int().positive(), columns: z.number().int().positive(), stride: z.number().int().positive() }),
+    pixel_spacing_mm: z.array(z.number()), slice_offset_mm: z.number(), slice_thickness_mm: z.number(),
+    image_position_patient: z.array(z.number()), image_orientation_patient: z.array(z.number()),
+    frame_of_reference_uid: z.string(), photometric_interpretation: z.string(), value_unit: z.string(),
+    rescale_slope: z.number(), rescale_intercept: z.number(), window_center: z.number(), window_width: z.number(),
+    display_range_hu: z.array(z.number()), display_pixels: z.array(z.number().int().min(0).max(255))
+  }),
+  registration: z.object({
+    mode: z.string(), status: z.string(), patient_coordinate_system: z.string(),
+    source_frame_of_reference_uid: z.string(), target_frame_of_reference_uid: z.string(),
+    overlay_algorithm: z.string(), overlay_available: z.boolean(), dose_frame_index: z.number().int(),
+    plane_mapping_matrix_dose_row_col_to_ct_frame_row_column: z.array(z.array(z.number())),
+    crosshair: z.object({ source: z.string(), patient_lps_mm: z.array(z.number()), ct_index: z.array(z.number()), nearest_pixel: z.array(z.number().int()), visible: z.boolean() })
+  }),
+  overlay: z.object({
+    rows: z.number().int().positive(), columns: z.number().int().positive(), stride: z.number().int().positive(),
+    dose_gy: z.array(z.number().nullable()), roi_mask: z.array(z.boolean()).nullable(),
+    valid_pixel_count: z.number().int().nonnegative(), outside_pixel_count: z.number().int().nonnegative()
+  }),
+  roi: z.object({ roi_number: z.number().int().positive(), name: z.string(), contour_count: z.number().int().nonnegative() }).nullable(),
+  warnings: z.array(z.record(z.string(), z.unknown())), result_sha256: z.string()
+})
 
 const reportBlockSchema = z.object({
   id: z.string().uuid().optional(),
@@ -2010,6 +2093,27 @@ export class ApiClient {
   dvhInputs(accessToken: string, organizationId: string, caseId: string, structureArtifactId?: string): Promise<DvhInputsResource> {
     const suffix = structureArtifactId ? `?structure_artifact_id=${encodeURIComponent(structureArtifactId)}` : ''
     return this.get(`/organizations/${organizationId}/qa-cases/${caseId}/dvh/inputs${suffix}`, dvhInputsSchema, accessToken)
+  }
+
+  dvhCtPreview(accessToken: string, organizationId: string, caseId: string, params: {
+    dose_artifact_id: string
+    ct_artifact_id: string
+    structure_artifact_id?: string
+    roi_number?: number
+    frame_index?: number
+    dose_frame_index?: number
+    preview_limit?: number
+  }): Promise<DvhCtPreviewResource> {
+    const query = new URLSearchParams({
+      dose_artifact_id: params.dose_artifact_id,
+      ct_artifact_id: params.ct_artifact_id,
+      ...(params.structure_artifact_id ? { structure_artifact_id: params.structure_artifact_id } : {}),
+      ...(params.roi_number !== undefined ? { roi_number: String(params.roi_number) } : {}),
+      ...(params.frame_index !== undefined ? { frame_index: String(params.frame_index) } : {}),
+      ...(params.dose_frame_index !== undefined ? { dose_frame_index: String(params.dose_frame_index) } : {}),
+      ...(params.preview_limit !== undefined ? { preview_limit: String(params.preview_limit) } : {})
+    })
+    return this.get(`/organizations/${organizationId}/qa-cases/${caseId}/dvh/ct-preview?${query.toString()}`, dvhCtPreviewSchema, accessToken)
   }
 
   validateDvh(accessToken: string, organizationId: string, caseId: string, body: DvhRequest): Promise<DvhValidationResource> {

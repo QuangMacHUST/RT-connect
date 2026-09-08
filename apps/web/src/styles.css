@@ -456,6 +456,13 @@ td code { color: #075e67; font-size: .78rem; }
 .dvh-metric-table { min-width: 700px; }
 .dvh-provenance { border-top: 1px solid #dce5ea; display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; padding-top: 12px; }
 .dvh-provenance code { color: #075e67; }
+.dvh-ct-workspace { margin-top: 12px; }
+.dvh-ct-panel { background: #fbfdfd; }
+.dvh-ct-controls { align-items: end; display: flex; flex-wrap: wrap; gap: 14px; justify-content: space-between; margin-top: 14px; }
+.dvh-ct-controls label { color: #334155; display: grid; font-size: .82rem; font-weight: 600; gap: 6px; min-width: 220px; }
+.dvh-ct-controls select { border: 1px solid #c8d5de; border-radius: 4px; color: #0f172a; font: inherit; min-height: 38px; padding: 8px 10px; }
+.dvh-ct-view { align-items: center; background: #09131d; border: 1px solid #20384a; display: flex; justify-content: center; margin-top: 14px; min-height: 240px; overflow: auto; padding: 12px; }
+.dvh-ct-canvas { image-rendering: pixelated; max-height: 560px; max-width: 100%; object-fit: contain; }
 
 .auth-layout { display: grid; grid-template-columns: minmax(300px, 42%) minmax(0, 58%); min-height: 100vh; }
 .auth-brand { background: #0f2744; color: #eaf1ff; display: flex; flex-direction: column; gap: 32px; justify-content: center; min-height: 100%; padding: clamp(32px, 6vw, 88px); }

@@ -9,7 +9,7 @@ from rt_connect_api.api.artifacts import _storage as artifact_storage
 from rt_connect_api.api.dvh import _storage as dvh_storage
 from rt_connect_api.services.object_storage import InMemoryObjectStorage
 from test_artifacts import _case
-from test_dvh_engine import _dose_file, _structure_file
+from test_dvh_engine import _ct_file, _dose_file, _structure_file
 from test_workspace import _workspace_client
 
 
@@ -71,6 +71,9 @@ def test_dvh_api_validates_saves_replays_exports_and_scopes_inputs(tmp_path: Pat
             structure_path.read_bytes(),
             "RTSTRUCT",
         )
+        ct_path = tmp_path / "ct.dcm"
+        _ct_file(ct_path, frame_uid)
+        ct = _upload_dicom(client, case_id, "synthetic-ct.dcm", ct_path.read_bytes(), "CT")
         base = f"/api/v1/organizations/{organization.id}/qa-cases/{case_id}/dvh"
 
         inputs = client.get(f"{base}/inputs", params={"structure_artifact_id": structure["id"]})
@@ -87,6 +90,21 @@ def test_dvh_api_validates_saves_replays_exports_and_scopes_inputs(tmp_path: Pat
         assert validation.json()["valid"] is True
         assert validation.json()["preview"]["metrics"]["Dmean_gy"] == 2.0
         assert any(item["code"] == "DVH_DOSE_ONLY_MODE" for item in validation.json()["warnings"])
+
+        ct_preview = client.get(
+            f"{base}/ct-preview",
+            params={
+                "dose_artifact_id": dose["id"],
+                "ct_artifact_id": ct["id"],
+                "structure_artifact_id": structure["id"],
+                "roi_number": 1,
+                "frame_index": 1,
+            },
+        )
+        assert ct_preview.status_code == 200, ct_preview.text
+        assert ct_preview.json()["schema_version"] == "visual-dose-ct-preview.v1"
+        assert ct_preview.json()["registration"]["overlay_available"] is True
+        assert ct_preview.json()["overlay"]["valid_pixel_count"] == 25
 
         created = client.post(f"{base}/runs", json=body)
         assert created.status_code == 201, created.text
@@ -138,8 +156,9 @@ def test_dvh_api_validates_saves_replays_exports_and_scopes_inputs(tmp_path: Pat
         )
         assert limited_run["result_snapshot"]["limit_evaluation"]["rule_status"] == "PASS"
         assert limited_run["result_snapshot"]["engine_result_sha256"]
-        assert limited_run["result_snapshot"]["result_sha256"] != (
-            limited_run["result_snapshot"]["engine_result_sha256"]
+        assert (
+            limited_run["result_snapshot"]["result_sha256"]
+            != (limited_run["result_snapshot"]["engine_result_sha256"])
         )
 
         protocol = client.post(
@@ -223,9 +242,12 @@ def test_dvh_api_validates_saves_replays_exports_and_scopes_inputs(tmp_path: Pat
         assert report.status_code == 201, report.text
         assert report.json()["source_snapshot"]["source_type"] == "DVH"
         assert report.json()["source_snapshot"]["payload"]["id"] == limited_run["id"]
-        assert report.json()["source_snapshot"]["payload"]["result_snapshot"][
-            "limit_evaluation"
-        ]["margin"] == 0.5
+        assert (
+            report.json()["source_snapshot"]["payload"]["result_snapshot"]["limit_evaluation"][
+                "margin"
+            ]
+            == 0.5
+        )
 
         replay = client.post(f"{base}/runs", json=body)
         assert replay.status_code == 200, replay.text

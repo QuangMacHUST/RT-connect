@@ -5,10 +5,10 @@
 - **Tên sản phẩm:** RT-CONNECT
 - **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
 - **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
-- **Phiên bản tài liệu:** 0.19 — catalogue tính năng, workflow, ngoại lệ, phục hồi, từ điển trạng thái và tiêu chí nghiệm thu theo P0–P20; bổ sung contract liên kết DVH với protocol/knowledge và report source (2026-09-08)
+- **Phiên bản tài liệu:** 0.20 — catalogue tính năng, workflow, ngoại lệ, phục hồi, từ điển trạng thái và tiêu chí nghiệm thu theo P0–P20; bổ sung CT preview/overlay có giới hạn, transform LPS và contract staging P17 (2026-09-09)
 - **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
-Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.19 tại mục 21–22 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
+Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.20 tại mục 21–22 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
 
 ---
 
@@ -1178,9 +1178,9 @@ Clinical MVP tập trung vào Machine QA, PSQA Gamma, report, trend, input valid
 `specification.md`, `technical-specification.md` và `plan.md` được xây dựng từ các yêu cầu, quy tắc và tiêu chí nghiệm thu trong tài liệu này. Google Stitch cung cấp thiết kế trực quan; Railway và Supabase cung cấp hạ tầng đã chọn; không nguồn nào trong số đó được tự thay thế hoặc làm mất requirement nghiệp vụ.
 
 
-## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.19
+## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.20
 
-Bổ sung ngày 2026-09-08 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu; mục 22 chuẩn hóa hành vi ở cấp tính năng để không bỏ sót tiền điều kiện, side effect và bằng chứng. `specification.md` v1.13 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v3.4 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
+Bổ sung ngày 2026-09-09 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu; mục 22 chuẩn hóa hành vi ở cấp tính năng để không bỏ sót tiền điều kiện, side effect và bằng chứng. `specification.md` v1.14 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v3.5 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
 
 ### 21.1. Các quyết định sản phẩm giữ nguyên
 
@@ -1711,12 +1711,15 @@ Các mã trên là contract thực thi của slice P15, khác với việc chỉ
 | FR-P17-04 | Có validate-preview, lưu run bất biến, lịch sử, checksum nguồn, engine/schema version và JSON/CSV export; có thể đưa snapshot vào report khi user chủ động chọn. Limit/margin chỉ hiện khi có protocol/knowledge snapshot tương thích, không tự suy ra. |
 | FR-P17-05 | Người dùng có thể chủ động chọn đúng một nguồn giới hạn: một `DOSE_LIMIT` từ Biological Knowledge Library hoặc một rule `ACTIVE` từ QA Protocol; hệ thống hiển thị actual/limit/margin/status và source snapshot, không tự tìm, xếp hạng hoặc áp dụng giới hạn. |
 | FR-P17-06 | Report Builder có thể nhận một DVH run đã lưu làm source; report giữ nguyên result/input/limit snapshot của run và không chạy lại hoặc trỏ sang “latest” khác. |
+| FR-P17-07 | CT anatomy preview độc lập với phép tính DVH: đọc HU, chọn lát cắt, window/level, dose overlay và ROI overlay theo patient LPS khi geometry/Frame of Reference tương thích; hiển thị transform, crosshair, coverage và warning rõ ràng. |
 
 **Dữ liệu đầu vào và điều kiện dùng được**
 
 - RTDOSE phải là artifact DICOM thuộc đúng organization và QA case, có `DoseUnits=GY`, `DoseGridScaling` hợp lệ, pixel data finite/không âm, Rows/Columns/NumberOfFrames hợp lệ, `ImageOrientationPatient`, `ImagePositionPatient`, `PixelSpacing`, `GridFrameOffsetVector` và `FrameOfReferenceUID` đọc được. Dữ liệu thiếu manifest `VALID` không được vào DVH.
 - RTSTRUCT phải thuộc cùng case, có ROI definition và contour hợp lệ. `ROINumber` là khóa nghiệp vụ; `ROIName` chỉ là nhãn. Hai ROI trùng tên vẫn là hai ROI khác nhau. Các contour kín hỗ trợ disjoint region/hole theo parity; contour lỗi không được silently drop.
 - CT là tùy chọn đối với tính DVH và bắt buộc về mặt dữ liệu khi người dùng muốn xem anatomy overlay. CT sai modality, sai frame hoặc geometry không tương thích phải tắt overlay và chỉ giữ dose-native mode hoặc trả lỗi theo capability.
+- CT preview ở phiên bản này nhận một file CT DICOM đơn hoặc multi-frame có geometry top-level đầy đủ, ảnh một kênh `MONOCHROME1`/`MONOCHROME2`, rescale sang HU và window/level. Người dùng có thể chọn `frame_index`; hệ thống tạo lưới hiển thị bị giới hạn, dose overlay nearest-neighbor và ROI overlay tùy chọn. CT series nhiều file, Enhanced CT chỉ có geometry trong functional groups, registration ngoại lai/deformable và resampling chất lượng chẩn đoán chưa thuộc capability này.
+- CT preview không làm thay đổi dose values, DVH, prescription hay QA result. Kết quả preview là read-only, có `schema_version`, `engine_key/version`, source grid/output grid, frame/spacing/window, patient-LPS mapping, crosshair, valid/outside pixel counts, warning và `result_sha256`. Nếu lát CT không giao với dose grid, vẫn có thể xem CT nhưng overlay dose phải rỗng và có warning `CT_DOSE_NO_OVERLAP`; không gán ngoài vùng thành zero.
 - Tất cả input được kiểm tra lại bằng byte checksum của artifact và `InputManifest.checksum_at_use` ngay trước tính. Không nhận filename, ROI name hoặc số liệu do trình duyệt tự tính làm authority.
 - Nguồn giới hạn là tùy chọn và phải được chọn rõ trong cùng request: `limit_entry_id` cho một entry `DOSE_LIMIT` hoặc `protocol_version_id` cùng `protocol_metric_key` cho một protocol `ACTIVE`; không được gửi đồng thời cả hai. Không có nguồn thì kết quả chỉ là DVH, không có actual/limit/margin.
 - P16 `DRAFT` chỉ tạo warning khi user chủ động chọn để preview; `ARCHIVED`, entry sai loại, protocol không `ACTIVE`, rule không tồn tại hoặc source khác organization đều chặn. Override chỉ áp dụng cho entry P16, phải nằm trong whitelist và được snapshot cùng effective values; protocol không nhận override tự do.
@@ -1740,6 +1743,7 @@ Các mã trên là contract thực thi của slice P15, khác với việc chỉ
 6. User xem curve, metric table, dose plane/mask, coverage và provenance; refresh/reconnect chỉ đọc lại run đã lưu. JSON/CSV lấy từ snapshot, không tính lại hoặc tự chọn “latest” khác.
 7. Nếu user chọn một protocol rule hoặc knowledge limit, hệ thống validate nguồn trong organization hiện tại, tính actual/limit/margin, gắn `rule_status` và snapshot nguồn vào result; warning của source vẫn hiển thị và không bị biến thành PASS.
 8. User có thể chọn DVH run đã lưu trong Report Builder; hệ thống snapshot toàn bộ DVH result và provenance vào report source, không tự tìm run khác và không tính lại.
+9. Nếu user chọn CT, hệ thống tải lại dose/CT/RTSTRUCT theo scope và checksum, giải mã HU, chọn lát cắt và window/level, map từng pixel CT sang dose grid bằng patient LPS, rồi hiển thị grayscale + dose/ROI overlay + crosshair. Đổi lát cắt chỉ tạo preview read-only mới; không tạo DVH run hay report revision.
 
 **Trường hợp chạy đúng bắt buộc**
 
@@ -1756,6 +1760,11 @@ Các mã trên là contract thực thi của slice P15, khác với việc chỉ
 | TC-P17-S09 | Chọn một P16 `DOSE_LIMIT` tương thích, metric đã yêu cầu đủ | Result có source/effective snapshot, actual/limit/margin, `rule_status` và hash; không thay đổi DVH engine result gốc ngoài lớp binding. |
 | TC-P17-S10 | Chọn một P11 protocol `ACTIVE` và rule `d95` | Rule được resolve theo organization và metric key, result hiển thị actual/limit/margin; protocol version/rule snapshot giữ nguyên sau khi protocol thay đổi về sau. |
 | TC-P17-S11 | Chọn DVH run đã lưu làm source trong Report Builder | Report tạo được từ run đúng case/org, source snapshot chứa result/limit evaluation; refresh/export không rerun DVH. |
+| TC-P17-S12 | Chọn RTDOSE + CT cùng Frame of Reference, CT single-file hợp lệ | Preview trả HU, window/level, source/output grid và `result_sha256`; dose overlay có số pixel valid/outside; DVH và dose values không bị thay đổi. |
+| TC-P17-S13 | CT multi-frame và đổi `frame_index` hợp lệ | Lát CT, slice offset và display pixels thay đổi đúng frame; mapping/crosshair được tính lại deterministic; không tạo persistence side effect. |
+| TC-P17-S14 | Có RTSTRUCT/ROINumber hợp lệ khi mở CT preview | Overlay trả `roi_mask` cùng lưới output, ROI number/name/contour count đúng; ROI lookup vẫn theo ROINumber, không theo ROIName. |
+| TC-P17-S15 | CT thiếu WindowCenter/WindowWidth hoặc single-slice thiếu thickness | Preview vẫn thành công với warning `CT_WINDOW_DEFAULTED` và/hoặc `CT_SLICE_SPACING_DEFAULTED`; warning nói rõ đây là display/navigation default, không phải dữ liệu lâm sàng mới. |
+| TC-P17-S16 | CT slice không giao với dose grid | CT grayscale vẫn hiển thị, `overlay_available=false`, valid count bằng 0 và warning `CT_DOSE_NO_OVERLAP`; không vẽ dose giả và không báo thành công overlay. |
 
 **Trường hợp lỗi và đường phục hồi bắt buộc**
 
@@ -1769,20 +1778,27 @@ Các mã trên là contract thực thi của slice P15, khác với việc chỉ
 | TC-P17-E06 | DoseUnits khác GY, scaling thiếu, pixel không finite/âm hoặc vượt resource limit | `DVH_DOSE_UNITS_UNSUPPORTED`, `DVH_DOSE_VALUES_INVALID`, `DVH_RESOURCE_LIMIT` | Từ chối tính; yêu cầu export/scale đúng hoặc giảm workload; không đổi unit ngầm. |
 | TC-P17-E07 | ROI không tồn tại, ROINumber duplicate/invalid, không có contour hoặc mask volume bằng 0 | `DVH_ROI_INVALID`, `DVH_STRUCTURE_ARTIFACT_INVALID`, `DVH_EMPTY_STRUCTURE` | Hiển thị danh sách ROI/chi tiết contour; metric null có reason; không biến empty thành 0 Gy/PASS. |
 | TC-P17-E08 | Contour không kín, sai số point, polygon tự cắt hoặc nằm ngoài grid | `CONTOUR_GEOMETRY_INVALID`, `DVH_INCOMPLETE_COVERAGE` | Chỉ rõ ROI/slice; FULL_ROI bị chặn, user sửa dataset hoặc chọn OVERLAP_ONLY có warning. |
-| TC-P17-E09 | CT thiếu khi muốn overlay, CT sai frame/geometry | `DVH_DOSE_ONLY_MODE`, `DVH_ANATOMY_FRAME_MISMATCH` | Cho phép dose-only nếu DVH hợp lệ; tắt overlay và ghi lý do, không vẽ anatomy sai. |
+| TC-P17-E09 | CT thiếu khi muốn overlay, CT sai frame/geometry | `DVH_DOSE_ONLY_MODE`, `DICOM_FRAME_MISMATCH`, `DVH_ANATOMY_ARTIFACT_INVALID` | Cho phép dose-only nếu DVH hợp lệ; tắt overlay và ghi lý do, không vẽ anatomy sai. |
 | TC-P17-E10 | Coverage policy/ROI/metric list/slice thickness/preview limit sai | `DVH_COVERAGE_POLICY_INVALID`, `DVH_METRIC_INVALID`, `DVH_ROI_INVALID` | Lỗi field-level HTTP 422; giữ input để sửa, không tạo mutation. |
 | TC-P17-E11 | Full ROI ngoài grid; overlap-only chạy được | `DVH_INCOMPLETE_COVERAGE` hoặc warning `DVH_PARTIAL_COVERAGE` | Phân biệt lỗi không tính được với kết quả có điều kiện; coverage phải nằm trong snapshot. |
 | TC-P17-E12 | Cùng idempotency key nhưng request fingerprint khác | `DVH_IDEMPOTENCY_CONFLICT` | Trả 409, không overwrite; tải run hiện tại hoặc dùng key mới cho request khác. |
 | TC-P17-E13 | Client timeout sau commit, double-click, refresh/reconnect | `ACCEPTED`/replay | Query theo key trước retry; trả cùng run/result, không nhân bản. |
 | TC-P17-E14 | DB commit/audit/export persistence lỗi không chắc chắn hoặc run không tồn tại | `DVH_PERSISTENCE_FAILED`, `DVH_RUN_NOT_FOUND` | Không báo success giả; query/reconcile trước retry, giữ input/run cũ và trả 404 khi đúng scope nhưng ID không có. |
-| TC-P17-E15 | Gửi đồng thời `limit_entry_id` và `protocol_version_id`, hoặc gửi override không có source | `DVH_LIMIT_BINDING_CONFLICT`, `DVH_LIMIT_OVERRIDE_INVALID` | Validate false/422 tùy operation; không chạy engine và không tạo run; giữ input để chọn một nguồn rõ ràng. |
-| TC-P17-E16 | Entry không tồn tại/ARCHIVED/sai loại hoặc không thuộc organization | `DVH_LIMIT_ENTRY_NOT_FOUND`, `DVH_LIMIT_NOT_AVAILABLE`, `DVH_LIMIT_ENTRY_INVALID` | Boundary-safe; không lộ entry khác org, không fallback sang limit khác; chọn entry mới hoặc tạo version hợp lệ. |
-| TC-P17-E17 | Protocol không tồn tại/không ACTIVE/thiếu rule hoặc rule type chưa hỗ trợ | `DVH_PROTOCOL_NOT_FOUND`, `DVH_PROTOCOL_NOT_AVAILABLE`, `DVH_PROTOCOL_RULE_REQUIRED`, `DVH_PROTOCOL_RULE_NOT_FOUND`, `DVH_PROTOCOL_RULE_UNSUPPORTED` | Chặn binding; chọn protocol/rule ACTIVE tương thích hoặc tạo version mới; không dùng rule gần giống. |
-| TC-P17-E18 | Metric không có trong Dx/Vx request, Dxcc chưa hỗ trợ hoặc unit actual/limit khác nhau | `DVH_LIMIT_METRIC_NOT_COMPUTED`, `DVH_LIMIT_METRIC_UNSUPPORTED`, `DVH_LIMIT_UNIT_MISMATCH` | Không tạo evaluation giả; bổ sung metric request/chọn rule khác hoặc sửa unit nguồn có version; không đổi unit ngầm. |
-| TC-P17-E19 | Limit numeric/range/operator/override không hợp lệ hoặc source warning cần review | `DVH_LIMIT_DEFINITION_INVALID`, `DVH_LIMIT_ENTRY_INVALID` và warning source | Lỗi definition chặn; warning vẫn giữ result nhưng `status=REVIEW_REQUIRED`, `rule_status` tách riêng PASS/FAIL. |
-| TC-P17-E20 | DVH run không thuộc org/case hoặc Report Builder gửi source type/ID không khớp | `REPORT_SOURCE_UNAVAILABLE`, `DVH_RUN_NOT_FOUND` | Không tạo report từ nguồn ngoài scope; chọn run đúng case/org, giữ report draft và không lộ metadata. |
+| TC-P17-E18 | Gửi đồng thời `limit_entry_id` và `protocol_version_id`, hoặc gửi override không có source | `DVH_LIMIT_BINDING_CONFLICT`, `DVH_LIMIT_OVERRIDE_INVALID` | Validate false/422 tùy operation; không chạy engine và không tạo run; giữ input để chọn một nguồn rõ ràng. |
+| TC-P17-E19 | Entry không tồn tại/ARCHIVED/sai loại hoặc không thuộc organization | `DVH_LIMIT_ENTRY_NOT_FOUND`, `DVH_LIMIT_NOT_AVAILABLE`, `DVH_LIMIT_ENTRY_INVALID` | Boundary-safe; không lộ entry khác org, không fallback sang limit khác; chọn entry mới hoặc tạo version hợp lệ. |
+| TC-P17-E20 | Protocol không tồn tại/không ACTIVE/thiếu rule hoặc rule type chưa hỗ trợ | `DVH_PROTOCOL_NOT_FOUND`, `DVH_PROTOCOL_NOT_AVAILABLE`, `DVH_PROTOCOL_RULE_REQUIRED`, `DVH_PROTOCOL_RULE_NOT_FOUND`, `DVH_PROTOCOL_RULE_UNSUPPORTED` | Chặn binding; chọn protocol/rule ACTIVE tương thích hoặc tạo version mới; không dùng rule gần giống. |
+| TC-P17-E21 | Metric không có trong Dx/Vx request, Dxcc chưa hỗ trợ hoặc unit actual/limit khác nhau | `DVH_LIMIT_METRIC_NOT_COMPUTED`, `DVH_LIMIT_METRIC_UNSUPPORTED`, `DVH_LIMIT_UNIT_MISMATCH` | Không tạo evaluation giả; bổ sung metric request/chọn rule khác hoặc sửa unit nguồn có version; không đổi unit ngầm. |
+| TC-P17-E22 | Limit numeric/range/operator/override không hợp lệ hoặc source warning cần review | `DVH_LIMIT_DEFINITION_INVALID`, `DVH_LIMIT_ENTRY_INVALID` và warning source | Lỗi definition chặn; warning vẫn giữ result nhưng `status=REVIEW_REQUIRED`, `rule_status` tách riêng PASS/FAIL. |
+| TC-P17-E23 | DVH run không thuộc org/case hoặc Report Builder gửi source type/ID không khớp | `REPORT_SOURCE_UNAVAILABLE`, `DVH_RUN_NOT_FOUND` | Không tạo report từ nguồn ngoài scope; chọn run đúng case/org, giữ report draft và không lộ metadata. |
+| TC-P17-E24 | CT artifact không tồn tại, ngoài case/org, chưa VALID hoặc checksum/storage không khớp | `DVH_INPUT_SCOPE_MISMATCH`, `DVH_INPUT_NOT_VALIDATED`, `DVH_SOURCE_CHANGED`, `DVH_STORAGE_UNAVAILABLE` | Không gọi renderer; giữ dose-native/DVH nếu workflow cho phép, hiển thị bước sửa CT hoặc retry storage; không đọc CT raw như đã xác minh. |
+| TC-P17-E25 | CT không phải CT, thiếu modality/Frame UID/Rows/Columns/IPP/IOP/PixelSpacing hoặc frame offsets không hợp lệ | `DVH_ANATOMY_ARTIFACT_INVALID`, `DICOM_GEOMETRY_INVALID` | Chặn anatomy preview và nêu attribute; DVH dose-native vẫn độc lập nếu input của nó hợp lệ; không đoán geometry. |
+| TC-P17-E26 | CT và RTDOSE khác Frame of Reference | `DICOM_FRAME_MISMATCH` | Không overlay và không tự registration; cho phép quay về dose-native hoặc chọn dataset cùng frame. |
+| TC-P17-E27 | CT codec/pixel data/số sample/shape/photometric không hỗ trợ | `DICOM_CAPABILITY_UNSUPPORTED`, `DVH_ANATOMY_ARTIFACT_INVALID` | Không dựng ảnh một phần; nêu codec/field, yêu cầu export CT single-channel hỗ trợ hoặc tắt preview. |
+| TC-P17-E28 | RescaleSlope/Intercept, WindowCenter/Width thiếu sai kiểu, non-finite hoặc width không dương | `DVH_ANATOMY_ARTIFACT_INVALID`; warning `CT_RESCALE_DEFAULTED` chỉ khi thiếu hoàn toàn | Không biến dữ liệu hỏng thành HU hợp lệ; default chỉ áp dụng cho field thiếu được phép và luôn hiển thị warning. |
+| TC-P17-E29 | `frame_index`, `dose_frame_index`, ROI pair hoặc preview limit sai; CT vượt `DVH_MAX_CT_PIXELS`/preview limit | `DICOM_GEOMETRY_INVALID`, `DVH_ROI_INVALID`, `DVH_METRIC_INVALID`, `DVH_RESOURCE_LIMIT` | HTTP 422, không side effect; giữ lựa chọn có thể sửa, giảm workload hoặc chọn frame/ROI hợp lệ. |
+| TC-P17-E30 | Lát CT hợp lệ nhưng nằm ngoài dose grid hoặc mapping không có pixel dose | warning `CT_DOSE_NO_OVERLAP` | Vẫn render CT read-only, overlay để rỗng, ghi valid/outside counts; không gọi là registration thành công và không tạo result QA. |
 
-**Nghiệm thu nhóm:** P17 chỉ đạt khi có known-answer geometry/DVH, API scope/checksum/idempotency, explicit P11/P16 binding, DVH report source, UI loading/empty/warning/error/result/history/export và staging browser→API→Railway PostgreSQL/object storage trên cùng candidate. CT anatomy, workload/fault và independent oracle vẫn là gate riêng nếu nằm trong release scope. P17 không được coi là hoàn tất chỉ vì endpoint health trả 200 hoặc ảnh Stitch hiển thị đúng.
+**Nghiệm thu nhóm:** P17 chỉ đạt khi có known-answer geometry/DVH, API scope/checksum/idempotency, explicit P11/P16 binding, DVH report source, UI loading/empty/warning/error/result/history/export và staging browser→API→Railway PostgreSQL/object storage trên cùng candidate. CT anatomy phải đạt S12–S16 và E24–E30; workload/fault và independent oracle phải có evidence riêng nếu nằm trong release scope. P17 không được coi là hoàn tất chỉ vì endpoint health trả 200 hoặc ảnh Stitch hiển thị đúng.
 
 #### P18 — Kiểm thử tích hợp, độ bền và pilot
 
@@ -2045,7 +2061,7 @@ Bảng này là bản đồ ngắn gọn để không bỏ sót phase. `S` là w
 
 Không được dùng cột `S` để bỏ qua cột `E`; một workflow chỉ được gọi là “hoàn thiện” khi cả hai đã có expected/observed/evidence. Khi implementation chưa tồn tại, các mã này vẫn là target và phải giữ `NOT_RUN`, không tạo screenshot hoặc dữ liệu giả để lấp checklist.
 
-## 22. Ma trận hành vi ở cấp tính năng v0.19
+## 22. Ma trận hành vi ở cấp tính năng v0.20
 
 Mục này chuyển catalogue phase ở mục 21 thành một hợp đồng dễ dùng khi thiết kế màn hình, viết API và lập testcase. Mỗi `FR-Pxx-yy` là một nhóm tính năng có thể truy vết; không được coi một nhóm là hoàn thiện chỉ vì một nút trên giao diện đã xuất hiện. Các mô tả dưới đây là yêu cầu nghiệp vụ; field/API/transaction cụ thể được chuẩn hóa tiếp trong `specification.md`.
 

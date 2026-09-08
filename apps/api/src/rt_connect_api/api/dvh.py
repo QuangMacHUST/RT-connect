@@ -45,6 +45,7 @@ from rt_connect_api.services.dose_dvh_engine import (
     DVHAnalysis,
     DVHEngineError,
     analyze_dvh,
+    create_ct_preview,
     list_structure_rois,
     request_fingerprint,
 )
@@ -373,17 +374,13 @@ def _limit_errors(exc: DvhLimitAdapterError) -> list[dict[str, object]]:
         {
             "code": exc.code,
             "field": item.get("field") if isinstance(item.get("field"), str) else exc.field,
-            "message": item.get("message")
-            if isinstance(item.get("message"), str)
-            else exc.message,
+            "message": item.get("message") if isinstance(item.get("message"), str) else exc.message,
         }
         for item in exc.details
     ] or [{"code": exc.code, "field": exc.field, "message": exc.message}]
 
 
-def _apply_limit_binding(
-    analysis: DVHAnalysis, binding: DvhLimitBinding | None
-) -> DVHAnalysis:
+def _apply_limit_binding(analysis: DVHAnalysis, binding: DvhLimitBinding | None) -> DVHAnalysis:
     """Add explicit limit evaluation without changing the pure DVH engine."""
 
     if binding is None:
@@ -402,6 +399,27 @@ def _apply_limit_binding(
     return DVHAnalysis(normalized_input=normalized, result=result, warnings=warnings)
 
 
+def _download_resolved_artifact(
+    storage: ObjectStorage, resolved: _ResolvedArtifact, path: Path
+) -> None:
+    try:
+        storage.download_to_path(resolved.artifact.object_key, path)
+    except ObjectStorageError as exc:
+        raise DomainError(
+            "DVH_STORAGE_UNAVAILABLE",
+            "A selected DVH artifact could not be read from durable storage.",
+            503,
+        ) from exc
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if digest != resolved.artifact.sha256 or digest != resolved.manifest.checksum_at_use:
+        raise DomainError(
+            "DVH_SOURCE_CHANGED",
+            "A selected artifact no longer matches its stored checksum snapshot.",
+            409,
+            [{"field": "sha256", "message": resolved.artifact.original_filename}],
+        )
+
+
 @contextmanager
 def _download_inputs(
     storage: ObjectStorage, inputs: _ResolvedInputs
@@ -414,24 +432,27 @@ def _download_inputs(
         for index, resolved in enumerate((inputs.dose, inputs.structure, inputs.ct)):
             if resolved is None:
                 continue
-            path = root / f"input-{index}.dcm"
-            try:
-                storage.download_to_path(resolved.artifact.object_key, path)
-            except ObjectStorageError as exc:
-                raise DomainError(
-                    "DVH_STORAGE_UNAVAILABLE",
-                    "A selected DVH artifact could not be read from durable storage.",
-                    503,
-                ) from exc
-            digest = hashlib.sha256(path.read_bytes()).hexdigest()
-            if digest != resolved.artifact.sha256 or digest != resolved.manifest.checksum_at_use:
-                raise DomainError(
-                    "DVH_SOURCE_CHANGED",
-                    "A selected artifact no longer matches its stored checksum snapshot.",
-                    409,
-                    [{"field": "sha256", "message": resolved.artifact.original_filename}],
-                )
+            _download_resolved_artifact(storage, resolved, root / f"input-{index}.dcm")
         yield dose_path, structure_path, ct_path if inputs.ct is not None else None
+
+
+@contextmanager
+def _download_ct_preview_inputs(
+    storage: ObjectStorage,
+    dose: _ResolvedArtifact,
+    ct: _ResolvedArtifact,
+    structure: _ResolvedArtifact | None,
+) -> Iterator[tuple[Path, Path, Path | None]]:
+    with tempfile.TemporaryDirectory(prefix="rt-connect-ct-preview-") as directory:
+        root = Path(directory)
+        dose_path = root / "dose.dcm"
+        ct_path = root / "ct.dcm"
+        structure_path = root / "structure.dcm"
+        _download_resolved_artifact(storage, dose, dose_path)
+        _download_resolved_artifact(storage, ct, ct_path)
+        if structure is not None:
+            _download_resolved_artifact(storage, structure, structure_path)
+        yield dose_path, ct_path, structure_path if structure is not None else None
 
 
 def _analyze(
@@ -439,6 +460,7 @@ def _analyze(
     inputs: _ResolvedInputs,
     storage: ObjectStorage,
     max_voxels: int,
+    max_ct_pixels: int,
 ) -> DVHAnalysis:
     with _download_inputs(storage, inputs) as paths:
         try:
@@ -452,6 +474,7 @@ def _analyze(
                 vx_doses_gy=request.vx_doses_gy,
                 ct_path=paths[2],
                 max_voxels=max_voxels,
+                max_ct_pixels=max_ct_pixels,
                 preview_limit=request.preview_limit,
             )
         except DVHEngineError:
@@ -618,6 +641,98 @@ def list_dvh_inputs(
     )
 
 
+@router.get("/ct-preview", response_model=dict[str, object])
+def get_ct_preview(
+    organization_id: UUID,
+    case_id: UUID,
+    http_request: Request,
+    dose_artifact_id: UUID = Query(...),
+    ct_artifact_id: UUID = Query(...),
+    structure_artifact_id: UUID | None = Query(default=None),
+    roi_number: int | None = Query(default=None, gt=0),
+    frame_index: int = Query(default=0, ge=0),
+    dose_frame_index: int | None = Query(default=None, ge=0),
+    preview_limit: int = Query(default=65_536, ge=256, le=262_144),
+    identity: AuthenticatedIdentity = Depends(require_identity),
+    session: Session = Depends(get_session),
+    storage: ObjectStorage = Depends(_storage),
+) -> dict[str, object]:
+    """Return a bounded CT slice and explicit dose/ROI patient-LPS overlays."""
+
+    context = _context_for_organization(organization_id, identity, session)
+    case = _case_or_error(session, context, case_id)
+    if (structure_artifact_id is None) != (roi_number is None):
+        raise DomainError(
+            "DVH_ROI_INVALID",
+            "structure_artifact_id and roi_number must be supplied together for ROI overlay.",
+            422,
+        )
+    dose = _resolve_artifact(
+        session,
+        context,
+        case,
+        dose_artifact_id,
+        expected_modality="RTDOSE",
+        label="dose",
+    )
+    ct = _resolve_artifact(
+        session,
+        context,
+        case,
+        ct_artifact_id,
+        expected_modality="CT",
+        label="anatomy",
+    )
+    structure = (
+        _resolve_artifact(
+            session,
+            context,
+            case,
+            structure_artifact_id,
+            expected_modality="RTSTRUCT",
+            label="structure",
+        )
+        if structure_artifact_id is not None
+        else None
+    )
+    configured_preview_limit = int(
+        getattr(http_request.app.state.settings, "dvh_max_ct_preview_pixels", 65_536)
+    )
+    if preview_limit > configured_preview_limit:
+        raise DomainError(
+            "DVH_RESOURCE_LIMIT",
+            "The requested CT preview exceeds the configured response pixel limit.",
+            422,
+            [
+                {
+                    "field": "preview_limit",
+                    "message": (
+                        f"{preview_limit} exceeds configured limit {configured_preview_limit}."
+                    ),
+                }
+            ],
+        )
+    with _download_ct_preview_inputs(storage, dose, ct, structure) as paths:
+        try:
+            return create_ct_preview(
+                paths[1],
+                paths[0],
+                frame_index=frame_index,
+                dose_frame_index=dose_frame_index,
+                structure_path=paths[2],
+                roi_number=roi_number,
+                max_ct_pixels=int(
+                    getattr(http_request.app.state.settings, "dvh_max_ct_pixels", 8_000_000)
+                ),
+                max_dose_voxels=int(
+                    getattr(http_request.app.state.settings, "gamma_max_voxels", 2_000_000)
+                ),
+                preview_limit=preview_limit,
+            )
+        except DVHEngineError as exc:
+            raise DomainError(exc.code, exc.message, 422, _engine_details(exc)) from exc
+
+
 @router.post("/validate", response_model=DvhValidationResponse)
 def validate_dvh(
     request: DvhRequest,
@@ -647,6 +762,7 @@ def validate_dvh(
             inputs,
             storage,
             int(getattr(http_request.app.state.settings, "gamma_max_voxels", 2_000_000)),
+            int(getattr(http_request.app.state.settings, "dvh_max_ct_pixels", 8_000_000)),
         )
         analysis = _apply_limit_binding(analysis, binding)
     except DVHEngineError as exc:
@@ -707,6 +823,7 @@ def create_dvh_run(
             inputs,
             storage,
             int(getattr(http_request.app.state.settings, "gamma_max_voxels", 2_000_000)),
+            int(getattr(http_request.app.state.settings, "dvh_max_ct_pixels", 8_000_000)),
         )
     except DVHEngineError as exc:
         raise DomainError(exc.code, exc.message, 422, _engine_details(exc)) from exc

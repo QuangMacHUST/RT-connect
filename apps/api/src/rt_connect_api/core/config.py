@@ -29,6 +29,8 @@ class Settings(BaseSettings):
     gamma_execution_deadline_seconds: int = Field(default=900, ge=60, le=86_400)
     gamma_max_voxels: int = Field(default=2_000_000, ge=1_024, le=100_000_000)
     gamma_max_candidate_evaluations: int = Field(default=50_000_000, ge=10_000)
+    dvh_max_ct_pixels: int = Field(default=8_000_000, ge=1_024, le=100_000_000)
+    dvh_max_ct_preview_pixels: int = Field(default=65_536, ge=256, le=262_144)
     cors_allowed_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:5173"]
     )

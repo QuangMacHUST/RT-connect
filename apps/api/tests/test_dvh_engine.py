@@ -5,11 +5,18 @@ from pathlib import Path
 import numpy as np
 import pytest
 from pydicom.dataset import Dataset, FileDataset, FileMetaDataset
-from pydicom.uid import ExplicitVRLittleEndian, RTDoseStorage, RTStructureSetStorage, generate_uid
+from pydicom.uid import (
+    CTImageStorage,
+    ExplicitVRLittleEndian,
+    RTDoseStorage,
+    RTStructureSetStorage,
+    generate_uid,
+)
 
 from rt_connect_api.services.dose_dvh_engine import (
     DVHEngineError,
     analyze_dvh,
+    create_ct_preview,
     list_structure_rois,
 )
 
@@ -162,6 +169,56 @@ def _structure_file(
 
     dataset.StructureSetROISequence = definitions
     dataset.ROIContourSequence = roi_contours
+    _write_dataset(dataset, path)
+
+
+def _ct_file(
+    path: Path,
+    frame_uid: str,
+    *,
+    shape: tuple[int, int, int] = (3, 5, 5),
+    values: np.ndarray | None = None,
+    window: tuple[float, float] | None = (0.0, 400.0),
+    photometric: str = "MONOCHROME2",
+) -> None:
+    frames, rows, columns = shape
+    sop_instance_uid = generate_uid()
+    file_meta = FileMetaDataset()
+    file_meta.MediaStorageSOPClassUID = CTImageStorage
+    file_meta.MediaStorageSOPInstanceUID = sop_instance_uid
+    file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
+    file_meta.ImplementationClassUID = generate_uid()
+    dataset = FileDataset(str(path), {}, file_meta=file_meta, preamble=b"\0" * 128)
+    dataset.SOPClassUID = CTImageStorage
+    dataset.SOPInstanceUID = sop_instance_uid
+    dataset.StudyInstanceUID = generate_uid()
+    dataset.SeriesInstanceUID = generate_uid()
+    dataset.FrameOfReferenceUID = frame_uid
+    dataset.Modality = "CT"
+    dataset.Rows = rows
+    dataset.Columns = columns
+    if frames > 1:
+        dataset.NumberOfFrames = frames
+    dataset.SamplesPerPixel = 1
+    dataset.PhotometricInterpretation = photometric
+    dataset.BitsAllocated = 16
+    dataset.BitsStored = 16
+    dataset.HighBit = 15
+    dataset.PixelRepresentation = 0
+    dataset.PixelSpacing = [2.0, 4.0]
+    dataset.SliceThickness = 2.0
+    dataset.SpacingBetweenSlices = 2.0
+    dataset.ImagePositionPatient = [0.0, 0.0, 0.0]
+    dataset.ImageOrientationPatient = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0]
+    dataset.RescaleSlope = 1.0
+    dataset.RescaleIntercept = -1000.0
+    if window is not None:
+        dataset.WindowCenter = window[0]
+        dataset.WindowWidth = window[1]
+    raw_values = (
+        values if values is not None else np.arange(np.prod(shape), dtype=np.uint16).reshape(shape)
+    )
+    dataset.PixelData = np.asarray(raw_values, dtype=np.uint16).tobytes()
     _write_dataset(dataset, path)
 
 
@@ -328,3 +385,54 @@ def test_committed_staging_fixture_matches_the_dose_grid() -> None:
     assert analysis.result["coverage"]["selected_voxel_count"] == 4
     assert analysis.result["dose"]["mean_gy"] == 6.5
     assert analysis.result["metrics"]["Dx_gy"]["D95_gy"] == 5.15
+
+
+def test_ct_preview_returns_hu_slice_patient_lps_overlay_and_crosshair(tmp_path: Path) -> None:
+    dose_path = tmp_path / "dose.dcm"
+    structure_path = tmp_path / "structures.dcm"
+    ct_path = tmp_path / "ct.dcm"
+    frame_uid = _dose_file(dose_path)
+    _structure_file(structure_path, frame_uid)
+    _ct_file(ct_path, frame_uid)
+
+    preview = create_ct_preview(
+        ct_path,
+        dose_path,
+        frame_index=1,
+        structure_path=structure_path,
+        roi_number=1,
+    )
+
+    assert preview["schema_version"] == "visual-dose-ct-preview.v1"
+    assert preview["ct"]["frame_count"] == 3
+    assert preview["ct"]["value_unit"] == "HU"
+    assert len(preview["ct"]["display_pixels"]) == 25
+    assert preview["registration"]["mode"] == "SHARED_FRAME_OF_REFERENCE"
+    assert preview["registration"]["overlay_available"] is True
+    assert preview["registration"]["crosshair"]["visible"] is True
+    assert preview["overlay"]["valid_pixel_count"] == 25
+    assert any(preview["overlay"]["roi_mask"])
+    assert (
+        len(preview["registration"]["plane_mapping_matrix_dose_row_col_to_ct_frame_row_column"])
+        == 3
+    )
+    assert preview["result_sha256"]
+
+
+def test_ct_preview_defaults_window_and_rejects_unsafe_frame_or_resource(tmp_path: Path) -> None:
+    dose_path = tmp_path / "dose.dcm"
+    ct_path = tmp_path / "ct.dcm"
+    frame_uid = _dose_file(dose_path)
+    _ct_file(ct_path, frame_uid, window=None)
+
+    preview = create_ct_preview(ct_path, dose_path, frame_index=2)
+    assert preview["ct"]["frame_index"] == 2
+    assert any(item["code"] == "CT_WINDOW_DEFAULTED" for item in preview["warnings"])
+
+    with pytest.raises(DVHEngineError, match="outside the available frame range") as frame_error:
+        create_ct_preview(ct_path, dose_path, frame_index=3)
+    assert frame_error.value.code == "DICOM_GEOMETRY_INVALID"
+
+    with pytest.raises(DVHEngineError) as resource_error:
+        create_ct_preview(ct_path, dose_path, max_ct_pixels=10)
+    assert resource_error.value.code == "DVH_RESOURCE_LIMIT"

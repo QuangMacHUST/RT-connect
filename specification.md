@@ -1,10 +1,10 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.13**; ngày 2026-09-08.
-- Nguồn nghiệp vụ: business-analysis.md v0.19.
-- Kế hoạch triển khai: plan.md v3.4, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.10.
-- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime. Bản 1.13 bổ sung explicit P11/P16 limit binding, actual/limit/margin evaluation và DVH report-source contract vào SPEC-P17; các ràng buộc state machine, coverage contract B01–B12, acceptance evidence schema, quy tắc xử lý “unknown outcome” và hợp đồng Visual Dose/DVH của bản trước vẫn giữ nguyên.
+- File: specification.md; version **1.14**; ngày 2026-09-09.
+- Nguồn nghiệp vụ: business-analysis.md v0.20.
+- Kế hoạch triển khai: plan.md v3.5, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.11.
+- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime. Bản 1.14 bổ sung CT preview/overlay bounded contract, frame navigation, HU/window semantics, LPS mapping và warning/error/recovery cho SPEC-P17; explicit P11/P16 limit binding, actual/limit/margin evaluation, DVH report-source contract, state machine, coverage contract B01–B12 và acceptance evidence schema vẫn giữ nguyên.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
 
@@ -1065,7 +1065,7 @@ Validation errors are not QA `FAIL`; a valid dose-limit result is not a clinical
 
 | Hạng mục | Đặc tả |
 | :--- | :--- |
-| Module/requirement | MOD-15; FR-P17-01 đến FR-P17-04 |
+| Module/requirement | MOD-15; FR-P17-01 đến FR-P17-07 |
 | Bounded context | QA case scoped; không sửa raw DICOM, RTPLAN, prescription, TPS hoặc PACS. Biological Toolkit vẫn là namespace độc lập. |
 | Input | `RTDOSE` bắt buộc và `RTSTRUCT` bắt buộc cho DVH; `CT` tùy chọn cho frame/anatomy context. Chỉ artifact thuộc cùng organization/case có `data_status=VALID` và latest manifest `VALID`. |
 | DICOM authority | Modality, SOP/metadata, Rows/Columns/NumberOfFrames, PixelData, DoseUnits, DoseGridScaling, IOP/IPP, PixelSpacing, GridFrameOffsetVector, FrameOfReferenceUID và byte checksum. Filename/ROIName không phải khóa. |
@@ -1073,13 +1073,13 @@ Validation errors are not QA `FAIL`; a valid dose-limit result is not a clinical
 | ROI | Chọn theo positive unique `ROINumber`; CLOSED_PLANAR/CLOSEDPLANAR_XOR; disjoint/hole dùng parity; contour non-finite, self-intersection/unsupported hoặc ROI không tồn tại là lỗi rõ ràng. |
 | Metrics | Physical dose Gy; weighted volume cc; Dmin/Dmean/Dmax, D(x) quantile tuyến tính, V(x) cc/% với `dose >= threshold`; preset D2/D50/D95/D98 và V0/V20/V30/V40/V50; input custom được normalize/deduplicate. |
 | Coverage | `FULL_ROI` chặn contour ngoài dose grid; `OVERLAP_ONLY` trả result có warning `DVH_PARTIAL_COVERAGE`, selected volume/outside count/frame counts; không gán vùng ngoài grid bằng zero. |
-| Operation/API surface | `/api/v1/organizations/{organization_id}/qa-cases/{case_id}/dvh/inputs`; `POST /validate`; `POST /runs`; `GET /runs`; `GET /runs/{run_id}`; `GET /runs/{run_id}/export?export_format=JSON|CSV`; Report Builder accepts a saved run as `source_type=DVH`. |
+| Operation/API surface | `/api/v1/organizations/{organization_id}/qa-cases/{case_id}/dvh/inputs`; `POST /validate`; `POST /runs`; `GET /runs`; `GET /runs/{run_id}`; `GET /runs/{run_id}/export?export_format=JSON|CSV`; `GET /dvh/ct-preview` for the independent bounded CT preview; Report Builder accepts a saved run as `source_type=DVH`. |
 | Model/storage | `dvh_analysis_runs`: organization/case/input artifact IDs, ROI, idempotency key/fingerprint, engine/schema version, input/result/warning/error snapshots, actor/timestamps; migration `20260908_0017_dvh_analysis.py`. Raw DICOM remains immutable. |
 | Transaction/invariant | Resolve scope before first resource query; validate/checksum before engine; validate-only creates no row; saved run pins all input/geometry/config/source hashes; unique `(organization_id,idempotency_key)` prevents duplicate; export serializes snapshot. |
-| Execution | Current slice is synchronous API execution. An explicit P11/P16 adapter may resolve one selected source, snapshot it and evaluate actual/limit/margin; it never searches or auto-applies a reference. Async worker/large workload and CT image renderer/crosshair/registration artifact remain explicit follow-up packages. |
-| Output | `DvhInputsResponse`, `DvhValidationResponse`, `DvhRunResponse`, dose-native visual preview, curve, metrics, coverage, warning, provenance, optional `limit_binding`, optional `limit_evaluation` and JSON/CSV export. Without an explicit compatible source, `actual/limit/margin` is absent/N/A. A selected source warning may make display `status=REVIEW_REQUIRED` while `rule_status` remains PASS/FAIL. |
-| Success oracle | TC-P17-S01 đến TC-P17-S08 trong plan |
-| Error/recovery oracle | TC-P17-E01 đến TC-P17-E17 trong plan; generic B01–B12 and C03–C16 apply where relevant. |
+| Execution | DVH run hiện là synchronous API execution. CT preview là read-only synchronous operation, có resource limit riêng và không tạo `dvh_analysis_runs`. Explicit P11/P16 adapter có thể resolve một source được chọn, snapshot và evaluate actual/limit/margin; không search hoặc auto-apply. Async worker/large workload vẫn là package riêng. |
+| Output | `DvhInputsResponse`, `DvhValidationResponse`, `DvhRunResponse`, dose-native visual preview, CT preview, curve, metrics, coverage, warning, provenance, optional `limit_binding`, optional `limit_evaluation` và JSON/CSV export. Without an explicit compatible source, `actual/limit/margin` is absent/N/A. A selected source warning may make display `status=REVIEW_REQUIRED` while `rule_status` remains PASS/FAIL. |
+| Success oracle | TC-P17-S01 đến TC-P17-S16 trong plan |
+| Error/recovery oracle | TC-P17-E01 đến TC-P17-E30 trong plan; generic B01–B12 and C03–C16 apply where relevant. |
 | Exit | Local engine/API/UI/migration checks pass; staging browser→API→PostgreSQL/object storage, geometry/DVH oracle, scope/checksum/idempotency, negative/fault/volume/export evidence pass. |
 
 #### SPEC-P17.1 — Request schema
@@ -1160,6 +1160,78 @@ When a binding is present, `result_snapshot.limit_evaluation` contains `source_t
 | DVH source unavailable to Report Builder | 404 | `REPORT_SOURCE_UNAVAILABLE`, `DVH_RUN_NOT_FOUND` | Keep report draft; choose a DVH run in the current organization/case and do not reveal another source. |
 
 `DVH_DOSE_ONLY_MODE` is a warning when CT is omitted; it is not an error. A valid result with `DVH_PARTIAL_COVERAGE` is not a full-ROI clinical conclusion. No P17 response may label a valid numeric result as QA PASS without a separate protocol rule evaluation.
+
+#### SPEC-P17.5 — CT preview/overlay request và response
+
+CT preview là operation riêng cho FR-P17-07. Nó phục vụ xem trực quan có giới hạn, không phải registration chẩn đoán, không thay thế CT viewer/PACS và không làm thay đổi DVH run.
+
+**Route:**
+
+```text
+GET /api/v1/organizations/{organization_id}/qa-cases/{case_id}/dvh/ct-preview
+  ?dose_artifact_id=<uuid>
+  &ct_artifact_id=<uuid>
+  [&structure_artifact_id=<uuid>&roi_number=<positive-int>]
+  [&frame_index=<int>]
+  [&dose_frame_index=<int>]
+  [&preview_limit=<256..262144>]
+```
+
+Rules bắt buộc:
+
+1. Identity/membership, organization và QA case được resolve trước mọi artifact query. Dose và CT phải thuộc cùng case/organization, là DICOM `VALID`, có manifest `VALID` và byte checksum khớp. Structure/ROI là cặp tùy chọn; gửi một mà thiếu một là lỗi `DVH_ROI_INVALID`.
+2. `frame_index` mặc định `0`, phải nằm trong `[0, frame_count)`. `dose_frame_index` mặc định là frame giữa của dose grid, phải nằm trong `[0, dose_frame_count)`. `preview_limit` mặc định `65_536`, bị giới hạn bởi `DVH_MAX_CT_PREVIEW_PIXELS` và không vượt `[256,262144]`.
+3. Phiên bản hiện tại chỉ hỗ trợ một file CT single-frame hoặc multi-frame có `Modality=CT`, `FrameOfReferenceUID`, `Rows`, `Columns`, `ImagePositionPatient`, `ImageOrientationPatient`, `PixelSpacing`, frame offsets hợp lệ, `SamplesPerPixel=1` và `PhotometricInterpretation=MONOCHROME1|MONOCHROME2`. CT series nhiều file, Enhanced CT chỉ có geometry trong functional groups, multi-sample và photometric khác phạm vi là capability unsupported.
+4. Pixel CT được giải mã và chuẩn hóa HU bằng `HU = stored_pixel × RescaleSlope + RescaleIntercept`. Nếu slope/intercept thiếu hoàn toàn, default `1.0/0.0` chỉ được dùng cho preview và phải thêm warning `CT_RESCALE_DEFAULTED`; giá trị sai kiểu, non-finite hoặc slope bằng zero là lỗi. Window/level dùng `WindowCenter/WindowWidth`; nếu cả hai thiếu, dùng percentile 1–99 cho display và warning `CT_WINDOW_DEFAULTED`. Width không dương là lỗi.
+5. CT và dose phải có cùng `FrameOfReferenceUID`. Mỗi pixel trên lát CT được đưa về patient LPS, sau đó nearest-neighbor map vào dose `(frame,row,column)`. Response phải ghi rõ `overlay_algorithm=NEAREST_NEIGHBOR_IN_PATIENT_LPS`, `valid_pixel_count`, `outside_pixel_count` và mapping matrix; matrix là phép map từ chỉ số row/column của dose reference plane sang chỉ số liên tục frame/row/column của CT, không phải deformable registration.
+6. ROI overlay nếu được yêu cầu lấy mask đã rasterize theo cùng dose geometry và map lên lưới CT. Không có structure vẫn cho xem grayscale + dose overlay. Khi không có pixel dose giao với lát CT, CT vẫn có thể render nhưng `overlay_available=false`, dose array dùng `null` cho pixel ngoài dose và warning `CT_DOSE_NO_OVERLAP`.
+7. Response không ghi DB, không tạo operation/job/report, không được dùng làm input authority cho DVH. `result_sha256` được tính trên canonical JSON trước khi thêm chính nó; đổi frame/window/limit phải tạo response/hash mới nhưng không sửa run cũ.
+
+Response tối thiểu:
+
+```json
+{
+  "schema_version": "visual-dose-ct-preview.v1",
+  "engine_key": "visual-dose.ct-preview",
+  "engine_version": "p17-ct-preview-1.0.0",
+  "ct": {
+    "frame_index": 0,
+    "frame_count": 3,
+    "value_unit": "HU",
+    "display_range_hu": [-1000, 300],
+    "source_grid": {"rows": 512, "columns": 512},
+    "output_grid": {"rows": 256, "columns": 256, "stride": 2},
+    "display_pixels": [0, 128, 255]
+  },
+  "registration": {
+    "mode": "SHARED_FRAME_OF_REFERENCE",
+    "status": "LINKED",
+    "patient_coordinate_system": "LPS",
+    "overlay_algorithm": "NEAREST_NEIGHBOR_IN_PATIENT_LPS",
+    "overlay_available": true,
+    "dose_frame_index": 0,
+    "plane_mapping_matrix_dose_row_col_to_ct_frame_row_column": [[0, 0, 0], [0, 0, 0], [0, 0, 1]],
+    "crosshair": {"source": "DOSE_GRID_CENTER", "patient_lps_mm": [0, 0, 0], "ct_index": [0, 0, 0], "nearest_pixel": [0, 0, 0], "visible": true}
+  },
+  "overlay": {"rows": 256, "columns": 256, "stride": 2, "dose_gy": [null], "roi_mask": null, "valid_pixel_count": 1, "outside_pixel_count": 0},
+  "roi": null,
+  "warnings": [],
+  "result_sha256": "sha256"
+}
+```
+
+Success/error semantics của CT preview:
+
+| Tình huống | Kết quả | Invariant/phục hồi |
+| :--- | :--- | :--- |
+| CT hợp lệ, cùng Frame of Reference | `200`, response parse được, overlay/crosshair/hash đầy đủ | Không có DB mutation; chỉ dùng cho visual review, không gọi là registration chẩn đoán. |
+| Đổi frame hợp lệ | `200`, frame/offset/pixels/mapping/hash đổi đúng | Request mới read-only; không sửa DVH/report. |
+| Thiếu window hoặc single-slice spacing | `200` + warning `CT_WINDOW_DEFAULTED`/`CT_SLICE_SPACING_DEFAULTED` | Default chỉ dành cho display/navigation và phải hiển thị cho user. |
+| Không giao dose | `200` + warning `CT_DOSE_NO_OVERLAP` | CT có thể xem; dose overlay rỗng, không gán zero và không tuyên bố linked overlay. |
+| Artifacts/checksum/scope không hợp lệ | `403/404/409/422/503` tùy boundary | Không gọi engine; giữ dose-native fallback nếu workflow còn hợp lệ; sửa/reconcile/retry. |
+| Geometry/frame/pixel/resource không hợp lệ | `422` với mã ổn định | Không render ảnh một phần; không đoán transform; giảm workload/chọn dataset/capability phù hợp. |
+
+Mã CT preview phải được map như sau: `DVH_INPUT_SCOPE_MISMATCH`, `DVH_INPUT_NOT_VALIDATED`, `DVH_SOURCE_CHANGED`, `DVH_STORAGE_UNAVAILABLE`, `DVH_ANATOMY_ARTIFACT_INVALID`, `DICOM_GEOMETRY_INVALID`, `DICOM_FRAME_MISMATCH`, `DICOM_CAPABILITY_UNSUPPORTED`, `DVH_ROI_INVALID`, `DVH_RESOURCE_LIMIT`, `DVH_METRIC_INVALID`; warning codes là `CT_RESCALE_DEFAULTED`, `CT_WINDOW_DEFAULTED`, `CT_SLICE_SPACING_DEFAULTED`, `CT_DOSE_NO_OVERLAP`. Không dùng `DVH_ANATOMY_FRAME_MISMATCH` như một mã thứ hai cho cùng lỗi; API hiện tại dùng `DICOM_FRAME_MISMATCH`.
 
 <a id="spec-p18"></a>
 
@@ -1290,7 +1362,7 @@ Các phase contract ở mục 8 đã nêu trường chi tiết. Bảng dưới �
 | P14 | Options 2–10 từ P13 `COMPLETED` snapshots, baseline, context | Absolute/% delta, chart/table/history, clone/export | `COMPARISON_OPTIONS_REQUIRED`, `COMPARISON_LIMIT_EXCEEDED`, `COMPARISON_BASELINE_REQUIRED`, `COMPARISON_OPTION_INVALID`, `COMPARISON_CONTEXT_MISMATCH`, `COMPARISON_IDEMPOTENCY_CONFLICT`, `COMPARISON_PERSISTENCE_FAILED`; `BASELINE_ZERO` là reason hợp lệ, alpha/beta mismatch là warning | Same model/context/revision, baseline mutation, zero handling, no auto-rank và no-truncate pass |
 | P15 | Course/fraction/time/recovery/compensation scenario | Scalar cumulative, sensitivity, integer alternatives, assumptions, immutable run/export | `COURSE_REQUIRED`, `COURSE_ROLE_REQUIRED`, `COURSE_ID_DUPLICATE`, `COURSE_INTERVAL_REQUIRED`, `RECOVERY_ASSUMPTION_INVALID`, `CUMULATIVE_CONTEXT_MISMATCH`, `FRACTION_SCHEDULE_REQUIRED`, `FRACTION_SCHEDULE_INVALID`, `FRACTION_SCHEDULE_INCONSISTENT`, `FRACTION_COUNT_NONINTEGER`, `TISSUE_DOSE_REQUIRED`, `TISSUE_DOSE_DUPLICATE`, `ALTERNATIVE_PREFIX_CHANGED`, `INTERRUPTION_OVERLAP`, `SPATIAL_ACCUMULATION_UNAVAILABLE`, `P15_IDEMPOTENCY_CONFLICT`, `REIRRADIATION_PERSISTENCE_FAILED`; tách scalar | No-recovery/recovery, nonuniform fractions, prefix-preserving alternatives, no fake spatial dose, replay, refresh và export pass |
 | P16 | Knowledge/dose-limit/protocol entry, citation/import | Searchable versioned library and snapshot binding | `KNOWLEDGE_SOURCE_REQUIRED`, `DOSE_LIMIT_UNIT_INVALID`, `REFERENCE_LINK_UNAVAILABLE`, `KNOWLEDGE_IMPORT_INVALID`, `DOSE_LIMIT_NOT_APPLICABLE`, `KNOWLEDGE_CONTENT_INVALID`; row-level repair | Source/applicability/version/import/override pass |
-| P17 | RTDOSE/RTSTRUCT/CT and geometry selection | Dose-native preview/profile/DVH with coverage metadata, immutable run and export | `DVH_INPUT_MANIFEST_REQUIRED`, `DVH_INPUT_NOT_VALIDATED`, `DVH_INPUT_MANIFEST_INVALID`, `DVH_DOSE_ARTIFACT_INVALID`, `DVH_STRUCTURE_ARTIFACT_INVALID`, `DVH_ANATOMY_ARTIFACT_INVALID`, `DVH_INPUTS_MUST_DIFFER`, `DICOM_GEOMETRY_INVALID`, `DICOM_CAPABILITY_UNSUPPORTED`, `DICOM_FRAME_MISMATCH`, `DVH_DOSE_UNITS_UNSUPPORTED`, `DVH_DOSE_VALUES_INVALID`, `DVH_ROI_INVALID`, `CONTOUR_GEOMETRY_INVALID`, `DVH_EMPTY_STRUCTURE`, `DVH_INCOMPLETE_COVERAGE`, `DVH_PARTIAL_COVERAGE`, `DVH_METRIC_INVALID`, `DVH_RESOURCE_LIMIT`, `DVH_SOURCE_CHANGED`, `DVH_IDEMPOTENCY_CONFLICT`, `DVH_STORAGE_UNAVAILABLE`, `DVH_PERSISTENCE_FAILED`, `QA_CASE_ARCHIVED`; dose-only warning | Geometry/DVH oracle, weighted volume, source/checksum/snapshot/idempotency/export and staging evidence; no guessed transform or zero outside grid |
+| P17 | RTDOSE/RTSTRUCT/CT and geometry selection | Dose-native preview/profile/DVH with coverage metadata, bounded CT HU/slice/dose/ROI overlay, immutable run and export | `DVH_INPUT_MANIFEST_REQUIRED`, `DVH_INPUT_NOT_VALIDATED`, `DVH_INPUT_MANIFEST_INVALID`, `DVH_DOSE_ARTIFACT_INVALID`, `DVH_STRUCTURE_ARTIFACT_INVALID`, `DVH_ANATOMY_ARTIFACT_INVALID`, `DVH_INPUTS_MUST_DIFFER`, `DICOM_GEOMETRY_INVALID`, `DICOM_CAPABILITY_UNSUPPORTED`, `DICOM_FRAME_MISMATCH`, `DVH_DOSE_UNITS_UNSUPPORTED`, `DVH_DOSE_VALUES_INVALID`, `DVH_ROI_INVALID`, `CONTOUR_GEOMETRY_INVALID`, `DVH_EMPTY_STRUCTURE`, `DVH_INCOMPLETE_COVERAGE`, `DVH_PARTIAL_COVERAGE`, `DVH_METRIC_INVALID`, `DVH_RESOURCE_LIMIT`, `DVH_SOURCE_CHANGED`, `DVH_IDEMPOTENCY_CONFLICT`, `DVH_STORAGE_UNAVAILABLE`, `DVH_PERSISTENCE_FAILED`, `QA_CASE_ARCHIVED`; dose-only/CT-default/no-overlap warnings | Geometry/DVH/CT oracle, weighted volume, source/checksum/snapshot/idempotency/export and staging evidence; no guessed transform, zero outside grid, deformable registration or implicit series aggregation |
 | P18 | Release candidate, golden/pilot dataset, fault/load scripts | Integrated test report, restore evidence, pilot issue log | `RESULT_REGRESSION`, `RESTORE_INCOMPLETE`, `DUPLICATE_RESULT`, `PERFORMANCE_GATE_FAILED`, `PILOT_CAPABILITY_GAP`, `RELEASE_EVIDENCE_MISMATCH`; giữ candidate và regression | No SEV0/1, exact SHA, backup/restore, workload and pilot matrix pass |
 | P19 | Candidate manifest, domain/TLS/CORS/Auth, production DB | Public HTTPS website and remote E2E | `PUBLIC_DOMAIN_NOT_READY`, `PUBLIC_BUILD_CONFIG_MISMATCH`, `RELEASE_SCHEMA_FAILED`, `RELEASE_VERSION_MISMATCH`, `REMOTE_E2E_FAILED`, `RESOURCE_BUDGET_EXCEEDED`; no promote/rollback | All service versions, schema, Auth, private deps, backup and rollback verified |
 | P20 | Monitoring/backup/alert/runbook/release configuration | Tested operational package and maintenance loop | `BACKUP_POLICY_FAILED`, `ALERT_DELIVERY_FAILED`, `CAPACITY_WARNING`, `ENGINE_RESULT_CHANGED`, `RECURRING_INCIDENT`; alert/restore/root cause/regression | Real alert, restore drill, owner, threshold, capacity and release evidence |
@@ -1411,7 +1483,7 @@ Danh sách errors là baseline có giới hạn, không chứng minh bao phủ m
 - Source repository: core/errors.py, db/session.py, alembic/env.py, api/gamma.py, services/gamma_engine.py, services/artifact_validation.py, worker.py, web env/routes và fixture generator.
 - Công thức LQ cơ bản xuất phát từ business-analysis §15.3; recovery profile ở §6.3 là giả định user-defined của sản phẩm, không phải bảng hướng dẫn điều trị.
 
-## 13. Ma trận contract ở cấp operation và tính năng v1.13
+## 13. Ma trận contract ở cấp operation và tính năng v1.14
 
 Mục này là lớp nối giữa yêu cầu `FR-Pxx-yy` trong `business-analysis.md` và testcase `TC-Pxx-*` trong `plan.md`. Nó quy định mỗi phase phải expose hành vi nào, điều gì được coi là thành công, lỗi nào phải phân biệt và dữ liệu nào phải được giữ. Đây vẫn là contract mục tiêu; nội dung chưa có trong source phải được ghi `TARGET`, không được đọc như bằng chứng đã triển khai.
 

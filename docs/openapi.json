@@ -15156,6 +15156,161 @@
         ]
       }
     },
+    "/api/v1/organizations/{organization_id}/qa-cases/{case_id}/dvh/ct-preview": {
+      "get": {
+        "description": "Return a bounded CT slice and explicit dose/ROI patient-LPS overlays.",
+        "operationId": "get_ct_preview_api_v1_organizations__organization_id__qa_cases__case_id__dvh_ct_preview_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dose_artifact_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Dose Artifact Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "ct_artifact_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Ct Artifact Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "structure_artifact_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Structure Artifact Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "roi_number",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "exclusiveMinimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Roi Number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "frame_index",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Frame Index",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dose_frame_index",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dose Frame Index"
+            }
+          },
+          {
+            "in": "query",
+            "name": "preview_limit",
+            "required": false,
+            "schema": {
+              "default": 65536,
+              "maximum": 262144,
+              "minimum": 256,
+              "title": "Preview Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Get Ct Preview Api V1 Organizations  Organization Id  Qa Cases  Case Id  Dvh Ct Preview Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Ct Preview",
+        "tags": [
+          "dvh"
+        ]
+      }
+    },
     "/api/v1/organizations/{organization_id}/qa-cases/{case_id}/dvh/inputs": {
       "get": {
         "description": "List validated RTDOSE/RTSTRUCT/CT choices and, optionally, ROI IDs.",
