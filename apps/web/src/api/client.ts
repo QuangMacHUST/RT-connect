@@ -865,13 +865,22 @@ export class ApiClient {
     timezone?: string
     aggregate?: 'raw' | 'day' | 'week'
     unit?: string
+    energy?: string
+    detector?: string
+    phantom?: string
+    beam_quality?: string
+    acquisition_mode?: string
+    protocol_key?: string
+    qa_cycle?: string
+    include_archived?: boolean
   } = {}): Promise<Blob> {
     const query = new URLSearchParams({ export_format: params.export_format ?? 'CSV' })
     if (params.machine_ids?.length) query.set('machine_ids', params.machine_ids.join(','))
-    for (const key of ['metric_key', 'from', 'to', 'timezone', 'aggregate', 'unit'] as const) {
+    for (const key of ['metric_key', 'from', 'to', 'timezone', 'aggregate', 'unit', 'energy', 'detector', 'phantom', 'beam_quality', 'acquisition_mode', 'protocol_key', 'qa_cycle'] as const) {
       const value = params[key]
       if (value) query.set(key, value)
     }
+    if (params.include_archived) query.set('include_archived', 'true')
     const correlationId = makeCorrelationId()
     let response: Response
     try {
@@ -896,7 +905,7 @@ export class ApiClient {
 
   createTrendBaseline(accessToken: string, organizationId: string, body: {
     machine_id: string; metric_key: string; unit: string; name: string; baseline_value: number;
-    tolerance?: number | null; action_level?: number | null; effective_from: string; context?: Record<string, string>
+    tolerance?: number | null; action_level?: number | null; effective_from: string; effective_to?: string | null; context?: Record<string, string>
   }): Promise<BaselineResource> {
     return this.request(`/organizations/${organizationId}/trend/baselines`, baselineSchema, accessToken, { method: 'POST', body: JSON.stringify(body) })
   }
