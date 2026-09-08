@@ -2,26 +2,26 @@
 
 ## Documentation and implementation rebaseline — 2026-09-08
 
-`business-analysis.md` v0.15, `specification.md` v1.9, `technical-specification.md` v1.6 và `plan.md` v2.9 bổ sung requirement, state contract, testcase và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
+`business-analysis.md` v0.16, `specification.md` v1.10, `technical-specification.md` v1.7 và `plan.md` v3.0 bổ sung requirement, state contract, testcase và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
 
 Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness, staging Trend và staging Protocol consumer vẫn phải được đối soát theo plan §1.2–§1.6. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Checkpoint trước đã xác minh browser staging P13/P14 trên candidate `31a5900`; PostgreSQL row query trực tiếp, organization-scope negative probe và release-manifest closure vẫn là gate riêng. P15 hiện đã có staging browser smoke trên candidate `09acb90`, nhưng direct PostgreSQL/scope/replay/release gates còn mở.
 
 ## Current checkpoint
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
-- **Current phase:** P15 — Re-irradiation, recovery và bù fraction; P8/P9/P10/P11/P12/P13/P14 remaining release gates và các phase tích hợp sau vẫn mở.
-- **Current status:** IN_PROGRESS — P15 local gates và authenticated staging browser happy paths đã pass trên candidate `09acb90`; replay cùng idempotency key, direct PostgreSQL checksum/scope, full error matrix và release-manifest closure chưa đóng.
-- **Last authoritative check:** 2026-09-08 — staging API deployment `008ec1d1-3215-44c7-9d64-fb06dc024e58` báo successful; `/api/v1/ready` trả `schema_revision=20260908_0015`; P15 browser validate→save→refresh→export đã pass cho cả hai operation. Local backend `133 passed`, P15 API `5/5`, P15 engine/error `22/22`, Ruff/mypy, frontend lint/typecheck/build, OpenAPI và Alembic head cũng pass. Đây chưa phải P15 DONE-v2.
-- **Next exact step:** dùng cùng request fingerprint để chứng minh idempotent replay của hai P15 operation, query PostgreSQL trực tiếp chỉ các aggregate/id/checksum redacted và chạy negative probe organization khác; sau đó cập nhật release manifest rồi tiếp tục P16.
+- **Current phase:** P16 — Dose limits, phác đồ điều trị và Knowledge Library; P8/P9/P10/P11/P12/P13/P14/P15 remaining release gates và các phase tích hợp sau vẫn mở.
+- **Current status:** IN_PROGRESS — P16 implementation/local gates đã pass trên working tree candidate; staging deployment, authenticated browser lifecycle, direct PostgreSQL checksum/scope, full error matrix và release-manifest closure chưa đóng. P15 replay/DB/scope gates vẫn mở độc lập.
+- **Last authoritative check:** 2026-09-08 — P16 focused tests `3/3`, full backend, Ruff/mypy, frontend lint/typecheck/Vitest/build pass trên cùng working tree candidate; migration `20260908_0016` và OpenAPI cần được chốt trong verification checkpoint. Staging P15 deployment `008ec1d1-3215-44c7-9d64-fb06dc024e58` vẫn là evidence mới nhất của cloud, với `/api/v1/ready` `schema_revision=20260908_0015`. Đây chưa phải P16 STAGING_VERIFIED hoặc P15 DONE-v2.
+- **Next exact step:** chạy Alembic head và OpenAPI regenerate/check trên candidate P16, commit/push, xác nhận Railway staging lên `20260908_0016`, rồi thực hiện browser/API import→publish→use→compare/export và negative scope/lifecycle probes.
 
 ## Source documents read
 
 | Source | Version | Status |
 | :--- | :--- | :--- |
-| `business-analysis.md` | 0.15 | Business source; detailed workflow/error/recovery/state matrix, P12–P15 independent biological contracts and P0–P20 coverage index |
-| `specification.md` | 1.9 | Behavior/data/error/state/numeric contracts; operation envelope, evidence schema and exact P10/P11/P12/P13/P14/P15 contracts |
-| `technical-specification.md` | 1.6 | Architecture reference; P10/P11/P12 plus P13/P14/P15 bounded-context implementation addenda |
-| `plan.md` | 2.9 | Phase/workflow/S-E/C/B tests, DoR/DoD, execution ledger, full coverage matrix, P10–P15 checkpoints and staging gates |
+| `business-analysis.md` | 0.16 | Business source; detailed workflow/error/recovery/state matrix, P12–P16 independent biological contracts and P0–P20 coverage index |
+| `specification.md` | 1.10 | Behavior/data/error/state/numeric contracts; operation envelope, evidence schema and exact P10/P11/P12/P13/P14/P15/P16 contracts |
+| `technical-specification.md` | 1.7 | Architecture reference; P10/P11/P12 plus P13/P14/P15/P16 bounded-context implementation addenda |
+| `plan.md` | 3.0 | Phase/workflow/S-E/C/B tests, DoR/DoD, execution ledger, full coverage matrix, P10–P16 checkpoints and staging gates |
 
 ## Phase status
 
@@ -43,7 +43,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | P13 | STAGING SMOKE VERIFIED / FINAL GATE OPEN | Migration `20260908_0013`, BED/EQD2 browser validate→save hai snapshot, history readback, chart/table và export đã chạy trên staging; direct PostgreSQL checksum/no-QA-linkage query và release manifest còn mở |
 | P14 | STAGING SMOKE VERIFIED / FINAL GATE OPEN | Migration `20260908_0014`, browser validate-only/no mutation, save, preview reorder không persist, clone, JSON/CSV export và refresh history đã chạy; direct PostgreSQL row/checksum, organization-scope negative probe và release evidence còn mở |
 | P15 | STAGING SMOKE VERIFIED / FINAL GATE OPEN | Migration `20260908_0015`, scalar re-irradiation/fraction-compensation engine/API/UI, recovery/sensitivity, nonuniform schedule, delivered-prefix alternatives, interruption/time model, immutable snapshot và JSON/CSV export; browser happy path đã pass trên deployment `008ec1d1-3215-44c7-9d64-fb06dc024e58`; replay/DB/scope/full S-E/release evidence còn mở |
-| P16 | NOT_STARTED | Depends on P12/P13 |
+| P16 | LOCAL VERIFIED / STAGING PENDING | Migration `20260908_0016`, library API/UI/validator/import/use snapshot local; staging browser/API/DB/scope/release evidence còn mở |
 | P17 | NOT_STARTED | Depends on P6/P8/P9 |
 | P18 | NOT_STARTED | Integrated hardening and pilot |
 | P19 | NOT_STARTED | Production remote web release |
@@ -125,7 +125,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - Migration `20260908_0012_biological_scenarios.py` upgraded successfully on local PostgreSQL and is the current Alembic head. It adds organization-scoped `biological_scenarios`, append-only `biological_scenario_revisions` and the read model for `biological_calculation_runs` without a mandatory QA-case/patient relationship.
 - P12 API routes are registered under `/api/v1/organizations/{organization_id}/biological`; validate-only, create DRAFT, DRAFT patch with optimistic revision, save to SAVED, clone with source lineage, archive, default archived filtering, revision history, summary/tools and scoped calculation reads are implemented.
 - Focused `apps/api/tests/test_biological.py` passed; full backend suite passed after updating the expected schema revision to `20260908_0012`. Ruff/mypy passed, OpenAPI was regenerated, and frontend lint/typecheck/Vitest/build passed. The Vite build emits only the known large-bundle warning.
-- The P12 web route is `/app/biological` and uses the generated Stitch screen `b32ef9de691f48449ec23e491a6b634d`. P13, P14 and P15 are now available; P16 remains explicitly `PLANNED`/disabled. The UI does not create fake calculation runs and does not link scenarios to QA cases automatically.
+- The P12 web route is `/app/biological` and uses the generated Stitch screen `b32ef9de691f48449ec23e491a6b634d`. P13, P14, P15 and the local P16 Knowledge Library route are now available in source; the P16 staging/release gate is still open. The UI does not create fake calculation runs and does not link scenarios to QA cases automatically.
 - P12 staging browser smoke: authenticated synthetic flow created `STAGING_P12_BIO`, validate-only returned no-mutation success, create/edit/save produced revisions, clone created `STAGING_P12_BIO_COPY_1D3A5958`, archive preserved history, and archived filtering displayed both states. PostgreSQL-state/query, refresh/reconnect, full negative matrix and P9 independent Biological report integration remain open.
 
 ## Local P13 BED/EQD2 evidence — verified 2026-09-08
@@ -154,6 +154,15 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - Frontend routes `/app/biological/re-irradiation` and `/app/biological/fraction-compensation` use the shared Clinical Precision Interface language. They expose saved scenario/revision selection, course×tissue matrix, recovery/sensitivity, planned/delivered prefix, alternatives, interruption/time model, validation, immutable result/history and export states. The page labels all outputs `SCENARIO / ESTIMATE ONLY`.
 - Local verification: `tests/test_re_irradiation.py` **5/5**, `tests/test_re_irradiation_engine.py` **22/22**, full backend **133 passed**, Ruff, strict mypy, frontend lint/typecheck/build and OpenAPI regenerate/check passed. The Vite build retains only the existing bundle-size warning.
 - This is local evidence only. Staging still requires the candidate deployment, schema/readiness check, authenticated browser workflow for both operations, remote export, direct PostgreSQL row/fingerprint/checksum, explicit out-of-organization negative probe and release manifest. P15 spatial accumulation remains intentionally unavailable.
+
+## Local P16 Biological Knowledge Library evidence — verified 2026-09-08
+
+- Migration `20260908_0016_biological_library.py` upgrades after `20260908_0015` and creates organization-scoped `biological_library_entries` with typed entry families, version uniqueness, clone lineage, optimistic revision, source status, JSON content/citation/applicability and content hash. The Biological bounded context remains independent from QA/patient/treatment records.
+- Pure engine `services/biological_library_engine.py` normalizes key/context, validates dose-limit metric/operator/unit/volume/parameter, alpha/beta, source/citation, applicability and safe finite JSON; exact context matching does not treat missing values as wildcard and no external URL is fetched.
+- API `api/biological_library.py` exposes validate-only, scoped list/detail/history, DRAFT create/patch, clone/publish/archive, compare, explicit-use snapshot, row-level import preview/commit and JSON/CSV export. Every organization read resolves membership before entity lookup; published entries are immutable and use snapshots pin source/version/hash/override.
+- Frontend route `/app/biological/knowledge` provides search/filter, structured editor, validation/warnings, lifecycle/history/compare, import preview/commit, explicit target/override and export states. It reuses the active Clinical Precision Interface and is registered as MOD-14; P15 fraction compensation remains MOD-13.
+- Local verification on the same working tree candidate: `tests/test_biological_library.py` **3/3**, full backend suite passed, Ruff, strict mypy, frontend lint/typecheck/Vitest/production build passed. The Vite build retains only the known bundle-size warning. Migration head and OpenAPI regeneration/check are the next recorded verification commands.
+- **Evidence level:** `LOCAL_VERIFIED`. P16 staging deployment/readiness `20260908_0016`, authenticated browser lifecycle, source/version/import/use/compare/export smoke, direct PostgreSQL row/hash/scope query, full negative/fault matrix and release manifest remain open. Direct calculator prefill is intentionally a later integration package; explicit-use snapshot currently does not mutate P13–P15/P17.
 
 ## Live Railway P15 Biological smoke evidence — verified 2026-09-08
 

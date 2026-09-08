@@ -90,3 +90,22 @@ def test_protocol_library_migration_declares_version_source_and_revision_fields(
     assert '"revision"' in source
     assert '"reference"' in source
     assert "def downgrade()" in source
+
+
+def test_biological_library_migration_declares_context_source_and_immutable_lineage() -> None:
+    migration = (
+        Path(__file__).parents[1]
+        / "alembic"
+        / "versions"
+        / "20260908_0016_biological_library.py"
+    )
+    source = migration.read_text(encoding="utf-8")
+
+    assert 'revision: str = "20260908_0016"' in source
+    assert 'down_revision: str | Sequence[str] | None = "20260908_0015"' in source
+    assert '"biological_library_entries"' in source
+    assert '"entry_type"' in source
+    assert '"applicability"' in source
+    assert '"content_sha256"' in source
+    assert '"source_entry_id"' in source
+    assert "def downgrade()" in source

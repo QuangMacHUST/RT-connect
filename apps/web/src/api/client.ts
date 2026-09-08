@@ -513,6 +513,122 @@ export type BiologicalSummaryResource = {
   completed_calculations: number
   exported_reports: number
 }
+export type BiologicalLibraryEntryResource = {
+  id: string
+  organization_id: string
+  entry_type: 'DOSE_LIMIT' | 'TREATMENT_PROTOCOL' | 'KNOWLEDGE' | 'ALPHA_BETA'
+  entry_key: string
+  name: string
+  version_number: number
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED'
+  revision: number
+  description: string | null
+  effective_note: string | null
+  disease: string | null
+  disease_subtype: string | null
+  anatomy_site: string | null
+  treatment_intent: string | null
+  technique: string | null
+  fractions: number | null
+  tissue_or_oar: string | null
+  metric_key: string | null
+  operator: string | null
+  limit_value: number | null
+  lower_limit: number | null
+  upper_limit: number | null
+  unit: string | null
+  volume_cc: number | null
+  metric_parameter: number | null
+  alpha_beta_gy: number | null
+  model_key: string | null
+  model_version: string | null
+  applicability: Record<string, unknown>
+  content: Record<string, unknown>
+  source_type: 'USER_DEFINED' | 'REFERENCE' | 'INTERNAL' | 'SITE_APPROVED'
+  source_reference: string | null
+  reference_status: 'UNVERIFIED' | 'AVAILABLE' | 'UNAVAILABLE'
+  source_date: string | null
+  evidence_level: string | null
+  citation: Record<string, unknown>
+  content_sha256: string
+  source_entry_id: string | null
+  created_by_user_identity_id: string | null
+  created_at: string
+  updated_at: string
+}
+export type BiologicalLibraryDefinitionInput = {
+  entry_key: string
+  entry_type: BiologicalLibraryEntryResource['entry_type']
+  name: string
+  description?: string | null
+  effective_note?: string | null
+  disease?: string | null
+  disease_subtype?: string | null
+  anatomy_site?: string | null
+  treatment_intent?: string | null
+  technique?: string | null
+  fractions?: number | null
+  tissue_or_oar?: string | null
+  metric_key?: string | null
+  operator?: string | null
+  limit_value?: number | null
+  lower_limit?: number | null
+  upper_limit?: number | null
+  unit?: string | null
+  volume_cc?: number | null
+  metric_parameter?: number | null
+  alpha_beta_gy?: number | null
+  model_key?: string | null
+  model_version?: string | null
+  applicability?: Record<string, unknown>
+  content?: Record<string, unknown>
+  source_type?: BiologicalLibraryEntryResource['source_type']
+  source_reference?: string | null
+  reference_status?: BiologicalLibraryEntryResource['reference_status']
+  source_date?: string | null
+  evidence_level?: string | null
+  citation?: Record<string, unknown>
+}
+export type BiologicalLibraryValidationResource = {
+  valid: boolean
+  errors: Array<{ code: string; field: string | null; message: string }>
+  warnings: Array<{ code: string; field: string | null; message: string }>
+  normalized_entry: Record<string, unknown> | null
+  content_sha256: string | null
+}
+export type BiologicalLibraryImportRowResource = {
+  row_number: number
+  valid: boolean
+  errors: Array<{ code: string; field: string | null; message: string }>
+  warnings: Array<{ code: string; field: string | null; message: string }>
+  entry_id: string | null
+}
+export type BiologicalLibraryImportResource = {
+  dry_run: boolean
+  committed_count: number
+  rejected_count: number
+  rows: BiologicalLibraryImportRowResource[]
+  entries: BiologicalLibraryEntryResource[]
+}
+export type BiologicalLibraryCompareResource = {
+  left: BiologicalLibraryEntryResource
+  right: BiologicalLibraryEntryResource
+  same_family: boolean
+  metadata_diffs: Array<{ field: string; left: unknown; right: unknown }>
+  content_diffs: Array<{ field: string; left: unknown; right: unknown }>
+}
+export type BiologicalLibraryUseResource = {
+  schema_version: string
+  target_tool: 'P13_BED_EQD2' | 'P14_PLAN_COMPARISON' | 'P15_REIRRADIATION' | 'P15_FRACTION_COMPENSATION' | 'P17_DVH' | 'KNOWLEDGE_REFERENCE'
+  entry: BiologicalLibraryEntryResource
+  source_snapshot: Record<string, unknown>
+  effective_values: Record<string, unknown>
+  override: Record<string, unknown>
+  override_label: string | null
+  snapshot_sha256: string
+  warnings: Array<{ code: string; field: string | null; message: string }>
+}
+export type BiologicalLibraryPatchInput = Partial<BiologicalLibraryDefinitionInput> & { expected_revision: number }
 export type BedEqd2CurveInput = {
   mode: 'FIXED_N' | 'FIXED_D'
   dose_min_gy: number
@@ -848,6 +964,54 @@ const biologicalSummarySchema = z.object({
   organization_id: z.string().uuid(), total_scenarios: z.number().int(), draft_scenarios: z.number().int(),
   saved_scenarios: z.number().int(), archived_scenarios: z.number().int(),
   completed_calculations: z.number().int(), exported_reports: z.number().int()
+})
+const libraryIssueSchema = z.object({ code: z.string(), field: z.string().nullable(), message: z.string() })
+const biologicalLibraryEntrySchema = z.object({
+  id: z.string().uuid(), organization_id: z.string().uuid(),
+  entry_type: z.enum(['DOSE_LIMIT', 'TREATMENT_PROTOCOL', 'KNOWLEDGE', 'ALPHA_BETA']),
+  entry_key: z.string(), name: z.string(), version_number: z.number().int(),
+  status: z.enum(['DRAFT', 'PUBLISHED', 'ARCHIVED']), revision: z.number().int(),
+  description: z.string().nullable(), effective_note: z.string().nullable(),
+  disease: z.string().nullable(), disease_subtype: z.string().nullable(), anatomy_site: z.string().nullable(),
+  treatment_intent: z.string().nullable(), technique: z.string().nullable(), fractions: z.number().int().nullable(),
+  tissue_or_oar: z.string().nullable(), metric_key: z.string().nullable(), operator: z.string().nullable(),
+  limit_value: z.number().nullable(), lower_limit: z.number().nullable(), upper_limit: z.number().nullable(),
+  unit: z.string().nullable(), volume_cc: z.number().nullable(), metric_parameter: z.number().nullable(),
+  alpha_beta_gy: z.number().nullable(), model_key: z.string().nullable(), model_version: z.string().nullable(),
+  applicability: z.record(z.string(), z.unknown()), content: z.record(z.string(), z.unknown()),
+  source_type: z.enum(['USER_DEFINED', 'REFERENCE', 'INTERNAL', 'SITE_APPROVED']),
+  source_reference: z.string().nullable(),
+  reference_status: z.enum(['UNVERIFIED', 'AVAILABLE', 'UNAVAILABLE']), source_date: z.string().nullable(),
+  evidence_level: z.string().nullable(), citation: z.record(z.string(), z.unknown()), content_sha256: z.string(),
+  source_entry_id: z.string().uuid().nullable(), created_by_user_identity_id: z.string().uuid().nullable(),
+  created_at: z.string(), updated_at: z.string()
+})
+const biologicalLibraryCollectionSchema = z.object({
+  items: z.array(biologicalLibraryEntrySchema), total: z.number().int(), offset: z.number().int(),
+  limit: z.number().int(), include_archived: z.boolean()
+})
+const biologicalLibraryValidationSchema = z.object({
+  valid: z.boolean(), errors: z.array(libraryIssueSchema), warnings: z.array(libraryIssueSchema),
+  normalized_entry: z.record(z.string(), z.unknown()).nullable(), content_sha256: z.string().nullable()
+})
+const biologicalLibraryImportRowSchema = z.object({
+  row_number: z.number().int(), valid: z.boolean(), errors: z.array(libraryIssueSchema),
+  warnings: z.array(libraryIssueSchema), entry_id: z.string().uuid().nullable()
+})
+const biologicalLibraryImportSchema = z.object({
+  dry_run: z.boolean(), committed_count: z.number().int(), rejected_count: z.number().int(),
+  rows: z.array(biologicalLibraryImportRowSchema), entries: z.array(biologicalLibraryEntrySchema)
+})
+const biologicalLibraryCompareSchema = z.object({
+  left: biologicalLibraryEntrySchema, right: biologicalLibraryEntrySchema, same_family: z.boolean(),
+  metadata_diffs: z.array(z.object({ field: z.string(), left: z.unknown(), right: z.unknown() })),
+  content_diffs: z.array(z.object({ field: z.string(), left: z.unknown(), right: z.unknown() }))
+})
+const biologicalLibraryUseSchema = z.object({
+  schema_version: z.string(), target_tool: z.enum(['P13_BED_EQD2', 'P14_PLAN_COMPARISON', 'P15_REIRRADIATION', 'P15_FRACTION_COMPENSATION', 'P17_DVH', 'KNOWLEDGE_REFERENCE']),
+  entry: biologicalLibraryEntrySchema, source_snapshot: z.record(z.string(), z.unknown()),
+  effective_values: z.record(z.string(), z.unknown()), override: z.record(z.string(), z.unknown()),
+  override_label: z.string().nullable(), snapshot_sha256: z.string(), warnings: z.array(libraryIssueSchema)
 })
 const biologicalValidationSchema = z.object({
   valid: z.boolean(),
@@ -1314,6 +1478,117 @@ export class ApiClient {
 
   biologicalScenarioRevisions(accessToken: string, organizationId: string, scenarioId: string): Promise<BiologicalScenarioRevisionResource[]> {
     return this.get(`/organizations/${organizationId}/biological/scenarios/${scenarioId}/revisions`, z.array(biologicalScenarioRevisionSchema), accessToken)
+  }
+
+  biologicalLibrary(accessToken: string, organizationId: string, params: {
+    q?: string
+    entry_type?: BiologicalLibraryEntryResource['entry_type']
+    status?: BiologicalLibraryEntryResource['status']
+    disease?: string
+    anatomy_site?: string
+    technique?: string
+    tissue_or_oar?: string
+    metric_key?: string
+    fractions?: number
+    include_archived?: boolean
+  } = {}): Promise<{ items: BiologicalLibraryEntryResource[]; total: number; offset: number; limit: number; include_archived: boolean }> {
+    const query = new URLSearchParams()
+    for (const key of ['q', 'entry_type', 'status', 'disease', 'anatomy_site', 'technique', 'tissue_or_oar', 'metric_key'] as const) {
+      const value = params[key]
+      if (value) query.set(key, value)
+    }
+    if (params.fractions !== undefined) query.set('fractions', String(params.fractions))
+    if (params.include_archived || params.status === 'ARCHIVED') query.set('include_archived', 'true')
+    const suffix = query.toString() ? `?${query.toString()}` : ''
+    return this.get(`/organizations/${organizationId}/biological/library${suffix}`, biologicalLibraryCollectionSchema, accessToken)
+  }
+
+  biologicalLibraryEntry(accessToken: string, organizationId: string, entryId: string): Promise<BiologicalLibraryEntryResource> {
+    return this.get(`/organizations/${organizationId}/biological/library/${entryId}`, biologicalLibraryEntrySchema, accessToken)
+  }
+
+  validateBiologicalLibraryEntry(accessToken: string, organizationId: string, body: BiologicalLibraryDefinitionInput): Promise<BiologicalLibraryValidationResource> {
+    return this.request(`/organizations/${organizationId}/biological/library/validate`, biologicalLibraryValidationSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  createBiologicalLibraryEntry(accessToken: string, organizationId: string, body: BiologicalLibraryDefinitionInput & { publish?: boolean }): Promise<BiologicalLibraryEntryResource> {
+    return this.request(`/organizations/${organizationId}/biological/library`, biologicalLibraryEntrySchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  updateBiologicalLibraryEntry(accessToken: string, organizationId: string, entryId: string, body: BiologicalLibraryPatchInput): Promise<BiologicalLibraryEntryResource> {
+    return this.request(`/organizations/${organizationId}/biological/library/${entryId}`, biologicalLibraryEntrySchema, accessToken, {
+      method: 'PATCH', body: JSON.stringify(body)
+    })
+  }
+
+  biologicalLibraryRevisions(accessToken: string, organizationId: string, entryId: string): Promise<BiologicalLibraryEntryResource[]> {
+    return this.get(`/organizations/${organizationId}/biological/library/${entryId}/revisions`, z.array(biologicalLibraryEntrySchema), accessToken)
+  }
+
+  cloneBiologicalLibraryEntry(accessToken: string, organizationId: string, entryId: string, body: { entry_key?: string; name?: string; publish?: boolean } = {}): Promise<BiologicalLibraryEntryResource> {
+    return this.request(`/organizations/${organizationId}/biological/library/${entryId}/clone`, biologicalLibraryEntrySchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  publishBiologicalLibraryEntry(accessToken: string, organizationId: string, entryId: string, expectedRevision: number): Promise<BiologicalLibraryEntryResource> {
+    return this.request(`/organizations/${organizationId}/biological/library/${entryId}/publish`, biologicalLibraryEntrySchema, accessToken, {
+      method: 'POST', body: JSON.stringify({ expected_revision: expectedRevision })
+    })
+  }
+
+  archiveBiologicalLibraryEntry(accessToken: string, organizationId: string, entryId: string, expectedRevision: number): Promise<BiologicalLibraryEntryResource> {
+    return this.request(`/organizations/${organizationId}/biological/library/${entryId}/archive`, biologicalLibraryEntrySchema, accessToken, {
+      method: 'POST', body: JSON.stringify({ expected_revision: expectedRevision })
+    })
+  }
+
+  compareBiologicalLibraryEntries(accessToken: string, organizationId: string, entryId: string, otherId: string): Promise<BiologicalLibraryCompareResource> {
+    return this.get(`/organizations/${organizationId}/biological/library/${entryId}/compare?other_id=${encodeURIComponent(otherId)}`, biologicalLibraryCompareSchema, accessToken)
+  }
+
+  useBiologicalLibraryEntry(accessToken: string, organizationId: string, entryId: string, body: {
+    target_tool: BiologicalLibraryUseResource['target_tool']
+    override?: Record<string, unknown>
+  }): Promise<BiologicalLibraryUseResource> {
+    return this.request(`/organizations/${organizationId}/biological/library/${entryId}/use`, biologicalLibraryUseSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  validateBiologicalLibraryImport(accessToken: string, organizationId: string, rows: BiologicalLibraryDefinitionInput[]): Promise<BiologicalLibraryImportResource> {
+    return this.request(`/organizations/${organizationId}/biological/library/import/validate`, biologicalLibraryImportSchema, accessToken, {
+      method: 'POST', body: JSON.stringify({ rows })
+    })
+  }
+
+  importBiologicalLibrary(accessToken: string, organizationId: string, rows: BiologicalLibraryDefinitionInput[], commitValid = true): Promise<BiologicalLibraryImportResource> {
+    return this.request(`/organizations/${organizationId}/biological/library/import`, biologicalLibraryImportSchema, accessToken, {
+      method: 'POST', body: JSON.stringify({ rows, commit_valid: commitValid })
+    })
+  }
+
+  async downloadBiologicalLibrary(accessToken: string, organizationId: string, entryId: string, exportFormat: 'JSON' | 'CSV'): Promise<Blob> {
+    const correlationId = makeCorrelationId()
+    let response: Response
+    try {
+      response = await fetch(`${this.baseUrl}/organizations/${organizationId}/biological/library/${entryId}/export?export_format=${exportFormat}`, {
+        headers: { Accept: exportFormat === 'JSON' ? 'application/json' : 'text/csv', 'X-Correlation-ID': correlationId, Authorization: `Bearer ${accessToken}` }
+      })
+    } catch {
+      throw new ApiClientError('Không thể kết nối tới RT-CONNECT API.', 'NETWORK_ERROR', correlationId)
+    }
+    if (!response.ok) {
+      const body: unknown = await response.json().catch(() => undefined)
+      const parsed = errorSchema.safeParse(body)
+      if (parsed.success) throw new ApiClientError(parsed.data.message, parsed.data.code, parsed.data.correlation_id)
+      throw new ApiClientError('API trả về phản hồi không hợp lệ.', 'INVALID_API_RESPONSE', correlationId)
+    }
+    return response.blob()
   }
 
   biologicalCalculations(accessToken: string, organizationId: string, scenarioId?: string): Promise<{ items: BiologicalCalculationResource[]; total: number; offset: number; limit: number }> {

@@ -5,10 +5,10 @@
 - **Tên sản phẩm:** RT-CONNECT
 - **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
 - **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
-- **Phiên bản tài liệu:** 0.15 — catalogue tính năng, workflow, ngoại lệ, phục hồi, từ điển trạng thái và tiêu chí nghiệm thu theo P0–P20; đồng bộ sau khi kiểm staging P15 (2026-09-08)
+- **Phiên bản tài liệu:** 0.16 — catalogue tính năng, workflow, ngoại lệ, phục hồi, từ điển trạng thái và tiêu chí nghiệm thu theo P0–P20; bổ sung hợp đồng triển khai P16 Biological Knowledge Library (2026-09-08)
 - **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
-Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.15 tại mục 21 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
+Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.16 tại mục 21 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
 
 ---
 
@@ -1178,9 +1178,9 @@ Clinical MVP tập trung vào Machine QA, PSQA Gamma, report, trend, input valid
 `specification.md`, `technical-specification.md` và `plan.md` được xây dựng từ các yêu cầu, quy tắc và tiêu chí nghiệm thu trong tài liệu này. Google Stitch cung cấp thiết kế trực quan; Railway và Supabase cung cấp hạ tầng đã chọn; không nguồn nào trong số đó được tự thay thế hoặc làm mất requirement nghiệp vụ.
 
 
-## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.15
+## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.16
 
-Bổ sung ngày 2026-09-08 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu. `specification.md` v1.9 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v2.9 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
+Bổ sung ngày 2026-09-08 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu. `specification.md` v1.10 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v3.0 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
 
 ### 21.1. Các quyết định sản phẩm giữ nguyên
 
@@ -1458,7 +1458,7 @@ Mã FR-Pxx-yy là yêu cầu có thể truy vết. Các phase nền tảng/tri�
 | P12-S06 | Clone SAVED/ARCHIVED | Tạo DRAFT mới, giữ lineage/source và không thay đổi bản nguồn hoặc calculation cũ. |
 | P12-S07 | Lọc/tìm history | Kết quả chỉ thuộc organization, lọc status/search đúng và archived chỉ xuất hiện khi yêu cầu rõ. |
 | P12-S08 | Mở lại sau refresh | Scenario, assumptions, source và revision hiển thị đúng snapshot server; không phụ thuộc state trong browser. |
-| P12-S09 | Capability P13–P15 đã mở, P16 chưa mở | Card P13–P15 dẫn tới route có contract; P16 có trạng thái `PLANNED`, không dẫn tới route chết và không giả vờ đã tính. |
+| P12-S09 | Capability P13–P16 được phát hiện | Card P13–P16 dẫn tới route có contract; P16 mở Knowledge Library độc lập, không tạo calculation giả và không auto-apply vào P13–P15. |
 
 **Các nhánh lỗi và cách phục hồi nghiệp vụ:**
 
@@ -1626,20 +1626,78 @@ Các mã trên là contract thực thi của slice P15, khác với việc chỉ
 
 #### P16 — Dose limits, phác đồ điều trị và Knowledge Library
 
-**Module:** MOD-14. **Mục tiêu người dùng:** Tra cứu và tái sử dụng nội dung có nguồn, context và version trong công cụ tính toán.
+**Module:** MOD-14. **Mục tiêu người dùng:** Tra cứu, ghi chú, so sánh và tái sử dụng có kiểm soát các nội dung sinh học/điều trị có context, nguồn và version trong các công cụ tính toán. Đây là một thư viện tham khảo độc lập; không phải order, prescription, QA tolerance hay quyết định PASS/FAIL.
 
 | Requirement | Tính năng phải bàn giao |
 | :--- | :--- |
-| FR-P16-01 | Bảng giới hạn liều theo bệnh lý/fractionation/OAR/metric và nguồn. |
-| FR-P16-02 | Protocol điều trị, phác đồ, hướng dẫn contour/planning ở mức kiến thức. |
-| FR-P16-03 | Knowledge/formula/alpha-beta library với search, tag và phiên bản. |
-| FR-P16-04 | Chọn áp dụng vào calculator explicit; giữ source/override và lịch sử. |
+| FR-P16-01 | Typed dose-limit entry theo bệnh lý, giải phẫu, kỹ thuật, số fraction, mô/OAR, metric, operator, giới hạn, đơn vị, volume/parameter và nguồn. |
+| FR-P16-02 | Treatment-protocol/reference entry có tổng liều, fractionation, target/OAR, contour/planning notes, điều kiện áp dụng và citation; nội dung chỉ là kiến thức, không phải phác đồ thực thi tự động. |
+| FR-P16-03 | Knowledge note, formula và alpha/beta entry có nội dung JSON an toàn, model/version, evidence, citation, search/filter, import preview và lịch sử version. |
+| FR-P16-04 | User chủ động tạo explicit-use snapshot cho một tool; snapshot giữ entry version, hash, effective values và override; không tự động ghi đè P13/P14/P15/P17 hay biến thành PASS/FAIL. |
 
-**Thông tin tối thiểu:** Disease/subtype/anatomy/intent/technique/fractions; tissue/OAR; metric Dmax/Dmean/Dxcc/Vx/operator/limit/unit; source type/citation/DOI/URL/version/date/evidence/applicability; content/alpha-beta/model.
+**FR-P16-01 — Dose limit có ngữ nghĩa rõ:**
 
-**Luồng chính:** Lọc bệnh lý, kỹ thuật, fractions, mô và metric. → Mở entry để xem nguồn và phạm vi áp dụng. → Tạo nội dung nội bộ hoặc clone, chỉnh và lưu version. → User chọn dùng entry vào calculator, review values/source. → Cập nhật library hoặc archive, mở lại calculation cũ giữ source version.
+- Context gồm disease, disease subtype, anatomy site, treatment intent, technique, fractions và tissue/OAR. Context được lưu cả ở field chuẩn và applicability để có thể tìm kiếm chính xác.
+- Metric `DMAX`, `DMEAN`, `Dxcc` và `Vx` không được coi là tương đương. `Dxcc` phải có volume dương; `Vx` phải có parameter rõ ràng và đơn vị `%`, `cc` hoặc `cm3`; metric dose phải dùng `Gy`, đơn vị sinh học đã ghi rõ như `Gy2/Gy3/Gy10` hoặc `EQD2 Gy`.
+- Operator `MAX`, `MIN`, `RANGE`, `TARGET` quyết định field giá trị: `RANGE` cần lower/upper và lower không được lớn hơn upper; các operator còn lại cần limit value.
+- Không tự đổi giới hạn giữa số fraction, không tự chuyển Gy sang EQD2, không tự chọn giới hạn thấp nhất khi có hai nguồn mâu thuẫn. Entry thiếu tissue/OAR chỉ được cảnh báo “không được auto-apply”.
+- Bộ lọc phải match exact theo từng dimension; dimension bị thiếu/không biết không phải wildcard. Kết quả không match phải là empty/no-match có hướng dẫn, không phải lỗi và không được tự tạo entry.
 
-**Nghiệm thu nhóm:** Filter/context/source/version/import/override pass; không seed bảng giới hạn lâm sàng không nguồn.
+**FR-P16-02 — Protocol/reference content:**
+
+- Có thể lưu tên phác đồ, bệnh/subtype, anatomy, intent, technique, tổng liều, số fraction, target/OAR, contouring notes, planning notes, dose constraints, BED/EQD2 reference, assumptions và citation.
+- Nội dung phải phân biệt `REFERENCE`, `SITE_APPROVED`, `INTERNAL` và `USER_DEFINED`; source date/evidence/citation được hiển thị cạnh nội dung.
+- Một protocol trong thư viện không tự tạo treatment course, không thay đổi RTPLAN/prescription/TPS/PACS và không tạo clinical order. Nếu cần dùng, user phải tạo snapshot với target tool và xem lại effective values.
+
+**FR-P16-03 — Knowledge, formula và alpha/beta:**
+
+- Alpha/beta phải dương, finite, có unit Gy, model key/version và source/reference khi thuộc loại tham khảo. Formula chỉ là dữ liệu tham khảo có cấu trúc; text không được thực thi như code.
+- Content, citation và applicability là JSON object hữu hạn, được kiểm tra active markup, `javascript:`/HTML thực thi, kiểu dữ liệu và field được phép.
+- Import nhiều dòng có validate preview trước; mỗi row có số dòng, errors, warnings và trạng thái riêng. Row hợp lệ có thể commit; row lỗi được giữ lại để sửa, không làm mất toàn bộ batch.
+
+**FR-P16-04 — Explicit-use snapshot:**
+
+- User chọn entry và `target_tool` (`P13_BED_EQD2`, `P14_PLAN_COMPARISON`, `P15_REIRRADIATION`, `P15_FRACTION_COMPENSATION`, `P17_DVH` hoặc `KNOWLEDGE_REFERENCE`), sau đó mới tạo snapshot.
+- Snapshot phải chứa source entry, organization, entry key/type/version/revision, source status, applicability, effective values, override, schema version và hash. Override chỉ được phép ở các field tính toán đã định nghĩa; override luôn có nhãn `USER_OVERRIDE`.
+- Entry `ARCHIVED` không được dùng cho phép tính mới. Entry `DRAFT` có thể được chọn để preview nhưng phải hiện warning. Calculator tương lai phải nhận snapshot này như input bất biến; việc publish/clone version mới không được làm thay đổi snapshot cũ.
+
+**Thông tin tối thiểu:** Entry ID/organization; entry type/key/name/version/revision/status; disease/subtype/anatomy/intent/technique/fractions; tissue/OAR; metric Dmax/Dmean/Dxcc/Vx/operator/limit/unit/volume/parameter; source type/reference/status/date/evidence/citation; applicability/content; alpha/beta/model/version; content hash; actor và timestamps.
+
+**Luồng nghiệp vụ chuẩn P16:**
+
+1. User mở tab Knowledge Library độc lập, chọn organization hiện tại và tra cứu bằng text hoặc bộ lọc context/type/status.
+2. Hệ thống match theo context chính xác, mặc định ẩn ARCHIVED, hiển thị no-match và cảnh báo source chưa xác minh mà không tự chọn reference.
+3. User mở detail để xem structured values, applicability, citation, source status, version, hash và lineage; có thể xem lịch sử/compare.
+4. User tạo entry mới hoặc clone entry cũ. Entry mới/clone mặc định là DRAFT; form chạy validate-only để chỉ ra lỗi field/cross-field và warning không chặn.
+5. User chỉnh DRAFT, import preview theo row hoặc commit các row hợp lệ. Publish chỉ chuyển entry hợp lệ sang PUBLISHED; bản đã publish không sửa tại chỗ, muốn thay đổi phải clone/version mới.
+6. User chọn explicit-use, chọn target tool và override nếu cần; hệ thống trả snapshot/hash để calculator tương ứng nhận ở phase khác. Không có auto-apply nền.
+7. User archive entry khi không muốn dùng mới; history, source và calculation snapshot cũ vẫn mở được. Export JSON/CSV phải phản ánh đúng entry/version đã chọn.
+
+**Trường hợp chạy đúng bắt buộc:**
+
+| Test ID | Tình huống | Kết quả nghiệp vụ phải thấy |
+| :--- | :--- | :--- |
+| TC-P16-S01 | Tìm theo disease/anatomy/technique/tissue/metric/fractions với context khớp; sau đó tìm một context không khớp | Kết quả chỉ gồm entry match exact; no-match là empty state, không match nhầm entry thiếu context. |
+| TC-P16-S02 | Validate-only, tạo DRAFT, sửa DRAFT và import một batch có cả row hợp lệ/lỗi | Validate không tạo dữ liệu; DRAFT có revision/hash; import trả kết quả từng row và commit được row hợp lệ theo lựa chọn. |
+| TC-P16-S03 | Clone, publish, xem history, compare và export JSON/CSV | Version lineage, source, revision, status và checksum hiển thị; bản published/old snapshot không bị thay đổi. |
+| TC-P16-S04 | Chọn entry vào từng target tool, có và không có override; hai reference có giá trị mâu thuẫn | Snapshot có target/source/effective values/hash; override có nhãn; reference mâu thuẫn hiển thị riêng, không tự xếp hạng hoặc áp dụng. |
+
+**Trường hợp lỗi và phục hồi bắt buộc:**
+
+| Test ID | Trigger | Error/warning contract | Expected và phục hồi |
+| :--- | :--- | :--- | :--- |
+| TC-P16-E01 | Entry REFERENCE thiếu citation/DOI/URL/document identifier | `KNOWLEDGE_SOURCE_REQUIRED` | Chặn create/publish; bổ sung source hoặc đổi rõ sang INTERNAL/USER_DEFINED, không gắn guideline giả. |
+| TC-P16-E02 | Sai schema/type, key/name/date, số không finite, JSON không hợp lệ hoặc metric/unit/operator không tương thích | `REQUEST_VALIDATION_FAILED`, `KNOWLEDGE_CONTENT_INVALID`, `DOSE_LIMIT_UNIT_INVALID`, `DOSE_LIMIT_NOT_APPLICABLE` | Field-level errors; không commit; giữ phần input hợp lệ để sửa và validate lại. |
+| TC-P16-E03 | Source link không sẵn sàng hoặc reference chưa được kiểm tra | `REFERENCE_LINK_UNAVAILABLE`, `REFERENCE_NOT_VERIFIED` | Giữ citation metadata, hiển thị warning/status; không xóa nội dung và không gọi source là đã xác minh. |
+| TC-P16-E04 | Import thiếu row field, duplicate cùng type/key trong batch hoặc batch vượt giới hạn | `KNOWLEDGE_IMPORT_INVALID` | Preview theo row; commit row hợp lệ nếu user chọn; row lỗi còn số dòng và lý do để sửa/import lại. |
+| TC-P16-E05 | Context không khớp, thiếu tissue/OAR, Dxcc/Vx thiếu parameter hoặc entry dose-limit dùng sai target | `DOSE_LIMIT_NOT_APPLICABLE` | Không auto-apply và không tạo PASS/FAIL; user chọn entry/context khác hoặc nhập explicit override có nhãn. |
+| TC-P16-E06 | Content/citation chứa script, active markup, URL scheme nguy hiểm hoặc NaN/Infinity | `KNOWLEDGE_CONTENT_INVALID` | Từ chối content nguy hiểm, không thực thi text; thay bằng plain text/safe JSON rồi validate lại. |
+| TC-P16-E07 | Sửa bằng revision cũ, sửa PUBLISHED/ARCHIVED, publish/archive sai revision hoặc lifecycle conflict | `KNOWLEDGE_REVISION_CONFLICT`, `KNOWLEDGE_VERSION_IMMUTABLE`, `KNOWLEDGE_NOT_AVAILABLE` | Tải bản mới, giữ draft cục bộ, clone version mới; không overwrite bản trước. |
+| TC-P16-E08 | Entry ID không thuộc organization hiện tại hoặc organization/resource không tồn tại | `ORGANIZATION_SCOPE_MISMATCH`, `KNOWLEDGE_ENTRY_NOT_FOUND` | Trả boundary-safe 403/404, không lộ metadata; chọn lại organization/entry hợp lệ. |
+| TC-P16-E09 | Override chứa field ngoài whitelist, dùng entry ARCHIVED hoặc request target không phù hợp | `KNOWLEDGE_CONTENT_INVALID`, `KNOWLEDGE_NOT_AVAILABLE` và warning `KNOWLEDGE_DRAFT_SELECTED`/`DOSE_LIMIT_NOT_APPLICABLE` | Không tạo use snapshot sai; sửa target/override hoặc clone/publish entry; warning không bị biến thành PASS. |
+| TC-P16-E10 | Hai người tạo cùng version hoặc DB commit/storage gặp lỗi không chắc chắn | `KNOWLEDGE_VERSION_CONFLICT`, `KNOWLEDGE_PERSISTENCE_FAILED` | Không báo thành công giả; tra cứu entry/id trước khi retry, reconcile nếu cần, dùng version/key mới khi xung đột. |
+
+**Nghiệm thu nhóm:** Search/context/no-match, source status, typed metric/unit, DRAFT→PUBLISHED/ARCHIVED, clone/history/compare/export, row-level import, explicit-use snapshot, scope, concurrency và persistence đều có test/evidence. Không seed bảng giới hạn lâm sàng không nguồn; không dùng entry live làm pointer duy nhất trong calculation.
 
 #### P17 — Visual Dose, DVH và structure review
 
@@ -1911,7 +1969,7 @@ Bảng này là bản đồ ngắn gọn để không bỏ sót phase. `S` là w
 | P13 | Saved revision → LQ input → validate → calculate → curve/table → history/export | `TC-P13-S01..S08` | `TC-P13-E01..E10` | Known-answer, precision, chart/table/checksum và replay. |
 | P14 | P13 options → common context → baseline → delta/chart → reorder/clone/export | `TC-P14-S01..S06` | `TC-P14-E01..E10` | Delta/zero policy, no-truncate, lineage và persisted snapshot. |
 | P15 | Courses → tissue/model → recovery → cumulative/sensitivity → compensation/export | `TC-P15-S01..S08` | `TC-P15-E01..E14` | Scalar/recovery/alternative snapshot; spatial capability rõ ràng. |
-| P16 | Search → source/applicability → create/clone/version → citation/import → explicit use | `TC-P16-S01..S04` | `TC-P16-E01..E06` | Library version, citation, import report và no-match behavior. |
+| P16 | Search → source/applicability → create/clone/version → citation/import → explicit use → compare/export/archive | `TC-P16-S01..S04` | `TC-P16-E01..E10` | Library version, citation, import report, no-match, scope/lifecycle/persistence behavior và explicit snapshot. |
 | P17 | Dataset → geometry preflight → overlay → DVH/profile → metric/export | `TC-P17-S01..S04` | `TC-P17-E01..E07` | Frame/ROI/coverage oracle, visual/table fallback và lineage. |
 | P18 | RC → integrated/golden/fault/load → restore → pilot → regression | `TC-P18-S01..S04` | `TC-P18-E01..E06` | RC manifest, workload, restore, pilot issue và severity. |
 | P19 | Backup → promote services/schema → domain/Auth → remote E2E → rollback | `TC-P19-S01..S04` | `TC-P19-E01..E06` | Public URL, HTTPS, version/config manifest và rollback rehearsal. |

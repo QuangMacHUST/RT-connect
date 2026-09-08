@@ -20,6 +20,7 @@ export const routeRegistry: readonly RouteDefinition[] = [
   { path: '/app/biological/bed-eqd2', label: 'BED & EQD2', module: 'MOD-11', phase: 'P13', nav: 'biological', available: true },
   { path: '/app/biological/compare', label: 'So sánh phác đồ', module: 'MOD-12', phase: 'P14', nav: 'biological', available: true },
   { path: '/app/biological/re-irradiation', label: 'Tái xạ', module: 'MOD-13', phase: 'P15', nav: 'biological', available: true },
-  { path: '/app/biological/fraction-compensation', label: 'Bù fraction', module: 'MOD-14', phase: 'P15', nav: 'biological', available: true },
+  { path: '/app/biological/fraction-compensation', label: 'Bù fraction', module: 'MOD-13', phase: 'P15', nav: 'biological', available: true },
+  { path: '/app/biological/knowledge', label: 'Knowledge Library', module: 'MOD-14', phase: 'P16', nav: 'biological', available: true },
   { path: '/app/system/status', label: 'Trạng thái hệ thống', module: 'MOD-16', phase: 'P1', nav: 'system', available: true }
 ]

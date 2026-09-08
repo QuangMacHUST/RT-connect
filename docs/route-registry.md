@@ -27,8 +27,6 @@ All routes are typed in source during P1. This registry is the P0 contract draft
 | `/app/biological/compare` | MOD-12 | Implemented and staging-smoke verified on candidate `31a5900`; final DB/scope/release evidence pending | `/api/v1/organizations/{id}/biological/comparisons` and child validate/detail/chart/clone/export routes | P14 |
 | `/app/biological/re-irradiation` | MOD-13 | Implemented with Clinical Precision Interface tokens; dedicated Stitch screen optional | re-irradiation validate/create/list/detail/export API | P15 |
 | `/app/biological/fraction-compensation` | MOD-13 | Implemented with shared P15 workspace; dedicated Stitch screen optional | fraction-compensation validate/create/list/detail/export API | P15 |
-| `/app/biological/dose-limits` | MOD-14 | Missing | dose-limit APIs | P16 |
-| `/app/biological/protocols` | MOD-14 | Missing | treatment-protocol APIs | P16 |
-| `/app/biological/knowledge` | MOD-14 | Missing | knowledge APIs | P16 |
+| `/app/biological/knowledge` | MOD-14 | Local P16 implementation; independent Knowledge Library page | `/api/v1/organizations/{id}/biological/library` validate/list/create/patch/clone/publish/archive/compare/use/import/export | P16 |
 | `/app/dose-review/:analysisId` | MOD-15 | Missing | DVH/dose review APIs | P17 |
 | `/app/system/status` | MOD-16 | Optional gap | health/readiness/job summaries | P18–P20 |

@@ -3,15 +3,15 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.6 — đồng bộ specification.md v1.9 và plan.md v2.9, bổ sung P15 Re-irradiation/Fraction Compensation implementation contract (2026-09-08)
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.15
+- **Phiên bản:** 1.7 — đồng bộ specification.md v1.10 và plan.md v3.0, bổ sung P16 Biological Knowledge Library implementation contract (2026-09-08)
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.16
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
 
 Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
-> Đồng bộ v1.6: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§8 là authority cho hành vi/validation/error/thuật toán. P6–P15 hiện đã có các slice code được ghi rõ trong mục 0.4; phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+> Đồng bộ v1.7: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§8 là authority cho hành vi/validation/error/thuật toán. P6–P16 hiện đã có các slice code được ghi rõ trong mục 0.4; phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -92,8 +92,9 @@ Phần 0.1–0.3 là baseline lịch sử ngày 2026-09-04 và không được �
 | P13 | BED/EQD2 pure engine, calculation snapshot, idempotency, chart dataset and JSON/CSV export | `20260908_0013` |
 | P14 | Plan Comparison engine, immutable comparison snapshot, baseline/delta table-chart, clone and JSON/CSV export | `20260908_0014` |
 | P15 | Re-irradiation/fraction-compensation scalar engine, recovery/sensitivity, schedule alternatives, immutable snapshot and JSON/CSV export | `20260908_0015` |
+| P16 | Organization-scoped Biological Knowledge Library: dose limits, treatment-protocol references, knowledge/alpha-beta entries, validation, import, versioning, explicit-use snapshots and export | `20260908_0016` |
 
-Ngày 2026-09-08, P11–P15 đã bổ sung model/API/UI và migrations `20260908_0011`/`20260908_0012`/`20260908_0013`/`20260908_0014`/`20260908_0015`. P12–P15 giữ Biological như bounded context độc lập, không có FK bắt buộc tới QACase/patient. Checkpoint local phải ghi đủ full suite, focused phase tests, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head trên cùng SHA; build warning không được coi là lỗi chức năng nhưng phải theo dõi bundle budget. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
+Ngày 2026-09-08, P11–P16 đã bổ sung model/API/UI và migrations `20260908_0011`/`20260908_0012`/`20260908_0013`/`20260908_0014`/`20260908_0015`/`20260908_0016`. P12–P16 giữ Biological như bounded context độc lập, không có FK bắt buộc tới QACase/patient. Checkpoint local phải ghi đủ full suite, focused phase tests, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head trên cùng SHA; build warning không được coi là lỗi chức năng nhưng phải theo dõi bundle budget. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
 
 ---
 
@@ -812,7 +813,7 @@ Slice P12 hiện thực ba bảng nền tảng trong namespace nghiệp vụ ri�
 
 Tất cả query đầu tiên đều kèm `organization_id` sau khi resolve membership. Mutation create/update/save/clone/archive ghi header, snapshot và audit trong một transaction. `PATCH` bắt `expected_revision`; chỉ DRAFT sửa trực tiếp; clone tạo ID/key mới và không sửa nguồn. `validate` là validate-only. `ARCHIVED` bị loại khỏi list mặc định nhưng history/detail vẫn đọc được.
 
-API implementation prefix là `/api/v1/organizations/{organization_id}/biological` với các nhóm `/tools`, `/summary`, `/scenarios`, `/scenarios/{id}/revisions`, `/calculations`, `/comparisons`, `/re-irradiation` và `/fraction-compensation`. P13–P15 đã có engine/API/UI contract và test local; P16 vẫn trả `PLANNED`/`available=false` cho tới khi có contract và evidence tương ứng; không tạo calculation giả chỉ để làm card hoạt động.
+API implementation prefix là `/api/v1/organizations/{organization_id}/biological` với các nhóm `/tools`, `/summary`, `/scenarios`, `/scenarios/{id}/revisions`, `/calculations`, `/comparisons`, `/re-irradiation`, `/fraction-compensation` và `/library`. P13–P16 đã có engine/API/UI contract và test local; P16 library không tạo calculation giả và chỉ trả explicit-use snapshot khi user chủ động yêu cầu. Staging/release availability vẫn phải kiểm theo evidence tương ứng.
 
 ### 4.17.2. P13 BED/EQD2 implementation contract
 
@@ -890,6 +891,54 @@ API prefix là `/api/v1/organizations/{organization_id}/biological`. Mọi read 
 #### Local verification checkpoint
 
 Working-tree candidate đã kiểm: P15 API tests `5/5`, pure engine/error tests `22/22`, full backend `133 passed`, Ruff, strict mypy, frontend lint/typecheck/build, OpenAPI regenerate/check và Alembic PostgreSQL head `20260908_0015`. Đây chỉ là local implementation evidence; staging deploy, authenticated browser smoke, direct PostgreSQL row/checksum/scope query và release manifest vẫn là gate riêng.
+
+### 4.17.5. P16 Biological Knowledge Library implementation contract
+
+P16 là một bounded context thư viện tham khảo trong Biological Toolkit. Một bảng versioned duy nhất được dùng cho bốn loại entry để giữ chung search, provenance và lifecycle; các màn hình dose limit, treatment protocol, knowledge note và alpha/beta là các view/entry type của cùng namespace, không phải bốn nguồn dữ liệu không liên quan.
+
+#### Thành phần triển khai
+
+- **Engine thuần:** `services/biological_library_engine.py` thực hiện canonicalization, validation field/cross-field, applicability matching, search text, snapshot và fingerprint. Engine không truy cập database, Auth, URL external hoặc patient data.
+- **API adapter:** `api/biological_library.py` dùng prefix `/api/v1/organizations/{organization_id}/biological/library`; route resolve membership trước mọi query, ghi audit cho mutation và rollback khi persistence thất bại.
+- **Entity/migration:** `BiologicalLibraryEntry` và migration `20260908_0016_biological_library.py`; unique family/version `(organization_id, entry_type, entry_key, version_number)`, `source_entry_id` cho clone, revision optimistic, content/citation/applicability JSON và hash.
+- **Frontend:** `KnowledgeLibraryPage` tại `/app/biological/knowledge`, dùng AppShell/Clinical Precision Interface hiện có; có list/filter, editor, validation, import, history/compare, explicit-use và JSON/CSV export.
+
+#### Schema và validation
+
+`entry_type` nhận `DOSE_LIMIT`, `TREATMENT_PROTOCOL`, `KNOWLEDGE`, `ALPHA_BETA`; `source_type` nhận `USER_DEFINED`, `REFERENCE`, `INTERNAL`, `SITE_APPROVED`; `reference_status` nhận `UNVERIFIED`, `AVAILABLE`, `UNAVAILABLE`. Key được uppercase canonical; mọi số phải finite và mọi JSON phải là object hữu hạn.
+
+- `DOSE_LIMIT` bắt buộc metric/unit/operator. `MAX|MIN|TARGET` dùng `limit_value`; `RANGE` dùng lower/upper và lower ≤ upper. DMAX/DMEAN/Dxcc dùng dose-like unit; Dxcc bắt buộc volume dương; Vx bắt buộc metric parameter dương và `%|cc|cm3`.
+- `ALPHA_BETA` yêu cầu alpha/beta dương, chuẩn hóa unit `Gy`, có thể dùng `limit_value` làm alias; thiếu tissue/OAR chỉ tạo warning `DOSE_LIMIT_NOT_APPLICABLE`, không auto-apply.
+- Direct context được sao chép vào applicability arrays. Search disease/anatomy/technique/tissue/metric/fractions là exact case-insensitive match; context thiếu không phải wildcard.
+- `REFERENCE` không có source identifier là lỗi `KNOWLEDGE_SOURCE_REQUIRED`. Link external chỉ là metadata; service không tự fetch/private URL và `UNVERIFIED` không thành `AVAILABLE` bằng việc lưu URL.
+- Content/citation không được chứa script/iframe/object/embed/style, event attribute, `javascript:` hoặc `data:text/html`; formula text không được chạy như code.
+
+#### API operation và transaction
+
+| Operation | Hành vi kỹ thuật |
+| :--- | :--- |
+| `POST /validate` | Validate-only; trả normalized entry/fingerprint/errors/warnings, không insert. |
+| `GET /` | Organization-scoped list; filter q/type/status/context/fractions, mặc định loại ARCHIVED, offset/limit tối đa 500. |
+| `POST /` | Validate lại server-side, tạo DRAFT hoặc PUBLISHED theo request, assign next family version và audit trong transaction. |
+| `PATCH /{id}` | Chỉ DRAFT; bắt `expected_revision`; cập nhật normalized fields, revision và hash atomically. |
+| `POST /{id}/clone` | Copy definition thành family version mới, lưu `source_entry_id`; key/name override phải validate lại. |
+| `POST /{id}/publish` / `archive` | Optimistic revision; publish validate đầy đủ; archive giữ read/history/export nhưng loại khỏi list/use mặc định. |
+| `GET /{id}/revisions` / `compare` | Read-only family history và field-level metadata/content diff; không sửa entry. |
+| `POST /{id}/use` | Tạo response snapshot với target tool, source snapshot, effective values, override label và SHA; không ghi trực tiếp vào calculator/QA. |
+| `POST /import/validate` / `POST /import` | Preview/commit 1–500 rows; duplicate family trong batch là row error; commit row hợp lệ và audit, rollback nếu DB lỗi. |
+| `GET /{id}/export` | JSON/CSV serialize đúng row đã chọn; không tự resolve latest version và không tính lại. |
+
+Explicit-use override whitelist chỉ gồm `limit_value`, `lower_limit`, `upper_limit`, `unit`, `alpha_beta_gy`, `fractions`, `metric_parameter`. Entry ARCHIVED bị chặn; DRAFT được preview nhưng trả warning `KNOWLEDGE_DRAFT_SELECTED`. Target không phù hợp tạo warning, không tạo rule/PASS.
+
+#### Error, observability và capability boundary
+
+`REQUEST_VALIDATION_FAILED`/field schema là 422; engine validation trên validate-only là 200 với `valid=false`, còn mutation là 422; source/unit/content/applicability dùng các mã `KNOWLEDGE_SOURCE_REQUIRED`, `DOSE_LIMIT_UNIT_INVALID`, `DOSE_LIMIT_NOT_APPLICABLE`, `KNOWLEDGE_CONTENT_INVALID`; import dùng `KNOWLEDGE_IMPORT_INVALID`; reference warning là `REFERENCE_NOT_VERIFIED`/`REFERENCE_LINK_UNAVAILABLE`; revision/lifecycle dùng `KNOWLEDGE_REVISION_CONFLICT`, `KNOWLEDGE_VERSION_IMMUTABLE`, `KNOWLEDGE_NOT_AVAILABLE`; scope/not-found dùng shared `ORGANIZATION_SCOPE_MISMATCH`/`KNOWLEDGE_ENTRY_NOT_FOUND`; DB/unique failure dùng `KNOWLEDGE_VERSION_CONFLICT`/`KNOWLEDGE_PERSISTENCE_FAILED` với 409/503.
+
+Every mutation audit payload tối thiểu có organization, actor, entry ID, type/key/version/status và source lineage. Log không ghi content nhạy cảm hoặc token. Snapshot use/export phải có schema version, source version/hash và correlation ID trong response envelope. P16 chỉ cung cấp reference snapshot; P13/P14/P15/P17 phải có adapter riêng nếu muốn prefill, không được đọc trực tiếp bảng P16.
+
+#### Local verification checkpoint
+
+Candidate working tree đã pass P16 focused tests `3/3`, full backend, Ruff, strict mypy, frontend lint/typecheck/Vitest/build. Migration/OpenAPI phải được regenerate/check trên cùng SHA; staging readiness `20260908_0016`, browser lifecycle, import/use/export, direct PostgreSQL row/hash/scope và full negative matrix vẫn là gate trước STAGING_VERIFIED.
 
 ### 4.18. Audit Event
 
@@ -1171,7 +1220,7 @@ evaluated/passing/nonpassing/excluded/no-candidate/censored, pass rate, coverage
 percentile exactness, histogram, warning, configuration, input checksum và engine version.
 Đây là deterministic engineering/golden slice; test local hiện có exhaustive independent node
 oracle và các guard resource/retry, nhưng không thay thế benchmark theo phần cứng hoặc
-commissioning. Gate phát triển, pilot và release theo plan.md v2.9. Coordinate frame mở rộng,
+commissioning. Gate phát triển, pilot và release theo plan.md v3.0. Coordinate frame mở rộng,
 crash/ack/dead-letter injection, large workload benchmark và evidence effective schema/release
 trên staging vẫn là điều kiện đóng P8.
 
@@ -1206,15 +1255,19 @@ API target và implementation phải dùng organization-scoped prefix `/api/v1/o
 | POST | /biological/comparisons | So sánh hai hoặc nhiều course/phác đồ |
 | POST | /biological/re-irradiation | Tạo và tính re-irradiation scenario |
 | POST | /biological/fraction-compensation | Tạo các phương án bù fraction/gián đoạn |
-| GET | /biological/dose-limits | Tra cứu giới hạn liều |
-| POST | /biological/dose-limits | Tạo dữ liệu giới hạn liều |
-| POST | /biological/dose-limits/{id}/versions | Tạo version mới của dose-limit entry |
-| GET | /biological/treatment-protocols | Tra cứu protocol điều trị |
-| POST | /biological/treatment-protocols | Tạo nội dung protocol |
-| POST | /biological/treatment-protocols/{id}/versions | Tạo version protocol/phác đồ mới |
-| GET | /biological/knowledge | Tra cứu knowledge library |
-| POST | /biological/knowledge | Tạo knowledge entry |
-| POST | /biological/knowledge/{id}/versions | Tạo version knowledge entry |
+| POST | /biological/library/validate | Validate-only một entry, không mutation |
+| GET | /biological/library | Tìm/lọc entry theo type/status/context/fractions |
+| POST | /biological/library | Tạo DRAFT/PUBLISHED entry |
+| PATCH | /biological/library/{id} | Sửa DRAFT bằng optimistic revision |
+| GET | /biological/library/{id}/revisions | Lịch sử family version |
+| POST | /biological/library/{id}/clone | Clone sang version/key mới |
+| POST | /biological/library/{id}/publish | Publish entry đã validate |
+| POST | /biological/library/{id}/archive | Archive, giữ history |
+| GET | /biological/library/{id}/compare | So sánh metadata/content |
+| POST | /biological/library/{id}/use | Tạo explicit-use source snapshot |
+| POST | /biological/library/import/validate | Preview import theo từng row |
+| POST | /biological/library/import | Commit row hợp lệ của import |
+| GET | /biological/library/{id}/export | Export JSON/CSV đúng version |
 | POST | /biological/reports | Tạo calculation report độc lập |
 
 ### 6.8. API error contract
@@ -1817,6 +1870,14 @@ TreatmentProtocolReference có:
 - Applicability limit.
 
 Các entry chỉ là kiến thức và công cụ tính toán, không tự link với ca lâm sàng.
+
+P16 hiện thực các loại entry trên bằng `biological_library_entries` trong một
+organization-scoped namespace. `entry_type` phân biệt `DOSE_LIMIT`,
+`TREATMENT_PROTOCOL`, `KNOWLEDGE` và `ALPHA_BETA`; `version_number`,
+`source_entry_id`, `revision`, `source_type`, `reference_status`,
+`applicability`, `citation` và `content_sha256` tạo lineage. API/UI không dùng
+những entry này để tự động prefill hay thay đổi một calculation; việc sử dụng
+phải qua explicit-use snapshot theo SPEC-P16.
 
 ### 12.7. Re-irradiation calculator
 

@@ -1,9 +1,9 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.9**; ngày 2026-09-08.
-- Nguồn nghiệp vụ: business-analysis.md v0.15.
-- Kế hoạch triển khai: plan.md v2.9, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.6.
+- File: specification.md; version **1.10**; ngày 2026-09-08.
+- Nguồn nghiệp vụ: business-analysis.md v0.16.
+- Kế hoạch triển khai: plan.md v3.0, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.7.
 - Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime. Bản 1.9 bổ sung state machine, coverage contract B01–B12, acceptance evidence schema và quy tắc xử lý “unknown outcome” xuyên mọi phase.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
@@ -421,7 +421,7 @@ P17 Visual Dose/DVH không tự chứng minh deformable dose accumulation đã c
 
 ### 6.6. Dose limits và knowledge
 
-DoseLimit là typed entry: disease/subtype, treatment intent, technique, fractionation range, structure, metric parameters, comparison operator, limit, dose/volume units, source type/citation/version/applicability. Unknown fractionation không tự match mọi phác đồ.
+DoseLimit là typed entry: disease/subtype, treatment intent, technique, fractionation, structure, metric parameters, comparison operator, limit, dose/volume units, source type/citation/version/applicability. Unknown fractionation không tự match mọi phác đồ. P16 implementation contract chi tiết ở SPEC-P16; implementation hiện dùng một bảng versioned theo `entry_type`, không tạo bốn bảng rời.
 
 Dmax khác D0.03cc; V20Gy[%] khác V20Gy[cc]; physical Gy khác EQD2(a). Không chuyển constraint giữa số fractions bằng BED/EQD2 tự động. User chọn entry mới đưa vào calculator và preview changes; source revision được snapshot. Nội dung không có nguồn external phải ghi internal/user-defined, không giả nhãn guideline.
 
@@ -1011,18 +1011,53 @@ Validate-only dùng HTTP `200` để trả `valid=false` cho lỗi engine đã p
 | Hạng mục | Đặc tả |
 | :--- | :--- |
 | Module/requirement | MOD-14; FR-P16-01 đến FR-P16-04 |
-| Input và dữ liệu hiển thị | Disease/subtype/anatomy/intent/technique/fractions; tissue/OAR; metric Dmax/Dmean/Dxcc/Vx/operator/limit/unit; source type/citation/DOI/URL/version/date/evidence/applicability; content/alpha-beta/model. |
-| Model/storage | DoseLimitEntryVersion, TreatmentProtocolVersion, KnowledgeEntryVersion, AlphaBetaEntryVersion and citation bindings. |
-| Operation/API surface | Target /biological/dose-limits, /treatment-protocols, /knowledge, /alpha-beta; version/search/import/export. |
-| Transaction/invariant | Published version immutable; reference selection copied to calculation snapshot, not live pointer only. |
-| Output bàn giao | Library/editor/version comparison/source preview; schema fixtures và calculator integration. |
+| Bounded context | Biological Toolkit độc lập; không có FK tới QA case, patient, RTPLAN, prescription, TPS hoặc PACS. |
+| Model/storage | `biological_library_entries`: organization-scoped, `entry_type` ∈ `DOSE_LIMIT`, `TREATMENT_PROTOCOL`, `KNOWLEDGE`, `ALPHA_BETA`; family key `(organization_id, entry_type, entry_key)` và version number; content/citation/applicability JSON an toàn; source lineage, actor, revision và `content_sha256`. |
+| Input | `entry_key`, type, name, disease/subtype/anatomy/intent/technique/fractions, tissue/OAR, metric/operator/limits/unit/volume/parameter, alpha/beta/model/version, applicability/content, source type/reference/status/date/evidence/citation. |
+| API prefix | `/api/v1/organizations/{organization_id}/biological/library`; mọi route resolve identity/membership trước khi đọc entity. |
+| API operations | `POST /validate`; `GET /`; `POST /`; `GET /{id}`; `GET /{id}/revisions`; `PATCH /{id}`; `POST /{id}/clone`; `POST /{id}/publish`; `POST /{id}/archive`; `GET /{id}/compare?other_id=`; `POST /{id}/use`; `POST /import/validate`; `POST /import`; `GET /{id}/export?export_format=JSON|CSV`. |
+| Lifecycle | Create/clone → `DRAFT`; only DRAFT can be patched; publish → `PUBLISHED`; archive → `ARCHIVED`; published content is immutable in place; change requires clone/new version. Repeated publish/archive is safe and returns current snapshot where contract permits. |
+| Transaction/invariant | All writes are organization-scoped and audited. Optimistic `revision` protects patch/publish/archive. Version uniqueness is enforced by DB. A validation preview never mutates; import commits only validated rows selected by request; calculator/use receives a copied source snapshot, not a live pointer only. |
+| Output | Structured entry, source/citation/status, applicability, version/revision/hash, row-level import report, compare diff, JSON/CSV export and explicit-use snapshot. |
 | Success oracle | TC-P16-S01 đến TC-P16-S04 trong plan |
-| Error/recovery oracle | TC-P16-E01 đến TC-P16-E06 trong plan |
-| Exit | Filter/context/source/version/import/override pass; không seed bảng giới hạn lâm sàng không nguồn. |
+| Error/recovery oracle | TC-P16-E01 đến TC-P16-E10 trong plan; generic B01–B12 and C03–C16 apply where relevant. |
+| Exit | Local tests and static checks pass; staging schema/API/browser/DB/scope/negative evidence pass; no unsourced clinical-limit seed and no auto-apply. |
 
-**Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer cần recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
+#### SPEC-P16.1 — Canonical validation and matching
 
-**Failure contract:** KNOWLEDGE_SOURCE_REQUIRED; DOSE_LIMIT_UNIT_INVALID; REFERENCE_LINK_UNAVAILABLE; KNOWLEDGE_IMPORT_INVALID; DOSE_LIMIT_NOT_APPLICABLE; KNOWLEDGE_CONTENT_INVALID. Đây là taxonomy target; mapping sang error codes thực tế phải được ghi trong contract test trước khi triển khai.
+1. **Key/type/text.** `entry_key` is normalized uppercase and must match `^[A-Z][A-Z0-9_.-]{0,119}$`; entry type must be one of the four enumerated types; text is trimmed and bounded. Dates use ISO date/datetime prefix.
+2. **Source.** `REFERENCE` requires a non-empty source identifier (citation, DOI, URL or document ID). `UNVERIFIED` and `UNAVAILABLE` are retained as metadata/warnings; RT-CONNECT never fetches a URL or treats a link as independently verified.
+3. **Dose metric.** A `DOSE_LIMIT` requires metric, unit and operator. `MAX`, `MIN`, `TARGET` require `limit_value`; `RANGE` requires `lower_limit` and `upper_limit` with lower ≤ upper. DMAX/DMEAN/Dxcc require dose-like units; Dxcc requires positive `volume_cc`; Vx requires positive `metric_parameter` and `%`, `cc` or `cm3`. Unknown metric/unit combinations are errors, not best-effort coercions.
+4. **Alpha/beta.** An `ALPHA_BETA` entry requires finite positive alpha/beta, stores unit `Gy`, and can use `limit_value` as an input alias. Missing tissue/OAR produces a non-blocking `DOSE_LIMIT_NOT_APPLICABLE` warning that explicitly prevents automatic application.
+5. **Applicability.** Direct context fields are copied into normalized applicability arrays. Search dimensions are exact case-insensitive membership; a missing/unknown dimension is not a wildcard. `fractions` is a positive integer and must agree with `applicability.fractions`.
+6. **Content safety.** `content`, `citation` and `applicability` are finite JSON objects. Script/iframe/object/embed/style markup, event attributes, `javascript:` and `data:text/html` are rejected. Formula text is displayed as data and is never evaluated as executable code.
+
+#### SPEC-P16.2 — Import, lifecycle and explicit-use contract
+
+- **Validate-only:** `POST /validate` returns `200` with `valid`, field-level `errors`, non-blocking `warnings`, normalized entry and fingerprint. It creates no row. Request/schema errors remain HTTP `422`.
+- **Import preview:** `POST /import/validate` accepts 1–500 rows and returns `row_number`, valid/errors/warnings and counts. Duplicate `(entry_type, entry_key)` within one batch is row-scoped `KNOWLEDGE_IMPORT_INVALID`; valid rows are not hidden by invalid rows.
+- **Import commit:** `POST /import` repeats validation server-side, creates DRAFT rows for valid rows, assigns next family version and audit events, then commits. A persistence error rolls back the transaction; the caller queries the result before retrying.
+- **Draft edit:** `PATCH /{id}` requires `expected_revision`; only DRAFT is mutable. The normalized content hash and revision are updated atomically. PUBLISHED/ARCHIVED returns `KNOWLEDGE_VERSION_IMMUTABLE`.
+- **Clone/publish/archive:** Clone copies the source definition into a new family version with `source_entry_id`; name/key changes are revalidated. Publish validates the complete definition first. Archive keeps row/history/export readable but excludes it from default list and new use snapshots.
+- **Explicit-use:** `POST /{id}/use` requires one enumerated target tool. Only override fields `limit_value`, `lower_limit`, `upper_limit`, `unit`, `alpha_beta_gy`, `fractions` and `metric_parameter` are accepted. The response includes `source_snapshot`, `effective_values`, `override_label`, schema version, warnings and a deterministic `snapshot_sha256`. It is a preview/binding payload; P13/P14/P15/P17 must explicitly integrate it in their own future contracts.
+- **Compare/export:** Compare is read-only and reports metadata/content diffs plus family identity. JSON/CSV export serializes the selected row exactly; it does not resolve the latest version implicitly.
+
+#### SPEC-P16.3 — Exact error mapping
+
+| Condition | Code | HTTP/handling |
+| :--- | :--- | :--- |
+| Pydantic request/type/size violation | `REQUEST_VALIDATION_FAILED` | `422`; retain input and show field errors. |
+| Missing reference for REFERENCE entry | `KNOWLEDGE_SOURCE_REQUIRED` | `422`; add source or label source as internal/user-defined. |
+| Unsupported metric/unit/operator/shape | `DOSE_LIMIT_UNIT_INVALID`, `DOSE_LIMIT_NOT_APPLICABLE` | `422` on mutation, `valid=false` on validate-only. |
+| Unsafe/non-finite/invalid JSON content | `KNOWLEDGE_CONTENT_INVALID` | `422`; no mutation or execution. |
+| Reference unavailable/unverified | `REFERENCE_LINK_UNAVAILABLE`, `REFERENCE_NOT_VERIFIED` | Non-blocking warning; preserve citation and show status. |
+| Import row invalid/duplicate | `KNOWLEDGE_IMPORT_INVALID` | Row-level error; valid rows can be committed explicitly. |
+| Revision/lifecycle conflict | `KNOWLEDGE_REVISION_CONFLICT`, `KNOWLEDGE_VERSION_IMMUTABLE`, `KNOWLEDGE_NOT_AVAILABLE` | `409`; reload current row or clone a new version. |
+| Wrong organization or missing entry | `ORGANIZATION_SCOPE_MISMATCH`, `KNOWLEDGE_ENTRY_NOT_FOUND` | `403/404`; do not reveal other-organization metadata. |
+| Unsupported use override or invalid binding | `KNOWLEDGE_CONTENT_INVALID`; warning `KNOWLEDGE_DRAFT_SELECTED`/`DOSE_LIMIT_NOT_APPLICABLE` | `422` for invalid request; warning remains visible and never becomes PASS. |
+| Concurrent version/DB failure | `KNOWLEDGE_VERSION_CONFLICT`, `KNOWLEDGE_PERSISTENCE_FAILED` | `409/503`; query ID/key before retry, reconcile, never report success from an uncertain commit. |
+
+Validation errors are not QA `FAIL`; a valid dose-limit result is not a clinical PASS. The P16 UI must expose loading, empty/no-match, validation error, warning, persisted result, conflict, unavailable and export error states.
 
 <a id="spec-p17"></a>
 

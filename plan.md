@@ -1,12 +1,12 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
-- Phiên bản: **2.9**, ngày 2026-09-08.
-- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.15.
-- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.9.
-- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.6.
+- Phiên bản: **3.0**, ngày 2026-09-08.
+- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.16.
+- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.10.
+- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.7.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
-- Phạm vi lần cập nhật này: chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20; bổ sung tiêu chuẩn bao phủ B01–B12 cho mỗi feature, từ điển trạng thái thống nhất, phase scenario index và đồng bộ slice implementation P6/P8/P9/P10/P11/P12/P13/P14/P15, migration schema `20260908_0015`, các engine/API/UI Biological và kết quả kiểm thử local/staging ngày 2026-09-08. Staging E2E sau slice này vẫn là gate riêng; không suy diễn từ test local hoặc một lần Railway báo Online.
+- Phạm vi lần cập nhật này: chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20; bổ sung tiêu chuẩn bao phủ B01–B12 cho mỗi feature, từ điển trạng thái thống nhất, phase scenario index và đồng bộ slice implementation P6/P8/P9/P10/P11/P12/P13/P14/P15/P16, migration schema `20260908_0016`, các engine/API/UI Biological và kết quả kiểm thử local ngày 2026-09-08. P16 có implementation local trên working tree candidate; staging E2E sau slice này vẫn là gate riêng; không suy diễn từ test local hoặc một lần Railway báo Online.
 
 ## 1. Cách thực hiện kế hoạch
 
@@ -1049,7 +1049,7 @@ Mã ở cột “Phân loại” là contract code. Mọi lỗi phải có HTTP 
 
 | Operation | Contract cần giữ | Trạng thái hiện tại |
 | :--- | :--- | :--- |
-| `GET /organizations/{org}/biological/tools` | Trả capability P13–P16, route và `available`; module chưa có code phải là `PLANNED` | Implemented; P13/P14/P15 `AVAILABLE`, P16 `PLANNED` |
+| `GET /organizations/{org}/biological/tools` | Trả capability P13–P16, route và `available`; module chưa có code phải là `PLANNED` | Implemented; P13/P14/P15/P16 `AVAILABLE` trên candidate local, staging P16 cần recheck |
 | `GET /organizations/{org}/biological/summary` | Chỉ đếm scenario/calculation/report cùng organization | Implemented |
 | `POST /organizations/{org}/biological/scenarios/validate` | Validate-only; không mutation; kiểm source/reference và JSON finite | Implemented |
 | `GET /organizations/{org}/biological/scenarios` | Search/status/include archived/pagination; archived không hiện mặc định | Implemented |
@@ -1086,7 +1086,7 @@ P12 không được coi là hoàn tất chỉ vì hub mở được. Trước kh
 | TC-P12-S06 | Clone SAVED/ARCHIVED | ID/key mới, source revision cũ, assumptions/context được sao chép; sửa clone không đổi nguồn. |
 | TC-P12-S07 | Search/status/include archived/history | Lọc đúng, archived bị ẩn mặc định và hiện khi yêu cầu; revision list newest-first. |
 | TC-P12-S08 | Refresh/reconnect sau create/save | API trả lại cùng snapshot/revision; UI không phụ thuộc state tạm trong browser. |
-| TC-P12-S09 | P13/P14/P15 available, P16 chưa available | P13/P14/P15 mở đúng calculator; P16 ghi `PLANNED`, không dẫn route chết và không tạo calculation giả. |
+| TC-P12-S09 | P13/P14/P15/P16 capability được trả về | P13/P14/P15 mở đúng calculator; P16 mở `/app/biological/knowledge` và chỉ cung cấp library/use snapshot, không tạo calculation giả. |
 
 ### Trường hợp lỗi và phục hồi P12
 
@@ -1334,56 +1334,65 @@ Các mã dưới đây là error code đã có trong engine/API P15 và phải g
 - **Module:** MOD-14.
 - **Requirement:** FR-P16-01 đến FR-P16-04, xem business-analysis §21.3.
 - **Dependency/entry gate:** P12, P13, P14, P15 đã có contract ổn định và evidence cho phần được sử dụng. Không dùng record/secret của môi trường khác.
-- **Mục tiêu:** Tra cứu và tái sử dụng nội dung có nguồn, context và version trong công cụ tính toán.
+- **Mục tiêu:** Tra cứu và tái sử dụng nội dung có nguồn, context và version trong công cụ tính toán; không biến thư viện thành prescription, QA tolerance hoặc quyết định PASS/FAIL.
 - **Contract:** specification §8 / SPEC-P16; các contract chung §2–§7 áp dụng khi có liên quan.
 - **Owner thực thi:** người/agent phụ trách module ghi tên trong checkpoint; người dùng cung cấp dữ liệu hoặc đánh giá workflow khi cần, không có cấp phê duyệt theo chức danh.
-- **Trạng thái test v2:** NOT_RUN cho đến khi có evidence theo ID dưới đây; không kế thừa PASS tự động từ test cũ.
+- **Trạng thái test v2:** LOCAL_VERIFIED trên working tree candidate; STAGING_PENDING. Local evidence không tự đóng staging/release gate.
 
 ### Workflow P16
 
-1. Lọc bệnh lý, kỹ thuật, fractions, mô và metric.
-2. Mở entry để xem nguồn và phạm vi áp dụng.
-3. Tạo nội dung nội bộ hoặc clone, chỉnh và lưu version.
-4. User chọn dùng entry vào calculator, review values/source.
-5. Cập nhật library hoặc archive, mở lại calculation cũ giữ source version.
+1. Bootstrap identity và organization context; không query entry trước khi context hợp lệ.
+2. Lọc theo text/type/status/disease/anatomy/technique/tissue/metric/fractions; mặc định loại ARCHIVED và match context exact.
+3. Mở detail để xem structured values, applicability, source/citation/status, version/revision/hash và lineage.
+4. Validate-only nội dung mới hoặc batch import; nhận errors/warnings theo field/row trước khi ghi.
+5. Tạo DRAFT hoặc clone version; chỉ DRAFT được sửa, publish/archive dùng optimistic revision.
+6. Tạo explicit-use snapshot với target tool và override whitelist; calculator khác chỉ nhận snapshot này khi contract của phase đó tích hợp.
+7. Compare/history/export; archive không xóa history và không làm thay đổi calculation snapshot đã tạo trước đó.
 
 ### Work packages P16
 
-- [ ] P16-W01 — Schema typed metric/unit/volume/context; validated citations không biến URL thành bằng chứng đã kiểm tra.
-- [ ] P16-W02 — Search filters + version/clone/import preview/dedup/source quality states.
-- [ ] P16-W03 — Ingestion rich text/attachments safe; link external source không tự fetch URL private.
-- [ ] P16-W04 — Calculator prefill có preview/diff và pinned library version; no auto overwrite khi entry cập nhật.
-- [ ] P16-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
-- [ ] P16-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
+- [x] P16-W01 — Schema typed metric/unit/volume/context; validator canonicalize field và citation nhưng không biến URL thành bằng chứng đã kiểm tra.
+- [x] P16-W02 — Search/filter exact context, status, version/history, clone, import preview/commit theo row và source quality state.
+- [x] P16-W03 — Structured JSON content/citation an toàn; reject active markup/non-finite data; không fetch URL external/private.
+- [x] P16-W04 — Explicit-use snapshot có target/override whitelist, source version/hash và cảnh báo; chưa tự bind vào P13–P15/P17.
+- [x] P16-VERIFY-LOCAL — `test_biological_library.py`, full backend, Ruff/mypy, frontend lint/typecheck/Vitest/build, migration và OpenAPI trên cùng candidate.
+- [ ] P16-VERIFY-STAGING — deploy schema `20260908_0016`, authenticated browser/API lifecycle, import/use/export, direct DB row/hash/scope và full negative matrix.
+- [ ] P16-HANDOFF — cập nhật contract/OpenAPI, migration/release notes, checkpoint, deployment manifest và backlog integration còn lại.
 
 ### Trường hợp chạy đúng P16
 
 | Test ID | Given/When — tình huống trong workflow | Then — kết quả phải kiểm chứng |
 | :--- | :--- | :--- |
-| TC-P16-S01 | Tìm constraint đúng context | Kết quả match disease/fractions/technique và metric unit; unknown không coi wildcard. |
-| TC-P16-S02 | Dùng entry vào calculator | Chỉ sau user chọn; source version được snapshot, override có nhãn. |
-| TC-P16-S03 | Version mới | Calculation/report cũ vẫn dùng nội dung version cũ. |
-| TC-P16-S04 | Hai nguồn mâu thuẫn | Hiển thị riêng cùng applicability; không tự chọn giới hạn thấp nhất. |
+| TC-P16-S01 | Tìm theo text/type/status và context disease/anatomy/technique/tissue/metric/fractions; lặp lại bằng context không khớp | Kết quả chỉ match organization hiện tại và exact context; mặc định ẩn ARCHIVED; no-match là empty state, không match nhầm entry thiếu context. |
+| TC-P16-S02 | Validate-only, tạo DRAFT, sửa DRAFT và import batch có row hợp lệ/lỗi | Validate không mutation; DRAFT có revision/hash; import preview có row number/errors/warnings và commit được row hợp lệ theo lựa chọn. |
+| TC-P16-S03 | Clone, publish, archive, xem history/compare và export JSON/CSV | Lineage/version/status/source/hash hiển thị; published immutable; archive không mất history; export đúng entry đã chọn. |
+| TC-P16-S04 | Tạo use snapshot cho P13/P14/P15/P17/knowledge reference, có và không có override; hai source cùng context nhưng khác limit | Snapshot có target/source version/effective values/override/hash; draft có warning; source mâu thuẫn không tự rank/auto-apply. |
 
 ### Trường hợp lỗi và phục hồi P16
 
-Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống; không mặc định đã là error code trong API hiện tại. Khi hiện thực, dùng code cụ thể đã tồn tại nếu cùng nghĩa và cập nhật OpenAPI/mapping; không gửi chuỗi OR làm một code API.
+Các mã dưới đây là error/warning code thực tế của P16 contract. Schema/Pydantic lỗi có HTTP 422; validate-only trả HTTP 200 với `valid=false`; scope là 403; resource thiếu 404; lifecycle/version conflict là 409; persistence là 503. Không gửi chuỗi OR như một code API.
 
 | Test ID | Trigger — điều kiện lỗi | Phân loại | Expected và đường phục hồi |
 | :--- | :--- | :--- | :--- |
-| TC-P16-E01 | Thiếu nguồn tham khảo | KNOWLEDGE_SOURCE_REQUIRED | Bổ sung citation hoặc đánh dấu nội bộ/user-defined, không gán guideline giả. |
-| TC-P16-E02 | Gy/%/cc không tương thích | DOSE_LIMIT_UNIT_INVALID | Chặn phép so sánh; yêu cầu metric/unit rõ. |
-| TC-P16-E03 | URL hỏng | REFERENCE_LINK_UNAVAILABLE | Giữ citation metadata và thông báo link; không xóa entry. |
-| TC-P16-E04 | Import schema/duplicate lỗi | KNOWLEDGE_IMPORT_INVALID | Preview từng row, commit các row hợp lệ theo lựa chọn; giữ lỗi row. |
-| TC-P16-E05 | Applicability không khớp | DOSE_LIMIT_NOT_APPLICABLE | Hiển thị tham khảo riêng, không gán PASS/FAIL tự động. |
-| TC-P16-E06 | Script/markup không an toàn | KNOWLEDGE_CONTENT_INVALID | Sanitize content; không thực thi công thức text như code. |
+| TC-P16-E01 | Entry REFERENCE thiếu citation/DOI/URL/document identifier | `KNOWLEDGE_SOURCE_REQUIRED` | Chặn create/publish; bổ sung source hoặc đổi rõ source type sang INTERNAL/USER_DEFINED. |
+| TC-P16-E02 | Sai request schema/key/name/date, số non-finite, metric/unit/operator không tương thích, Dxcc/Vx thiếu parameter | `REQUEST_VALIDATION_FAILED`, `KNOWLEDGE_CONTENT_INVALID`, `DOSE_LIMIT_UNIT_INVALID`, `DOSE_LIMIT_NOT_APPLICABLE` | Field-level error; không commit và không tạo snapshot; giữ input để sửa. |
+| TC-P16-E03 | Reference chưa verify hoặc source link unavailable | `REFERENCE_NOT_VERIFIED` warning, `REFERENCE_LINK_UNAVAILABLE` warning | Giữ citation/status; không xóa entry và không tuyên bố nguồn đã xác minh. |
+| TC-P16-E04 | Import row invalid, duplicate family type/key, payload quá giới hạn | `KNOWLEDGE_IMPORT_INVALID` | Preview từng row; commit row hợp lệ; row lỗi giữ row number và lý do. |
+| TC-P16-E05 | Context không match, thiếu tissue/OAR, dùng dose-limit sai target | `DOSE_LIMIT_NOT_APPLICABLE` | Không auto-apply/PASS/FAIL; chọn context/tool khác hoặc explicit override có nhãn. |
+| TC-P16-E06 | Content/citation có script, active markup, `javascript:` hoặc NaN/Infinity | `KNOWLEDGE_CONTENT_INVALID` | Từ chối dữ liệu nguy hiểm; thay bằng plain text/safe JSON rồi validate lại. |
+| TC-P16-E07 | Sửa revision cũ, sửa PUBLISHED/ARCHIVED, publish/archive sai revision | `KNOWLEDGE_REVISION_CONFLICT`, `KNOWLEDGE_VERSION_IMMUTABLE`, `KNOWLEDGE_NOT_AVAILABLE` | Tải bản hiện tại, giữ draft cục bộ hoặc clone version mới; không overwrite. |
+| TC-P16-E08 | Entry/organization không thuộc scope hiện tại hoặc ID không tồn tại | `ORGANIZATION_SCOPE_MISMATCH`, `KNOWLEDGE_ENTRY_NOT_FOUND` | Boundary-safe 403/404, không lộ metadata; chọn lại context/entry. |
+| TC-P16-E09 | Override ngoài whitelist, entry ARCHIVED được dùng, hoặc target không phù hợp | `KNOWLEDGE_CONTENT_INVALID`, `KNOWLEDGE_NOT_AVAILABLE`, warning `KNOWLEDGE_DRAFT_SELECTED`/`DOSE_LIMIT_NOT_APPLICABLE` | Không tạo use snapshot sai; sửa target/override hoặc clone/publish entry. |
+| TC-P16-E10 | Concurrent version conflict hoặc DB commit thất bại/không chắc chắn | `KNOWLEDGE_VERSION_CONFLICT`, `KNOWLEDGE_PERSISTENCE_FAILED` | Không báo success giả; query lại ID/key trước retry, reconcile nếu cần và dùng version mới khi xung đột. |
 
 ### Bất biến và điều kiện đóng P16
 
-- **Dữ liệu phải giữ/transaction:** Published version immutable; reference selection copied to calculation snapshot, not live pointer only.
-- **Bàn giao:** Library/editor/version comparison/source preview; schema fixtures và calculator integration.
-- **Exit gate:** Filter/context/source/version/import/override pass; không seed bảng giới hạn lâm sàng không nguồn.
-- **Kiểm tra chéo:** C03–C09 về scope, retry, đồng thời, mất mạng, session và version phải có evidence hoặc lý do không áp dụng; thêm C10–C16 theo module.
+- **Dữ liệu phải giữ/transaction:** Published version immutable; reference selection copied to calculation snapshot, not live pointer only; import commit atomic cho các row hợp lệ đã chọn và không làm mất row lỗi.
+- **Bàn giao:** Library/editor/version comparison/source preview; migration `20260908_0016`; API/UI/OpenAPI; validator fixtures; import report; explicit-use snapshot.
+- **Exit gate local:** Filter/context/no-match, typed metric/unit, source warning, lifecycle/history/compare/export, import row-level, explicit-use, scope/concurrency/persistence có test.
+- **Exit gate staging:** Cùng candidate có readiness `schema_revision=20260908_0016`, browser/API lifecycle, import/use/export, direct DB aggregate/hash/scope, negative matrix và redacted deployment manifest.
+- **Integration gap:** P13–P15/P17 hiện nhận explicit-use contract ở mức snapshot endpoint/UI; việc tự prefill calculator phải là work package riêng, không tuyên bố đã tích hợp chỉ vì snapshot tạo thành công.
+- **Kiểm tra chéo:** C03–C16 về scope, retry, đồng thời, mất mạng, session, version, persistence và export phải có evidence hoặc lý do không áp dụng. Không thay expected để ép PASS.
 - **Nếu gate fail:** mở issue với testcase thất bại, giữ evidence/bản dữ liệu trước đó và sửa package liên quan; không thay expected để hợp thức hóa output. Có thể làm task độc lập tiếp theo, nhưng phase vẫn mở.
 
 <a id="phase-17"></a>
@@ -1742,7 +1751,7 @@ Bảng này là chỉ mục điều hành ngắn gọn; mỗi phase vẫn phải
 | P13 | P12 scenario/revision contract và known-answer LQ set | SAVED revision → D/n/d/alpha-beta → normalize/validate-only → BED/EQD2 → curve/table/marker → immutable snapshot/replay/export | Noninteger/negative/nonfinite, D≠n×d, alpha-beta/source, range/step/point limit, duplicate curve, archived/out-of-scope revision, idempotency/persistence uncertainty | Formula/known-answer, pair derivation/zero dose, unit/precision, curve-table equality, model/source/checksum snapshot, validate no-mutation; staging browser/API/DB evidence | Local gates pass; staging graph/history/export/replay/no-QA linkage pass |
 | P14 | P13 engine và common biological context đã stable | 2–10 options → common context/model → baseline → calculate delta/chart → reorder/clone/export | Missing/invalid option, context mismatch, baseline missing/zero, alpha/beta mismatch, idempotency conflict, persistence uncertainty, limit/truncate | Same revision/context, `null + BASELINE_ZERO`, warning/ranking policy, option IDs/order, no-truncate evidence; giữ options hợp lệ | Comparison known delta, zero handling, history/export/clone pass |
 | P15 | P13/P14 scalar result và time/course model đã stable | Courses → tissue/alpha-beta → no-recovery/recovery → cumulative/sensitivity → interruption → compensation alternatives → export | Interval/recovery/source/context, nonuniform schedule, overlap, noninteger, missing spatial registration/OAR dose | Assumption/source/sensitivity snapshot, scalar-vs-spatial capability, integer schedule; chặn nhánh unsupported, không sửa treatment | Scalar/recovery/compensation negative matrix và independent export pass |
-| P16 | P12/P13 source/applicability contract đã stable | Search/filter → entry detail → create/clone/version → citation/import → explicit scenario use → archive | Missing source, unit/applicability, broken link, duplicate/import/script content | Version/citation/applicability snapshot and import report; row-level repair, không gán PASS/FAIL | Library no-match/source/version/explicit-use pass |
+| P16 | P12/P13 source/applicability contract đã stable; migration `20260908_0016` và validator candidate đã pass local | Bootstrap scope → search/filter exact → detail/source → validate/create DRAFT → clone/publish/archive/history/compare/export → import preview/commit → explicit-use snapshot | Request/schema, missing source, metric/unit/operator/volume, no-match, broken/unverified reference, duplicate/import, unsafe content, stale revision, immutable lifecycle, cross-scope/not-found, unsupported override, version conflict, persistence uncertainty | Local: 3 focused tests + full backend + Ruff/mypy + frontend + migration/OpenAPI. Staging: readiness/schema, authenticated browser/API, DB row/hash/scope, negative matrix and manifest; row-level repair, no auto-apply | P16 local implementation and contract docs pass; staging/release evidence and direct calculator binding remain open |
 | P17 | P6 DICOM metadata và geometry fixtures đã stable | Dataset select → frame/grid/ROI preflight → overlay → DVH/profile → metric/export | Missing CT/RTSTRUCT, frame/grid/ROI/contour/codec/coverage; dose-only fallback | Geometry oracle, coverage denominator, source UID/checksum, visual/table fallback; không gán zero hoặc giả spatial | Supported/unsupported geometry, DVH and staging evidence pass |
 | P18 | P0–P17 release contracts và candidate manifest đã khóa | RC → integrated E2E → golden → failure/restart/concurrency/load → backup/restore → pilot → regression | Result regression, restore incomplete, duplicate replay, capacity, unsupported pilot data, evidence mismatch | Immutable RC manifest, workload/log/restore/checksum/pilot issues; giữ candidate, mở issue/regression, không sửa expected | MUST E2E/restore/performance/pilot pass, không SEV0/1 |
 | P19 | P18 RC, production backup, DNS/TLS/Auth/CORS và service IDs đã kiểm | Backup → migration compatible → API/worker/renderer/web → public smoke → remote E2E → monitor/rollback rehearsal | Domain/TLS, build config, schema/version mismatch, private dependency, remote E2E/resource | Promotion manifest, public URLs, service/schema/engine versions, rollback record; không promote partial, giữ last-good | Website HTTPS và workflow từ mạng ngoài pass, rollback/backup evidence pass |
@@ -1778,7 +1787,7 @@ Bảng này là chỉ mục điều hành ngắn gọn; mỗi phase vẫn phải
 | P13 | `S01–S08` | `E01–E10` | B01, B02, B03, B04, B05, B06, B07, B10, B11, B12 | D, A, DB, UI, R, V, P |
 | P14 | `S01–S06` | `E01–E10` | B01, B02, B04, B05, B06, B07, B10, B11, B12 | D, A, DB, UI, R, P |
 | P15 | `S01–S08` | `E01–E14` | B01, B02, B03, B04, B05, B06, B07, B09, B10, B11, B12 | D, A, DB, UI, R, P |
-| P16 | `S01–S04` | `E01–E06` | B01, B02, B03, B04, B05, B06, B08, B12 | D, A, DB, UI, R, P |
+| P16 | `S01–S04` | `E01–E10` | B01, B02, B03, B04, B05, B06, B07, B08, B09, B10, B11, B12 | D, A, DB, UI, R, P |
 | P17 | `S01–S04` | `E01–E07` | B01, B02, B04, B05, B06, B09, B10, B11, B12 | D, A, DB, UI, R, V, P |
 | P18 | `S01–S04` | `E01–E06` | B01, B02, B04, B05, B07, B09, B10, B11, B12 | D, A, DB, UI, R, V, P |
 | P19 | `S01–S04` | `E01–E06` | B01, B04, B06, B09, B10, B11, B12 | A, DB, UI, R, V, P |
@@ -1860,8 +1869,8 @@ Template checkpoint (cần điền giá trị thật):
 
 ~~~yaml
 plan_version: "2.9"
-current_phase: P15
-current_work_package: P15-VERIFY-STAGING-REPLAY
+current_phase: P16
+current_work_package: P16-VERIFY-LOCAL
 status: IN_PROGRESS
 source_commit: "<actual-sha>"
 implemented_requirements: []
@@ -1889,7 +1898,7 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 ### 7.2. Kết quả lần sửa tài liệu này
 
-Đã rebaseline tài liệu thành BA v0.15, specification v1.9 và plan v2.9; bổ sung từ điển trạng thái, error taxonomy, operation/evidence contract, B01–B12 và ma trận bao phủ P0–P20. P15 đã có local implementation và staging browser smoke trên candidate `09acb90` với readiness schema `20260908_0015`, nhưng replay cùng key, direct PostgreSQL/scope, full error matrix và release manifest vẫn mở. Các phase khác giữ trạng thái trong `implementation-progress.md`; không phase nào được đánh dấu `DONE-v2` chỉ vì local test, HTTP 200 hoặc Railway báo Online.
+Đã rebaseline tài liệu thành BA v0.16, specification v1.10 và plan v3.0; bổ sung từ điển trạng thái, error taxonomy, operation/evidence contract, B01–B12 và ma trận bao phủ P0–P20. P16 đã có implementation local trên working tree candidate với migration `20260908_0016`, API/UI/library validator và test local; staging browser/API/DB/scope/release evidence còn mở. P15 replay/direct PostgreSQL/scope/full error/release gates cũng vẫn mở theo progress log. Không phase nào được đánh dấu `DONE-v2` chỉ vì local test, HTTP 200 hoặc Railway báo Online.
 
 
 ## 8. Ma trận FR → contract → testcase ban đầu
@@ -1962,10 +1971,10 @@ Mỗi FR có testcase cụ thể dưới đây; Cxx là ma trận chung §3, Gxx
 | FR-P15-02 | SPEC-P15 | TC-P15-S02, TC-P15-E01, TC-P15-E02 |
 | FR-P15-03 | SPEC-P15 | TC-P15-S03, TC-P15-S04, TC-P15-S05, TC-P15-E04, TC-P15-E07, TC-P15-E08 |
 | FR-P15-04 | SPEC-P15 | TC-P15-S05, TC-P15-E05, C09, C13 |
-| FR-P16-01 | SPEC-P16 | TC-P16-S01, TC-P16-S04, TC-P16-E02, TC-P16-E05 |
-| FR-P16-02 | SPEC-P16 | TC-P16-S03, TC-P16-E01 |
-| FR-P16-03 | SPEC-P16 | TC-P16-S03, TC-P16-E03, TC-P16-E04, TC-P16-E06 |
-| FR-P16-04 | SPEC-P16 | TC-P16-S02, C09, C13 |
+| FR-P16-01 | SPEC-P16 | TC-P16-S01, TC-P16-S04, TC-P16-E02, TC-P16-E05, TC-P16-E09 |
+| FR-P16-02 | SPEC-P16 | TC-P16-S02, TC-P16-S03, TC-P16-E01, TC-P16-E03, TC-P16-E07 |
+| FR-P16-03 | SPEC-P16 | TC-P16-S02, TC-P16-S03, TC-P16-E03, TC-P16-E04, TC-P16-E06, TC-P16-E10 |
+| FR-P16-04 | SPEC-P16 | TC-P16-S04, TC-P16-E05, TC-P16-E08, TC-P16-E09, C09, C13 |
 | FR-P17-01 | SPEC-P17 | TC-P17-S02, TC-P17-E06, TC-P17-E07 |
 | FR-P17-02 | SPEC-P17 | TC-P17-S01, TC-P17-E01, TC-P17-E03, TC-P17-E04 |
 | FR-P17-03 | SPEC-P17 | TC-P17-S03, TC-P17-S04, TC-P17-E02, TC-P17-E05 |

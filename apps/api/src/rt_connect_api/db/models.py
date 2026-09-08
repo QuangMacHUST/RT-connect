@@ -447,6 +447,92 @@ class BiologicalReirradiationRun(TimestampedIdMixin, Base):
     )
 
 
+class BiologicalLibraryEntry(TimestampedIdMixin, Base):
+    """Versioned, organization-scoped biological reference material.
+
+    A row is one version in an entry family.  Draft rows may be edited in
+    place with an optimistic revision; published and archived rows are kept as
+    immutable historical material.  Calculators copy the complete row into
+    their own input snapshot rather than resolving this table later.
+    """
+
+    __tablename__ = "biological_library_entries"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "entry_type",
+            "entry_key",
+            "version_number",
+            name="uq_biological_library_entries_family_version",
+        ),
+        Index(
+            "ix_biological_library_entries_organization_type_status",
+            "organization_id",
+            "entry_type",
+            "status",
+        ),
+        Index(
+            "ix_biological_library_entries_organization_key",
+            "organization_id",
+            "entry_key",
+        ),
+        Index(
+            "ix_biological_library_entries_organization_updated",
+            "organization_id",
+            "updated_at",
+        ),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    entry_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    entry_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    name: Mapped[str] = mapped_column(String(240), nullable=False)
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="DRAFT")
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    description: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    effective_note: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    disease: Mapped[str | None] = mapped_column(String(240), nullable=True)
+    disease_subtype: Mapped[str | None] = mapped_column(String(240), nullable=True)
+    anatomy_site: Mapped[str | None] = mapped_column(String(240), nullable=True)
+    treatment_intent: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    technique: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    fractions: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    tissue_or_oar: Mapped[str | None] = mapped_column(String(240), nullable=True)
+    metric_key: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    operator: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    limit_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    lower_limit: Mapped[float | None] = mapped_column(Float, nullable=True)
+    upper_limit: Mapped[float | None] = mapped_column(Float, nullable=True)
+    unit: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    volume_cc: Mapped[float | None] = mapped_column(Float, nullable=True)
+    metric_parameter: Mapped[float | None] = mapped_column(Float, nullable=True)
+    alpha_beta_gy: Mapped[float | None] = mapped_column(Float, nullable=True)
+    model_key: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    model_version: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    applicability: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    content: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    source_type: Mapped[str] = mapped_column(
+        String(40), nullable=False, server_default="USER_DEFINED"
+    )
+    source_reference: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    reference_status: Mapped[str] = mapped_column(
+        String(30), nullable=False, server_default="UNVERIFIED"
+    )
+    source_date: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    evidence_level: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    citation: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_entry_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("biological_library_entries.id"), nullable=True, index=True
+    )
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+
+
 class MachineQARun(TimestampedIdMixin, Base):
     """Draft or completed Machine QA run with immutable result snapshots."""
 

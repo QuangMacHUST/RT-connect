@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { BiologicalToolkitPage } from './pages/BiologicalToolkitPage'
+import { KnowledgeLibraryPage } from './pages/KnowledgeLibraryPage'
 import { BedEqd2Page } from './pages/BedEqd2Page'
 import { PlanComparisonPage } from './pages/PlanComparisonPage'
 import { ReIrradiationPage } from './pages/ReIrradiationPage'
@@ -39,6 +40,7 @@ export function ApplicationRoutes() {
       <Route path="/app/biological/compare" element={<ProtectedRoute><PlanComparisonPage /></ProtectedRoute>} />
       <Route path="/app/biological/re-irradiation" element={<ProtectedRoute><ReIrradiationPage mode="REIRRADIATION" /></ProtectedRoute>} />
       <Route path="/app/biological/fraction-compensation" element={<ProtectedRoute><ReIrradiationPage mode="FRACTION_COMPENSATION" /></ProtectedRoute>} />
+      <Route path="/app/biological/knowledge" element={<ProtectedRoute><KnowledgeLibraryPage /></ProtectedRoute>} />
       <Route path="/app/qa/cases/:caseId/machine-qa" element={<ProtectedRoute><MachineQAPage /></ProtectedRoute>} />
       <Route path="/app/qa/cases/:caseId/gamma" element={<ProtectedRoute><GammaPage /></ProtectedRoute>} />
       <Route path="/app/system/status" element={<PlatformStatusPage />} />

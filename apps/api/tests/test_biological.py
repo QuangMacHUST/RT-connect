@@ -34,7 +34,7 @@ def test_biological_hub_scenario_lifecycle_is_independent_and_versioned() -> Non
             "DOSE_LIMITS_PROTOCOLS",
             "KNOWLEDGE_LIBRARY",
         ]
-        assert [item["available"] for item in tools.json()[2:]] == [True, True, False, False]
+        assert [item["available"] for item in tools.json()[2:]] == [True, True, True, True]
 
         summary = client.get(f"{base_url}/summary")
         assert summary.status_code == 200
