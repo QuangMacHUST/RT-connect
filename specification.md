@@ -1,10 +1,10 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.10**; ngày 2026-09-08.
-- Nguồn nghiệp vụ: business-analysis.md v0.16.
-- Kế hoạch triển khai: plan.md v3.0, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.7.
-- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime. Bản 1.9 bổ sung state machine, coverage contract B01–B12, acceptance evidence schema và quy tắc xử lý “unknown outcome” xuyên mọi phase.
+- File: specification.md; version **1.11**; ngày 2026-09-08.
+- Nguồn nghiệp vụ: business-analysis.md v0.17.
+- Kế hoạch triển khai: plan.md v3.1, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.8.
+- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime. Bản 1.11 bổ sung state machine, coverage contract B01–B12, acceptance evidence schema, quy tắc xử lý “unknown outcome” xuyên mọi phase và hợp đồng thực thi P17 Visual Dose/DVH.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
 
@@ -1066,18 +1066,84 @@ Validation errors are not QA `FAIL`; a valid dose-limit result is not a clinical
 | Hạng mục | Đặc tả |
 | :--- | :--- |
 | Module/requirement | MOD-15; FR-P17-01 đến FR-P17-04 |
-| Input và dữ liệu hiển thị | RTDOSE/RTSTRUCT/CT refs; Frame/series/contour UIDs; patient LPS geometry; ROI ID/name mapping; rasterization/resampling method; dose bins/volume weights/coverage; Dmean/Dx/Vx. |
-| Model/storage | Dataset/ROI mapping, TransformArtifact, DVHRun/result/coverage, derived masks/artifacts; raw DICOM immutable. |
-| Operation/API surface | Target POST /qa-cases/{id}/dvh-runs; GET run/results; dataset/slice metadata API; Biological dataset namespace riêng. |
-| Transaction/invariant | Transform + rasterization + source checksum pinned in one run; result commit sau all required artifacts. |
-| Output bàn giao | Dose/DVH viewer, affine/rasterization tests, report integration và benchmarks. |
-| Success oracle | TC-P17-S01 đến TC-P17-S04 trong plan |
-| Error/recovery oracle | TC-P17-E01 đến TC-P17-E07 trong plan |
-| Exit | Geometry, uniform/box/sphere/holes/coverage, Dx/Vx units và staging DVH E2E pass. P17 bắt buộc cho mục tiêu toàn dự án, tùy chọn chỉ cho R1 sớm. |
+| Bounded context | QA case scoped; không sửa raw DICOM, RTPLAN, prescription, TPS hoặc PACS. Biological Toolkit vẫn là namespace độc lập. |
+| Input | `RTDOSE` bắt buộc và `RTSTRUCT` bắt buộc cho DVH; `CT` tùy chọn cho frame/anatomy context. Chỉ artifact thuộc cùng organization/case có `data_status=VALID` và latest manifest `VALID`. |
+| DICOM authority | Modality, SOP/metadata, Rows/Columns/NumberOfFrames, PixelData, DoseUnits, DoseGridScaling, IOP/IPP, PixelSpacing, GridFrameOffsetVector, FrameOfReferenceUID và byte checksum. Filename/ROIName không phải khóa. |
+| Geometry | Patient LPS; IOP first triplet là direction theo columns, second là direction theo rows; `PixelSpacing=(row,column)`; normal = row×column; frame gần z-offset nhất; single-frame cần `slice_thickness_mm` hoặc metadata hợp lệ. |
+| ROI | Chọn theo positive unique `ROINumber`; CLOSED_PLANAR/CLOSEDPLANAR_XOR; disjoint/hole dùng parity; contour non-finite, self-intersection/unsupported hoặc ROI không tồn tại là lỗi rõ ràng. |
+| Metrics | Physical dose Gy; weighted volume cc; Dmin/Dmean/Dmax, D(x) quantile tuyến tính, V(x) cc/% với `dose >= threshold`; preset D2/D50/D95/D98 và V0/V20/V30/V40/V50; input custom được normalize/deduplicate. |
+| Coverage | `FULL_ROI` chặn contour ngoài dose grid; `OVERLAP_ONLY` trả result có warning `DVH_PARTIAL_COVERAGE`, selected volume/outside count/frame counts; không gán vùng ngoài grid bằng zero. |
+| Operation/API surface | `/api/v1/organizations/{organization_id}/qa-cases/{case_id}/dvh/inputs`; `POST /validate`; `POST /runs`; `GET /runs`; `GET /runs/{run_id}`; `GET /runs/{run_id}/export?export_format=JSON|CSV`. |
+| Model/storage | `dvh_analysis_runs`: organization/case/input artifact IDs, ROI, idempotency key/fingerprint, engine/schema version, input/result/warning/error snapshots, actor/timestamps; migration `20260908_0017_dvh_analysis.py`. Raw DICOM remains immutable. |
+| Transaction/invariant | Resolve scope before first resource query; validate/checksum before engine; validate-only creates no row; saved run pins all input/geometry/config/source hashes; unique `(organization_id,idempotency_key)` prevents duplicate; export serializes snapshot. |
+| Execution | Current slice is synchronous API execution. Async worker/large workload, CT image renderer/crosshair/registration artifact and protocol/knowledge limit binding are explicit follow-up packages, not implied by this API. |
+| Output | `DvhInputsResponse`, `DvhValidationResponse`, `DvhRunResponse`, dose-native visual preview, curve, metrics, coverage, warning, provenance and JSON/CSV export. `actual/limit/margin` is `N/A` unless an explicit compatible P11/P16 snapshot is supplied. |
+| Success oracle | TC-P17-S01 đến TC-P17-S08 trong plan |
+| Error/recovery oracle | TC-P17-E01 đến TC-P17-E17 trong plan; generic B01–B12 and C03–C16 apply where relevant. |
+| Exit | Local engine/API/UI/migration checks pass; staging browser→API→PostgreSQL/object storage, geometry/DVH oracle, scope/checksum/idempotency, negative/fault/volume/export evidence pass. |
 
-**Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer cần recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
+#### SPEC-P17.1 — Request schema
 
-**Failure contract:** DVH_INPUT_REQUIRED; DICOM_FRAME_MISMATCH; DVH_EMPTY_STRUCTURE; DVH_INCOMPLETE_COVERAGE; CONTOUR_GEOMETRY_INVALID; DICOM_CAPABILITY_UNSUPPORTED; ANATOMY_INPUT_REQUIRED. Đây là taxonomy target; mapping sang error codes thực tế phải được ghi trong contract test trước khi triển khai.
+`DvhRequest` (JSON, `extra=forbid`, no Infinity/NaN):
+
+~~~json
+{
+  "dose_artifact_id": "uuid",
+  "structure_artifact_id": "uuid",
+  "ct_artifact_id": "uuid|null",
+  "roi_number": 1,
+  "coverage_policy": "FULL_ROI",
+  "slice_thickness_mm": null,
+  "dx_percentages": [2, 50, 95, 98],
+  "vx_doses_gy": [0, 20, 30, 40, 50],
+  "preview_limit": 4096
+}
+~~~
+
+Rules: dose and structure IDs are required and different; `roi_number > 0`; policy is `FULL_ROI|OVERLAP_ONLY`; optional thickness is positive; Dx values are finite `[0,100]`; Vx values are finite non-negative Gy; each list has 1–20 values; preview limit is 64–16384. `DvhRunCreateRequest` adds an idempotency key length 8–200. Pydantic/schema errors are HTTP 422 and create no side effect.
+
+#### SPEC-P17.2 — Normal response and snapshot
+
+`POST /validate` returns HTTP 200 even when the engine rejects a validly shaped request:
+
+~~~json
+{
+  "valid": true,
+  "errors": [],
+  "warnings": [{"code": "DVH_DOSE_ONLY_MODE", "field": "ct_artifact_id", "message": "..."}],
+  "normalized_input": {"schema_version": "visual-dose-dvh.input.v1", "roi_number": 1},
+  "preview": {"schema_version": "visual-dose-dvh.result.v1", "metrics": {}, "coverage": {}, "result_sha256": "..."}
+}
+~~~
+
+When `valid=false`, `errors` contains `{code, field, message}` and `preview`/normalized output may be null; no `dvh_analysis_runs` row is inserted. `POST /runs` returns HTTP 201 for a new completed run and HTTP 200 for an exact idempotent replay. `DvhRunResponse` must expose IDs, status, engine key/version, complete `input_snapshot`, `result_snapshot`, warning/error snapshots and timestamps. The input snapshot contains artifact filename/type/modality/size/hash, manifest ID/checksum, selected metadata/geometry/unit/validation summary, normalized request and request fingerprint. The result snapshot contains dose, ROI, geometry, coverage, metrics, curve, visual preview, CT summary, warnings and `result_sha256`.
+
+#### SPEC-P17.3 — Metric and geometry semantics
+
+1. Read RTDOSE with pydicom; reject non-RTDOSE, missing/invalid dimensions, unsupported transfer syntax/pixel data, missing geometry, non-positive spacing, invalid frame offsets, non-GY units, missing/invalid scaling, negative/non-finite/oversized values.
+2. Convert stored integer pixels to Gy using `pixel_array * DoseGridScaling`; never treat raw integer as Gy and never silently convert `CGY`, `RELATIVE` or unknown units.
+3. Project RTSTRUCT patient LPS points to `(frame,row,column)` using the dose affine. Rasterize each contour on its nearest dose plane; use even-odd parity for closed polygons and XOR where declared; report outside contours instead of clipping invisibly.
+4. Build selected voxel volume from row spacing × column spacing × frame slice thickness / 1000. `Dmean` is volume-weighted. `D(x)=quantile(values,1-x/100)` with pinned linear interpolation. `V(x)=sum(volume where dose>=x)` and percent is relative to selected ROI volume.
+5. Result SHA is computed over canonical sorted JSON before adding the hash field. JSON/CSV export must return the persisted snapshot and the same result hash; it must not rerun the engine.
+
+#### SPEC-P17.4 — Exact status/error/recovery mapping
+
+| Condition | HTTP/status | Code | Recovery/invariant |
+| :--- | :--- | :--- | :--- |
+| Missing/malformed request | 422 | `REQUEST_VALIDATION_FAILED` | Field-level correction; no row/job. |
+| Missing/invalid manifest | 422 | `DVH_INPUT_MANIFEST_REQUIRED`, `DVH_INPUT_NOT_VALIDATED`, `DVH_INPUT_MANIFEST_INVALID` | Run P6 validation and reconcile checksum. |
+| Wrong type/modality or same input | 422 | `DVH_DOSE_ARTIFACT_INVALID`, `DVH_STRUCTURE_ARTIFACT_INVALID`, `DVH_ANATOMY_ARTIFACT_INVALID`, `DVH_INPUTS_MUST_DIFFER` | Select correct artifact; no engine call. |
+| Wrong organization/case/archive | 403/404/409 | `ORGANIZATION_SCOPE_MISMATCH`, `DVH_INPUT_SCOPE_MISMATCH`, `QA_CASE_NOT_FOUND`, `QA_CASE_ARCHIVED` | Boundary-safe response; no metadata leak or implicit restore. |
+| Object read/checksum drift | 503/409 | `DVH_STORAGE_UNAVAILABLE`, `DVH_SOURCE_CHANGED` | Reconcile object and stored hash; retry only after resolution. |
+| DICOM geometry/capability failure | 422 | `DICOM_GEOMETRY_INVALID`, `DICOM_CAPABILITY_UNSUPPORTED` | Use valid export or add explicit capability; never guess transform. |
+| Dose units/values/scaling | 422 | `DVH_DOSE_UNITS_UNSUPPORTED`, `DVH_DOSE_VALUES_INVALID` | Correct exporter/scale; never convert implicitly. |
+| ROI/contour/empty mask | 422 | `DVH_ROI_INVALID`, `DVH_STRUCTURE_ARTIFACT_INVALID`, `CONTOUR_GEOMETRY_INVALID`, `DVH_EMPTY_STRUCTURE` | Correct RTSTRUCT/ROI; null reason is not zero dose. |
+| Coverage | 422 or 200 warning | `DVH_INCOMPLETE_COVERAGE`, `DVH_PARTIAL_COVERAGE` | FULL blocks; OVERLAP_ONLY records warning and denominator. |
+| Metrics/resource | 422 | `DVH_COVERAGE_POLICY_INVALID`, `DVH_METRIC_INVALID`, `DVH_RESOURCE_LIMIT` | Correct range/reduce workload; no OOM or side effect. |
+| Idempotency | 409 or 200 replay | `DVH_IDEMPOTENCY_CONFLICT` | Same fingerprint replay; different fingerprint uses new key. |
+| Persistence/export/run lookup | 503/404/422 | `DVH_PERSISTENCE_FAILED`, `DVH_RUN_NOT_FOUND`, `EXPORT_FORMAT_UNSUPPORTED` | Query/reconcile before retry; snapshot remains immutable. |
+
+`DVH_DOSE_ONLY_MODE` is a warning when CT is omitted; it is not an error. A valid result with `DVH_PARTIAL_COVERAGE` is not a full-ROI clinical conclusion. No P17 response may label a valid numeric result as QA PASS without a separate protocol rule evaluation.
 
 <a id="spec-p18"></a>
 
@@ -1208,7 +1274,7 @@ Các phase contract ở mục 8 đã nêu trường chi tiết. Bảng dưới �
 | P14 | Options 2–10 từ P13 `COMPLETED` snapshots, baseline, context | Absolute/% delta, chart/table/history, clone/export | `COMPARISON_OPTIONS_REQUIRED`, `COMPARISON_LIMIT_EXCEEDED`, `COMPARISON_BASELINE_REQUIRED`, `COMPARISON_OPTION_INVALID`, `COMPARISON_CONTEXT_MISMATCH`, `COMPARISON_IDEMPOTENCY_CONFLICT`, `COMPARISON_PERSISTENCE_FAILED`; `BASELINE_ZERO` là reason hợp lệ, alpha/beta mismatch là warning | Same model/context/revision, baseline mutation, zero handling, no auto-rank và no-truncate pass |
 | P15 | Course/fraction/time/recovery/compensation scenario | Scalar cumulative, sensitivity, integer alternatives, assumptions, immutable run/export | `COURSE_REQUIRED`, `COURSE_ROLE_REQUIRED`, `COURSE_ID_DUPLICATE`, `COURSE_INTERVAL_REQUIRED`, `RECOVERY_ASSUMPTION_INVALID`, `CUMULATIVE_CONTEXT_MISMATCH`, `FRACTION_SCHEDULE_REQUIRED`, `FRACTION_SCHEDULE_INVALID`, `FRACTION_SCHEDULE_INCONSISTENT`, `FRACTION_COUNT_NONINTEGER`, `TISSUE_DOSE_REQUIRED`, `TISSUE_DOSE_DUPLICATE`, `ALTERNATIVE_PREFIX_CHANGED`, `INTERRUPTION_OVERLAP`, `SPATIAL_ACCUMULATION_UNAVAILABLE`, `P15_IDEMPOTENCY_CONFLICT`, `REIRRADIATION_PERSISTENCE_FAILED`; tách scalar | No-recovery/recovery, nonuniform fractions, prefix-preserving alternatives, no fake spatial dose, replay, refresh và export pass |
 | P16 | Knowledge/dose-limit/protocol entry, citation/import | Searchable versioned library and snapshot binding | `KNOWLEDGE_SOURCE_REQUIRED`, `DOSE_LIMIT_UNIT_INVALID`, `REFERENCE_LINK_UNAVAILABLE`, `KNOWLEDGE_IMPORT_INVALID`, `DOSE_LIMIT_NOT_APPLICABLE`, `KNOWLEDGE_CONTENT_INVALID`; row-level repair | Source/applicability/version/import/override pass |
-| P17 | RTDOSE/RTSTRUCT/CT and geometry selection | Overlay/profile/DVH with coverage metadata | `DVH_INPUT_REQUIRED`, `DICOM_FRAME_MISMATCH`, `DVH_EMPTY_STRUCTURE`, `DVH_INCOMPLETE_COVERAGE`, `CONTOUR_GEOMETRY_INVALID`, `DICOM_CAPABILITY_UNSUPPORTED`, `ANATOMY_INPUT_REQUIRED`; dose-only fallback | Geometry/DVH oracle, visual/table fallback and coverage pass |
+| P17 | RTDOSE/RTSTRUCT/CT and geometry selection | Dose-native preview/profile/DVH with coverage metadata, immutable run and export | `DVH_INPUT_MANIFEST_REQUIRED`, `DVH_INPUT_NOT_VALIDATED`, `DVH_INPUT_MANIFEST_INVALID`, `DVH_DOSE_ARTIFACT_INVALID`, `DVH_STRUCTURE_ARTIFACT_INVALID`, `DVH_ANATOMY_ARTIFACT_INVALID`, `DVH_INPUTS_MUST_DIFFER`, `DICOM_GEOMETRY_INVALID`, `DICOM_CAPABILITY_UNSUPPORTED`, `DICOM_FRAME_MISMATCH`, `DVH_DOSE_UNITS_UNSUPPORTED`, `DVH_DOSE_VALUES_INVALID`, `DVH_ROI_INVALID`, `CONTOUR_GEOMETRY_INVALID`, `DVH_EMPTY_STRUCTURE`, `DVH_INCOMPLETE_COVERAGE`, `DVH_PARTIAL_COVERAGE`, `DVH_METRIC_INVALID`, `DVH_RESOURCE_LIMIT`, `DVH_SOURCE_CHANGED`, `DVH_IDEMPOTENCY_CONFLICT`, `DVH_STORAGE_UNAVAILABLE`, `DVH_PERSISTENCE_FAILED`, `QA_CASE_ARCHIVED`; dose-only warning | Geometry/DVH oracle, weighted volume, source/checksum/snapshot/idempotency/export and staging evidence; no guessed transform or zero outside grid |
 | P18 | Release candidate, golden/pilot dataset, fault/load scripts | Integrated test report, restore evidence, pilot issue log | `RESULT_REGRESSION`, `RESTORE_INCOMPLETE`, `DUPLICATE_RESULT`, `PERFORMANCE_GATE_FAILED`, `PILOT_CAPABILITY_GAP`, `RELEASE_EVIDENCE_MISMATCH`; giữ candidate và regression | No SEV0/1, exact SHA, backup/restore, workload and pilot matrix pass |
 | P19 | Candidate manifest, domain/TLS/CORS/Auth, production DB | Public HTTPS website and remote E2E | `PUBLIC_DOMAIN_NOT_READY`, `PUBLIC_BUILD_CONFIG_MISMATCH`, `RELEASE_SCHEMA_FAILED`, `RELEASE_VERSION_MISMATCH`, `REMOTE_E2E_FAILED`, `RESOURCE_BUDGET_EXCEEDED`; no promote/rollback | All service versions, schema, Auth, private deps, backup and rollback verified |
 | P20 | Monitoring/backup/alert/runbook/release configuration | Tested operational package and maintenance loop | `BACKUP_POLICY_FAILED`, `ALERT_DELIVERY_FAILED`, `CAPACITY_WARNING`, `ENGINE_RESULT_CHANGED`, `RECURRING_INCIDENT`; alert/restore/root cause/regression | Real alert, restore drill, owner, threshold, capacity and release evidence |
@@ -1284,7 +1350,7 @@ Nếu phase có output nhưng chưa có một lớp required, status cao nhất 
 | Machine QA | Protocol seed, run create/measurements/evaluate/rerun/compare | Autosave races, full library and boundary coverage. |
 | Gamma | Run enqueue/list/detail/retry/compare; queue metrics | PSQA profile, extra config capabilities, denominator/search, leases/outbox, proper DICOM fixtures. |
 | Report/trend/protocol library | Report P9, Trend P10 và Protocol Library P11 đã có API/UI slice local; P11 migration `20260908_0011` | P9/P10/P11 phải revalidate staging theo schema mới; P11 vẫn cần library/version/consumer E2E và source snapshot evidence. |
-| Biological/knowledge/DVH | Requirement/architecture | P12–P17 target; cần source, schema, API, UI và tests. |
+| Biological/knowledge/DVH | Requirement/architecture | P12–P17; P17 có local source/schema/API/UI/test slice, staging/renderer/limit-binding vẫn là gate. |
 
 Mutation mới phải có typed request/response, operation ID, error mapping, organization scope và idempotency/revision khi phù hợp. Async create trả 202 + run/export ID khi chưa xong; synchronous create có thể 201. List response giữ collection metadata; server không nhúng dump DB/raw patient payload.
 

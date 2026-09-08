@@ -3,7 +3,7 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.7 — đồng bộ specification.md v1.10 và plan.md v3.0, bổ sung P16 Biological Knowledge Library implementation contract (2026-09-08)
+- **Phiên bản:** 1.8 — đồng bộ specification.md v1.11 và plan.md v3.1, bổ sung P16 Biological Knowledge Library và P17 Visual Dose/DVH implementation contract (2026-09-08)
 - **Nguồn yêu cầu:** business-analysis.md phiên bản 0.16
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
@@ -11,7 +11,7 @@
 
 Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
-> Đồng bộ v1.7: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§8 là authority cho hành vi/validation/error/thuật toán. P6–P16 hiện đã có các slice code được ghi rõ trong mục 0.4; phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+> Đồng bộ v1.8: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§8 là authority cho hành vi/validation/error/thuật toán. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -93,8 +93,9 @@ Phần 0.1–0.3 là baseline lịch sử ngày 2026-09-04 và không được �
 | P14 | Plan Comparison engine, immutable comparison snapshot, baseline/delta table-chart, clone and JSON/CSV export | `20260908_0014` |
 | P15 | Re-irradiation/fraction-compensation scalar engine, recovery/sensitivity, schedule alternatives, immutable snapshot and JSON/CSV export | `20260908_0015` |
 | P16 | Organization-scoped Biological Knowledge Library: dose limits, treatment-protocol references, knowledge/alpha-beta entries, validation, import, versioning, explicit-use snapshots and export | `20260908_0016` |
+| P17 | RTDOSE/RTSTRUCT physical-dose DVH engine, LPS geometry/ROI rasterization, coverage/metrics, immutable run snapshots, API/UI and JSON/CSV export | `20260908_0017` |
 
-Ngày 2026-09-08, P11–P16 đã bổ sung model/API/UI và migrations `20260908_0011`/`20260908_0012`/`20260908_0013`/`20260908_0014`/`20260908_0015`/`20260908_0016`. P12–P16 giữ Biological như bounded context độc lập, không có FK bắt buộc tới QACase/patient. Checkpoint local phải ghi đủ full suite, focused phase tests, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head trên cùng SHA; build warning không được coi là lỗi chức năng nhưng phải theo dõi bundle budget. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
+Ngày 2026-09-08, P11–P17 đã bổ sung model/API/UI và migrations `20260908_0011`/`20260908_0012`/`20260908_0013`/`20260908_0014`/`20260908_0015`/`20260908_0016`/`20260908_0017`. P12–P16 giữ Biological như bounded context độc lập, không có FK bắt buộc tới QACase/patient; P17 thuộc QA case và giữ raw DICOM immutable. Checkpoint local phải ghi đủ full suite, focused phase tests, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head trên cùng SHA; build warning không được coi là lỗi chức năng nhưng phải theo dõi bundle budget. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
 
 ---
 
@@ -813,7 +814,7 @@ Slice P12 hiện thực ba bảng nền tảng trong namespace nghiệp vụ ri�
 
 Tất cả query đầu tiên đều kèm `organization_id` sau khi resolve membership. Mutation create/update/save/clone/archive ghi header, snapshot và audit trong một transaction. `PATCH` bắt `expected_revision`; chỉ DRAFT sửa trực tiếp; clone tạo ID/key mới và không sửa nguồn. `validate` là validate-only. `ARCHIVED` bị loại khỏi list mặc định nhưng history/detail vẫn đọc được.
 
-API implementation prefix là `/api/v1/organizations/{organization_id}/biological` với các nhóm `/tools`, `/summary`, `/scenarios`, `/scenarios/{id}/revisions`, `/calculations`, `/comparisons`, `/re-irradiation`, `/fraction-compensation` và `/library`. P13–P16 đã có engine/API/UI contract và test local; P16 library không tạo calculation giả và chỉ trả explicit-use snapshot khi user chủ động yêu cầu. Staging/release availability vẫn phải kiểm theo evidence tương ứng.
+API implementation prefix là `/api/v1/organizations/{organization_id}/biological` với các nhóm `/tools`, `/summary`, `/scenarios`, `/scenarios/{id}/revisions`, `/calculations`, `/comparisons`, `/re-irradiation`, `/fraction-compensation` và `/library`. P13–P16 đã có engine/API/UI contract và test local; P16 library không tạo calculation giả và chỉ trả explicit-use snapshot khi user chủ động yêu cầu. P17 thuộc QA case với prefix `/api/v1/organizations/{organization_id}/qa-cases/{case_id}/dvh`; P17 local slice không đọc trực tiếp bảng Biological. Staging/release availability vẫn phải kiểm theo evidence tương ứng.
 
 ### 4.17.2. P13 BED/EQD2 implementation contract
 
@@ -938,7 +939,7 @@ Every mutation audit payload tối thiểu có organization, actor, entry ID, ty
 
 #### Local verification checkpoint
 
-Candidate working tree đã pass P16 focused tests `3/3`, full backend, Ruff, strict mypy, frontend lint/typecheck/Vitest/build. Migration/OpenAPI phải được regenerate/check trên cùng SHA; staging readiness `20260908_0016`, browser lifecycle, import/use/export, direct PostgreSQL row/hash/scope và full negative matrix vẫn là gate trước STAGING_VERIFIED.
+Candidate working tree đã pass P16 focused tests `3/3`, P17 engine/API/health focused tests `17 passed`, full backend, Ruff, strict mypy, frontend lint/typecheck/Vitest/build. Migration/OpenAPI phải được regenerate/check trên cùng SHA; staging readiness `20260908_0016` cho P16 và `20260908_0017` cho P17, browser lifecycle, import/use/export, direct PostgreSQL row/hash/scope và full negative matrix vẫn là gate trước STAGING_VERIFIED.
 
 ### 4.18. Audit Event
 
@@ -1310,6 +1311,8 @@ Các mã còn lại là target và phải được map bằng contract test, kh�
 - REPORT_RENDER_FAILED.
 - EXPORT_FAILED.
 
+P17 hiện đã có các mã engine/API cụ thể sau và phải giữ nguyên khi mở rộng UI hoặc worker: `DVH_INPUT_MANIFEST_REQUIRED`, `DVH_INPUT_NOT_VALIDATED`, `DVH_INPUT_MANIFEST_INVALID`, `DVH_INPUT_SCOPE_MISMATCH`, `DVH_INPUTS_MUST_DIFFER`, `DVH_DOSE_ARTIFACT_INVALID`, `DVH_STRUCTURE_ARTIFACT_INVALID`, `DVH_ANATOMY_ARTIFACT_INVALID`, `DICOM_GEOMETRY_INVALID`, `DICOM_CAPABILITY_UNSUPPORTED`, `DICOM_FRAME_MISMATCH`, `DVH_DOSE_UNITS_UNSUPPORTED`, `DVH_DOSE_VALUES_INVALID`, `DVH_ROI_INVALID`, `CONTOUR_GEOMETRY_INVALID`, `DVH_EMPTY_STRUCTURE`, `DVH_INCOMPLETE_COVERAGE`, `DVH_PARTIAL_COVERAGE`, `DVH_COVERAGE_POLICY_INVALID`, `DVH_METRIC_INVALID`, `DVH_RESOURCE_LIMIT`, `DVH_SOURCE_CHANGED`, `DVH_IDEMPOTENCY_CONFLICT`, `DVH_STORAGE_UNAVAILABLE`, `DVH_EXECUTION_FAILED`, `DVH_PERSISTENCE_FAILED` và `DVH_RUN_NOT_FOUND`. `DVH_DOSE_ONLY_MODE` là warning; `QA_CASE_ARCHIVED` và `ORGANIZATION_SCOPE_MISMATCH` là boundary/lifecycle errors dùng chung. Mọi code mới phải có mapping HTTP, field details, UI message, recovery và test ID trong specification/plan.
+
 ---
 
 ## 7. DICOM ingestion và validation
@@ -1582,8 +1585,55 @@ Mỗi metric phải có định nghĩa, percentile convention, interpolation met
 - Ưu tiên ROI Number và Referenced Frame of Reference.
 - ROI name chỉ dùng làm label hiển thị.
 - Mapping thủ công được lưu trong configuration snapshot.
-- Nếu ROI không map được, trả DVH_INPUT_REQUIRED hoặc INVALID_INPUT tùy tình trạng.
+- Nếu ROI không map được, trả `DVH_ROI_INVALID`, `DVH_STRUCTURE_ARTIFACT_INVALID` hoặc `DVH_EMPTY_STRUCTURE` tùy tình trạng; không dùng `ROIName` thay cho ROINumber.
 - Không tự gộp hai ROI cùng tên nhưng khác structure set.
+
+### 9.5. P17 implementation contract — current code
+
+P17 hiện được hiện thực bởi ba lớp tách biệt, để phần số học không phụ thuộc HTTP hay database:
+
+| Lớp | Thành phần | Trách nhiệm |
+| :--- | :--- | :--- |
+| Domain engine | `apps/api/src/rt_connect_api/services/dose_dvh_engine.py` | Đọc RTDOSE/RTSTRUCT, giải affine patient LPS, rasterize ROI, tính coverage/metrics/curve/preview và hash kết quả. Không biết organization, auth hay storage. |
+| API/persistence | `apps/api/src/rt_connect_api/api/dvh.py`, `DVHAnalysisRun`, migration `20260908_0017_dvh_analysis.py` | Resolve scope trước query, kiểm artifact/manifest/checksum, tải object, gọi engine, idempotency, audit, snapshot và export. |
+| Web | `apps/web/src/pages/DVHPage.tsx`, route `/app/qa/cases/:caseId/dvh` | Chọn input/ROI/policy, validate-preview, save, hiển thị metric/curve/dose-native mask/history/provenance và JSON/CSV download. Route không nằm trong global sidebar. |
+
+#### 9.5.1. Input resolution và boundary
+
+1. `organization_id` trong URL phải khớp membership của JWT; `case_id` phải thuộc organization và chưa archive.
+2. Artifact phải đồng thời thuộc organization/case, `artifact_type=DICOM`, đúng modality (`RTDOSE`, `RTSTRUCT`, tùy chọn `CT`) và `data_status=VALID`.
+3. Mỗi artifact phải có `InputManifest` mới nhất với `validation_summary.result=VALID` và checksum 64 ký tự hex thường. Trước khi engine đọc, bytes tải từ object storage được hash lại và phải khớp cả `Artifact.sha256` lẫn `InputManifest.checksum_at_use`.
+4. Không dùng global artifact lookup, filename, ROIName, dữ liệu do browser tự tính hoặc database pointer “latest” làm authority cho một run.
+
+#### 9.5.2. DICOM geometry algorithm
+
+- RTDOSE pixel array được đổi sang Gy bằng `pixel_array * DoseGridScaling`; chỉ chấp nhận `DoseUnits=GY`, pixel finite và không âm.
+- `ImageOrientationPatient` gồm direction của columns trước, direction của rows sau. `PixelSpacing` giữ thứ tự `(row_spacing, column_spacing)`. Normal là tích có hướng `row × column`; điểm contour patient LPS được chiếu về frame/row/column theo affine này.
+- `GridFrameOffsetVector` được chuẩn hóa thành một vector kể cả trường hợp single-frame pydicom trả scalar. Slice thickness lấy metadata hợp lệ hoặc request override dương cho single-frame; nhiều frame phải có spacing/thickness hợp lệ.
+- ROI contour được chọn bằng `ROINumber`; polygon kín rasterize trên frame gần z-offset nhất. Contour `CLOSED_PLANAR_XOR` và hole/disjoint dùng parity; không phụ thuộc contour winding. Contour ngoài grid được đếm để áp dụng coverage policy, không silently clip thành zero dose.
+- Voxel volume dùng `row_spacing × column_spacing × slice_thickness / 1000` cc. `Dmean` là weighted average; `D(x)` dùng `np.quantile(values, 1-x/100, method="linear")`; `V(x)` cộng volume của voxel có dose `>= x` và trả cả cc/%.
+
+#### 9.5.3. Persistence và API sequence
+
+```text
+JWT -> resolve membership/org -> resolve case
+    -> resolve VALID artifacts/manifests
+    -> download + checksum verify
+    -> engine preflight/calculation
+    -> validate response OR transaction(run + audit)
+    -> read snapshot for history/export
+```
+
+`POST .../dvh/validate` không mutation. `POST .../dvh/runs` tính xong mới flush `DVHAnalysisRun` và audit; unique `(organization_id, idempotency_key)` cùng request fingerprint bảo vệ double-click/retry. Nếu race commit gặp unique conflict, API query key và trả run cùng fingerprint với HTTP 200; fingerprint khác trả HTTP 409. Export JSON/CSV lấy dữ liệu đã lưu, không rerun engine.
+
+`DVHAnalysisRun` lưu `organization_id`, `qa_case_id`, dose/structure/CT artifact IDs, `roi_number`, idempotency key/fingerprint, engine key/version, status, input/result/warning/error snapshots, actor và timestamps. Snapshot phải giữ source artifact/manifest IDs, filename/type/modality/byte size/SHA, selected metadata, validation summary, normalized request, geometry, coverage, metrics, curve, preview và result SHA.
+
+#### 9.5.4. Capability boundary và phần chưa hoàn tất
+
+- P17 current slice là synchronous, physical-dose, dose-native grid. Chưa có worker queue cho DVH lớn, chưa có CT pixel renderer/crosshair/registration artifact và chưa tích hợp tự động actual/limit/margin từ P11/P16 vào result.
+- `CT` được kiểm tra modality/frame/geometry summary và được ghi vào result; việc hiển thị anatomy overlay chỉ được bật sau khi có renderer/transform contract và test riêng.
+- P17 không tính deformable cumulative dose, không tự cộng dose giữa course, không sửa prescription/RTPLAN/TPS/PACS và không tự tạo QA PASS.
+- Các phần mở phải có package/test/evidence riêng ở P17/P18; không dùng ảnh Stitch hoặc `/ready` 200 làm bằng chứng thay thế.
 
 ---
 

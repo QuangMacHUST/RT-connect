@@ -17,7 +17,7 @@
 | MOD-12 | Plan Comparison | Multi-course editor and charts | Comparison service | Biological engine | P14 |
 | MOD-13 | Re-irradiation | Course/scenario/recovery UI | Re-irradiation scenario service | Biological engine; spatial worker only with valid contract | P15 |
 | MOD-14 | Biological Knowledge | Dose-limit/protocol/knowledge pages | Versioned knowledge repositories | Import/index when needed | P16 |
-| MOD-15 | Visual Dose and DVH | Dose viewer/DVH workspace | DICOM linkage and DVH contracts | DVH worker | P17 |
+| MOD-15 | Visual Dose and DVH | Dose viewer/DVH workspace | DICOM linkage and physical-dose DVH contracts | Synchronous DVH engine now; async/large-workload worker is P17-W06 | P17 |
 | MOD-16 | Audit and Operations | Status/history/diagnostics as needed | AuditEvent, health and backup manifest | Monitoring/maintenance jobs | P18–P20 |
 
 ## Naming conventions
@@ -33,10 +33,10 @@
 
 - Stable `UPPER_SNAKE_CASE` identifiers returned in the shared API error contract.
 - Validation errors describe the missing/invalid contract, not a guessed correction.
-- Initial registry: `ORGANIZATION_NOT_FOUND`, `MEMBERSHIP_REQUIRED`, `MACHINE_NOT_FOUND`, `FOLDER_NOT_FOUND`, `ARTIFACT_NOT_FOUND`, `UNSUPPORTED_MODALITY`, `INVALID_DICOM`, `GEOMETRY_MISMATCH`, `UNIT_MISSING`, `RTDOSE_REQUIRED`, `COMPARE_DATASET_REQUIRED`, `MEASUREMENT_REQUIRED`, `DVH_INPUT_REQUIRED`, `GAMMA_CONFIG_INVALID`, `BIOLOGICAL_INPUT_INVALID`, `CALCULATION_FAILED`, `REPORT_RENDER_FAILED`, `EXPORT_FAILED`.
+- Initial registry (legacy names remain for compatibility): `ORGANIZATION_NOT_FOUND`, `MEMBERSHIP_REQUIRED`, `MACHINE_NOT_FOUND`, `FOLDER_NOT_FOUND`, `ARTIFACT_NOT_FOUND`, `UNSUPPORTED_MODALITY`, `INVALID_DICOM`, `GEOMETRY_MISMATCH`, `UNIT_MISSING`, `RTDOSE_REQUIRED`, `COMPARE_DATASET_REQUIRED`, `MEASUREMENT_REQUIRED`, `DVH_INPUT_REQUIRED`, `GAMMA_CONFIG_INVALID`, `BIOLOGICAL_INPUT_INVALID`, `CALCULATION_FAILED`, `REPORT_RENDER_FAILED`, `EXPORT_FAILED`.
+- P17 concrete codes: `DVH_INPUT_MANIFEST_REQUIRED`, `DVH_INPUT_NOT_VALIDATED`, `DVH_INPUT_MANIFEST_INVALID`, `DVH_INPUT_SCOPE_MISMATCH`, `DVH_INPUTS_MUST_DIFFER`, `DVH_DOSE_ARTIFACT_INVALID`, `DVH_STRUCTURE_ARTIFACT_INVALID`, `DVH_ANATOMY_ARTIFACT_INVALID`, `DICOM_GEOMETRY_INVALID`, `DICOM_CAPABILITY_UNSUPPORTED`, `DICOM_FRAME_MISMATCH`, `DVH_DOSE_UNITS_UNSUPPORTED`, `DVH_DOSE_VALUES_INVALID`, `DVH_ROI_INVALID`, `CONTOUR_GEOMETRY_INVALID`, `DVH_EMPTY_STRUCTURE`, `DVH_INCOMPLETE_COVERAGE`, `DVH_PARTIAL_COVERAGE`, `DVH_COVERAGE_POLICY_INVALID`, `DVH_METRIC_INVALID`, `DVH_RESOURCE_LIMIT`, `DVH_SOURCE_CHANGED`, `DVH_IDEMPOTENCY_CONFLICT`, `DVH_STORAGE_UNAVAILABLE`, `DVH_EXECUTION_FAILED`, `DVH_PERSISTENCE_FAILED`, `DVH_RUN_NOT_FOUND`. `DVH_DOSE_ONLY_MODE` is a warning, not an error.
 
 ### Event types
 
 - Stable uppercase event family and action: `FOLDER_CREATED`, `ARTIFACT_UPLOADED`, `VALIDATION_COMPLETED`, `ANALYSIS_SUCCEEDED`, `REPORT_REVISION_CREATED`, `BIOLOGICAL_CALCULATION_COMPLETED`.
 - Events remain append-only and include request/correlation ID, actor and organization context.
-

@@ -17,7 +17,7 @@ export function AppShell({ children }: PropsWithChildren) {
         </div>
         <p className="sidebar__caption">Clinical QA &amp; calculation workspace</p>
         <nav>
-          {routeRegistry.map((route) => {
+          {routeRegistry.filter((route) => route.showInSidebar !== false).map((route) => {
             const isCurrent = location.pathname === route.path
             const isAvailable = route.available
             return isAvailable ? (

@@ -28,5 +28,5 @@ All routes are typed in source during P1. This registry is the P0 contract draft
 | `/app/biological/re-irradiation` | MOD-13 | Implemented with Clinical Precision Interface tokens; dedicated Stitch screen optional | re-irradiation validate/create/list/detail/export API | P15 |
 | `/app/biological/fraction-compensation` | MOD-13 | Implemented with shared P15 workspace; dedicated Stitch screen optional | fraction-compensation validate/create/list/detail/export API | P15 |
 | `/app/biological/knowledge` | MOD-14 | Local P16 implementation; independent Knowledge Library page | `/api/v1/organizations/{id}/biological/library` validate/list/create/patch/clone/publish/archive/compare/use/import/export | P16 |
-| `/app/dose-review/:analysisId` | MOD-15 | Missing | DVH/dose review APIs | P17 |
+| `/app/qa/cases/:caseId/dvh` | MOD-15 | Local P17 Visual Dose / DVH workspace; case-specific route hidden from global sidebar | `/api/v1/organizations/{organization_id}/qa-cases/{case_id}/dvh/inputs`, `/validate`, `/runs`, `/runs/{run_id}`, `/export` | P17 |
 | `/app/system/status` | MOD-16 | Optional gap | health/readiness/job summaries | P18–P20 |

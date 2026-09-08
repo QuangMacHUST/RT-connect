@@ -271,6 +271,64 @@ export type GammaQueueMetrics = {
   error: string | null
 }
 
+export type DvhRequest = {
+  dose_artifact_id: string
+  structure_artifact_id: string
+  ct_artifact_id?: string | null
+  roi_number: number
+  coverage_policy: 'FULL_ROI' | 'OVERLAP_ONLY'
+  slice_thickness_mm?: number | null
+  dx_percentages: number[]
+  vx_doses_gy: number[]
+  preview_limit: number
+}
+export type DvhRunInput = DvhRequest & { idempotency_key: string }
+export type DvhArtifactChoice = {
+  id: string
+  artifact_type: string
+  modality: string | null
+  original_filename: string
+  sha256: string
+  byte_size: number
+  data_status: string
+  frame_of_reference_uid: string | null
+  metadata: Record<string, unknown>
+}
+export type DvhInputsResource = {
+  case_id: string
+  dose_artifacts: DvhArtifactChoice[]
+  structure_artifacts: DvhArtifactChoice[]
+  ct_artifacts: DvhArtifactChoice[]
+  rois: Array<Record<string, unknown>>
+}
+export type DvhValidationResource = {
+  valid: boolean
+  errors: Array<Record<string, unknown>>
+  warnings: Array<Record<string, unknown>>
+  normalized_input: Record<string, unknown> | null
+  preview: Record<string, unknown> | null
+}
+export type DvhRunResource = {
+  id: string
+  organization_id: string
+  qa_case_id: string
+  dose_artifact_id: string
+  structure_artifact_id: string
+  ct_artifact_id: string | null
+  roi_number: number
+  idempotency_key: string
+  engine_key: string
+  engine_version: string
+  status: string
+  input_snapshot: Record<string, unknown>
+  result_snapshot: Record<string, unknown>
+  warning_snapshot: Array<Record<string, unknown>>
+  error_snapshot: Array<Record<string, unknown>>
+  created_by_user_identity_id: string | null
+  created_at: string
+  updated_at: string
+}
+
 export type ReportBlock = {
   stable_block_id: string
   block_type: string
@@ -846,6 +904,34 @@ const gammaQueueMetricsSchema = z.object({
   running_runs: z.number().int(), retrying_runs: z.number().int(), failed_runs: z.number().int(),
   error: z.string().nullable()
 })
+const dvhArtifactChoiceSchema = z.object({
+  id: z.string().uuid(), artifact_type: z.string(), modality: z.string().nullable(),
+  original_filename: z.string(), sha256: z.string(), byte_size: z.number().int(),
+  data_status: z.string(), frame_of_reference_uid: z.string().nullable(),
+  metadata: z.record(z.string(), z.unknown())
+})
+const dvhInputsSchema = z.object({
+  case_id: z.string().uuid(), dose_artifacts: z.array(dvhArtifactChoiceSchema),
+  structure_artifacts: z.array(dvhArtifactChoiceSchema), ct_artifacts: z.array(dvhArtifactChoiceSchema),
+  rois: z.array(z.record(z.string(), z.unknown()))
+})
+const dvhValidationSchema = z.object({
+  valid: z.boolean(), errors: z.array(z.record(z.string(), z.unknown())),
+  warnings: z.array(z.record(z.string(), z.unknown())),
+  normalized_input: z.record(z.string(), z.unknown()).nullable(),
+  preview: z.record(z.string(), z.unknown()).nullable()
+})
+const dvhRunSchema = z.object({
+  id: z.string().uuid(), organization_id: z.string().uuid(), qa_case_id: z.string().uuid(),
+  dose_artifact_id: z.string().uuid(), structure_artifact_id: z.string().uuid(),
+  ct_artifact_id: z.string().uuid().nullable(), roi_number: z.number().int(),
+  idempotency_key: z.string(), engine_key: z.string(), engine_version: z.string(), status: z.string(),
+  input_snapshot: z.record(z.string(), z.unknown()), result_snapshot: z.record(z.string(), z.unknown()),
+  warning_snapshot: z.array(z.record(z.string(), z.unknown())),
+  error_snapshot: z.array(z.record(z.string(), z.unknown())),
+  created_by_user_identity_id: z.string().uuid().nullable(), created_at: z.string(), updated_at: z.string()
+})
+const dvhRunCollectionSchema = z.object({ items: z.array(dvhRunSchema), total: z.number().int() })
 
 const reportBlockSchema = z.object({
   id: z.string().uuid().optional(),
@@ -1915,6 +2001,46 @@ export class ApiClient {
       left_run_id: z.string().uuid(), right_run_id: z.string().uuid(),
       items: z.array(z.object({ key: z.string(), left: z.unknown().nullable(), right: z.unknown().nullable() }))
     }), accessToken)
+  }
+
+  dvhInputs(accessToken: string, organizationId: string, caseId: string, structureArtifactId?: string): Promise<DvhInputsResource> {
+    const suffix = structureArtifactId ? `?structure_artifact_id=${encodeURIComponent(structureArtifactId)}` : ''
+    return this.get(`/organizations/${organizationId}/qa-cases/${caseId}/dvh/inputs${suffix}`, dvhInputsSchema, accessToken)
+  }
+
+  validateDvh(accessToken: string, organizationId: string, caseId: string, body: DvhRequest): Promise<DvhValidationResource> {
+    return this.request(`/organizations/${organizationId}/qa-cases/${caseId}/dvh/validate`, dvhValidationSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  createDvhRun(accessToken: string, organizationId: string, caseId: string, body: DvhRunInput): Promise<DvhRunResource> {
+    return this.request(`/organizations/${organizationId}/qa-cases/${caseId}/dvh/runs`, dvhRunSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  dvhRuns(accessToken: string, organizationId: string, caseId: string): Promise<{ items: DvhRunResource[]; total: number }> {
+    return this.get(`/organizations/${organizationId}/qa-cases/${caseId}/dvh/runs`, dvhRunCollectionSchema, accessToken)
+  }
+
+  async downloadDvh(accessToken: string, organizationId: string, caseId: string, runId: string, exportFormat: 'JSON' | 'CSV'): Promise<Blob> {
+    const correlationId = makeCorrelationId()
+    let response: Response
+    try {
+      response = await fetch(`${this.baseUrl}/organizations/${organizationId}/qa-cases/${caseId}/dvh/runs/${runId}/export?export_format=${exportFormat}`, {
+        headers: { Accept: exportFormat === 'JSON' ? 'application/json' : 'text/csv', 'X-Correlation-ID': correlationId, Authorization: `Bearer ${accessToken}` }
+      })
+    } catch {
+      throw new ApiClientError('Không thể kết nối tới RT-CONNECT API.', 'NETWORK_ERROR', correlationId)
+    }
+    if (!response.ok) {
+      const body: unknown = await response.json().catch(() => undefined)
+      const parsed = errorSchema.safeParse(body)
+      if (parsed.success) throw new ApiClientError(parsed.data.message, parsed.data.code, parsed.data.correlation_id)
+      throw new ApiClientError('API export DVH thất bại.', 'EXPORT_FAILED', correlationId)
+    }
+    return response.blob()
   }
 
   reportTemplates(accessToken: string, organizationId: string, includeArchived = true): Promise<{ items: ReportTemplateVersion[]; total: number }> {

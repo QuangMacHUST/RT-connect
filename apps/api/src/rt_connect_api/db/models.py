@@ -533,6 +533,52 @@ class BiologicalLibraryEntry(TimestampedIdMixin, Base):
     )
 
 
+class DVHAnalysisRun(TimestampedIdMixin, Base):
+    """Immutable P17 physical-dose DVH/visual-dose calculation snapshot."""
+
+    __tablename__ = "dvh_analysis_runs"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "idempotency_key",
+            name="uq_dvh_analysis_runs_organization_idempotency",
+        ),
+        Index("ix_dvh_analysis_runs_organization_case", "organization_id", "qa_case_id"),
+        Index("ix_dvh_analysis_runs_organization_status", "organization_id", "status"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    qa_case_id: Mapped[UUID] = mapped_column(ForeignKey("qa_cases.id"), nullable=False, index=True)
+    dose_artifact_id: Mapped[UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False, index=True
+    )
+    structure_artifact_id: Mapped[UUID] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=False, index=True
+    )
+    ct_artifact_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=True, index=True
+    )
+    roi_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(200), nullable=False)
+    request_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    engine_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    engine_version: Mapped[str] = mapped_column(String(80), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="COMPLETED")
+    input_snapshot: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    result_snapshot: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    warning_snapshot: Mapped[list[dict[str, object]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    error_snapshot: Mapped[list[dict[str, object]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+
+
 class MachineQARun(TimestampedIdMixin, Base):
     """Draft or completed Machine QA run with immutable result snapshots."""
 

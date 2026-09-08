@@ -1968,6 +1968,504 @@
         "title": "DownloadResponse",
         "type": "object"
       },
+      "DvhArtifactChoice": {
+        "properties": {
+          "artifact_type": {
+            "title": "Artifact Type",
+            "type": "string"
+          },
+          "byte_size": {
+            "title": "Byte Size",
+            "type": "integer"
+          },
+          "data_status": {
+            "title": "Data Status",
+            "type": "string"
+          },
+          "frame_of_reference_uid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frame Of Reference Uid"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "modality": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modality"
+          },
+          "original_filename": {
+            "title": "Original Filename",
+            "type": "string"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "artifact_type",
+          "modality",
+          "original_filename",
+          "sha256",
+          "byte_size",
+          "data_status",
+          "frame_of_reference_uid",
+          "metadata"
+        ],
+        "title": "DvhArtifactChoice",
+        "type": "object"
+      },
+      "DvhInputsResponse": {
+        "properties": {
+          "case_id": {
+            "format": "uuid",
+            "title": "Case Id",
+            "type": "string"
+          },
+          "ct_artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/DvhArtifactChoice"
+            },
+            "title": "Ct Artifacts",
+            "type": "array"
+          },
+          "dose_artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/DvhArtifactChoice"
+            },
+            "title": "Dose Artifacts",
+            "type": "array"
+          },
+          "rois": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Rois",
+            "type": "array"
+          },
+          "structure_artifacts": {
+            "items": {
+              "$ref": "#/components/schemas/DvhArtifactChoice"
+            },
+            "title": "Structure Artifacts",
+            "type": "array"
+          }
+        },
+        "required": [
+          "case_id",
+          "dose_artifacts",
+          "structure_artifacts",
+          "ct_artifacts",
+          "rois"
+        ],
+        "title": "DvhInputsResponse",
+        "type": "object"
+      },
+      "DvhRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "coverage_policy": {
+            "default": "FULL_ROI",
+            "enum": [
+              "FULL_ROI",
+              "OVERLAP_ONLY"
+            ],
+            "title": "Coverage Policy",
+            "type": "string"
+          },
+          "ct_artifact_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ct Artifact Id"
+          },
+          "dose_artifact_id": {
+            "format": "uuid",
+            "title": "Dose Artifact Id",
+            "type": "string"
+          },
+          "dx_percentages": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Dx Percentages",
+            "type": "array"
+          },
+          "preview_limit": {
+            "default": 4096,
+            "maximum": 16384.0,
+            "minimum": 64.0,
+            "title": "Preview Limit",
+            "type": "integer"
+          },
+          "roi_number": {
+            "exclusiveMinimum": 0.0,
+            "title": "Roi Number",
+            "type": "integer"
+          },
+          "slice_thickness_mm": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slice Thickness Mm"
+          },
+          "structure_artifact_id": {
+            "format": "uuid",
+            "title": "Structure Artifact Id",
+            "type": "string"
+          },
+          "vx_doses_gy": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Vx Doses Gy",
+            "type": "array"
+          }
+        },
+        "required": [
+          "dose_artifact_id",
+          "structure_artifact_id",
+          "roi_number"
+        ],
+        "title": "DvhRequest",
+        "type": "object"
+      },
+      "DvhRunCollectionResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DvhRunResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "DvhRunCollectionResponse",
+        "type": "object"
+      },
+      "DvhRunCreateRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "coverage_policy": {
+            "default": "FULL_ROI",
+            "enum": [
+              "FULL_ROI",
+              "OVERLAP_ONLY"
+            ],
+            "title": "Coverage Policy",
+            "type": "string"
+          },
+          "ct_artifact_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ct Artifact Id"
+          },
+          "dose_artifact_id": {
+            "format": "uuid",
+            "title": "Dose Artifact Id",
+            "type": "string"
+          },
+          "dx_percentages": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Dx Percentages",
+            "type": "array"
+          },
+          "idempotency_key": {
+            "maxLength": 200,
+            "minLength": 8,
+            "title": "Idempotency Key",
+            "type": "string"
+          },
+          "preview_limit": {
+            "default": 4096,
+            "maximum": 16384.0,
+            "minimum": 64.0,
+            "title": "Preview Limit",
+            "type": "integer"
+          },
+          "roi_number": {
+            "exclusiveMinimum": 0.0,
+            "title": "Roi Number",
+            "type": "integer"
+          },
+          "slice_thickness_mm": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Slice Thickness Mm"
+          },
+          "structure_artifact_id": {
+            "format": "uuid",
+            "title": "Structure Artifact Id",
+            "type": "string"
+          },
+          "vx_doses_gy": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Vx Doses Gy",
+            "type": "array"
+          }
+        },
+        "required": [
+          "dose_artifact_id",
+          "structure_artifact_id",
+          "roi_number",
+          "idempotency_key"
+        ],
+        "title": "DvhRunCreateRequest",
+        "type": "object"
+      },
+      "DvhRunResponse": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by_user_identity_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By User Identity Id"
+          },
+          "ct_artifact_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ct Artifact Id"
+          },
+          "dose_artifact_id": {
+            "format": "uuid",
+            "title": "Dose Artifact Id",
+            "type": "string"
+          },
+          "engine_key": {
+            "title": "Engine Key",
+            "type": "string"
+          },
+          "engine_version": {
+            "title": "Engine Version",
+            "type": "string"
+          },
+          "error_snapshot": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Error Snapshot",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "idempotency_key": {
+            "title": "Idempotency Key",
+            "type": "string"
+          },
+          "input_snapshot": {
+            "additionalProperties": true,
+            "title": "Input Snapshot",
+            "type": "object"
+          },
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "qa_case_id": {
+            "format": "uuid",
+            "title": "Qa Case Id",
+            "type": "string"
+          },
+          "result_snapshot": {
+            "additionalProperties": true,
+            "title": "Result Snapshot",
+            "type": "object"
+          },
+          "roi_number": {
+            "title": "Roi Number",
+            "type": "integer"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "structure_artifact_id": {
+            "format": "uuid",
+            "title": "Structure Artifact Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          },
+          "warning_snapshot": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Warning Snapshot",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "organization_id",
+          "qa_case_id",
+          "dose_artifact_id",
+          "structure_artifact_id",
+          "ct_artifact_id",
+          "roi_number",
+          "idempotency_key",
+          "engine_key",
+          "engine_version",
+          "status",
+          "input_snapshot",
+          "result_snapshot",
+          "warning_snapshot",
+          "error_snapshot",
+          "created_by_user_identity_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "DvhRunResponse",
+        "type": "object"
+      },
+      "DvhValidationResponse": {
+        "properties": {
+          "errors": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "normalized_input": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized Input"
+          },
+          "preview": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preview"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "valid",
+          "errors",
+          "warnings"
+        ],
+        "title": "DvhValidationResponse",
+        "type": "object"
+      },
       "ExportDownloadResponse": {
         "properties": {
           "expires_at": {
@@ -14569,6 +15067,423 @@
         "summary": "Create Qa Case",
         "tags": [
           "qa-archive"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/qa-cases/{case_id}/dvh/inputs": {
+      "get": {
+        "description": "List validated RTDOSE/RTSTRUCT/CT choices and, optionally, ROI IDs.",
+        "operationId": "list_dvh_inputs_api_v1_organizations__organization_id__qa_cases__case_id__dvh_inputs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "structure_artifact_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Structure Artifact Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DvhInputsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Dvh Inputs",
+        "tags": [
+          "dvh"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/qa-cases/{case_id}/dvh/runs": {
+      "get": {
+        "operationId": "list_dvh_runs_api_v1_organizations__organization_id__qa_cases__case_id__dvh_runs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DvhRunCollectionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Dvh Runs",
+        "tags": [
+          "dvh"
+        ]
+      },
+      "post": {
+        "operationId": "create_dvh_run_api_v1_organizations__organization_id__qa_cases__case_id__dvh_runs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DvhRunCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DvhRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Dvh Run",
+        "tags": [
+          "dvh"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/qa-cases/{case_id}/dvh/runs/{run_id}": {
+      "get": {
+        "operationId": "get_dvh_run_api_v1_organizations__organization_id__qa_cases__case_id__dvh_runs__run_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DvhRunResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Dvh Run",
+        "tags": [
+          "dvh"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/qa-cases/{case_id}/dvh/runs/{run_id}/export": {
+      "get": {
+        "operationId": "export_dvh_run_api_v1_organizations__organization_id__qa_cases__case_id__dvh_runs__run_id__export_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "export_format",
+            "required": false,
+            "schema": {
+              "default": "JSON",
+              "enum": [
+                "JSON",
+                "CSV"
+              ],
+              "title": "Export Format",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Export Dvh Run",
+        "tags": [
+          "dvh"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/qa-cases/{case_id}/dvh/validate": {
+      "post": {
+        "description": "Run geometry and metric validation without creating a database row.",
+        "operationId": "validate_dvh_api_v1_organizations__organization_id__qa_cases__case_id__dvh_validate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "case_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Case Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DvhRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DvhValidationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Validate Dvh",
+        "tags": [
+          "dvh"
         ]
       }
     },

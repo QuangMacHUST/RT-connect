@@ -9,6 +9,7 @@ import { PlanComparisonPage } from './pages/PlanComparisonPage'
 import { ReIrradiationPage } from './pages/ReIrradiationPage'
 import { HomeDashboardPage } from './pages/HomeDashboardPage'
 import { GammaPage } from './pages/GammaPage'
+import { DVHPage } from './pages/DVHPage'
 import { LoginPage } from './pages/LoginPage'
 import { MachineQAPage } from './pages/MachineQAPage'
 import { NotFoundPage } from './pages/NotFoundPage'
@@ -43,6 +44,7 @@ export function ApplicationRoutes() {
       <Route path="/app/biological/knowledge" element={<ProtectedRoute><KnowledgeLibraryPage /></ProtectedRoute>} />
       <Route path="/app/qa/cases/:caseId/machine-qa" element={<ProtectedRoute><MachineQAPage /></ProtectedRoute>} />
       <Route path="/app/qa/cases/:caseId/gamma" element={<ProtectedRoute><GammaPage /></ProtectedRoute>} />
+      <Route path="/app/qa/cases/:caseId/dvh" element={<ProtectedRoute><DVHPage /></ProtectedRoute>} />
       <Route path="/app/system/status" element={<PlatformStatusPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>

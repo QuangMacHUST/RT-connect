@@ -5,6 +5,7 @@ export type RouteDefinition = {
   phase: string
   nav: 'workspace' | 'biological' | 'system'
   available: boolean
+  showInSidebar?: boolean
 }
 
 // This is the source counterpart of docs/route-registry.md. Routes become active only
@@ -13,6 +14,7 @@ export const routeRegistry: readonly RouteDefinition[] = [
   { path: '/app', label: 'Trang chủ', module: 'MOD-01', phase: 'P3', nav: 'workspace', available: true },
   { path: '/app/organization', label: 'Organization / Site / Machine', module: 'MOD-02', phase: 'P4', nav: 'workspace', available: true },
   { path: '/app/qa', label: 'Kho lưu trữ QA', module: 'MOD-03', phase: 'P5', nav: 'workspace', available: true },
+  { path: '/app/qa/cases/:caseId/dvh', label: 'Visual Dose / DVH', module: 'MOD-15', phase: 'P17', nav: 'workspace', available: true, showInSidebar: false },
   { path: '/app/reports', label: 'Report Builder', module: 'MOD-07', phase: 'P9', nav: 'workspace', available: true },
   { path: '/app/qa-protocols', label: 'QA Protocols', module: 'MOD-09', phase: 'P11', nav: 'workspace', available: true },
   { path: '/app/trend', label: 'Xu hướng', module: 'MOD-08', phase: 'P10', nav: 'workspace', available: true },
