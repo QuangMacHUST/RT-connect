@@ -1,12 +1,12 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
-- Phiên bản: **3.6**, ngày 2026-09-09.
+- Phiên bản: **3.7**, ngày 2026-09-09.
 - Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.20.
 - Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.14.
-- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.11.
+- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.12.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
-- Phạm vi lần cập nhật này: chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20; bổ sung ma trận hành vi ở cấp tính năng, tiêu chuẩn bao phủ B01–B12, từ điển trạng thái thống nhất, phase scenario index và đồng bộ slice implementation P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, migration schema `20260908_0017`, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local ngày 2026-09-09. Bổ sung checkpoint deploy/readiness staging P17, fixture RTSTRUCT/CT known-answer và hash tái lập; staging DVH saved-run/CT E2E vẫn là gate riêng vì case hiện chưa có RTSTRUCT/CT. Bổ sung local P18 integrated journey test và script kiểm public deployment cho P19; hai artifact này chỉ là công cụ/evidence hỗ trợ, không tự đóng phase. Không suy diễn từ test local hoặc một lần Railway báo Online.
+- Phạm vi lần cập nhật này: chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20; bổ sung ma trận hành vi ở cấp tính năng, tiêu chuẩn bao phủ B01–B12, từ điển trạng thái thống nhất, phase scenario index và đồng bộ slice implementation P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, migration schema `20260908_0017`, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local ngày 2026-09-09. Bổ sung checkpoint deploy/readiness staging P17, fixture RTSTRUCT/CT known-answer và hash tái lập; staging DVH saved-run/CT E2E vẫn là gate riêng vì case hiện chưa có RTSTRUCT/CT. Bổ sung local P18 integrated journey test, local backup/restore verifier cho P18 và script kiểm public deployment cho P19; các artifact này chỉ là công cụ/evidence hỗ trợ, không tự đóng phase. Không suy diễn từ test local hoặc một lần Railway báo Online.
 
 ## 1. Cách thực hiện kế hoạch
 
@@ -1558,9 +1558,22 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - [ ] P18-W01 — Test matrix theo browser/device/timezone/tenant/dataset, ưu tiên cross-boundary failures.
 - [ ] P18-W02 — Fault injection API/DB/Redis/storage/worker/renderer trên staging có restore plan.
 - [ ] P18-W03 — Backup database+objects+manifest, restore isolated và kiểm lineage/checksum.
+- [x] P18-W03a — Local backup/restore harness tại `scripts/verify-local-backup-restore.py`: PostgreSQL custom dump và MinIO object inventory được restore vào tài nguyên tạm, so sánh row/object SHA rồi dọn database/bucket; chỉ là `LOCAL_VERIFIED` support, chưa thay provider backup/restore staging.
 - [ ] P18-W04 — Bug triage SEV0–3, regression before close, record limitations và candidate evidence.
 - [ ] P18-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P18-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
+
+### P18-W03a local backup/restore support checkpoint
+
+Chạy từ repository root sau khi local Compose PostgreSQL và MinIO đã healthy:
+
+~~~powershell
+& .\\apps\\api\\.venv\\Scripts\\python.exe `
+  .\\scripts\\verify-local-backup-restore.py `
+  --output docs/evidence/p18-local-backup-restore.json
+~~~
+
+Verifier chỉ chấp nhận topology local Compose cố định, không nhận Railway/S3/database URL từ tham số. Nó tạo dump PostgreSQL tạm, copy object theo inventory SHA-256, restore vào database/bucket tạm, đối chiếu row counts và object bytes, rồi xóa đúng tài nguyên tạm trong `finally`. Evidence không lưu database dump, object content, secret hay dữ liệu bệnh nhân. Kết quả local ngày 2026-09-09: database row inventory PASS, object inventory `1 → 1` PASS, cleanup database/bucket PASS. Đây chưa phải evidence P18-W03 staging: vẫn cần Railway provider backup, isolated restore, RPO/RTO và lineage/checksum trên candidate thật.
 
 ### Trường hợp chạy đúng P18
 
@@ -1744,13 +1757,13 @@ Template phase packet tối thiểu:
 
 ~~~yaml
 phase: Pxx
-phase_version: "3.6"
+phase_version: "3.7"
 status: IN_PROGRESS
 branch: "codex/<branch>"
 source_commit: "<sha>"
 business_analysis_version: "0.20"
 specification_version: "1.14"
-technical_specification_version: "1.11"
+technical_specification_version: "1.12"
 entry_gate:
   dependencies: []
   schema_revision: "<revision-or-null>"
@@ -1962,7 +1975,7 @@ Trước code UI: ghi screen ID/revision, route, API event và FR. Sau code: đ�
 Template checkpoint (cần điền giá trị thật):
 
 ~~~yaml
-plan_version: "3.6"
+plan_version: "3.7"
 current_phase: P17
 current_work_package: P17-W05b.2
 status: IN_PROGRESS
@@ -1992,7 +2005,7 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 ### 7.2. Kết quả lần sửa tài liệu này
 
-Đã rebaseline tài liệu thành BA v0.20, specification v1.14, technical-specification v1.11 và plan v3.5; bổ sung ma trận hành vi ở cấp tính năng, từ điển trạng thái, error taxonomy, operation/evidence contract, B01–B12 và ma trận bao phủ P0–P20. P16 đã có implementation local và staging browser smoke trên migration `20260908_0016`: DRAFT/publish/archive, import row-level error và explicit-use snapshot đã được kiểm bằng dữ liệu tổng hợp; direct PostgreSQL/scope/fault/release closure vẫn mở. P17 đã có pure engine/API/UI/migration, explicit P11/P16 limit binding, DVH report source và bounded CT preview local với S12–S16/E24–E30; staging DVH/CT E2E, protocol compatibility, fault/volume, independent oracle và release evidence vẫn mở. P15 replay/direct PostgreSQL/scope/full error/release gates cũng vẫn mở theo progress log. Không phase nào được đánh dấu `DONE-v2` chỉ vì local test, HTTP 200 hoặc Railway báo Online.
+Đợt rebaseline ban đầu đã tạo BA v0.20, specification v1.14, technical-specification v1.11 và plan v3.5; các bản cập nhật kế tiếp giữ lịch sử đó và nâng plan hiện tại lên v3.7/technical-specification v1.12. Bộ tài liệu hiện có ma trận hành vi ở cấp tính năng, từ điển trạng thái, error taxonomy, operation/evidence contract, B01–B12 và ma trận bao phủ P0–P20. P16 đã có implementation local và staging browser smoke trên migration `20260908_0016`, còn direct PostgreSQL/scope/fault/release closure vẫn mở. P17 đã có pure engine/API/UI/migration, explicit P11/P16 limit binding, DVH report source và bounded CT preview local với S12–S16/E24–E30; staging DVH/CT E2E, protocol compatibility, fault/volume, independent oracle và release evidence vẫn mở. P18 hiện có local integrated journey và local backup/restore support nhưng staging fault/restore/pilot vẫn mở. Không phase nào được đánh dấu `DONE-v2` chỉ vì local test, HTTP 200 hoặc Railway báo Online.
 
 
 ## 8. Ma trận FR → contract → testcase ban đầu

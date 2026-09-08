@@ -3,7 +3,7 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.11 — đồng bộ specification.md v1.14, plan.md v3.6 và business-analysis.md v0.20; bổ sung P17 CT preview/overlay contract, giới hạn tài nguyên và LPS mapping (2026-09-09)
+- **Phiên bản:** 1.12 — đồng bộ specification.md v1.14, plan.md v3.7 và business-analysis.md v0.20; bổ sung P17 CT preview/overlay contract, giới hạn tài nguyên và P18 local backup/restore verification harness (2026-09-09)
 - **Nguồn yêu cầu:** business-analysis.md phiên bản 0.20
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
@@ -11,7 +11,7 @@
 
 Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
-> Đồng bộ v1.11: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§13 là authority cho hành vi/validation/error/thuật toán. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; P17 có CT pixel preview local nhưng explicit P11/P16 binding, DVH report source và CT/staging evidence vẫn phải kiểm theo candidate. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+> Đồng bộ v1.12: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§13 là authority cho hành vi/validation/error/thuật toán. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; P17 có CT pixel preview local nhưng explicit P11/P16 binding, DVH report source và CT/staging evidence vẫn phải kiểm theo candidate. P18 có local route-to-persistence và local backup/restore support nhưng chưa thay fault/restore/pilot staging gate. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -1221,7 +1221,7 @@ evaluated/passing/nonpassing/excluded/no-candidate/censored, pass rate, coverage
 percentile exactness, histogram, warning, configuration, input checksum và engine version.
 Đây là deterministic engineering/golden slice; test local hiện có exhaustive independent node
 oracle và các guard resource/retry, nhưng không thay thế benchmark theo phần cứng hoặc
-commissioning. Gate phát triển, pilot và release theo plan.md v3.6. Coordinate frame mở rộng,
+commissioning. Gate phát triển, pilot và release theo plan.md v3.7. Coordinate frame mở rộng,
 crash/ack/dead-letter injection, large workload benchmark và evidence effective schema/release
 trên staging vẫn là điều kiện đóng P8.
 
@@ -2094,6 +2094,16 @@ Backup tối thiểu gồm:
 - Secrets reference, không ghi secret plaintext vào backup log.
 
 Phải có bài kiểm tra restore định kỳ và ghi kết quả vào vận hành.
+
+Local support harness hiện thực hóa một phép kiểm bounded tại
+`scripts/verify-local-backup-restore.py`. Harness dùng `pg_dump --format=custom`,
+restore vào database tạm, inventory mọi object MinIO theo kích thước và SHA-256,
+copy sang bucket tạm, so sánh inventory rồi dọn tài nguyên tạm. Harness chỉ được
+chạy với topology `docker-compose.yml` local và không phải provider backup,
+staging restore, RPO/RTO hoặc production runbook. Evidence của nó ghi row/object
+inventory hash, dump size/hash và trạng thái cleanup nhưng không ghi dump/object
+content hay secret. P18 vẫn phải kiểm provider backup/restore, isolated restore,
+lineage/checksum và thời gian RPO/RTO trên candidate thật.
 
 ### 14.5. Bảo vệ public web
 

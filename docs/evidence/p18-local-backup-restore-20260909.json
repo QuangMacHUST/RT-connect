@@ -1,0 +1,93 @@
+{
+  "schema_version": "rt-connect.local-backup-restore.v1",
+  "captured_at_utc": "2026-09-08T19:22:04.405173Z",
+  "environment": "local-compose-only",
+  "compose_file": "docker-compose.yml",
+  "source_database": "rt_connect",
+  "restore_database": "rt_connect_restore_ba3647a0566c",
+  "database_dump": {
+    "bytes": 162769,
+    "sha256": "2cd2c185266510dc0f4c13491802ccbe0669ed10a0ca5c6166ac745361d86b2b"
+  },
+  "source_row_counts": {
+    "organizations": 1,
+    "organization_memberships": 0,
+    "sites": 1,
+    "machines": 1,
+    "folders": 0,
+    "qa_cases": 0,
+    "artifacts": 0,
+    "input_manifests": 0,
+    "validation_runs": 0,
+    "machine_qa_runs": 0,
+    "gamma_analysis_runs": 0,
+    "dvh_analysis_runs": 0,
+    "report_revisions": 0,
+    "export_jobs": 0,
+    "trend_points": 0,
+    "biological_scenarios": 0,
+    "biological_calculation_runs": 0,
+    "biological_comparison_runs": 0,
+    "biological_reirradiation_runs": 0,
+    "audit_events": 0
+  },
+  "restored_row_counts": {
+    "organizations": 1,
+    "organization_memberships": 0,
+    "sites": 1,
+    "machines": 1,
+    "folders": 0,
+    "qa_cases": 0,
+    "artifacts": 0,
+    "input_manifests": 0,
+    "validation_runs": 0,
+    "machine_qa_runs": 0,
+    "gamma_analysis_runs": 0,
+    "dvh_analysis_runs": 0,
+    "report_revisions": 0,
+    "export_jobs": 0,
+    "trend_points": 0,
+    "biological_scenarios": 0,
+    "biological_calculation_runs": 0,
+    "biological_comparison_runs": 0,
+    "biological_reirradiation_runs": 0,
+    "audit_events": 0
+  },
+  "source_object_count": 1,
+  "restored_object_count": 1,
+  "source_object_inventory_sha256": "6d8c6b2e079e96bfa2ebb9348be8fb7b92a504299ab747b0f4539d9b86150c0d",
+  "restored_object_inventory_sha256": "6d8c6b2e079e96bfa2ebb9348be8fb7b92a504299ab747b0f4539d9b86150c0d",
+  "passed": true,
+  "checks": [
+    {
+      "name": "database.row_inventory",
+      "ok": true,
+      "details": {
+        "source_sha256": "5b481e966eb88e7df32b339b317e64802b37da1c9fe17cba7d989d14b45571ed",
+        "restored_sha256": "5b481e966eb88e7df32b339b317e64802b37da1c9fe17cba7d989d14b45571ed"
+      }
+    },
+    {
+      "name": "object.inventory",
+      "ok": true,
+      "details": {
+        "source_count": 1,
+        "restored_count": 1,
+        "source_sha256": "6d8c6b2e079e96bfa2ebb9348be8fb7b92a504299ab747b0f4539d9b86150c0d",
+        "restored_sha256": "6d8c6b2e079e96bfa2ebb9348be8fb7b92a504299ab747b0f4539d9b86150c0d"
+      }
+    },
+    {
+      "name": "disposable-resource-cleanup",
+      "ok": true,
+      "details": {
+        "restore_database": "rt_connect_restore_ba3647a0566c",
+        "database_dropped": true,
+        "restore_bucket": "rt-connect-restore-e096a0bdc0ec49d3",
+        "bucket_removed": true
+      }
+    }
+  ],
+  "contains_patient_data": false,
+  "error": null
+}
