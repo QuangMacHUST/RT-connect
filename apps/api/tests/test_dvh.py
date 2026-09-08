@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from rt_connect_api.api.artifacts import _storage as artifact_storage
 from rt_connect_api.api.dvh import _storage as dvh_storage
-from rt_connect_api.services.object_storage import InMemoryObjectStorage
+from rt_connect_api.services.object_storage import InMemoryObjectStorage, ObjectStorageError
 from test_artifacts import _case
 from test_dvh_engine import _ct_file, _dose_file, _structure_file
 from test_workspace import _workspace_client
@@ -44,6 +44,13 @@ def _dvh_body(dose_id: str, structure_id: str, key: str = "dvh-api-001") -> dict
 
 def _validation_body(body: dict[str, object]) -> dict[str, object]:
     return {key: value for key, value in body.items() if key != "idempotency_key"}
+
+
+class _UnavailableObjectStorage(InMemoryObjectStorage):
+    """Storage fault double: metadata exists, but bytes cannot be downloaded."""
+
+    def download_to_path(self, key: str, destination: Path) -> None:
+        raise ObjectStorageError(f"synthetic storage outage for {key}")
 
 
 def test_dvh_api_validates_saves_replays_exports_and_scopes_inputs(tmp_path: Path) -> None:
@@ -312,3 +319,32 @@ def test_dvh_api_rejects_archived_case_and_detects_changed_source(tmp_path: Path
         )
         assert blocked.status_code == 409, blocked.text
         assert blocked.json()["code"] == "QA_CASE_ARCHIVED"
+
+
+def test_dvh_api_storage_outage_is_explicit_and_does_not_create_a_run(tmp_path: Path) -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[artifact_storage] = lambda: storage
+        client.app.dependency_overrides[dvh_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+        dose_path = tmp_path / "dose.dcm"
+        structure_path = tmp_path / "structures.dcm"
+        frame_uid = _dose_file(dose_path)
+        _structure_file(structure_path, frame_uid)
+        dose = _upload_dicom(client, case_id, "dose.dcm", dose_path.read_bytes(), "REFERENCE")
+        structure = _upload_dicom(
+            client, case_id, "structures.dcm", structure_path.read_bytes(), "RTSTRUCT"
+        )
+        body = _dvh_body(
+            str(dose["id"]), str(structure["id"]), "dvh-api-storage-outage"
+        )
+        failing_storage = _UnavailableObjectStorage()
+        client.app.dependency_overrides[artifact_storage] = lambda: failing_storage
+        client.app.dependency_overrides[dvh_storage] = lambda: failing_storage
+
+        base = f"/api/v1/organizations/{organization.id}/qa-cases/{case_id}/dvh"
+        response = client.post(f"{base}/validate", json=_validation_body(body))
+
+        assert response.status_code == 503, response.text
+        assert response.json()["code"] == "DVH_STORAGE_UNAVAILABLE"
+        assert client.get(f"{base}/runs").json()["total"] == 0

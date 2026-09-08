@@ -2054,7 +2054,7 @@ Bảng này là bản đồ ngắn gọn để không bỏ sót phase. `S` là w
 | P14 | P13 options → common context → baseline → delta/chart → reorder/clone/export | `TC-P14-S01..S06` | `TC-P14-E01..E10` | Delta/zero policy, no-truncate, lineage và persisted snapshot. |
 | P15 | Courses → tissue/model → recovery → cumulative/sensitivity → compensation/export | `TC-P15-S01..S08` | `TC-P15-E01..E14` | Scalar/recovery/alternative snapshot; spatial capability rõ ràng. |
 | P16 | Search → source/applicability → create/clone/version → citation/import → explicit use → compare/export/archive | `TC-P16-S01..S04` | `TC-P16-E01..E10` | Library version, citation, import report, no-match, scope/lifecycle/persistence behavior và explicit snapshot. |
-| P17 | Dataset → geometry preflight → overlay → DVH/profile → metric/export | `TC-P17-S01..S04` | `TC-P17-E01..E07` | Frame/ROI/coverage oracle, visual/table fallback và lineage. |
+| P17 | Dataset → geometry preflight → overlay → DVH/profile → metric/export | `TC-P17-S01..S16` | `TC-P17-E01..E30` | Frame/ROI/coverage/CT overlay oracle, visual/table fallback, source hash và lineage. |
 | P18 | RC → integrated/golden/fault/load → restore → pilot → regression | `TC-P18-S01..S04` | `TC-P18-E01..E06` | RC manifest, workload, restore, pilot issue và severity. |
 | P19 | Backup → promote services/schema → domain/Auth → remote E2E → rollback | `TC-P19-S01..S04` | `TC-P19-E01..E06` | Public URL, HTTPS, version/config manifest và rollback rehearsal. |
 | P20 | Monitor/alert → backup/restore drill → runbook → incident → maintenance | `TC-P20-S01..S04` | `TC-P20-E01..E05` | Alert, restore, owner, RCA/regression và backlog vận hành. |

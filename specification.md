@@ -1419,7 +1419,7 @@ Mỗi phase kế thừa B01–B12 ở mục 2 và phải có các lớp kiểm t
 | P14 | `TC-P14-S01..S06`, `E01..E10` | D, A, DB, UI, R, P | 2–10 options, baseline/zero policy, context warning, reorder preview, clone/export. |
 | P15 | `TC-P15-S01..S08`, `E01..E14` | D, A, DB, UI, R, P | Course/tissue/recovery, nonuniform schedule, prefix alternative, spatial unavailable, export. |
 | P16 | `TC-P16-S01..S04`, `E01..E06` | D, A, DB, UI, R, P | Source/applicability/version/import, no-match, link/content safety và explicit use. |
-| P17 | `TC-P17-S01..S04`, `E01..E07` | D, A, DB, UI, R, V, P | Frame/grid/ROI/coverage, DVH oracle, dose-only fallback, visual/table and source lineage. |
+| P17 | `TC-P17-S01..S16`, `E01..E30` | D, A, DB, UI, R, V, P | Frame/grid/ROI/coverage, bounded CT HU/LPS overlay/no-overlap oracle, DVH oracle, dose-only fallback, visual/table and source lineage. |
 | P18 | `TC-P18-S01..S04`, `E01..E06` | D, A, DB, UI, R, V, P | Integrated RC, golden diff, restart/concurrency, load, backup/restore, pilot severity. |
 | P19 | `TC-P19-S01..S04`, `E01..E06` | A, DB, UI, R, V, P | Public HTTPS, Auth/CORS, service/schema/config manifest, remote E2E and rollback. |
 | P20 | `TC-P20-S01..S04`, `E01..E05` | A, DB, R, V, P | Real alert, backup/restore drill, owner/runbook, capacity and result-change regression. |
