@@ -3,7 +3,7 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.11 — đồng bộ specification.md v1.14, plan.md v3.5 và business-analysis.md v0.20; bổ sung P17 CT preview/overlay contract, giới hạn tài nguyên và LPS mapping (2026-09-09)
+- **Phiên bản:** 1.11 — đồng bộ specification.md v1.14, plan.md v3.6 và business-analysis.md v0.20; bổ sung P17 CT preview/overlay contract, giới hạn tài nguyên và LPS mapping (2026-09-09)
 - **Nguồn yêu cầu:** business-analysis.md phiên bản 0.20
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
@@ -939,7 +939,7 @@ Every mutation audit payload tối thiểu có organization, actor, entry ID, ty
 
 #### Local verification checkpoint
 
-Candidate working tree đã pass P16 focused tests `3/3`, P17 DVH engine/API/report-source suite `20 passed`, full backend `153 passed`, Ruff, strict mypy, frontend lint/typecheck/Vitest/build. Migration/OpenAPI phải được regenerate/check trên cùng SHA; staging readiness `20260908_0016` cho P16 và `20260908_0017` cho P17, browser lifecycle, import/use/export, explicit binding/report source, direct PostgreSQL row/hash/scope và full negative matrix vẫn là gate trước STAGING_VERIFIED.
+Candidate working tree đã pass P16 focused tests `3/3`, P17 DVH engine/API/report-source suite `20 passed`, P18 integrated journey suite `2 passed`, full backend `155 passed`, Ruff, strict mypy, frontend lint/typecheck/Vitest/build. Migration/OpenAPI phải được regenerate/check trên cùng SHA; staging readiness `20260908_0016` cho P16 và `20260908_0017` cho P17, browser lifecycle, import/use/export, explicit binding/report source, direct PostgreSQL row/hash/scope và full negative matrix vẫn là gate trước STAGING_VERIFIED.
 
 ### 4.18. Audit Event
 
@@ -1221,7 +1221,7 @@ evaluated/passing/nonpassing/excluded/no-candidate/censored, pass rate, coverage
 percentile exactness, histogram, warning, configuration, input checksum và engine version.
 Đây là deterministic engineering/golden slice; test local hiện có exhaustive independent node
 oracle và các guard resource/retry, nhưng không thay thế benchmark theo phần cứng hoặc
-commissioning. Gate phát triển, pilot và release theo plan.md v3.5. Coordinate frame mở rộng,
+commissioning. Gate phát triển, pilot và release theo plan.md v3.6. Coordinate frame mở rộng,
 crash/ack/dead-letter injection, large workload benchmark và evidence effective schema/release
 trên staging vẫn là điều kiện đóng P8.
 
@@ -2427,7 +2427,7 @@ Pipeline public release tối thiểu:
 1. Build frontend/API/worker/render image với version cố định.
 2. Chạy test và scan dependency/image theo năng lực hạ tầng.
 3. Deploy các service vào Railway staging environment.
-4. Chạy smoke test từ browser và API client.
+4. Chạy smoke test từ browser và API client; `scripts/verify-public-deployment.ps1` có thể tạo public-contract evidence JSON cho health/readiness/schema/version/OpenAPI/web bundle, nhưng không thay authenticated E2E.
 5. Kiểm tra Supabase Auth config, Railway PostgreSQL migration/health, queue, upload, analysis và export.
 6. Backup Railway PostgreSQL/object storage trước production migration.
 7. Deploy Railway production environment theo version manifest và environment variables đã review.

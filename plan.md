@@ -1,12 +1,12 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
-- Phiên bản: **3.5**, ngày 2026-09-09.
+- Phiên bản: **3.6**, ngày 2026-09-09.
 - Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.20.
 - Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.14.
 - Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.11.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
-- Phạm vi lần cập nhật này: chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20; bổ sung ma trận hành vi ở cấp tính năng, tiêu chuẩn bao phủ B01–B12, từ điển trạng thái thống nhất, phase scenario index và đồng bộ slice implementation P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, migration schema `20260908_0017`, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local ngày 2026-09-09. Bổ sung checkpoint deploy/readiness staging P17, fixture RTSTRUCT/CT known-answer và hash tái lập; staging DVH saved-run/CT E2E vẫn là gate riêng vì case hiện chưa có RTSTRUCT/CT. Không suy diễn từ test local hoặc một lần Railway báo Online.
+- Phạm vi lần cập nhật này: chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20; bổ sung ma trận hành vi ở cấp tính năng, tiêu chuẩn bao phủ B01–B12, từ điển trạng thái thống nhất, phase scenario index và đồng bộ slice implementation P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, migration schema `20260908_0017`, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local ngày 2026-09-09. Bổ sung checkpoint deploy/readiness staging P17, fixture RTSTRUCT/CT known-answer và hash tái lập; staging DVH saved-run/CT E2E vẫn là gate riêng vì case hiện chưa có RTSTRUCT/CT. Bổ sung local P18 integrated journey test và script kiểm public deployment cho P19; hai artifact này chỉ là công cụ/evidence hỗ trợ, không tự đóng phase. Không suy diễn từ test local hoặc một lần Railway báo Online.
 
 ## 1. Cách thực hiện kế hoạch
 
@@ -1554,6 +1554,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 
 ### Work packages P18
 
+- [x] P18-W00 — Local route-to-persistence integration pack tại `apps/api/tests/test_p18_integration.py`: QA journey và Biological journey pass; đây là `LOCAL_VERIFIED` support evidence, không thay staging/pilot/restore gate.
 - [ ] P18-W01 — Test matrix theo browser/device/timezone/tenant/dataset, ưu tiên cross-boundary failures.
 - [ ] P18-W02 — Fault injection API/DB/Redis/storage/worker/renderer trên staging có restore plan.
 - [ ] P18-W03 — Backup database+objects+manifest, restore isolated và kiểm lineage/checksum.
@@ -1613,12 +1614,28 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 
 ### Work packages P19
 
+- [x] P19-W00 — Reusable public deployment verifier tại `scripts/verify-public-deployment.ps1`: health/readiness/schema/version/OpenAPI/public web bundle và CT preview marker; chỉ là smoke/evidence tool, không thay remote E2E hoặc rollback rehearsal.
 - [ ] P19-W01 — Promote cùng source/artifact provenance; web public config khác environment phải rebuild và ghi digest riêng.
 - [ ] P19-W02 — Effective settings matrix web/API/worker; migrations single runner, private DB/Redis.
 - [ ] P19-W03 — DNS/TLS/CORS/SPA fallback/Supabase redirects/build-time vars smoke.
 - [ ] P19-W04 — External browser/device journeys; version mismatch checks, rollback rehearsal and monitoring hooks.
 - [ ] P19-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P19-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
+
+Lệnh smoke có thể tái lập cho public candidate (không truyền secret) là:
+
+~~~powershell
+.\scripts\verify-public-deployment.ps1 `
+  -ApiBaseUrl "https://<api-domain>" `
+  -WebBaseUrl "https://<web-domain>" `
+  -ExpectedVersion "<release-label>" `
+  -ExpectedSchemaRevision "<alembic-revision>" `
+  -OutputPath "docs/evidence/p19-public-deployment.json"
+~~~
+
+Script chỉ kiểm public contract và bundle marker. P19 vẫn phải chạy Authenticated remote E2E, private dependency check, backup point và rollback rehearsal; không dùng 10/10 smoke checks để đóng phase.
+
+Evidence staging hiện tại: `docs/evidence/p19-staging-public-smoke-20260909.json` — version `65dd52b`, schema `20260908_0017`, 10/10 checks pass.
 
 ### Trường hợp chạy đúng P19
 
@@ -1727,13 +1744,13 @@ Template phase packet tối thiểu:
 
 ~~~yaml
 phase: Pxx
-phase_version: "2.5"
+phase_version: "3.6"
 status: IN_PROGRESS
 branch: "codex/<branch>"
 source_commit: "<sha>"
-business_analysis_version: "0.11"
-specification_version: "1.5"
-technical_specification_version: "1.3"
+business_analysis_version: "0.20"
+specification_version: "1.14"
+technical_specification_version: "1.11"
 entry_gate:
   dependencies: []
   schema_revision: "<revision-or-null>"
@@ -1829,7 +1846,7 @@ Bảng này là chỉ mục điều hành ngắn gọn; mỗi phase vẫn phải
 | P14 | P13 engine và common biological context đã stable | 2–10 options → common context/model → baseline → calculate delta/chart → reorder/clone/export | Missing/invalid option, context mismatch, baseline missing/zero, alpha/beta mismatch, idempotency conflict, persistence uncertainty, limit/truncate | Same revision/context, `null + BASELINE_ZERO`, warning/ranking policy, option IDs/order, no-truncate evidence; giữ options hợp lệ | Comparison known delta, zero handling, history/export/clone pass |
 | P15 | P13/P14 scalar result và time/course model đã stable | Courses → tissue/alpha-beta → no-recovery/recovery → cumulative/sensitivity → interruption → compensation alternatives → export | Interval/recovery/source/context, nonuniform schedule, overlap, noninteger, missing spatial registration/OAR dose | Assumption/source/sensitivity snapshot, scalar-vs-spatial capability, integer schedule; chặn nhánh unsupported, không sửa treatment | Scalar/recovery/compensation negative matrix và independent export pass |
 | P16 | P12/P13 source/applicability contract đã stable; migration `20260908_0016` và validator candidate đã pass local | Bootstrap scope → search/filter exact → detail/source → validate/create DRAFT → clone/publish/archive/history/compare/export → import preview/commit → explicit-use snapshot | Request/schema, missing source, metric/unit/operator/volume, no-match, broken/unverified reference, duplicate/import, unsafe content, stale revision, immutable lifecycle, cross-scope/not-found, unsupported override, version conflict, persistence uncertainty | Local: 3 focused tests + full backend + Ruff/mypy + frontend + migration/OpenAPI. Staging smoke: web build `9262bfd`, API schema `20260908_0016`, DRAFT/publish/archive, invalid import row and explicit-use snapshot `1de9704f6b061e35…`. Closure: DB row/hash/scope, compare/history/export, full negative matrix and manifest | P16 implementation and browser smoke pass; database/scope/fault/release closure and direct calculator binding remain open |
-| P17 | P6 artifact/manifest contract và DICOM geometry fixtures đã stable; P8/P9/P11/P16 là optional source bindings có contract riêng | Resolve scope → discover VALID RTDOSE/RTSTRUCT/CT → checksum/preflight → ROI/policy/metrics → optional explicit P11/P16 binding → validate preview → save snapshot → history/export/report source; CT anatomy mở riêng | Missing/wrong artifact or manifest, source drift/storage, unit/scaling, dimensions/orientation/frame/ROI/contour, empty/partial coverage, CT mismatch, metric/resource, binding conflict/source/rule/unit errors, idempotency/persistence/reconnect | Local: DVH engine/API/report-source suite `20 passed`, full backend `153 passed`, Ruff/mypy/frontend checks, migration/OpenAPI. Staging: schema `20260908_0017`, browser/API/DB/object/scope/checksum/idempotency, negative/fault/volume/export and binding/report evidence; giữ raw source và retry sau reconcile | Supported geometry/DVH oracle, staging E2E, fault/volume, CT renderer, protocol/knowledge compatibility and report-source evidence pass or are explicitly excluded from release |
+| P17 | P6 artifact/manifest contract và DICOM geometry fixtures đã stable; P8/P9/P11/P16 là optional source bindings có contract riêng | Resolve scope → discover VALID RTDOSE/RTSTRUCT/CT → checksum/preflight → ROI/policy/metrics → optional explicit P11/P16 binding → validate preview → save snapshot → history/export/report source; CT anatomy mở riêng | Missing/wrong artifact or manifest, source drift/storage, unit/scaling, dimensions/orientation/frame/ROI/contour, empty/partial coverage, CT mismatch, metric/resource, binding conflict/source/rule/unit errors, idempotency/persistence/reconnect | Local: DVH engine/API/report-source suite `20 passed`, full backend `155 passed`, Ruff/mypy/frontend checks, migration/OpenAPI. Staging: schema `20260908_0017`, browser/API/DB/object/scope/checksum/idempotency, negative/fault/volume/export and binding/report evidence; giữ raw source và retry sau reconcile | Supported geometry/DVH oracle, staging E2E, fault/volume, CT renderer, protocol/knowledge compatibility and report-source evidence pass or are explicitly excluded from release |
 | P18 | P0–P17 release contracts và candidate manifest đã khóa | RC → integrated E2E → golden → failure/restart/concurrency/load → backup/restore → pilot → regression | Result regression, restore incomplete, duplicate replay, capacity, unsupported pilot data, evidence mismatch | Immutable RC manifest, workload/log/restore/checksum/pilot issues; giữ candidate, mở issue/regression, không sửa expected | MUST E2E/restore/performance/pilot pass, không SEV0/1 |
 | P19 | P18 RC, production backup, DNS/TLS/Auth/CORS và service IDs đã kiểm | Backup → migration compatible → API/worker/renderer/web → public smoke → remote E2E → monitor/rollback rehearsal | Domain/TLS, build config, schema/version mismatch, private dependency, remote E2E/resource | Promotion manifest, public URLs, service/schema/engine versions, rollback record; không promote partial, giữ last-good | Website HTTPS và workflow từ mạng ngoài pass, rollback/backup evidence pass |
 | P20 | P19 release và owner/runbook inventory đã bàn giao | Monitor/alert → backup/restore drill → guide/support → incident triage → maintenance staging → regression | Backup/retention, alert delivery, capacity, engine result change, recurring incident | Alert/restore timestamps, runbook execution, incident/RCA/regression/release notes; không xóa last-good | Initial operations package có config thật, owner, alert/restore evidence và backlog |
@@ -1945,7 +1962,7 @@ Trước code UI: ghi screen ID/revision, route, API event và FR. Sau code: đ�
 Template checkpoint (cần điền giá trị thật):
 
 ~~~yaml
-plan_version: "3.5"
+plan_version: "3.6"
 current_phase: P17
 current_work_package: P17-W05b.2
 status: IN_PROGRESS
