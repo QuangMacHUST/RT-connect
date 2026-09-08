@@ -37,9 +37,7 @@ _SCENARIO_KEY_PATTERN = r"^[A-Z][A-Z0-9_.-]{0,119}$"
 
 
 class BiologicalScenarioCreateRequest(BaseModel):
-    scenario_key: str = Field(
-        min_length=1, max_length=120, pattern=_SCENARIO_KEY_PATTERN
-    )
+    scenario_key: str = Field(min_length=1, max_length=120, pattern=_SCENARIO_KEY_PATTERN)
     name: str = Field(min_length=1, max_length=240)
     scenario_type: str = Field(min_length=1, max_length=80)
     tissue_context: str = Field(min_length=1, max_length=240)
@@ -368,8 +366,7 @@ def _scenario_response(
     include_snapshot: bool = False,
 ) -> BiologicalScenarioResponse:
     latest = session.scalar(
-        select(BiologicalScenarioRevision)
-        .where(
+        select(BiologicalScenarioRevision).where(
             BiologicalScenarioRevision.organization_id == scenario.organization_id,
             BiologicalScenarioRevision.scenario_id == scenario.id,
             BiologicalScenarioRevision.revision_number == scenario.revision,
@@ -445,8 +442,8 @@ def _tools() -> list[BiologicalToolResponse]:
             label="So sánh phác đồ",
             route="/app/biological/compare",
             phase="P14",
-            status="PLANNED",
-            available=False,
+            status="AVAILABLE",
+            available=True,
             description="So sánh nhiều phương án cùng bối cảnh sinh học.",
         ),
         BiologicalToolResponse(
@@ -532,30 +529,39 @@ def biological_summary(
         or 0
         for status_name in _SCENARIO_STATUSES
     }
-    total_scenarios = session.scalar(
-        select(func.count())
-        .select_from(BiologicalScenario)
-        .where(BiologicalScenario.organization_id == context.organization_id)
-    ) or 0
-    completed_calculations = session.scalar(
-        select(func.count())
-        .select_from(BiologicalCalculationRun)
-        .where(
-            BiologicalCalculationRun.organization_id == context.organization_id,
-            BiologicalCalculationRun.status == "COMPLETED",
+    total_scenarios = (
+        session.scalar(
+            select(func.count())
+            .select_from(BiologicalScenario)
+            .where(BiologicalScenario.organization_id == context.organization_id)
         )
-    ) or 0
-    exported_reports = session.scalar(
-        select(func.count())
-        .select_from(ExportJob)
-        .join(ReportRevision, ExportJob.report_revision_id == ReportRevision.id)
-        .where(
-            ExportJob.organization_id == context.organization_id,
-            ExportJob.status == "COMPLETED",
-            ReportRevision.organization_id == context.organization_id,
-            ReportRevision.source_type == "BIOLOGICAL",
+        or 0
+    )
+    completed_calculations = (
+        session.scalar(
+            select(func.count())
+            .select_from(BiologicalCalculationRun)
+            .where(
+                BiologicalCalculationRun.organization_id == context.organization_id,
+                BiologicalCalculationRun.status == "COMPLETED",
+            )
         )
-    ) or 0
+        or 0
+    )
+    exported_reports = (
+        session.scalar(
+            select(func.count())
+            .select_from(ExportJob)
+            .join(ReportRevision, ExportJob.report_revision_id == ReportRevision.id)
+            .where(
+                ExportJob.organization_id == context.organization_id,
+                ExportJob.status == "COMPLETED",
+                ReportRevision.organization_id == context.organization_id,
+                ReportRevision.source_type == "BIOLOGICAL",
+            )
+        )
+        or 0
+    )
     return BiologicalSummaryResponse(
         organization_id=context.organization_id,
         total_scenarios=total_scenarios,
@@ -619,8 +625,10 @@ def list_biological_scenarios(
     query = select(BiologicalScenario).where(
         BiologicalScenario.organization_id == context.organization_id
     )
-    count_query = select(func.count()).select_from(BiologicalScenario).where(
-        BiologicalScenario.organization_id == context.organization_id
+    count_query = (
+        select(func.count())
+        .select_from(BiologicalScenario)
+        .where(BiologicalScenario.organization_id == context.organization_id)
     )
     if status_filter:
         query = query.where(BiologicalScenario.status == status_filter)
@@ -639,9 +647,7 @@ def list_biological_scenarios(
         query = query.where(condition)
         count_query = count_query.where(condition)
     scenarios = session.scalars(
-        query.order_by(BiologicalScenario.updated_at.desc())
-        .offset(offset)
-        .limit(limit)
+        query.order_by(BiologicalScenario.updated_at.desc()).offset(offset).limit(limit)
     ).all()
     total = session.scalar(count_query) or 0
     return BiologicalScenarioCollectionResponse(
@@ -666,12 +672,15 @@ def create_biological_scenario(
 ) -> BiologicalScenarioResponse:
     context = _context_for_organization(organization_id, identity, session)
     _validate_create(request)
-    if session.scalar(
-        select(BiologicalScenario.id).where(
-            BiologicalScenario.organization_id == context.organization_id,
-            BiologicalScenario.scenario_key == request.scenario_key,
+    if (
+        session.scalar(
+            select(BiologicalScenario.id).where(
+                BiologicalScenario.organization_id == context.organization_id,
+                BiologicalScenario.scenario_key == request.scenario_key,
+            )
         )
-    ) is not None:
+        is not None
+    ):
         raise DomainError(
             "SCENARIO_KEY_CONFLICT",
             "Scenario key already exists in this organization.",
@@ -860,12 +869,15 @@ def clone_biological_scenario(
     scenario_key = request.scenario_key or f"{source.scenario_key}_COPY_{uuid4().hex[:8].upper()}"
     if len(scenario_key) > 120:
         scenario_key = scenario_key[:120]
-    if session.scalar(
-        select(BiologicalScenario.id).where(
-            BiologicalScenario.organization_id == context.organization_id,
-            BiologicalScenario.scenario_key == scenario_key,
+    if (
+        session.scalar(
+            select(BiologicalScenario.id).where(
+                BiologicalScenario.organization_id == context.organization_id,
+                BiologicalScenario.scenario_key == scenario_key,
+            )
         )
-    ) is not None:
+        is not None
+    ):
         raise DomainError(
             "SCENARIO_KEY_CONFLICT",
             "Scenario key already exists in this organization.",
@@ -949,8 +961,10 @@ def list_biological_calculations(
     query = select(BiologicalCalculationRun).where(
         BiologicalCalculationRun.organization_id == context.organization_id
     )
-    count_query = select(func.count()).select_from(BiologicalCalculationRun).where(
-        BiologicalCalculationRun.organization_id == context.organization_id
+    count_query = (
+        select(func.count())
+        .select_from(BiologicalCalculationRun)
+        .where(BiologicalCalculationRun.organization_id == context.organization_id)
     )
     if scenario_id is not None:
         query = query.where(BiologicalCalculationRun.scenario_id == scenario_id)

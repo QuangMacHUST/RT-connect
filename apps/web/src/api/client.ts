@@ -552,6 +552,54 @@ export type BedEqd2ChartResource = {
   chart_dataset: Record<string, unknown>
   table_rows: Array<Record<string, unknown>>
 }
+export type PlanComparisonOptionInput = {
+  option_id: string
+  label: string
+  calculation_id: string
+}
+export type PlanComparisonInput = {
+  name: string
+  idempotency_key: string
+  baseline_option_id: string
+  options: PlanComparisonOptionInput[]
+}
+export type PlanComparisonValidationResource = {
+  valid: boolean
+  errors: Array<{ code: string; field: string | null; message: string }>
+  warnings: Array<{ code: string; field: string | null; message: string }>
+  normalized_input: Record<string, unknown> | null
+  preview: Record<string, unknown> | null
+}
+export type PlanComparisonResource = {
+  id: string
+  organization_id: string
+  scenario_id: string
+  scenario_revision_id: string
+  name: string
+  idempotency_key: string
+  model_key: string
+  model_version: string
+  status: string
+  input_snapshot: Record<string, unknown>
+  result_snapshot: Record<string, unknown>
+  warning_snapshot: Array<Record<string, unknown>>
+  error_snapshot: Array<Record<string, unknown>>
+  created_by_user_identity_id: string | null
+  created_at: string
+  updated_at: string
+}
+export type PlanComparisonChartResource = {
+  comparison_id: string
+  scenario_id: string
+  scenario_revision_id: string
+  baseline_option_id: string
+  model_key: string
+  model_version: string
+  persisted: boolean
+  option_order: string[]
+  chart_dataset: Record<string, unknown>
+  table_rows: Array<Record<string, unknown>>
+}
 
 const qaProtocolRuleSchema = z.object({
   id: z.string().uuid(), metric_key: z.string(), display_name: z.string(), unit: z.string(),
@@ -744,6 +792,30 @@ const bedEqd2ChartSchema = z.object({
   calculation_id: z.string().uuid(), scenario_id: z.string().uuid(), scenario_revision_id: z.string().uuid(),
   model_key: z.string(), model_version: z.string(), persisted: z.boolean(),
   chart_dataset: z.record(z.string(), z.unknown()), table_rows: z.array(z.record(z.string(), z.unknown()))
+})
+const planComparisonValidationSchema = z.object({
+  valid: z.boolean(),
+  errors: z.array(z.object({ code: z.string(), field: z.string().nullable(), message: z.string() })),
+  warnings: z.array(z.object({ code: z.string(), field: z.string().nullable(), message: z.string() })),
+  normalized_input: z.record(z.string(), z.unknown()).nullable(),
+  preview: z.record(z.string(), z.unknown()).nullable()
+})
+const planComparisonSchema = z.object({
+  id: z.string().uuid(), organization_id: z.string().uuid(), scenario_id: z.string().uuid(),
+  scenario_revision_id: z.string().uuid(), name: z.string(), idempotency_key: z.string(),
+  model_key: z.string(), model_version: z.string(), status: z.string(),
+  input_snapshot: z.record(z.string(), z.unknown()), result_snapshot: z.record(z.string(), z.unknown()),
+  warning_snapshot: z.array(z.record(z.string(), z.unknown())), error_snapshot: z.array(z.record(z.string(), z.unknown())),
+  created_by_user_identity_id: z.string().uuid().nullable(), created_at: z.string(), updated_at: z.string()
+})
+const planComparisonCollectionSchema = z.object({
+  items: z.array(planComparisonSchema), total: z.number().int(), offset: z.number().int(), limit: z.number().int()
+})
+const planComparisonChartSchema = z.object({
+  comparison_id: z.string().uuid(), scenario_id: z.string().uuid(), scenario_revision_id: z.string().uuid(),
+  baseline_option_id: z.string(), model_key: z.string(), model_version: z.string(), persisted: z.boolean(),
+  option_order: z.array(z.string()), chart_dataset: z.record(z.string(), z.unknown()),
+  table_rows: z.array(z.record(z.string(), z.unknown()))
 })
 
 const makeCorrelationId = () => crypto.randomUUID()
@@ -1184,6 +1256,63 @@ export class ApiClient {
     let response: Response
     try {
       response = await fetch(`${this.baseUrl}/organizations/${organizationId}/biological/calculations/${calculationId}/export?export_format=${exportFormat}`, {
+        headers: { Accept: exportFormat === 'JSON' ? 'application/json' : 'text/csv', 'X-Correlation-ID': correlationId, Authorization: `Bearer ${accessToken}` }
+      })
+    } catch {
+      throw new ApiClientError('Không thể kết nối tới RT-CONNECT API.', 'NETWORK_ERROR', correlationId)
+    }
+    if (!response.ok) {
+      const body: unknown = await response.json().catch(() => undefined)
+      const parsed = errorSchema.safeParse(body)
+      if (parsed.success) throw new ApiClientError(parsed.data.message, parsed.data.code, parsed.data.correlation_id)
+      throw new ApiClientError('API trả về phản hồi không hợp lệ.', 'INVALID_API_RESPONSE', correlationId)
+    }
+    return response.blob()
+  }
+
+  planComparisons(accessToken: string, organizationId: string, scenarioId?: string): Promise<{ items: PlanComparisonResource[]; total: number; offset: number; limit: number }> {
+    const suffix = scenarioId ? `?scenario_id=${encodeURIComponent(scenarioId)}` : ''
+    return this.get(`/organizations/${organizationId}/biological/comparisons${suffix}`, planComparisonCollectionSchema, accessToken)
+  }
+
+  validatePlanComparison(accessToken: string, organizationId: string, body: PlanComparisonInput): Promise<PlanComparisonValidationResource> {
+    return this.request(`/organizations/${organizationId}/biological/comparisons/validate`, planComparisonValidationSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  createPlanComparison(accessToken: string, organizationId: string, body: PlanComparisonInput): Promise<PlanComparisonResource> {
+    return this.request(`/organizations/${organizationId}/biological/comparisons`, planComparisonSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  planComparison(accessToken: string, organizationId: string, comparisonId: string): Promise<PlanComparisonResource> {
+    return this.get(`/organizations/${organizationId}/biological/comparisons/${comparisonId}`, planComparisonSchema, accessToken)
+  }
+
+  planComparisonChart(accessToken: string, organizationId: string, comparisonId: string, optionOrder?: string[]): Promise<PlanComparisonChartResource> {
+    return this.request(`/organizations/${organizationId}/biological/comparisons/${comparisonId}/charts`, planComparisonChartSchema, accessToken, {
+      method: 'POST', body: JSON.stringify({ option_order: optionOrder ?? null })
+    })
+  }
+
+  clonePlanComparison(accessToken: string, organizationId: string, comparisonId: string, body: {
+    idempotency_key: string
+    name?: string | null
+    baseline_option_id?: string | null
+    option_order?: string[] | null
+  }): Promise<PlanComparisonResource> {
+    return this.request(`/organizations/${organizationId}/biological/comparisons/${comparisonId}/clone`, planComparisonSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  async downloadPlanComparison(accessToken: string, organizationId: string, comparisonId: string, exportFormat: 'JSON' | 'CSV'): Promise<Blob> {
+    const correlationId = makeCorrelationId()
+    let response: Response
+    try {
+      response = await fetch(`${this.baseUrl}/organizations/${organizationId}/biological/comparisons/${comparisonId}/export?export_format=${exportFormat}`, {
         headers: { Accept: exportFormat === 'JSON' ? 'application/json' : 'text/csv', 'X-Correlation-ID': correlationId, Authorization: `Bearer ${accessToken}` }
       })
     } catch {

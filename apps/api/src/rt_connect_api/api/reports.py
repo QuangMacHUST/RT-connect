@@ -565,9 +565,7 @@ def _blocks_for_revision(
     )
 
 
-def _revision_response(
-    session: Session, revision: ReportRevision
-) -> ReportRevisionResponse:
+def _revision_response(session: Session, revision: ReportRevision) -> ReportRevisionResponse:
     return ReportRevisionResponse(
         id=revision.id,
         organization_id=revision.organization_id,
@@ -760,9 +758,7 @@ def _template_snapshot(template: ReportTemplateVersion | None) -> dict[str, obje
     }
 
 
-def _snapshot_for_revision(
-    session: Session, revision: ReportRevision
-) -> dict[str, object]:
+def _snapshot_for_revision(session: Session, revision: ReportRevision) -> dict[str, object]:
     blocks = _blocks_for_revision(session, revision.id, revision.organization_id)
     template: ReportTemplateVersion | None = None
     if revision.template_version_id is not None:
@@ -860,9 +856,7 @@ def _create_revision(
                 is_visible=bool(block["is_visible"]),
                 config=block["config"] if isinstance(block["config"], dict) else {},
                 source_binding=(
-                    block["source_binding"]
-                    if isinstance(block["source_binding"], dict)
-                    else {}
+                    block["source_binding"] if isinstance(block["source_binding"], dict) else {}
                 ),
             )
         )
@@ -905,9 +899,7 @@ def _export_response(
     )
 
 
-def _export_or_error(
-    session: Session, context: SessionContext, job_id: UUID
-) -> ExportJob:
+def _export_or_error(session: Session, context: SessionContext, job_id: UUID) -> ExportJob:
     job = session.scalar(
         select(ExportJob).where(
             ExportJob.id == job_id,

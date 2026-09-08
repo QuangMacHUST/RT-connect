@@ -36,10 +36,7 @@ def test_alembic_environment_uses_database_url_normalizer() -> None:
 
 def test_gamma_reliability_migration_declares_fenced_dispatch_schema() -> None:
     migration = (
-        Path(__file__).parents[1]
-        / "alembic"
-        / "versions"
-        / "20260908_0008_gamma_reliability.py"
+        Path(__file__).parents[1] / "alembic" / "versions" / "20260908_0008_gamma_reliability.py"
     )
     source = migration.read_text(encoding="utf-8")
 
@@ -53,12 +50,7 @@ def test_gamma_reliability_migration_declares_fenced_dispatch_schema() -> None:
 
 
 def test_report_migration_declares_immutable_revision_and_export_schema() -> None:
-    migration = (
-        Path(__file__).parents[1]
-        / "alembic"
-        / "versions"
-        / "20260908_0009_reports.py"
-    )
+    migration = Path(__file__).parents[1] / "alembic" / "versions" / "20260908_0009_reports.py"
     source = migration.read_text(encoding="utf-8")
 
     assert 'revision: str = "20260908_0009"' in source
@@ -72,12 +64,7 @@ def test_report_migration_declares_immutable_revision_and_export_schema() -> Non
 
 
 def test_trend_migration_declares_projection_baseline_and_event_schema() -> None:
-    migration = (
-        Path(__file__).parents[1]
-        / "alembic"
-        / "versions"
-        / "20260908_0010_trends.py"
-    )
+    migration = Path(__file__).parents[1] / "alembic" / "versions" / "20260908_0010_trends.py"
     source = migration.read_text(encoding="utf-8")
 
     assert 'revision: str = "20260908_0010"' in source
@@ -92,10 +79,7 @@ def test_trend_migration_declares_projection_baseline_and_event_schema() -> None
 
 def test_protocol_library_migration_declares_version_source_and_revision_fields() -> None:
     migration = (
-        Path(__file__).parents[1]
-        / "alembic"
-        / "versions"
-        / "20260908_0011_protocol_library.py"
+        Path(__file__).parents[1] / "alembic" / "versions" / "20260908_0011_protocol_library.py"
     )
     source = migration.read_text(encoding="utf-8")
 

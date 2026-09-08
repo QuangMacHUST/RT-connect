@@ -38,9 +38,7 @@ class DashboardSummaryResponse(BaseModel):
     warnings: list[str] = []
 
 
-def _context(
-    identity: AuthenticatedIdentity, session: Session
-) -> SessionContext:
+def _context(identity: AuthenticatedIdentity, session: Session) -> SessionContext:
     return resolve_session_context(session, identity)
 
 

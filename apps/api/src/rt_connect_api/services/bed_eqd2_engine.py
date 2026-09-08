@@ -179,8 +179,7 @@ def normalize_fractionation(
                 {
                     "field": "fractionation",
                     "message": (
-                        "Provide any two of total_dose_gy, fractions and "
-                        "dose_per_fraction_gy."
+                        "Provide any two of total_dose_gy, fractions and dose_per_fraction_gy."
                     ),
                 }
             ],
@@ -375,8 +374,10 @@ def _curve_doses(
     epsilon = max(1e-12, abs(maximum) * 1e-12)
 
     if mode == "FIXED_N":
-        fixed_n = normalized.fractions if curve.fixed_n is None else _integer_fractions(
-            curve.fixed_n, "curve.fixed_n"
+        fixed_n = (
+            normalized.fractions
+            if curve.fixed_n is None
+            else _integer_fractions(curve.fixed_n, "curve.fixed_n")
         )
         index = 0
         while True:
@@ -551,8 +552,7 @@ def calculate_bed_eqd2(
             "bed": "BED = D × (1 + d / (alpha/beta))",
             "eqd2": "EQD2 = BED / (1 + 2 / (alpha/beta))",
             "rounding": (
-                "No rounding before calculation; display rounding is a "
-                "presentation concern."
+                "No rounding before calculation; display rounding is a presentation concern."
             ),
         },
         "fractionation": fractionation.as_dict(),

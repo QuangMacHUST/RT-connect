@@ -341,8 +341,10 @@ def _configuration_from_mapping(payload: Mapping[str, object]) -> GammaConfigura
     else:
         candidate_limit = raw_candidate_limit
     absolute_value = payload.get("absolute_dose_difference_gy")
-    absolute = None if absolute_value is None else _finite_float(
-        absolute_value, "absolute_dose_difference_gy", positive=True
+    absolute = (
+        None
+        if absolute_value is None
+        else _finite_float(absolute_value, "absolute_dose_difference_gy", positive=True)
     )
     if dose_mode == "ABSOLUTE" and absolute is None:
         raise GammaEngineError(
@@ -419,15 +421,11 @@ def _candidate_gammas(
         index_ranges: list[range] = []
         for axis in range(evaluation.values.ndim):
             minimum = math.ceil(
-                (reference_position[axis]
-                 - search_radius
-                 - evaluation.origin_mm[axis])
+                (reference_position[axis] - search_radius - evaluation.origin_mm[axis])
                 / evaluation.spacing_mm[axis]
             )
             maximum = math.floor(
-                (reference_position[axis]
-                 + search_radius
-                 - evaluation.origin_mm[axis])
+                (reference_position[axis] + search_radius - evaluation.origin_mm[axis])
                 / evaluation.spacing_mm[axis]
             )
             start = max(0, minimum)
@@ -641,8 +639,7 @@ def calculate_gamma(
     else:
         overall_status = (
             "PASS"
-            if pass_rate is not None
-            and pass_rate >= configuration.pass_rate_threshold_percent
+            if pass_rate is not None and pass_rate >= configuration.pass_rate_threshold_percent
             else "FAIL"
         )
     warnings: list[dict[str, object]] = []

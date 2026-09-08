@@ -38,9 +38,7 @@ def _measurements(output_factor: float = 100.0) -> list[dict[str, object]]:
 
 def test_machine_qa_protocol_run_evaluate_rerun_and_compare() -> None:
     with _workspace_client() as (client, organization):
-        protocol = client.post(
-            f"/api/v1/organizations/{organization.id}/machine-qa/protocols/seed"
-        )
+        protocol = client.post(f"/api/v1/organizations/{organization.id}/machine-qa/protocols/seed")
         assert protocol.status_code == 201, protocol.text
         assert len(protocol.json()["rules"]) == 3
         case_id = _case(client, str(organization.id))
@@ -97,15 +95,11 @@ def test_machine_qa_explains_unit_and_required_measurement_failures() -> None:
             f"/api/v1/qa-cases/{case_id}/machine-qa-runs",
             json={
                 "protocol_version_id": protocol["id"],
-                "measurements": [
-                    {"metric_key": "output_factor", "value": 100, "unit": "Gy"}
-                ],
+                "measurements": [{"metric_key": "output_factor", "value": 100, "unit": "Gy"}],
             },
         )
         assert created.status_code == 201, created.text
-        evaluated = client.post(
-            f"/api/v1/machine-qa-runs/{created.json()['id']}/evaluate"
-        )
+        evaluated = client.post(f"/api/v1/machine-qa-runs/{created.json()['id']}/evaluate")
         assert evaluated.status_code == 200, evaluated.text
         body = evaluated.json()
         assert body["status"] == "FAILED"
@@ -129,9 +123,7 @@ def test_machine_qa_rule_boundary_returns_warning_and_fail() -> None:
             },
         )
         assert created.status_code == 201, created.text
-        warning = client.post(
-            f"/api/v1/machine-qa-runs/{created.json()['id']}/evaluate"
-        )
+        warning = client.post(f"/api/v1/machine-qa-runs/{created.json()['id']}/evaluate")
         assert warning.json()["overall_status"] == "WARNING"
 
         case_2 = _case(client, str(organization.id), "Machine QA second")
@@ -143,7 +135,5 @@ def test_machine_qa_rule_boundary_returns_warning_and_fail() -> None:
             },
         )
         assert failed.status_code == 201, failed.text
-        result = client.post(
-            f"/api/v1/machine-qa-runs/{failed.json()['id']}/evaluate"
-        )
+        result = client.post(f"/api/v1/machine-qa-runs/{failed.json()['id']}/evaluate")
         assert result.json()["overall_status"] == "FAIL"

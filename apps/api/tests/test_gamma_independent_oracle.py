@@ -99,10 +99,14 @@ def _independent_node_oracle(
     denominator = len(gamma_values) + censored
     invalid_coverage = no_candidate if configuration.coverage_policy == "FULL_ROI" else 0
     coverage_excluded = no_candidate if configuration.coverage_policy == "OVERLAP_ONLY" else 0
-    pass_rate = None if invalid_coverage else (
-        sum(value <= 1.0 for value in gamma_values) / denominator * 100.0
-        if denominator
-        else None
+    pass_rate = (
+        None
+        if invalid_coverage
+        else (
+            sum(value <= 1.0 for value in gamma_values) / denominator * 100.0
+            if denominator
+            else None
+        )
     )
     return {
         "selected_points": selected,

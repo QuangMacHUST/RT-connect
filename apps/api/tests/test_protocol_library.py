@@ -77,9 +77,7 @@ def test_protocol_library_validates_creates_clones_archives_and_compares() -> No
         assert stale.status_code == 409, stale.text
         assert stale.json()["code"] == "PROTOCOL_VERSION_CONFLICT"
 
-        activated = client.post(
-            f"{base_url}/{draft['id']}/activate", json={"expected_revision": 2}
-        )
+        activated = client.post(f"{base_url}/{draft['id']}/activate", json={"expected_revision": 2})
         assert activated.status_code == 200, activated.text
         active = activated.json()
         assert active["status"] == "ACTIVE"
@@ -92,9 +90,7 @@ def test_protocol_library_validates_creates_clones_archives_and_compares() -> No
         assert immutable.status_code == 409, immutable.text
         assert immutable.json()["code"] == "PROTOCOL_VERSION_IMMUTABLE"
 
-        cloned = client.post(
-            f"{base_url}/{draft['id']}/clone", json={"name": "Site machine QA v2"}
-        )
+        cloned = client.post(f"{base_url}/{draft['id']}/clone", json={"name": "Site machine QA v2"})
         assert cloned.status_code == 201, cloned.text
         clone = cloned.json()
         assert clone["status"] == "DRAFT"
@@ -109,9 +105,7 @@ def test_protocol_library_validates_creates_clones_archives_and_compares() -> No
         assert comparison.json()["same_family"] is True
         assert any(item["field"] == "status" for item in comparison.json()["metadata_diffs"])
 
-        archived = client.post(
-            f"{base_url}/{draft['id']}/archive", json={"expected_revision": 3}
-        )
+        archived = client.post(f"{base_url}/{draft['id']}/archive", json={"expected_revision": 3})
         assert archived.status_code == 200, archived.text
         assert archived.json()["status"] == "ARCHIVED"
 
@@ -165,8 +159,6 @@ def test_protocol_library_scope_and_machine_qa_only_accept_active_versions() -> 
         assert outsider.status_code == 403, outsider.text
         assert outsider.json()["code"] == "ORGANIZATION_SCOPE_MISMATCH"
 
-        archived = client.post(
-            f"{base_url}/{active['id']}/archive", json={"expected_revision": 1}
-        )
+        archived = client.post(f"{base_url}/{active['id']}/archive", json={"expected_revision": 1})
         assert archived.status_code == 200, archived.text
         assert client.get(machine_qa_url).json()["total"] == 0

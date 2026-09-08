@@ -128,7 +128,9 @@ def _pdf_document(lines: Sequence[str]) -> bytes:
         b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
         b"/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
         b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-        b"<< /Length " + str(len(content)).encode("ascii") + b" >>\nstream\n"
+        b"<< /Length "
+        + str(len(content)).encode("ascii")
+        + b" >>\nstream\n"
         + content
         + b"\nendstream",
     ]
@@ -192,9 +194,12 @@ def _png_rgb(width: int, height: int, pixels: bytes) -> bytes:
             + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
         )
 
-    return b"\x89PNG\r\n\x1a\n" + chunk(
-        b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
-    ) + chunk(b"IDAT", zlib.compress(bytes(raw), level=9)) + chunk(b"IEND", b"")
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(bytes(raw), level=9))
+        + chunk(b"IEND", b"")
+    )
 
 
 def _blocks(snapshot: Mapping[str, object]) -> list[Mapping[str, object]]:

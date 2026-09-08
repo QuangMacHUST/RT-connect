@@ -865,9 +865,7 @@ def _finish_gamma_attempt(
         outbox.available_at = now + timedelta(seconds=max(0.0, retry_delay_seconds))
         outbox.published_at = None
         raw_code = errors[0].get("code") if errors else None
-        outbox.last_error = (
-            raw_code if isinstance(raw_code, str) else "GAMMA_RETRY_SCHEDULED"
-        )
+        outbox.last_error = raw_code if isinstance(raw_code, str) else "GAMMA_RETRY_SCHEDULED"
     session.commit()
 
 
@@ -888,18 +886,14 @@ def process_gamma_run(
     if lease_token is not None and run.status != "RUNNING":
         return
     if lease_token is None:
-        lease_token = acquire_gamma_run_lease(
-            session, run, worker_id, lease_seconds=lease_seconds
-        )
+        lease_token = acquire_gamma_run_lease(session, run, worker_id, lease_seconds=lease_seconds)
     if lease_token is None:
         return
     started_monotonic = time.monotonic()
 
     def check_deadline() -> None:
         if time.monotonic() - started_monotonic > execution_deadline_seconds:
-            raise GammaExecutionDeadline(
-                "Gamma execution exceeded its configured deadline."
-            )
+            raise GammaExecutionDeadline("Gamma execution exceeded its configured deadline.")
 
     reference_path: Path | None = None
     evaluation_path: Path | None = None
@@ -917,17 +911,13 @@ def process_gamma_run(
         )
         _verify_snapshot_checksum(run, "reference", reference_path)
         check_deadline()
-        _heartbeat_gamma_run(
-            session, run, lease_token, 25, lease_seconds=lease_seconds
-        )
+        _heartbeat_gamma_run(session, run, lease_token, 25, lease_seconds=lease_seconds)
         storage.download_to_path(
             _object_key_from_snapshot(run, "evaluation", session), evaluation_path
         )
         _verify_snapshot_checksum(run, "evaluation", evaluation_path)
         check_deadline()
-        _heartbeat_gamma_run(
-            session, run, lease_token, 45, lease_seconds=lease_seconds
-        )
+        _heartbeat_gamma_run(session, run, lease_token, 45, lease_seconds=lease_seconds)
         result = calculate_gamma_from_paths(reference_path, evaluation_path, run.config_snapshot)
         check_deadline()
         raw_warnings = result.get("warnings", [])

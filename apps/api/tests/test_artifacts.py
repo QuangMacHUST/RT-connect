@@ -187,15 +187,11 @@ def test_same_bytes_with_different_declared_type_are_not_silently_reused() -> No
         # The declared DICOM contract must win over the browser's JSON MIME
         # hint and filename.  The object may be stored for provenance, but it
         # must be rejected before it can enter Gamma.
-        dicom_validation = client.post(
-            f"/api/v1/artifacts/{stored_as_dicom.json()['id']}/validate"
-        )
+        dicom_validation = client.post(f"/api/v1/artifacts/{stored_as_dicom.json()['id']}/validate")
         assert dicom_validation.status_code == 200, dicom_validation.text
         dicom_body = dicom_validation.json()
         assert dicom_body["result"] == "INVALID"
-        assert any(
-            item["code"] == "ARTIFACT_TYPE_MISMATCH" for item in dicom_body["errors"]
-        )
+        assert any(item["code"] == "ARTIFACT_TYPE_MISMATCH" for item in dicom_body["errors"])
 
 
 def test_declared_json_rejects_a_real_dicom_payload() -> None:

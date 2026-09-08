@@ -5,10 +5,10 @@
 - **Tên sản phẩm:** RT-CONNECT
 - **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
 - **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
-- **Phiên bản tài liệu:** 0.12 — catalogue tính năng, workflow, ngoại lệ, phục hồi và tiêu chí nghiệm thu theo P0–P20; bổ sung contract thực thi BED/EQD2 P13 và trạng thái triển khai tương ứng (2026-09-08)
+- **Phiên bản tài liệu:** 0.13 — catalogue tính năng, workflow, ngoại lệ, phục hồi và tiêu chí nghiệm thu theo P0–P20; bổ sung contract thực thi BED/EQD2 P13, Plan Comparison P14 và trạng thái triển khai tương ứng (2026-09-08)
 - **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
-Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.12 tại mục 21 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
+Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.13 tại mục 21 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
 
 ---
 
@@ -1178,9 +1178,9 @@ Clinical MVP tập trung vào Machine QA, PSQA Gamma, report, trend, input valid
 `specification.md`, `technical-specification.md` và `plan.md` được xây dựng từ các yêu cầu, quy tắc và tiêu chí nghiệm thu trong tài liệu này. Google Stitch cung cấp thiết kế trực quan; Railway và Supabase cung cấp hạ tầng đã chọn; không nguồn nào trong số đó được tự thay thế hoặc làm mất requirement nghiệp vụ.
 
 
-## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.12
+## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.13
 
-Bổ sung ngày 2026-09-08 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi và phạm vi nghiệm thu. `specification.md` v1.6 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v2.6 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
+Bổ sung ngày 2026-09-08 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi và phạm vi nghiệm thu. `specification.md` v1.7 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v2.7 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
 
 ### 21.1. Các quyết định sản phẩm giữ nguyên
 
@@ -1458,7 +1458,7 @@ Mã FR-Pxx-yy là yêu cầu có thể truy vết. Các phase nền tảng/tri�
 | P12-S06 | Clone SAVED/ARCHIVED | Tạo DRAFT mới, giữ lineage/source và không thay đổi bản nguồn hoặc calculation cũ. |
 | P12-S07 | Lọc/tìm history | Kết quả chỉ thuộc organization, lọc status/search đúng và archived chỉ xuất hiện khi yêu cầu rõ. |
 | P12-S08 | Mở lại sau refresh | Scenario, assumptions, source và revision hiển thị đúng snapshot server; không phụ thuộc state trong browser. |
-| P12-S09 | Capability P14–P16 chưa mở sau khi P13 được bật | Card có trạng thái `PLANNED`, không dẫn tới route chết và không giả vờ đã tính; card P13 phải dẫn tới calculator đang có contract. |
+| P12-S09 | Capability P14 đã mở, P15–P16 chưa mở | Card P14 dẫn tới route có contract; P15–P16 có trạng thái `PLANNED`, không dẫn tới route chết và không giả vờ đã tính. |
 
 **Các nhánh lỗi và cách phục hồi nghiệp vụ:**
 
@@ -1541,6 +1541,52 @@ Mã FR-Pxx-yy là yêu cầu có thể truy vết. Các phase nền tảng/tri�
 **Luồng chính:** Tạo hai phương án hoặc clone từ library/calculation. → Chọn mô/model và phương án baseline. → Validate từng phương án và compatibility giữa các phương án. → Tính bảng BED/EQD2, delta và chart. → Lưu comparison snapshot; clone thêm phương án và export.
 
 **Nghiệm thu nhóm:** Known delta, zero baseline, mismatched context và baseline reorder/delete tests pass.
+
+**Đặc tả nghiệp vụ chi tiết P14:**
+
+- P14 nhận các **calculation snapshot BED/EQD2 đã hoàn tất** từ P13; người dùng không nhập lại một kết quả đã tính vào bảng so sánh và P14 không tự tính từ browser state. Mỗi option có `option_id` ổn định, tên hiển thị, calculation ID, fractionation D/n/d, alpha/beta, source, model key/version và tissue context đã được snapshot ở P13.
+- Một comparison có từ 2 đến 10 option. Các option là những phương án thay thế; P14 không cộng liều của các option với nhau. Nếu trong tương lai một option chứa nhiều course thì tổng chỉ được tính bên trong option theo cùng tissue/metric/model contract của P15, không được biến bảng so sánh thành cumulative dose ngầm.
+- Tất cả option phải cùng `scenario_id`, `scenario_revision_id`, `tissue_context`, `model_key` và `model_version`. Khác alpha/beta không làm mất số liệu riêng của từng option nhưng phải hiển thị cảnh báo `COMPARISON_ALPHA_BETA_MISMATCH` và tắt xếp hạng tự động. Không dùng bảng so sánh để kết luận “phác đồ tốt nhất”.
+- Baseline được tham chiếu bằng `option_id`, không bằng vị trí cột. Với baseline A, delta của option B là `B − A`; phần trăm là `100 × (B − A) / A`. Nếu A bằng 0, delta tuyệt đối vẫn được tính, còn phần trăm là `null` với reason `BASELINE_ZERO`; không thay bằng 0, Infinity hoặc NaN.
+- Table, chart và export phải lấy từ cùng result snapshot. Đổi thứ tự option chỉ thay presentation order/preview, không đổi baseline, không đổi source calculation và không ghi đè comparison đã lưu. Clone tạo comparison ID/idempotency key mới, cho phép đổi baseline/thứ tự nhưng giữ nguyên source snapshot.
+- `Validate only` chỉ kiểm tra shape, scope, source snapshot, compatibility và tính delta; không ghi comparison hoặc audit mutation. `Calculate & save` ghi một comparison snapshot cùng warning/error snapshot và audit event trong một transaction. Retry cùng idempotency key và cùng payload trả lại ID cũ; cùng key nhưng payload khác là conflict.
+
+**Workflow P14 đầy đủ:**
+
+1. Mở tab **So sánh phác đồ** từ Biological Toolkit; hệ thống tải các P13 calculation `COMPLETED` trong organization hiện tại.
+2. Chọn ít nhất hai snapshot, đặt option ID/tên hiển thị, kiểm tra D/n/d, alpha/beta, tissue, revision và model đang được dùng; chọn baseline.
+3. Bấm `Validate only`; nếu hợp lệ, xem preview table/checksum/warning; nếu không hợp lệ, sửa đúng field được chỉ ra, không mất các field hợp lệ.
+4. Bấm `Calculate & save comparison`; chờ response commit, sau đó mở result table/chart và immutable history. Không hiển thị thành công chỉ vì request đã gửi hoặc HTTP 200 chưa qua schema kiểm tra.
+5. Đổi metric BED/EQD2, reorder để xem presentation preview, mở lại history hoặc refresh để kiểm tra snapshot server; preview reorder phải ghi rõ `NOT PERSISTED`.
+6. Clone comparison khi muốn thử baseline/thứ tự mới; export JSON/CSV từ snapshot đã lưu; giữ comparison nguồn và source calculations nguyên vẹn.
+
+**Các nhánh chạy đúng phải quan sát được:**
+
+| Mã | Tình huống | Kết quả nghiệp vụ bắt buộc |
+| :--- | :--- | :--- |
+| P14-S01 | Hai option có cùng input | BED/EQD2 và delta bằng 0; chart/table/export cùng option IDs và checksum; reorder không đổi nghĩa baseline. |
+| P14-S02 | Đổi baseline từ A sang B | Dấu delta và mẫu số phần trăm đổi đúng theo baseline mới; source snapshot không bị sửa. |
+| P14-S03 | Ba đến mười option | Mỗi option có một row/category độc lập; không có trường tổng của các phương án thay thế và không bị truncate. |
+| P14-S04 | Alpha/beta khác nhau | Mỗi kết quả vẫn hiển thị source/value riêng; cảnh báo compatibility xuất hiện; ranking bị tắt. |
+| P14-S05 | Lưu, refresh, mở history | Comparison, option order, baseline, model/version, warning và checksum đọc lại đúng từ server. |
+| P14-S06 | Clone và export | Clone có ID/key mới, source comparison không đổi; JSON/CSV có đủ provenance và các row kết quả. |
+
+**Các nhánh lỗi và cách phục hồi nghiệp vụ:**
+
+| Mã | Kích hoạt | Phản hồi người dùng và dữ liệu phải giữ |
+| :--- | :--- | :--- |
+| P14-E01 | Có ít hơn hai option | `COMPARISON_OPTIONS_REQUIRED`/lỗi request; không dựng bảng so sánh giả, giữ form và yêu cầu thêm snapshot. |
+| P14-E02 | Baseline bằng 0 | Không phải lỗi chặn calculation: delta tuyệt đối hợp lệ, phần trăm `null` với `BASELINE_ZERO`; UI không vẽ Infinity/NaN. |
+| P14-E03 | Option thiếu label, calculation ID, số không hữu hạn/âm hoặc snapshot chưa COMPLETED | `COMPARISON_OPTION_INVALID`; chỉ rõ option/field, không thay giá trị bằng 0 và không lưu một phần. |
+| P14-E04 | Khác scenario/revision/tissue/model/version | `COMPARISON_CONTEXT_MISMATCH`; không so sánh như cùng đại lượng, yêu cầu chọn snapshot cùng context hoặc tách nhóm. |
+| P14-E05 | Baseline không tồn tại hoặc option bị xóa khỏi form | `COMPARISON_BASELINE_REQUIRED`; yêu cầu chọn baseline bằng ID còn tồn tại trước validate/save. |
+| P14-E06 | Vượt 10 option hoặc gửi thứ tự thiếu/trùng | `COMPARISON_LIMIT_EXCEEDED` hoặc `COMPARISON_OPTION_INVALID`; không truncate, không reorder giả. |
+| P14-E07 | Cùng một calculation dùng cho hai option | `COMPARISON_OPTION_INVALID`; yêu cầu chọn các calculation snapshot khác nhau để tránh row trùng danh nghĩa. |
+| P14-E08 | Calculation/scenario không tồn tại hoặc ngoài organization | Not-found/scope error; không lộ metadata và không tạo comparison. |
+| P14-E09 | Cùng idempotency key nhưng payload khác | `COMPARISON_IDEMPOTENCY_CONFLICT`; giữ comparison cũ và cấp key mới cho thử nghiệm khác. |
+| P14-E10 | Mất response, database lỗi hoặc export snapshot hỏng | `COMPARISON_PERSISTENCE_FAILED`/trạng thái chưa xác định; query lại bằng key/ID trước retry, không tạo duplicate và không xuất file thiếu checksum. |
+
+**Điều cấm ở P14:** không cộng các option thay thế, không auto-rank khi context/alpha-beta không tương đương, không dùng vị trí cột làm identity, không lấy calculation đang `RUNNING`/`FAILED`, không tự kéo patient/QA/TPS/PACS context vào comparison, không biến delta số học thành khuyến nghị điều trị.
 
 #### P15 — Re-irradiation, recovery và bù fraction
 
@@ -1674,7 +1720,7 @@ Mục này biến catalogue FR thành một hành trình có thể quan sát đ�
 | P11 | Xây dựng QA protocol nội bộ có version và nguồn | Tìm hoặc clone protocol → sửa rule/applicability → kiểm sample → lưu version → dùng cho run mới → compare | Rule min/max sai, version/key trùng, thiếu reference, chọn version archive, engine không hỗ trợ rule | Version đã dùng được giữ immutable; clone deep-copy child; run cũ giữ rule/limit cũ; protocol tham khảo không tự thành protocol áp dụng |
 | P12 | Có một Biological Hub riêng, không phụ thuộc QA case hoặc patient record | Vào tab Biological → chọn tool → nhập scenario/context → lưu revision → tính hoặc chờ module → xem history → clone/export | Scenario khác organization, tự mang QA context sai, sửa đồng thời, model version không còn, route/module chưa sẵn sàng | Scenario và calculation là namespace riêng; không bắt buộc QACase; mọi input/model/assumption được lưu cùng revision; module chưa có không được hiện nút giả |
 | P13 | Tính BED/EQD2 và xem đồ thị theo tổng liều D | Nhập D/n/d và alpha-beta → kiểm nhất quán → tính BED/EQD2 → chọn range/step → vẽ curve/table/marker → lưu/export | n không nguyên hoặc không dương, alpha-beta sai, D khác n*d, số non-finite, curve range/step sai, thiếu nguồn alpha-beta, persistence fail | Không tự thay n, d, D hoặc alpha-beta; precision/unit nhất quán; đường cong là dataset có input snapshot, không chỉ là ảnh; kết quả cũ không đổi khi sửa draft |
-| P14 | So sánh 2–10 phương án điều trị trên cùng bối cảnh | Tạo options → nhập fractionation/model/tissue → chọn baseline → calculate absolute và percent delta → chart/table → reorder/clone/export | Thiếu options, baseline 0, option invalid, khác context, xóa baseline, vượt giới hạn | Delta % không xác định phải là null và có lý do; không dùng 0 thay missing; toàn bộ options dùng cùng revision/context; không truncate im lặng |
+| P14 | So sánh 2–10 phương án điều trị trên cùng bối cảnh | Tạo options → resolve P13 snapshots → kiểm common context → chọn baseline → calculate absolute và percent delta → chart/table → reorder preview/clone/export | `COMPARISON_OPTIONS_REQUIRED`, `COMPARISON_LIMIT_EXCEEDED`, `COMPARISON_BASELINE_REQUIRED`, `COMPARISON_OPTION_INVALID`, `COMPARISON_CONTEXT_MISMATCH`, `COMPARISON_IDEMPOTENCY_CONFLICT`, `COMPARISON_PERSISTENCE_FAILED`; baseline 0 là `null + BASELINE_ZERO`, alpha/beta khác là warning | Delta % không xác định phải là null và có lý do; không dùng 0 thay missing; toàn bộ options dùng cùng revision/context; không truncate hoặc auto-rank im lặng |
 | P15 | Phân tích re-irradiation và bù fraction chi tiết trong tab scenario riêng | Nhập course/date/dose/fraction list → chọn tissue/alpha-beta → chọn recovery/no-recovery và thời điểm đánh giá → xem cumulative scalar/sensitivity → nhập interruption → xem các phương án bù fraction → export | Thiếu interval, recovery ngoài phạm vi/không nguồn, khác tissue/alpha-beta, lịch delivered/planned sai, spatial registration thiếu, thiếu OAR dose, interruption overlap, số fraction không nguyên | Hiển thị assumptions, source và độ nhạy; tách scalar khỏi spatial accumulation; không giả lập voxel dose khi thiếu registration; bù fraction là estimate để người dùng đánh giá, không tự sửa treatment record hoặc phát hành prescription |
 | P16 | Tra cứu và quản lý dose limits, treatment protocol, phác đồ và knowledge library | Lọc theo bệnh lý/mô/OAR/metric → xem source/applicability → tạo/clone/version → import hoặc gắn citation → chọn explicit trong scenario | Thiếu nguồn, unit sai, link hỏng, row import lỗi/duplicate, không phù hợp bệnh cảnh, content/script nguy hiểm | Published version immutable; citation và applicability đi cùng calculation snapshot; entry không nguồn phải gắn user-defined/internal; không tự sinh PASS/FAIL lâm sàng |
 | P17 | Xem dose, profile, structure và DVH khi dữ liệu hình học đủ | Chọn RTDOSE/RTSTRUCT/image → validate Frame/ROI/grid → overlay → tính DVH/profile → xem bảng/đồ thị → export | Thiếu RTSTRUCT hoặc CT, frame mismatch, ROI rỗng, contour ngoài grid, contour hỏng, codec/oblique unsupported | Dose-only fallback có nhãn; không vẽ overlay sai frame; coverage phải hiển thị; ROI thiếu dose không được gán 0 hoặc kết luận full-ROI |
@@ -1741,7 +1787,7 @@ Bảng dưới là yêu cầu nghiệp vụ tối thiểu. `Chạy đúng` là h
 | P11 | Tìm/clone protocol; sửa rule; kiểm sample; lưu version; áp dụng cho run mới | Protocol/rule/reference có version và source rõ | Rule vô nghĩa, key/version trùng, ref thiếu, archived/unsupported | Clone deep-copy; version đã dùng immutable; run cũ giữ snapshot |
 | P12 | Mở Biological Hub; chọn tool; tạo scenario; calculate/history/export | Toolkit hoạt động độc lập, không cần QACase/patient record | Scenario sai context, module unavailable, model cũ, conflict, export fail | Namespace scenario riêng; lưu assumptions/model; module chưa có phải báo capability |
 | P13 | Nhập D/n/d/alpha-beta; validate; tính; chọn range/step; vẽ curve; lưu | BED/EQD2, bảng và đồ thị cùng input/model, có marker và precision | Fraction không hợp lệ, D không khớp n*d, alpha/beta sai, non-finite, step/range lỗi | Không tự đổi input; invalid curve không lưu như success; draft/history giữ nguyên |
-| P14 | Tạo 2–10 options; chọn context/baseline; calculate; chart/table/export | So sánh tuyệt đối và delta % nhất quán, option reorder không đổi nghĩa | Option thiếu/sai, baseline 0, context khác, overflow/truncate | Delta không xác định là null có lý do; dùng cùng model/context snapshot |
+| P14 | Tạo 2–10 options từ P13 snapshot; chọn context/baseline; calculate; chart/table/export | So sánh tuyệt đối và delta % nhất quán, option reorder không đổi nghĩa, clone giữ lineage | Option/request sai, calculation ngoài scope/chưa hoàn tất, baseline 0, context/alpha-beta khác, idempotency conflict, overflow/truncate, persistence uncertainty | Delta không xác định là `null` với `BASELINE_ZERO`; alpha/beta mismatch chỉ là warning và tắt ranking; dùng cùng model/context/revision snapshot; retry phải query trước |
 | P15 | Nhập nhiều course/date/dose/fraction; recovery/alpha-beta; interruption; compensation scenario | Scalar cumulative, sensitivity, recovery và phương án bù được giải thích | Interval/lịch sai, recovery không nguồn, tissue mismatch, spatial registration thiếu, overlap | Không giả lập spatial khi thiếu transform; scenario là estimate, không sửa treatment record |
 | P16 | Tìm theo bệnh lý/mô/OAR; xem source; clone/version; chọn explicit vào scenario | Entry có applicability/unit/citation và version; calculation ghi source | No source, link hỏng, duplicate/import lỗi, không phù hợp, script nguy hiểm | Published version immutable; entry nội bộ gắn nhãn; không tự sinh clinical PASS/FAIL |
 | P17 | Chọn dose/RTSTRUCT/image; validate geometry; overlay; DVH/profile/export | Overlay đúng frame; coverage/ROI/metric có bảng thay thế chart | Frame/ROI/grid/codec/contour lỗi, thiếu image/structure, dose ngoài vùng | Dose-only fallback có nhãn; không gán 0 cho vùng thiếu; giữ source |

@@ -214,9 +214,7 @@ def test_only_one_worker_can_hold_a_gamma_lease() -> None:
         process_gamma_run(session, run, storage, lease_token=first_token, worker_id="worker-a")
         assert run.status == "COMPLETED"
         attempts = list(
-            session.scalars(
-                select(GammaRunAttempt).where(GammaRunAttempt.gamma_run_id == run.id)
-            )
+            session.scalars(select(GammaRunAttempt).where(GammaRunAttempt.gamma_run_id == run.id))
         )
         assert len(attempts) == 1
         assert attempts[0].status == "COMPLETED"
@@ -322,9 +320,7 @@ def test_redelivered_message_after_commit_does_not_create_a_second_result() -> N
         assert process_gamma_queue_message(session, storage, message) is False
         session.refresh(run)
         attempts = list(
-            session.scalars(
-                select(GammaRunAttempt).where(GammaRunAttempt.gamma_run_id == run.id)
-            )
+            session.scalars(select(GammaRunAttempt).where(GammaRunAttempt.gamma_run_id == run.id))
         )
         assert run.status == "COMPLETED"
         assert run.result_snapshot == first_result

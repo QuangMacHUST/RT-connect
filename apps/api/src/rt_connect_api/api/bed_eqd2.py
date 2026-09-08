@@ -132,17 +132,13 @@ def _engine_curve(request: BedEqd2CurveRequest) -> CurveSpec:
 
 
 def _engine_error(exc: BedEqd2EngineError) -> DomainError:
-    details = exc.details or (
-        [{"field": exc.field, "message": exc.message}] if exc.field else []
-    )
+    details = exc.details or ([{"field": exc.field, "message": exc.message}] if exc.field else [])
     return DomainError(exc.code, exc.message, 422, details)
 
 
 def _validation_errors(exc: BedEqd2EngineError) -> list[dict[str, str | None]]:
     errors: list[dict[str, str | None]] = []
-    items: list[dict[str, object]] = exc.details or [
-        {"field": exc.field, "message": exc.message}
-    ]
+    items: list[dict[str, object]] = exc.details or [{"field": exc.field, "message": exc.message}]
     for item in items:
         raw_field = item.get("field")
         raw_message = item.get("message")

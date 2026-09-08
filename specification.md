@@ -1,9 +1,9 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.6**; ngày 2026-09-08.
-- Nguồn nghiệp vụ: business-analysis.md v0.12.
-- Kế hoạch triển khai: plan.md v2.6, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.4.
+- File: specification.md; version **1.7**; ngày 2026-09-08.
+- Nguồn nghiệp vụ: business-analysis.md v0.13.
+- Kế hoạch triển khai: plan.md v2.7, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.5.
 - Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
@@ -726,7 +726,7 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 | :--- | :--- |
 | `BiologicalScenario` | `id: UUID`; `organization_id: UUID`; `scenario_key: string` matching `^[A-Z][A-Z0-9_.-]{0,119}$`, unique within organization; `name` 1–240; `scenario_type` 1–80; `tissue_context` 1–240; nullable `clinical_context` ≤4000; `source_type ∈ {USER_DEFINED,REFERENCE,INTERNAL,SITE_APPROVED}`; nullable `source_reference` ≤1000; `assumptions: JSON object`; `status ∈ {DRAFT,SAVED,ARCHIVED}`; positive integer `revision`; optional `source_scenario_revision_id`; actor/timestamps. |
 | `BiologicalScenarioRevision` | `id`, organization/scenario IDs, monotonic `revision_number`, copied status, immutable `snapshot`, actor and creation time. Unique by `(scenario_id, revision_number)`; every current scenario revision must have one snapshot. |
-| `BiologicalCalculationRun` | `id`, organization/scenario/revision IDs, `calculation_type`, optional `idempotency_key`, `model_key`, `model_version`, technical status, immutable `input_snapshot`/`result_snapshot`, warning/error snapshots, actor/timestamps. P12 exposes read contract; P13 owns BED/EQD2 creation and P14–P15 own later calculation types. |
+| `BiologicalCalculationRun` | `id`, organization/scenario/revision IDs, `calculation_type`, optional `idempotency_key`, `model_key`, `model_version`, technical status, immutable `input_snapshot`/`result_snapshot`, warning/error snapshots, actor/timestamps. P12 exposes the read contract; P13 owns BED/EQD2 creation; P14 consumes completed P13 snapshots in `BiologicalComparisonRun`; P15 owns later course/recovery calculations. |
 
 `clinical_context` is a working note, not a patient record. The API/UI must not accept a patient identifier as a hidden lookup key. A user-provided dataset is a separate explicit source contract and must carry source identity/checksum before a later module can consume it.
 
@@ -734,7 +734,7 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 
 | Method and path | Request | `2xx` behavior | Side effect |
 | :--- | :--- | :--- | :--- |
-| `GET /organizations/{org}/biological/tools` | None | `200` list of six tools with `tool_key`, label, route, phase, status, description and `available` | No mutation; P13 is `AVAILABLE/true`, tools not implemented yet return `PLANNED/false`. |
+| `GET /organizations/{org}/biological/tools` | None | `200` list of six tools with `tool_key`, label, route, phase, status, description and `available` | No mutation; P13 and P14 are `AVAILABLE/true`, tools not implemented yet return `PLANNED/false`. |
 | `GET /organizations/{org}/biological/summary` | None | `200` organization-scoped counts for total/draft/saved/archived scenarios, completed calculations and biological exports | No mutation. |
 | `POST /organizations/{org}/biological/scenarios/validate` | Create-shaped scenario | `200 {valid, errors[], warnings[]}`; valid response does not mean persisted | None. Duplicate key is a validation result, not a partial create. |
 | `GET /organizations/{org}/biological/scenarios` | `q`, `status`, `include_archived`, `offset`, `limit` | Typed collection, stable `updated_at DESC` order, total and effective archive flag | No mutation; archived excluded unless explicit status/include flag. |
@@ -839,18 +839,36 @@ Current P12 implementation provides the route/resource/lifecycle contract above.
 | Hạng mục | Đặc tả |
 | :--- | :--- |
 | Module/requirement | MOD-12; FR-P14-01 đến FR-P14-04 |
-| Input và dữ liệu hiển thị | 2–10 phương án ban đầu; name, D/n/d, tissue/alpha-beta/source/model; baseline option; disease/context/technique/time; absolute/% deltas. |
-| Model/storage | ComparisonScenario with stable option IDs, baseline ID, calculation/source snapshots. |
-| Operation/API surface | Target POST /biological/comparisons; revision/get/export routes cùng namespace. |
-| Transaction/invariant | Một comparison dùng cùng revision của toàn bộ options; không ghép result cũ/mới. |
-| Output bàn giao | Multi-option editor/table/chart/compatibility/history/export. |
-| Success oracle | TC-P14-S01 đến TC-P14-S04 trong plan |
-| Error/recovery oracle | TC-P14-E01 đến TC-P14-E06 trong plan |
-| Exit | Known delta, zero baseline, mismatched context và baseline reorder/delete tests pass. |
+| Input và dữ liệu hiển thị | 2–10 option; mỗi option tham chiếu một P13 `COMPLETED` snapshot bằng `calculation_id`, có `option_id` ổn định và label; result hiển thị D/n/d, tissue, alpha/beta/source/model, baseline, absolute/% delta. |
+| Model/storage | `BiologicalComparisonRun` với organization/scenario/revision IDs, idempotency key, model key/version, immutable input/result/warning/error snapshots và audit event. Option values được copy vào snapshot, không phải live pointer. |
+| Operation/API surface | `/api/v1/organizations/{organization_id}/biological/comparisons`: validate, create/replay, list, detail, chart preview, clone và JSON/CSV export. UI route: `/app/biological/compare`. |
+| Transaction/invariant | Tất cả option phải cùng scenario, scenario revision, tissue context, model key/version; calculation IDs khác nhau; baseline dùng stable option ID; validate/preview không mutation; create/clone commit một snapshot atomic. |
+| Delta semantics | Với baseline A và option B: `delta = B − A`, `percent = 100 × delta / A`; A=0 giữ delta tuyệt đối và trả percent `null` + reason `BASELINE_ZERO`. Không phát ra Infinity/NaN hoặc giả zero. |
+| Compatibility semantics | Khác alpha/beta được tính và hiển thị riêng nhưng warning `COMPARISON_ALPHA_BETA_MISMATCH`, `ranking_allowed=false`, `ranking=null`; không cộng các phương án thay thế và không auto-rank. |
+| Presentation semantics | Table và chart lấy từ cùng result snapshot. Reorder chart trả `persisted=false`, không đổi baseline/history. Clone tạo ID/key mới, cho phép baseline/order mới và giữ source calculation snapshots. |
+| Output bàn giao | Multi-option editor/table/chart/compatibility/history/clone/export với trạng thái empty/loading/warning/error/preview rõ ràng. |
+| Success oracle | TC-P14-S01 đến TC-P14-S06 trong plan |
+| Error/recovery oracle | TC-P14-E01 đến TC-P14-E10 trong plan |
+| Exit | Local engine/API/UI/OpenAPI/migration tests pass; staging phải chứng minh validate/no-mutation, persisted replay, zero/warning, reorder, clone/export, PostgreSQL checksum và organization scope. |
 
 **Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer cần recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
 
-**Failure contract:** COMPARISON_OPTIONS_REQUIRED; COMPARISON_PERCENT_UNDEFINED; COMPARISON_OPTION_INVALID; COMPARISON_CONTEXT_MISMATCH; COMPARISON_BASELINE_REQUIRED; COMPARISON_LIMIT_EXCEEDED. Đây là taxonomy target; mapping sang error codes thực tế phải được ghi trong contract test trước khi triển khai.
+**P14 request schema:** `name` 1–240 ký tự; `idempotency_key` 8–200 ký tự; `baseline_option_id` theo stable ID; `options` 2–10 phần tử; mỗi option có `option_id` 1–40 ký tự theo `[A-Za-z][A-Za-z0-9_.-]{0,39}`, label 1–240 ký tự và UUID `calculation_id`. Unknown fields, thiếu field, UUID sai hoặc NaN/Infinity bị chặn bởi shared `REQUEST_VALIDATION_FAILED` trước mutation.
+
+**P14 result schema:** `input_snapshot` có `schema_version=biological-plan-comparison-input.v1`, name, baseline, ordered option snapshots và request fingerprint. `result_snapshot` có `schema_version=biological-plan-comparison-result.v1`, engine key/version, baseline, compatibility, warnings, `ranking=null`, table rows và `chart_dataset` với `schema_version=biological-comparison-chart.v1`, categories, point count và SHA-256. `warning_snapshot` chỉ chứa warning objects; `error_snapshot` rỗng khi run `COMPLETED`.
+
+**P14 operation matrix:**
+
+| Method/path | Thành công | Side effect và recovery |
+| :--- | :--- | :--- |
+| `POST .../comparisons/validate` | `200 valid=true/false`, preview/warnings/errors | Không tạo row/audit mutation; lỗi field giữ form để sửa. |
+| `POST .../comparisons` | `201` tạo mới; `200` replay cùng fingerprint | Commit comparison + audit; retry sau mất response query key trước khi gửi lại. |
+| `GET .../comparisons`, `GET .../comparisons/{id}` | Collection/detail typed, organization-scoped | Chỉ đọc snapshot; out-of-scope không lộ metadata. |
+| `POST .../{id}/charts` | `200 persisted=false`, option order/table/chart mới | Không sửa result; order phải chứa mọi option đúng một lần. |
+| `POST .../{id}/clone` | `201` clone; `200` replay clone key | Tạo snapshot mới từ source snapshot; source không đổi. |
+| `GET .../{id}/export?export_format=JSON\|CSV` | File đúng schema/row/checksum | Đọc snapshot đã lưu; snapshot hỏng trả persistence error, không export file giả. |
+
+**Failure contract thực thi:** `COMPARISON_OPTIONS_REQUIRED`, `COMPARISON_LIMIT_EXCEEDED`, `COMPARISON_BASELINE_REQUIRED`, `COMPARISON_OPTION_INVALID`, `COMPARISON_CONTEXT_MISMATCH`, `COMPARISON_ALPHA_BETA_MISMATCH` (warning), `COMPARISON_IDEMPOTENCY_CONFLICT`, `COMPARISON_NOT_FOUND`, `COMPARISON_PERSISTENCE_FAILED`, cùng `REQUEST_VALIDATION_FAILED` cho lỗi Pydantic. `BASELINE_ZERO` là reason hợp lệ của percent `null`, không phải failure HTTP. HTTP mapping: request/engine `422`, scope `403`, missing resource `404`, idempotency `409`, persistence `503`.
 
 <a id="spec-p15"></a>
 
@@ -1038,7 +1056,7 @@ Các phase contract ở mục 8 đã nêu trường chi tiết. Bảng dưới �
 | P11 | Protocol/rule/reference editor and version command | Immutable internal version with applicability/source; schema `20260908_0011` | `REQUEST_VALIDATION_FAILED`, `PROTOCOL_APPLICABILITY_INVALID`, `PROTOCOL_RULE_INVALID`, `PROTOCOL_VERSION_CONFLICT`, `REFERENCE_REQUIRED`, `PROTOCOL_VERSION_IMMUTABLE`, `PROTOCOL_NOT_AVAILABLE`, `PROTOCOL_CAPABILITY_MISMATCH`, `PROTOCOL_NOT_FOUND`, `PROTOCOL_PERSISTENCE_FAILED`, `MUTATION_RESULT_UNKNOWN`; clone/version mới | Old run/report snapshot, active-only consumer, scope, deep-copy/version compare and uncertain mutation recovery pass |
 | P12 | Biological scenario/tool selection and calculation request | Independent scenario/revision/history | `SCENARIO_NOT_FOUND`, `BIOLOGICAL_CONTEXT_INVALID`, `SCENARIO_REVISION_CONFLICT`, `MODEL_VERSION_UNAVAILABLE`, `MODULE_UNAVAILABLE`; giữ scenario và availability | No-QA-case namespace, scoped history, clone/export pass |
 | P13 | SAVED revision + fractionation D/n/d + alpha/beta + curve range | BED/EQD2 values, normalized input, immutable calculation/chart dataset, table/export | `BIOLOGICAL_INPUT_INVALID`, `FRACTIONATION_INCONSISTENT`, `CALCULATION_NONFINITE`, `CURVE_RANGE_INVALID`, `ALPHA_BETA_SOURCE_REQUIRED`, `CALCULATION_IDEMPOTENCY_CONFLICT`, `CALCULATION_PERSISTENCE_FAILED`, `SCENARIO_REVISION_NOT_FOUND`, `SCENARIO_IMMUTABLE`; validate/replay/query before retry | Known answer, pair derivation/zero dose, precision, source/override, curve/checksum equality, snapshot/replay/persistence pass |
-| P14 | Options 2–10, baseline, context | Absolute/% delta, chart/table/history | `COMPARISON_OPTIONS_REQUIRED`, `COMPARISON_PERCENT_UNDEFINED`, `COMPARISON_OPTION_INVALID`, `COMPARISON_CONTEXT_MISMATCH`, `COMPARISON_BASELINE_REQUIRED`, `COMPARISON_LIMIT_EXCEEDED`; giữ options hợp lệ | Same model/context/revision, baseline mutation và zero handling pass |
+| P14 | Options 2–10 từ P13 `COMPLETED` snapshots, baseline, context | Absolute/% delta, chart/table/history, clone/export | `COMPARISON_OPTIONS_REQUIRED`, `COMPARISON_LIMIT_EXCEEDED`, `COMPARISON_BASELINE_REQUIRED`, `COMPARISON_OPTION_INVALID`, `COMPARISON_CONTEXT_MISMATCH`, `COMPARISON_IDEMPOTENCY_CONFLICT`, `COMPARISON_PERSISTENCE_FAILED`; `BASELINE_ZERO` là reason hợp lệ, alpha/beta mismatch là warning | Same model/context/revision, baseline mutation, zero handling, no auto-rank và no-truncate pass |
 | P15 | Course/fraction/time/recovery/compensation scenario | Scalar cumulative, sensitivity, integer alternatives, assumptions | `COURSE_INTERVAL_REQUIRED`, `RECOVERY_ASSUMPTION_INVALID`, `CUMULATIVE_CONTEXT_MISMATCH`, `FRACTION_SCHEDULE_INVALID`, `SPATIAL_ACCUMULATION_UNAVAILABLE`, `TISSUE_DOSE_REQUIRED`, `INTERRUPTION_OVERLAP`, `FRACTION_COUNT_NONINTEGER`; tách capability | No-recovery/recovery, nonuniform schedule, no fake spatial dose, export pass |
 | P16 | Knowledge/dose-limit/protocol entry, citation/import | Searchable versioned library and snapshot binding | `KNOWLEDGE_SOURCE_REQUIRED`, `DOSE_LIMIT_UNIT_INVALID`, `REFERENCE_LINK_UNAVAILABLE`, `KNOWLEDGE_IMPORT_INVALID`, `DOSE_LIMIT_NOT_APPLICABLE`, `KNOWLEDGE_CONTENT_INVALID`; row-level repair | Source/applicability/version/import/override pass |
 | P17 | RTDOSE/RTSTRUCT/CT and geometry selection | Overlay/profile/DVH with coverage metadata | `DVH_INPUT_REQUIRED`, `DICOM_FRAME_MISMATCH`, `DVH_EMPTY_STRUCTURE`, `DVH_INCOMPLETE_COVERAGE`, `CONTOUR_GEOMETRY_INVALID`, `DICOM_CAPABILITY_UNSUPPORTED`, `ANATOMY_INPUT_REQUIRED`; dose-only fallback | Geometry/DVH oracle, visual/table fallback and coverage pass |

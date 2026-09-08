@@ -82,9 +82,7 @@ def test_report_revision_snapshots_source_and_supports_full_block_customization(
             json={"title": "Changed after report"},
         )
         assert changed.status_code == 200, changed.text
-        old_revision = client.get(
-            f"/api/v1/reports/{report_key}/revisions/{revision['id']}"
-        )
+        old_revision = client.get(f"/api/v1/reports/{report_key}/revisions/{revision['id']}")
         assert old_revision.status_code == 200, old_revision.text
         assert old_revision.json()["source_snapshot"]["payload"]["title"] == "P9 source case"
 
@@ -119,9 +117,7 @@ def test_report_templates_versioning_and_revision_conflict_are_scoped() -> None:
         )
         assert version.status_code == 201, version.text
         assert version.json()["version_number"] == 2
-        templates = client.get(
-            f"/api/v1/organizations/{organization.id}/report-templates"
-        )
+        templates = client.get(f"/api/v1/organizations/{organization.id}/report-templates")
         assert templates.status_code == 200
         assert templates.json()["total"] == 2
 
@@ -140,9 +136,7 @@ def test_report_templates_versioning_and_revision_conflict_are_scoped() -> None:
         )
         assert conflict.status_code == 409, conflict.text
         assert conflict.json()["code"] == "REPORT_REVISION_CONFLICT"
-        revisions = client.get(
-            f"/api/v1/reports/{report.json()['report_key']}/revisions"
-        )
+        revisions = client.get(f"/api/v1/reports/{report.json()['report_key']}/revisions")
         assert len(revisions.json()) == 1
 
         outside = client.get(f"/api/v1/organizations/{uuid4()}/reports")

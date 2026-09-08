@@ -127,6 +127,4 @@ def test_rtdose_metadata_validation_is_strict_enough_for_gamma(tmp_path: Path) -
 
     assert validation.result == "VALID"
     codes = {item["code"] for item in validation.checks}
-    assert {"RTDOSE_GRID_VALID", "RTDOSE_GEOMETRY_VALID", "RTDOSE_DOSE_UNITS_VALID"}.issubset(
-        codes
-    )
+    assert {"RTDOSE_GRID_VALID", "RTDOSE_GEOMETRY_VALID", "RTDOSE_DOSE_UNITS_VALID"}.issubset(codes)
