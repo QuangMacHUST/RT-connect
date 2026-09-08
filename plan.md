@@ -1,12 +1,12 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
-- Phiên bản: **2.8**, ngày 2026-09-08.
-- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.14.
-- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.8.
+- Phiên bản: **2.9**, ngày 2026-09-08.
+- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.15.
+- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.9.
 - Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.6.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
-- Phạm vi lần cập nhật này: chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20; đồng bộ slice implementation P6/P8/P9/P10/P11/P12/P13/P14/P15, migration schema `20260908_0015`, các engine/API/UI Biological và kết quả kiểm thử local ngày 2026-09-08. Staging E2E sau slice này vẫn là gate riêng; không suy diễn từ test local.
+- Phạm vi lần cập nhật này: chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20; bổ sung tiêu chuẩn bao phủ B01–B12 cho mỗi feature, từ điển trạng thái thống nhất, phase scenario index và đồng bộ slice implementation P6/P8/P9/P10/P11/P12/P13/P14/P15, migration schema `20260908_0015`, các engine/API/UI Biological và kết quả kiểm thử local/staging ngày 2026-09-08. Staging E2E sau slice này vẫn là gate riêng; không suy diễn từ test local hoặc một lần Railway báo Online.
 
 ## 1. Cách thực hiện kế hoạch
 
@@ -43,9 +43,9 @@ Test chỉ dùng NOT_RUN / PASS / FAIL / BLOCKED / NOT_APPLICABLE. NOT_APPLICABL
 | P10 | Có implementation slice backend/frontend, migration `20260908_0010`, test scope/error/rebuild/event/export và trend UI | Basic staging smoke đã có; large-series budget, complete negative matrix, source/export revalidation và visual/accessibility evidence còn phải làm. |
 | P11 | Có implementation slice backend/frontend, migration `20260908_0011`, protocol lifecycle/validation/compare và active-only consumer | Staging migration/browser/consumer E2E, complete S/E/C evidence và release manifest còn phải làm. |
 | P12 | Có implementation slice và staging browser evidence mới; release/report integration còn mở | Đối soát PostgreSQL state, refresh/reconnect, negative matrix và P9 Biological report integration trước `STAGING_VERIFIED`. |
-| P13 | Có implementation slice local: migration `20260908_0013`, engine/API/UI, known-answer/API tests; staging chưa kiểm trên candidate này | Deploy đúng SHA, chạy browser validate→calculate/replay→chart preview→export, đối chiếu DB snapshot/checksum và cập nhật manifest. |
-| P14 | Có slice implementation local và test; staging chưa kiểm | Deploy đúng SHA, chạy P14 browser/API/PostgreSQL E2E, negative matrix và release manifest. |
-| P15 | Đã có implementation slice local, chưa deploy/revalidate staging | Đối chiếu schema `20260908_0015`, authenticated browser workflow, PostgreSQL snapshot/checksum/scope và release manifest. |
+| P13 | Có implementation slice local và staging smoke trên candidate `31a5900`; final gate còn direct DB/no-QA-linkage và release manifest | Revalidate nếu candidate/schema/contract đổi; hoàn tất replay/chart/export, DB snapshot/checksum và manifest. |
+| P14 | Có implementation slice local và staging smoke trên candidate `31a5900`; final gate còn direct DB/scope và release manifest | Revalidate nếu candidate/schema/contract đổi; hoàn tất browser/API/PostgreSQL E2E, negative matrix và manifest. |
+| P15 | Có implementation slice local và staging browser smoke trên candidate `09acb90`; final gate còn replay, direct DB/scope và release manifest | Đối chiếu schema `20260908_0015`, authenticated browser workflow, replay cùng key, PostgreSQL snapshot/checksum/scope và release manifest. |
 | P16–P17 | Chưa có evidence triển khai module đầy đủ | Thực hiện các gói công việc bên dưới. |
 | P18–P20 | Chưa có evidence integrated release/operations đầy đủ | Không đóng bằng việc Railway báo Online hoặc /health trả 200. |
 
@@ -78,7 +78,47 @@ Các trạng thái trên chỉ là checkpoint, không phải đóng phase. `LOCA
 - Fixture: `gamma-rtdose-v1-smoke.dcm` được sinh lại hai lần với cùng SHA-256 `CA5C9168EB9B045E30A375EDC6B76118EFD754A35815C2860B17CA8944C4480B`.
 - Staging slice mới đã chạy qua web/API/object storage/Redis worker: web deployment `7f104141-0fe4-4527-b455-a503beaceb20` từ commit `e71e8e1` thành công; run `df38e7d5-bb4b-4e2b-b949-2310acb1875c` dùng PSQA_GAMMA, RTDOSE GY reference + measurement 3D evaluation, cấu hình `3D · FULL_ROI · max γ 2`, đạt `COMPLETED/PASS`, 8/8 evaluated/passing, 0 excluded, coverage `1`, Gamma P95 `0`, attempt 1. Sau reload browser, run và config snapshot vẫn hiển thị đúng; đây là evidence cho staging 3D happy path, không đóng các gate oracle/failure/resource còn lại. P9 chưa có staging evidence trên schema `20260908_0009` ở thời điểm ghi tài liệu.
 - P14 comparison slice: migration `20260908_0014` đã upgrade thành công trên local PostgreSQL; `BiologicalComparisonRun`, pure comparison engine, six API operations, immutable option/result snapshots, warning/zero-baseline policy, chart reorder preview, clone và JSON/CSV export đã có. Focused P14 engine/API/biological **15/15 PASS**, full backend, Ruff, strict mypy, frontend lint/typecheck/Vitest/build và OpenAPI regenerate/check PASS. Staging P14 deploy, authenticated browser flow, PostgreSQL row/checksum and remote export evidence vẫn mở.
-- P15 re-irradiation/fraction-compensation slice: migration `20260908_0015_reirradiation.py`, pure scalar LQ engine, API/UI routes, immutable run snapshot, recovery/sensitivity, nonuniform schedule, delivered-prefix alternatives, interruption/time model và JSON/CSV export đã có. P15 API **5/5**, pure engine/error **22/22**, full backend **133 passed**, Ruff, strict mypy, frontend lint/typecheck/build, OpenAPI regenerate/check và local PostgreSQL migration head `20260908_0015` đã PASS. Staging deployment/browser flow, direct PostgreSQL/scope query, remote export và release evidence còn mở; spatial accumulation vẫn cố ý `UNAVAILABLE`.
+- P15 re-irradiation/fraction-compensation slice: migration `20260908_0015_reirradiation.py`, pure scalar LQ engine, API/UI routes, immutable run snapshot, recovery/sensitivity, nonuniform schedule, delivered-prefix alternatives, interruption/time model và JSON/CSV export đã có. P15 API **5/5**, pure engine/error **22/22**, full backend **133 passed**, Ruff, strict mypy, frontend lint/typecheck/build, OpenAPI regenerate/check và local PostgreSQL migration head `20260908_0015` đã PASS. Staging deployment/browser validate→save→refresh→export của cả hai operation đã PASS trên candidate `09acb90`; same-key replay, direct PostgreSQL/scope query, full error matrix và release evidence còn mở; spatial accumulation vẫn cố ý `UNAVAILABLE`.
+
+### 1.5. Chuẩn “đầy đủ” cho workflow và trường hợp lỗi
+
+Kế hoạch này không thể liệt kê trước mọi lỗi tương lai của một hệ thống có file DICOM, mạng, database, worker và website. Vì vậy từ “toàn bộ” được định nghĩa là: mọi failure boundary đã biết trong contract hiện tại đều phải có testcase, expected result, đường phục hồi và assertion về dữ liệu. Khi phát hiện failure mode mới trong dataset, pilot hoặc vận hành, failure đó phải được thêm vào phase sở hữu, không được coi là ngoại lệ ngoài kế hoạch.
+
+Mỗi feature có side effect hoặc output tính toán phải được kiểm đủ 12 lớp case nghiệp vụ sau. `B01–B12` là mã phân loại; testcase cụ thể là `TC-Pxx-*` ở từng phase và không được thay thế bằng một HTTP smoke đơn lẻ:
+
+| Case | Phạm vi bắt buộc | Assertion tối thiểu |
+| :--- | :--- | :--- |
+| B01 | Happy path tối thiểu | Input hợp lệ tạo đúng output, ID/revision, trạng thái cuối và provenance. |
+| B02 | Happy path biên | Min/max hợp lệ, nhiều dòng, tên dài hoặc bảng dài không bị clamp/truncate ngầm. |
+| B03 | Optional/empty/zero | Omitted, null, empty và zero được phân biệt đúng; empty state có CTA/hướng dẫn. |
+| B04 | Field invalid | Sai type/format/unit, âm, non-finite, quá giới hạn → field error; không side effect. |
+| B05 | Cross-field invalid | Quan hệ lịch, parent, UID/frame, context, option hoặc revision sai → reject đúng quan hệ. |
+| B06 | Not-found/archived/scope | ID sai, archived hoặc organization khác → 404/403 đúng boundary; không lộ metadata. |
+| B07 | Duplicate/idempotency | Double click/retry cùng key replay một kết quả; khác fingerprint → 409; không nhân bản. |
+| B08 | Concurrent edit | Hai tab/member dùng cùng revision: một commit, một conflict; draft không mất. |
+| B09 | Dependency transient | DB/Redis/object/Auth/renderer timeout hoặc 5xx → retry bounded/FAILED; accepted ID giữ nguyên. |
+| B10 | Persistence uncertain | Commit xong nhưng response mất hoặc object/DB lệch → query/reconcile trước retry; không success giả. |
+| B11 | Refresh/reconnect/restart | Reload browser hoặc restart service sau accept → cùng snapshot, không spinner vô hạn/duplicate. |
+| B12 | Output/provenance/export | History, drill-down và các format trả đúng source/version/hash; warning/assumption không mất. |
+
+Mỗi testcase phải kiểm các lớp phù hợp: response envelope, trạng thái nghiệp vụ, database row, object/queue/worker nếu có, UI state, audit/provenance, log redaction và hành động phục hồi. `NOT_APPLICABLE` chỉ hợp lệ khi phase packet ghi lý do; không dùng để bỏ qua B06–B10 cho mutation, calculation, job hoặc export có side effect. P8 thêm oracle số học/coverage/lease; P9 thêm renderer/visual; P17 thêm geometry/DVH; P18 thêm volume, restore và pilot.
+
+### 1.6. Từ điển trạng thái và quy tắc quyết định exit
+
+Mọi phase phải phân biệt vòng đời operation với quality result. `HTTP 200/201` chỉ là kết quả giao thức, không phải `PASS`. Vòng đời được dùng trong evidence là `NOT_STARTED → DRAFT → VALIDATING → ACCEPTED → QUEUED → RUNNING → COMPLETED`, cùng các nhánh `INVALID`, `RETRYING`, `FAILED`, `CONFLICT`, `ARCHIVED`, `UNAVAILABLE`. Quality result dùng riêng `PASS`, `WARNING`, `FAIL`, `N/A`, `INVALID`.
+
+| Trạng thái | Được gọi là thành công chưa? | Điều kiện chuyển tiếp/phục hồi |
+| :--- | :--- | :--- |
+| `DRAFT` | Chưa | Sửa input hoặc archive; không được xuất result final. |
+| `VALIDATING` | Chưa | Có thể về `DRAFT`, `INVALID`, `CONFLICT` hoặc `ACCEPTED`. |
+| `ACCEPTED`/`QUEUED`/`RUNNING`/`RETRYING` | Chưa có output cuối | Có ID tra cứu; refresh không tạo operation mới. |
+| `COMPLETED` | Có về mặt kỹ thuật | Phải có output snapshot, hash/version và quality status riêng. |
+| `FAILED` | Không | Có error snapshot; retry chỉ khi allowlist, còn lại sửa input/tạo run mới. |
+| `CONFLICT` | Không | Tải revision hiện tại, giữ draft và gửi lại với revision/key đúng. |
+| `INVALID`/`UNAVAILABLE` | Không | Chặn nhánh không đủ khả năng; không biến thành warning hoặc PASS ngầm. |
+| `ARCHIVED` | Không cho thao tác mới mặc định | Vẫn đọc history theo scope; restore tạo trạng thái mới nếu contract cho phép. |
+
+Phase chỉ được chuyển `DONE-v2` khi toàn bộ testcase MUST, B01–B12 áp dụng, dependency và evidence gate đã đạt trên đúng candidate. Một phase có implementation local nhưng thiếu staging/oracle/volume/restore vẫn giữ `LOCAL_VERIFIED` hoặc `STAGING_VERIFIED`, không nâng thành `DONE-v2`.
 
 ## 2. Dependency, release và cách chia task
 
@@ -1208,7 +1248,7 @@ Mã ở cột “Phân loại” là contract được kiểm chứng trong P14.
 - **Dữ liệu phải giữ/transaction:** Một comparison dùng cùng scenario revision/tissue/model của toàn bộ options; option values được copy vào snapshot; không ghép result cũ/mới; create/clone + audit atomic.
 - **Bàn giao:** Multi-option editor/table/chart/compatibility/history/export/clone và route registry/OpenAPI.
 - **Exit gate local:** migration `20260908_0014`, engine/API `15/15` focused, full backend, Ruff/mypy, frontend lint/typecheck/Vitest/build, OpenAPI check; known delta, zero baseline, warning, context, idempotency, history, reorder, clone/export đều pass.
-- **Exit gate staging:** browser → API → Railway PostgreSQL chứng minh validate/no-mutation, persisted result/replay, DB row/checksum, zero/warning, reorder non-persist, clone/export và organization scope trên đúng candidate SHA. Browser smoke trên candidate `31a5900` đã chứng minh phần UI/API; direct PostgreSQL row/checksum, explicit organization-scope negative probe và release manifest vẫn là điều kiện trước `STAGING_VERIFIED`.
+- **Exit gate staging:** browser → API → Railway PostgreSQL chứng minh validate/no-mutation, persisted result/replay, DB row/checksum, zero/warning, reorder non-persist, clone/export và organization scope trên đúng candidate SHA. Browser smoke trên candidate `31a5900` đã chứng minh phần UI/API; direct PostgreSQL row/checksum, explicit organization-scope negative probe và release manifest vẫn là điều kiện trước `STAGING_VERIFIED`/`DONE-v2`.
 - **Kiểm tra chéo:** C03–C09 về scope, retry, đồng thời, mất mạng, session và version phải có evidence hoặc lý do không áp dụng; thêm C10–C16 theo module.
 - **Nếu gate fail:** mở issue với testcase thất bại, giữ evidence/bản dữ liệu trước đó và sửa package liên quan; không thay expected để hợp thức hóa output. Có thể làm task độc lập tiếp theo, nhưng phase vẫn mở.
 
@@ -1222,7 +1262,7 @@ Mã ở cột “Phân loại” là contract được kiểm chứng trong P14.
 - **Mục tiêu:** Tính scenario nhiều course và các lịch thay thế với giả định rõ ràng.
 - **Contract:** specification §8 / SPEC-P15; các contract chung §2–§7 áp dụng khi có liên quan.
 - **Owner thực thi:** người/agent phụ trách module ghi tên trong checkpoint; người dùng cung cấp dữ liệu hoặc đánh giá workflow khi cần, không có cấp phê duyệt theo chức danh.
-- **Trạng thái test v2:** NOT_RUN cho đến khi có evidence theo ID dưới đây; không kế thừa PASS tự động từ test cũ.
+- **Trạng thái test v2:** LOCAL_VERIFIED và STAGING_SMOKE_VERIFIED cho các happy path đã ghi; không kế thừa PASS tự động cho replay, negative matrix, direct DB/scope hoặc release gate chưa chạy.
 
 ### Workflow P15
 
@@ -1239,8 +1279,11 @@ Mã ở cột “Phân loại” là contract được kiểm chứng trong P14.
 - [x] P15-W03 — LQ per-fraction sum khi nonuniform; schedule/time-model optional explicit có source/version.
 - [x] P15-W04 — UI scalar/spatial capability; không bật spatial bằng ghi chú registration; actual transform/resampling tests thuộc contract §6.
 - [x] P15-VERIFY-LOCAL — P15 API `5/5`, pure engine/error `22/22`, full backend `133 passed`, Ruff/mypy, frontend lint/typecheck/build, OpenAPI và Alembic `20260908_0015` local PostgreSQL đã PASS.
-- [ ] P15-VERIFY-STAGING — deploy cùng candidate; chạy browser validate→save→replay→refresh→export cho cả hai operation, warning/error matrix, direct DB fingerprint/checksum và organization-scope negative probe.
-- [ ] P15-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại; chỉ đóng sau remote evidence.
+- [x] P15-VERIFY-STAGING-BROWSER — candidate `09acb90`/deployment `008ec1d1-3215-44c7-9d64-fb06dc024e58`; readiness schema `20260908_0015`; browser validate-only→save→refresh→export cho re-irradiation và fraction compensation đã pass.
+- [ ] P15-VERIFY-STAGING-REPLAY — dùng lại cùng idempotency key/fingerprint cho cả hai operation; chứng minh `200` replay và không tạo row thứ hai sau retry/mất response.
+- [ ] P15-VERIFY-STAGING-DB-SCOPE — query PostgreSQL aggregate/id/checksum redacted và negative probe organization khác; không lộ row/metadata.
+- [ ] P15-VERIFY-STAGING-ERRORS — chạy/ghi các error cases P15-E01..E14 và B04–B10 áp dụng trong staging an toàn hoặc ghi BLOCKED có owner.
+- [ ] P15-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại; chỉ đóng sau remote evidence đầy đủ.
 
 ### Trường hợp chạy đúng P15
 
@@ -1713,6 +1756,50 @@ Bảng này là chỉ mục điều hành ngắn gọn; mỗi phase vẫn phải
 4. Không đánh dấu phase tiếp theo `DONE-v2` nếu phase trước chỉ có local evidence nhưng target gate yêu cầu staging, independent oracle, resource test hoặc browser workflow.
 5. Khi phát hiện lỗi mới, thêm testcase/regression mới vào phase sở hữu lỗi và cập nhật cả `business-analysis.md`, `specification.md`, `plan.md` trong cùng change set nếu contract thay đổi.
 
+### 4.5. Ma trận bao phủ testcase bắt buộc P0–P20
+
+Đây là bảng điều khiển chính để trả lời câu hỏi “phase này đã kiểm đủ chưa”. Một dòng chỉ được đóng khi tất cả mã `S`, `E` và B-case áp dụng có outcome; mã testcase tồn tại trong plan không đồng nghĩa testcase đã PASS. `D` = domain/engine, `A` = API, `DB` = database/migration, `UI` = browser, `R` = recovery/fault, `V` = volume/performance, `P` = provenance/evidence.
+
+| Phase | Happy path (`S`) | Error/recovery (`E`) | B-case tối thiểu | Lớp phải có evidence |
+| :--- | :--- | :--- | :--- | :--- |
+| P0 | `S01–S03` | `E01–E04` | B01, B02, B04, B06, B12 | D, P |
+| P1 | `S01–S03` | `E01–E05` | B01, B02, B04, B09, B11 | D, A, DB, R, P |
+| P2 | `S01–S03` | `E01–E06` | B01, B04, B06, B09, B10, B11 | A, DB, R, P |
+| P3 | `S01–S04` | `E01–E06` | B01, B03, B06, B07, B09, B11 | A, UI, R, P |
+| P4 | `S01–S04` | `E01–E06` | B01, B04, B06, B07, B08, B10 | D, A, DB, UI, R, P |
+| P5 | `S01–S04` | `E01–E06` | B01, B02, B04, B05, B06, B08 | D, A, DB, UI, R, P |
+| P6 | `S01–S04` | `E01–E07` | B01, B02, B04, B05, B06, B09, B10, B11, B12 | D, A, DB, UI, R, P |
+| P7 | `S01–S04` | `E01–E06` | B01, B03, B04, B05, B07, B08, B11, B12 | D, A, DB, UI, R, P |
+| P8 | `S01–S05` | `E01–E10` | B01, B02, B04, B05, B06, B07, B09, B10, B11, B12 | D, A, DB, UI, R, V, P |
+| P9 | `S01–S04` | `E01–E06` | B01, B02, B04, B06, B07, B08, B09, B10, B11, B12 | D, A, DB, UI, R, V, P |
+| P10 | `S01–S08` | `E01–E12` | B01, B02, B03, B04, B05, B06, B08, B11, B12 | D, A, DB, UI, R, V, P |
+| P11 | `S01–S09` | `E01–E16` | B01, B02, B04, B05, B06, B07, B08, B10, B11, B12 | D, A, DB, UI, R, P |
+| P12 | `S01–S09` | `E01–E12` | B01, B03, B04, B06, B07, B08, B09, B10, B11, B12 | D, A, DB, UI, R, P |
+| P13 | `S01–S08` | `E01–E10` | B01, B02, B03, B04, B05, B06, B07, B10, B11, B12 | D, A, DB, UI, R, V, P |
+| P14 | `S01–S06` | `E01–E10` | B01, B02, B04, B05, B06, B07, B10, B11, B12 | D, A, DB, UI, R, P |
+| P15 | `S01–S08` | `E01–E14` | B01, B02, B03, B04, B05, B06, B07, B09, B10, B11, B12 | D, A, DB, UI, R, P |
+| P16 | `S01–S04` | `E01–E06` | B01, B02, B03, B04, B05, B06, B08, B12 | D, A, DB, UI, R, P |
+| P17 | `S01–S04` | `E01–E07` | B01, B02, B04, B05, B06, B09, B10, B11, B12 | D, A, DB, UI, R, V, P |
+| P18 | `S01–S04` | `E01–E06` | B01, B02, B04, B05, B07, B09, B10, B11, B12 | D, A, DB, UI, R, V, P |
+| P19 | `S01–S04` | `E01–E06` | B01, B04, B06, B09, B10, B11, B12 | A, DB, UI, R, V, P |
+| P20 | `S01–S04` | `E01–E05` | B01, B02, B04, B09, B10, B11, B12 | A, DB, R, V, P |
+
+Quy tắc đọc ma trận: phase không có `UI` vẫn phải có output/evidence mà người khác có thể kiểm tra; phase có `UI` phải kiểm browser với loading/empty/ready/warning/error; phase có `DB` phải query state sau mutation; phase có `R` phải thực hiện phục hồi thật ít nhất một lần trong môi trường an toàn; phase có `V` phải ghi workload, resource, thời gian và giới hạn. Nếu một B-case không thể thực hiện vì dependency bên ngoài, outcome là `BLOCKED` kèm owner và next action, không được đổi thành `NOT_APPLICABLE`.
+
+### 4.6. Checklist tạm dừng và tiếp tục công việc
+
+Trước khi tạm dừng một turn hoặc chuyển cho người khác, cập nhật đúng thứ tự:
+
+1. Ghi `current phase`, work package cuối cùng, branch/SHA và environment.
+2. Ghi test đã PASS, test FAIL/BLOCKED/NOT_RUN; không chỉ ghi “đã test”.
+3. Lưu ID của deployment, run, export, migration và checksum; redaction secret/PHI.
+4. Ghi trạng thái DB/object/queue/worker sau khi chạy, kể cả khi output là lỗi.
+5. Ghi recovery đã thử và kết quả; nếu chưa thử, giữ phase mở.
+6. Ghi duy nhất một `next_exact_action` có thể thực hiện ngay, cùng dependency nếu có.
+7. Nếu contract đổi, cập nhật BA → specification → plan → progress trong cùng change set trước khi code tiếp.
+
+Khi tiếp tục, đọc `implementation-progress.md` và phase packet trước; không chạy lại các mutation staging chỉ để tạo screenshot mới nếu đã có ID/hash, nhưng phải chạy lại nếu candidate, schema, config hoặc contract đã thay đổi.
+
 ## 5. Railway/Supabase deployment contract
 
 Bảng dưới là mục tiêu cấu hình và ID đã có trong hồ sơ. Chỉ việc đọc deployment metadata tại thời điểm deploy mới chứng minh cấu hình đang áp dụng. Không suy diễn rằng Railway đã bỏ hỗ trợ config-as-code từ việc một ô path biến mất.
@@ -1772,9 +1859,9 @@ Trước code UI: ghi screen ID/revision, route, API event và FR. Sau code: đ�
 Template checkpoint (cần điền giá trị thật):
 
 ~~~yaml
-plan_version: "2.0"
-current_phase: P8
-current_work_package: P08-W01
+plan_version: "2.9"
+current_phase: P15
+current_work_package: P15-VERIFY-STAGING-REPLAY
 status: IN_PROGRESS
 source_commit: "<actual-sha>"
 implemented_requirements: []
@@ -1802,7 +1889,7 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 ### 7.2. Kết quả lần sửa tài liệu này
 
-Đã chi tiết hóa requirement/workflow/error/recovery/exit và xác định gap từ source. Slice P6/P8/P9 đã được sửa và kiểm thử local; tài liệu đã được rebaseline theo schema `20260908_0009`. P8 vẫn mở ở các gate oracle/failure/resource; P9 đã `LOCAL_VERIFIED` nhưng staging browser, export/download và visual evidence còn mở. Không phase nào được đánh dấu `DONE-v2` chỉ vì local test hoặc Railway báo Online.
+Đã rebaseline tài liệu thành BA v0.15, specification v1.9 và plan v2.9; bổ sung từ điển trạng thái, error taxonomy, operation/evidence contract, B01–B12 và ma trận bao phủ P0–P20. P15 đã có local implementation và staging browser smoke trên candidate `09acb90` với readiness schema `20260908_0015`, nhưng replay cùng key, direct PostgreSQL/scope, full error matrix và release manifest vẫn mở. Các phase khác giữ trạng thái trong `implementation-progress.md`; không phase nào được đánh dấu `DONE-v2` chỉ vì local test, HTTP 200 hoặc Railway báo Online.
 
 
 ## 8. Ma trận FR → contract → testcase ban đầu

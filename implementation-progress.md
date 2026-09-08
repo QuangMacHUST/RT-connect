@@ -2,26 +2,26 @@
 
 ## Documentation and implementation rebaseline — 2026-09-08
 
-`business-analysis.md` v0.14, `specification.md` v1.8, `technical-specification.md` v1.6 và `plan.md` v2.8 bổ sung requirement, contract, testcase và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
+`business-analysis.md` v0.15, `specification.md` v1.9, `technical-specification.md` v1.6 và `plan.md` v2.9 bổ sung requirement, state contract, testcase và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
 
-Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness, staging Trend và staging Protocol consumer vẫn phải được đối soát theo plan §1.2–§1.3. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Checkpoint trước đã xác minh browser staging P13/P14 trên candidate `31a5900`; PostgreSQL row query trực tiếp, organization-scope negative probe và release-manifest closure vẫn là gate riêng. P15 hiện có local implementation slice; staging là bước kế tiếp.
+Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness, staging Trend và staging Protocol consumer vẫn phải được đối soát theo plan §1.2–§1.6. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Checkpoint trước đã xác minh browser staging P13/P14 trên candidate `31a5900`; PostgreSQL row query trực tiếp, organization-scope negative probe và release-manifest closure vẫn là gate riêng. P15 hiện đã có staging browser smoke trên candidate `09acb90`, nhưng direct PostgreSQL/scope/replay/release gates còn mở.
 
 ## Current checkpoint
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
 - **Current phase:** P15 — Re-irradiation, recovery và bù fraction; P8/P9/P10/P11/P12/P13/P14 remaining release gates và các phase tích hợp sau vẫn mở.
-- **Current status:** IN_PROGRESS — P15 local implementation đã pass engine/API/full regression/frontend/migration/OpenAPI; P13/P14 browser staging smoke vẫn pass trên candidate `31a5900` nhưng final exit của các phase đó và P15 staging evidence chưa đóng.
-- **Last authoritative check:** 2026-09-08 — working-tree P15 candidate: backend `133 passed`, P15 API `5/5`, P15 engine/error `22/22`, Ruff/mypy, frontend lint/typecheck/build, OpenAPI regenerate/check và local PostgreSQL Alembic head `20260908_0015` đều pass. Đây chưa phải deployment evidence.
-- **Next exact step:** commit/push P15, đợi API/web staging deploy, kiểm `/api/v1/ready` schema `20260908_0015`, chạy authenticated browser validate→save→replay→refresh→export cho cả re-irradiation và fraction compensation, rồi direct PostgreSQL/scope/release-manifest checks.
+- **Current status:** IN_PROGRESS — P15 local gates và authenticated staging browser happy paths đã pass trên candidate `09acb90`; replay cùng idempotency key, direct PostgreSQL checksum/scope, full error matrix và release-manifest closure chưa đóng.
+- **Last authoritative check:** 2026-09-08 — staging API deployment `008ec1d1-3215-44c7-9d64-fb06dc024e58` báo successful; `/api/v1/ready` trả `schema_revision=20260908_0015`; P15 browser validate→save→refresh→export đã pass cho cả hai operation. Local backend `133 passed`, P15 API `5/5`, P15 engine/error `22/22`, Ruff/mypy, frontend lint/typecheck/build, OpenAPI và Alembic head cũng pass. Đây chưa phải P15 DONE-v2.
+- **Next exact step:** dùng cùng request fingerprint để chứng minh idempotent replay của hai P15 operation, query PostgreSQL trực tiếp chỉ các aggregate/id/checksum redacted và chạy negative probe organization khác; sau đó cập nhật release manifest rồi tiếp tục P16.
 
 ## Source documents read
 
 | Source | Version | Status |
 | :--- | :--- | :--- |
-| `business-analysis.md` | 0.13 | Business source; detailed workflow/error/recovery matrix, P12 scenario, P13 BED/EQD2 and P14 comparison contract |
-| `specification.md` | 1.7 | Behavior/data/error/numeric contracts; exact P10/P11/P12/P13/P14 API, model, validation and persistence contracts |
-| `technical-specification.md` | 1.5 | Architecture reference; P10/P11/P12 plus P13/P14 bounded-context implementation addenda |
-| `plan.md` | 2.7 | Phase/workflow/S-E/C tests, DoR/DoD, execution ledger, P10/P11/P12/P13/P14 checkpoints and staging gates |
+| `business-analysis.md` | 0.15 | Business source; detailed workflow/error/recovery/state matrix, P12–P15 independent biological contracts and P0–P20 coverage index |
+| `specification.md` | 1.9 | Behavior/data/error/state/numeric contracts; operation envelope, evidence schema and exact P10/P11/P12/P13/P14/P15 contracts |
+| `technical-specification.md` | 1.6 | Architecture reference; P10/P11/P12 plus P13/P14/P15 bounded-context implementation addenda |
+| `plan.md` | 2.9 | Phase/workflow/S-E/C/B tests, DoR/DoD, execution ledger, full coverage matrix, P10–P15 checkpoints and staging gates |
 
 ## Phase status
 
@@ -42,7 +42,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | P12 | STAGING E2E PASS / EXIT OPEN | Migration `20260908_0012`, Biological Hub route/API/UI, staging browser create/validate/edit/save/clone/archive/history đã chạy trên dữ liệu tổng hợp; PostgreSQL state, refresh/reconnect, renderer integration và full S/E/C remain |
 | P13 | STAGING SMOKE VERIFIED / FINAL GATE OPEN | Migration `20260908_0013`, BED/EQD2 browser validate→save hai snapshot, history readback, chart/table và export đã chạy trên staging; direct PostgreSQL checksum/no-QA-linkage query và release manifest còn mở |
 | P14 | STAGING SMOKE VERIFIED / FINAL GATE OPEN | Migration `20260908_0014`, browser validate-only/no mutation, save, preview reorder không persist, clone, JSON/CSV export và refresh history đã chạy; direct PostgreSQL row/checksum, organization-scope negative probe và release evidence còn mở |
-| P15 | LOCAL VERIFIED / STAGING OPEN | Migration `20260908_0015`, scalar re-irradiation/fraction-compensation engine/API/UI, recovery/sensitivity, nonuniform schedule, delivered-prefix alternatives, interruption/time model, immutable snapshot và JSON/CSV export; staging browser/DB/scope/release evidence còn mở |
+| P15 | STAGING SMOKE VERIFIED / FINAL GATE OPEN | Migration `20260908_0015`, scalar re-irradiation/fraction-compensation engine/API/UI, recovery/sensitivity, nonuniform schedule, delivered-prefix alternatives, interruption/time model, immutable snapshot và JSON/CSV export; browser happy path đã pass trên deployment `008ec1d1-3215-44c7-9d64-fb06dc024e58`; replay/DB/scope/full S-E/release evidence còn mở |
 | P16 | NOT_STARTED | Depends on P12/P13 |
 | P17 | NOT_STARTED | Depends on P6/P8/P9 |
 | P18 | NOT_STARTED | Integrated hardening and pilot |
@@ -154,6 +154,15 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - Frontend routes `/app/biological/re-irradiation` and `/app/biological/fraction-compensation` use the shared Clinical Precision Interface language. They expose saved scenario/revision selection, course×tissue matrix, recovery/sensitivity, planned/delivered prefix, alternatives, interruption/time model, validation, immutable result/history and export states. The page labels all outputs `SCENARIO / ESTIMATE ONLY`.
 - Local verification: `tests/test_re_irradiation.py` **5/5**, `tests/test_re_irradiation_engine.py` **22/22**, full backend **133 passed**, Ruff, strict mypy, frontend lint/typecheck/build and OpenAPI regenerate/check passed. The Vite build retains only the existing bundle-size warning.
 - This is local evidence only. Staging still requires the candidate deployment, schema/readiness check, authenticated browser workflow for both operations, remote export, direct PostgreSQL row/fingerprint/checksum, explicit out-of-organization negative probe and release manifest. P15 spatial accumulation remains intentionally unavailable.
+
+## Live Railway P15 Biological smoke evidence — verified 2026-09-08
+
+- Candidate `09acb90` deployed successfully to staging API deployment `008ec1d1-3215-44c7-9d64-fb06dc024e58`; the API readiness endpoint returned HTTP 200 with `schema_revision=20260908_0015`. The web bundle served the P15 routes `/app/biological/re-irradiation` and `/app/biological/fraction-compensation`.
+- Re-irradiation browser flow used the saved synthetic scenario `Staging P12 Biological Scenario rev2 · STAGING_P12_BIO`, saved revision `3`, with prior/current courses `60 Gy / 30 fractions / 2 Gy` and alpha/beta `10 Gy`. Validate-only returned `valid` and did not create a snapshot. Save created snapshot `ebc07188-82f2-4d4d-b443-a86105efbc3f`, status `COMPLETED`, result checksum `c5d80c8a8a1250b4be683fcb7f2fb988545784e9b5d055e573627de843f88068`; the UI displayed no-recovery BED `144`, recovery BED `144` for `NONE`, and EQD2 `120`.
+- After navigation/reload, the same re-irradiation snapshot remained in history with the same checksum. JSON export returned HTTP 200 and the UI reported a successful download. This demonstrates browser/API/readback/export for the scalar operation; it does not yet demonstrate same-key replay or direct SQL.
+- Fraction-compensation browser flow used planned doses `[2,2,2,2,2]`, delivered prefix `[2,2]`, alternatives `[2,2,2]` and `[2.5,2.5,1]`, alpha/beta `10 Gy`. Validate-only did not mutate; save created snapshot `2e9f2767-daa4-4774-a48f-6f1ca47f8ad9`, status `COMPLETED`, result checksum `796fbc91e5b0cc2a7b3fc679c8acbbcd4026e9549858b1999dab407697ba86cf`. The UI showed planned BED `12`, two delivered prefix fractions locked, alternative deltas `0` and `0.15`, and warning `NO_REPOPULATION_CORRECTION` for the `NONE` time model.
+- Fraction-compensation JSON and CSV export actions both returned HTTP 200 in the API console. The browser retained the result and history after the operation. Spatial accumulation was not requested as an available capability and no QA-case/patient/TPS/PACS linkage was created.
+- **Evidence level:** `STAGING_SMOKE_VERIFIED` for deploy, readiness, authenticated validate-only/no-mutation, save, persisted readback and export of both operations. Still open before P15 `DONE-v2`: same-key idempotent replay, direct PostgreSQL aggregate/id/checksum query, explicit out-of-organization negative probe, full error/fault matrix, release manifest and any independent clinical/scientific validation required by intended use.
 
 ## Live Railway P13/P14 Biological smoke evidence — verified 2026-09-08
 

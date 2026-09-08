@@ -5,10 +5,10 @@
 - **Tên sản phẩm:** RT-CONNECT
 - **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
 - **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
-- **Phiên bản tài liệu:** 0.14 — catalogue tính năng, workflow, ngoại lệ, phục hồi và tiêu chí nghiệm thu theo P0–P20; bổ sung contract thực thi P15 re-irradiation/fraction compensation và trạng thái triển khai tương ứng (2026-09-08)
+- **Phiên bản tài liệu:** 0.15 — catalogue tính năng, workflow, ngoại lệ, phục hồi, từ điển trạng thái và tiêu chí nghiệm thu theo P0–P20; đồng bộ sau khi kiểm staging P15 (2026-09-08)
 - **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
-Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.14 tại mục 21 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
+Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.15 tại mục 21 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
 
 ---
 
@@ -1178,9 +1178,9 @@ Clinical MVP tập trung vào Machine QA, PSQA Gamma, report, trend, input valid
 `specification.md`, `technical-specification.md` và `plan.md` được xây dựng từ các yêu cầu, quy tắc và tiêu chí nghiệm thu trong tài liệu này. Google Stitch cung cấp thiết kế trực quan; Railway và Supabase cung cấp hạ tầng đã chọn; không nguồn nào trong số đó được tự thay thế hoặc làm mất requirement nghiệp vụ.
 
 
-## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.14
+## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.15
 
-Bổ sung ngày 2026-09-08 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi và phạm vi nghiệm thu. `specification.md` v1.8 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v2.8 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
+Bổ sung ngày 2026-09-08 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu. `specification.md` v1.9 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v2.9 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
 
 ### 21.1. Các quyết định sản phẩm giữ nguyên
 
@@ -1837,3 +1837,84 @@ Các nhóm tính năng có điều kiện bổ sung:
 | Public website | HTTPS/Auth/CORS; version manifest; private dependency; remote E2E; backup/rollback |
 
 Nếu một điều kiện chưa có evidence, trạng thái là `IN_PROGRESS`, `LOCAL_VERIFIED` hoặc `STAGING_VERIFIED` tùy evidence, không phải `DONE`. Danh sách này không tuyên bố có thể dự đoán mọi lỗi; lỗi mới phát hiện trong pilot hoặc vận hành phải trở thành testcase hồi quy và được truy vết ngược về FR/contract/phase.
+
+### 21.10. Từ điển trạng thái nghiệp vụ thống nhất
+
+Để người dùng không nhầm giữa “API trả 200”, “phép tính đã xong” và “kết quả đạt”, mọi module dùng ba lớp trạng thái độc lập:
+
+1. **Vòng đời dữ liệu/tác vụ:** mô tả resource hoặc operation đang ở bước nào.
+2. **Kết quả kỹ thuật:** mô tả phép tính/render đã hoàn tất hay chưa.
+3. **Kết quả chất lượng:** chỉ áp dụng cho rule/QA metric và không được suy ra từ HTTP status.
+
+| Lớp | Giá trị | Ý nghĩa nghiệp vụ | Chuyển trạng thái hợp lệ tối thiểu |
+| :--- | :--- | :--- | :--- |
+| Vòng đời | `NOT_STARTED` | Chưa có thao tác hoặc chưa khởi tạo draft | `DRAFT`, `UNAVAILABLE` |
+| Vòng đời | `DRAFT` | Đang nhập/sửa, chưa được chấp nhận để tính | `VALIDATING`, `ARCHIVED` |
+| Vòng đời | `VALIDATING` | Đang kiểm schema, liên kết, đơn vị và điều kiện chéo | `DRAFT`, `ACCEPTED`, `INVALID`, `CONFLICT` |
+| Vòng đời | `INVALID` | Dữ liệu không đủ hoặc sai, không được dùng cho nhánh liên quan | `DRAFT`, `ARCHIVED` |
+| Vòng đời | `ACCEPTED` | Server đã nhận và ghi nhận operation; đã có ID tra cứu | `QUEUED`, `RUNNING`, `COMPLETED`, `FAILED` |
+| Vòng đời | `QUEUED` | Đang chờ worker/renderer hoặc dependency | `RUNNING`, `RETRYING`, `FAILED` |
+| Vòng đời | `RUNNING` | Đang thực thi; output chưa được coi là kết quả cuối | `COMPLETED`, `RETRYING`, `FAILED` |
+| Vòng đời | `RETRYING` | Đang phục hồi lỗi transient theo giới hạn | `QUEUED`, `RUNNING`, `FAILED` |
+| Vòng đời | `COMPLETED` | Output đã lưu bền vững và có provenance | `SUPERSEDED`, `ARCHIVED` |
+| Vòng đời | `FAILED` | Operation không hoàn tất; có error snapshot và cách phục hồi | `RETRYING`, `DRAFT`, `ARCHIVED` |
+| Vòng đời | `CONFLICT` | Revision/idempotency/lifecycle không còn khớp | `DRAFT`, `VALIDATING` sau khi tải bản hiện tại |
+| Vòng đời | `ARCHIVED` | Không dùng cho thao tác mới mặc định nhưng còn lịch sử | `RESTORED` hoặc chỉ đọc theo contract |
+| Capability | `UNAVAILABLE` | Nhánh chưa được hỗ trợ hoặc dependency chưa đủ | Không tự chuyển thành `COMPLETED`; chỉ mở khi capability có contract |
+| Chất lượng | `PASS` | Rule/metric đạt điều kiện đã chọn | Không nói lên toàn bộ an toàn điều trị |
+| Chất lượng | `WARNING` | Có output nhưng còn giả định/thiếu thông tin không chặn | Người dùng xem warning và nguồn trước khi dùng tiếp |
+| Chất lượng | `FAIL` | Output hợp lệ nhưng không đạt tolerance/rule | Tạo issue/review hoặc run mới; không gọi là lỗi hệ thống |
+| Chất lượng | `N/A` | Metric được miễn có lý do rõ ràng | Không tính là `PASS` và không tự đưa vào mẫu số |
+
+Các trạng thái terminal (`INVALID`, `COMPLETED`, `FAILED`, `CONFLICT`, `ARCHIVED`) phải có lý do hoặc snapshot đủ để giải thích. `PASS`, `FAIL`, `WARNING` và `N/A` là kết quả của metric; chúng không thay thế vòng đời `COMPLETED` hoặc `FAILED`. Member trong organization vẫn ngang quyền; các trạng thái trên chỉ mô tả dữ liệu/tác vụ, không phải cấp bậc bác sĩ–kỹ sư.
+
+### 21.11. Bộ trường hợp bắt buộc để gọi một tính năng là đầy đủ
+
+“Toàn bộ trường hợp lỗi” trong phạm vi kế hoạch được hiểu là toàn bộ các điểm kiểm soát mà sản phẩm biết và có thể kiểm thử: input, trạng thái, scope, dependency, persistence, concurrency, output và vận hành. Không thể liệt kê trước mọi lỗi tương lai; mỗi lỗi mới phải trở thành testcase hồi quy. Với mỗi FR có mutation, calculation, job hoặc export, tối thiểu phải kiểm các trường hợp sau:
+
+| Case | Khi xảy ra | Kết quả phải có |
+| :--- | :--- | :--- |
+| B01 — Happy path tối thiểu | Input hợp lệ nhỏ nhất | Output đúng, ID/revision, status cuối và provenance. |
+| B02 — Happy path biên | Giá trị min/max hợp lệ, nhiều dòng hoặc dữ liệu dài | Không truncation/clamp ngầm; hiệu năng và số đếm đúng. |
+| B03 — Optional/empty | Optional omitted, null, empty collection, zero hợp lệ | Phân biệt ba trạng thái và hiển thị empty có hướng dẫn. |
+| B04 — Field invalid | Sai type, format, unit, âm, non-finite, quá giới hạn | Field error, không side effect, giữ input còn hợp lệ. |
+| B05 — Cross-field invalid | D/n/d, parent/child, UID/frame, option/context hoặc lịch không nhất quán | Error ở quan hệ liên quan; không sửa tự động hoặc tính một phần. |
+| B06 — Not found/archived/scope | ID sai, resource archived, identity khác organization | `404/403` đúng boundary; không lộ metadata và không tạo fallback giả. |
+| B07 — Duplicate/idempotency | Double click, retry sau mất response, key trùng cùng payload/khác payload | Replay cùng kết quả hoặc `409`; không nhân bản. |
+| B08 — Concurrent edit | Hai tab/member dùng cùng revision | Một commit hợp lệ; bản còn lại conflict và draft được giữ. |
+| B09 — Dependency transient | DB/Redis/object/Auth/renderer timeout, 5xx, unavailable | Retry bounded hoặc trạng thái FAILED; accepted ID không mất. |
+| B10 — Persistence uncertain | Commit đã xảy ra nhưng response mất hoặc object/DB lệch | Tra cứu operation/object trước retry; reconcile; không báo success giả. |
+| B11 — Refresh/reconnect/restart | Reload browser, đổi route, API/worker restart sau accept | Đọc lại cùng snapshot; không duplicate, không spinner vô hạn. |
+| B12 — Output/provenance/export | Mở history, drill-down, download từng format, dữ liệu warning | Source/version/checksum/format đúng; output cũ không bị live data thay thế. |
+
+Phase owner phải đánh dấu từng B-case là `PASS`, `FAIL`, `BLOCKED`, `NOT_RUN` hoặc `NOT_APPLICABLE` và trỏ đến testcase `TC-Pxx-*`, evidence và issue. `NOT_APPLICABLE` cần lý do nghiệp vụ; không được dùng để bỏ qua B06, B07, B09 hoặc B10 cho một mutation có side effect. Các phase P8, P9, P17 và P18 còn phải thêm oracle số học, visual/geometry hoặc workload tương ứng.
+
+### 21.12. Chỉ mục nghiệm thu nghiệp vụ P0–P20
+
+Bảng này là bản đồ ngắn gọn để không bỏ sót phase. `S` là workflow chạy đúng, `E` là workflow lỗi/phục hồi; chi tiết expected, input và evidence nằm trong cùng mã ở `plan.md`.
+
+| Phase | Workflow nghiệp vụ phải đi hết | S bắt buộc | E bắt buộc | Output chứng minh |
+| :--- | :--- | :--- | :--- | :--- |
+| P0 | Baseline → FR/MOD/route → contract/test/evidence → gap decision | `TC-P00-S01..S03` | `TC-P00-E01..E04` | Registry, decision log, gap list, tài liệu cùng version. |
+| P1 | Clean setup → service → migration/seed → build/test → restart | `TC-P01-S01..S03` | `TC-P01-E01..E05` | Setup/migration/CI/build evidence tái lập được. |
+| P2 | Railway đúng env → migration → health/ready → JWT/Auth → manifest | `TC-P02-S01..S03` | `TC-P02-E01..E06` | Source SHA, schema, service, Auth và DB đúng môi trường. |
+| P3 | Deep-link → sign-in/recovery → bootstrap/onboarding → dashboard → logout | `TC-P03-S01..S04` | `TC-P03-E01..E06` | Browser state matrix, cache/session và empty/error evidence. |
+| P4 | Organization → site/machine/member → rename → archive/restore/history | `TC-P04-S01..S04` | `TC-P04-E01..E06` | Stable IDs, scope, ngang quyền và lifecycle history. |
+| P5 | Folder tree → QA case → search/filter/page → move/archive/restore | `TC-P05-S01..S04` | `TC-P05-E01..E06` | Tree snapshot, deep-link và atomic mutation evidence. |
+| P6 | File → object/checksum → manifest → validation → signed download | `TC-P06-S01..S04` | `TC-P06-E01..E07` | Byte round-trip, DICOM/measurement findings và reconcile. |
+| P7 | Protocol → draft metrics/N-A → evaluate → result → rerun/compare/trend | `TC-P07-S01..S04` | `TC-P07-E01..E06` | Known-answer, rule result, immutable rerun và projection. |
+| P8 | Preflight → accepted/outbox → Redis/lease → Gamma → result → retry/compare | `TC-P08-S01..S05` | `TC-P08-E01..E10` | 2D/3D oracle, denominator, attempt/fencing, fault/resource evidence. |
+| P9 | Source/template → edit block → revision → render → export/history | `TC-P09-S01..S04` | `TC-P09-E01..E06` | Snapshot, 4 format, Unicode/visual/hash và retry evidence. |
+| P10 | Filter/context → raw/aggregate → baseline/event → drill-down/export/rebuild | `TC-P10-S01..S08` | `TC-P10-E01..E12` | Compatibility, timezone, source equality và volume evidence. |
+| P11 | Search → create/clone → validate → DRAFT → ACTIVE → consumer/history | `TC-P11-S01..S09` | `TC-P11-E01..E16` | Version/source/applicability, active consumer và immutable snapshot. |
+| P12 | Hub → capability → scenario/revision → save/clone/archive → history/export | `TC-P12-S01..S09` | `TC-P12-E01..E12` | Namespace độc lập, PostgreSQL state, scope và capability. |
+| P13 | Saved revision → LQ input → validate → calculate → curve/table → history/export | `TC-P13-S01..S08` | `TC-P13-E01..E10` | Known-answer, precision, chart/table/checksum và replay. |
+| P14 | P13 options → common context → baseline → delta/chart → reorder/clone/export | `TC-P14-S01..S06` | `TC-P14-E01..E10` | Delta/zero policy, no-truncate, lineage và persisted snapshot. |
+| P15 | Courses → tissue/model → recovery → cumulative/sensitivity → compensation/export | `TC-P15-S01..S08` | `TC-P15-E01..E14` | Scalar/recovery/alternative snapshot; spatial capability rõ ràng. |
+| P16 | Search → source/applicability → create/clone/version → citation/import → explicit use | `TC-P16-S01..S04` | `TC-P16-E01..E06` | Library version, citation, import report và no-match behavior. |
+| P17 | Dataset → geometry preflight → overlay → DVH/profile → metric/export | `TC-P17-S01..S04` | `TC-P17-E01..E07` | Frame/ROI/coverage oracle, visual/table fallback và lineage. |
+| P18 | RC → integrated/golden/fault/load → restore → pilot → regression | `TC-P18-S01..S04` | `TC-P18-E01..E06` | RC manifest, workload, restore, pilot issue và severity. |
+| P19 | Backup → promote services/schema → domain/Auth → remote E2E → rollback | `TC-P19-S01..S04` | `TC-P19-E01..E06` | Public URL, HTTPS, version/config manifest và rollback rehearsal. |
+| P20 | Monitor/alert → backup/restore drill → runbook → incident → maintenance | `TC-P20-S01..S04` | `TC-P20-E01..E05` | Alert, restore, owner, RCA/regression và backlog vận hành. |
+
+Không được dùng cột `S` để bỏ qua cột `E`; một workflow chỉ được gọi là “hoàn thiện” khi cả hai đã có expected/observed/evidence. Khi implementation chưa tồn tại, các mã này vẫn là target và phải giữ `NOT_RUN`, không tạo screenshot hoặc dữ liệu giả để lấp checklist.

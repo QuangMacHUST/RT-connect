@@ -1,10 +1,10 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.8**; ngày 2026-09-08.
-- Nguồn nghiệp vụ: business-analysis.md v0.14.
-- Kế hoạch triển khai: plan.md v2.8, P0–P20.
+- File: specification.md; version **1.9**; ngày 2026-09-08.
+- Nguồn nghiệp vụ: business-analysis.md v0.15.
+- Kế hoạch triển khai: plan.md v2.9, P0–P20.
 - Kiến trúc nền: technical-specification.md v1.6.
-- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime.
+- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime. Bản 1.9 bổ sung state machine, coverage contract B01–B12, acceptance evidence schema và quy tắc xử lý “unknown outcome” xuyên mọi phase.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
 
@@ -106,6 +106,87 @@ Mọi trang có loading/empty/ready/error; form thêm validation/saving/saved/co
 Form có label, unit cạnh value, keyboard focus theo lỗi đầu tiên; không chỉ dùng màu. Khi chọn file phải thấy filename/size; upload reset file input sau success là bình thường, vì vậy “No file chosen” sau upload không chứng minh upload thất bại: phải refresh danh sách/server và tìm artifact/checksum.
 
 Dates/decimal input phải hỗ trợ giao diện tiếng Việt có quy tắc rõ, không hiểu “1,000” lúc là 1 lúc là 1000. Bảng/chart có data-table alternative; route deep-link và back/forward giữ selection/filter.
+
+### 2.6. State machine và operation envelope thống nhất
+
+Mọi resource hoặc operation được triển khai mới phải phân biệt ba giá trị: `lifecycle_status`, `technical_status` và `quality_status`. Không được map trực tiếp HTTP `200` thành `PASS`, cũng không được map lỗi tính toán hợp lệ (`FAIL`) thành lỗi server.
+
+| Trường | Giá trị/kiểu | Quy tắc |
+| :--- | :--- | :--- |
+| `operation_id` | UUID/string ổn định | Có từ lúc server chấp nhận mutation/job; dùng để query sau timeout. |
+| `lifecycle_status` | `NOT_STARTED`, `DRAFT`, `VALIDATING`, `ACCEPTED`, `ARCHIVED`, `CONFLICT`, `UNAVAILABLE` | Trạng thái của resource hoặc command; `DRAFT` không được dùng làm output cuối. |
+| `technical_status` | `NOT_STARTED`, `QUEUED`, `RUNNING`, `RETRYING`, `COMPLETED`, `FAILED` | Tiến trình tính/render/queue; chỉ `COMPLETED` mới có output kỹ thuật cuối. |
+| `quality_status` | `PASS`, `WARNING`, `FAIL`, `N/A`, `INVALID`, `null` | Kết quả rule/metric; không thay thế `technical_status`. |
+| `warnings` | mảng warning có `code`, `message`, `field/location`, `impact` | Warning phải xuất hiện cả ở UI và snapshot nếu output đã lưu. |
+| `errors` | mảng error có `code`, `message`, `field/location`, `retryable` | Error không được chứa secret, PHI không cần thiết hoặc stack trace. |
+| `provenance` | source IDs/checksum, revision, model/engine/renderer version | Có với calculation/report/export; không trỏ “latest” thay cho revision cụ thể. |
+| `next_action` | hành động phục hồi dạng machine-readable/text | Nêu sửa field, refresh/query, retry, restore hoặc tạo revision mới; không phải nút giả. |
+
+State transition chuẩn:
+
+~~~text
+NOT_STARTED → DRAFT → VALIDATING
+VALIDATING → DRAFT | INVALID | CONFLICT | ACCEPTED
+ACCEPTED → QUEUED | RUNNING | COMPLETED | FAILED
+QUEUED → RUNNING | RETRYING | FAILED
+RUNNING → COMPLETED | RETRYING | FAILED
+RETRYING → QUEUED | RUNNING | FAILED
+COMPLETED → SUPERSEDED | ARCHIVED
+FAILED → RETRYING | DRAFT | ARCHIVED
+~~~
+
+`INVALID`, `CONFLICT`, `FAILED` và `UNAVAILABLE` phải có reason; `COMPLETED` phải có output hoặc lý do output rỗng hợp lệ. Không cho phép transition ngầm `FAILED → COMPLETED` bằng cách sửa cùng run; retry hạ tầng giữ nguyên input/config và attempt mới, còn input thay đổi tạo operation/run mới. `SUPERSEDED` là trạng thái lịch sử của resource có revision mới và không được dùng thay cho `ARCHIVED` nếu sản phẩm cần khôi phục.
+
+Nếu client mất response sau khi gửi mutation, UI dùng trạng thái cục bộ `OUTCOME_UNKNOWN` và phải query `operation_id`/idempotency key trước khi báo thất bại hoặc gửi lại. `OUTCOME_UNKNOWN` không phải trạng thái thành công hay lỗi cuối trong database.
+
+### 2.7. Error taxonomy và chính sách phục hồi
+
+Mỗi mã lỗi thực thi phải thuộc một lớp dưới đây, có HTTP mapping, `retryable` và assertion về side effect. Một nguyên nhân chỉ dùng một mã chính; không ghép nhiều mã bằng chuỗi `A_OR_B`.
+
+| Lớp | Ví dụ mã | Retry tự động | Invariant bắt buộc |
+| :--- | :--- | :--- | :--- |
+| Request/schema | `REQUEST_VALIDATION_FAILED`, `INVALID_FORMAT` | Không | Không tạo resource/job/result; field error giữ input. |
+| Authentication | `AUTHENTICATION_REQUIRED`, `AUTH_VERIFICATION_FAILED` | Refresh một lần nếu có session | Không bypass signature; không render cache user cũ. |
+| Organization/scope | `MEMBERSHIP_REQUIRED`, `RESOURCE_OUT_OF_SCOPE` | Không | Lookup đầu tiên đã lọc organization; không lộ tồn tại record. |
+| Lifecycle/revision | `REVISION_CONFLICT`, `RESOURCE_ARCHIVED` | Không | Không overwrite; giữ draft và tải revision hiện hành. |
+| Idempotency/unique | `IDEMPOTENCY_CONFLICT`, `UNIQUE_CONFLICT` | Không | Same fingerprint replay; khác fingerprint không tạo row thứ hai. |
+| Dependency/transient | `SERVICE_UNAVAILABLE`, `UPSTREAM_TIMEOUT` | Có giới hạn | Accepted operation giữ ID; không ghi result terminal giả. |
+| Persistence uncertain | `PERSISTENCE_UNCERTAIN`, `OBJECT_DB_MISMATCH` | Query/reconcile trước | Xác định DB/object/queue trước retry; không cleanup object đang được tham chiếu. |
+| Numeric/geometry | `UNIT_INVALID`, `FRAME_MISMATCH`, `CALCULATION_NONFINITE` | Không | Không đoán unit/transform hoặc bỏ điểm lỗi để tăng PASS. |
+| Capacity/security | `PAYLOAD_TOO_LARGE`, `RESOURCE_LIMIT`, `RATE_LIMITED` | Theo `Retry-After`/policy | Không OOM dây chuyền; không retry vô hạn. |
+| Render/export | `RENDER_FAILED`, `EXPORT_FORMAT_UNSUPPORTED`, `DOWNLOAD_EXPIRED` | Render/download có điều kiện | Source revision và export cũ không bị sửa. |
+| Release/config | `SCHEMA_NOT_READY`, `VERSION_MISMATCH`, `CONFIGURATION_DRIFT` | Không trong request user | Dừng promote/giữ last-good; health 200 không đủ để đóng. |
+
+`retryable=true` chỉ là thuộc tính của error sau khi server xác định operation có thể retry an toàn. Client không được retry vô điều kiện mọi `5xx`. Với mutation không có idempotency, chỉ hiển thị query/reconcile; với async job, retry phải giữ snapshot và tăng attempt. Với warning, operation vẫn có thể `COMPLETED` nhưng `quality_status` hoặc capability phải phản ánh warning; warning không được biến thành error hoặc bị ẩn khỏi provenance.
+
+### 2.8. Evidence record bắt buộc cho nghiệm thu
+
+Mỗi kết quả test/e2e/release phải lưu record có schema tối thiểu sau; giá trị secret/PHI phải redaction trước khi commit:
+
+~~~yaml
+evidence_id: "EV-<phase>-<date>-<sequence>"
+phase: "Pxx"
+test_id: "TC-Pxx-Syy|TC-Pxx-Eyy|Cxx|Gxx"
+requirements: ["FR-Pxx-yy"]
+contract: "SPEC-Pxx"
+environment: "local|staging|production"
+source_sha: "<git-sha>"
+schema_revision: "<alembic-or-null>"
+engine_version: "<version-or-null>"
+renderer_version: "<version-or-null>"
+fixture_hashes: ["<sha256>"]
+organization_scope: "<synthetic-org-id-or-redacted>"
+input_fingerprint: "<sha256>"
+expected: "<measurable assertion>"
+observed: "<measurable result>"
+state_assertions: ["<db/object/queue/ui assertions>"]
+outcome: "PASS|FAIL|BLOCKED|NOT_RUN|NOT_APPLICABLE"
+recovery: "<action and result>"
+captured_at: "<ISO-8601>"
+artifacts: ["<redacted-log/screenshot/response/path>"]
+~~~
+
+Evidence chỉ có HTTP status là `API_SMOKE`, không phải `E2E_PASS`. Với upload phải có checksum round-trip; job phải có attempt/lease/terminal state; calculation phải có known-answer hoặc oracle; report phải có snapshot/format/hash; trend phải có source equality; release phải có service/schema/config manifest. Nếu assertion không quan sát được do thiếu quyền hoặc dependency, ghi `BLOCKED` và next action cụ thể.
 
 ## 3. Lưu trữ, provenance và validation dữ liệu
 
@@ -1125,6 +1206,36 @@ Các phase contract ở mục 8 đã nêu trường chi tiết. Bảng dưới �
 | Projection/rebuild | Đọc source snapshot cùng organization; uniqueness | Rebuild tạo thiếu/sửa projection được phép, trả counters | Duplicate/source thiếu được ghi diagnostic, không commit partial | Chạy lại idempotent; source of truth không bị rewrite |
 
 Một test chỉ được đánh dấu đạt khi kiểm đủ lớp mà contract yêu cầu: response/error envelope, state database, object/queue nếu có, giao diện và provenance. Nếu chỉ kiểm HTTP status thì chỉ được ghi `API_SMOKE`, không được ghi `E2E_PASS`.
+
+### 8.5. Coverage contract cho từng phase
+
+Mỗi phase kế thừa B01–B12 ở mục 2 và phải có các lớp kiểm tra dưới đây. `D` là domain/engine, `A` là API, `DB` là migration/database, `UI` là browser, `R` là failure/recovery, `V` là volume/performance và `P` là provenance/evidence. Phase chỉ đạt khi các lớp được yêu cầu có assertion tương ứng; mã `TC` là chỉ mục trong `plan.md`.
+
+| Phase | Test success/error tối thiểu | Lớp | Assertion đặc thù |
+| :--- | :--- | :--- | :--- |
+| P0 | `TC-P00-S01..S03`, `E01..E04` | D, P | FR không orphan, conflict/gap có quyết định và evidence không bị sửa lịch sử. |
+| P1 | `TC-P01-S01..S03`, `E01..E05` | D, A, DB, R, P | Clean setup, restart, migration rỗng/upgrade và CI cùng SHA. |
+| P2 | `TC-P02-S01..S03`, `E01..E06` | A, DB, R, P | URL driver, PORT, schema readiness, JWT positive/negative và config drift. |
+| P3 | `TC-P03-S01..S04`, `E01..E06` | A, UI, R, P | Deep-link, first-use, existing member, expiry, logout-cache và offline. |
+| P4 | `TC-P04-S01..S04`, `E01..E06` | D, A, DB, UI, R, P | Stable IDs, equal-member scope, invite/lifecycle, concurrent edit và unknown mutation. |
+| P5 | `TC-P05-S01..S04`, `E01..E06` | D, A, DB, UI, R, P | Cây không cycle, move atomic, combined filter/page và restore history. |
+| P6 | `TC-P06-S01..S04`, `E01..E07` | D, A, DB, UI, R, P | Byte/hash round-trip, object/DB reconcile, type/role/UID/geometry và signed link. |
+| P7 | `TC-P07-S01..S04`, `E01..E06` | D, A, DB, UI, R, P | Known-answer, rule boundary, N/A reason, immutable rerun và projection uniqueness. |
+| P8 | `TC-P08-S01..S05`, `E01..E10` | D, A, DB, UI, R, V, P | Gamma oracle, coverage/denominator/censoring, DICOM 2D/3D, lease/fencing/crash/dead-letter. |
+| P9 | `TC-P09-S01..S04`, `E01..E06` | D, A, DB, UI, R, V, P | Full block customization, snapshot, 4 format, Unicode/long report, render/storage retry. |
+| P10 | `TC-P10-S01..S08`, `E01..E12` | D, A, DB, UI, R, V, P | Compatibility/timezone/aggregate equality, baseline/event, rebuild, source drill-down/export. |
+| P11 | `TC-P11-S01..S09`, `E01..E16` | D, A, DB, UI, R, P | Immutable version/source, clone deep-copy, active consumer, stale conflict và scope. |
+| P12 | `TC-P12-S01..S09`, `E01..E12` | D, A, DB, UI, R, P | Independent namespace, revision/history/clone/archive, capability và no-QA linkage. |
+| P13 | `TC-P13-S01..S08`, `E01..E10` | D, A, DB, UI, R, V, P | LQ known-answer, D/n/d consistency, curve-table identity, replay/checksum/no mutation. |
+| P14 | `TC-P14-S01..S06`, `E01..E10` | D, A, DB, UI, R, P | 2–10 options, baseline/zero policy, context warning, reorder preview, clone/export. |
+| P15 | `TC-P15-S01..S08`, `E01..E14` | D, A, DB, UI, R, P | Course/tissue/recovery, nonuniform schedule, prefix alternative, spatial unavailable, export. |
+| P16 | `TC-P16-S01..S04`, `E01..E06` | D, A, DB, UI, R, P | Source/applicability/version/import, no-match, link/content safety và explicit use. |
+| P17 | `TC-P17-S01..S04`, `E01..E07` | D, A, DB, UI, R, V, P | Frame/grid/ROI/coverage, DVH oracle, dose-only fallback, visual/table and source lineage. |
+| P18 | `TC-P18-S01..S04`, `E01..E06` | D, A, DB, UI, R, V, P | Integrated RC, golden diff, restart/concurrency, load, backup/restore, pilot severity. |
+| P19 | `TC-P19-S01..S04`, `E01..E06` | A, DB, UI, R, V, P | Public HTTPS, Auth/CORS, service/schema/config manifest, remote E2E and rollback. |
+| P20 | `TC-P20-S01..S04`, `E01..E05` | A, DB, R, V, P | Real alert, backup/restore drill, owner/runbook, capacity and result-change regression. |
+
+Nếu phase có output nhưng chưa có một lớp required, status cao nhất chỉ là `LOCAL_VERIFIED` hoặc `STAGING_VERIFIED` theo evidence thực tế. `DONE-v2` yêu cầu không có testcase MUST `NOT_RUN`, `BLOCKED` hoặc `FAIL`, không có SEV0/SEV1 và manifest phải chỉ ra đúng SHA/schema/config đã chạy.
 
 ## 9. API hiện có và API mục tiêu
 
