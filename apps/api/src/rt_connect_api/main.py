@@ -12,6 +12,7 @@ from rt_connect_api.api.health import router as health_router
 from rt_connect_api.api.machine_qa import router as machine_qa_router
 from rt_connect_api.api.organization import router as organization_router
 from rt_connect_api.api.qa_archive import router as qa_archive_router
+from rt_connect_api.api.reports import router as reports_router
 from rt_connect_api.api.workspace import router as workspace_router
 from rt_connect_api.core.config import Settings, get_settings
 from rt_connect_api.core.errors import (
@@ -58,6 +59,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(artifacts_router, prefix="/api/v1")
     app.include_router(machine_qa_router, prefix="/api/v1")
     app.include_router(gamma_router, prefix="/api/v1")
+    app.include_router(reports_router, prefix="/api/v1")
     return app
 
 

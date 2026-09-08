@@ -309,7 +309,7 @@ def main() -> None:
                         execution_deadline_seconds=settings.gamma_execution_deadline_seconds,
                         retry_delay_seconds=retry_delay,
                     )
-                    if processed and run.status == "FAILED":
+                    if processed and run is not None and run.status == "FAILED":
                         raw_error = (
                             run.error_snapshot[0].get("code") if run.error_snapshot else None
                         )

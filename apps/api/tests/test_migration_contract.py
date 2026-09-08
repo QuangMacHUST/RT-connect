@@ -50,3 +50,22 @@ def test_gamma_reliability_migration_declares_fenced_dispatch_schema() -> None:
     assert '"lease_token"' in source
     assert '"lease_expires_at"' in source
     assert "def downgrade()" in source
+
+
+def test_report_migration_declares_immutable_revision_and_export_schema() -> None:
+    migration = (
+        Path(__file__).parents[1]
+        / "alembic"
+        / "versions"
+        / "20260908_0009_reports.py"
+    )
+    source = migration.read_text(encoding="utf-8")
+
+    assert 'revision: str = "20260908_0009"' in source
+    assert 'down_revision: str | Sequence[str] | None = "20260908_0008"' in source
+    assert '"report_template_versions"' in source
+    assert '"report_revisions"' in source
+    assert '"report_block_configs"' in source
+    assert '"export_jobs"' in source
+    assert '"warning_snapshot"' in source
+    assert "def downgrade()" in source

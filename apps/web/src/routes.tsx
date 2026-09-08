@@ -9,6 +9,7 @@ import { MachineQAPage } from './pages/MachineQAPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { OrganizationManagementPage } from './pages/OrganizationManagementPage'
 import { QAArchivePage } from './pages/QAArchivePage'
+import { ReportBuilderPage } from './pages/ReportBuilderPage'
 import { PasswordRecoveryPage } from './pages/PasswordRecoveryPage'
 import { PlatformStatusPage } from './pages/PlatformStatusPage'
 import { SessionErrorPage } from './pages/SessionErrorPage'
@@ -24,6 +25,7 @@ export function ApplicationRoutes() {
       <Route path="/app" element={<ProtectedRoute><HomeDashboardPage /></ProtectedRoute>} />
       <Route path="/app/organization" element={<ProtectedRoute><OrganizationManagementPage /></ProtectedRoute>} />
       <Route path="/app/qa" element={<ProtectedRoute><QAArchivePage /></ProtectedRoute>} />
+      <Route path="/app/reports" element={<ProtectedRoute><ReportBuilderPage /></ProtectedRoute>} />
       <Route path="/app/qa/cases/:caseId/machine-qa" element={<ProtectedRoute><MachineQAPage /></ProtectedRoute>} />
       <Route path="/app/qa/cases/:caseId/gamma" element={<ProtectedRoute><GammaPage /></ProtectedRoute>} />
       <Route path="/app/system/status" element={<PlatformStatusPage />} />

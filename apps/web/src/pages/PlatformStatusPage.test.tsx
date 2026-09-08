@@ -18,7 +18,7 @@ function renderPage() {
 
 test('renders an API-backed platform health state', async () => {
   vi.mocked(apiClient.health).mockResolvedValue({ status: 'ok', timestamp: '2026-09-05T00:00:00Z', correlation_id: 'test-id' })
-  vi.mocked(apiClient.version).mockResolvedValue({ application: 'rt-connect-api', version: '0.1.0', environment: 'test', engine_version: 'not-yet', renderer_version: 'not-yet' })
+  vi.mocked(apiClient.version).mockResolvedValue({ application: 'rt-connect-api', version: '0.1.0', environment: 'test', engine_version: 'not-yet', renderer_version: 'not-yet', schema_revision: 'test-schema' })
 
   renderPage()
 

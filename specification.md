@@ -1,8 +1,8 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.1**; ngày 2026-09-08.
-- Nguồn nghiệp vụ: business-analysis.md v0.7.
-- Kế hoạch triển khai: plan.md v2.1, P0–P20.
+- File: specification.md; version **1.2**; ngày 2026-09-08.
+- Nguồn nghiệp vụ: business-analysis.md v0.8.
+- Kế hoạch triển khai: plan.md v2.2, P0–P20.
 - Kiến trúc nền: technical-specification.md v1.0.
 - Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime.
 
@@ -585,8 +585,8 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 | :--- | :--- |
 | Module/requirement | MOD-07; FR-P09-01 đến FR-P09-04 |
 | Input và dữ liệu hiển thị | Report/title/source refs; template version; block stable IDs/type/label/order/visible/config; notes; revision; render options/font/locale; export format/status/hash. |
-| Model/storage | ReportTemplateVersion, ReportRevision, ReportBlockConfig, ExportJob/Artifact; immutable source bindings. |
-| Operation/API surface | Target /report-templates; /reports/{id}/revisions; POST revision exports, GET export status/download; không render side-effect qua GET. |
+| Model/storage | `report_template_versions`, `report_revisions`, `report_block_configs`, `export_jobs` trong migration `20260908_0009`; rendered bytes ở object storage qua `Artifact`-compatible storage contract; immutable source bindings. |
+| Operation/API surface | **Đã có local:** `GET/POST /organizations/{organization_id}/report-templates`; `POST /report-templates/{template_id}/versions`; `GET/POST /organizations/{organization_id}/reports`; `GET /reports/{report_key}`; `GET /reports/{report_key}/revisions`; `GET/POST /reports/{report_key}/revisions`; `GET/POST /reports/{report_key}/revisions/{revision_id}/exports`; `GET /report-exports/{job_id}`; `GET /report-exports/{job_id}/download`. Không render side-effect qua GET. |
 | Transaction/invariant | Save revision chỉ một lần trên expected revision; export failure không mutate result; giữ file gốc export để byte reproducibility. |
 | Output bàn giao | Builder/viewer/history/compare/renderer; visual export fixtures. |
 | Success oracle | TC-P09-S01 đến TC-P09-S04 trong plan |
@@ -596,6 +596,8 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 **Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer cần recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
 
 **Failure contract:** REPORT_REVISION_CONFLICT; REPORT_SOURCE_UNAVAILABLE; REPORT_CONTENT_INVALID; REPORT_RENDER_FAILED; EXPORT_FORMAT_UNSUPPORTED; DOWNLOAD_LINK_EXPIRED. Đây là taxonomy target; mapping sang error codes thực tế phải được ghi trong contract test trước khi triển khai.
+
+**P9 implementation contract hiện tại:** `ReportRevision.source_snapshot` là nguồn dữ liệu của revision, không phải live query khi mở lại. Khi tạo revision mới từ `QA_CASE`, backend đọc case hiện tại trong đúng organization rồi ghi snapshot mới; revision cũ không đổi. Block có stable ID, type, label, sort order, visibility, config và source binding; user có thể ẩn hoặc xóa warning/provenance khỏi layout theo quyết định sản phẩm, nhưng hệ thống vẫn giữ content hash, source snapshot, actor và timestamps ở lineage. Nội dung JSON tree bị giới hạn depth/size, số phải finite, block ID/order phải duy nhất; script, `javascript:` và payload nguy hiểm bị từ chối. Renderer hiện hỗ trợ JSON, CSV, PDF và PNG; output được hash, lưu object storage và trả signed URL. PDF fallback nếu không có font Unicode phù hợp phải ghi `warning_snapshot`, không được giả vờ rằng bản render tiếng Việt hoàn hảo. Cùng organization + idempotency key + fingerprint phải trả export cũ; cùng key khác request phải trả conflict.
 
 <a id="spec-p10"></a>
 
@@ -817,6 +819,93 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 
 **Failure contract:** BACKUP_POLICY_FAILED; ALERT_DELIVERY_FAILED; CAPACITY_WARNING; ENGINE_RESULT_CHANGED; RECURRING_INCIDENT. Đây là taxonomy target; mapping sang error codes thực tế phải được ghi trong contract test trước khi triển khai.
 
+## 8.1. Hợp đồng thực thi xuyên phase
+
+### 8.1.1. Phân loại kết quả
+
+Mọi operation phải trả về một trong các nhóm kết quả sau, không suy diễn từ HTTP status đơn lẻ:
+
+| Nhóm | Ý nghĩa | Quy tắc lưu và hiển thị |
+| :--- | :--- | :--- |
+| `REJECTED` | Request không hợp lệ trước khi được chấp nhận | Có error envelope; không tạo accepted job, không tạo artifact/result một phần. |
+| `ACCEPTED` | Server đã commit operation/run và có ID | Client có thể mất response nhưng phải query ID/idempotency trước khi retry. |
+| `RUNNING`/`RETRYING` | Job đang thực thi hoặc đang phục hồi dependency | Có attempt/progress/next action; không hiển thị PASS/FAIL tính toán sớm. |
+| `COMPLETED` | Phép tính/render đã có output bền vững | Tách status kỹ thuật khỏi quality status `PASS`, `WARNING`, `FAIL`, `INVALID`. |
+| `FAILED` | Attempt hoặc operation không hoàn tất | Có error snapshot và recovery action; không xóa input, result hoặc export cũ. |
+| `CONFLICT` | Revision/idempotency/lifecycle không còn phù hợp | 409, tải bản hiện tại, giữ draft; không silently overwrite. |
+| `OUT_OF_SCOPE` | Resource không thuộc organization/context hiện tại | 403/404 theo boundary; không suy ra resource tồn tại hay lộ metadata. |
+
+### 8.1.2. Chuỗi xử lý chuẩn
+
+1. **Resolve context:** xác minh identity, active membership và `organization_id` trước truy vấn resource đầu tiên.
+2. **Validate command:** kiểm schema, type, unit, range, cross-field, source relationship và capability.
+3. **Build snapshot:** chụp input, source checksum, config, protocol/model/template version và timezone/locale cần thiết.
+4. **Commit acceptance:** transaction ghi resource/snapshot/audit và outbox hoặc export job; response thành công phải có ID.
+5. **Execute:** synchronous engine chỉ được commit output sau khi kiểm snapshot; async worker dùng lease/attempt/fencing.
+6. **Persist terminal state:** output, warning/error, hash, version và lineage commit atomic theo khả năng storage.
+7. **Reconcile:** nếu queue/storage/response gặp lỗi, đối chiếu DB/object inventory trước retry; không tạo thao tác mới chỉ vì client timeout.
+8. **Present:** UI hiển thị trạng thái loading, empty, warning, error, success, retry và stale/conflict; không tự tính lại business result từ payload đã round display.
+
+### 8.1.3. Error/recovery matrix của toàn hệ thống
+
+| Lớp lỗi | Ví dụ phase | Response chuẩn | Recovery bắt buộc | Bất biến cần kiểm |
+| :--- | :--- | :--- | :--- | :--- |
+| Request/schema | P0, P1, P6, P13 | 400/422 + field details | Sửa input và gửi lại; không auto-retry invalid request | Không tạo record/job/result |
+| Authentication | P2, P3 | 401 + correlation ID | Refresh single-flight hoặc login lại; clear cache cũ | Không bypass signature, không cache sang user khác |
+| Membership/scope | P3–P19 | 403 hoặc 404 | Chọn organization/context hợp lệ; không tự join/create thay thế | Query/worker đầu tiên đã có organization scope |
+| Unique/revision | P4, P5, P7, P9, P11–P15 | 409 | Reload bản hiện tại, copy draft hoặc tạo revision/version mới | Không overwrite bản trước, không nhân đôi operation |
+| Dependency transient | P2, P6, P8, P9, P19 | 502/503/504 | Retry bounded theo loại operation; accepted ID giữ nguyên | Không mất accepted job; error không ghi đè result cũ |
+| Persistence uncertain | P4, P6, P8, P9, P13 | 409/503 tùy đã commit | Query idempotency/status/object inventory rồi mới retry | DB/object không có trạng thái “success giả” |
+| Numeric/geometry | P8, P13–P17 | 422 hoặc completed warning | Sửa unit/frame/config hoặc dùng capability explicit | Không đoán unit, transform, dose=0 hay pass rate |
+| Resource/capacity | P8, P9, P18–P20 | 413/429/503 | Giảm workload theo policy hoặc tăng capacity; giữ input | API không OOM dây chuyền, không retry vô hạn |
+| Valid result with warning | P6, P8, P9, P15–P17 | 200/201 với warning snapshot | User xem warning/assumption và quyết định bước tiếp theo | Warning không bị đổi thành error hoặc giấu khỏi lineage |
+| Release/config drift | P1, P2, P19, P20 | 503 hoặc release fail | Dừng promote, đối chiếu manifest, rollback last-good | Không gọi health-only là E2E pass |
+
+### 8.1.4. Quy tắc kiểm thử và evidence
+
+Một assertion chỉ được đánh dấu `PASS` khi đồng thời đúng response, DB state, object/queue state, UI state và provenance mà testcase yêu cầu. Ví dụ upload có HTTP 201 nhưng checksum download sai là `FAIL`; Gamma có `COMPLETED` nhưng denominator/censoring sai là `FAIL`; `/ready` trả 200 nhưng schema không đúng `SCHEMA_REVISION` là `FAIL`. Mỗi evidence phải ghi exact SHA, schema revision, engine/renderer version, fixture hash, organization context, request/run/export ID, expected/observed và cleanup. Không dùng screenshot thay query dữ liệu hoặc thay known-answer assertion.
+
+## 8.2. Ma trận hợp đồng kỹ thuật P0–P20
+
+Các phase contract ở mục 8 đã nêu trường chi tiết. Bảng dưới đây là checklist kỹ thuật để triển khai và review; các mã lỗi phải khớp testcase tương ứng trong `plan.md`, còn phần chưa có endpoint phải giữ chữ `TARGET`.
+
+| Phase | Input/command chính | Output thành công | Lỗi bắt buộc và phục hồi | Điều kiện kỹ thuật chặn đóng |
+| :--- | :--- | :--- | :--- | :--- |
+| P0 | Tài liệu, source, design registry, evidence index | Baseline version, FR→contract→test→evidence map | `DOCUMENT_CONFLICT`, `DESIGN_REFERENCE_STALE`, `EVIDENCE_MISSING`, `ENVIRONMENT_MISMATCH`; quyết định và rebaseline | Không có FR orphan; không có xung đột chưa quyết định |
+| P1 | Lockfile, env contract, Compose, migration, CI command | Runtime reproducible, schema head, health/build/test artifact | `DEPENDENCY_MISMATCH`, `PORT_IN_USE`, `MIGRATION_FAILED`, `CONFIGURATION_MISSING`, `BUILD_CONTRACT_FAILED`; sửa layer và rerun | Clean setup và upgrade từ DB rỗng/đang có đều có evidence |
+| P2 | Railway service/env, PostgreSQL URL, Auth issuer/JWKS, public port | API/worker deploy, `/health`, `/ready`, schema/version manifest | `BUILD_SOURCE_INVALID`, `DATABASE_DRIVER_MISMATCH`, `SERVICE_NOT_LISTENING`, `SCHEMA_NOT_READY`, `AUTH_VERIFICATION_FAILED`, `DEPLOYMENT_CONFIG_DRIFT`; giữ last-good | `SCHEMA_REVISION`, source SHA, Auth và DB là effective config đã kiểm |
+| P3 | Browser URL, Supabase session, return path, organization bootstrap | Authenticated shell và dashboard đúng context | `SIGN_IN_FAILED`, `RECOVERY_LINK_INVALID`, `SESSION_UNAVAILABLE`, `ORGANIZATION_MEMBERSHIP_REQUIRED`, `AUTH_CONFIGURATION_MISSING`, `WORKSPACE_LOAD_FAILED`; refresh/logout/login lại | Deep-link, expiry, empty onboarding và cache clear pass |
+| P4 | Organization/site/machine/membership commands | Scoped hierarchy, stable IDs, membership/invitation history | `MACHINE_CODE_CONFLICT`, `PARENT_NOT_AVAILABLE`, `REVISION_CONFLICT`, `INVITATION_INVALID`, `LAST_MEMBERSHIP_CONFLICT`, `MUTATION_RESULT_UNKNOWN`; đối soát idempotency | Cross-org isolation, concurrent edit, archive/restore và ngang quyền pass |
+| P5 | Folder/case create, tree move, search/filter/pagination | Atomic tree/case records và stable deep-links | `FOLDER_CYCLE`, `FOLDER_NAME_CONFLICT`, `PARENT_NOT_AVAILABLE`, `CASE_HIERARCHY_INVALID`, `PAGE_OUT_OF_RANGE`, `RESTORE_CONFLICT`; rollback mutation | Nested tree, archived lineage và combined filter pass |
+| P6 | Multipart file, declared type/role, manifest, validation command | Artifact metadata + object + checksum + findings | `FILE_REQUIRED_OR_EMPTY`, `UPLOAD_TOO_LARGE`, `UPLOAD_INTERRUPTED`, `ARTIFACT_PERSISTENCE_FAILED`, `ARTIFACT_TYPE_MISMATCH`, `INPUT_METADATA_INVALID`, `DOWNLOAD_LINK_EXPIRED`; reconcile/retry | Byte/hash round-trip, DICOM relationship, duplicate role và invalid profile pass |
+| P7 | Protocol version, metric draft, evaluate/rerun | Immutable measurement snapshot/result/trend projection | `MEASUREMENT_REQUIRED`, `MEASUREMENT_INVALID`, `BASELINE_ZERO`, `REVISION_CONFLICT`, `DUPLICATE_OPERATION`, `PROTOCOL_NOT_AVAILABLE`; tạo rerun/version | Known answer/boundary, N/A reason, result immutability và projection unique pass |
+| P8 | Gamma profile, artifact roles, config, enqueue/outbox | Gamma result/plots/counts/attempt diagnostics | `RTDOSE_REQUIRED_OR_COMPARISON_REQUIRED`, `GAMMA_INPUT_INCOMPATIBLE`, `GAMMA_CONFIG_UNSUPPORTED`, `GAMMA_NO_EVALUATED_POINTS`, `GAMMA_LOCAL_ZERO_REFERENCE`, `GAMMA_DISPATCH_UNAVAILABLE`, `GAMMA_EXECUTION_INTERRUPTED`, `GAMMA_DICOM_UNSUPPORTED`, `GAMMA_RESOURCE_LIMIT`, `GAMMA_SOURCE_CHANGED`; bounded retry/dead-letter | Numeric oracle, coverage/denominator, DICOM 3D, lease fencing, crash/ack, large workload và schema staging pass |
+| P9 | Template/report/revision/block/export command | Immutable report revision, deterministic output, object/hash/signed download | `REPORT_REVISION_CONFLICT`, `REPORT_SOURCE_UNAVAILABLE`, `REPORT_CONTENT_INVALID`, `REPORT_RENDER_FAILED`, `EXPORT_FORMAT_UNSUPPORTED`, `DOWNLOAD_LINK_EXPIRED`, `REPORT_STORAGE_UNAVAILABLE`, `EXPORT_IDEMPOTENCY_CONFLICT`; retry safe | Schema `20260908_0009`, full customization, snapshot immutability, 4-format export, visual and staging evidence |
+| P10 | Trend query, compatibility signature, baseline/event | Raw/aggregate trend + source drill-down | `TREND_SERIES_INCOMPATIBLE`, `DATE_RANGE_INVALID`, `TREND_EMPTY`, `TREND_BASELINE_INVALID`, `TREND_DUPLICATE_SOURCE`, `TREND_SOURCE_ARCHIVED`; rebuild projection | Unit/timezone/filter/export equality and large query pass |
+| P11 | Protocol/rule/reference editor and version command | Immutable internal version with applicability/source | `PROTOCOL_RULE_INVALID`, `PROTOCOL_VERSION_CONFLICT`, `REFERENCE_REQUIRED`, `PROTOCOL_NOT_AVAILABLE`, `PROTOCOL_CAPABILITY_MISMATCH`; clone/version mới | Old run/report snapshot and deep-copy/version compare pass |
+| P12 | Biological scenario/tool selection and calculation request | Independent scenario/revision/history | `SCENARIO_NOT_FOUND`, `BIOLOGICAL_CONTEXT_INVALID`, `SCENARIO_REVISION_CONFLICT`, `MODEL_VERSION_UNAVAILABLE`, `MODULE_UNAVAILABLE`; giữ scenario và availability | No-QA-case namespace, scoped history, clone/export pass |
+| P13 | Fractionation + alpha/beta + curve range | BED/EQD2 values, curve dataset, table/export | `BIOLOGICAL_INPUT_INVALID`, `FRACTIONATION_INCONSISTENT`, `CALCULATION_NONFINITE`, `CURVE_RANGE_INVALID`, `ALPHA_BETA_SOURCE_REQUIRED`, `CALCULATION_PERSISTENCE_FAILED`; sửa input/retry | Known answer, precision, source/override, curve and persistence pass |
+| P14 | Options 2–10, baseline, context | Absolute/% delta, chart/table/history | `COMPARISON_OPTIONS_REQUIRED`, `COMPARISON_PERCENT_UNDEFINED`, `COMPARISON_OPTION_INVALID`, `COMPARISON_CONTEXT_MISMATCH`, `COMPARISON_BASELINE_REQUIRED`, `COMPARISON_LIMIT_EXCEEDED`; giữ options hợp lệ | Same model/context/revision, baseline mutation và zero handling pass |
+| P15 | Course/fraction/time/recovery/compensation scenario | Scalar cumulative, sensitivity, integer alternatives, assumptions | `COURSE_INTERVAL_REQUIRED`, `RECOVERY_ASSUMPTION_INVALID`, `CUMULATIVE_CONTEXT_MISMATCH`, `FRACTION_SCHEDULE_INVALID`, `SPATIAL_ACCUMULATION_UNAVAILABLE`, `TISSUE_DOSE_REQUIRED`, `INTERRUPTION_OVERLAP`, `FRACTION_COUNT_NONINTEGER`; tách capability | No-recovery/recovery, nonuniform schedule, no fake spatial dose, export pass |
+| P16 | Knowledge/dose-limit/protocol entry, citation/import | Searchable versioned library and snapshot binding | `KNOWLEDGE_SOURCE_REQUIRED`, `DOSE_LIMIT_UNIT_INVALID`, `REFERENCE_LINK_UNAVAILABLE`, `KNOWLEDGE_IMPORT_INVALID`, `DOSE_LIMIT_NOT_APPLICABLE`, `KNOWLEDGE_CONTENT_INVALID`; row-level repair | Source/applicability/version/import/override pass |
+| P17 | RTDOSE/RTSTRUCT/CT and geometry selection | Overlay/profile/DVH with coverage metadata | `DVH_INPUT_REQUIRED`, `DICOM_FRAME_MISMATCH`, `DVH_EMPTY_STRUCTURE`, `DVH_INCOMPLETE_COVERAGE`, `CONTOUR_GEOMETRY_INVALID`, `DICOM_CAPABILITY_UNSUPPORTED`, `ANATOMY_INPUT_REQUIRED`; dose-only fallback | Geometry/DVH oracle, visual/table fallback and coverage pass |
+| P18 | Release candidate, golden/pilot dataset, fault/load scripts | Integrated test report, restore evidence, pilot issue log | `RESULT_REGRESSION`, `RESTORE_INCOMPLETE`, `DUPLICATE_RESULT`, `PERFORMANCE_GATE_FAILED`, `PILOT_CAPABILITY_GAP`, `RELEASE_EVIDENCE_MISMATCH`; giữ candidate và regression | No SEV0/1, exact SHA, backup/restore, workload and pilot matrix pass |
+| P19 | Candidate manifest, domain/TLS/CORS/Auth, production DB | Public HTTPS website and remote E2E | `PUBLIC_DOMAIN_NOT_READY`, `PUBLIC_BUILD_CONFIG_MISMATCH`, `RELEASE_SCHEMA_FAILED`, `RELEASE_VERSION_MISMATCH`, `REMOTE_E2E_FAILED`, `RESOURCE_BUDGET_EXCEEDED`; no promote/rollback | All service versions, schema, Auth, private deps, backup and rollback verified |
+| P20 | Monitoring/backup/alert/runbook/release configuration | Tested operational package and maintenance loop | `BACKUP_POLICY_FAILED`, `ALERT_DELIVERY_FAILED`, `CAPACITY_WARNING`, `ENGINE_RESULT_CHANGED`, `RECURRING_INCIDENT`; alert/restore/root cause/regression | Real alert, restore drill, owner, threshold, capacity and release evidence |
+
+## 8.3. P9 report implementation field contract
+
+Để không nhầm giữa thiết kế giao diện và dữ liệu thật, P9 phải giữ các quy tắc sau trong code, OpenAPI và test:
+
+- `ReportTemplateVersion`: `organization_id`, `template_key`, `version_number`, `status`, `blocks_snapshot`, `render_options`, actor và timestamps; uniqueness theo organization + template key + version.
+- `ReportRevision`: `report_key`, `revision_number`, `source_type`, `source_id`, title, `template_version_id`, `source_snapshot`, render options, content SHA-256, status và `supersedes_revision_id`; uniqueness theo organization + report key + revision number.
+- `ReportBlockConfig`: stable block ID, type, label, order, visibility, config và source binding; uniqueness theo revision + stable block ID. Label chỉ là presentation, không phải source identity.
+- `ExportJob`: revision, idempotency key, request fingerprint, format, renderer version, status, object key, SHA-256, byte size, media type, error/warning snapshots; cùng key khác fingerprint phải conflict.
+- Source lookup `QA_CASE`, `MACHINE_QA`, `GAMMA` phải kiểm organization trước khi đọc; `BIOLOGICAL`/`CUSTOM` không được ép có QACase. Revision response trả snapshot và blocks, không trả live result thay thế snapshot.
+- Renderer phải canonicalize JSON UTF-8, escape dữ liệu CSV có nguy cơ trở thành formula, không thực thi script/URL, giới hạn tree và số finite. PDF/PNG là presentation export; JSON/CSV là structured export, không hứa layout giống nhau.
+- Signed download chỉ được tạo cho `COMPLETED` export có object/hash/media type; link mới có thể được cấp cho cùng job sau khi kiểm scope. Download fail không làm mất export đã hoàn tất.
+- Migration `20260908_0009` và `SCHEMA_REVISION=20260908_0009` phải cùng xuất hiện trong release manifest trước khi gọi API ready. Đây là contract kỹ thuật, không phải tùy chọn config chỉ dành cho local.
+
 ## 9. API hiện có và API mục tiêu
 
 Đối chiếu source ngày sửa tài liệu; phải regenerate/check OpenAPI khi thực hiện code. Base API prefix /api/v1.
@@ -860,9 +949,9 @@ Danh sách errors là baseline có giới hạn, không chứng minh bao phủ m
 1. Đối soát FR mới và evidence cũ; đánh dấu NEEDS_REVALIDATION cho phạm vi chưa đủ.
 2. Đã có local closure cho GAP-01/GAP-02/GAP-03/GAP-04/GAP-07 và implementation slice GAP-05; giữ các gate staging/oracle/benchmark mở.
 3. Hoàn thiện mapping error flat cho GAP-08 và release/build manifest cho GAP-09; schema revision readiness cho GAP-06 đã có local implementation, cần chứng minh trên staging.
-4. Kiểm tra staging đang chạy đúng migration `20260908_0008`; RTDOSE+measurement 3D end-to-end với source đúng frame/profile đã PASS trên run `df38e7d5-bb4b-4e2b-b949-2310acb1875c`, còn queue/outbox và stale-worker negative behavior cần evidence tương ứng.
+4. Kiểm tra staging chạy đúng migration `20260908_0009`; RTDOSE+measurement 3D end-to-end với source đúng frame/profile đã PASS trên run `df38e7d5-bb4b-4e2b-b949-2310acb1875c`, còn P8 queue/outbox/stale-worker negative behavior và P9 browser/export evidence cần kiểm đúng candidate.
 5. Bổ sung staging crash/ack/dead-letter và resource/large-input benchmark trước khi đóng P8; oracle độc lập, bounded retry và preflight đã có local test.
-6. Chỉ sau khi P8 exit đạt mới tiếp tục P9 theo dependency; không triển khai hoặc thay cấu hình cloud chỉ vì tài liệu có checklist.
+6. P9 implementation slice có thể được kiểm local song song, nhưng chỉ gọi P9 hoàn tất sau staging schema `20260908_0009`, authenticated report/export/download và visual checks; không triển khai hoặc thay cấu hình cloud chỉ vì tài liệu có checklist.
 
 ## 12. Nguồn kỹ thuật đã kiểm tra khi viết
 

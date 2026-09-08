@@ -398,6 +398,146 @@ class GammaDispatchOutbox(TimestampedIdMixin, Base):
     last_error: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
 
+class ReportTemplateVersion(TimestampedIdMixin, Base):
+    """Versioned report layout owned by one organization."""
+
+    __tablename__ = "report_template_versions"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "template_key",
+            "version_number",
+            name="uq_report_template_versions_key_version",
+        ),
+        Index(
+            "ix_report_template_versions_organization_status",
+            "organization_id",
+            "status",
+        ),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    template_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    name: Mapped[str] = mapped_column(String(240), nullable=False)
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="ACTIVE")
+    description: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    blocks_snapshot: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False)
+    render_options: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+
+
+class ReportRevision(TimestampedIdMixin, Base):
+    """Immutable report content and source snapshot for one report aggregate."""
+
+    __tablename__ = "report_revisions"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "report_key",
+            "revision_number",
+            name="uq_report_revisions_key_number",
+        ),
+        Index(
+            "ix_report_revisions_organization_source",
+            "organization_id",
+            "source_type",
+            "source_id",
+        ),
+        Index("ix_report_revisions_organization_created", "organization_id", "created_at"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    report_key: Mapped[UUID] = mapped_column(
+        PostgreSQLUUID(as_uuid=True), nullable=False, index=True, default=uuid4
+    )
+    revision_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    source_id: Mapped[UUID | None] = mapped_column(PostgreSQLUUID(as_uuid=True), nullable=True)
+    title: Mapped[str] = mapped_column(String(240), nullable=False)
+    template_version_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("report_template_versions.id"), nullable=True, index=True
+    )
+    source_snapshot: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
+    render_options: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
+    content_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="SAVED")
+    supersedes_revision_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("report_revisions.id"), nullable=True, index=True
+    )
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+
+
+class ReportBlockConfig(TimestampedIdMixin, Base):
+    """Stable block identity and user layout for one immutable report revision."""
+
+    __tablename__ = "report_block_configs"
+    __table_args__ = (
+        UniqueConstraint(
+            "report_revision_id",
+            "stable_block_id",
+            name="uq_report_block_configs_revision_block",
+        ),
+        Index("ix_report_block_configs_revision_order", "report_revision_id", "sort_order"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    report_revision_id: Mapped[UUID] = mapped_column(
+        ForeignKey("report_revisions.id"), nullable=False, index=True
+    )
+    stable_block_id: Mapped[str] = mapped_column(String(120), nullable=False)
+    block_type: Mapped[str] = mapped_column(String(60), nullable=False)
+    label: Mapped[str] = mapped_column(String(240), nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False)
+    is_visible: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=true())
+    config: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
+    source_binding: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
+
+
+class ExportJob(TimestampedIdMixin, Base):
+    """Idempotent report export with a durable object-storage result."""
+
+    __tablename__ = "export_jobs"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "idempotency_key",
+            name="uq_export_jobs_organization_idempotency",
+        ),
+        Index("ix_export_jobs_organization_revision", "organization_id", "report_revision_id"),
+        Index("ix_export_jobs_organization_status", "organization_id", "status"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    report_revision_id: Mapped[UUID] = mapped_column(
+        ForeignKey("report_revisions.id"), nullable=False, index=True
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(200), nullable=False)
+    request_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    export_format: Mapped[str] = mapped_column(String(20), nullable=False)
+    render_options: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
+    renderer_version: Mapped[str] = mapped_column(String(100), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="QUEUED")
+    object_key: Mapped[str | None] = mapped_column(String(768), nullable=True, unique=True)
+    sha256: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    byte_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    media_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    error_snapshot: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False)
+    warning_snapshot: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False)
+
+
 class Artifact(TimestampedIdMixin, Base):
     """Immutable source or derived file metadata; bytes live in object storage."""
 

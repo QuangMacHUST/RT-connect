@@ -28,6 +28,7 @@ export type Version = {
   environment: string
   engine_version: string
   renderer_version: string
+  schema_revision: string
 }
 
 export type OrganizationContext = { id: string; name: string }
@@ -234,6 +235,82 @@ export type GammaQueueMetrics = {
   error: string | null
 }
 
+export type ReportBlock = {
+  stable_block_id: string
+  block_type: string
+  label: string
+  sort_order?: number
+  is_visible: boolean
+  config: Record<string, unknown>
+  source_binding: Record<string, unknown>
+}
+export type ReportTemplateVersion = {
+  id: string
+  organization_id: string
+  template_key: string
+  name: string
+  version_number: number
+  status: string
+  description: string | null
+  blocks_snapshot: Array<Record<string, unknown>>
+  render_options: Record<string, unknown>
+  created_by_user_identity_id: string | null
+  created_at: string
+  updated_at: string
+}
+export type ReportRevision = {
+  id: string
+  organization_id: string
+  report_key: string
+  revision_number: number
+  source_type: string
+  source_id: string | null
+  title: string
+  template_version_id: string | null
+  source_snapshot: Record<string, unknown>
+  render_options: Record<string, unknown>
+  content_sha256: string
+  status: string
+  supersedes_revision_id: string | null
+  created_by_user_identity_id: string | null
+  created_at: string
+  updated_at: string
+  blocks: Array<ReportBlock & { id: string; sort_order: number }>
+}
+export type ReportSummary = {
+  report_key: string
+  organization_id: string
+  title: string
+  source_type: string
+  source_id: string | null
+  latest_revision_id: string
+  latest_revision_number: number
+  status: string
+  content_sha256: string
+  created_at: string
+  updated_at: string
+}
+export type ExportJob = {
+  id: string
+  organization_id: string
+  report_revision_id: string
+  idempotency_key: string
+  export_format: string
+  render_options: Record<string, unknown>
+  renderer_version: string
+  status: string
+  object_key: string | null
+  sha256: string | null
+  byte_size: number | null
+  media_type: string | null
+  error_snapshot: Array<Record<string, unknown>>
+  warning_snapshot: Array<Record<string, unknown>>
+  download_url: string | null
+  download_expires_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 const qaProtocolRuleSchema = z.object({
   id: z.string().uuid(), metric_key: z.string(), display_name: z.string(), unit: z.string(),
   rule_type: z.string(), target_value: z.number().nullable(), lower_limit: z.number().nullable(),
@@ -272,6 +349,49 @@ const gammaQueueMetricsSchema = z.object({
   consumer_count: z.number().int().nullable(), queued_runs: z.number().int(),
   running_runs: z.number().int(), retrying_runs: z.number().int(), failed_runs: z.number().int(),
   error: z.string().nullable()
+})
+
+const reportBlockSchema = z.object({
+  id: z.string().uuid().optional(),
+  stable_block_id: z.string(), block_type: z.string(), label: z.string(),
+  sort_order: z.number().int(), is_visible: z.boolean(),
+  config: z.record(z.string(), z.unknown()),
+  source_binding: z.record(z.string(), z.unknown())
+})
+const reportTemplateVersionSchema = z.object({
+  id: z.string().uuid(), organization_id: z.string().uuid(), template_key: z.string(),
+  name: z.string(), version_number: z.number().int(), status: z.string(),
+  description: z.string().nullable(), blocks_snapshot: z.array(z.record(z.string(), z.unknown())),
+  render_options: z.record(z.string(), z.unknown()),
+  created_by_user_identity_id: z.string().uuid().nullable(), created_at: z.string(), updated_at: z.string()
+})
+const reportRevisionSchema = z.object({
+  id: z.string().uuid(), organization_id: z.string().uuid(), report_key: z.string().uuid(),
+  revision_number: z.number().int(), source_type: z.string(), source_id: z.string().uuid().nullable(),
+  title: z.string(), template_version_id: z.string().uuid().nullable(),
+  source_snapshot: z.record(z.string(), z.unknown()), render_options: z.record(z.string(), z.unknown()),
+  content_sha256: z.string(), status: z.string(), supersedes_revision_id: z.string().uuid().nullable(),
+  created_by_user_identity_id: z.string().uuid().nullable(), created_at: z.string(), updated_at: z.string(),
+  blocks: z.array(reportBlockSchema.extend({ id: z.string().uuid() }))
+})
+const reportSummarySchema = z.object({
+  report_key: z.string().uuid(), organization_id: z.string().uuid(), title: z.string(),
+  source_type: z.string(), source_id: z.string().uuid().nullable(), latest_revision_id: z.string().uuid(),
+  latest_revision_number: z.number().int(), status: z.string(), content_sha256: z.string(),
+  created_at: z.string(), updated_at: z.string()
+})
+const exportJobSchema = z.object({
+  id: z.string().uuid(), organization_id: z.string().uuid(), report_revision_id: z.string().uuid(),
+  idempotency_key: z.string(), export_format: z.string(), render_options: z.record(z.string(), z.unknown()),
+  renderer_version: z.string(), status: z.string(), object_key: z.string().nullable(),
+  sha256: z.string().nullable(), byte_size: z.number().int().nullable(), media_type: z.string().nullable(),
+  error_snapshot: z.array(z.record(z.string(), z.unknown())), warning_snapshot: z.array(z.record(z.string(), z.unknown())),
+  download_url: z.string().nullable(), download_expires_at: z.string().nullable(),
+  created_at: z.string(), updated_at: z.string()
+})
+const exportDownloadSchema = z.object({
+  export_job_id: z.string().uuid(), report_revision_id: z.string().uuid(), url: z.string(),
+  expires_at: z.string(), sha256: z.string(), media_type: z.string()
 })
 
 const makeCorrelationId = () => crypto.randomUUID()
@@ -610,6 +730,67 @@ export class ApiClient {
       left_run_id: z.string().uuid(), right_run_id: z.string().uuid(),
       items: z.array(z.object({ key: z.string(), left: z.unknown().nullable(), right: z.unknown().nullable() }))
     }), accessToken)
+  }
+
+  reportTemplates(accessToken: string, organizationId: string, includeArchived = true): Promise<{ items: ReportTemplateVersion[]; total: number }> {
+    return this.get(`/organizations/${organizationId}/report-templates?include_archived=${includeArchived}`, z.object({
+      items: z.array(reportTemplateVersionSchema), total: z.number().int()
+    }), accessToken)
+  }
+
+  reports(accessToken: string, organizationId: string): Promise<{ items: ReportSummary[]; total: number; offset: number; limit: number }> {
+    return this.get(`/organizations/${organizationId}/reports`, z.object({
+      items: z.array(reportSummarySchema), total: z.number().int(), offset: z.number().int(), limit: z.number().int()
+    }), accessToken)
+  }
+
+  createReport(accessToken: string, organizationId: string, body: {
+    source_type: 'CUSTOM' | 'QA_CASE' | 'MACHINE_QA' | 'GAMMA' | 'BIOLOGICAL'
+    source_id?: string
+    title: string
+    template_version_id?: string
+    blocks?: Array<{
+      stable_block_id: string; block_type: string; label: string; sort_order?: number
+      is_visible?: boolean; config?: Record<string, unknown>; source_binding?: Record<string, unknown>
+    }>
+    render_options?: Record<string, unknown>
+  }): Promise<ReportRevision> {
+    return this.request(`/organizations/${organizationId}/reports`, reportRevisionSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  reportRevisions(accessToken: string, reportKey: string): Promise<ReportRevision[]> {
+    return this.get(`/reports/${reportKey}/revisions`, z.array(reportRevisionSchema), accessToken)
+  }
+
+  createReportRevision(accessToken: string, reportKey: string, body: {
+    expected_revision?: number
+    source_type?: 'CUSTOM' | 'QA_CASE' | 'MACHINE_QA' | 'GAMMA' | 'BIOLOGICAL'
+    source_id?: string
+    title?: string
+    template_version_id?: string
+    blocks?: Array<{
+      stable_block_id: string; block_type: string; label: string; sort_order?: number
+      is_visible?: boolean; config?: Record<string, unknown>; source_binding?: Record<string, unknown>
+    }>
+    render_options?: Record<string, unknown>
+  }): Promise<ReportRevision> {
+    return this.request(`/reports/${reportKey}/revisions`, reportRevisionSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  exportReport(accessToken: string, reportKey: string, revisionId: string, body: {
+    export_format: 'JSON' | 'CSV' | 'PDF' | 'PNG'; idempotency_key: string; render_options?: Record<string, unknown>
+  }): Promise<ExportJob> {
+    return this.request(`/reports/${reportKey}/revisions/${revisionId}/exports`, exportJobSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  reportExportDownload(accessToken: string, exportJobId: string): Promise<{ export_job_id: string; report_revision_id: string; url: string; expires_at: string; sha256: string; media_type: string }> {
+    return this.get(`/report-exports/${exportJobId}/download`, exportDownloadSchema, accessToken)
   }
 }
 
