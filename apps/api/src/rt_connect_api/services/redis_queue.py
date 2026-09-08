@@ -40,6 +40,7 @@ class RedisGammaQueue:
         if settings.redis_url is None:
             raise ValueError("REDIS_URL is required for the Redis Gamma queue")
         self.stream_name = settings.gamma_queue_stream
+        self.dead_letter_stream_name = f"{self.stream_name}:dead-letter"
         self.group_name = settings.gamma_queue_group
         self.visibility_timeout_ms = settings.gamma_queue_visibility_timeout_seconds * 1000
         self.maxlen = settings.gamma_queue_maxlen
@@ -113,7 +114,7 @@ class RedisGammaQueue:
                 start_id="0-0",
                 count=1,
             )
-            if isinstance(reclaimed, (list, tuple)) and len(reclaimed) >= 2:
+            if isinstance(reclaimed, list | tuple) and len(reclaimed) >= 2:
                 message = self._parse_entries(reclaimed[1])
                 if message is not None:
                     return message
@@ -140,6 +141,34 @@ class RedisGammaQueue:
         except RedisError as exc:
             raise RedisQueueError("Gamma job acknowledgement failed") from exc
 
+    def dead_letter(self, message: GammaQueueMessage, error_code: str) -> str:
+        """Persist a terminal dispatch failure before its source is acknowledged.
+
+        The database remains authoritative for the run/result.  This stream is
+        an operational quarantine record: it lets an operator inspect the
+        message identity and terminal error without replaying a permanently
+        failed job into the normal consumer group.
+        """
+
+        try:
+            return str(
+                self.client.xadd(
+                    self.dead_letter_stream_name,
+                    {
+                        "job_type": "GAMMA",
+                        "source_message_id": message.message_id,
+                        "run_id": str(message.run_id),
+                        "organization_id": str(message.organization_id),
+                        "attempt": str(message.attempt),
+                        "error_code": error_code,
+                    },
+                    maxlen=self.maxlen,
+                    approximate=True,
+                )
+            )
+        except RedisError as exc:
+            raise RedisQueueError("Gamma dead-letter write failed") from exc
+
     def metrics(self) -> dict[str, int | str]:
         """Return non-secret queue counters for the authenticated operations view."""
 
@@ -165,10 +194,10 @@ class RedisGammaQueue:
 
     @staticmethod
     def _parse_entries(entries: object) -> GammaQueueMessage | None:
-        if not isinstance(entries, (list, tuple)) or not entries:
+        if not isinstance(entries, list | tuple) or not entries:
             return None
         entry = entries[0]
-        if not isinstance(entry, (list, tuple)) or len(entry) != 2:
+        if not isinstance(entry, list | tuple) or len(entry) != 2:
             return None
         message_id, payload = entry
         if not isinstance(message_id, str) or not isinstance(payload, dict):

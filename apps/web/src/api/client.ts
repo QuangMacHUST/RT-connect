@@ -332,7 +332,8 @@ export class ApiClient {
         version: z.string(),
         environment: z.string(),
         engine_version: z.string(),
-        renderer_version: z.string()
+        renderer_version: z.string(),
+        schema_revision: z.string()
       })
     )
   }

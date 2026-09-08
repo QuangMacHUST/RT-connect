@@ -92,6 +92,9 @@ def test_redis_queue_enqueue_claim_ack_and_metrics() -> None:
     queue.acknowledge(message.message_id)
     assert client.acknowledged == ["1-0"]
 
+    dead_letter_id = queue.dead_letter(message, "GAMMA_STORAGE_UNAVAILABLE")
+    assert dead_letter_id == "1-0"
+
 
 def test_redis_queue_rejects_invalid_message() -> None:
     with pytest.raises(RedisQueueError):

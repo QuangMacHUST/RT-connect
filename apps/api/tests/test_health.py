@@ -82,4 +82,5 @@ def test_version_exposes_release_metadata_without_secrets(client: TestClient) ->
         "environment": "test",
         "engine_version": "unavailable-in-p1",
         "renderer_version": "unavailable-in-p1",
+        "schema_revision": "20260908_0008",
     }

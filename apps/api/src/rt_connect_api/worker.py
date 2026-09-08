@@ -300,7 +300,7 @@ def main() -> None:
                         if run is not None
                         else 0.0
                     )
-                    process_gamma_queue_message(
+                    processed = process_gamma_queue_message(
                         session,
                         storage,
                         message,
@@ -309,6 +309,14 @@ def main() -> None:
                         execution_deadline_seconds=settings.gamma_execution_deadline_seconds,
                         retry_delay_seconds=retry_delay,
                     )
+                    if processed and run.status == "FAILED":
+                        raw_error = (
+                            run.error_snapshot[0].get("code") if run.error_snapshot else None
+                        )
+                        queue.dead_letter(
+                            message,
+                            raw_error if isinstance(raw_error, str) else "GAMMA_TERMINAL_FAILURE",
+                        )
                 queue.acknowledge(message.message_id)
             except Exception:
                 logger.exception("Gamma queue message processing failed")

@@ -15,6 +15,7 @@ class HealthResponse(BaseModel):
     status: str
     timestamp: datetime
     correlation_id: str
+    schema_revision: str | None = None
 
 
 class VersionResponse(BaseModel):
@@ -23,6 +24,7 @@ class VersionResponse(BaseModel):
     environment: str
     engine_version: str
     renderer_version: str
+    schema_revision: str
 
 
 @router.get("/health", response_model=HealthResponse)
@@ -51,6 +53,7 @@ def readiness(request: Request) -> HealthResponse | JSONResponse:
         status="ready",
         timestamp=datetime.now(UTC),
         correlation_id=str(request.state.correlation_id),
+        schema_revision=request.app.state.settings.schema_revision,
     )
 
 
@@ -63,4 +66,5 @@ def version(request: Request) -> VersionResponse:
         environment=settings.app_env,
         engine_version=settings.engine_version,
         renderer_version=settings.renderer_version,
+        schema_revision=settings.schema_revision,
     )

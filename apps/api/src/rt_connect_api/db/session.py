@@ -32,7 +32,7 @@ def get_engine() -> Engine | None:
     database_url = get_settings().database_url
     if database_url is None:
         return None
-    return create_engine(normalize_database_url(database_url), pool_pre_ping=True)
+    return _create_engine(database_url)
 
 
 def get_session() -> Generator[Session]:
@@ -74,4 +74,20 @@ def database_ready(settings: Settings | None = None) -> tuple[bool, str | None]:
 def _engine_for_settings(settings: Settings) -> Engine | None:
     if settings.database_url is None:
         return None
-    return create_engine(normalize_database_url(settings.database_url), pool_pre_ping=True)
+    return _create_engine(settings.database_url)
+
+
+def _create_engine(database_url: str) -> Engine:
+    """Create an engine with a bounded network connect timeout.
+
+    Railway can briefly expose a service before its private PostgreSQL endpoint
+    is reachable.  Readiness must then fail fast and return a useful 503 rather
+    than holding the platform probe open until its own timeout.  SQLite test
+    URLs intentionally receive no PostgreSQL-only connect argument.
+    """
+
+    normalized_url = normalize_database_url(database_url)
+    connect_args: dict[str, object] = {}
+    if normalized_url.startswith("postgresql+"):
+        connect_args["connect_timeout"] = 5
+    return create_engine(normalized_url, pool_pre_ping=True, connect_args=connect_args)
