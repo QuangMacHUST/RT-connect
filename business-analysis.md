@@ -5,10 +5,10 @@
 - **Tên sản phẩm:** RT-CONNECT
 - **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
 - **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
-- **Phiên bản tài liệu:** 0.13 — catalogue tính năng, workflow, ngoại lệ, phục hồi và tiêu chí nghiệm thu theo P0–P20; bổ sung contract thực thi BED/EQD2 P13, Plan Comparison P14 và trạng thái triển khai tương ứng (2026-09-08)
+- **Phiên bản tài liệu:** 0.14 — catalogue tính năng, workflow, ngoại lệ, phục hồi và tiêu chí nghiệm thu theo P0–P20; bổ sung contract thực thi P15 re-irradiation/fraction compensation và trạng thái triển khai tương ứng (2026-09-08)
 - **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
-Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.13 tại mục 21 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
+Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.14 tại mục 21 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
 
 ---
 
@@ -1178,9 +1178,9 @@ Clinical MVP tập trung vào Machine QA, PSQA Gamma, report, trend, input valid
 `specification.md`, `technical-specification.md` và `plan.md` được xây dựng từ các yêu cầu, quy tắc và tiêu chí nghiệm thu trong tài liệu này. Google Stitch cung cấp thiết kế trực quan; Railway và Supabase cung cấp hạ tầng đã chọn; không nguồn nào trong số đó được tự thay thế hoặc làm mất requirement nghiệp vụ.
 
 
-## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.13
+## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.14
 
-Bổ sung ngày 2026-09-08 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi và phạm vi nghiệm thu. `specification.md` v1.7 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v2.7 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
+Bổ sung ngày 2026-09-08 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi và phạm vi nghiệm thu. `specification.md` v1.8 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v2.8 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
 
 ### 21.1. Các quyết định sản phẩm giữ nguyên
 
@@ -1458,7 +1458,7 @@ Mã FR-Pxx-yy là yêu cầu có thể truy vết. Các phase nền tảng/tri�
 | P12-S06 | Clone SAVED/ARCHIVED | Tạo DRAFT mới, giữ lineage/source và không thay đổi bản nguồn hoặc calculation cũ. |
 | P12-S07 | Lọc/tìm history | Kết quả chỉ thuộc organization, lọc status/search đúng và archived chỉ xuất hiện khi yêu cầu rõ. |
 | P12-S08 | Mở lại sau refresh | Scenario, assumptions, source và revision hiển thị đúng snapshot server; không phụ thuộc state trong browser. |
-| P12-S09 | Capability P14 đã mở, P15–P16 chưa mở | Card P14 dẫn tới route có contract; P15–P16 có trạng thái `PLANNED`, không dẫn tới route chết và không giả vờ đã tính. |
+| P12-S09 | Capability P13–P15 đã mở, P16 chưa mở | Card P13–P15 dẫn tới route có contract; P16 có trạng thái `PLANNED`, không dẫn tới route chết và không giả vờ đã tính. |
 
 **Các nhánh lỗi và cách phục hồi nghiệp vụ:**
 
@@ -1604,6 +1604,25 @@ Mã FR-Pxx-yy là yêu cầu có thể truy vết. Các phase nền tảng/tri�
 **Luồng chính:** Chọn Re-irradiation hoặc Fraction Compensation trong toolkit. → Nhập các course/đã thực hiện và phương án dự kiến cho đúng mô. → Chọn no-recovery hoặc recovery explicit; xác nhận thời gian nếu model cần. → Tính từng course và cumulative scalar/alternative schedule. → So sánh scenario, sensitivity và export assumptions/result; spatial chỉ khi contract dữ liệu đủ.
 
 **Nghiệm thu nhóm:** No-recovery/recovery, nonuniform fractions, missing time/context, compensation schedule và independent export pass; spatial không giả lập.
+
+**Contract nghiệp vụ P15 đã được chốt cho implementation slice:**
+
+- **Re-irradiation:** mỗi course có `course_id`, nhãn, vai trò prior/current, khoảng ngày tùy theo model, và một hoặc nhiều dòng `tissue_doses`. Mỗi dòng phải ghi `tissue_key`, metric, đơn vị `Gy`, lịch `fraction_doses_gy` hoặc bộ `total_dose_gy`/`fractions`/`dose_per_fraction_gy`, cùng `alpha_beta_gy` và nguồn. Không suy ra liều OAR từ liều target.
+- **Recovery:** `NONE` là baseline không recovery. `USER_DEFINED` cần evaluation date; mỗi prior course phải có recovery fraction trong `[0,1]`, loại nguồn và tham chiếu. Recovery chỉ được áp dụng một lần vào BED của prior course; current course có recovery bằng 0. Các điểm sensitivity là các giả định độc lập để so sánh, không phải confidence interval.
+- **Context:** các dòng cùng tissue nhưng khác alpha/beta được tách thành group riêng và trả warning `CUMULATIVE_CONTEXT_MISMATCH`; hệ thống không cộng hai đại lượng khác ngữ cảnh. Khi yêu cầu spatial, P15 hiện trả capability `UNAVAILABLE` và warning `SPATIAL_ACCUMULATION_UNAVAILABLE`, không tạo voxel dose giả.
+- **Bù fraction:** `planned_fraction_doses_gy` là lịch gốc; `delivered_fraction_doses_gy` là prefix đã thực hiện và phải khớp lịch gốc trong tolerance; alternative chỉ được thay phần còn lại. Interruption và time model là input explicit. `NONE` không tự thêm repopulation correction; `USER_DEFINED_LINEAR` phải có ngày, rate, kick-off và source.
+- **Vòng đời:** Validate-only không ghi database. Calculate & save ghi một immutable snapshot gắn organization/scenario/saved revision, model key/version, warnings, error snapshot và checksum. Cùng idempotency key cùng fingerprint trả lại snapshot cũ; cùng key khác fingerprint là conflict. Export JSON/CSV đọc snapshot đã lưu và không sửa scenario, treatment record, QA case hoặc prescription.
+
+| Nhóm lỗi P15 | Mã thực thi | Cách xử lý nghiệp vụ |
+| :--- | :--- | :--- |
+| Course/context | `COURSE_REQUIRED`, `COURSE_COUNT_INVALID`, `COURSE_ROLE_REQUIRED`, `COURSE_ID_DUPLICATE`, `COURSE_LIMIT_EXCEEDED`, `COURSE_INTERVAL_INVALID`, `COURSE_INTERVAL_REQUIRED` | Giữ form, chỉ rõ course/field; yêu cầu ít nhất một prior và một current; không tự đổi vai trò/ngày. |
+| Tissue/dose/model | `TISSUE_DOSE_REQUIRED`, `TISSUE_DOSE_DUPLICATE`, `DOSE_UNIT_INVALID`, `ALPHA_BETA_SOURCE_REQUIRED`, `CALCULATION_NONFINITE` | Chặn calculation; yêu cầu dose/metric/unit/source rõ ràng, không tự đổi đơn vị hoặc clamp NaN/Infinity. |
+| Fraction schedule | `FRACTION_SCHEDULE_REQUIRED`, `FRACTION_SCHEDULE_INVALID`, `FRACTION_SCHEDULE_INCONSISTENT`, `FRACTION_COUNT_NONINTEGER`, `TISSUE_DOSE_LIMIT_EXCEEDED` | Hiển thị lỗi tại schedule; không sửa ngầm D/n/d và không tạo remaining âm. |
+| Recovery/spatial | `RECOVERY_ASSUMPTION_INVALID`, `CUMULATIVE_CONTEXT_MISMATCH`, `SPATIAL_ACCUMULATION_UNAVAILABLE` | Mismatch là warning tách group; recovery sai là error; spatial chưa đủ dữ liệu thì giữ scalar estimate có nhãn unavailable. |
+| Compensation | `ALTERNATIVE_SCHEDULE_REQUIRED`, `ALTERNATIVE_ID_DUPLICATE`, `ALTERNATIVE_LIMIT_EXCEEDED`, `ALTERNATIVE_PREFIX_CHANGED`, `INTERRUPTION_INTERVAL_INVALID`, `INTERRUPTION_OVERLAP`, `TIME_MODEL_INVALID`, `TIME_MODEL_SOURCE_REQUIRED` | Không lưu snapshot lỗi; sửa alternative/interval/time model rồi validate lại. |
+| Persistence/scope | `SCENARIO_SAVED_REQUIRED`, `SCENARIO_REVISION_NOT_FOUND`, `SCENARIO_REVISION_NOT_SAVED`, `P15_IDEMPOTENCY_CONFLICT`, `P15_RUN_NOT_FOUND`, `REIRRADIATION_PERSISTENCE_FAILED` | Tải lại context hoặc dùng key mới; retry phải query key/ID trước, không nhân bản hay lộ dữ liệu organization khác. |
+
+Các mã trên là contract thực thi của slice P15, khác với việc chỉ liệt kê taxonomy mục tiêu. HTTP mapping là: schema Pydantic `422`; lỗi engine validate trong validate-only trả `200` với `valid=false`, còn create trả `422`; scope `403`; resource thiếu `404`; archived/unsaved/idempotency conflict `409`; persistence `503`.
 
 #### P16 — Dose limits, phác đồ điều trị và Knowledge Library
 

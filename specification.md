@@ -1,9 +1,9 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.7**; ngày 2026-09-08.
-- Nguồn nghiệp vụ: business-analysis.md v0.13.
-- Kế hoạch triển khai: plan.md v2.7, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.5.
+- File: specification.md; version **1.8**; ngày 2026-09-08.
+- Nguồn nghiệp vụ: business-analysis.md v0.14.
+- Kế hoạch triển khai: plan.md v2.8, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.6.
 - Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
@@ -767,7 +767,7 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 | Client loses response after mutation | `409/503` `MUTATION_RESULT_UNKNOWN` target | Query by returned/request idempotency context before retry; do not assume “not created”. |
 | Tool is not implemented | Capability response `PLANNED`/`available=false`; calculation command is not exposed | Show disabled CTA and preserve scenario; no fake RUNNING/COMPLETED calculation. |
 
-Current P12 implementation provides the route/resource/lifecycle contract above. P13 now creates only BED/EQD2 calculation runs under SPEC-P13; re-irradiation remains P15 and Biological report integration remains a separate P9/P12 work package. A capability is not described as available until its own tests and evidence pass.
+Current P12 implementation provides the route/resource/lifecycle contract above. P13 creates BED/EQD2 calculation runs under SPEC-P13, P14 creates comparison snapshots and P15 creates separate re-irradiation/fraction-compensation run snapshots under SPEC-P15. Biological report integration remains a separate P9/P12 work package. A capability is not described as available until its own tests and evidence pass.
 
 **Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer cần recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
 
@@ -879,16 +879,49 @@ Current P12 implementation provides the route/resource/lifecycle contract above.
 | Module/requirement | MOD-13; FR-P15-01 đến FR-P15-04 |
 | Input và dữ liệu hiển thị | Course IDs/date ranges/D/n/d hoặc fraction list; tissue dose metric/unit/alpha-beta; recovery per prior course/evaluation time/source; no-recovery comparator; planned/delivered/remaining fractions; interruption duration; optional time model. |
 | Model/storage | Course/fraction/tissue dose inputs, recovery assumptions, model version, evaluation date; immutable scenario calculations. |
-| Operation/API surface | Target /biological/re-irradiation; /biological/fraction-compensation; same scenario version/export contracts. |
+| Operation/API surface | Implemented `/biological/re-irradiation` and `/biological/fraction-compensation` validate/create/list/detail/export contracts; same scenario-version and scope rules. |
 | Transaction/invariant | Input snapshot gồm delivered schedule và assumptions; calculation không mutate treatment records. |
 | Output bàn giao | Re-irradiation + compensation screens, model contract, timeline, sensitivity/compare, golden/error suite. |
-| Success oracle | TC-P15-S01 đến TC-P15-S05 trong plan |
-| Error/recovery oracle | TC-P15-E01 đến TC-P15-E08 trong plan |
+| Success oracle | TC-P15-S01 đến TC-P15-S08 trong plan |
+| Error/recovery oracle | TC-P15-E01 đến TC-P15-E14 trong plan |
 | Exit | No-recovery/recovery, nonuniform fractions, missing time/context, compensation schedule và independent export pass; spatial không giả lập. |
 
 **Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer cần recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
 
-**Failure contract:** COURSE_INTERVAL_REQUIRED; RECOVERY_ASSUMPTION_INVALID; CUMULATIVE_CONTEXT_MISMATCH; FRACTION_SCHEDULE_INVALID; SPATIAL_ACCUMULATION_UNAVAILABLE; TISSUE_DOSE_REQUIRED; INTERRUPTION_OVERLAP; FRACTION_COUNT_NONINTEGER. Đây là taxonomy target; mapping sang error codes thực tế phải được ghi trong contract test trước khi triển khai.
+**Implementation contract P15 (slice `p15-lq-reirradiation-1.0.0` / `p15-lq-compensation-1.0.0`):**
+
+1. **Request boundary.** `ReIrradiationRequest` nhận `scenario_revision_id`, `name`, organization-scoped `idempotency_key`, `courses[2..20]`, `recovery_model`, sensitivity fractions và `spatial.requested`. Mỗi course yêu cầu ID duy nhất, `is_prior`, date tùy model và `tissue_doses[1..40]`. Mỗi tissue dose yêu cầu tissue key duy nhất, metric, `dose_unit=Gy`, alpha/beta dương có source/reference và một trong hai biểu diễn lịch: `fraction_doses_gy[]` hoặc các giá trị đủ để suy ra D/n/d. P15 bắt buộc ít nhất một prior và một current course.
+2. **Re-irradiation calculation.** Với mỗi dòng mô, engine tính `BED = Σ d_j × (1 + d_j/(α/β))`; `EQD2 = BED/(1+2/(α/β))`. Lịch không đều dùng từng `d_j`, không thay bằng liều trung bình. `NONE` trả baseline; `USER_DEFINED` chỉ áp dụng recovery `(1-r)` vào BED của prior course đúng một lần. Group key gồm tissue và alpha/beta; context khác nhau không được cộng.
+3. **Fraction compensation boundary.** `planned_fraction_doses_gy[]` là nguồn lịch gốc; delivered là prefix phải khớp từng phần tử trong tolerance. Mỗi alternative chỉ chứa `remaining_fraction_doses_gy[]`; engine ghép `delivered + remaining`, lưu dấu `delivered_prefix_unchanged=true` và delta so với lịch gốc. Interruption không tự biến thành dose; time model `NONE` trả warning `NO_REPOPULATION_CORRECTION`, còn `USER_DEFINED_LINEAR` cần start/evaluation date, kickoff, rate và source.
+4. **Persistence boundary.** `POST .../validate` chỉ chạy schema/context/engine và không insert. Create ghi `BiologicalReirradiationRun` gồm organization/scenario/revision, operation, request snapshot/fingerprint, result snapshot, warnings/errors, model key/version, actor và timestamps trong một transaction cùng audit. Replay cùng key + fingerprint trả row cũ; cùng key khác fingerprint trả conflict. JSON/CSV export lấy đúng snapshot đã lưu.
+5. **Capability boundary.** Scalar cumulative và schedule comparison là capability hiện hành. `spatial.requested=true` không được trả voxel result; kết quả vẫn có `spatial_result=null`, capability `UNAVAILABLE` và warning `SPATIAL_ACCUMULATION_UNAVAILABLE`. P15 không sửa treatment record, QA case, patient record, prescription, TPS hoặc PACS.
+
+**API routes:**
+
+| Method | Route | Semantics |
+| :--- | :--- | :--- |
+| POST | `/organizations/{org}/biological/scenarios/{scenario}/re-irradiation/validate` | Validate-only, trả `valid`, field errors, warnings, normalized snapshot và preview; không ghi DB. |
+| POST | `/organizations/{org}/biological/scenarios/{scenario}/re-irradiation` | Tính và lưu immutable scalar run; `201` lần đầu, `200` khi idempotent replay. |
+| GET | `/organizations/{org}/biological/re-irradiation` và `/{run_id}` | List/detail theo organization và operation; không đọc xuyên scope. |
+| GET | `/organizations/{org}/biological/re-irradiation/{run_id}/export?export_format=JSON|CSV` | Export snapshot, không tính lại và không mutation. |
+| POST | `/organizations/{org}/biological/scenarios/{scenario}/fraction-compensation/validate` | Validate-only lịch gốc/prefix/alternatives/interruption/time model. |
+| POST | `/organizations/{org}/biological/scenarios/{scenario}/fraction-compensation` | Tính và lưu alternatives; idempotency giống re-irradiation. |
+| GET | `/organizations/{org}/biological/fraction-compensation` và `/{run_id}` | List/detail compensation snapshots theo organization. |
+| GET | `/organizations/{org}/biological/fraction-compensation/{run_id}/export?export_format=JSON|CSV` | Export result snapshot. |
+
+**Failure contract thực thi:**
+
+| Boundary | Codes | HTTP/response và phục hồi |
+| :--- | :--- | :--- |
+| Course/context | `COURSE_REQUIRED`, `COURSE_COUNT_INVALID`, `COURSE_ROLE_REQUIRED`, `COURSE_ID_DUPLICATE`, `COURSE_LIMIT_EXCEEDED`, `COURSE_INTERVAL_INVALID`, `COURSE_INTERVAL_REQUIRED` | Engine error `422`; sửa field/course; không tạo run. |
+| Tissue/dose | `TISSUE_DOSE_REQUIRED`, `TISSUE_DOSE_DUPLICATE`, `TISSUE_DOSE_LIMIT_EXCEEDED`, `DOSE_UNIT_INVALID`, `ALPHA_BETA_SOURCE_REQUIRED`, `CALCULATION_NONFINITE` | `422`; không copy target sang OAR, không clamp hoặc đổi unit ngầm. |
+| Schedule | `FRACTION_SCHEDULE_REQUIRED`, `FRACTION_SCHEDULE_INVALID`, `FRACTION_SCHEDULE_INCONSISTENT`, `FRACTION_COUNT_NONINTEGER` | `422`; giữ draft, sửa D/n/d hoặc list; remaining không âm/không tự sửa. |
+| Recovery/context | `RECOVERY_ASSUMPTION_INVALID`, `CUMULATIVE_CONTEXT_MISMATCH`, `SPATIAL_ACCUMULATION_UNAVAILABLE` | Recovery sai là `422`; context mismatch và spatial unavailable là warning trong valid result, group/capability phải giữ rõ. |
+| Compensation | `ALTERNATIVE_SCHEDULE_REQUIRED`, `ALTERNATIVE_ID_DUPLICATE`, `ALTERNATIVE_LIMIT_EXCEEDED`, `ALTERNATIVE_PREFIX_CHANGED`, `INTERRUPTION_INTERVAL_INVALID`, `INTERRUPTION_OVERLAP`, `TIME_MODEL_INVALID`, `TIME_MODEL_SOURCE_REQUIRED` | `422`; chỉnh alternative/interval/time model và validate lại. |
+| Scenario/scope | `SCENARIO_SAVED_REQUIRED`, `SCENARIO_REVISION_NOT_FOUND`, `SCENARIO_REVISION_NOT_SAVED`, `P15_RUN_NOT_FOUND` | `409` cho lifecycle, `403/404` cho scope/resource; chọn saved revision thuộc organization hiện tại. |
+| Idempotency/persistence | `P15_IDEMPOTENCY_CONFLICT`, `REIRRADIATION_PERSISTENCE_FAILED` | `409` khi key khác payload; `503` khi persistence uncertain; query key/ID trước retry, không nhân bản. |
+
+Validate-only dùng HTTP `200` để trả `valid=false` cho lỗi engine đã phân loại; lỗi request Pydantic `422`; scope `403`; resource thiếu `404`; lifecycle/idempotency conflict `409`; persistence `503`. `CUMULATIVE_CONTEXT_MISMATCH`, `SPATIAL_ACCUMULATION_UNAVAILABLE` và `NO_REPOPULATION_CORRECTION` là warning/capability state, không được biến thành `PASS` ngầm.
 
 <a id="spec-p16"></a>
 
@@ -1057,7 +1090,7 @@ Các phase contract ở mục 8 đã nêu trường chi tiết. Bảng dưới �
 | P12 | Biological scenario/tool selection and calculation request | Independent scenario/revision/history | `SCENARIO_NOT_FOUND`, `BIOLOGICAL_CONTEXT_INVALID`, `SCENARIO_REVISION_CONFLICT`, `MODEL_VERSION_UNAVAILABLE`, `MODULE_UNAVAILABLE`; giữ scenario và availability | No-QA-case namespace, scoped history, clone/export pass |
 | P13 | SAVED revision + fractionation D/n/d + alpha/beta + curve range | BED/EQD2 values, normalized input, immutable calculation/chart dataset, table/export | `BIOLOGICAL_INPUT_INVALID`, `FRACTIONATION_INCONSISTENT`, `CALCULATION_NONFINITE`, `CURVE_RANGE_INVALID`, `ALPHA_BETA_SOURCE_REQUIRED`, `CALCULATION_IDEMPOTENCY_CONFLICT`, `CALCULATION_PERSISTENCE_FAILED`, `SCENARIO_REVISION_NOT_FOUND`, `SCENARIO_IMMUTABLE`; validate/replay/query before retry | Known answer, pair derivation/zero dose, precision, source/override, curve/checksum equality, snapshot/replay/persistence pass |
 | P14 | Options 2–10 từ P13 `COMPLETED` snapshots, baseline, context | Absolute/% delta, chart/table/history, clone/export | `COMPARISON_OPTIONS_REQUIRED`, `COMPARISON_LIMIT_EXCEEDED`, `COMPARISON_BASELINE_REQUIRED`, `COMPARISON_OPTION_INVALID`, `COMPARISON_CONTEXT_MISMATCH`, `COMPARISON_IDEMPOTENCY_CONFLICT`, `COMPARISON_PERSISTENCE_FAILED`; `BASELINE_ZERO` là reason hợp lệ, alpha/beta mismatch là warning | Same model/context/revision, baseline mutation, zero handling, no auto-rank và no-truncate pass |
-| P15 | Course/fraction/time/recovery/compensation scenario | Scalar cumulative, sensitivity, integer alternatives, assumptions | `COURSE_INTERVAL_REQUIRED`, `RECOVERY_ASSUMPTION_INVALID`, `CUMULATIVE_CONTEXT_MISMATCH`, `FRACTION_SCHEDULE_INVALID`, `SPATIAL_ACCUMULATION_UNAVAILABLE`, `TISSUE_DOSE_REQUIRED`, `INTERRUPTION_OVERLAP`, `FRACTION_COUNT_NONINTEGER`; tách capability | No-recovery/recovery, nonuniform schedule, no fake spatial dose, export pass |
+| P15 | Course/fraction/time/recovery/compensation scenario | Scalar cumulative, sensitivity, integer alternatives, assumptions, immutable run/export | `COURSE_REQUIRED`, `COURSE_ROLE_REQUIRED`, `COURSE_ID_DUPLICATE`, `COURSE_INTERVAL_REQUIRED`, `RECOVERY_ASSUMPTION_INVALID`, `CUMULATIVE_CONTEXT_MISMATCH`, `FRACTION_SCHEDULE_REQUIRED`, `FRACTION_SCHEDULE_INVALID`, `FRACTION_SCHEDULE_INCONSISTENT`, `FRACTION_COUNT_NONINTEGER`, `TISSUE_DOSE_REQUIRED`, `TISSUE_DOSE_DUPLICATE`, `ALTERNATIVE_PREFIX_CHANGED`, `INTERRUPTION_OVERLAP`, `SPATIAL_ACCUMULATION_UNAVAILABLE`, `P15_IDEMPOTENCY_CONFLICT`, `REIRRADIATION_PERSISTENCE_FAILED`; tách scalar | No-recovery/recovery, nonuniform fractions, prefix-preserving alternatives, no fake spatial dose, replay, refresh và export pass |
 | P16 | Knowledge/dose-limit/protocol entry, citation/import | Searchable versioned library and snapshot binding | `KNOWLEDGE_SOURCE_REQUIRED`, `DOSE_LIMIT_UNIT_INVALID`, `REFERENCE_LINK_UNAVAILABLE`, `KNOWLEDGE_IMPORT_INVALID`, `DOSE_LIMIT_NOT_APPLICABLE`, `KNOWLEDGE_CONTENT_INVALID`; row-level repair | Source/applicability/version/import/override pass |
 | P17 | RTDOSE/RTSTRUCT/CT and geometry selection | Overlay/profile/DVH with coverage metadata | `DVH_INPUT_REQUIRED`, `DICOM_FRAME_MISMATCH`, `DVH_EMPTY_STRUCTURE`, `DVH_INCOMPLETE_COVERAGE`, `CONTOUR_GEOMETRY_INVALID`, `DICOM_CAPABILITY_UNSUPPORTED`, `ANATOMY_INPUT_REQUIRED`; dose-only fallback | Geometry/DVH oracle, visual/table fallback and coverage pass |
 | P18 | Release candidate, golden/pilot dataset, fault/load scripts | Integrated test report, restore evidence, pilot issue log | `RESULT_REGRESSION`, `RESTORE_INCOMPLETE`, `DUPLICATE_RESULT`, `PERFORMANCE_GATE_FAILED`, `PILOT_CAPABILITY_GAP`, `RELEASE_EVIDENCE_MISMATCH`; giữ candidate và regression | No SEV0/1, exact SHA, backup/restore, workload and pilot matrix pass |

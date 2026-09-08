@@ -46,7 +46,7 @@ def test_database_readiness_requires_the_expected_alembic_revision(tmp_path) -> 
     with engine.begin() as connection:
         connection.execute(text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL)"))
         connection.execute(
-            text("INSERT INTO alembic_version (version_num) VALUES ('20260908_0014')")
+            text("INSERT INTO alembic_version (version_num) VALUES ('20260908_0015')")
         )
     engine.dispose()
 
@@ -66,7 +66,7 @@ def test_database_readiness_rejects_a_schema_revision_mismatch(tmp_path) -> None
     ready, reason = database_ready(Settings(database_url=database_url))
 
     assert ready is False
-    assert reason == ("Database schema revision is 20260907_0007; expected 20260908_0014")
+    assert reason == ("Database schema revision is 20260907_0007; expected 20260908_0015")
 
 
 def test_version_exposes_release_metadata_without_secrets(client: TestClient) -> None:
@@ -79,5 +79,5 @@ def test_version_exposes_release_metadata_without_secrets(client: TestClient) ->
         "environment": "test",
         "engine_version": "unavailable-in-p1",
         "renderer_version": "unavailable-in-p1",
-        "schema_revision": "20260908_0014",
+        "schema_revision": "20260908_0015",
     }

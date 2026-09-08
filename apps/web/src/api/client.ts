@@ -600,6 +600,79 @@ export type PlanComparisonChartResource = {
   chart_dataset: Record<string, unknown>
   table_rows: Array<Record<string, unknown>>
 }
+export type ReIrradiationTissueDoseInput = {
+  tissue_key: string
+  dose_metric: string
+  dose_unit: 'Gy'
+  total_dose_gy?: number | null
+  fractions?: number | null
+  dose_per_fraction_gy?: number | null
+  fraction_doses_gy?: number[] | null
+  consistency_tolerance_gy?: number
+  alpha_beta_gy: number
+  alpha_beta_source_type: 'USER_DEFINED' | 'REFERENCE'
+  alpha_beta_source_reference: string
+}
+export type ReIrradiationCourseInput = {
+  course_id: string
+  label: string
+  is_prior: boolean
+  start_date?: string | null
+  end_date?: string | null
+  tissue_doses: ReIrradiationTissueDoseInput[]
+  recovery_fraction?: number | null
+  recovery_source_type?: 'USER_DEFINED' | 'REFERENCE' | null
+  recovery_source_reference?: string | null
+}
+export type ReIrradiationInput = {
+  scenario_revision_id: string
+  name: string
+  idempotency_key: string
+  courses: ReIrradiationCourseInput[]
+  recovery_model: Record<string, unknown>
+  sensitivity_recovery_fractions: number[]
+  spatial: Record<string, unknown>
+}
+export type FractionCompensationInput = {
+  scenario_revision_id: string
+  name: string
+  idempotency_key: string
+  planned_fraction_doses_gy: number[]
+  delivered_fraction_doses_gy: number[]
+  consistency_tolerance_gy: number
+  alpha_beta_gy: number
+  alpha_beta_source_type: 'USER_DEFINED' | 'REFERENCE'
+  alpha_beta_source_reference: string
+  alternatives: Array<Record<string, unknown>>
+  interruptions: Array<Record<string, unknown>>
+  time_model: Record<string, unknown>
+}
+export type P15ValidationResource = {
+  valid: boolean
+  errors: Array<{ code: string; field: string | null; message: string }>
+  warnings: Array<{ code: string; field: string | null; message: string }>
+  normalized_input: Record<string, unknown> | null
+  preview: Record<string, unknown> | null
+}
+export type P15RunResource = {
+  id: string
+  organization_id: string
+  scenario_id: string
+  scenario_revision_id: string
+  operation_type: string
+  name: string
+  idempotency_key: string
+  model_key: string
+  model_version: string
+  status: string
+  input_snapshot: Record<string, unknown>
+  result_snapshot: Record<string, unknown>
+  warning_snapshot: Array<Record<string, unknown>>
+  error_snapshot: Array<Record<string, unknown>>
+  created_by_user_identity_id: string | null
+  created_at: string
+  updated_at: string
+}
 
 const qaProtocolRuleSchema = z.object({
   id: z.string().uuid(), metric_key: z.string(), display_name: z.string(), unit: z.string(),
@@ -816,6 +889,25 @@ const planComparisonChartSchema = z.object({
   baseline_option_id: z.string(), model_key: z.string(), model_version: z.string(), persisted: z.boolean(),
   option_order: z.array(z.string()), chart_dataset: z.record(z.string(), z.unknown()),
   table_rows: z.array(z.record(z.string(), z.unknown()))
+})
+const p15ValidationSchema = z.object({
+  valid: z.boolean(),
+  errors: z.array(z.object({ code: z.string(), field: z.string().nullable(), message: z.string() })),
+  warnings: z.array(z.object({ code: z.string(), field: z.string().nullable(), message: z.string() })),
+  normalized_input: z.record(z.string(), z.unknown()).nullable(),
+  preview: z.record(z.string(), z.unknown()).nullable()
+})
+const p15RunSchema = z.object({
+  id: z.string().uuid(), organization_id: z.string().uuid(), scenario_id: z.string().uuid(),
+  scenario_revision_id: z.string().uuid(), operation_type: z.string(), name: z.string(),
+  idempotency_key: z.string(), model_key: z.string(), model_version: z.string(), status: z.string(),
+  input_snapshot: z.record(z.string(), z.unknown()), result_snapshot: z.record(z.string(), z.unknown()),
+  warning_snapshot: z.array(z.record(z.string(), z.unknown())),
+  error_snapshot: z.array(z.record(z.string(), z.unknown())),
+  created_by_user_identity_id: z.string().uuid().nullable(), created_at: z.string(), updated_at: z.string()
+})
+const p15CollectionSchema = z.object({
+  items: z.array(p15RunSchema), total: z.number().int(), offset: z.number().int(), limit: z.number().int()
 })
 
 const makeCorrelationId = () => crypto.randomUUID()
@@ -1313,6 +1405,51 @@ export class ApiClient {
     let response: Response
     try {
       response = await fetch(`${this.baseUrl}/organizations/${organizationId}/biological/comparisons/${comparisonId}/export?export_format=${exportFormat}`, {
+        headers: { Accept: exportFormat === 'JSON' ? 'application/json' : 'text/csv', 'X-Correlation-ID': correlationId, Authorization: `Bearer ${accessToken}` }
+      })
+    } catch {
+      throw new ApiClientError('Không thể kết nối tới RT-CONNECT API.', 'NETWORK_ERROR', correlationId)
+    }
+    if (!response.ok) {
+      const body: unknown = await response.json().catch(() => undefined)
+      const parsed = errorSchema.safeParse(body)
+      if (parsed.success) throw new ApiClientError(parsed.data.message, parsed.data.code, parsed.data.correlation_id)
+      throw new ApiClientError('API trả về phản hồi không hợp lệ.', 'INVALID_API_RESPONSE', correlationId)
+    }
+    return response.blob()
+  }
+
+  reIrradiationRuns(accessToken: string, organizationId: string, scenarioId?: string): Promise<{ items: P15RunResource[]; total: number; offset: number; limit: number }> {
+    const suffix = scenarioId ? `?scenario_id=${encodeURIComponent(scenarioId)}` : ''
+    return this.get(`/organizations/${organizationId}/biological/re-irradiation${suffix}`, p15CollectionSchema, accessToken)
+  }
+
+  validateReIrradiation(accessToken: string, organizationId: string, scenarioId: string, body: ReIrradiationInput): Promise<P15ValidationResource> {
+    return this.request(`/organizations/${organizationId}/biological/scenarios/${scenarioId}/re-irradiation/validate`, p15ValidationSchema, accessToken, { method: 'POST', body: JSON.stringify(body) })
+  }
+
+  createReIrradiation(accessToken: string, organizationId: string, scenarioId: string, body: ReIrradiationInput): Promise<P15RunResource> {
+    return this.request(`/organizations/${organizationId}/biological/scenarios/${scenarioId}/re-irradiation`, p15RunSchema, accessToken, { method: 'POST', body: JSON.stringify(body) })
+  }
+
+  fractionCompensationRuns(accessToken: string, organizationId: string, scenarioId?: string): Promise<{ items: P15RunResource[]; total: number; offset: number; limit: number }> {
+    const suffix = scenarioId ? `?scenario_id=${encodeURIComponent(scenarioId)}` : ''
+    return this.get(`/organizations/${organizationId}/biological/fraction-compensation${suffix}`, p15CollectionSchema, accessToken)
+  }
+
+  validateFractionCompensation(accessToken: string, organizationId: string, scenarioId: string, body: FractionCompensationInput): Promise<P15ValidationResource> {
+    return this.request(`/organizations/${organizationId}/biological/scenarios/${scenarioId}/fraction-compensation/validate`, p15ValidationSchema, accessToken, { method: 'POST', body: JSON.stringify(body) })
+  }
+
+  createFractionCompensation(accessToken: string, organizationId: string, scenarioId: string, body: FractionCompensationInput): Promise<P15RunResource> {
+    return this.request(`/organizations/${organizationId}/biological/scenarios/${scenarioId}/fraction-compensation`, p15RunSchema, accessToken, { method: 'POST', body: JSON.stringify(body) })
+  }
+
+  async downloadP15(accessToken: string, organizationId: string, operation: 're-irradiation' | 'fraction-compensation', runId: string, exportFormat: 'JSON' | 'CSV'): Promise<Blob> {
+    const correlationId = makeCorrelationId()
+    let response: Response
+    try {
+      response = await fetch(`${this.baseUrl}/organizations/${organizationId}/biological/${operation}/${runId}/export?export_format=${exportFormat}`, {
         headers: { Accept: exportFormat === 'JSON' ? 'application/json' : 'text/csv', 'X-Correlation-ID': correlationId, Authorization: `Bearer ${accessToken}` }
       })
     } catch {

@@ -3,15 +3,15 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.5 — đồng bộ specification.md v1.7 và plan.md v2.7, bổ sung P13 BED/EQD2 và P14 Plan Comparison implementation contract (2026-09-08)
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.13
+- **Phiên bản:** 1.6 — đồng bộ specification.md v1.8 và plan.md v2.8, bổ sung P15 Re-irradiation/Fraction Compensation implementation contract (2026-09-08)
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.14
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
 
 Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
-> Đồng bộ v1.5: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§8 là authority cho hành vi/validation/error/thuật toán. P6–P14 hiện đã có các slice code được ghi rõ trong mục 0.4; phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+> Đồng bộ v1.6: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§8 là authority cho hành vi/validation/error/thuật toán. P6–P15 hiện đã có các slice code được ghi rõ trong mục 0.4; phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -38,7 +38,7 @@ Baseline dưới đây được kiểm tra trực tiếp ngày 2026-09-04. ID h�
 | `ffb87901b3194bd3aff8760c54c2f9f4` | Phân tích PSQA Gamma Workspace | MOD-04, MOD-06 |
 | `a1478466ace843c5aaf9a15dfc58273e` | Trình biên soạn Báo cáo - Report Builder Studio | MOD-07 |
 
-Logo và avatar không phải route. `get_project` vẫn có thể trả bốn instance Biological cũ ở trạng thái `hidden`; chúng là legacy/deprecated sau khi user loại khỏi canvas hoạt động, không phải nguồn thiết kế hiện hành và không được tự khôi phục. MOD-10 đến MOD-13 là design gap: phải tạo screen mới theo thứ tự Biological Hub → BED/EQD2 → Plan Comparison → Re-irradiation/Fraction Compensation, kế thừa Design System `Clinical Precision Interface` và AppShell của bốn screen đang hoạt động.
+Logo và avatar không phải route. `get_project` vẫn có thể trả bốn instance Biological cũ ở trạng thái `hidden`; chúng là legacy/deprecated sau khi user loại khỏi canvas hoạt động, không phải nguồn thiết kế hiện hành và không được tự khôi phục. MOD-10 đến MOD-13 phải dùng các screen implementation hiện hành theo thứ tự Biological Hub → BED/EQD2 → Plan Comparison → Re-irradiation/Fraction Compensation, kế thừa Design System `Clinical Precision Interface` và AppShell của bốn screen đang hoạt động. Một screen Stitch riêng chỉ là nguồn tham khảo tùy chọn, không phải điều kiện để route có code.
 
 Các resource tài liệu cũ trên Stitch không phải bản canonical trong repository. `UI-UX.md` không còn được duy trì; việc thiết kế mới hoặc sửa thiết kế được thực hiện trực tiếp trong project Stitch qua MCP.
 
@@ -91,8 +91,9 @@ Phần 0.1–0.3 là baseline lịch sử ngày 2026-09-04 và không được �
 | P12 | Biological Hub, independent scenario/revision/history, capability discovery and scoped calculation read model | `20260908_0012` |
 | P13 | BED/EQD2 pure engine, calculation snapshot, idempotency, chart dataset and JSON/CSV export | `20260908_0013` |
 | P14 | Plan Comparison engine, immutable comparison snapshot, baseline/delta table-chart, clone and JSON/CSV export | `20260908_0014` |
+| P15 | Re-irradiation/fraction-compensation scalar engine, recovery/sensitivity, schedule alternatives, immutable snapshot and JSON/CSV export | `20260908_0015` |
 
-Ngày 2026-09-08, P11–P14 đã bổ sung model/API/UI và migrations `20260908_0011`/`20260908_0012`/`20260908_0013`/`20260908_0014`. P12–P14 giữ Biological như bounded context độc lập, không có FK bắt buộc tới QACase/patient. Checkpoint local phải ghi đủ full suite, focused phase tests, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head trên cùng SHA; build warning không được coi là lỗi chức năng nhưng phải theo dõi bundle budget. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
+Ngày 2026-09-08, P11–P15 đã bổ sung model/API/UI và migrations `20260908_0011`/`20260908_0012`/`20260908_0013`/`20260908_0014`/`20260908_0015`. P12–P15 giữ Biological như bounded context độc lập, không có FK bắt buộc tới QACase/patient. Checkpoint local phải ghi đủ full suite, focused phase tests, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head trên cùng SHA; build warning không được coi là lỗi chức năng nhưng phải theo dõi bundle budget. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
 
 ---
 
@@ -266,10 +267,10 @@ Mỗi screen mới phải dùng synthetic data và có ít nhất loading, empty
 | `/app/qa` | Kho lưu trữ QA & Thư mục | MOD-03 | Folder tree, search, case list |
 | `/app/qa/cases/:caseId/gamma` | PSQA Gamma Workspace | MOD-04, MOD-06 | Upload/manifest/config/job/result |
 | `/app/reports/:reportId/edit` | Report Builder Studio | MOD-07 | Builder, preview, revision và export |
-| `/app/biological` | Chưa có — tạo lại trong P12 | MOD-10 | Hub độc lập với QA case |
+| `/app/biological` | Active implementation trong P12; kế thừa Clinical Precision Interface | MOD-10 | Hub độc lập với QA case |
 | `/app/biological/bed-eqd2` | Active Clinical Precision Interface implementation; Stitch generation unavailable at P13 attempt | MOD-11 | Calculator, chart, history, immutable snapshot and export |
 | `/app/biological/compare` | Active implementation trong P14; kế thừa Clinical Precision Interface | MOD-12 | Multi-option P13 snapshot comparison |
-| `/app/biological/re-irradiation` | Chưa có — tạo lại trong P15 | MOD-13 | Multi-course/recovery/scenario |
+| `/app/biological/re-irradiation` | Active implementation trong P15; shared ReIrradiationPage | MOD-13 | Multi-course/recovery/scenario |
 
 Các route chưa có Stitch screen được tạo trong phase module tương ứng. Route cuối cùng được khóa trong typed route registry; không hardcode URL rải rác trong component.
 
@@ -807,11 +808,11 @@ Slice P12 hiện thực ba bảng nền tảng trong namespace nghiệp vụ ri�
 
 - `biological_scenarios`: organization-scoped stable key, tên/loại/context, source/reference, finite assumptions, trạng thái `DRAFT|SAVED|ARCHIVED`, revision và lineage tới source scenario revision khi clone.
 - `biological_scenario_revisions`: snapshot append-only của từng revision, unique theo scenario + revision number; dùng để mở lại đúng input đã lưu.
-- `biological_calculation_runs`: model/version, input/result/warning/error snapshot và liên kết scenario revision; P12 cung cấp read contract, P13 tạo calculation BED/EQD2 bất biến, P14 đọc các snapshot này để so sánh và P15 mở rộng calculation theo phase riêng.
+- `biological_calculation_runs`: model/version, input/result/warning/error snapshot và liên kết scenario revision; P12 cung cấp read contract, P13 tạo calculation BED/EQD2 bất biến, P14 đọc các snapshot này để so sánh. P15 dùng namespace `biological_reirradiation_runs` riêng cho re-irradiation/fraction compensation để không trộn semantics với một calculation BED/EQD2 đơn.
 
 Tất cả query đầu tiên đều kèm `organization_id` sau khi resolve membership. Mutation create/update/save/clone/archive ghi header, snapshot và audit trong một transaction. `PATCH` bắt `expected_revision`; chỉ DRAFT sửa trực tiếp; clone tạo ID/key mới và không sửa nguồn. `validate` là validate-only. `ARCHIVED` bị loại khỏi list mặc định nhưng history/detail vẫn đọc được.
 
-API implementation prefix là `/api/v1/organizations/{organization_id}/biological` với các nhóm `/tools`, `/summary`, `/scenarios`, `/scenarios/{id}/revisions`, `/calculations` và `/comparisons`. P13 và P14 đã có engine/API/UI contract và test local; P15–P16 vẫn trả `PLANNED`/`available=false` cho tới khi có contract và evidence tương ứng; không tạo calculation giả chỉ để làm card hoạt động.
+API implementation prefix là `/api/v1/organizations/{organization_id}/biological` với các nhóm `/tools`, `/summary`, `/scenarios`, `/scenarios/{id}/revisions`, `/calculations`, `/comparisons`, `/re-irradiation` và `/fraction-compensation`. P13–P15 đã có engine/API/UI contract và test local; P16 vẫn trả `PLANNED`/`available=false` cho tới khi có contract và evidence tương ứng; không tạo calculation giả chỉ để làm card hoạt động.
 
 ### 4.17.2. P13 BED/EQD2 implementation contract
 
@@ -838,6 +839,57 @@ P14 là bounded context đọc các P13 `BiologicalCalculationRun` đã `COMPLET
 - **Transaction/error boundary:** create/clone thêm comparison và audit trong một transaction; same key + same fingerprint trả row cũ, same key + khác fingerprint trả `409 COMPARISON_IDEMPOTENCY_CONFLICT`; validation `422`, scope `403`, missing `404`, persistence `503`. Validate/preview không ghi database. Error response dùng shared flat envelope và correlation ID.
 - **Frontend behavior:** nếu không có hai P13 snapshot `COMPLETED`, hiển thị empty state; form chỉ chọn source snapshot có thật; warning/error/zero-percent có text và reason; history sau refresh đọc lại từ API; export/clone chỉ thực hiện từ persisted comparison. Không coi HTTP 200 là tính toán thành công nếu schema parse thất bại.
 - **Evidence:** migration `0014`, full backend suite, focused P14 engine/API/biological tests, Ruff, strict mypy, frontend lint/typecheck/Vitest/build và OpenAPI check đã pass trên candidate. Staging browser/API smoke trên candidate `31a5900` cũng đã pass validate-only, save, reorder preview, clone, JSON/CSV export và refresh readback; direct PostgreSQL row/checksum, organization-scope negative probe và release manifest vẫn là gate kế tiếp. Đây chưa phải tuyên bố clinical readiness.
+
+### 4.17.4. P15 Re-irradiation và Fraction Compensation implementation contract
+
+P15 là hai operation synchronous trong Biological bounded context. Engine thuần không import FastAPI/SQLAlchemy/Auth/QA data; API adapter chịu trách nhiệm resolve organization membership, saved scenario revision, idempotency và persistence. UI chỉ gửi input đã nhập, hiển thị field error/warning và đọc immutable snapshot.
+
+#### Engine và dữ liệu chuẩn hóa
+
+- `services/re_irradiation_engine.py` công bố hai engine identity: `biological.re-irradiation / p15-lq-reirradiation-1.0.0` và `biological.fraction-compensation / p15-lq-compensation-1.0.0`.
+- Re-irradiation parser chuẩn hóa lịch uniform từ D/n/d hoặc giữ nguyên `fraction_doses_gy[]` nếu nonuniform. Mọi số được kiểm finite; dose không âm; alpha/beta dương; fraction count nguyên trong giới hạn. `BED` được tính theo từng fraction, `EQD2` tính từ BED chưa làm tròn.
+- Course phải có ID duy nhất, explicit prior/current role và tissue rows độc lập. Engine từ chối scenario không có đủ một prior và một current. Cùng tissue với alpha/beta khác nhau được group bằng `tissue_key|alpha-beta={value} Gy` và trả warning thay vì cộng khác context.
+- Recovery là scalar user-defined. `NONE` không giảm BED; `USER_DEFINED` yêu cầu evaluation date và source cho từng prior course, áp dụng `(1-recovery_fraction)` đúng một lần. Sensitivity chỉ là bảng giả định, không phải uncertainty interval.
+- Fraction compensation kiểm `delivered_fraction_doses_gy[]` là prefix khớp `planned_fraction_doses_gy[]` trong tolerance. Alternative được ghép từ prefix + remaining; output chứa prefix unchanged, total/BED/EQD2 và delta so với planned. Interruption được parse thành interval không overlap. `USER_DEFINED_LINEAR` tính penalty BED theo rate sau kickoff và luôn lưu source; không có model thì warning `NO_REPOPULATION_CORRECTION`.
+- `spatial.requested=true` chỉ tạo capability/warning `SPATIAL_ACCUMULATION_UNAVAILABLE`; không đọc DICOM, không resample, không đăng ký geometry và không tạo voxel result trong P15.
+
+#### Model và migration
+
+Migration `20260908_0015_reirradiation.py` tạo `biological_reirradiation_runs` với:
+
+| Cột/constraint | Mục đích |
+| :--- | :--- |
+| `id`, `organization_id`, `scenario_id`, `scenario_revision_id` | Identity và tenant/scenario lineage; foreign key tới resource hiện hữu. |
+| `operation_type` | `REIRRADIATION` hoặc `FRACTION_COMPENSATION`; list/detail luôn lọc operation. |
+| `name`, `idempotency_key` | Tên hiển thị và retry identity; unique theo `(organization_id, idempotency_key)`. |
+| `model_key`, `model_version`, `status` | Provenance engine và terminal state; hiện calculation synchronous `COMPLETED`. |
+| `input_snapshot`, `result_snapshot`, `warning_snapshot`, `error_snapshot` | Snapshot JSON immutable, đủ để export/reproduce; không trỏ live form. |
+| `created_by_user_identity_id`, timestamps | Actor/audit lineage và thời gian. |
+
+Indexes gồm organization, scenario, scenario revision, organization+operation, organization+status và actor. Không có FK tới QA case/patient/TPS/PACS; calculation P15 là namespace Biological độc lập.
+
+#### API transaction và error mapping
+
+API prefix là `/api/v1/organizations/{organization_id}/biological`. Mọi read đầu tiên resolve identity/membership rồi mới query với `organization_id`; detail/list của organization khác trả scope-safe error. Validate-only không commit. Create tính trước, tạo run + audit rồi commit; `IntegrityError` sau concurrent insert chỉ trả existing nếu fingerprint trùng, ngược lại `P15_IDEMPOTENCY_CONFLICT`.
+
+| Tình huống | Mapping |
+| :--- | :--- |
+| Pydantic extra field, type, UUID, finite/range | HTTP `422`, shared error envelope; không tạo run. |
+| Engine input error | Validate route HTTP `200` + `valid=false`; create route HTTP `422` + code/field details. |
+| Missing/archived/unsaved scenario revision | `404` resource hoặc `409` lifecycle; không chạy engine. |
+| Organization mismatch | `403`, query không lấy resource ngoài scope. |
+| Same key/same fingerprint | `200` replay row cũ, không insert row thứ hai. |
+| Same key/different fingerprint | `409 P15_IDEMPOTENCY_CONFLICT`. |
+| DB/transaction failure | `503 REIRRADIATION_PERSISTENCE_FAILED`; rollback và query key trước retry. |
+| Export | JSON/CSV đọc snapshot; không tính lại, không mutation; run thiếu trả `404`. |
+
+#### Frontend route và trạng thái
+
+`/app/biological/re-irradiation` và `/app/biological/fraction-compensation` dùng cùng `ReIrradiationPage` nhưng hai form mode. UI có scenario/revision selector chỉ lấy `SAVED`, course×tissue matrix, recovery/sensitivity, planned/delivered prefix, alternatives, interruptions, optional time model, validate-only, save, history và JSON/CSV export. Các trạng thái bắt buộc là loading, no saved scenario, validation error, warning, persisted result, export error và API/session error. Kết quả luôn có model/version/checksum và nhãn `SCENARIO / ESTIMATE ONLY`.
+
+#### Local verification checkpoint
+
+Working-tree candidate đã kiểm: P15 API tests `5/5`, pure engine/error tests `22/22`, full backend `133 passed`, Ruff, strict mypy, frontend lint/typecheck/build, OpenAPI regenerate/check và Alembic PostgreSQL head `20260908_0015`. Đây chỉ là local implementation evidence; staging deploy, authenticated browser smoke, direct PostgreSQL row/checksum/scope query và release manifest vẫn là gate riêng.
 
 ### 4.18. Audit Event
 

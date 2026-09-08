@@ -5,6 +5,7 @@ import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { BiologicalToolkitPage } from './pages/BiologicalToolkitPage'
 import { BedEqd2Page } from './pages/BedEqd2Page'
 import { PlanComparisonPage } from './pages/PlanComparisonPage'
+import { ReIrradiationPage } from './pages/ReIrradiationPage'
 import { HomeDashboardPage } from './pages/HomeDashboardPage'
 import { GammaPage } from './pages/GammaPage'
 import { LoginPage } from './pages/LoginPage'
@@ -36,6 +37,8 @@ export function ApplicationRoutes() {
       <Route path="/app/biological" element={<ProtectedRoute><BiologicalToolkitPage /></ProtectedRoute>} />
       <Route path="/app/biological/bed-eqd2" element={<ProtectedRoute><BedEqd2Page /></ProtectedRoute>} />
       <Route path="/app/biological/compare" element={<ProtectedRoute><PlanComparisonPage /></ProtectedRoute>} />
+      <Route path="/app/biological/re-irradiation" element={<ProtectedRoute><ReIrradiationPage mode="REIRRADIATION" /></ProtectedRoute>} />
+      <Route path="/app/biological/fraction-compensation" element={<ProtectedRoute><ReIrradiationPage mode="FRACTION_COMPENSATION" /></ProtectedRoute>} />
       <Route path="/app/qa/cases/:caseId/machine-qa" element={<ProtectedRoute><MachineQAPage /></ProtectedRoute>} />
       <Route path="/app/qa/cases/:caseId/gamma" element={<ProtectedRoute><GammaPage /></ProtectedRoute>} />
       <Route path="/app/system/status" element={<PlatformStatusPage />} />
