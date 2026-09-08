@@ -3,15 +3,15 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.3 — đồng bộ specification.md v1.5 và plan.md v2.5, bổ sung P12 Biological Hub implementation contract (2026-09-08)
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.11
+- **Phiên bản:** 1.4 — đồng bộ specification.md v1.6 và plan.md v2.6, bổ sung P13 BED/EQD2 implementation contract (2026-09-08)
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.12
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
 
 Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
-> Đồng bộ v1.3: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§8 là authority cho hành vi/validation/error/thuật toán. P6–P12 hiện đã có các slice code được ghi rõ trong mục 0.4; phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+> Đồng bộ v1.4: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§8 là authority cho hành vi/validation/error/thuật toán. P6–P13 hiện đã có các slice code được ghi rõ trong mục 0.4; phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -89,8 +89,9 @@ Phần 0.1–0.3 là baseline lịch sử ngày 2026-09-04 và không được �
 | P10 | Trend query/aggregate/export/rebuild, BaselineVersion, MaintenanceEvent/Revisions, source drill-down | `20260908_0010` |
 | P11 | QA Protocol Library, rule validation, lifecycle, clone/compare and active-only Machine QA consumer | `20260908_0011` |
 | P12 | Biological Hub, independent scenario/revision/history, capability discovery and scoped calculation read model | `20260908_0012` |
+| P13 | BED/EQD2 pure engine, calculation snapshot, idempotency, chart dataset and JSON/CSV export | `20260908_0013` |
 
-Ngày 2026-09-08, P11 và P12 đã bổ sung model/API/UI và migrations `20260908_0011`/`20260908_0012`. P12 giữ Biological như bounded context độc lập, không có FK bắt buộc tới QACase/patient. Checkpoint local phải ghi đủ full suite, focused P12, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head trên cùng SHA; build warning không được coi là lỗi chức năng nhưng phải theo dõi bundle budget. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
+Ngày 2026-09-08, P11–P13 đã bổ sung model/API/UI và migrations `20260908_0011`/`20260908_0012`/`20260908_0013`. P12–P13 giữ Biological như bounded context độc lập, không có FK bắt buộc tới QACase/patient. Checkpoint local phải ghi đủ full suite, focused phase tests, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head trên cùng SHA; build warning không được coi là lỗi chức năng nhưng phải theo dõi bundle budget. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
 
 ---
 
@@ -265,7 +266,7 @@ Mỗi screen mới phải dùng synthetic data và có ít nhất loading, empty
 | `/app/qa/cases/:caseId/gamma` | PSQA Gamma Workspace | MOD-04, MOD-06 | Upload/manifest/config/job/result |
 | `/app/reports/:reportId/edit` | Report Builder Studio | MOD-07 | Builder, preview, revision và export |
 | `/app/biological` | Chưa có — tạo lại trong P12 | MOD-10 | Hub độc lập với QA case |
-| `/app/biological/bed-eqd2` | Chưa có — tạo lại trong P13 | MOD-11 | Calculator, chart, history |
+| `/app/biological/bed-eqd2` | Active Clinical Precision Interface implementation; Stitch generation unavailable at P13 attempt | MOD-11 | Calculator, chart, history, immutable snapshot and export |
 | `/app/biological/compare` | Chưa có — tạo lại trong P14 | MOD-12 | Multi-course comparison |
 | `/app/biological/re-irradiation` | Chưa có — tạo lại trong P15 | MOD-13 | Multi-course/recovery/scenario |
 
@@ -805,11 +806,23 @@ Slice P12 hiện thực ba bảng nền tảng trong namespace nghiệp vụ ri�
 
 - `biological_scenarios`: organization-scoped stable key, tên/loại/context, source/reference, finite assumptions, trạng thái `DRAFT|SAVED|ARCHIVED`, revision và lineage tới source scenario revision khi clone.
 - `biological_scenario_revisions`: snapshot append-only của từng revision, unique theo scenario + revision number; dùng để mở lại đúng input đã lưu.
-- `biological_calculation_runs`: model/version, input/result/warning/error snapshot và liên kết scenario revision; P12 chỉ cung cấp read contract, P13–P15 mới tạo calculation thật.
+- `biological_calculation_runs`: model/version, input/result/warning/error snapshot và liên kết scenario revision; P12 cung cấp read contract, P13 bắt đầu tạo calculation BED/EQD2 bất biến, P14–P15 mở rộng calculation theo phase riêng.
 
 Tất cả query đầu tiên đều kèm `organization_id` sau khi resolve membership. Mutation create/update/save/clone/archive ghi header, snapshot và audit trong một transaction. `PATCH` bắt `expected_revision`; chỉ DRAFT sửa trực tiếp; clone tạo ID/key mới và không sửa nguồn. `validate` là validate-only. `ARCHIVED` bị loại khỏi list mặc định nhưng history/detail vẫn đọc được.
 
-API implementation prefix là `/api/v1/organizations/{organization_id}/biological` với các nhóm `/tools`, `/summary`, `/scenarios`, `/scenarios/{id}/revisions` và `/calculations`. P13–P16 capability được trả là `PLANNED`/`available=false` cho tới khi có engine, UI route và test/fixture tương ứng; không tạo calculation giả chỉ để làm card hoạt động.
+API implementation prefix là `/api/v1/organizations/{organization_id}/biological` với các nhóm `/tools`, `/summary`, `/scenarios`, `/scenarios/{id}/revisions` và `/calculations`. P13 đã có engine, UI route và test/fixture local; P14–P16 vẫn trả `PLANNED`/`available=false` cho tới khi có contract và evidence tương ứng; không tạo calculation giả chỉ để làm card hoạt động.
+
+### 4.17.2. P13 BED/EQD2 implementation contract
+
+P13 dùng engine thuần `services/bed_eqd2_engine.py`, không phụ thuộc database, HTTP hoặc patient data. API route được đăng ký tại `/api/v1/organizations/{organization_id}/biological` và UI route tại `/app/biological/bed-eqd2`.
+
+- **Schema/migration:** `biological_calculation_runs.idempotency_key` nullable cho các row read-model P12 cũ, unique theo `(organization_id, idempotency_key)` cho calculation P13; migration `20260908_0013_bed_eqd2_calculations.py`.
+- **Engine identity:** key `biological.bed-eqd2`; version `p13-lq-1.0.0`. Engine chuẩn hóa D/n/d, kiểm finite/nonnegative/positive/integer, tolerance, source và point budget; không làm tròn trước phép tính.
+- **Primary result:** LQ BED/EQD2 với D [Gy], n [fraction], d [Gy/fraction], alpha/beta [Gy]. Kết quả JSON chứa formula, fractionation normalized, alpha/beta provenance, primary, table rows và chart dataset canonical có SHA-256.
+- **Curve modes:** `FIXED_N` giữ số fraction và tạo d=D/n; `FIXED_D` giữ d và chỉ tạo D=n×d với n nguyên. Point limit tính trên toàn bộ alpha/beta series; range/step không hợp lệ chặn toàn bộ operation.
+- **API operations:** validate-only không mutation; create calculation commit + audit; replay idempotent trả snapshot đã lưu; chart preview chỉ đọc/rebuild từ input snapshot với `persisted=false`; JSON/CSV export đọc result snapshot. Mọi route resolve membership trước rồi mới query resource bằng organization scope.
+- **Failure boundary:** input/domain errors trả `valid=false` ở validate hoặc error envelope 422; idempotency conflict 409; scenario/revision/calculation scope lỗi 403/404/409; persistence lỗi 503. Không tạo calculation COMPLETED một phần và không liên kết mặc định với QA/patient/TPS/PACS.
+- **Evidence local:** engine/API focused tests, full backend, Ruff/mypy, frontend lint/typecheck/Vitest/build và Alembic head `20260908_0013` đã pass trên candidate. Staging browser/API/PostgreSQL/checksum/export evidence vẫn là gate tiếp theo và được ghi trong `implementation-progress.md`.
 
 ### 4.18. Audit Event
 

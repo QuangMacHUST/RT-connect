@@ -24,7 +24,9 @@ def test_biological_hub_scenario_lifecycle_is_independent_and_versioned() -> Non
         tools = client.get(f"{base_url}/tools")
         assert tools.status_code == 200, tools.text
         assert len(tools.json()) == 6
-        assert all(item["available"] is False for item in tools.json())
+        assert tools.json()[0]["tool_key"] == "BED_EQD2"
+        assert tools.json()[0]["available"] is True
+        assert all(item["available"] is False for item in tools.json()[1:])
 
         summary = client.get(f"{base_url}/summary")
         assert summary.status_code == 200

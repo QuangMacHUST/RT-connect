@@ -22,8 +22,8 @@ All routes are typed in source during P1. This registry is the P0 contract draft
 | `/app/reports/:reportId/edit` | MOD-07 | Builder `a1478466ace843c5aaf9a15dfc58273e` | report template/revision APIs | P9 |
 | `/app/trend` | MOD-08 | Missing | `/api/v1/trend` | P10 |
 | `/app/qa-protocols` | MOD-09 | Local P11 implementation; dedicated Stitch screen still optional | `/api/v1/organizations/{id}/qa-protocols` | P11 |
-| `/app/biological` | MOD-10 | Stitch Biological Hub `b32ef9de691f48449ec23e491a6b634d`; local P12 implementation | `/api/v1/organizations/{id}/biological/tools`, `/summary`, `/scenarios`, `/calculations` | P12 |
-| `/app/biological/bed-eqd2` | MOD-11 | Missing; regenerate | biological calculation/chart APIs | P13 |
+| `/app/biological` | MOD-10 | Stitch Biological Hub `b32ef9de691f48449ec23e491a6b634d`; P12 implementation | `/api/v1/organizations/{id}/biological/tools`, `/summary`, `/scenarios`, `/calculations` | P12 |
+| `/app/biological/bed-eqd2` | MOD-11 | P13 implementation using Clinical Precision Interface tokens; Stitch generation attempted but service unavailable, so existing design system is used | `/api/v1/organizations/{id}/biological/scenarios/{scenario_id}/calculations/validate`, `/calculations`, `/calculations/{id}/charts`, `/calculations/{id}/export` | P13 |
 | `/app/biological/compare` | MOD-12 | Missing; regenerate | `/api/v1/biological/comparisons` | P14 |
 | `/app/biological/re-irradiation` | MOD-13 | Missing; regenerate | re-irradiation API | P15 |
 | `/app/biological/fraction-compensation` | MOD-13 | Missing | fraction-compensation API | P15 |

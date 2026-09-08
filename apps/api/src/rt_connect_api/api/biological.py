@@ -168,6 +168,7 @@ class BiologicalCalculationResponse(BaseModel):
     scenario_id: UUID
     scenario_revision_id: UUID
     calculation_type: str
+    idempotency_key: str | None
     model_key: str
     model_version: str
     status: str
@@ -435,8 +436,8 @@ def _tools() -> list[BiologicalToolResponse]:
             label="BED & EQD2",
             route="/app/biological/bed-eqd2",
             phase="P13",
-            status="PLANNED",
-            available=False,
+            status="AVAILABLE",
+            available=True,
             description="Tính BED/EQD2 và đồ thị theo tổng liều D.",
         ),
         BiologicalToolResponse(
@@ -972,6 +973,7 @@ def _calculation_response(run: BiologicalCalculationRun) -> BiologicalCalculatio
         scenario_id=run.scenario_id,
         scenario_revision_id=run.scenario_revision_id,
         calculation_type=run.calculation_type,
+        idempotency_key=run.idempotency_key,
         model_key=run.model_key,
         model_version=run.model_version,
         status=run.status,

@@ -324,6 +324,9 @@ class BiologicalCalculationRun(TimestampedIdMixin, Base):
         ForeignKey("biological_scenario_revisions.id"), nullable=False, index=True
     )
     calculation_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    # P13+ calculations use this key to make browser retries safe.  It is
+    # nullable for the P12 read-model rows that predate executable tools.
+    idempotency_key: Mapped[str | None] = mapped_column(String(200), nullable=True)
     model_key: Mapped[str] = mapped_column(String(120), nullable=False)
     model_version: Mapped[str] = mapped_column(String(80), nullable=False)
     status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="COMPLETED")

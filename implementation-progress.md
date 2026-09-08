@@ -2,26 +2,26 @@
 
 ## Documentation and implementation rebaseline — 2026-09-08
 
-`business-analysis.md` v0.11, `specification.md` v1.5, `technical-specification.md` v1.3 và `plan.md` v2.5 bổ sung requirement, contract, testcase và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
+`business-analysis.md` v0.12, `specification.md` v1.6, `technical-specification.md` v1.4 và `plan.md` v2.6 bổ sung requirement, contract, testcase và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
 
-Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness, staging Trend và staging Protocol consumer vẫn phải được đối soát theo plan §1.2–§1.3. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Next work lấy từ plan v2.5 và specification §11; P12 hiện mới `LOCAL_VERIFIED`.
+Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness, staging Trend và staging Protocol consumer vẫn phải được đối soát theo plan §1.2–§1.3. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Next work lấy từ plan v2.6 và specification §11; P13 hiện mới `LOCAL_VERIFIED`.
 
 ## Current checkpoint
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
-- **Current phase:** P12 — Biological Hub và calculation history độc lập; P8/P9/P10/P11 remaining release gates vẫn mở, P13 là module kế tiếp sau P12 staging closure.
-- **Current status:** IN_PROGRESS — P12 có migration `20260908_0012`, scoped scenario/revision/calculation read model, lifecycle API/UI và Stitch screen `b32ef9de691f48449ec23e491a6b634d`. Local focused P12, full backend, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head pass; P12 renderer integration, staging browser/DB-state/no-QA-linkage, complete negative matrix và release manifest chưa đóng.
-- **Last authoritative check:** 2026-09-08 — local PostgreSQL đã upgrade tới `20260908_0012 (head)`; OpenAPI đã regenerate, frontend build pass và P12 focused suite pass trên working tree candidate. Evidence staging P8/P10/P11 bên dưới vẫn có giá trị cho candidate tương ứng, nhưng không được dùng để suy ra P12 staging hoặc production readiness.
-- **Next exact step:** commit/push P12 cùng tài liệu v0.11/v1.5/v1.3/v2.5; cập nhật/kiểm `SCHEMA_REVISION=20260908_0012` trên API/worker staging nếu biến đang pin, chờ deploy đúng SHA, kiểm `/api/v1/ready` và chạy browser P12 validate→create→edit→save→clone→archive→history với DB/scope evidence.
+- **Current phase:** P13 — BED/EQD2 và đồ thị theo tổng liều; P8/P9/P10/P11/P12 remaining release gates vẫn mở, P14 là module kế tiếp sau P13 staging closure.
+- **Current status:** IN_PROGRESS — P13 có migration `20260908_0013`, pure LQ engine, validate-only/create/replay/chart/export API, calculator UI và immutable calculation snapshot. Local focused P13, full backend, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head pass; P13 staging browser/DB/checksum/no-QA-linkage, P12 renderer integration và các gate release trước đó chưa đóng.
+- **Last authoritative check:** 2026-09-08 — local PostgreSQL đã upgrade tới `20260908_0013 (head)`; OpenAPI đã regenerate, frontend build pass, P13 engine/API tests pass trên working tree candidate. Evidence staging P8/P10/P11/P12 bên dưới chỉ có giá trị cho candidate tương ứng, không suy ra P13 staging hoặc production readiness.
+- **Next exact step:** commit/push candidate P13; kiểm `SCHEMA_REVISION=20260908_0013` trên API/worker staging nếu biến đang pin, chờ deploy đúng SHA, kiểm `/api/v1/ready` và chạy browser P13 validate→calculate→replay→chart preview→export với PostgreSQL state/checksum evidence.
 
 ## Source documents read
 
 | Source | Version | Status |
 | :--- | :--- | :--- |
-| `business-analysis.md` | 0.11 | Business source; detailed workflow/error/recovery matrix, protocol lifecycle, P12 scenario contract and feature-completion definition |
-| `specification.md` | 1.5 | Behavior/data/error/numeric contracts; exact P10/P11/P12 API, model, validation and consumer contracts |
-| `technical-specification.md` | 1.3 | Architecture reference; P10/P11 plus P12 bounded-context implementation addenda |
-| `plan.md` | 2.5 | Phase/workflow/S-E/C tests, DoR/DoD, execution ledger, P10/P11/P12 checkpoints and staging gates |
+| `business-analysis.md` | 0.12 | Business source; detailed workflow/error/recovery matrix, P12 scenario and P13 BED/EQD2 contract |
+| `specification.md` | 1.6 | Behavior/data/error/numeric contracts; exact P10/P11/P12/P13 API, model, validation and persistence contracts |
+| `technical-specification.md` | 1.4 | Architecture reference; P10/P11/P12 plus P13 bounded-context implementation addenda |
+| `plan.md` | 2.6 | Phase/workflow/S-E/C tests, DoR/DoD, execution ledger, P10/P11/P12/P13 checkpoints and staging gates |
 
 ## Phase status
 
@@ -39,8 +39,8 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | P9 | STAGING E2E PARTIAL / LOCAL VERIFIED | Report revision/export browser smoke on staging; recheck current candidate, visual/export failure gate remains |
 | P10 | STAGING SMOKE PARTIAL / EXIT OPEN | Migration `20260908_0010`, API/UI slice, 7 focused tests and authenticated staging trend smoke pass; large-series, complete negative matrix, visual/accessibility and release evidence remain |
 | P11 | LOCAL VERIFIED / STAGING OPEN | Migration `20260908_0011`, library API/UI and local `3/3`; staging browser/consumer snapshot and full S/E/C evidence remain |
-| P12 | LOCAL VERIFIED / STAGING OPEN | Migration `20260908_0012`, Biological Hub route/API/UI, scenario revision/clone/archive and local focused/full gates; staging browser/DB-state/no-QA-linkage, renderer integration and full S/E/C remain |
-| P13 | NOT_STARTED | Depends on P12 |
+| P12 | STAGING E2E PASS / EXIT OPEN | Migration `20260908_0012`, Biological Hub route/API/UI, staging browser create/validate/edit/save/clone/archive/history đã chạy trên dữ liệu tổng hợp; PostgreSQL state, refresh/reconnect, renderer integration và full S/E/C remain |
+| P13 | LOCAL VERIFIED / STAGING OPEN | Migration `20260908_0013`, BED/EQD2 engine/API/UI, validate-only/create/replay/chart preview/JSON/CSV export và local S/E/C tests pass; staging browser/DB/checksum/no-QA-linkage remain |
 | P14 | NOT_STARTED | Depends on P13 |
 | P15 | NOT_STARTED | Depends on P13/P14 |
 | P16 | NOT_STARTED | Depends on P12/P13 |
@@ -125,8 +125,17 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - Migration `20260908_0012_biological_scenarios.py` upgraded successfully on local PostgreSQL and is the current Alembic head. It adds organization-scoped `biological_scenarios`, append-only `biological_scenario_revisions` and the read model for `biological_calculation_runs` without a mandatory QA-case/patient relationship.
 - P12 API routes are registered under `/api/v1/organizations/{organization_id}/biological`; validate-only, create DRAFT, DRAFT patch with optimistic revision, save to SAVED, clone with source lineage, archive, default archived filtering, revision history, summary/tools and scoped calculation reads are implemented.
 - Focused `apps/api/tests/test_biological.py` passed; full backend suite passed after updating the expected schema revision to `20260908_0012`. Ruff/mypy passed, OpenAPI was regenerated, and frontend lint/typecheck/Vitest/build passed. The Vite build emits only the known large-bundle warning.
-- The P12 web route is `/app/biological` and uses the generated Stitch screen `b32ef9de691f48449ec23e491a6b634d`. Cards for P13–P16 remain explicitly `PLANNED`/disabled; the UI does not create fake calculation runs and does not link scenarios to QA cases automatically.
-- This is local evidence only. P12 staging still requires deploy on the candidate SHA, authenticated browser create→validate→edit→save→clone→archive→history/filter, response plus PostgreSQL state checks, refresh/reconnect behavior, negative scope/conflict/source/session/persistence cases and the P9 independent Biological report integration decision.
+- The P12 web route is `/app/biological` and uses the generated Stitch screen `b32ef9de691f48449ec23e491a6b634d`. P13 is now available; P14–P16 remain explicitly `PLANNED`/disabled. The UI does not create fake calculation runs and does not link scenarios to QA cases automatically.
+- P12 staging browser smoke: authenticated synthetic flow created `STAGING_P12_BIO`, validate-only returned no-mutation success, create/edit/save produced revisions, clone created `STAGING_P12_BIO_COPY_1D3A5958`, archive preserved history, and archived filtering displayed both states. PostgreSQL-state/query, refresh/reconnect, full negative matrix and P9 independent Biological report integration remain open.
+
+## Local P13 BED/EQD2 evidence — verified 2026-09-08
+
+- Migration `20260908_0013_bed_eqd2_calculations.py` upgraded successfully on local PostgreSQL; it adds nullable `idempotency_key` for legacy P12 read rows and an organization-scoped unique index for executable calculation retries. The API default/Compose example schema revision is `20260908_0013`.
+- The pure engine `services/bed_eqd2_engine.py` implements finite/nonnegative/positive/integer validation, deterministic pair derivation, explicit `D ≈ n×d` tolerance, valid zero-dose handling, source/reference checks, fixed-n/fixed-d curve generation, duplicate-series/point-budget checks, unrounded LQ calculation and canonical chart checksum.
+- P13 API routes are registered under `/api/v1/organizations/{organization_id}/biological`: validate-only, calculation create/replay, chart preview and JSON/CSV export. Every executable result stores scenario revision, raw/normalized input, source, curve, model key/version, result/table/chart checksum and idempotency identity; chart preview is non-persistent.
+- The P13 UI route is `/app/biological/bed-eqd2`; it selects a SAVED scenario/revision, exposes fractionation/source/curve controls, displays primary values plus a synchronized chart/table/history, and labels the output as an independent estimate rather than QA/prescription. Stitch screen generation was attempted for the new route but the service returned unavailable; the UI therefore reuses the active Clinical Precision Interface design system and existing Biological Hub visual language.
+- Focused P13 engine/API/biological tests passed **10/10**; full backend suite, Ruff, strict mypy, frontend lint, typecheck, Vitest **1/1**, production build and local PostgreSQL migration pass on the working tree candidate. The build emits only the known bundle-size warning.
+- This is local evidence only. P13 staging still requires deploy on the candidate SHA, `/api/v1/ready` schema `20260908_0013`, authenticated browser validate→calculate→replay→chart preview→export, PostgreSQL snapshot/checksum/no-QA-linkage evidence, and release-manifest verification.
 
 ## Historical Railway evidence (superseded)
 

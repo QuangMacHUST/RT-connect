@@ -5,10 +5,10 @@
 - **Tên sản phẩm:** RT-CONNECT
 - **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
 - **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
-- **Phiên bản tài liệu:** 0.11 — catalogue tính năng, workflow, ngoại lệ, phục hồi và tiêu chí nghiệm thu theo P0–P20; bổ sung contract thực thi Biological Hub P12 (2026-09-08)
+- **Phiên bản tài liệu:** 0.12 — catalogue tính năng, workflow, ngoại lệ, phục hồi và tiêu chí nghiệm thu theo P0–P20; bổ sung contract thực thi BED/EQD2 P13 và trạng thái triển khai tương ứng (2026-09-08)
 - **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
-Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.11 tại mục 21 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
+Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.12 tại mục 21 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
 
 ---
 
@@ -1178,9 +1178,9 @@ Clinical MVP tập trung vào Machine QA, PSQA Gamma, report, trend, input valid
 `specification.md`, `technical-specification.md` và `plan.md` được xây dựng từ các yêu cầu, quy tắc và tiêu chí nghiệm thu trong tài liệu này. Google Stitch cung cấp thiết kế trực quan; Railway và Supabase cung cấp hạ tầng đã chọn; không nguồn nào trong số đó được tự thay thế hoặc làm mất requirement nghiệp vụ.
 
 
-## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.11
+## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.12
 
-Bổ sung ngày 2026-09-08 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi và phạm vi nghiệm thu. `specification.md` v1.5 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v2.5 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
+Bổ sung ngày 2026-09-08 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi và phạm vi nghiệm thu. `specification.md` v1.6 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v2.6 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
 
 ### 21.1. Các quyết định sản phẩm giữ nguyên
 
@@ -1458,7 +1458,7 @@ Mã FR-Pxx-yy là yêu cầu có thể truy vết. Các phase nền tảng/tri�
 | P12-S06 | Clone SAVED/ARCHIVED | Tạo DRAFT mới, giữ lineage/source và không thay đổi bản nguồn hoặc calculation cũ. |
 | P12-S07 | Lọc/tìm history | Kết quả chỉ thuộc organization, lọc status/search đúng và archived chỉ xuất hiện khi yêu cầu rõ. |
 | P12-S08 | Mở lại sau refresh | Scenario, assumptions, source và revision hiển thị đúng snapshot server; không phụ thuộc state trong browser. |
-| P12-S09 | Capability P13–P16 chưa mở | Card có trạng thái `PLANNED`, không dẫn tới route chết và không giả vờ đã tính. |
+| P12-S09 | Capability P14–P16 chưa mở sau khi P13 được bật | Card có trạng thái `PLANNED`, không dẫn tới route chết và không giả vờ đã tính; card P13 phải dẫn tới calculator đang có contract. |
 
 **Các nhánh lỗi và cách phục hồi nghiệp vụ:**
 
@@ -1495,6 +1495,35 @@ Mã FR-Pxx-yy là yêu cầu có thể truy vết. Các phase nền tảng/tri�
 **Luồng chính:** Chọn hai input độc lập D/n/d và alpha/beta có nguồn/override. → Kiểm consistency và hiển thị công thức/input đã chuẩn hóa. → Tính BED/EQD2, hiển thị đủ precision và unit. → Chọn curve mode/range/alpha-beta list và xem table/marker. → Lưu calculation/graph snapshot và export.
 
 **Nghiệm thu nhóm:** Known answers/invalid/curve equality/history/export pass; limits/model assumptions có nguồn hoặc user-defined.
+
+**Đặc tả nghiệp vụ chi tiết P13:**
+
+- Người dùng phải chọn một scenario `SAVED` và một revision `SAVED` của Biological Toolkit. P13 không lấy dữ liệu từ QA case, patient record, TPS hoặc treatment order nếu người dùng không chủ động đưa vào một context độc lập.
+- Ba đại lượng fractionation là `D` (tổng liều, Gy), `n` (số fraction, số nguyên dương) và `d` (liều mỗi fraction, Gy/fraction). Có thể nhập đủ ba để kiểm tra `D ≈ n × d` trong tolerance đã chọn, hoặc nhập bất kỳ hai đại lượng để hệ thống suy ra đại lượng còn thiếu. Hệ thống không âm thầm sửa một trong ba giá trị khi người dùng nhập đủ nhưng không nhất quán.
+- `alpha/beta` luôn là một giá trị dương, có đơn vị Gy và phải đi kèm `source_type` cùng `source_reference`. `USER_DEFINED` là một override có ghi chú bắt buộc; `REFERENCE` phải có citation/URL/tài liệu. P13 không tự chọn giá trị alpha/beta từ tên mô hoặc bệnh lý.
+- Kết quả chính dùng mô hình LQ: `BED = D × (1 + d/(alpha/beta))` và `EQD2 = BED/(1 + 2/(alpha/beta))`. Engine không làm tròn trước khi tính; giao diện chỉ làm tròn ở lớp trình bày và luôn hiển thị đơn vị, alpha/beta, source, model version và revision nguồn.
+- Đồ thị có hai chế độ: `FIXED_N` giữ số fraction và thay đổi `d = D/n`; `FIXED_D` giữ liều mỗi fraction và chỉ tạo các điểm có `n` nguyên dương. Người dùng chọn D min/max/step, danh sách alpha/beta (tối đa 10 series) và point limit; số điểm tính theo toàn bộ các series, không cắt bớt im lặng.
+- Chart, table, marker tại liều chính và export phải dùng cùng một `ChartDataset` có checksum. Calculation lưu input đã nhập, input đã chuẩn hóa, assumptions/source, curve parameters, engine key/version và result snapshot. Sửa scenario hoặc tạo revision mới không làm thay đổi calculation cũ.
+- `Validate only` chỉ trả lỗi/cảnh báo/preview và không tạo calculation. `Calculate & save` chỉ hiển thị history khi transaction đã commit; retry cùng idempotency key trả lại snapshot cũ, còn cùng key với input khác là conflict. Export JSON/CSV đọc từ snapshot đã lưu, không tính lại từ state hiện tại của browser.
+- P13 là công cụ ước tính/scenario độc lập. Kết quả không phải prescription, không tạo PASS/FAIL QA, không tự suy giới hạn liều, không tự cộng liều theo không gian và không tạo clinical order.
+
+**Các nhánh chạy đúng bổ sung:**
+
+| Mã | Tình huống | Kết quả nghiệp vụ bắt buộc |
+| :--- | :--- | :--- |
+| P13-S05 | Chỉ nhập một cặp trong D/n/d | Đại lượng còn thiếu được suy ra deterministic; input supplied và normalized được lưu riêng. |
+| P13-S06 | Chọn nhiều alpha/beta và đổi BED/EQD2 | Các series có cùng D grid, marker và table dùng đúng dataset; đổi metric không đổi số liệu nguồn. |
+| P13-S07 | Lưu, refresh, mở history và export | Calculation cũ mở lại đúng revision/model/source/checksum; JSON/CSV không phụ thuộc form hiện tại. |
+| P13-S08 | Retry sau khi client mất response | Server tìm theo idempotency trước khi tạo; không sinh calculation trùng và người dùng nhận lại ID cũ. |
+
+**Các nhánh lỗi bổ sung:**
+
+| Mã | Kích hoạt | Phản hồi người dùng và dữ liệu phải giữ |
+| :--- | :--- | :--- |
+| P13-E07 | Cùng idempotency key nhưng input/model khác | Trả `CALCULATION_IDEMPOTENCY_CONFLICT`; giữ calculation cũ, cấp key mới cho lần tính khác. |
+| P13-E08 | Scenario/revision không thuộc organization hoặc đã archive | Trả lỗi scope/not-found/immutable phù hợp; không đọc hoặc tính từ revision ngoài scope. |
+| P13-E09 | Danh sách alpha/beta trùng, rỗng không hợp lệ hoặc curve không có điểm | Trả `CURVE_RANGE_INVALID` theo field; không lưu chart dataset một phần. |
+| P13-E10 | API commit thành công nhưng response mất, timeout hoặc lỗi database | Hiển thị trạng thái chưa xác định; query lại bằng key/calculation ID trước retry, không tạo success giả hoặc record trùng. |
 
 #### P14 — So sánh phác đồ xạ trị
 

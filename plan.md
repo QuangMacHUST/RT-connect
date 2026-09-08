@@ -1,12 +1,12 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
-- Phiên bản: **2.5**, ngày 2026-09-08.
-- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.11.
-- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.5.
-- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.3.
+- Phiên bản: **2.6**, ngày 2026-09-08.
+- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.12.
+- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.6.
+- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.4.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
-- Phạm vi lần cập nhật này: chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20; đồng bộ slice implementation P6/P8/P9/P10/P11/P12, migration schema `20260908_0012`, Biological Hub API/UI và kết quả kiểm thử local ngày 2026-09-08. Staging E2E sau slice này vẫn là gate riêng; không suy diễn từ test local.
+- Phạm vi lần cập nhật này: chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20; đồng bộ slice implementation P6/P8/P9/P10/P11/P12/P13, migration schema `20260908_0013`, BED/EQD2 engine/API/UI và kết quả kiểm thử local ngày 2026-09-08. Staging E2E sau slice này vẫn là gate riêng; không suy diễn từ test local.
 
 ## 1. Cách thực hiện kế hoạch
 
@@ -42,7 +42,9 @@ Test chỉ dùng NOT_RUN / PASS / FAIL / BLOCKED / NOT_APPLICABLE. NOT_APPLICABL
 | P9 | Có implementation slice backend/frontend và local tests cho template, revision, block, snapshot, renderer, export và idempotency; authenticated browser smoke đã tạo revision và tải JSON/CSV/PDF/PNG trên staging | Recheck trên candidate mới; storage failure/retry, visual byte review và build manifest vẫn là gate riêng. |
 | P10 | Có implementation slice backend/frontend, migration `20260908_0010`, test scope/error/rebuild/event/export và trend UI | Basic staging smoke đã có; large-series budget, complete negative matrix, source/export revalidation và visual/accessibility evidence còn phải làm. |
 | P11 | Có implementation slice backend/frontend, migration `20260908_0011`, protocol lifecycle/validation/compare và active-only consumer | Staging migration/browser/consumer E2E, complete S/E/C evidence và release manifest còn phải làm. |
-| P12–P17 | Chưa có evidence triển khai module đầy đủ | Thực hiện các gói công việc bên dưới. |
+| P12 | Có implementation slice và staging browser evidence mới; release/report integration còn mở | Đối soát PostgreSQL state, refresh/reconnect, negative matrix và P9 Biological report integration trước `STAGING_VERIFIED`. |
+| P13 | Có implementation slice local: migration `20260908_0013`, engine/API/UI, known-answer/API tests; staging chưa kiểm trên candidate này | Deploy đúng SHA, chạy browser validate→calculate/replay→chart preview→export, đối chiếu DB snapshot/checksum và cập nhật manifest. |
+| P14–P17 | Chưa có evidence triển khai module đầy đủ | Thực hiện các gói công việc bên dưới. |
 | P18–P20 | Chưa có evidence integrated release/operations đầy đủ | Không đóng bằng việc Railway báo Online hoặc /health trả 200. |
 
 Các smoke run lịch sử giữ tại progress log: Gamma 2D `e084529d-6bb1-4119-ae0a-f4da7d371cac`; failure/retry `26a54046-1f20-454c-b3f4-e766937f30d6`. Đây là evidence đã ghi, không phải kết quả được chạy lại ngày sửa tài liệu.
@@ -56,7 +58,7 @@ Các smoke run lịch sử giữ tại progress log: Gamma 2D `e084529d-6bb1-411
 | GAP-03: Gamma bỏ NO_CANDIDATE khỏi mẫu số | `calculate_gamma` có `FULL_ROI`/`OVERLAP_ONLY`, counts coverage và không loại điểm thiếu candidate khỏi FULL_ROI; independent oracle enumerates all comparison nodes. | P8 | Policy coverage/no-candidate theo specification §5; test chứng minh không tăng PASS giả. | `LOCAL_VERIFIED`; staging negative coverage/convergence còn mở. |
 | GAP-04: Search giới hạn 1×DTA nhưng vẫn xuất percentile gamma | `_candidate_gammas` dùng `max_gamma × DTA`; điểm vượt bound được đánh dấu censored và percentile không giả exact; oracle kiểm tra denominator/status. | P8 | Full gamma search theo max_gamma hoặc output bound có nhãn; percentile không giả exact. | `LOCAL_VERIFIED`; benchmark large workload còn mở. |
 | GAP-05: Lease/attempt/outbox chưa đủ hợp đồng v2 | Models/migration/API/worker đã có lease token, attempt history, dispatch outbox, conditional fencing, bounded retry, backoff và lease-expiry reclaim. | P8 | Hai worker/reclaim/commit/ack failure injection không duplicate hoặc mất accepted job. | `LOCAL_VERIFIED` cho race/reclaim/retry/replay; staging crash/ack/dead-letter/resource policy còn mở. |
-| GAP-06: /ready chỉ kiểm DB connection | `db/session.py::database_ready` hiện kiểm `SELECT 1` và đối chiếu đúng một dòng `alembic_version` với `Settings.schema_revision`. | P2/P19 | Có kiểm schema revision riêng hoặc readiness mở rộng; không nói SELECT 1 xác minh migration. | `LOCAL_VERIFIED`; cần staging evidence với schema hiện hành `20260908_0012`. |
+| GAP-06: /ready chỉ kiểm DB connection | `db/session.py::database_ready` hiện kiểm `SELECT 1` và đối chiếu đúng một dòng `alembic_version` với `Settings.schema_revision`. | P2/P19 | Có kiểm schema revision riêng hoặc readiness mở rộng; không nói SELECT 1 xác minh migration. | `LOCAL_VERIFIED`; cần staging evidence với schema hiện hành `20260908_0013`. |
 | GAP-07: Fixture RTDOSE sử dụng CGY và SOP Class tham chiếu ngẫu nhiên | Fixture generator đã chuyển sang GY + `DoseGridScaling=0.01`, RTPlanStorage SOP Class và UID ổn định; fixture tái tạo byte-identical. | P6/P8 | Tạo fixture chuẩn GY + DoseGridScaling tương ứng, RTPlanStorage SOP Class đúng; CGY raw fixture chỉ compatibility/negative test. | `STAGING_VERIFIED` cho fixture RTDOSE GY + measurement 3D trên run `df38e7d5-bb4b-4e2b-b949-2310acb1875c`; geometry/scale negative cases còn mở. |
 | GAP-08: Old error example khác API thật | `core/errors.py`, `specification.md` và technical contract đang được đồng bộ về flat envelope. | P0/P1 | Tài liệu và consumer tests cùng schema flat, không còn ví dụ nested gây hiểu sai. | `DOC_SYNCED`; vẫn giữ contract test chống hồi quy. |
 | GAP-09: Build label không chứng minh source deployed | VITE build label và deployment SHA vẫn là hai nguồn; chưa có release manifest bắt buộc nối chúng. | P3/P19 | Hiển thị build metadata đúng artifact và ghi SHA của từng service. | `OPEN`. |
@@ -137,8 +139,8 @@ Bảng này là bản đồ điều hành một trang. Các bảng `TC-Pxx-Syy` 
 | P9 | P7/P8 contracts và schema `20260908_0009` | Chọn source/template → edit mọi block → snapshot revision → preview → export → reload/history/download | `REPORT_REVISION_CONFLICT`, `REPORT_SOURCE_UNAVAILABLE`, `REPORT_CONTENT_INVALID`, `REPORT_RENDER_FAILED`, `EXPORT_FORMAT_UNSUPPORTED`, `DOWNLOAD_LINK_EXPIRED`, cùng storage/idempotency conflict; giữ revision cũ, retry export | 4 format, UTF-8/PDF warning, hash/idempotency, browser storage download, visual review; source live làm đổi revision cũ chặn |
 | P10 | P7 results và P9 report source | Chọn machine/metric/time → compatible series → baseline/markers → drill-down/export | `TREND_SERIES_INCOMPATIBLE`, `DATE_RANGE_INVALID`, `TREND_EMPTY`, `TREND_BASELINE_INVALID`, `TREND_DUPLICATE_SOURCE`, `TREND_SOURCE_ARCHIVED`; tách series và rebuild projection | Raw/aggregate equality, timezone, extrema, maintenance marker, source link; trộn unit/machine hoặc mất raw chặn |
 | P11 | P7 protocol use và P9 source; migration `20260908_0011` | Resolve org → search/detail → new/clone → validate-only → save DRAFT → activate → consumer snapshot → compare/archive | `REQUEST_VALIDATION_FAILED`, `PROTOCOL_APPLICABILITY_INVALID`, `PROTOCOL_RULE_INVALID`, `PROTOCOL_VERSION_CONFLICT`, `REFERENCE_REQUIRED`, `PROTOCOL_VERSION_IMMUTABLE`, `PROTOCOL_NOT_AVAILABLE`, `PROTOCOL_CAPABILITY_MISMATCH`, `PROTOCOL_NOT_FOUND`, `PROTOCOL_PERSISTENCE_FAILED`, `MUTATION_RESULT_UNKNOWN`; giữ draft và query trước retry | Version/rule/reference lineage, active-only consumer, old-result snapshot, no cross-org leak; rule mơ hồ, update ngược hoặc partial transaction chặn |
-| P12 | Auth/org và report shell | Mở Biological Hub → chọn tool → nhập scenario độc lập → save revision → history/clone/export | `SCENARIO_NOT_FOUND`, `BIOLOGICAL_CONTEXT_INVALID`, `SCENARIO_REVISION_CONFLICT`, `MODEL_VERSION_UNAVAILABLE`, `MODULE_UNAVAILABLE`; giữ scenario, nêu capability rõ | Không cần QA case/patient; scoped history, independent report; automatic QA linkage hoặc route giả chặn |
-| P13 | P12 scenario contract và known-answer set | Nhập D/n/d/alpha-beta → validate → BED/EQD2 → curve D → table/marker/export/history | `BIOLOGICAL_INPUT_INVALID`, `FRACTIONATION_INCONSISTENT`, `CALCULATION_NONFINITE`, `CURVE_RANGE_INVALID`, `ALPHA_BETA_SOURCE_REQUIRED`, `CALCULATION_PERSISTENCE_FAILED`; sửa input/model, không clamp ngầm | Known answers, unit/precision, curve equality, source/override, persistence; số không finite hoặc mismatch chặn |
+| P12 | Auth/org và report shell | Mở Biological Hub → chọn tool → nhập scenario độc lập → save revision → history/clone/export | `SCENARIO_NOT_FOUND`, `BIOLOGICAL_CONTEXT_INVALID`, `SCENARIO_REVISION_CONFLICT`, `MODEL_VERSION_UNAVAILABLE`, `MODULE_UNAVAILABLE`; giữ scenario, nêu capability rõ | Không cần QA case/patient; scoped history, independent report; P13 available và P14–P16 planned đúng capability; automatic QA linkage hoặc route giả chặn |
+| P13 | P12 scenario contract và known-answer set | Chọn SAVED revision → nhập D/n/d/alpha-beta → validate-only → BED/EQD2 → curve D → table/marker → save/replay/export/history | `BIOLOGICAL_INPUT_INVALID`, `FRACTIONATION_INCONSISTENT`, `CALCULATION_NONFINITE`, `CURVE_RANGE_INVALID`, `ALPHA_BETA_SOURCE_REQUIRED`, `CALCULATION_IDEMPOTENCY_CONFLICT`, `CALCULATION_PERSISTENCE_FAILED`, `SCENARIO_REVISION_NOT_FOUND`, `SCENARIO_IMMUTABLE`; sửa input/model, query idempotency trước retry, không clamp ngầm | Known answers, pair derivation/zero dose, unit/precision, curve equality, source/override, immutable snapshot, idempotency/persistence; số không finite hoặc mismatch chặn |
 | P14 | P13 calculation engine | Tạo 2–10 options → chọn baseline → calculate deltas → chart/table → reorder/clone/export | `COMPARISON_OPTIONS_REQUIRED`, `COMPARISON_PERCENT_UNDEFINED`, `COMPARISON_OPTION_INVALID`, `COMPARISON_CONTEXT_MISMATCH`, `COMPARISON_BASELINE_REQUIRED`, `COMPARISON_LIMIT_EXCEEDED`; giữ option hợp lệ và % null khi không xác định | Same revision/context, absolute/% delta, baseline changes, history/export; ghép khác mô hình hoặc truncate im lặng chặn |
 | P15 | P13/P14 và model assumptions | Chọn course/time/dose/fractions → recovery/no-recovery → cumulative scalar → sensitivity → compensation scenario/export | `COURSE_INTERVAL_REQUIRED`, `RECOVERY_ASSUMPTION_INVALID`, `CUMULATIVE_CONTEXT_MISMATCH`, `FRACTION_SCHEDULE_INVALID`, `SPATIAL_ACCUMULATION_UNAVAILABLE`, `TISSUE_DOSE_REQUIRED`, `INTERRUPTION_OVERLAP`, `FRACTION_COUNT_NONINTEGER`; tách scalar/spatial, không kê đơn tự động | Timeline, assumptions, nonuniform schedule, no-recovery comparator, integer alternatives; spatial giả lập hoặc thiếu OAR dose chặn |
 | P16 | P12/P13 library contract | Search/filter source → create/clone/version dose-limit/protocol/knowledge → cite/import → dùng explicit trong scenario | `KNOWLEDGE_SOURCE_REQUIRED`, `DOSE_LIMIT_UNIT_INVALID`, `REFERENCE_LINK_UNAVAILABLE`, `KNOWLEDGE_IMPORT_INVALID`, `DOSE_LIMIT_NOT_APPLICABLE`, `KNOWLEDGE_CONTENT_INVALID`; row-level preview, version mới, giữ citation | Source/applicability/version snapshots, import report, override label; nguồn giả hoặc auto PASS/FAIL chặn |
@@ -1003,7 +1005,7 @@ Mã ở cột “Phân loại” là contract code. Mọi lỗi phải có HTTP 
 
 | Operation | Contract cần giữ | Trạng thái hiện tại |
 | :--- | :--- | :--- |
-| `GET /organizations/{org}/biological/tools` | Trả capability P13–P16, route và `available`; module chưa có code phải là `PLANNED` | Implemented; sáu tool đang `available=false` |
+| `GET /organizations/{org}/biological/tools` | Trả capability P13–P16, route và `available`; module chưa có code phải là `PLANNED` | Implemented; P13 `AVAILABLE`, P14–P16 `PLANNED` |
 | `GET /organizations/{org}/biological/summary` | Chỉ đếm scenario/calculation/report cùng organization | Implemented |
 | `POST /organizations/{org}/biological/scenarios/validate` | Validate-only; không mutation; kiểm source/reference và JSON finite | Implemented |
 | `GET /organizations/{org}/biological/scenarios` | Search/status/include archived/pagination; archived không hiện mặc định | Implemented |
@@ -1014,7 +1016,11 @@ Mã ở cột “Phân loại” là contract code. Mọi lỗi phải có HTTP 
 | `POST .../scenarios/{id}/save` | DRAFT→SAVED, tạo snapshot mới; không approval role | Implemented |
 | `POST .../scenarios/{id}/clone` | ID/key mới, deep-copy context/assumptions và source revision lineage | Implemented; negative key pattern phải giữ trong contract test |
 | `POST .../scenarios/{id}/archive` | Archive không xóa history; archived không sửa/được dùng implicit | Implemented |
-| `GET /organizations/{org}/biological/calculations` và `/{id}` | Chỉ đọc calculation snapshot; P13–P15 mới tạo calculation thật | Read contract implemented; create/calculation target P13–P15 |
+| `GET /organizations/{org}/biological/calculations` và `/{id}` | Chỉ đọc calculation snapshot; P13–P15 tạo calculation theo contract riêng | Read contract implemented; P13 create/replay implemented, P14–P15 target |
+| `POST .../scenarios/{id}/calculations/validate` | Validate-only D/n/d, alpha/beta, curve; không mutation | P13 implemented |
+| `POST .../scenarios/{id}/calculations` | Commit immutable BED/EQD2 snapshot; first 201, idempotent replay 200, conflicting key 409 | P13 implemented; staging gate open |
+| `POST .../calculations/{id}/charts` | Rebuild chart/table preview từ calculation snapshot; `persisted=false` | P13 implemented; staging gate open |
+| `GET .../calculations/{id}/export` | JSON/CSV đọc từ result snapshot, cùng dataset checksum | P13 implemented; staging gate open |
 
 P12 không được coi là hoàn tất chỉ vì hub mở được. Trước khi chuyển sang `STAGING_VERIFIED`, phải chứng minh đồng thời: route thật tải dữ liệu thật, mutation và revision state đúng trong PostgreSQL, scope không lộ organization khác, refresh/reconnect giữ snapshot, tool chưa mở không dẫn tới route chết và P9 report integration được ghi rõ là đã làm hoặc còn target.
 
@@ -1030,7 +1036,7 @@ P12 không được coi là hoàn tất chỉ vì hub mở được. Trước kh
 | TC-P12-S06 | Clone SAVED/ARCHIVED | ID/key mới, source revision cũ, assumptions/context được sao chép; sửa clone không đổi nguồn. |
 | TC-P12-S07 | Search/status/include archived/history | Lọc đúng, archived bị ẩn mặc định và hiện khi yêu cầu; revision list newest-first. |
 | TC-P12-S08 | Refresh/reconnect sau create/save | API trả lại cùng snapshot/revision; UI không phụ thuộc state tạm trong browser. |
-| TC-P12-S09 | P13–P16 chưa available | Card ghi `PLANNED`, nút bị disable hoặc capability rõ; không dẫn route chết và không tạo calculation giả. |
+| TC-P12-S09 | P14–P16 chưa available, P13 available | P13 mở đúng calculator; P14–P16 ghi `PLANNED`, không dẫn route chết và không tạo calculation giả. |
 
 ### Trường hợp lỗi và phục hồi P12
 
@@ -1069,24 +1075,26 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - **Mục tiêu:** Tính LQ minh bạch, kiểm tính nhất quán và export đồ thị/data từ cùng snapshot.
 - **Contract:** specification §8 / SPEC-P13; các contract chung §2–§7 áp dụng khi có liên quan.
 - **Owner thực thi:** người/agent phụ trách module ghi tên trong checkpoint; người dùng cung cấp dữ liệu hoặc đánh giá workflow khi cần, không có cấp phê duyệt theo chức danh.
-- **Trạng thái test v2:** NOT_RUN cho đến khi có evidence theo ID dưới đây; không kế thừa PASS tự động từ test cũ.
+- **Trạng thái test v2:** LOCAL_VERIFIED trên working tree ngày 2026-09-08; staging E2E và release-manifest evidence vẫn mở, không suy diễn từ test local.
 
 ### Workflow P13
 
-1. Chọn hai input độc lập D/n/d và alpha/beta có nguồn/override.
-2. Kiểm consistency và hiển thị công thức/input đã chuẩn hóa.
-3. Tính BED/EQD2, hiển thị đủ precision và unit.
-4. Chọn curve mode/range/alpha-beta list và xem table/marker.
-5. Lưu calculation/graph snapshot và export.
+1. Mở scenario `SAVED` và chọn đúng scenario revision `SAVED` trong Biological namespace.
+2. Nhập đủ hoặc nhập một cặp trong D/n/d; ghi tolerance và kiểm consistency ở backend.
+3. Chọn alpha/beta dương, source type/reference; hiển thị formula, unit và normalized input.
+4. Chọn `FIXED_N` hoặc `FIXED_D`, range/step, alpha-beta series và point limit; dựng chart/table từ một dataset.
+5. Chọn `Validate only` để kiểm tra không mutation, hoặc `Calculate & save snapshot` để commit calculation idempotent.
+6. Mở marker/history sau refresh, tạo chart preview mới nếu cần và export JSON/CSV từ snapshot đã commit.
 
 ### Work packages P13
 
-- [ ] P13-W01 — Pure engine LQ với finite checks, integer fractions, units và rounding chỉ ở display.
-- [ ] P13-W02 — Input pair deterministic; D=n*d tolerance explicit; zero-dose được phép khi n>0.
-- [ ] P13-W03 — Curve generator fixed-n mặc định; fixed-d dùng điểm n nguyên, range/point budget.
-- [ ] P13-W04 — Snapshot model/source/curve parameters; charts dùng chính dữ liệu table/export.
-- [ ] P13-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
-- [ ] P13-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
+- [x] P13-W01 — Pure engine LQ với finite checks, integer fractions, units và rounding chỉ ở display.
+- [x] P13-W02 — Input pair deterministic; D=n*d tolerance explicit; zero-dose được phép khi n>0.
+- [x] P13-W03 — Curve generator fixed-n mặc định; fixed-d dùng điểm n nguyên, range/point budget.
+- [x] P13-W04 — Snapshot model/source/curve parameters; charts dùng chính dữ liệu table/export.
+- [x] P13-LOCAL-VERIFY — engine/API suite, full backend, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head local pass.
+- [ ] P13-STAGING-VERIFY — deploy đúng SHA; browser validate→calculate→history→chart preview→export với PostgreSQL state và no-QA-linkage evidence.
+- [ ] P13-HANDOFF — sau staging, cập nhật release manifest, OpenAPI, migration/release notes, checkpoint và backlog còn lại.
 
 ### Trường hợp chạy đúng P13
 
@@ -1096,6 +1104,10 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 | TC-P13-S02 | Known answer 30 Gy/5, alpha-beta 3 | BED=90 Gy3, EQD2=54 Gy; không làm tròn trước phép chia. |
 | TC-P13-S03 | Đồ thị fixed-n | Giữ n, d=D/n thay đổi theo D; điểm marker khớp calculator cùng input. |
 | TC-P13-S04 | Dose bằng 0 | n>0 và alpha/beta>0 cho BED=EQD2=0; không nhầm với input thiếu. |
+| TC-P13-S05 | Chỉ nhập một cặp trong D/n/d | Đại lượng còn thiếu được suy ra deterministic; supplied và normalized input khác nhau được lưu trong snapshot. |
+| TC-P13-S06 | Nhiều alpha/beta và đổi metric BED/EQD2 | Các series dùng cùng D grid; table, marker và chart không tạo giá trị riêng lệch nhau. |
+| TC-P13-S07 | Save → refresh → mở history → export | Calculation cũ giữ scenario revision/model/source/checksum; export không đọc form hiện tại. |
+| TC-P13-S08 | Retry sau khi client mất response | Query idempotency trả cùng calculation; không tạo record thứ hai. |
 
 ### Trường hợp lỗi và phục hồi P13
 
@@ -1109,12 +1121,17 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 | TC-P13-E04 | Range ngược/step<=0/quá nhiều điểm | CURVE_RANGE_INVALID | Chặn curve, giữ kết quả đơn; cho chỉnh step/range. |
 | TC-P13-E05 | Thiếu alpha-beta source | ALPHA_BETA_SOURCE_REQUIRED | Chọn library source hoặc explicit user override. |
 | TC-P13-E06 | Tải lại mất result | CALCULATION_PERSISTENCE_FAILED | Giữ draft; chỉ hiển thị saved khi server commit, retry idempotent. |
+| TC-P13-E07 | Cùng idempotency key nhưng input/model khác | CALCULATION_IDEMPOTENCY_CONFLICT | Giữ calculation cũ; cấp key mới cho calculation khác. |
+| TC-P13-E08 | Scenario/revision ngoài scope hoặc scenario đã archive | SCENARIO_REVISION_NOT_FOUND / ORGANIZATION_SCOPE_MISMATCH / SCENARIO_IMMUTABLE | Không tính; không lộ metadata; clone scenario nếu cần tạo context mới. |
+| TC-P13-E09 | Alpha/beta curve trùng, curve không có điểm hoặc vượt point budget | CURVE_RANGE_INVALID | Chặn toàn bộ dataset; giữ form để sửa, không lưu một phần. |
+| TC-P13-E10 | Commit xong nhưng response timeout/mất mạng | CALCULATION_PERSISTENCE_FAILED / MUTATION_RESULT_UNKNOWN | Query theo idempotency trước retry; không tự tạo success giả hoặc duplicate. |
 
 ### Bất biến và điều kiện đóng P13
 
 - **Dữ liệu phải giữ/transaction:** Tính từ input revision đã chọn; thay input làm kết quả hiện tại stale, không đổi history.
 - **Bàn giao:** Calculator, curves, table/marker, known-answer fixtures và exports.
-- **Exit gate:** Known answers/invalid/curve equality/history/export pass; limits/model assumptions có nguồn hoặc user-defined.
+- **Exit gate local:** Known answers/invalid/curve equality/history/export API pass; limits/model assumptions có nguồn hoặc user-defined; migration `20260908_0013` và schema contract đồng bộ.
+- **Exit gate staging:** Browser → API → Railway PostgreSQL phải chứng minh validate-only không mutation, calculation commit/replay không duplicate, chart preview không ghi đè history, JSON/CSV đúng checksum và route không tạo liên kết QA/patient tự động. Chỉ khi gate này cùng với release manifest pass mới chuyển P13 sang `STAGING_VERIFIED`.
 - **Kiểm tra chéo:** C03–C09 về scope, retry, đồng thời, mất mạng, session và version phải có evidence hoặc lý do không áp dụng; thêm C10–C16 theo module.
 - **Nếu gate fail:** mở issue với testcase thất bại, giữ evidence/bản dữ liệu trước đó và sửa package liên quan; không thay expected để hợp thức hóa output. Có thể làm task độc lập tiếp theo, nhưng phase vẫn mở.
 
@@ -1609,7 +1626,7 @@ rollback_or_recovery: "<safe recovery/rollback action and evidence>"
 | P10 | Trend schema/migration, projection/rebuild report, baseline/event history, chart/export evidence | Machine QA result → projection → filter/aggregate → marker/baseline → drill-down/export | Tách incompatible series; 413/409/422 đúng; rebuild idempotent | S01–S08/E01–E12, large-series budget, source/export revalidation và staging workflow pass |
 | P11 | Protocol library models/version rules, source/citation fixtures, compare report, migration `20260908_0011` | Resolve org → search/detail → new/clone → validate-only → DRAFT → ACTIVE → consumer snapshot → compare/archive | Không cho version trùng/archived/unsupported; field error; conflict giữ draft; persistence uncertain query trước retry; old run giữ snapshot | S01–S09/E01–E16, C03–C16 áp dụng, P7/P8/P9/P10 consumer và staging browser/source evidence pass |
 | P12 | Biological scenario namespace, hub routes, calculation history, capability states | Biological hub → tool → scenario → calculation → history/export | Không gắn QACase tự động; model unavailable có capability error | Scenario độc lập, context/source/model snapshot và route states pass |
-| P13 | BED/EQD2 engine, model/input schema, curve dataset, known-answer report | Input D/n/d/alpha-beta → validate → calculate → curve/table → history/export | Không clamp hoặc đổi input; invalid range/precision không lưu success | Known-answer, boundary, graph/table equality và persistence pass |
+| P13 | BED/EQD2 engine, model/input schema, curve dataset, known-answer report | SAVED scenario revision → D/n/d + alpha/beta → validate-only → calculate/replay → curve/table/marker → history/export | Không clamp hoặc đổi input; invalid range/precision, stale/archived revision, idempotency conflict hoặc persistence uncertainty không lưu success | Local engine/API/UI/migration gates đã pass; staging phải chứng minh DB snapshot, no duplicate, chart preview/export và no-QA linkage |
 | P14 | Comparison model/options, delta rules, chart/table/export fixture | 2–10 options → common context → calculate → baseline/delta → export | Option/context/zero baseline fail rõ; null không biến thành zero | Absolute/percent comparison cùng revision/context và no-truncate pass |
 | P15 | Course/recovery/interruption/scenario schema, assumptions/sensitivity, compensation report | Courses → tissue/model/recovery → cumulative → interruption → alternatives/export | Thiếu spatial data không giả lập voxel; lịch overlap/invalid bị chặn | Scalar/recovery/sensitivity/compensation error cases và warnings pass |
 | P16 | Library schema/citation/import report, version/applicability matrix | Search → source/applicability → clone/publish → explicit scenario use | No source/invalid unit/script/link lỗi; không gán clinical PASS/FAIL | Search/no-match, citation, immutable version và explicit-use pass |
@@ -1651,7 +1668,7 @@ Bảng này là chỉ mục điều hành ngắn gọn; mỗi phase vẫn phải
 | P10 | P7 result projection có context/protocol version | Filter machine/metric/time → compatible series → raw/aggregate → baseline/event → drill-down/export/rebuild | Incompatible series, date/timezone, empty, zero baseline, duplicate/source archived, large query | Aggregate equality, rebuild counters/idempotency, source/export and browser evidence; tách series, không bịa zero | S/E/C, large-series budget và staging source drill-down pass |
 | P11 | P7 consumer contract và P4 organization đã sẵn sàng | Search/detail → create/clone → validate-only → DRAFT → ACTIVE → consumer snapshot → compare/archive | Rule/applicability/reference/version/key/persistence/conflict/archived/capability errors | Migration `20260908_0011`, API/UI lifecycle, consumer snapshot and scope; query uncertain mutation, clone/version mới | Active-only consumer, old snapshot, full S/E/C và staging pass |
 | P12 | P3 Auth, P9 report shell và migration environment đã sẵn sàng | Biological Hub → tool capability → scenario validate/create → edit/save → clone/archive → history/export | Session/scope/key/context/source/revision/immutable/module/persistence errors | Migration `20260908_0012`, scenario/revision DB state, no-QA linkage, browser refresh/reconnect, Stitch screen; retry sau query, không tạo calculation giả | P12 local + staging S/E/C, report integration và capability states pass |
-| P13 | P12 scenario/revision contract và known-answer LQ set | D/n/d/alpha-beta → normalize/validate → BED/EQD2 → curve/table/marker → snapshot/export | Noninteger/negative/nonfinite, D≠n×d, alpha-beta/source, range/step/point limit, persistence | Formula/known-answer, unit/precision, curve-table equality, model/source snapshot; sửa input hoặc tạo run mới | Known-answer, boundary, graph/history/export pass |
+| P13 | P12 scenario/revision contract và known-answer LQ set | SAVED revision → D/n/d/alpha-beta → normalize/validate-only → BED/EQD2 → curve/table/marker → immutable snapshot/replay/export | Noninteger/negative/nonfinite, D≠n×d, alpha-beta/source, range/step/point limit, duplicate curve, archived/out-of-scope revision, idempotency/persistence uncertainty | Formula/known-answer, pair derivation/zero dose, unit/precision, curve-table equality, model/source/checksum snapshot, validate no-mutation; staging browser/API/DB evidence | Local gates pass; staging graph/history/export/replay/no-QA linkage pass |
 | P14 | P13 engine và common biological context đã stable | 2–10 options → common context/model → baseline → calculate delta/chart → reorder/clone/export | Missing/invalid option, context mismatch, baseline missing/zero, percent undefined, limit/truncate | Same revision/context, null percent reason, option IDs/order, no-truncate evidence; giữ options hợp lệ | Comparison known delta, zero handling, history/export pass |
 | P15 | P13/P14 scalar result và time/course model đã stable | Courses → tissue/alpha-beta → no-recovery/recovery → cumulative/sensitivity → interruption → compensation alternatives → export | Interval/recovery/source/context, nonuniform schedule, overlap, noninteger, missing spatial registration/OAR dose | Assumption/source/sensitivity snapshot, scalar-vs-spatial capability, integer schedule; chặn nhánh unsupported, không sửa treatment | Scalar/recovery/compensation negative matrix và independent export pass |
 | P16 | P12/P13 source/applicability contract đã stable | Search/filter → entry detail → create/clone/version → citation/import → explicit scenario use → archive | Missing source, unit/applicability, broken link, duplicate/import/script content | Version/citation/applicability snapshot and import report; row-level repair, không gán PASS/FAIL | Library no-match/source/version/explicit-use pass |
@@ -1818,10 +1835,10 @@ Mỗi FR có testcase cụ thể dưới đây; Cxx là ma trận chung §3, Gxx
 | FR-P12-02 | SPEC-P12 | TC-P12-S01, TC-P12-E01, TC-P12-E02 |
 | FR-P12-03 | SPEC-P12 | TC-P12-S02, TC-P12-E03 |
 | FR-P12-04 | SPEC-P12 | TC-P12-S03, TC-P12-E04, C13 |
-| FR-P13-01 | SPEC-P13 | TC-P13-S01, TC-P13-S02, TC-P13-S04, TC-P13-E01, TC-P13-E02, TC-P13-E03 |
-| FR-P13-02 | SPEC-P13 | TC-P13-S01, TC-P13-E05 |
-| FR-P13-03 | SPEC-P13 | TC-P13-S03, TC-P13-E04 |
-| FR-P13-04 | SPEC-P13 | TC-P13-S03, TC-P13-E06, C13 |
+| FR-P13-01 | SPEC-P13 | TC-P13-S01, TC-P13-S02, TC-P13-S04, TC-P13-S05, TC-P13-E01, TC-P13-E02, TC-P13-E03 |
+| FR-P13-02 | SPEC-P13 | TC-P13-S01, TC-P13-S06, TC-P13-E05, TC-P13-E08 |
+| FR-P13-03 | SPEC-P13 | TC-P13-S03, TC-P13-S06, TC-P13-E04, TC-P13-E09 |
+| FR-P13-04 | SPEC-P13 | TC-P13-S03, TC-P13-S07, TC-P13-S08, TC-P13-E06, TC-P13-E07, TC-P13-E10, C13 |
 | FR-P14-01 | SPEC-P14 | TC-P14-S01, TC-P14-S03, TC-P14-E01, TC-P14-E03, TC-P14-E06 |
 | FR-P14-02 | SPEC-P14 | TC-P14-S02, TC-P14-E02, TC-P14-E05 |
 | FR-P14-03 | SPEC-P14 | TC-P14-S04, TC-P14-E04 |

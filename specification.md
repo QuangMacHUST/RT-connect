@@ -1,9 +1,9 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.5**; ngày 2026-09-08.
-- Nguồn nghiệp vụ: business-analysis.md v0.11.
-- Kế hoạch triển khai: plan.md v2.5, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.3.
+- File: specification.md; version **1.6**; ngày 2026-09-08.
+- Nguồn nghiệp vụ: business-analysis.md v0.12.
+- Kế hoạch triển khai: plan.md v2.6, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.4.
 - Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
@@ -711,8 +711,8 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 | Hạng mục | Đặc tả |
 | :--- | :--- |
 | Module/requirement | MOD-10; FR-P12-01 đến FR-P12-04 |
-| Input và dữ liệu hiển thị | `scenario_key` uppercase stable key; name/type/tissue/clinical context; `source_type` + reference; finite JSON `assumptions`; status/revision/lineage; tool capability; calculation model/version/input/result khi P13–P15 mở. |
-| Model/storage | `BiologicalScenario`, `BiologicalScenarioRevision`, `BiologicalCalculationRun`; namespace độc lập QA, không bắt buộc `qa_case_id`/patient FK. Migration implementation: `20260908_0012`. |
+| Input và dữ liệu hiển thị | `scenario_key` uppercase stable key; name/type/tissue/clinical context; `source_type` + reference; finite JSON `assumptions`; status/revision/lineage; tool capability; calculation model/version/input/result; P13 BED/EQD2 fields khi calculator được mở. |
+| Model/storage | `BiologicalScenario`, `BiologicalScenarioRevision`, `BiologicalCalculationRun`; namespace độc lập QA, không bắt buộc `qa_case_id`/patient FK. Migration implementation: `20260908_0012`; executable P13 idempotency field: `20260908_0013`. |
 | Operation/API surface | `/api/v1/organizations/{organization_id}/biological/tools`, `/summary`, `/scenarios`, `/scenarios/{id}/revisions`, `/calculations` và `/calculations/{id}`; report Biological là integration target của P9/P12. |
 | Transaction/invariant | Validate-only không mutation; create/update/transition ghi scenario + revision + audit atomic; save input không đồng nghĩa đã tính; calculation phải pin input revision; clone giữ source revision lineage; archived không bị xóa. |
 | Output bàn giao | Biological Hub/history/base contracts và independent report integration. |
@@ -726,7 +726,7 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 | :--- | :--- |
 | `BiologicalScenario` | `id: UUID`; `organization_id: UUID`; `scenario_key: string` matching `^[A-Z][A-Z0-9_.-]{0,119}$`, unique within organization; `name` 1–240; `scenario_type` 1–80; `tissue_context` 1–240; nullable `clinical_context` ≤4000; `source_type ∈ {USER_DEFINED,REFERENCE,INTERNAL,SITE_APPROVED}`; nullable `source_reference` ≤1000; `assumptions: JSON object`; `status ∈ {DRAFT,SAVED,ARCHIVED}`; positive integer `revision`; optional `source_scenario_revision_id`; actor/timestamps. |
 | `BiologicalScenarioRevision` | `id`, organization/scenario IDs, monotonic `revision_number`, copied status, immutable `snapshot`, actor and creation time. Unique by `(scenario_id, revision_number)`; every current scenario revision must have one snapshot. |
-| `BiologicalCalculationRun` | `id`, organization/scenario/revision IDs, `calculation_type`, `model_key`, `model_version`, technical status, immutable `input_snapshot`/`result_snapshot`, warning/error snapshots, actor/timestamps. P12 only exposes read contract; P13–P15 own creation. |
+| `BiologicalCalculationRun` | `id`, organization/scenario/revision IDs, `calculation_type`, optional `idempotency_key`, `model_key`, `model_version`, technical status, immutable `input_snapshot`/`result_snapshot`, warning/error snapshots, actor/timestamps. P12 exposes read contract; P13 owns BED/EQD2 creation and P14–P15 own later calculation types. |
 
 `clinical_context` is a working note, not a patient record. The API/UI must not accept a patient identifier as a hidden lookup key. A user-provided dataset is a separate explicit source contract and must carry source identity/checksum before a later module can consume it.
 
@@ -734,7 +734,7 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 
 | Method and path | Request | `2xx` behavior | Side effect |
 | :--- | :--- | :--- | :--- |
-| `GET /organizations/{org}/biological/tools` | None | `200` list of six tools with `tool_key`, label, route, phase, status, description and `available` | No mutation; all tools not implemented yet return `PLANNED`/`false`. |
+| `GET /organizations/{org}/biological/tools` | None | `200` list of six tools with `tool_key`, label, route, phase, status, description and `available` | No mutation; P13 is `AVAILABLE/true`, tools not implemented yet return `PLANNED/false`. |
 | `GET /organizations/{org}/biological/summary` | None | `200` organization-scoped counts for total/draft/saved/archived scenarios, completed calculations and biological exports | No mutation. |
 | `POST /organizations/{org}/biological/scenarios/validate` | Create-shaped scenario | `200 {valid, errors[], warnings[]}`; valid response does not mean persisted | None. Duplicate key is a validation result, not a partial create. |
 | `GET /organizations/{org}/biological/scenarios` | `q`, `status`, `include_archived`, `offset`, `limit` | Typed collection, stable `updated_at DESC` order, total and effective archive flag | No mutation; archived excluded unless explicit status/include flag. |
@@ -746,7 +746,7 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 | `POST /organizations/{org}/biological/scenarios/{id}/clone` | Optional valid new key/name | `201` new DRAFT rev 1 with source revision lineage | New ID/key; source unchanged; clone snapshot is independent. |
 | `POST /organizations/{org}/biological/scenarios/{id}/archive` | `expected_revision` | `200` ARCHIVED scenario with one new revision | History remains readable; archive is not hard delete. |
 | `GET /organizations/{org}/biological/calculations` | Optional `scenario_id`, `offset`, `limit` | Typed calculation collection scoped to org/scenario | No mutation. |
-| `GET /organizations/{org}/biological/calculations/{id}` | None | `200` immutable calculation snapshot | No mutation; P12 does not invent a result. |
+| `GET /organizations/{org}/biological/calculations/{id}` | None | `200` immutable calculation snapshot | No mutation; P12 reads and P13 persists only BED/EQD2 results under its own contract. |
 
 #### SPEC-P12.3 — State and error mapping
 
@@ -767,13 +767,13 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 | Client loses response after mutation | `409/503` `MUTATION_RESULT_UNKNOWN` target | Query by returned/request idempotency context before retry; do not assume “not created”. |
 | Tool is not implemented | Capability response `PLANNED`/`available=false`; calculation command is not exposed | Show disabled CTA and preserve scenario; no fake RUNNING/COMPLETED calculation. |
 
-Current P12 implementation provides the route/resource/lifecycle contract above. It intentionally does not yet create BED/EQD2/re-irradiation calculation runs or Biological report exports; those are P13–P15/P9 work packages and must not be described as available until their own tests pass.
+Current P12 implementation provides the route/resource/lifecycle contract above. P13 now creates only BED/EQD2 calculation runs under SPEC-P13; re-irradiation remains P15 and Biological report integration remains a separate P9/P12 work package. A capability is not described as available until its own tests and evidence pass.
 
 **Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer cần recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
 
 **Failure contract:** SPEC-P12.3 là mapping chi tiết. Những mã target chưa xuất hiện trong route lifecycle hiện tại (`MODEL_VERSION_UNAVAILABLE`, `MODULE_UNAVAILABLE`, `MUTATION_RESULT_UNKNOWN`) phải được dùng khi module/operation tương ứng được mở; không giả vờ đã kiểm chứng chúng ở local chỉ vì tài liệu đã liệt kê.
 
-**P12 implementation status 2026-09-08:** migration `20260908_0012` đã upgrade tới head trên PostgreSQL local; route/API/UI và `test_biological.py` focused pass, full backend/frontend/OpenAPI gate đang được re-run trên candidate. Đây là local implementation evidence; staging browser/DB-state/no-QA-linkage, P9 Biological renderer integration, complete negative matrix và release manifest vẫn mở.
+**P12 implementation status 2026-09-08:** migration `20260908_0012` đã upgrade tới head trên PostgreSQL local; route/API/UI và `test_biological.py` focused pass. Browser staging đã chạy create/validate/edit/save/clone/archive/history bằng dữ liệu tổng hợp; PostgreSQL-state, refresh/reconnect, P9 Biological renderer integration, complete negative matrix và release manifest vẫn mở.
 
 <a id="spec-p13"></a>
 
@@ -782,18 +782,55 @@ Current P12 implementation provides the route/resource/lifecycle contract above.
 | Hạng mục | Đặc tả |
 | :--- | :--- |
 | Module/requirement | MOD-11; FR-P13-01 đến FR-P13-04 |
-| Input và dữ liệu hiển thị | D [Gy], n nguyên dương, d [Gy/fraction], alpha/beta [Gy], tissue/source/user override; input pair; graph Dmin/Dmax/step, fixed-n hoặc fixed-d, point limit. |
-| Model/storage | CalculationRun with input/normalization/model/source/result; ChartDataset snapshot, not pixels only. |
-| Operation/API surface | Target POST scenario calculations/charts; GET calculation; chart/download export. |
-| Transaction/invariant | Tính từ input revision đã chọn; thay input làm kết quả hiện tại stale, không đổi history. |
+| Input và dữ liệu hiển thị | `scenario_revision_id` của revision SAVED; D [Gy], n nguyên dương, d [Gy/fraction], alpha/beta [Gy], source type/reference; consistency tolerance; graph Dmin/Dmax/step, `FIXED_N` hoặc `FIXED_D`, fixed-n/fixed-d, tối đa 10 alpha/beta series và point limit. |
+| Model/storage | `BiologicalCalculationRun` với idempotency key, request fingerprint, input/raw + normalized snapshots, model/source/result; `ChartDataset` snapshot gồm series/table/checksum, không chỉ lưu ảnh. |
+| Operation/API surface | `POST .../scenarios/{id}/calculations/validate`; `POST .../scenarios/{id}/calculations`; `POST .../calculations/{id}/charts`; `GET .../calculations/{id}/export?export_format=JSON|CSV`; calculation history đọc qua P12 route. |
+| Transaction/invariant | Tính từ revision SAVED đã chọn; validate-only không mutation; calculation đầu tiên 201, replay cùng key/input 200, key khác input 409; chart preview không mutation; thay input/scenario không đổi history. |
 | Output bàn giao | Calculator, curves, table/marker, known-answer fixtures và exports. |
-| Success oracle | TC-P13-S01 đến TC-P13-S04 trong plan |
-| Error/recovery oracle | TC-P13-E01 đến TC-P13-E06 trong plan |
-| Exit | Known answers/invalid/curve equality/history/export pass; limits/model assumptions có nguồn hoặc user-defined. |
+| Success oracle | TC-P13-S01 đến TC-P13-S08 trong plan |
+| Error/recovery oracle | TC-P13-E01 đến TC-P13-E10 trong plan |
+| Exit | Local engine/API/UI/migration gates pass; staging phải chứng minh DB snapshot, replay không duplicate, chart/table/export cùng checksum và no-QA linkage. |
 
 **Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer cần recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
 
-**Failure contract:** BIOLOGICAL_INPUT_INVALID; FRACTIONATION_INCONSISTENT; CALCULATION_NONFINITE; CURVE_RANGE_INVALID; ALPHA_BETA_SOURCE_REQUIRED; CALCULATION_PERSISTENCE_FAILED. Đây là taxonomy target; mapping sang error codes thực tế phải được ghi trong contract test trước khi triển khai.
+**Failure contract đã map cho P13:** `BIOLOGICAL_INPUT_INVALID`, `FRACTIONATION_INCONSISTENT`, `CALCULATION_NONFINITE`, `CURVE_RANGE_INVALID`, `ALPHA_BETA_SOURCE_REQUIRED`, `CALCULATION_IDEMPOTENCY_CONFLICT`, `CALCULATION_PERSISTENCE_FAILED`, `SCENARIO_REVISION_NOT_FOUND`, `SCENARIO_IMMUTABLE`, `ORGANIZATION_SCOPE_MISMATCH`, `CALCULATION_NOT_FOUND` và lỗi schema 422 của FastAPI/Pydantic. Lỗi validation domain được trả trong response `valid=false` của validate-only; lỗi scope/resource/conflict/persistence dùng error envelope chung.
+
+#### SPEC-P13.1 — Request và chuẩn hóa số học
+
+| Trường | Quy tắc bắt buộc |
+| :--- | :--- |
+| `scenario_revision_id` | UUID thuộc đúng `scenario_id` và organization hiện tại; revision phải là snapshot SAVED được chọn. Scenario ARCHIVED không khởi tạo calculation mới. |
+| `idempotency_key` | Chuỗi đã trim, dài 8–200 ký tự; duy nhất trong organization cho calculation P13. Cùng key phải có cùng fingerprint của input raw/scenario revision/curve. |
+| D/n/d | Cần ít nhất hai trong ba. D và d không âm; n là số nguyên dương ≤ 1.000.000. Đủ cả ba thì kiểm `abs(D − n×d) ≤ tolerance`; ngoài tolerance trả `FRACTIONATION_INCONSISTENT`. |
+| Suy đại lượng thiếu | D+n → d=D/n; n+d → D=n×d; D+d → n=D/d và phải là số nguyên trong tolerance. Trường hợp D=d=0 bắt buộc có n; zero dose hợp lệ khi n>0. Không clamp và không sửa ngầm giá trị đã nhập. |
+| `consistency_tolerance_gy` | Số hữu hạn dương, mặc định 0.01 Gy, tối đa 100 Gy; tolerance được lưu trong normalized snapshot. |
+| `alpha_beta_gy` | Số hữu hạn dương; source type chỉ `USER_DEFINED` hoặc `REFERENCE`; reference sau trim không được rỗng. Curve alpha/beta cũng phải dương, hữu hạn và không trùng. |
+| Curve `FIXED_N` | D min/max không âm, max ≥ min, step > 0; giữ n từ `fixed_n` hoặc n normalized; tạo D từ min đến max, tối đa point limit trên toàn bộ series. |
+| Curve `FIXED_D` | fixed d > 0 từ `fixed_d_gy` hoặc d normalized; chỉ tạo điểm D=n×d với n nguyên dương; step phải là bội nguyên dương của fixed d; range không có điểm thì lỗi. |
+| Precision | Engine tính bằng giá trị hữu hạn chưa làm tròn; rounding chỉ ở UI/export presentation theo contract. Dataset checksum được tính trên payload canonical trước khi render. |
+
+#### SPEC-P13.2 — Operation, response và persistence
+
+1. `validate` resolve organization → scenario → revision trước khi tính; chạy engine trong memory; trả `valid`, field errors, normalized input và preview point count/checksum; không thêm `BiologicalCalculationRun` hoặc `AuditEvent`.
+2. `calculate` resolve scope/revision → chạy cùng engine → tạo raw request snapshot, fingerprint, normalized fractionation và result snapshot → insert calculation + audit trong transaction. Chỉ sau commit mới trả `COMPLETED`.
+3. Nếu key đã tồn tại và fingerprint giống, trả nguyên snapshot đã commit (HTTP 200). Nếu fingerprint khác, trả `409 CALCULATION_IDEMPOTENCY_CONFLICT`; không overwrite. Nếu race unique constraint xảy ra, query lại key và chỉ trả record khi fingerprint khớp.
+4. `charts` chỉ đọc calculation thuộc organization, dựng preview từ normalized fractionation/alpha-beta/source trong snapshot với curve mới; `persisted=false`, không sửa result snapshot và không thêm history.
+5. `export JSON` trả input/result/model/version/checksum; `export CSV` dùng chính `result_snapshot.table_rows`. Nếu snapshot thiếu/không finite, trả persistence error; không tự tính lại từ scenario hiện tại.
+
+#### SPEC-P13.3 — Contract test mapping
+
+| Test | Assertion chính | Error/recovery cần xác nhận |
+| :--- | :--- | :--- |
+| TC-P13-S01/S02 | 60/30/2 α/β10 → BED72/EQD260; 30/5/6 α/β3 → BED90/EQD254 | Không làm tròn sớm, unit/model version được lưu. |
+| TC-P13-S03/S06 | Curve fixed-n, nhiều series, marker/table/chart | `table_rows` và chart points cùng dataset/checksum. |
+| TC-P13-S04/S05 | Zero dose và input pair | Zero không bị coi là missing; derived field deterministic. |
+| TC-P13-S07/S08 | Save/refresh/export và retry | Snapshot/history bền vững; replay không duplicate. |
+| TC-P13-E01–E03 | Invalid n/alpha, D≠n×d, non-finite/overflow | 422 hoặc `valid=false`; không có completed run. |
+| TC-P13-E04/E09 | Range/step/point/series lỗi | `CURVE_RANGE_INVALID`; không lưu chart một phần. |
+| TC-P13-E05 | Missing source | `ALPHA_BETA_SOURCE_REQUIRED`; giữ form. |
+| TC-P13-E07 | Key trùng payload khác | 409 conflict; record cũ không đổi. |
+| TC-P13-E08 | Out-of-scope/archived revision | Scope/not-found/immutable; không lộ metadata hoặc tạo run. |
+| TC-P13-E10 | Timeout sau commit/DB failure | Query key trước retry; không success giả/duplicate. |
 
 <a id="spec-p14"></a>
 
@@ -1000,7 +1037,7 @@ Các phase contract ở mục 8 đã nêu trường chi tiết. Bảng dưới �
 | P10 | Trend query, compatibility signature, baseline/event | Raw/aggregate trend + source drill-down | `TREND_SERIES_INCOMPATIBLE`, `DATE_RANGE_INVALID`, `TREND_EMPTY`, `TREND_BASELINE_INVALID`, `TREND_DUPLICATE_SOURCE`, `TREND_SOURCE_ARCHIVED`; rebuild projection | Unit/timezone/filter/export equality and large query pass |
 | P11 | Protocol/rule/reference editor and version command | Immutable internal version with applicability/source; schema `20260908_0011` | `REQUEST_VALIDATION_FAILED`, `PROTOCOL_APPLICABILITY_INVALID`, `PROTOCOL_RULE_INVALID`, `PROTOCOL_VERSION_CONFLICT`, `REFERENCE_REQUIRED`, `PROTOCOL_VERSION_IMMUTABLE`, `PROTOCOL_NOT_AVAILABLE`, `PROTOCOL_CAPABILITY_MISMATCH`, `PROTOCOL_NOT_FOUND`, `PROTOCOL_PERSISTENCE_FAILED`, `MUTATION_RESULT_UNKNOWN`; clone/version mới | Old run/report snapshot, active-only consumer, scope, deep-copy/version compare and uncertain mutation recovery pass |
 | P12 | Biological scenario/tool selection and calculation request | Independent scenario/revision/history | `SCENARIO_NOT_FOUND`, `BIOLOGICAL_CONTEXT_INVALID`, `SCENARIO_REVISION_CONFLICT`, `MODEL_VERSION_UNAVAILABLE`, `MODULE_UNAVAILABLE`; giữ scenario và availability | No-QA-case namespace, scoped history, clone/export pass |
-| P13 | Fractionation + alpha/beta + curve range | BED/EQD2 values, curve dataset, table/export | `BIOLOGICAL_INPUT_INVALID`, `FRACTIONATION_INCONSISTENT`, `CALCULATION_NONFINITE`, `CURVE_RANGE_INVALID`, `ALPHA_BETA_SOURCE_REQUIRED`, `CALCULATION_PERSISTENCE_FAILED`; sửa input/retry | Known answer, precision, source/override, curve and persistence pass |
+| P13 | SAVED revision + fractionation D/n/d + alpha/beta + curve range | BED/EQD2 values, normalized input, immutable calculation/chart dataset, table/export | `BIOLOGICAL_INPUT_INVALID`, `FRACTIONATION_INCONSISTENT`, `CALCULATION_NONFINITE`, `CURVE_RANGE_INVALID`, `ALPHA_BETA_SOURCE_REQUIRED`, `CALCULATION_IDEMPOTENCY_CONFLICT`, `CALCULATION_PERSISTENCE_FAILED`, `SCENARIO_REVISION_NOT_FOUND`, `SCENARIO_IMMUTABLE`; validate/replay/query before retry | Known answer, pair derivation/zero dose, precision, source/override, curve/checksum equality, snapshot/replay/persistence pass |
 | P14 | Options 2–10, baseline, context | Absolute/% delta, chart/table/history | `COMPARISON_OPTIONS_REQUIRED`, `COMPARISON_PERCENT_UNDEFINED`, `COMPARISON_OPTION_INVALID`, `COMPARISON_CONTEXT_MISMATCH`, `COMPARISON_BASELINE_REQUIRED`, `COMPARISON_LIMIT_EXCEEDED`; giữ options hợp lệ | Same model/context/revision, baseline mutation và zero handling pass |
 | P15 | Course/fraction/time/recovery/compensation scenario | Scalar cumulative, sensitivity, integer alternatives, assumptions | `COURSE_INTERVAL_REQUIRED`, `RECOVERY_ASSUMPTION_INVALID`, `CUMULATIVE_CONTEXT_MISMATCH`, `FRACTION_SCHEDULE_INVALID`, `SPATIAL_ACCUMULATION_UNAVAILABLE`, `TISSUE_DOSE_REQUIRED`, `INTERRUPTION_OVERLAP`, `FRACTION_COUNT_NONINTEGER`; tách capability | No-recovery/recovery, nonuniform schedule, no fake spatial dose, export pass |
 | P16 | Knowledge/dose-limit/protocol entry, citation/import | Searchable versioned library and snapshot binding | `KNOWLEDGE_SOURCE_REQUIRED`, `DOSE_LIMIT_UNIT_INVALID`, `REFERENCE_LINK_UNAVAILABLE`, `KNOWLEDGE_IMPORT_INVALID`, `DOSE_LIMIT_NOT_APPLICABLE`, `KNOWLEDGE_CONTENT_INVALID`; row-level repair | Source/applicability/version/import/override pass |

@@ -483,6 +483,7 @@ export type BiologicalCalculationResource = {
   scenario_id: string
   scenario_revision_id: string
   calculation_type: string
+  idempotency_key: string | null
   model_key: string
   model_version: string
   status: string
@@ -511,6 +512,45 @@ export type BiologicalSummaryResource = {
   archived_scenarios: number
   completed_calculations: number
   exported_reports: number
+}
+export type BedEqd2CurveInput = {
+  mode: 'FIXED_N' | 'FIXED_D'
+  dose_min_gy: number
+  dose_max_gy: number
+  dose_step_gy: number
+  fixed_n?: number | null
+  fixed_d_gy?: number | null
+  alpha_beta_values_gy: number[]
+  point_limit: number
+}
+export type BedEqd2CalculationInput = {
+  scenario_revision_id: string
+  idempotency_key: string
+  total_dose_gy?: number | null
+  fractions?: number | null
+  dose_per_fraction_gy?: number | null
+  consistency_tolerance_gy: number
+  alpha_beta_gy: number
+  alpha_beta_source_type: 'USER_DEFINED' | 'REFERENCE'
+  alpha_beta_source_reference: string
+  curve: BedEqd2CurveInput
+}
+export type BedEqd2ValidationResource = {
+  valid: boolean
+  errors: Array<{ code: string; field: string | null; message: string }>
+  warnings: Array<{ code: string; field: string | null; message: string }>
+  normalized_input: Record<string, unknown> | null
+  preview: Record<string, unknown> | null
+}
+export type BedEqd2ChartResource = {
+  calculation_id: string
+  scenario_id: string
+  scenario_revision_id: string
+  model_key: string
+  model_version: string
+  persisted: boolean
+  chart_dataset: Record<string, unknown>
+  table_rows: Array<Record<string, unknown>>
 }
 
 const qaProtocolRuleSchema = z.object({
@@ -669,7 +709,7 @@ const biologicalScenarioRevisionSchema = z.object({
 })
 const biologicalCalculationSchema = z.object({
   id: z.string().uuid(), organization_id: z.string().uuid(), scenario_id: z.string().uuid(),
-  scenario_revision_id: z.string().uuid(), calculation_type: z.string(), model_key: z.string(),
+  scenario_revision_id: z.string().uuid(), calculation_type: z.string(), idempotency_key: z.string().nullable(), model_key: z.string(),
   model_version: z.string(), status: z.string(), input_snapshot: z.record(z.string(), z.unknown()),
   result_snapshot: z.record(z.string(), z.unknown()),
   warning_snapshot: z.array(z.record(z.string(), z.unknown())),
@@ -692,6 +732,18 @@ const biologicalValidationSchema = z.object({
   valid: z.boolean(),
   errors: z.array(z.object({ code: z.string(), field: z.string().nullable(), message: z.string() })),
   warnings: z.array(z.object({ code: z.string(), field: z.string().nullable(), message: z.string() }))
+})
+const bedEqd2ValidationSchema = z.object({
+  valid: z.boolean(),
+  errors: z.array(z.object({ code: z.string(), field: z.string().nullable(), message: z.string() })),
+  warnings: z.array(z.object({ code: z.string(), field: z.string().nullable(), message: z.string() })),
+  normalized_input: z.record(z.string(), z.unknown()).nullable(),
+  preview: z.record(z.string(), z.unknown()).nullable()
+})
+const bedEqd2ChartSchema = z.object({
+  calculation_id: z.string().uuid(), scenario_id: z.string().uuid(), scenario_revision_id: z.string().uuid(),
+  model_key: z.string(), model_version: z.string(), persisted: z.boolean(),
+  chart_dataset: z.record(z.string(), z.unknown()), table_rows: z.array(z.record(z.string(), z.unknown()))
 })
 
 const makeCorrelationId = () => crypto.randomUUID()
@@ -1107,6 +1159,43 @@ export class ApiClient {
 
   biologicalCalculation(accessToken: string, organizationId: string, calculationId: string): Promise<BiologicalCalculationResource> {
     return this.get(`/organizations/${organizationId}/biological/calculations/${calculationId}`, biologicalCalculationSchema, accessToken)
+  }
+
+  validateBedEqd2(accessToken: string, organizationId: string, scenarioId: string, body: BedEqd2CalculationInput): Promise<BedEqd2ValidationResource> {
+    return this.request(`/organizations/${organizationId}/biological/scenarios/${scenarioId}/calculations/validate`, bedEqd2ValidationSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  createBedEqd2Calculation(accessToken: string, organizationId: string, scenarioId: string, body: BedEqd2CalculationInput): Promise<BiologicalCalculationResource> {
+    return this.request(`/organizations/${organizationId}/biological/scenarios/${scenarioId}/calculations`, biologicalCalculationSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  bedEqd2Chart(accessToken: string, organizationId: string, calculationId: string, curve: BedEqd2CurveInput): Promise<BedEqd2ChartResource> {
+    return this.request(`/organizations/${organizationId}/biological/calculations/${calculationId}/charts`, bedEqd2ChartSchema, accessToken, {
+      method: 'POST', body: JSON.stringify({ curve })
+    })
+  }
+
+  async downloadBedEqd2(accessToken: string, organizationId: string, calculationId: string, exportFormat: 'JSON' | 'CSV'): Promise<Blob> {
+    const correlationId = makeCorrelationId()
+    let response: Response
+    try {
+      response = await fetch(`${this.baseUrl}/organizations/${organizationId}/biological/calculations/${calculationId}/export?export_format=${exportFormat}`, {
+        headers: { Accept: exportFormat === 'JSON' ? 'application/json' : 'text/csv', 'X-Correlation-ID': correlationId, Authorization: `Bearer ${accessToken}` }
+      })
+    } catch {
+      throw new ApiClientError('Không thể kết nối tới RT-CONNECT API.', 'NETWORK_ERROR', correlationId)
+    }
+    if (!response.ok) {
+      const body: unknown = await response.json().catch(() => undefined)
+      const parsed = errorSchema.safeParse(body)
+      if (parsed.success) throw new ApiClientError(parsed.data.message, parsed.data.code, parsed.data.correlation_id)
+      throw new ApiClientError('API trả về phản hồi không hợp lệ.', 'INVALID_API_RESPONSE', correlationId)
+    }
+    return response.blob()
   }
 
   seedMachineQAProtocol(accessToken: string, organizationId: string): Promise<QAProtocolResource> {
