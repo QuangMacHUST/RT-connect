@@ -1,9 +1,9 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.2**; ngày 2026-09-08.
-- Nguồn nghiệp vụ: business-analysis.md v0.8.
-- Kế hoạch triển khai: plan.md v2.2, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.0.
+- File: specification.md; version **1.3**; ngày 2026-09-08.
+- Nguồn nghiệp vụ: business-analysis.md v0.9.
+- Kế hoạch triển khai: plan.md v2.3, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.1.
 - Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
@@ -120,7 +120,7 @@ Dates/decimal input phải hỗ trợ giao diện tiếng Việt có quy tắc r
 | InputManifest / ValidationRun | Source UID/geometry/units/acquisition/roles/validator version và findings; validation mới không xóa bản cũ. |
 | Analysis / Attempt | Immutable input/config/engine; mutable technical lifecycle; attempts riêng, lease/fencing; result commit một lần. |
 | Protocol/Template/Report versions | Version độc lập mutable draft; saved version/source snapshot không update ngược. |
-| TrendPoint | Unique organization+source_run+metric+projection version; rebuild không thay source. |
+| TrendPoint | Unique organization+source_run+metric trong projection hiện tại, context snapshot và source lineage; rebuild không thay source. Nếu đổi thuật toán projection trong tương lai, phải tạo projection version/migration riêng trước khi coexist. |
 | BiologicalScenario / CalculationRun | Không FK QACase bắt buộc; input/tissue/model/source/assumptions/results versioned. |
 | Knowledge versions | Applicability/metric/unit/source/external citation; library update không đổi calculation cũ. |
 
@@ -360,6 +360,10 @@ Dmax khác D0.03cc; V20Gy[%] khác V20Gy[cc]; physical Gy khác EQD2(a). Không 
 ### 7.2. Trend
 
 Series compatibility signature gồm metric meaning/unit, machine, energy/mode, detector/phantom và protocol/rule context. Chuyển unit equivalent phải explicit. Maintenance/baseline là versioned annotations, không rewrite raw points.
+
+Query trend dùng khoảng thời gian `[from, to)`: `from` được lấy, `to` bị loại. Nếu UI cho phép chọn “đến hết ngày”, UI phải chuyển sang mốc đầu ngày kế tiếp theo timezone đang hiển thị rồi gửi làm `to`; API không tự đoán ý nghĩa ngày. `day` và `week` bucket theo IANA timezone, nhưng timestamp lưu và source ID vẫn giữ UTC/canonical.
+
+Một series chỉ được nhóm khi cùng `machine_id`, metric meaning, unit và compatibility signature. Khi khác context, response trả nhiều series và warning `TREND_SERIES_INCOMPATIBLE`; không tính mean chung. Aggregate phải bảo toàn count, min/max, first/last, status counts, source point IDs và source run IDs. Baseline lookup dùng effective interval của từng point; thiếu baseline chỉ là warning để user xem raw, không thay bằng 0. Event overlap dùng cùng khoảng `[from,to)` và chỉ là annotation, không phải nguyên nhân tự động của outlier.
 
 Baseline effective date và source snapshot; outlier không bị loại âm thầm. Downsample phải báo method/count/time-buckets, giữ min/max để thấy cực trị; export raw/aggregated chọn rõ. Drill-down source run/report revision, không link report mới nhất không tương ứng.
 
@@ -606,18 +610,26 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 | Hạng mục | Đặc tả |
 | :--- | :--- |
 | Module/requirement | MOD-08; FR-P10-01 đến FR-P10-04 |
-| Input và dữ liệu hiển thị | Machine/metric/time range/timezone; unit/energy/detector/phantom/protocol/QA cycle; baseline source/effective time; tolerance/action; maintenance events; raw/aggregate series. |
-| Model/storage | TrendPoint derived immutable source; BaselineVersion, MaintenanceEvent; filter snapshot. |
-| Operation/API surface | Target GET /trend; /trend/{machine_id}; /trend/events; /trend/baselines; scoped export job. |
-| Transaction/invariant | Trend là projection tái dựng từ snapshot, không source of truth; event edit có revision. |
-| Output bàn giao | Trend dashboard/filter/drill-down và export/large-data checks. |
-| Success oracle | TC-P10-S01 đến TC-P10-S04 trong plan |
-| Error/recovery oracle | TC-P10-E01 đến TC-P10-E06 trong plan |
-| Exit | Không trộn máy/unit; baseline/outlier/timezone/filter/export/drill-down và rebuild pass. |
+| Input và dữ liệu hiển thị | Machine/metric/time range/timezone; unit/energy/detector/phantom/beam_quality/acquisition_mode/protocol/QA cycle; baseline source/effective time; tolerance/action; maintenance events; raw/day/week series. |
+| Model/storage | `TrendPoint` là projection immutable theo `organization_id + source_run_id + metric_key`, có `context_snapshot`; `BaselineVersion` versioned theo machine/metric; `MaintenanceEvent` có current revision và `MaintenanceEventRevision` append-only. |
+| Operation/API surface | `GET /organizations/{organization_id}/trend`; `GET /organizations/{organization_id}/trend/export`; `POST /organizations/{organization_id}/trend/rebuild`; `GET/POST /organizations/{organization_id}/trend/baselines`; `PATCH /trend-baselines/{baseline_id}`; `GET/POST /organizations/{organization_id}/trend/events`; `PATCH /trend-events/{event_id}`; `GET /trend-events/{event_id}/revisions`; `GET /trend-points/{point_id}/source`. |
+| Query contract | `machine_ids` là danh sách UUID phân tách bằng dấu phẩy; `metric_key`, `unit`, context và `protocol_key/qa_cycle` là filter exact; `aggregate ∈ {raw, day, week}`; `from` inclusive, `to` exclusive; timezone là IANA ZoneInfo; machine phải thuộc organization trước khi load points. |
+| Compatibility contract | Mỗi point tạo signature SHA-256 rút gọn từ `unit, qa_type, qa_cycle, protocol_key, protocol_version, energy, detector, phantom, beam_quality, acquisition_mode`. Các signature khác nhau là series khác nhau; không nội suy hoặc quy đổi unit/context ngầm. |
+| Baseline contract | Chọn baseline `ACTIVE` cùng machine/metric/unit/context, `effective_from ≤ measured_at < effective_to` (hoặc không có end), ưu tiên `effective_from` mới nhất rồi `version_number` cao nhất. `delta = value - baseline_value`; `is_outlier = abs(delta) > action_level` nếu có, nếu không dùng tolerance. Thiếu baseline chỉ tạo warning, không thay raw value. |
+| Aggregate contract | `day/week` nhóm theo timezone đã chọn; mỗi bucket giữ `count`, mean, min, max, first/last, status counts, toàn bộ source point IDs và source run IDs. Raw series vẫn là nguồn drill-down; aggregate không được làm mất lineage. |
+| Event contract | Tạo event ở revision 1; PATCH bắt buộc `expected_revision`; sửa thành công tăng revision và ghi snapshot mới; revision conflict trả 409, không overwrite. Event chỉ là marker trên trend, không sửa QA result. |
+| Rebuild contract | Rebuild đọc completed Machine QA result snapshots cùng organization, tạo thiếu point hoặc sửa context projection, không tạo trùng nhờ uniqueness; trả số `scanned_runs/created_points/existing_points/repaired_context_points`. Source run/result là authority. |
+| Export contract | CSV raw có header và source IDs; JSON chứa cùng `TrendResponse` gồm filter/timezone/aggregate/series/warnings; export phải tái hiện đúng query và không xuất điểm ngoài scope. |
+| Output bàn giao | Trend dashboard/filter/drill-down, baseline/event history, raw/day/week aggregate, table fallback và export/large-data checks. |
+| Success oracle | TC-P10-S01 đến TC-P10-S08 trong plan |
+| Error/recovery oracle | TC-P10-E01 đến TC-P10-E12 trong plan |
+| Exit | Không trộn máy/unit/context; baseline/outlier/timezone/filter/export/drill-down/rebuild, revision conflict và large-series behavior pass. |
 
 **Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer cần recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
 
-**Failure contract:** TREND_SERIES_INCOMPATIBLE; DATE_RANGE_INVALID; TREND_EMPTY; TREND_BASELINE_INVALID; TREND_DUPLICATE_SOURCE; TREND_SOURCE_ARCHIVED. Đây là taxonomy target; mapping sang error codes thực tế phải được ghi trong contract test trước khi triển khai.
+**Failure contract hiện tại và target:** `TREND_SERIES_INCOMPATIBLE` là warning khi nhiều compatible signature; `DATE_RANGE_INVALID`, `TREND_TIMEZONE_INVALID`, `TREND_FILTER_INVALID`, `TREND_EMPTY`, `TREND_BASELINE_INVALID`, `TREND_BASELINE_NOT_FOUND`, `TREND_BASELINE_VERSION_CONFLICT`, `TREND_SOURCE_ARCHIVED`, `TREND_SOURCE_UNAVAILABLE`, `TREND_DUPLICATE_SOURCE`, `TREND_QUERY_TOO_LARGE`, `MAINTENANCE_INTERVAL_INVALID`, `MAINTENANCE_EVENT_CONFLICT`, `MAINTENANCE_EVENT_NOT_FOUND` và `MAINTENANCE_REVISION_CONFLICT` là các mã cần được kiểm qua response contract. Input invalid không được retry tự động; conflict phải reload/copy; query quá lớn phải chuyển aggregate; source archived vẫn được xem lịch sử với nhãn. Không biến `TREND_EMPTY` thành lỗi 500 và không tạo điểm 0 thay dữ liệu trống.
+
+**P10 implementation status 2026-09-08:** schema `20260908_0010`, API và frontend trend slice đã có; Ruff/mypy, full backend `68/68` và P10 focused `7/7` pass local; migration đã chạy trên PostgreSQL local. Staging migration, authenticated browser trend workflow, large-series benchmark, event/baseline persistence và visual/accessibility evidence vẫn là TARGET/OPEN cho đến khi ghi vào progress log.
 
 <a id="spec-p11"></a>
 
@@ -906,6 +918,22 @@ Các phase contract ở mục 8 đã nêu trường chi tiết. Bảng dưới �
 - Signed download chỉ được tạo cho `COMPLETED` export có object/hash/media type; link mới có thể được cấp cho cùng job sau khi kiểm scope. Download fail không làm mất export đã hoàn tất.
 - Migration `20260908_0009` và `SCHEMA_REVISION=20260908_0009` phải cùng xuất hiện trong release manifest trước khi gọi API ready. Đây là contract kỹ thuật, không phải tùy chọn config chỉ dành cho local.
 
+## 8.4. Quy tắc nghiệm thu contract cho từng loại operation
+
+Đây là quy tắc thực thi áp dụng cho mọi phase, dùng để review API, UI và worker trước khi ghi `PASS`:
+
+| Loại operation | Trước khi thực hiện | Khi thành công | Khi lỗi | Kiểm tra sau refresh/retry |
+| :--- | :--- | :--- | :--- | :--- |
+| Read/list/query | Resolve identity + organization; validate filter/range/timezone | Response typed, stable sort, đúng scope, có empty/warning khi cần | 401/403/404/422/503 theo nguyên nhân; không trả partial sai scope | Query lại cùng filter cho cùng snapshot; filter mới không bị response cũ ghi đè |
+| Create/edit resource | Kiểm parent/source/archived/revision; canonicalize payload | Commit resource + audit/snapshot atomically; trả ID/revision | Invalid không commit; conflict 409 giữ draft; dependency uncertain cần lookup | Same idempotency key không tạo bản thứ hai; stale revision không overwrite |
+| Upload/manifest | Kiểm case/type/role/size; tính server checksum; stream object | Object + Artifact + Manifest + validation reference có thể truy nguyên | File invalid/duplicate/type mismatch/DB-object partial có recovery riêng | Download hash khớp; upload lại không làm mất artifact hoặc tạo role trùng |
+| Synchronous calculation | Kiểm capability, unit, range, source và resource | Result snapshot + warnings + engine/model version | Invalid/unsupported/nonfinite không lưu result giả; dependency fail giữ input | Cùng input/config cho cùng result semantics; đổi config tạo revision/run mới |
+| Async job | Commit accepted run + immutable snapshot + outbox trước dispatch | `QUEUED → RUNNING → terminal`; attempt/progress/result durable | Retry transient có giới hạn; poison/terminal vào error/dead-letter; old worker bị fencing | Reconnect thấy cùng run; ack redelivery không nhân đôi result |
+| Report/export | Pin source revision/template/options/renderer | File có format, hash, size, version, signed download | Render/storage/link fail không sửa source/export cũ | Mở history tải đúng revision; cùng request idempotent |
+| Projection/rebuild | Đọc source snapshot cùng organization; uniqueness | Rebuild tạo thiếu/sửa projection được phép, trả counters | Duplicate/source thiếu được ghi diagnostic, không commit partial | Chạy lại idempotent; source of truth không bị rewrite |
+
+Một test chỉ được đánh dấu đạt khi kiểm đủ lớp mà contract yêu cầu: response/error envelope, state database, object/queue nếu có, giao diện và provenance. Nếu chỉ kiểm HTTP status thì chỉ được ghi `API_SMOKE`, không được ghi `E2E_PASS`.
+
 ## 9. API hiện có và API mục tiêu
 
 Đối chiếu source ngày sửa tài liệu; phải regenerate/check OpenAPI khi thực hiện code. Base API prefix /api/v1.
@@ -917,7 +945,7 @@ Các phase contract ở mục 8 đã nêu trường chi tiết. Bảng dưới �
 | Artifact | Upload/list/metadata/validate/download/manifest/history | Type mismatch, interrupted/batch, atomic object/DB reconciliation, checksum round-trip evidence. |
 | Machine QA | Protocol seed, run create/measurements/evaluate/rerun/compare | Autosave races, full library and boundary coverage. |
 | Gamma | Run enqueue/list/detail/retry/compare; queue metrics | PSQA profile, extra config capabilities, denominator/search, leases/outbox, proper DICOM fixtures. |
-| Report/trend/protocol library | Có schema/roadmap nền hoặc trend projection | UI/API đầy đủ ở P9–P11, không coi generic endpoints trong technical spec là live. |
+| Report/trend/protocol library | Report P9 và Trend P10 đã có API/UI slice; protocol library còn target | P9/P10 phải revalidate staging theo schema mới; P11 vẫn cần library/version/consumer E2E. |
 | Biological/knowledge/DVH | Requirement/architecture | P12–P17 target; cần source, schema, API, UI và tests. |
 
 Mutation mới phải có typed request/response, operation ID, error mapping, organization scope và idempotency/revision khi phù hợp. Async create trả 202 + run/export ID khi chưa xong; synchronous create có thể 201. List response giữ collection metadata; server không nhúng dump DB/raw patient payload.
@@ -951,7 +979,9 @@ Danh sách errors là baseline có giới hạn, không chứng minh bao phủ m
 3. Hoàn thiện mapping error flat cho GAP-08 và release/build manifest cho GAP-09; schema revision readiness cho GAP-06 đã có local implementation, cần chứng minh trên staging.
 4. Kiểm tra staging chạy đúng migration `20260908_0009`; RTDOSE+measurement 3D end-to-end với source đúng frame/profile đã PASS trên run `df38e7d5-bb4b-4e2b-b949-2310acb1875c`, còn P8 queue/outbox/stale-worker negative behavior và P9 browser/export evidence cần kiểm đúng candidate.
 5. Bổ sung staging crash/ack/dead-letter và resource/large-input benchmark trước khi đóng P8; oracle độc lập, bounded retry và preflight đã có local test.
-6. P9 implementation slice có thể được kiểm local song song, nhưng chỉ gọi P9 hoàn tất sau staging schema `20260908_0009`, authenticated report/export/download và visual checks; không triển khai hoặc thay cấu hình cloud chỉ vì tài liệu có checklist.
+6. P9/P10 implementation slice có thể được kiểm local song song, nhưng chỉ gọi phase hoàn tất sau staging schema `20260908_0010`, authenticated report/trend workflow, export/download/source drill-down và visual checks; không triển khai hoặc thay cấu hình cloud chỉ vì tài liệu có checklist.
+
+**Cập nhật thực thi 2026-09-08:** dòng 4 ở trên là snapshot lịch sử được giữ để truy nguyên. Checkpoint hiện hành phải dùng migration `20260908_0010`; P9 browser/export đã có smoke evidence và P10 đang ở `LOCAL_VERIFIED`, còn staging trend, P8 negative/reliability và visual/release checks vẫn mở.
 
 ## 12. Nguồn kỹ thuật đã kiểm tra khi viết
 

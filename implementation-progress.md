@@ -1,27 +1,31 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
-## Documentation rebaseline — 2026-09-08
+## Documentation and implementation rebaseline — 2026-09-08
 
-`business-analysis.md` v0.7, `specification.md` v1.1, `technical-specification.md` v1.0 và `plan.md` v2.1 bổ sung requirement, contract, testcase và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8 cũng đã được sửa và kiểm thử local; chưa coi đó là staging E2E mới.
+`business-analysis.md` v0.9, `specification.md` v1.3, `technical-specification.md` v1.1 và `plan.md` v2.3 bổ sung requirement, contract, testcase và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
 
-Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint local mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection và schema-readiness vẫn phải được đối soát theo plan §1.2–§1.3. Đặc biệt câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ theo v2.1. Next work lấy từ plan v2.1 và specification §11; chưa đóng thêm phase trong lần sửa này.
+Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness và staging Trend vẫn phải được đối soát theo plan §1.2–§1.3. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Next work lấy từ plan v2.3 và specification §11; P10 mới chỉ `LOCAL_VERIFIED`.
 
 ## Current checkpoint
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
-- **Current phase:** P8 — PSQA Gamma queue, deterministic engine contract and result artifacts; P7 Machine QA is complete on staging.
-- **Current status:** IN_PROGRESS — P8 has passed the authenticated 2D synthetic and 3D RTDOSE + measurement staging E2E flows through the deployed Redis Streams worker, including worker completion, immutable result/config snapshot, compare, refresh persistence, queue metrics and a controlled `FAILED → retry → COMPLETED` recovery. The local slice adds PSQA/ENGINE_TEST profile enforcement, RTDOSE GY fixture validation, coverage/no-candidate accounting, max-gamma censoring and database-fenced attempt/outbox dispatch. The full P8 exit gate remains open for independent oracle, crash/ack/retry/resource and large-input evidence.
+- **Current phase:** P10 — Trend, baseline, maintenance revision and source drill-down; P7 Machine QA and the current P9 report slice are available as dependencies, while P8/P9 remaining release gates stay open.
+- **Current status:** IN_PROGRESS — P10 has a local implementation slice with migration `20260908_0010`, organization-scoped trend query, raw/day/week aggregation, compatibility context/signature, versioned baseline, maintenance event revisions, rebuild, export and source drill-down. Backend full suite `68/68` and focused P10 `7/7` pass locally; staging P10 workflow, large-series budget, visual/accessibility evidence and P8/P9 remaining release gates are not yet closed.
 - **Last authoritative check:** 2026-09-08 — commit `e71e8e1` (web snapshot display) is pushed to `origin/codex/p4-org-site-machine`; web deployment `7f104141-0fe4-4527-b455-a503beaceb20` is active and successful. Fresh staging browser verification after reload showed run `df38e7d5-bb4b-4e2b-b949-2310acb1875c` with profile `PSQA_GAMMA`, config snapshot `3D · FULL_ROI · max γ 2`, `COMPLETED/PASS`, 8/8 evaluated/passing, 0 excluded, coverage `1`, Gamma P95 `0`, attempt 1. Backend full suite `64/64`, including the independent Gamma oracle, bounded retry/replay and readiness revision tests, strict mypy/Ruff and frontend lint/typecheck/Vitest `1/1`/build passed locally; RTDOSE fixture SHA-256 remains `CA5C9168EB9B045E30A375EDC6B76118EFD754A35815C2860B17CA8944C4480B`. The API/worker deployments from `ec5191e` were already active; the new API/worker release and migration/readiness plus remaining staging reliability gates must still be verified.
-- **Next exact step:** close the remaining P8 engineering gates: add an independent exhaustive Gamma oracle and convergence tests, enforce bounded retry/dead-letter plus resource/large-input preflight, inject crash-after-commit-before-ack and lease-expiry scenarios, then verify migration/schema readiness and release/build manifest before starting P9.
+- **Next exact step:** commit/push P10, wait for API/web staging deployments, verify `/api/v1/ready` reports schema `20260908_0010`, then run authenticated `/app/trend` query/filter/baseline/event/rebuild/export/source smoke and record IDs before starting P11.
+
+- **Current local verification supersedes the older snapshot above:** backend full suite `68/68`, focused P10 `7/7`, Ruff/mypy and frontend lint/typecheck/Vitest `1/1`/build pass; PostgreSQL migration `20260908_0009 → 20260908_0010` pass. The older P9 staging browser evidence remains valid for its candidate but does not prove the current P10 release.
+
+The older `Last authoritative check` line above is retained as a historical pointer to the P8/P9 candidate. For the current checkpoint, use the local verification line immediately above and the P10 staging gates below; do not interpret the older deployment SHA as evidence for the uncommitted P10 slice.
 
 ## Source documents read
 
 | Source | Version | Status |
 | :--- | :--- | :--- |
-| `business-analysis.md` | 0.7 | Business source; FR catalogue added in documentation rebaseline |
-| `specification.md` | 1.1 | Target behavior/data/error/numeric contracts; P8 local slice synchronized, staging evidence pending |
-| `technical-specification.md` | 1.0 | Architecture reference; P8 queue/DICOM/error details synchronized |
-| `plan.md` | 2.1 | Phase/workflow/S-E tests, gap statuses and P8 checkpoint; not a new staging PASS |
+| `business-analysis.md` | 0.9 | Business source; detailed workflow/error/recovery matrix and feature-completion definition |
+| `specification.md` | 1.3 | Behavior/data/error/numeric contracts; exact P10 API/model/aggregation contract added |
+| `technical-specification.md` | 1.1 | Architecture reference; P10 projection/baseline/maintenance implementation addendum |
+| `plan.md` | 2.3 | Phase/workflow/S-E tests, execution packet, P10 local checkpoint and staging gates |
 
 ## Phase status
 
@@ -36,8 +40,8 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | P6 | STAGING E2E PASS | Migration `20260907_0005`, artifact metadata/checksum, Input Manifest, duplicate upload, Railway S3-compatible storage, DICOM/measurement validator and QA Archive upload panel are deployed; authenticated synthetic upload created the manifest, validation returned `VALID` with 0 errors/0 warnings and the signed Download action was invoked |
 | P7 | STAGING E2E PASS | Migration `20260907_0006`; protocol/rule seed, scoped Machine QA run lifecycle, draft revision, evaluation, immutable result/rerun/compare and trend projection are implemented; staging evaluate returned PASS for `output_factor=100`, `symmetry=1`, `flatness=100`, then rerun and compare preserved both histories |
 | P8 | STAGING 2D/3D REDIS STREAM + FAILURE/RETRY PASS; FULL EXIT GATE OPEN | Migrations `20260907_0007` + reliability slice `20260908_0008`; organization/case-scoped preflight, PSQA/ENGINE_TEST profile, deterministic 2D/3D engine with standard-GY RTDOSE adapter, coverage/censor metrics, logical-role-aware artifact contract and database-fenced lease/attempt/outbox slice are implemented and locally tested. Staging has validated 2D and RTDOSE+measurement 3D PASS runs, compare/refresh persistence and controlled storage retry. Independent oracle, crash/ack/bounded retry/resource/large-input evidence and schema/release gates remain open. |
-| P9 | NOT_STARTED | Depends on P7/P8 for Gamma blocks |
-| P10 | NOT_STARTED | Depends on P7–P9 |
+| P9 | STAGING E2E PARTIAL / LOCAL VERIFIED | Report revision/export browser smoke on staging; recheck current candidate, visual/export failure gate remains |
+| P10 | LOCAL VERIFIED / STAGING NOT RUN | Migration `20260908_0010`, API/UI slice and 7 focused tests pass local; staging trend workflow, large series and visual/accessibility remain |
 | P11 | NOT_STARTED | Depends on P7/P9 |
 | P12 | NOT_STARTED | Biological screen must be regenerated |
 | P13 | NOT_STARTED | Depends on P12 |

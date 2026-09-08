@@ -5,10 +5,10 @@
 - **Tên sản phẩm:** RT-CONNECT
 - **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
 - **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
-- **Phiên bản tài liệu:** 0.8 — catalogue tính năng, workflow, ngoại lệ, phục hồi và tiêu chí nghiệm thu theo P0–P20 (2026-09-08)
+- **Phiên bản tài liệu:** 0.9 — catalogue tính năng, workflow, ngoại lệ, phục hồi và tiêu chí nghiệm thu theo P0–P20 (2026-09-08)
 - **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
-Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.8 tại mục 21 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
+Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.9 tại mục 21 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
 
 ---
 
@@ -1559,3 +1559,81 @@ Mục này biến catalogue FR thành một hành trình có thể quan sát đ�
 6. **Valid calculation with warning:** phép tính hoàn tất nhưng có coverage, censoring, font, assumption hoặc applicability warning; kết quả vẫn được đánh dấu theo đúng trạng thái cảnh báo, khác với lỗi không tính được.
 
 Mỗi màn hình phải có trạng thái loading, empty, populated, warning, error, retry và offline phù hợp. Không dùng màu sắc đơn độc để truyền đạt PASS/FAIL, không để spinner vô hạn, không hiển thị stack trace/secret và không biến HTTP 200 thành kết quả nghiệp vụ. Danh sách trong mục 21.5 là baseline kiểm thử hiện tại; khi phát hiện lỗi mới, bổ sung FR/testcase/regression và cập nhật cả ba tài liệu nghiệp vụ, specification và plan.
+
+### 21.7. Chuỗi workflow nghiệp vụ chuẩn cho mọi module
+
+Mọi module phải được mô tả và bàn giao theo cùng một chuỗi quan sát được. Chuỗi này không tạo thêm vai trò hay bước phê duyệt; nó chỉ giúp người dùng biết dữ liệu đang ở đâu và có thể tiếp tục từ điểm nào:
+
+```text
+MỞ MODULE
+  → XÁC ĐỊNH IDENTITY + ORGANIZATION CONTEXT
+  → CHỌN/ TẠO INPUT
+  → KIỂM TRA FIELD VÀ QUAN HỆ
+  → THỰC HIỆN THAO TÁC HOẶC PHÉP TÍNH
+  → LƯU KẾT QUẢ + SNAPSHOT + PROVENANCE
+  → HIỂN THỊ KẾT QUẢ/ CẢNH BÁO/ LỊCH SỬ
+  → EXPORT, DRILL-DOWN HOẶC TẠO REVISION MỚI
+```
+
+Quy tắc áp dụng cho từng điểm của chuỗi:
+
+1. **Context trước dữ liệu:** hệ thống phải biết identity và organization trước khi đọc resource mục tiêu. Không được tải một UUID toàn cục rồi mới kiểm tra quyền thuộc tổ chức.
+2. **Input không bị biến đổi ngầm:** giá trị, đơn vị, ngày, nguồn và lựa chọn của user phải giữ nguyên hoặc được thông báo khi chuyển đổi explicit. Null, rỗng, 0 và missing là các trạng thái khác nhau.
+3. **Validation có thể sửa:** lỗi gắn với field hoặc dataset cụ thể; input hợp lệ còn lại không bị xóa. Lỗi critical chặn phép tính liên quan; warning phải nêu ảnh hưởng và giả định.
+4. **Kết quả tách khỏi trạng thái HTTP:** `200` chỉ nói request đã được phục vụ. Kết quả nghiệp vụ phải có status riêng như `PASS`, `WARNING`, `FAIL`, `INVALID`, `QUEUED`, `COMPLETED` hoặc `FAILED` theo module.
+5. **Snapshot trước khi tính dài:** phép tính, report và scenario phải lưu input/config/model/protocol version trước hoặc cùng lúc accepted operation; refresh browser không làm thay đổi kết quả.
+6. **Lỗi sau khi gửi phải phân biệt:** `chưa gửi`, `đã nhận nhưng chưa biết kết quả` và `đã thất bại` không được hiển thị như nhau. Retry phải tra cứu operation/run trước để tránh tạo bản ghi trùng.
+7. **Kết quả luôn có đường quay lại nguồn:** từ metric, chart, export hoặc report phải biết source run/case/artifact/scenario và version đã dùng.
+8. **Kết thúc có thể tiếp tục:** mỗi luồng phải có hành động rõ để mở lại, retry an toàn, tạo revision mới hoặc xem hướng dẫn phục hồi. Không có spinner vô hạn hay nút giả chưa có backend.
+
+### 21.8. Ma trận workflow, chạy đúng, lỗi và phục hồi theo phase
+
+Bảng dưới là yêu cầu nghiệp vụ tối thiểu. `Chạy đúng` là hành trình phải đi hết đến output bền vững; `Lỗi` là các nhóm lỗi người dùng phải nhìn thấy; `Phục hồi` là hành động không làm mất dữ liệu hoặc tạo kết quả giả. Chi tiết API, transaction, mã lỗi và test ID nằm trong `specification.md` và `plan.md`.
+
+| Phase | Điểm bắt đầu và workflow bắt buộc | Chạy đúng phải có | Lỗi phải hiển thị/kiểm tra | Phục hồi và dữ liệu phải giữ |
+| :--- | :--- | :--- | :--- | :--- |
+| P0 | Đọc source nghiệp vụ, thiết kế, code và evidence; lập FR/MOD/phase/test registry | Mọi FR có owner, dependency, acceptance và link truy vết | Mâu thuẫn tài liệu, screen cũ, evidence thiếu, sai project/environment | Giữ lịch sử; ghi quyết định/gap mới, không sửa evidence cũ để làm đẹp |
+| P1 | Clone sạch; cài runtime; chạy DB/queue/storage; migrate/seed; build/test | Một người mới có thể khởi động và tái chạy cùng kết quả | Thiếu dependency, port bận, env thiếu, migration/build/OpenAPI fail | Sửa đúng layer rồi chạy lại từ checkpoint; không bỏ qua migration lỗi |
+| P2 | Chọn đúng Railway environment; deploy API/worker; chạy migration; nối Supabase Auth | HTTPS, process, DB schema và token contract được kiểm riêng | Source/root sai, psycopg scheme sai, process không listen, schema thiếu, JWT/JWKS lỗi, config drift | Giữ release last-good; không dùng database production cho staging và không in secret |
+| P3 | Mở deep-link; sign-in/recovery; bootstrap; onboarding nếu chưa membership; dashboard | User vào đúng organization và thấy dữ liệu thật, empty hoặc warning đúng | Credential/session/recovery hết hạn, Auth config thiếu, membership thiếu, API/CORS/offline | Single-flight refresh; clear cache khi đổi identity; không tự gán tổ chức khác |
+| P4 | Tạo site/machine; đổi thông tin; mời thành viên; archive/restore; xem history | Stable machine ID không đổi; hai thành viên cùng org dùng cùng nghiệp vụ | Parent/ID trùng, invitation sai/hết hạn, sửa đồng thời, mutation không rõ kết quả | Conflict giữ draft; retry idempotent; archive không xóa QA history |
+| P5 | Tạo cây folder; tạo case; search/filter/page; move/rename/archive/restore | Cây lồng nhau và case mở lại bằng deep-link, filter kết hợp đúng | Cycle, tên trùng, parent archived, case sai machine/site, page ngoài phạm vi, restore conflict | Move subtree atomic; fail không làm mất cây/case; history giữ ID |
+| P6 | Chọn case/type/role; upload; checksum; manifest; validate; download | File tải lại byte-identical; manifest nói rõ UID/geometry/role và validation | Empty/quá lớn, upload đứt, duplicate, declared type sai, DICOM/measurement invalid, link hết hạn | Từng file có terminal state; retry không upload trùng; object mồ côi được reconcile |
+| P7 | Chọn cycle/protocol; nhập metric/N-A; evaluate; xem rule/result; rerun/compare | Actual/limit/margin/status giải thích được và trend point đúng | Missing/unit/NaN/baseline, autosave conflict, double submit, protocol archived | Giữ draft và run cũ; rerun ID mới; không nhân đôi projection |
+| P8 | Chọn input đã validate; preflight; enqueue; worker tính; xem map/statistics; retry/compare | PSQA RTDOSE + comparison chạy được; job bền qua refresh; result có config/engine | Thiếu input, frame/grid/unit sai, no candidate, coverage thiếu, Redis/worker/OOM/timeout/lease lỗi | Retry bounded; attempt/fencing/dead-letter; không để worker cũ ghi đè; FULL_ROI/OVERLAP_ONLY nói rõ denominator |
+| P9 | Chọn source hoặc Biological calculation; chỉnh block; preview; lưu revision; export | Toàn quyền layout; revision/export mở lại đúng snapshot và checksum | Conflict, source missing, rich-content nguy hiểm, renderer/storage/download lỗi | Giữ draft và export cũ; retry renderer/download; không sửa analysis/source |
+| P10 | Chọn machine/metric/time/context; xem raw/aggregate; baseline/event; drill-down/export | Series chỉ ghép dữ liệu tương thích; aggregate giữ count/extrema/source IDs | Date/timezone/filter sai, unit/context khác, empty, baseline thiếu, duplicate projection, source archived | Tách series; cảnh báo thay vì bịa 0; rebuild idempotent; marker không sửa QA |
+| P11 | Tìm/clone protocol; sửa rule; kiểm sample; lưu version; áp dụng cho run mới | Protocol/rule/reference có version và source rõ | Rule vô nghĩa, key/version trùng, ref thiếu, archived/unsupported | Clone deep-copy; version đã dùng immutable; run cũ giữ snapshot |
+| P12 | Mở Biological Hub; chọn tool; tạo scenario; calculate/history/export | Toolkit hoạt động độc lập, không cần QACase/patient record | Scenario sai context, module unavailable, model cũ, conflict, export fail | Namespace scenario riêng; lưu assumptions/model; module chưa có phải báo capability |
+| P13 | Nhập D/n/d/alpha-beta; validate; tính; chọn range/step; vẽ curve; lưu | BED/EQD2, bảng và đồ thị cùng input/model, có marker và precision | Fraction không hợp lệ, D không khớp n*d, alpha/beta sai, non-finite, step/range lỗi | Không tự đổi input; invalid curve không lưu như success; draft/history giữ nguyên |
+| P14 | Tạo 2–10 options; chọn context/baseline; calculate; chart/table/export | So sánh tuyệt đối và delta % nhất quán, option reorder không đổi nghĩa | Option thiếu/sai, baseline 0, context khác, overflow/truncate | Delta không xác định là null có lý do; dùng cùng model/context snapshot |
+| P15 | Nhập nhiều course/date/dose/fraction; recovery/alpha-beta; interruption; compensation scenario | Scalar cumulative, sensitivity, recovery và phương án bù được giải thích | Interval/lịch sai, recovery không nguồn, tissue mismatch, spatial registration thiếu, overlap | Không giả lập spatial khi thiếu transform; scenario là estimate, không sửa treatment record |
+| P16 | Tìm theo bệnh lý/mô/OAR; xem source; clone/version; chọn explicit vào scenario | Entry có applicability/unit/citation và version; calculation ghi source | No source, link hỏng, duplicate/import lỗi, không phù hợp, script nguy hiểm | Published version immutable; entry nội bộ gắn nhãn; không tự sinh clinical PASS/FAIL |
+| P17 | Chọn dose/RTSTRUCT/image; validate geometry; overlay; DVH/profile/export | Overlay đúng frame; coverage/ROI/metric có bảng thay thế chart | Frame/ROI/grid/codec/contour lỗi, thiếu image/structure, dose ngoài vùng | Dose-only fallback có nhãn; không gán 0 cho vùng thiếu; giữ source |
+| P18 | Khóa candidate; chạy integrated/golden/error/concurrency/load/restore; pilot; regression | E2E và failure recovery có evidence theo SHA/version; không SEV0/1 | Golden lệch, restore thiếu object, duplicate replay, capacity, dataset unsupported | Giữ input/log/evidence; issue có root cause; không sửa expected để ép PASS |
+| P19 | Backup; promote API/web/worker/schema; domain/TLS/Auth/CORS; remote E2E; rollback rehearsal | HTTPS và workflow thật đồng bộ service/schema/engine, public URL mở được | DNS/TLS, migration, web/API mismatch, Auth/CORS, private dependency, health giả | Giữ last-good và rollback; không promote partial release; backup trước migration |
+| P20 | Monitor/alert; backup/restore drill; guide; incident triage; maintenance release | Người vận hành thực hiện được runbook; alert và restore có evidence | Alert không tới, backup/retention/capacity fail, engine đổi số, incident lặp | Không xóa last-good; update có version/diff/regression; root cause trước đóng issue |
+
+### 21.9. Định nghĩa “hoàn thiện” ở cấp tính năng
+
+Một tính năng chỉ được coi là hoàn thiện khi thỏa cả năm điều kiện sau, không phụ thuộc việc nó nằm ở tab nào:
+
+1. **Có đường đi của người dùng:** màn hình thật, route thật, input/output thật; không chỉ là card hoặc mock data.
+2. **Có hợp đồng dữ liệu:** field, unit, format, giới hạn, ID, source và version được định nghĩa ở backend/frontend/engine.
+3. **Có hành trình thất bại:** ít nhất invalid input, dependency unavailable, persistence uncertain, conflict và archived/not-found được xử lý nếu phù hợp.
+4. **Có tính tái hiện:** mở lại sau refresh/reconnect vẫn ra cùng snapshot; export và drill-down không trỏ nhầm bản live.
+5. **Có bằng chứng:** testcase success/error/boundary, environment, commit, schema/engine version và evidence path được ghi trong progress log.
+
+Các nhóm tính năng có điều kiện bổ sung:
+
+| Nhóm | Điều kiện bổ sung trước khi gọi hoàn thiện |
+| :--- | :--- |
+| Lưu trữ/file | Round-trip checksum; object/metadata reconciliation; declared type và role không mâu thuẫn |
+| Phép tính | Known-answer/reference; unit/precision; non-finite/zero/negative; input snapshot và model version |
+| Job bất đồng bộ | Accepted ID; queued/running/terminal; retry/dead-letter; worker restart/duplicate delivery |
+| Report/export | Revision snapshot; deterministic render; format/Unicode/bảng dài; signed download và checksum |
+| Trend/chart | Compatibility key; raw/aggregate equality; baseline/timezone; source drill-down; table fallback |
+| Library | Search/no-match; source/citation; draft/clone/published version; explicit applicability |
+| Public website | HTTPS/Auth/CORS; version manifest; private dependency; remote E2E; backup/rollback |
+
+Nếu một điều kiện chưa có evidence, trạng thái là `IN_PROGRESS`, `LOCAL_VERIFIED` hoặc `STAGING_VERIFIED` tùy evidence, không phải `DONE`. Danh sách này không tuyên bố có thể dự đoán mọi lỗi; lỗi mới phát hiện trong pilot hoặc vận hành phải trở thành testcase hồi quy và được truy vết ngược về FR/contract/phase.

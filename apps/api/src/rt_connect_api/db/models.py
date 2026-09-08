@@ -256,6 +256,12 @@ class TrendPoint(TimestampedIdMixin, Base):
 
     __tablename__ = "trend_points"
     __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "source_run_id",
+            "metric_key",
+            name="uq_trend_points_source_metric",
+        ),
         Index(
             "ix_trend_points_organization_machine_metric",
             "organization_id",
@@ -263,6 +269,7 @@ class TrendPoint(TimestampedIdMixin, Base):
             "metric_key",
         ),
         Index("ix_trend_points_source_run", "source_run_id"),
+        Index("ix_trend_points_organization_measured_at", "organization_id", "measured_at"),
     )
 
     organization_id: Mapped[UUID] = mapped_column(
@@ -278,6 +285,125 @@ class TrendPoint(TimestampedIdMixin, Base):
     unit: Mapped[str] = mapped_column(String(40), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     measured_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    context_snapshot: Mapped[dict[str, object]] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
+
+
+class BaselineVersion(TimestampedIdMixin, Base):
+    """Versioned baseline and action limits for one compatible trend series."""
+
+    __tablename__ = "baseline_versions"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "machine_id",
+            "metric_key",
+            "version_number",
+            name="uq_baseline_versions_machine_metric_version",
+        ),
+        Index(
+            "ix_baseline_versions_organization_lookup",
+            "organization_id",
+            "machine_id",
+            "metric_key",
+            "status",
+        ),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    machine_id: Mapped[UUID] = mapped_column(ForeignKey("machines.id"), nullable=False, index=True)
+    metric_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    unit: Mapped[str] = mapped_column(String(40), nullable=False)
+    name: Mapped[str] = mapped_column(String(240), nullable=False)
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    baseline_value: Mapped[float] = mapped_column(Float, nullable=False)
+    tolerance: Mapped[float | None] = mapped_column(Float, nullable=True)
+    action_level: Mapped[float | None] = mapped_column(Float, nullable=True)
+    effective_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    effective_to: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="ACTIVE")
+    source_type: Mapped[str] = mapped_column(String(40), nullable=False, server_default="MANUAL")
+    source_id: Mapped[UUID | None] = mapped_column(PostgreSQLUUID(as_uuid=True), nullable=True)
+    context_snapshot: Mapped[dict[str, object]] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+
+
+class MaintenanceEvent(TimestampedIdMixin, Base):
+    """Mutable current view of a maintenance marker with explicit revisions."""
+
+    __tablename__ = "maintenance_events"
+    __table_args__ = (
+        Index(
+            "ix_maintenance_events_organization_machine_time",
+            "organization_id",
+            "machine_id",
+            "started_at",
+        ),
+        Index("ix_maintenance_events_organization_status", "organization_id", "status"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    machine_id: Mapped[UUID] = mapped_column(ForeignKey("machines.id"), nullable=False, index=True)
+    event_type: Mapped[str] = mapped_column(String(60), nullable=False)
+    title: Mapped[str] = mapped_column(String(240), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    revision_number: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="ACTIVE")
+    metadata_snapshot: Mapped[dict[str, object]] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+
+
+class MaintenanceEventRevision(TimestampedIdMixin, Base):
+    """Append-only snapshot of every maintenance event version."""
+
+    __tablename__ = "maintenance_event_revisions"
+    __table_args__ = (
+        UniqueConstraint(
+            "maintenance_event_id",
+            "revision_number",
+            name="uq_maintenance_event_revisions_event_number",
+        ),
+        Index(
+            "ix_maintenance_event_revisions_organization_event",
+            "organization_id",
+            "maintenance_event_id",
+        ),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    maintenance_event_id: Mapped[UUID] = mapped_column(
+        ForeignKey("maintenance_events.id"), nullable=False, index=True
+    )
+    revision_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    event_type: Mapped[str] = mapped_column(String(60), nullable=False)
+    title: Mapped[str] = mapped_column(String(240), nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    status: Mapped[str] = mapped_column(String(30), nullable=False)
+    metadata_snapshot: Mapped[dict[str, object]] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
 
 
 class GammaAnalysisRun(TimestampedIdMixin, Base):

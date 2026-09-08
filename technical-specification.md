@@ -3,15 +3,15 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.0 — đồng bộ specification.md v1.1 và plan.md v2.1 (2026-09-08)
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.7
+- **Phiên bản:** 1.1 — đồng bộ specification.md v1.3 và plan.md v2.3 (2026-09-08)
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.9
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
 
 Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
-> Đồng bộ v1.0: các bảng API/entity đề xuất trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§8 là authority cho hành vi/validation/error/thuật toán. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+> Đồng bộ v1.1: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§8 là authority cho hành vi/validation/error/thuật toán. P6–P10 hiện đã có các slice code được ghi rõ trong mục 0.4; phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -75,6 +75,20 @@ Chỉ đặt một biến xác thực CLI chính thức tại một thời đi�
 - Repository hiện chỉ có tài liệu Markdown, chưa có frontend, backend, migration, test hoặc deployment manifest.
 - Các file `UI-UX.md`, `DESIGN.md` và `Biological-toolkit.html` đã được user xóa; không tự khôi phục. Thiết kế UI được truy xuất qua Stitch MCP.
 - Không triển khai trực tiếp production từ baseline tài liệu. Trước hết phải tạo staging, sửa nguyên nhân deployment thất bại và chạy health/migration/smoke test.
+
+### 0.4. Addendum repository hiện tại — 2026-09-08
+
+Phần 0.1–0.3 là baseline lịch sử ngày 2026-09-04 và không được đọc như trạng thái source hiện tại. Repository hiện đã có backend FastAPI, frontend React/Vite, Alembic migrations, Redis worker và object-storage adapter. Các mốc code đã được kiểm local gồm:
+
+| Slice | Thành phần hiện có | Schema/check |
+| :--- | :--- | :--- |
+| P6 | Artifact, Input Manifest, validation, checksum/signed download | `20260907_0005` |
+| P7 | QA protocol seed, Machine QA run/rule/result/rerun/compare, TrendPoint projection | `20260907_0006` |
+| P8 | Gamma 2D/3D adapter, RTDOSE GY/scaling, Redis Streams, lease/attempt/outbox, retry/dead-letter/resource guard | `20260907_0007` + `20260908_0008` |
+| P9 | Report template/revision/block/export renderer | `20260908_0009` |
+| P10 | Trend query/aggregate/export/rebuild, BaselineVersion, MaintenanceEvent/Revisions, source drill-down | `20260908_0010` |
+
+Ngày 2026-09-08, backend full suite **68/68**, test P10 **7/7**, Ruff/mypy và frontend lint/typecheck/Vitest/build đã đạt local; migration `20260908_0010` đã upgrade trên PostgreSQL local. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
 
 ---
 
@@ -708,25 +722,22 @@ Report Builder không áp đặt block bắt buộc; user toàn quyền tùy ch�
 
 ### 4.16. Trend Point
 
-Các trường chính:
+Các trường chính của projection đang triển khai:
 
 - id.
 - organization_id.
-- site_id.
 - machine_id.
 - qa_case_id.
-- analysis_run_id.
+- source_run_id (`MachineQARun`).
 - metric_key.
-- value_numeric.
+- value.
 - unit.
-- baseline_value nullable.
-- tolerance_value nullable.
-- action_value nullable.
+- status.
 - measured_at.
-- context_json.
+- context_snapshot: qa_type, qa_cycle, protocol key/version và context đo (energy, detector, phantom, beam quality, acquisition mode).
 - created_at.
 
-Trend point không được tự động xóa khi có outlier.
+Unique key của projection là `organization_id + source_run_id + metric_key`; index phục vụ organization/machine/metric và organization/measured_at. Trend point không được tự động xóa khi có outlier, machine/case archive hoặc rebuild. Baseline không nằm trong point: `BaselineVersion` được chọn theo effective interval và context khi query. `MaintenanceEvent` là marker hiện tại, còn `MaintenanceEventRevision` là lịch sử append-only. Chi tiết field/API/error nằm trong `specification.md` SPEC-P10.
 
 ### 4.17. Biological Toolkit entities
 
@@ -1418,20 +1429,27 @@ Rule snapshot được lưu trong Analysis Run và Report Revision.
 
 ### 10.3. Trend normalization
 
-Trend key gồm:
+Trend key/projection hiện tại gồm:
 
 - machine_id.
 - qa_type.
 - qa_cycle.
 - metric_key.
 - unit.
-- energy/mode.
+- energy.
 - detector.
 - phantom.
+- beam_quality.
+- acquisition_mode.
+- protocol_key.
 - protocol_version.
 - measured_at.
 
-Nếu unit khác nhau, không vẽ chung một trend nếu chưa có phép quy đổi được định nghĩa.
+Projection lưu `context_snapshot` cùng `organization_id`, `source_run_id`, `qa_case_id`, value, unit, status và measured_at. Unique constraint hiện tại là organization + source run + metric; đây là read model có thể rebuild từ Machine QA result snapshot, không phải source of truth. Nếu unit/context khác nhau, compatibility signature tạo series riêng; không vẽ chung và không tự quy đổi.
+
+API P10 hiện triển khai các surface sau: trend raw/day/week; filter machine/metric/unit/timezone/context; baseline list/create/update có version; maintenance event list/create/update có revision và revision history; rebuild projection; source drill-down; CSV/JSON export. Khoảng thời gian API là `[from, to)`, bucket day/week theo IANA timezone, còn timestamp/source ID canonical theo UTC.
+
+Baseline chọn theo machine/metric/unit/context và effective interval của từng point. `delta = value - baseline`; outlier dùng action level nếu có, nếu không dùng tolerance. Thiếu baseline chỉ tạo warning. Aggregate luôn giữ count, mean, min, max, first/last, status counts, source point IDs và source run IDs để không mất khả năng điều tra.
 
 ### 10.4. Maintenance event
 
@@ -1439,14 +1457,16 @@ Maintenance event gồm:
 
 - machine_id.
 - event_type.
-- occurred_at.
-- description.
-- affected_components.
-- source_note.
+- title.
+- started_at/ended_at.
+- notes.
+- metadata snapshot.
+- revision_number.
+- status.
 - created_by.
-- related_qa_case_ids nếu user chọn.
+- append-only revision snapshots.
 
-Trend chỉ hiển thị sự kiện; không tự suy luận nguyên nhân.
+Trend chỉ hiển thị sự kiện; không tự suy luận nguyên nhân. Update phải có `expected_revision`; conflict không overwrite bản hiện tại. Marker không sửa `TrendPoint`, `MachineQARun` hoặc report.
 
 ---
 

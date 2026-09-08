@@ -160,6 +160,18 @@ td code { color: #075e67; font-size: .78rem; }
 .report-preview article small { color: #087785; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .68rem; }
 .report-preview article pre { color: #526e80; font: .8rem/1.5 "JetBrains Mono", ui-monospace, monospace; margin: 8px 0 0; overflow-x: auto; white-space: pre-wrap; }
 .report-export-actions { border-top: 1px solid #dce5ea; padding-top: 14px; }
+.trend-filter-panel, .trend-series-card { margin-top: 18px; }
+.trend-filter-grid, .form-grid { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 16px; }
+.trend-filter-grid label, .form-grid label { color: #334155; display: grid; font-size: .82rem; font-weight: 600; gap: 6px; }
+.trend-filter-grid input, .trend-filter-grid select, .form-grid input, .form-grid select, .form-grid textarea { border: 1px solid #c8d5de; border-radius: 4px; color: #0f172a; font: inherit; min-height: 38px; padding: 8px 10px; }
+.trend-filter-grid select[multiple] { min-height: 110px; }
+.form-grid textarea { min-height: 72px; resize: vertical; }
+.trend-chart { background: linear-gradient(180deg, #f5fbfb, #fff); border: 1px solid #d4e0e6; height: 180px; margin-top: 16px; padding: 12px; }
+.trend-chart svg { height: 100%; overflow: visible; width: 100%; }
+.trend-chart line { stroke: #c8d5de; stroke-width: .6; }
+.trend-chart polyline { fill: none; stroke: #087785; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.8; }
+.trend-admin-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 12px; }
+.alert--warning { border-left: 4px solid #d49a22; }
 
 .auth-layout { display: grid; grid-template-columns: minmax(300px, 42%) minmax(0, 58%); min-height: 100vh; }
 .auth-brand { background: #0f2744; color: #eaf1ff; display: flex; flex-direction: column; gap: 32px; justify-content: center; min-height: 100%; padding: clamp(32px, 6vw, 88px); }
@@ -203,7 +215,7 @@ td code { color: #075e67; font-size: .78rem; }
   .sidebar__caption, .sidebar__footer { display: none; }
   .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .management-grid, .report-layout { grid-template-columns: 1fr; }
+  .management-grid, .report-layout, .trend-admin-grid { grid-template-columns: 1fr; }
   .archive-layout { grid-template-columns: 1fr; }
   .auth-layout { grid-template-columns: 1fr; }
   .auth-brand { min-height: auto; padding: 32px; }
@@ -217,7 +229,7 @@ td code { color: #075e67; font-size: .78rem; }
   .inline-form { align-items: stretch; flex-direction: column; }
   .filter-row { grid-template-columns: 1fr; }
   .artifact-upload { grid-template-columns: 1fr; }
-  .machine-qa-protocol-controls, .gamma-input-grid, .gamma-config-grid, .report-form-grid, .report-json-grid { grid-template-columns: 1fr; }
+  .machine-qa-protocol-controls, .gamma-input-grid, .gamma-config-grid, .report-form-grid, .report-json-grid, .trend-filter-grid, .form-grid { grid-template-columns: 1fr; }
   .report-block-editor__top { grid-template-columns: auto 1fr; }
   .report-block-editor__top .table-actions { grid-column: 1 / -1; justify-content: start; }
   .auth-panel { padding: 16px; }

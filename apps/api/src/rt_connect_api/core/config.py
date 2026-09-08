@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     app_version: str = "0.1.0-dev"
-    schema_revision: str = "20260908_0009"
+    schema_revision: str = "20260908_0010"
     log_level: str = "INFO"
     database_url: str | None = None
     redis_url: str | None = None

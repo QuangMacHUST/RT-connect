@@ -69,3 +69,22 @@ def test_report_migration_declares_immutable_revision_and_export_schema() -> Non
     assert '"export_jobs"' in source
     assert '"warning_snapshot"' in source
     assert "def downgrade()" in source
+
+
+def test_trend_migration_declares_projection_baseline_and_event_schema() -> None:
+    migration = (
+        Path(__file__).parents[1]
+        / "alembic"
+        / "versions"
+        / "20260908_0010_trends.py"
+    )
+    source = migration.read_text(encoding="utf-8")
+
+    assert 'revision: str = "20260908_0010"' in source
+    assert 'down_revision: str | Sequence[str] | None = "20260908_0009"' in source
+    assert '"context_snapshot"' in source
+    assert '"baseline_versions"' in source
+    assert '"maintenance_events"' in source
+    assert '"maintenance_event_revisions"' in source
+    assert '"uq_trend_points_source_metric"' in source
+    assert "def downgrade()" in source

@@ -148,6 +148,7 @@ export type MachineQAMeasurement = {
   value: number | null
   unit: string
   note: string | null
+  context?: Record<string, string>
 }
 export type MachineQARunResource = {
   id: string
@@ -310,6 +311,97 @@ export type ExportJob = {
   created_at: string
   updated_at: string
 }
+export type BaselineResource = {
+  id: string
+  organization_id: string
+  machine_id: string
+  metric_key: string
+  unit: string
+  name: string
+  version_number: number
+  baseline_value: number
+  tolerance: number | null
+  action_level: number | null
+  effective_from: string
+  effective_to: string | null
+  status: string
+  source_type: string
+  source_id: string | null
+  context: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+export type MaintenanceEventResource = {
+  id: string
+  organization_id: string
+  machine_id: string
+  machine_name: string
+  event_type: string
+  title: string
+  started_at: string
+  ended_at: string | null
+  notes: string | null
+  revision_number: number
+  status: string
+  metadata: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+export type TrendPointResource = {
+  id: string
+  machine_id: string
+  machine_name: string
+  qa_case_id: string
+  source_run_id: string
+  metric_key: string
+  value: number
+  unit: string
+  status: string
+  measured_at: string
+  context: Record<string, unknown>
+  compatibility_signature: string
+  source_archived: boolean
+  source_status: string
+  baseline_value: number | null
+  baseline_delta: number | null
+  is_outlier: boolean
+}
+export type TrendBucketResource = {
+  start_at: string
+  end_at: string
+  count: number
+  mean: number
+  minimum: number
+  maximum: number
+  first_value: number
+  last_value: number
+  statuses: Record<string, number>
+  source_point_ids: string[]
+  source_run_ids: string[]
+}
+export type TrendSeriesResource = {
+  machine_id: string
+  machine_name: string
+  metric_key: string
+  unit: string
+  context: Record<string, unknown>
+  compatibility_signature: string
+  baseline: BaselineResource | null
+  points: TrendPointResource[]
+  buckets: TrendBucketResource[]
+}
+export type TrendResource = {
+  organization_id: string
+  timezone: string
+  aggregate: 'raw' | 'day' | 'week'
+  from_at: string | null
+  to_at: string | null
+  total_points: number
+  series: TrendSeriesResource[]
+  maintenance_events: MaintenanceEventResource[]
+  baselines: BaselineResource[]
+  warnings: string[]
+}
 
 const qaProtocolRuleSchema = z.object({
   id: z.string().uuid(), metric_key: z.string(), display_name: z.string(), unit: z.string(),
@@ -392,6 +484,43 @@ const exportJobSchema = z.object({
 const exportDownloadSchema = z.object({
   export_job_id: z.string().uuid(), report_revision_id: z.string().uuid(), url: z.string(),
   expires_at: z.string(), sha256: z.string(), media_type: z.string()
+})
+const baselineSchema = z.object({
+  id: z.string().uuid(), organization_id: z.string().uuid(), machine_id: z.string().uuid(),
+  metric_key: z.string(), unit: z.string(), name: z.string(), version_number: z.number().int(),
+  baseline_value: z.number(), tolerance: z.number().nullable(), action_level: z.number().nullable(),
+  effective_from: z.string(), effective_to: z.string().nullable(), status: z.string(),
+  source_type: z.string(), source_id: z.string().uuid().nullable(), context: z.record(z.string(), z.unknown()),
+  created_at: z.string(), updated_at: z.string()
+})
+const maintenanceSchema = z.object({
+  id: z.string().uuid(), organization_id: z.string().uuid(), machine_id: z.string().uuid(),
+  machine_name: z.string(), event_type: z.string(), title: z.string(), started_at: z.string(),
+  ended_at: z.string().nullable(), notes: z.string().nullable(), revision_number: z.number().int(),
+  status: z.string(), metadata: z.record(z.string(), z.unknown()), created_at: z.string(), updated_at: z.string()
+})
+const trendPointSchema = z.object({
+  id: z.string().uuid(), machine_id: z.string().uuid(), machine_name: z.string(), qa_case_id: z.string().uuid(),
+  source_run_id: z.string().uuid(), metric_key: z.string(), value: z.number(), unit: z.string(), status: z.string(),
+  measured_at: z.string(), context: z.record(z.string(), z.unknown()), compatibility_signature: z.string(),
+  source_archived: z.boolean(), source_status: z.string(), baseline_value: z.number().nullable(),
+  baseline_delta: z.number().nullable(), is_outlier: z.boolean()
+})
+const trendBucketSchema = z.object({
+  start_at: z.string(), end_at: z.string(), count: z.number().int(), mean: z.number(), minimum: z.number(),
+  maximum: z.number(), first_value: z.number(), last_value: z.number(), statuses: z.record(z.string(), z.number().int()),
+  source_point_ids: z.array(z.string().uuid()), source_run_ids: z.array(z.string().uuid())
+})
+const trendSeriesSchema = z.object({
+  machine_id: z.string().uuid(), machine_name: z.string(), metric_key: z.string(), unit: z.string(),
+  context: z.record(z.string(), z.unknown()), compatibility_signature: z.string(), baseline: baselineSchema.nullable(),
+  points: z.array(trendPointSchema), buckets: z.array(trendBucketSchema)
+})
+const trendSchema = z.object({
+  organization_id: z.string().uuid(), timezone: z.string(), aggregate: z.enum(['raw', 'day', 'week']),
+  from_at: z.string().nullable(), to_at: z.string().nullable(), total_points: z.number().int(),
+  series: z.array(trendSeriesSchema), maintenance_events: z.array(maintenanceSchema),
+  baselines: z.array(baselineSchema), warnings: z.array(z.string())
 })
 
 const makeCorrelationId = () => crypto.randomUUID()
@@ -697,6 +826,105 @@ export class ApiClient {
       left_run_id: z.string().uuid(), right_run_id: z.string().uuid(),
       items: z.array(z.object({ metric_key: z.string(), left: z.record(z.string(), z.unknown()).nullable(), right: z.record(z.string(), z.unknown()).nullable() }))
     }), accessToken)
+  }
+
+  trend(accessToken: string, organizationId: string, params: {
+    machine_ids?: string[]
+    metric_key?: string
+    from?: string
+    to?: string
+    timezone?: string
+    aggregate?: 'raw' | 'day' | 'week'
+    unit?: string
+    energy?: string
+    detector?: string
+    phantom?: string
+    beam_quality?: string
+    acquisition_mode?: string
+    protocol_key?: string
+    qa_cycle?: string
+    include_archived?: boolean
+  } = {}): Promise<TrendResource> {
+    const query = new URLSearchParams()
+    if (params.machine_ids?.length) query.set('machine_ids', params.machine_ids.join(','))
+    for (const key of ['metric_key', 'from', 'to', 'timezone', 'aggregate', 'unit', 'energy', 'detector', 'phantom', 'beam_quality', 'acquisition_mode', 'protocol_key', 'qa_cycle'] as const) {
+      const value = params[key]
+      if (value) query.set(key, value)
+    }
+    if (params.include_archived) query.set('include_archived', 'true')
+    const suffix = query.toString() ? `?${query.toString()}` : ''
+    return this.get(`/organizations/${organizationId}/trend${suffix}`, trendSchema, accessToken)
+  }
+
+  async exportTrend(accessToken: string, organizationId: string, params: {
+    export_format?: 'CSV' | 'JSON'
+    machine_ids?: string[]
+    metric_key?: string
+    from?: string
+    to?: string
+    timezone?: string
+    aggregate?: 'raw' | 'day' | 'week'
+    unit?: string
+  } = {}): Promise<Blob> {
+    const query = new URLSearchParams({ export_format: params.export_format ?? 'CSV' })
+    if (params.machine_ids?.length) query.set('machine_ids', params.machine_ids.join(','))
+    for (const key of ['metric_key', 'from', 'to', 'timezone', 'aggregate', 'unit'] as const) {
+      const value = params[key]
+      if (value) query.set(key, value)
+    }
+    const correlationId = makeCorrelationId()
+    let response: Response
+    try {
+      response = await fetch(`${this.baseUrl}/organizations/${organizationId}/trend/export?${query.toString()}`, {
+        headers: { Accept: 'text/csv, application/json', 'X-Correlation-ID': correlationId, Authorization: `Bearer ${accessToken}` }
+      })
+    } catch {
+      throw new ApiClientError('Không thể kết nối tới RT-CONNECT API.', 'NETWORK_ERROR', correlationId)
+    }
+    if (!response.ok) {
+      const body: unknown = await response.json().catch(() => undefined)
+      const parsed = errorSchema.safeParse(body)
+      throw new ApiClientError(parsed.success ? parsed.data.message : 'API export trend thất bại.', parsed.success ? parsed.data.code : 'EXPORT_FAILED', parsed.success ? parsed.data.correlation_id : correlationId)
+    }
+    return response.blob()
+  }
+
+  trendBaselines(accessToken: string, organizationId: string, machineId?: string): Promise<BaselineResource[]> {
+    const suffix = machineId ? `?machine_id=${encodeURIComponent(machineId)}` : ''
+    return this.get(`/organizations/${organizationId}/trend/baselines${suffix}`, z.array(baselineSchema), accessToken)
+  }
+
+  createTrendBaseline(accessToken: string, organizationId: string, body: {
+    machine_id: string; metric_key: string; unit: string; name: string; baseline_value: number;
+    tolerance?: number | null; action_level?: number | null; effective_from: string; context?: Record<string, string>
+  }): Promise<BaselineResource> {
+    return this.request(`/organizations/${organizationId}/trend/baselines`, baselineSchema, accessToken, { method: 'POST', body: JSON.stringify(body) })
+  }
+
+  trendEvents(accessToken: string, organizationId: string, machineId?: string): Promise<MaintenanceEventResource[]> {
+    const suffix = machineId ? `?machine_id=${encodeURIComponent(machineId)}` : ''
+    return this.get(`/organizations/${organizationId}/trend/events${suffix}`, z.array(maintenanceSchema), accessToken)
+  }
+
+  createTrendEvent(accessToken: string, organizationId: string, body: {
+    machine_id: string; event_type: string; title: string; started_at: string; ended_at?: string | null;
+    notes?: string | null; metadata?: Record<string, string>
+  }): Promise<MaintenanceEventResource> {
+    return this.request(`/organizations/${organizationId}/trend/events`, maintenanceSchema, accessToken, { method: 'POST', body: JSON.stringify(body) })
+  }
+
+  updateTrendEvent(accessToken: string, eventId: string, body: {
+    expected_revision: number; event_type?: string; title?: string; started_at?: string; ended_at?: string | null;
+    notes?: string | null; metadata?: Record<string, string>; status?: 'ACTIVE' | 'ARCHIVED'
+  }): Promise<MaintenanceEventResource> {
+    return this.request(`/trend-events/${eventId}`, maintenanceSchema, accessToken, { method: 'PATCH', body: JSON.stringify(body) })
+  }
+
+  rebuildTrend(accessToken: string, organizationId: string): Promise<{ organization_id: string; scanned_runs: number; created_points: number; existing_points: number; repaired_context_points: number }> {
+    return this.request(`/organizations/${organizationId}/trend/rebuild`, z.object({
+      organization_id: z.string().uuid(), scanned_runs: z.number().int(), created_points: z.number().int(),
+      existing_points: z.number().int(), repaired_context_points: z.number().int()
+    }), accessToken, { method: 'POST' })
   }
 
   gammaRuns(accessToken: string, caseId: string): Promise<{ items: GammaRunResource[]; total: number }> {

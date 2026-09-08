@@ -35,6 +35,7 @@ class MeasurementInput(BaseModel):
     value: float | None = None
     unit: str = Field(min_length=1, max_length=40)
     note: str | None = Field(default=None, max_length=1000)
+    context: dict[str, str] = Field(default_factory=dict)
 
 
 class MeasurementPatchRequest(BaseModel):
@@ -218,6 +219,7 @@ def _run_response(session: Session, run: MachineQARun) -> MachineQARunResponse:
 
 
 def _normalise_measurements(measurements: list[MeasurementInput]) -> list[dict[str, object]]:
+    allowed_context_keys = {"energy", "detector", "phantom", "beam_quality", "acquisition_mode"}
     keys: set[str] = set()
     normalised: list[dict[str, object]] = []
     for measurement in measurements:
@@ -234,12 +236,23 @@ def _normalise_measurements(measurements: list[MeasurementInput]) -> list[dict[s
                 f"Metric {measurement.metric_key} must contain a finite numeric value.",
                 422,
             )
+        unknown_context = set(measurement.context) - allowed_context_keys
+        if unknown_context:
+            raise DomainError(
+                "MACHINE_QA_CONTEXT_INVALID",
+                f"Metric {measurement.metric_key} contains unsupported context fields.",
+                422,
+                details=[
+                    {"field": "context", "message": "Use the published trend context fields."}
+                ],
+            )
         normalised.append(
             {
                 "metric_key": measurement.metric_key,
                 "value": measurement.value,
                 "unit": measurement.unit,
                 "note": measurement.note,
+                "context": dict(sorted(measurement.context.items())),
             }
         )
     return normalised
@@ -422,8 +435,14 @@ def _evaluate_rule(rule: QAProtocolRule, measurement: dict[str, object]) -> dict
             return result
         margin = limit - value
         result["margin"] = margin
-        result["status"] = "PASS" if margin >= 0 else (
-            "WARNING" if rule.action_level is not None and margin >= -rule.action_level else "FAIL"
+        result["status"] = (
+            "PASS"
+            if margin >= 0
+            else (
+                "WARNING"
+                if rule.action_level is not None and margin >= -rule.action_level
+                else "FAIL"
+            )
         )
         return result
 
@@ -433,8 +452,14 @@ def _evaluate_rule(rule: QAProtocolRule, measurement: dict[str, object]) -> dict
             return result
         margin = value - limit
         result["margin"] = margin
-        result["status"] = "PASS" if margin >= 0 else (
-            "WARNING" if rule.action_level is not None and margin >= -rule.action_level else "FAIL"
+        result["status"] = (
+            "PASS"
+            if margin >= 0
+            else (
+                "WARNING"
+                if rule.action_level is not None and margin >= -rule.action_level
+                else "FAIL"
+            )
         )
         return result
 
@@ -450,10 +475,14 @@ def _evaluate_rule(rule: QAProtocolRule, measurement: dict[str, object]) -> dict
         margin = rule.tolerance - deviation
         result["margin"] = margin
         result["deviation"] = deviation
-        result["status"] = "PASS" if margin >= 0 else (
-            "WARNING"
-            if rule.action_level is not None and deviation <= rule.action_level
-            else "FAIL"
+        result["status"] = (
+            "PASS"
+            if margin >= 0
+            else (
+                "WARNING"
+                if rule.action_level is not None and deviation <= rule.action_level
+                else "FAIL"
+            )
         )
         return result
 
@@ -507,7 +536,9 @@ def _evaluate_run(
                 }
             )
             continue
-        metrics.append(_evaluate_rule(rule, measurement))
+        metric_result = _evaluate_rule(rule, measurement)
+        metric_result["context"] = measurement.get("context", {})
+        metrics.append(metric_result)
 
     run.started_at = run.started_at or datetime.now(UTC)
     run.completed_at = datetime.now(UTC)
@@ -536,6 +567,21 @@ def _evaluate_run(
     for metric in metrics:
         actual = metric.get("actual")
         if isinstance(actual, int | float) and isfinite(float(actual)):
+            metric_context = metric.get("context")
+            context_snapshot: dict[str, object] = {
+                "qa_type": case.qa_type,
+                "qa_cycle": case.qa_cycle,
+                "protocol_key": protocol.protocol_key,
+                "protocol_version": protocol.version_number,
+            }
+            if isinstance(metric_context, dict):
+                context_snapshot.update(
+                    {
+                        str(key): value
+                        for key, value in metric_context.items()
+                        if isinstance(value, str)
+                    }
+                )
             session.add(
                 TrendPoint(
                     organization_id=run.organization_id,
@@ -547,8 +593,9 @@ def _evaluate_run(
                     unit=str(metric["unit"]),
                     status=str(metric["status"]),
                     measured_at=case.performed_at,
+                    context_snapshot=context_snapshot,
+                )
             )
-        )
 
 
 def _metric_items(snapshot: dict[str, object]) -> list[dict[str, object]]:
