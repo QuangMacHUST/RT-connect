@@ -169,6 +169,8 @@ def verify(root: Path) -> dict[str, object]:
         root / "deployment" / "railway" / "production-runbook.md",
         root / "scripts" / "verify-public-deployment.ps1",
         root / "scripts" / "verify-local-backup-restore.py",
+        root / "scripts" / "create-release-manifest.py",
+        root / "scripts" / "release_manifest.py",
     )
     for path in required_artifacts:
         _check(

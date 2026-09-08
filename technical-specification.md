@@ -2445,6 +2445,15 @@ Pipeline public release tối thiểu:
 9. Theo dõi log/metrics sau phát hành.
 10. Rollback về image/version trước nếu smoke test hoặc monitoring không đạt.
 
+`scripts/create-release-manifest.py` và `scripts/release_manifest.py` là implementation
+support cho P19-W01. Tool nhận metadata đã được operator thu thập, hash fixture nằm trong
+repository, loại bỏ secret-like value và tạo manifest canonical có `manifest_sha256`.
+Manifest ghi riêng SHA nguồn của API/web/worker; nếu working tree bẩn hoặc service SHA
+không đồng nhất với `source_sha`, output vẫn được giữ để điều tra nhưng có
+`release_gate=RELEASE_BLOCKED` và exit code khác 0. `--verify-manifest` kiểm tra schema,
+secret scan và canonical hash; nó không gọi Railway, Supabase hoặc PostgreSQL và không thể
+thay thế remote E2E, backup/restore, rollback rehearsal hay production promotion.
+
 #### 17.5.5. Kiểm thử remote access
 
 Phải kiểm tra tối thiểu trên một mạng ngoài bệnh viện/server và trên desktop/mobile browser:

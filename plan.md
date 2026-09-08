@@ -6,7 +6,7 @@
 - Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.14.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
-- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.0 và bổ sung operation surface/readiness contract cho P20 dashboard; tiếp tục chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20. Các slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, migration schema `20260908_0017`, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local ngày 2026-09-09 được giữ nguyên theo progress log. Staging DVH saved-run/CT E2E vẫn là gate riêng vì case hiện chưa có RTSTRUCT/CT. P18 local integrated journey, local backup/restore verifier, ma trận browser/device/timezone/viewport, script kiểm public deployment P19 và gói runbook P20 chỉ là công cụ/evidence hỗ trợ, không tự đóng phase. Không suy diễn từ test local hoặc một lần Railway báo Online.
+- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.0 và bổ sung operation surface/readiness contract cho P20 dashboard; tiếp tục chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20. Các slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, migration schema `20260908_0017`, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local ngày 2026-09-09 được giữ nguyên theo progress log. Staging DVH saved-run/CT E2E vẫn là gate riêng vì case hiện chưa có RTSTRUCT/CT. P18 local integrated journey, local backup/restore verifier, ma trận browser/device/timezone/viewport, script kiểm public deployment P19, công cụ release-manifest P19 và gói runbook P20 chỉ là công cụ/evidence hỗ trợ, không tự đóng phase. Không suy diễn từ test local hoặc một lần Railway báo Online.
 
 ## 1. Cách thực hiện kế hoạch
 
@@ -1675,7 +1675,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 ### Work packages P19
 
 - [x] P19-W00 — Reusable public deployment verifier tại `scripts/verify-public-deployment.ps1`: health/readiness/schema/version/OpenAPI/public web bundle và CT preview marker; chỉ là smoke/evidence tool, không thay remote E2E hoặc rollback rehearsal.
-- [ ] P19-W01 — Promote cùng source/artifact provenance; web public config khác environment phải rebuild và ghi digest riêng.
+- [x] P19-W01 — Có công cụ tạo/kiểm tra manifest bất biến tại `scripts/create-release-manifest.py` và `scripts/release_manifest.py`: ghi source SHA, SHA từng service, schema, engine/renderer, fixture hash, test IDs, backup/rollback reference; kiểm tra secret-like value và tự đánh dấu `RELEASE_BLOCKED` khi working tree bẩn hoặc SHA service không khớp source. Đây là implementation support; promotion thật, service metadata thật và remote E2E vẫn phải ghi trong manifest đúng candidate.
 - [ ] P19-W02 — Effective settings matrix web/API/worker; migrations single runner, private DB/Redis.
 - [ ] P19-W03 — DNS/TLS/CORS/SPA fallback/Supabase redirects/build-time vars smoke.
 - [ ] P19-W04 — External browser/device journeys; version mismatch checks, rollback rehearsal and monitoring hooks.
@@ -1696,6 +1696,45 @@ Lệnh smoke có thể tái lập cho public candidate (không truyền secret) 
 Script chỉ kiểm public contract và bundle marker. P19 vẫn phải chạy Authenticated remote E2E, private dependency check, backup point và rollback rehearsal; không dùng 10/10 smoke checks để đóng phase.
 
 Evidence staging hiện tại: `docs/evidence/p19-staging-public-smoke-20260909.json` — version `65dd52b`, schema `20260908_0017`, 10/10 checks pass.
+
+P19-W01 có thể tạo một manifest redacted sau khi đã thu thập metadata từ Railway và test runner:
+
+~~~powershell
+& .\apps\api\.venv\Scripts\python.exe .\scripts\create-release-manifest.py `
+  --release-id "R-staging-YYYYMMDD-001" `
+  --environment staging `
+  --source-sha "<candidate-git-sha>" `
+  --schema-revision "<alembic-revision>" `
+  --auth-environment staging `
+  --database-environment staging `
+  --api-deployment-id "<api-deployment-id>" --api-sha "<api-sha>" `
+  --web-deployment-id "<web-deployment-id>" --web-sha "<web-sha>" `
+  --worker-deployment-id "<worker-deployment-id>" --worker-sha "<worker-sha>" `
+  --renderer-version "<renderer-version>" `
+  --gamma-engine-version "<gamma-engine-version>" `
+  --dvh-engine-version "<dvh-engine-version>" `
+  --biological-engine-version "<biological-engine-version>" `
+  --fixture "docs/fixtures/p17-ct-v1-smoke.dcm" `
+  --local-test "TC-P19-S01" --staging-test "TC-P19-S02" `
+  --backup-before-change "<provider-backup-id>" `
+  --rollback-target "<last-good-release-id>" `
+  --output "docs/evidence/release-manifest-staging.json"
+~~~
+
+Các placeholder trong ví dụ chỉ là cú pháp hướng dẫn và phải được thay bằng giá trị
+thật trước khi chạy. Tool từ chối placeholder, database URL, token, password và secret.
+Nếu API/web/worker được deploy từ các descendant SHA khác nhau, tool vẫn ghi manifest để
+lưu evidence nhưng trả exit code khác 0 và `release_gate=RELEASE_BLOCKED`; không được dùng
+manifest đó để promote. Kiểm tra lại manifest đã lưu bằng:
+
+~~~powershell
+& .\apps\api\.venv\Scripts\python.exe .\scripts\create-release-manifest.py `
+  --verify-manifest "docs/evidence/release-manifest-staging.json"
+~~~
+
+`--verify-manifest` phải trả `valid=true`; `valid=true` chỉ chứng minh cấu trúc/hash của
+manifest, còn `release_gate=ELIGIBLE` mới là điều kiện tối thiểu để tiếp tục xem xét
+promotion. `ELIGIBLE` vẫn không thay thế remote E2E, backup/restore hoặc rollback rehearsal.
 
 ### Trường hợp chạy đúng P19
 

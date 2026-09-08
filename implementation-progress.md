@@ -29,6 +29,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - `scripts/verify-planning-contract.py` bổ sung verifier fail-closed cho P0: kiểm bốn version tài liệu, cross-reference plan, đủ 21 phase P0–P20 trong BA/spec/plan, workflow/success/error/exit section, FR mapping, testcase S/E, B01–B12, G0–G7 và các support artifact. Evidence `docs/evidence/p0-planning-contract-20260909.json` đạt **pass=true, failed_check_count=0**; đây là consistency evidence, không phải runtime/clinical evidence.
 - P20-W01 local support slice: `apps/web/src/api/client.ts` có `ready()` và `PlatformStatusPage.tsx` đọc riêng `/health`, `/ready`, `/version` cùng authenticated `/gamma/queue-metrics`; frontend test readiness failure không cho phép hiển thị nền tảng là ready. Local test **2/2**, lint, typecheck và production build PASS; đây chưa phải alert delivery hoặc P20 exit evidence.
 - P20-W01 staging smoke: sau khi deploy web descendant `03802e7`, authenticated `/app/system/status` đã hiển thị riêng health `OK`, schema readiness `READY`, schema `20260908_0017`, API version `65dd52b` và queue `available/configured`. Đây mới là dashboard/readiness evidence; chưa có alert delivery tới kênh thật, backup/restore provider, owner handoff hoặc maintenance evidence nên P20 vẫn `LOCAL_SUPPORT_ONLY`.
+- P19-W01 local support slice: `scripts/create-release-manifest.py` và `scripts/release_manifest.py` tạo/kiểm manifest redacted, hash fixture trong repository, kiểm secret-like value và fail-closed theo source/service SHA parity; test `apps/api/tests/test_release_manifest.py` đạt **3 passed**. Tool đã sẵn sàng cho release packet nhưng chưa có production manifest; metadata deployment/backup/remote E2E thật vẫn là gate P18/P19.
 
 ## Source documents read
 
@@ -62,7 +63,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | P16 | STAGING SMOKE VERIFIED / EXIT OPEN | Migration `20260908_0016`, web build `9262bfd`; staging DRAFT/publish/archive, import row-level invalid, explicit-use snapshot đã pass; direct PostgreSQL/hash/scope, compare/history/export, full fault matrix và release evidence còn mở |
 | P17 | LOCAL CT/BINDING/REPORT READY / STAGING DATA OPEN | Engine/API/UI/migration, bounded CT preview, explicit P11/P16 limit binding and DVH report-source local gates pass; RTSTRUCT/CT fixture upload + DVH run, staging binding/report/CT, fault/volume and release evidence remain |
 | P18 | LOCAL SUPPORT ONLY | `P18-W00` integrated API pack, `P18-W01a` local browser matrix và `P18-W03a` local backup/restore pass; authenticated tenant/dataset matrix, fault/load, provider restore/RPO/RTO và pilot remain open |
-| P19 | PUBLIC SMOKE TOOL READY | Public deployment verifier exists and passed current staging candidate; promotion, remote E2E, DNS/TLS/Auth and rollback remain open |
+| P19 | PUBLIC SMOKE + MANIFEST TOOL READY | Public deployment verifier và release-manifest tool đã pass local/current staging public smoke; promotion, remote E2E, DNS/TLS/Auth và rollback remain open |
 | P20 | LOCAL SUPPORT ONLY | Initial operations and production rollback runbooks exist; alert, provider backup/restore, owner handoff and maintenance regression evidence remain open |
 
 ## Live Google Stitch evidence

@@ -5,7 +5,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = REPO_ROOT / "scripts" / "create-release-manifest.py"
 FIXTURE = REPO_ROOT / "docs" / "fixtures" / "p17-ct-v1-smoke.dcm"
