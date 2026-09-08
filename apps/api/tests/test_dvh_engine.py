@@ -387,6 +387,53 @@ def test_committed_staging_fixture_matches_the_dose_grid() -> None:
     assert analysis.result["metrics"]["Dx_gy"]["D95_gy"] == 5.15
 
 
+def test_committed_staging_ct_fixture_matches_dose_and_roi_oracle() -> None:
+    root = Path(__file__).resolve().parents[3]
+    dose_path = root / "docs" / "fixtures" / "gamma-rtdose-v1-smoke.dcm"
+    structure_path = root / "docs" / "fixtures" / "p17-rtstruct-v1-smoke.dcm"
+    ct_path = root / "docs" / "fixtures" / "p17-ct-v1-smoke.dcm"
+
+    preview = create_ct_preview(
+        ct_path,
+        dose_path,
+        frame_index=1,
+        structure_path=structure_path,
+        roi_number=1,
+    )
+
+    assert preview["ct"]["frame_count"] == 3
+    assert preview["ct"]["frame_index"] == 1
+    assert preview["ct"]["value_unit"] == "HU"
+    assert preview["ct"]["slice_offset_mm"] == 1.0
+    assert preview["ct"]["display_range_hu"] == [-100.0, 300.0]
+    assert preview["ct"]["display_pixels"] == [128, 140, 153, 166]
+    assert preview["registration"]["mode"] == "SHARED_FRAME_OF_REFERENCE"
+    assert preview["registration"]["overlay_available"] is True
+    assert preview["registration"]["crosshair"]["visible"] is True
+    assert preview["overlay"]["dose_gy"] == [5.0, 6.0, 7.0, 8.0]
+    assert preview["overlay"]["roi_mask"] == [True, True, True, True]
+    assert preview["overlay"]["valid_pixel_count"] == 4
+    assert preview["overlay"]["outside_pixel_count"] == 0
+    assert preview["roi"] == {"roi_number": 1, "name": "P17_TARGET", "contour_count": 1}
+    assert preview["result_sha256"]
+
+
+def test_committed_staging_ct_fixture_exposes_explicit_no_overlap_warning() -> None:
+    root = Path(__file__).resolve().parents[3]
+    preview = create_ct_preview(
+        root / "docs" / "fixtures" / "p17-ct-v1-smoke.dcm",
+        root / "docs" / "fixtures" / "gamma-rtdose-v1-smoke.dcm",
+        frame_index=2,
+    )
+
+    assert preview["ct"]["slice_offset_mm"] == 2.0
+    assert preview["registration"]["overlay_available"] is False
+    assert preview["overlay"]["dose_gy"] == [None, None, None, None]
+    assert preview["overlay"]["valid_pixel_count"] == 0
+    assert preview["overlay"]["outside_pixel_count"] == 4
+    assert any(item["code"] == "CT_DOSE_NO_OVERLAP" for item in preview["warnings"])
+
+
 def test_ct_preview_returns_hu_slice_patient_lps_overlay_and_crosshair(tmp_path: Path) -> None:
     dose_path = tmp_path / "dose.dcm"
     structure_path = tmp_path / "structures.dcm"

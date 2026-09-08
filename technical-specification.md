@@ -939,7 +939,7 @@ Every mutation audit payload tối thiểu có organization, actor, entry ID, ty
 
 #### Local verification checkpoint
 
-Candidate working tree đã pass P16 focused tests `3/3`, P17 engine/API/health focused tests `17 passed` và focused P17 binding/report cases trong `test_dvh.py`/`test_reports.py`, full backend, Ruff, strict mypy, frontend lint/typecheck/Vitest/build. Migration/OpenAPI phải được regenerate/check trên cùng SHA; staging readiness `20260908_0016` cho P16 và `20260908_0017` cho P17, browser lifecycle, import/use/export, explicit binding/report source, direct PostgreSQL row/hash/scope và full negative matrix vẫn là gate trước STAGING_VERIFIED.
+Candidate working tree đã pass P16 focused tests `3/3`, P17 DVH engine/API/report-source suite `19 passed`, full backend `152 passed`, Ruff, strict mypy, frontend lint/typecheck/Vitest/build. Migration/OpenAPI phải được regenerate/check trên cùng SHA; staging readiness `20260908_0016` cho P16 và `20260908_0017` cho P17, browser lifecycle, import/use/export, explicit binding/report source, direct PostgreSQL row/hash/scope và full negative matrix vẫn là gate trước STAGING_VERIFIED.
 
 ### 4.18. Audit Event
 
