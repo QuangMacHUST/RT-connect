@@ -1,6 +1,6 @@
 {
   "schema_version": "rt-connect.public-deployment-verification.v1",
-  "captured_at_utc": "2026-09-08T19:04:31.0884419Z",
+  "captured_at_utc": "2026-09-08T19:37:25.1535278Z",
   "api_base_url": "https://gleaming-cooperation-staging.up.railway.app",
   "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
   "expected_version": "65dd52b",
