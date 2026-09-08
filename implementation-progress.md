@@ -2,26 +2,26 @@
 
 ## Documentation and implementation rebaseline — 2026-09-08
 
-`business-analysis.md` v0.17, `specification.md` v1.11, `technical-specification.md` v1.8 và `plan.md` v3.1 bổ sung requirement, state contract, testcase và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
+`business-analysis.md` v0.18, `specification.md` v1.12, `technical-specification.md` v1.9 và `plan.md` v3.3 bổ sung requirement, state contract, testcase và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
 
 Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness, staging Trend và staging Protocol consumer vẫn phải được đối soát theo plan §1.2–§1.6. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Checkpoint trước đã xác minh browser staging P13/P14 trên candidate `31a5900`; PostgreSQL row query trực tiếp, organization-scope negative probe và release-manifest closure vẫn là gate riêng. P15 hiện đã có staging browser smoke trên candidate `09acb90`, nhưng direct PostgreSQL/scope/replay/release gates còn mở.
 
 ## Current checkpoint
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
-- **Current phase:** P17 — Visual Dose, DVH và structure review; P16 browser smoke đã pass nhưng database/scope/fault/release closure còn mở, cùng các gate P8/P9/P10/P11/P12/P13/P14/P15 và các phase tích hợp sau.
-- **Current status:** IN_PROGRESS — P17 local slice đã có pure RTDOSE/RTSTRUCT engine, migration `20260908_0017`, API inputs/validate/save/history/export, organization/case scope, checksum/idempotency snapshot và route `/app/qa/cases/:caseId/dvh`. Staging E2E, CT anatomy renderer, report/limit binding, fault/volume/release evidence chưa đóng. P16/P15 replay/DB/scope gates vẫn mở độc lập.
-- **Last authoritative check:** 2026-09-08 — local P17 engine/API focused tests `17 passed`, full backend, Ruff/mypy, frontend lint/typecheck/build pass trên working tree candidate; migration/OpenAPI và staging P17 chưa được ghi là đã pass cho đến khi deploy đúng schema `20260908_0017`.
-- **Next exact step:** commit/push P17 local slice cùng tài liệu v0.17/v1.11/v1.8/v3.1, sau đó deploy API/web staging với schema `20260908_0017` và chạy browser DVH synthetic E2E; giữ P16 closure checklist song song.
+- **Current phase:** P17 — Visual Dose, DVH và structure review; P17 đã deploy staging đúng schema nhưng browser E2E còn chờ bổ sung RTSTRUCT tổng hợp vào QA case. P16 browser smoke đã pass nhưng database/scope/fault/release closure còn mở, cùng các gate P8/P9/P10/P11/P12/P13/P14/P15 và các phase tích hợp sau.
+- **Current status:** IN_PROGRESS — P17 local slice đã có pure RTDOSE/RTSTRUCT engine, migration `20260908_0017`, API inputs/validate/save/history/export, organization/case scope, checksum/idempotency snapshot và route `/app/qa/cases/:caseId/dvh`. Staging API/web/worker deploy `SUCCESS`, `/api/v1/ready` trả `schema_revision=20260908_0017`, web build `9262bfd`; staging case hiện có RTDOSE hợp lệ nhưng chưa có RTSTRUCT nên nút tính vẫn bị khóa. CT anatomy renderer, report/limit binding, fault/volume/release evidence chưa đóng. P16/P15 replay/DB/scope gates vẫn mở độc lập.
+- **Last authoritative check:** 2026-09-08 — local P17 engine/API/health focused tests `17 passed`, full backend, Ruff/mypy, frontend lint/typecheck/build, migration/OpenAPI pass; staging `/health`, `/ready`, `/version` và web root đều HTTP 200. Fixture `docs/fixtures/p17-rtstruct-v1-smoke.dcm` được kiểm tra local với `FULL_ROI`, 4 voxels, mean `6.5 Gy`, D95 `5.15 Gy`, SHA-256 `16a79df3129757d9df8b48bd095f0b4b70b24713ea5255e24719d46e6808d401`.
+- **Next exact step:** upload fixture RTSTRUCT tổng hợp vào case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`, validate và tạo Input Manifest `RTSTRUCT`; sau đó chạy browser DVH validate→save→replay→refresh→JSON/CSV trên staging. Giữ P16 closure checklist song song; chỉ chuyển P17 sang staging smoke verified sau khi có run ID và result checksum.
 
 ## Source documents read
 
 | Source | Version | Status |
 | :--- | :--- | :--- |
-| `business-analysis.md` | 0.17 | Business source; detailed workflow/error/recovery/state matrix, P12–P17 contracts and P0–P20 coverage index |
-| `specification.md` | 1.11 | Behavior/data/error/state/numeric contracts; operation envelope, evidence schema and exact P10/P11/P12/P13/P14/P15/P16/P17 contracts |
-| `technical-specification.md` | 1.8 | Architecture reference; P10/P11/P12 plus P13/P14/P15/P16/P17 bounded-context implementation addenda |
-| `plan.md` | 3.1 | Phase/workflow/S-E/C/B tests, DoR/DoD, execution ledger, full coverage matrix, P10–P17 checkpoints and staging gates |
+| `business-analysis.md` | 0.18 | Business source; detailed feature behavior/workflow/error/recovery/state matrix, P0–P20 contracts and coverage index |
+| `specification.md` | 1.12 | Behavior/data/error/state/numeric contracts; feature operation matrix, operation envelope, evidence schema and exact P10/P11/P12/P13/P14/P15/P16/P17 contracts |
+| `technical-specification.md` | 1.9 | Architecture reference; P10/P11/P12 plus P13/P14/P15/P16/P17 bounded-context implementation addenda |
+| `plan.md` | 3.3 | Phase/workflow/S-E/C/B tests, DoR/DoD, execution gates, execution ledger, full coverage matrix, P10–P17 checkpoints and staging gates |
 
 ## Phase status
 
@@ -44,7 +44,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | P14 | STAGING SMOKE VERIFIED / FINAL GATE OPEN | Migration `20260908_0014`, browser validate-only/no mutation, save, preview reorder không persist, clone, JSON/CSV export và refresh history đã chạy; direct PostgreSQL row/checksum, organization-scope negative probe và release evidence còn mở |
 | P15 | STAGING SMOKE VERIFIED / FINAL GATE OPEN | Migration `20260908_0015`, scalar re-irradiation/fraction-compensation engine/API/UI, recovery/sensitivity, nonuniform schedule, delivered-prefix alternatives, interruption/time model, immutable snapshot và JSON/CSV export; browser happy path đã pass trên deployment `008ec1d1-3215-44c7-9d64-fb06dc024e58`; replay/DB/scope/full S-E/release evidence còn mở |
 | P16 | STAGING SMOKE VERIFIED / EXIT OPEN | Migration `20260908_0016`, web build `9262bfd`; staging DRAFT/publish/archive, import row-level invalid, explicit-use snapshot đã pass; direct PostgreSQL/hash/scope, compare/history/export, full fault matrix và release evidence còn mở |
-| P17 | LOCAL SLICE ONLY / STAGING OPEN | Engine/API/UI/migration and local tests pass; staging E2E, CT renderer, report/limit binding, fault/volume and release evidence remain |
+| P17 | STAGING DEPLOYED / DVH E2E DATA OPEN | Engine/API/UI/migration/local gates and staging readiness pass; RTSTRUCT fixture upload + DVH run, CT renderer, report/limit binding, fault/volume and release evidence remain |
 | P18 | NOT_STARTED | Integrated hardening and pilot |
 | P19 | NOT_STARTED | Production remote web release |
 | P20 | NOT_STARTED | Initial operations package after P19 |
@@ -285,6 +285,14 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 - **Local checks:** P17 engine/API/health focused suite `17 passed`; full backend suite, Ruff, strict mypy, frontend lint/typecheck/build passed on the same working tree candidate. Vite still reports the existing bundle-size warning; it is recorded as a performance follow-up, not treated as a functional pass.
 - **Not yet evidenced:** migration on staging with schema `20260908_0017`, authenticated staging browser flow, direct PostgreSQL row/checksum/scope query, object-storage drift/fault recovery, volume/resource benchmark, full negative matrix, CT anatomy renderer/crosshair/registration, P11/P16 actual-limit binding, report integration and independent/reference DVH oracle.
 
+## Live Railway P17 deployment/readiness evidence — verified 2026-09-08
+
+- Staging API service `Railway-API-staging`, worker `RT-connect-gamma-worker-staging` and web service `RT-connect-web-staging` all redeployed from the P17 candidate and report `SUCCESS`. The effective service roots remain `/apps/api` for API/worker and `/apps/web` for web; the existing API config-as-code path `/apps/api/railway.toml` is preserved.
+- API `https://gleaming-cooperation-staging.up.railway.app/api/v1/health` returned HTTP 200 with correlation ID; `/api/v1/ready` returned HTTP 200 with `status=ready` and `schema_revision=20260908_0017`; `/api/v1/version` returned HTTP 200 with web/API build identifier `9262bfd` and the same schema revision.
+- Web `https://rt-connect-web-staging-staging.up.railway.app/` returned HTTP 200 and served a new P17 bundle (`index-BHkPHe4v.js`, `index-Ks1ZYwE_.css`). Authenticated browser navigation opened `/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh` and displayed the real P17 workspace.
+- The existing synthetic case currently exposes one valid RTDOSE and zero RTSTRUCT artifacts; the P17 controls therefore correctly show `1 dose · 0 structure` and keep `Validate & preview`/`Tính và lưu DVH run` disabled. This is an expected input-preflight state, not a server/deployment failure.
+- The committed synthetic RTSTRUCT candidate is `docs/fixtures/p17-rtstruct-v1-smoke.dcm`, generated by `scripts/generate-p17-dvh-structure-fixture.py`. Local known-answer output is `FULL_ROI`, 4 selected voxels, mean `6.5 Gy`, D95 `5.15 Gy`, SHA-256 `16a79df3129757d9df8b48bd095f0b4b70b24713ea5255e24719d46e6808d401`. It has not yet been uploaded to staging, so no staging DVH run ID is claimed here.
+
 ## Current blockers and required gates
 
 The older Railway-history bullets below are retained as evidence of earlier incidents. The current gates are:
@@ -304,5 +312,5 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 ## Known limitations
 
 - Production has not yet received the P6 artifact branch; promotion remains intentionally gated by the staging artifact E2E and later clinical-module gates.
-- The current browser automation cannot inject a local file into the file chooser; the final P6 web smoke therefore requires a manual selection of the repository's synthetic fixture or an equivalent user-driven browser action.
+- The final P17 staging smoke requires an explicit upload of the repository's synthetic RTSTRUCT fixture into the staging QA case; no patient or clinical dataset is needed. Until that action is completed, the browser can verify deployment and empty-input behavior but not the saved DVH run path.
 - Four Biological designs must be regenerated in P12–P15.

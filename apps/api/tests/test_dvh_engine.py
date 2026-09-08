@@ -313,3 +313,18 @@ def test_full_coverage_rejects_outside_contour_but_overlap_mode_is_explicit(
     assert overlap.result["coverage"]["status"] == "OVERLAP_ONLY"
     assert overlap.result["coverage"]["coverage_percent"] is None
     assert any(item["code"] == "DVH_PARTIAL_COVERAGE" for item in overlap.warnings)
+
+
+def test_committed_staging_fixture_matches_the_dose_grid() -> None:
+    root = Path(__file__).resolve().parents[3]
+    analysis = analyze_dvh(
+        root / "docs" / "fixtures" / "gamma-rtdose-v1-smoke.dcm",
+        root / "docs" / "fixtures" / "p17-rtstruct-v1-smoke.dcm",
+        roi_number=1,
+    )
+
+    assert analysis.result["roi"]["name"] == "P17_TARGET"
+    assert analysis.result["coverage"]["status"] == "FULL"
+    assert analysis.result["coverage"]["selected_voxel_count"] == 4
+    assert analysis.result["dose"]["mean_gy"] == 6.5
+    assert analysis.result["metrics"]["Dx_gy"]["D95_gy"] == 5.15

@@ -1,10 +1,10 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.11**; ngày 2026-09-08.
-- Nguồn nghiệp vụ: business-analysis.md v0.17.
-- Kế hoạch triển khai: plan.md v3.1, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.8.
-- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime. Bản 1.11 bổ sung state machine, coverage contract B01–B12, acceptance evidence schema, quy tắc xử lý “unknown outcome” xuyên mọi phase và hợp đồng thực thi P17 Visual Dose/DVH.
+- File: specification.md; version **1.12**; ngày 2026-09-08.
+- Nguồn nghiệp vụ: business-analysis.md v0.18.
+- Kế hoạch triển khai: plan.md v3.3, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.9.
+- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime. Bản 1.12 bổ sung ma trận operation ở cấp phase/tính năng, quy tắc đóng feature và liên kết chặt giữa success/error/recovery với snapshot, scope, trạng thái và evidence; các ràng buộc state machine, coverage contract B01–B12, acceptance evidence schema, quy tắc xử lý “unknown outcome” và hợp đồng P17 Visual Dose/DVH của bản trước vẫn giữ nguyên.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
 
@@ -1394,3 +1394,113 @@ Danh sách errors là baseline có giới hạn, không chứng minh bao phủ m
 - PyMedPhys Gamma API: tham số/normalization/cutoff/search, dùng làm ứng viên oracle version-pinned. Link ở §5.3.
 - Source repository: core/errors.py, db/session.py, alembic/env.py, api/gamma.py, services/gamma_engine.py, services/artifact_validation.py, worker.py, web env/routes và fixture generator.
 - Công thức LQ cơ bản xuất phát từ business-analysis §15.3; recovery profile ở §6.3 là giả định user-defined của sản phẩm, không phải bảng hướng dẫn điều trị.
+
+## 13. Ma trận contract ở cấp operation và tính năng v1.12
+
+Mục này là lớp nối giữa yêu cầu `FR-Pxx-yy` trong `business-analysis.md` và testcase `TC-Pxx-*` trong `plan.md`. Nó quy định mỗi phase phải expose hành vi nào, điều gì được coi là thành công, lỗi nào phải phân biệt và dữ liệu nào phải được giữ. Đây vẫn là contract mục tiêu; nội dung chưa có trong source phải được ghi `TARGET`, không được đọc như bằng chứng đã triển khai.
+
+### 13.1. Operation envelope chuẩn
+
+Mọi command/mutation/calculation/export có side effect phải tuân theo chuỗi sau:
+
+~~~text
+identity → active membership → organization scope
+        → request/schema validation
+        → parent/source/capability validation
+        → input/config/model/source snapshot
+        → transaction commit + operation/audit/outbox (nếu có)
+        → synchronous engine hoặc async worker/renderer
+        → terminal output + warning/error + hash/provenance
+        → UI history/replay/export/recovery
+~~~
+
+Contract tối thiểu cho response mutation:
+
+~~~json
+{
+  "operation_id": "uuid-or-stable-key",
+  "lifecycle_status": "ACCEPTED",
+  "technical_status": "QUEUED",
+  "quality_status": null,
+  "data": {},
+  "warnings": [],
+  "errors": [],
+  "provenance": {
+    "organization_id": "uuid",
+    "source_revision": "uuid-or-null",
+    "input_fingerprint": "sha256-or-null",
+    "engine_version": "version-or-null"
+  },
+  "next_action": "GET operation or open history"
+}
+~~~
+
+Quy tắc bắt buộc:
+
+1. `operation_id` hoặc resource ID phải có ngay khi server đã commit acceptance. Nếu response mất sau đó, client query theo ID/idempotency key trước khi gửi lại.
+2. `data` của output tính toán/report là snapshot đã lưu; không query “latest” khi mở history hoặc export.
+3. `warnings` có thể đi cùng `COMPLETED`; `errors` không được dùng để che một kết quả QA `FAIL`. `quality_status=FAIL` là output rule hợp lệ, còn `technical_status=FAILED` là phép tính/render không hoàn tất.
+4. `retryable` chỉ do server quyết định sau khi xác định side effect và trạng thái commit. Request invalid, scope, conflict và unsupported capability không auto-retry.
+5. Lookup đầu tiên sau khi xác minh membership luôn phải chứa `organization_id`; worker message cũng phải kiểm scope trước khi đọc run/input. Không dùng global resource UUID rồi mới lọc tenant.
+6. Nếu operation có source file, phải lưu checksum tại thời điểm sử dụng. Nếu object/manifest/checksum thay đổi, không được commit output của bytes khác.
+
+### 13.2. Contract operation của từng phase
+
+| Phase | Operation/tính năng bắt buộc | Tiền điều kiện và input | Kết quả chạy đúng | Lỗi, trạng thái và phục hồi | Bất biến/persistence |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **P0** | Baseline registry, FR/MOD/route/contract/test/evidence mapping và decision log. | Đọc đủ tài liệu, repository, Stitch/Railway inventory và evidence cũ. | Registry không orphan; requirement mới có revision, dependency và testcase. | `DOCUMENT_CONFLICT`, `DESIGN_REFERENCE_STALE`, `EVIDENCE_MISSING`, `ENVIRONMENT_MISMATCH`; tạo decision/gap, không xóa lịch sử. | Version tài liệu và evidence history không bị ghi đè; secret không vào registry. |
+| **P1** | Clean setup, migration/seed, health/ready/version, CI/build/restart. | Lockfile, Docker/Compose, `.env.example`, DB/Redis/object storage local. | DB rỗng/upgrade pass; services start/restart; CI xanh trên đúng SHA. | Dependency/port/config/migration/build contract error; sửa layer tương ứng và chạy lại, không bỏ qua migration. | Seed synthetic idempotent; startup không seed production; migration chỉ forward an toàn. |
+| **P2** | Deploy API/web/worker staging, database readiness và Supabase Auth verification. | Đúng Railway project/environment/service, root/source SHA, PORT, DB reference, Auth issuer/audience/JWKS. | Pre-deploy migration, health, ready/schema, version và JWT positive/negative đều pass; `postgresql://` được normalize sang psycopg3 khi cần. | `BUILD_SOURCE_INVALID`, `DATABASE_DRIVER_MISMATCH`, `SERVICE_NOT_LISTENING`, `SCHEMA_NOT_READY`, `AUTH_VERIFICATION_FAILED`, `DEPLOYMENT_CONFIG_DRIFT`; giữ last-good, sửa effective config và kiểm lại. | Staging không dùng production DB; secrets chỉ ở server/secret store; health không thay schema/Auth evidence. |
+| **P3** | Sign-in, recovery, callback, bootstrap, first-use onboarding, existing workspace, Home và logout. | Public web config đúng environment; Supabase session; return URL nội bộ. | Session single-flight; member vào đúng org; identity chưa có membership thấy onboarding; dashboard empty/ready đúng dữ liệu. | `SIGN_IN_FAILED`, `RECOVERY_LINK_INVALID`, `SESSION_UNAVAILABLE`, `MEMBERSHIP_REQUIRED`, `AUTH_CONFIGURATION_MISSING`, `WORKSPACE_LOAD_FAILED`; giữ draft an toàn, login lại/retry bounded, không tự tạo org khi outage. | Cache/request gắn identity+organization; logout/identity đổi phải clear cache và hủy request cũ. |
+| **P4** | Organization/site/machine CRUD, stable ID, member invitation, archive/restore/history. | Active identity và organization context; parent active; invitation có token/expiry. | Hierarchy scoped; rename không đổi source IDs; invitation accept idempotent; member cùng org dùng nghiệp vụ ngang nhau. | Unique/parent/revision/invitation/last-member/unknown outcome; 409 giữ draft, query trước retry, cấp invite mới, không hard-delete history. | Mutation + audit cùng transaction; stable IDs và old links không đổi; không có action-level role hierarchy. |
+| **P5** | Folder tree, QA case, combined search/filter/page/deep-link, move/rename/archive/restore. | Site/machine đúng org; folder parent không archived khi tạo/move. | Nested tree đúng; case giữ machine/cycle/time; filter URL tái hiện; archive không xóa history. | `FOLDER_CYCLE`, `FOLDER_NAME_CONFLICT`, `PARENT_NOT_AVAILABLE`, `CASE_HIERARCHY_INVALID`, `PAGE_OUT_OF_RANGE`, `RESTORE_CONFLICT`; atomic rollback subtree và giữ case/run/report. | Move cập nhật path nguyên tử; case/source ID không đổi; archived resource chỉ bị hạn chế thao tác mới. |
+| **P6** | Upload stream/batch, artifact role/type, object commit, manifest, DICOM/measurement validation, signed download. | Case scoped; size/media/type policy; file role; object store available. | Bytes/checksum round-trip; mỗi file có terminal state; manifest ghi UID/geometry/unit/source; duplicate được xử lý rõ. | `FILE_REQUIRED_OR_EMPTY`, `UPLOAD_TOO_LARGE`, `UPLOAD_INTERRUPTED`, `ARTIFACT_TYPE_MISMATCH`, `INPUT_METADATA_INVALID`, `ARTIFACT_PERSISTENCE_FAILED`, `DOWNLOAD_LINK_EXPIRED`; cleanup/reconcile rồi retry đúng operation. | Object và DB được đối soát; không tạo `VALID` giả; raw bytes immutable; signed URL không đổi scope. |
+| **P7** | Machine QA run, measurement draft, N/A, rule evaluation, result/rerun/compare/trend projection. | Active protocol version và machine/case; metric schema/unit/baseline. | `COMPLETED` + quality `PASS/WARNING/FAIL/N/A` đúng rule; actual/limit/margin giải thích; rerun có snapshot mới. | `MEASUREMENT_REQUIRED`, `MEASUREMENT_INVALID`, `BASELINE_ZERO`, `REVISION_CONFLICT`, `DUPLICATE_OPERATION`, `PROTOCOL_NOT_AVAILABLE`; giữ draft/run cũ, tạo revision mới, không tạo trend point trùng. | Evaluate snapshot protocol/rule/measurement; result cũ không resolve live protocol. |
+| **P8** | Gamma preflight, accepted/outbox, queue/lease/attempt/worker, 2D/3D calculation, map/statistics/profile, retry/compare. | Validated RTDOSE + comparison theo profile; configuration/capability/geometry hợp lệ; Redis/worker. | Operation từ `ACCEPTED` đến terminal; result lưu config/engine/input, denominator/coverage/censoring; reconnect đọc lại cùng run. | Missing input, frame/grid/unit/config/no-candidate/local-zero, dispatch/worker/lease/OOM/source drift; 422 hoặc FAILED/RETRYING bounded, dead-letter khi hết retry, không duplicate/worker cũ overwrite. | Lease fencing và attempt audit; `FULL_ROI`/`OVERLAP_ONLY` giữ denominator; JSON-only không giả PSQA. |
+| **P9** | Template/block editor, source snapshot, report revision, preview/render/export/history. | Source thuộc org và operation đã có output; block schema; renderer/font/format capability. | Full customization; revision và bốn export format mở lại deterministic; Biological report giữ namespace độc lập. | Source/revision/content/renderer/storage/download/idempotency error; giữ draft/source/export cũ, retry render/download an toàn, không sửa source. | Revision pins source/config/template; block hidden/deleted không làm mất lineage; export hash thuộc revision. |
+| **P10** | Trend query/raw/aggregate, compatibility, baseline, maintenance event, outlier, drill-down/export/rebuild. | Machine/metric/timezone/context; source result compatible. | Stable series; raw/aggregate có count/extrema/source IDs; baseline/event marker và export cùng filter/timezone. | Incompatible/date/timezone/filter/empty/baseline/duplicate/archive/large query/event conflict; trả warning/error phù hợp, aggregate hoặc tách series, không bịa zero. | Projection uniqueness; rebuild idempotent; source history không bị sửa bởi trend. |
+| **P11** | Protocol search/detail/create/clone/validate/DRAFT/activate/archive/compare và consumer snapshot. | Organization; protocol/rule schema; reference/source; consumer capability. | Version immutable sau use; clone deep-copy; consumer chọn explicit active version; compare chỉ đọc. | Rule/source/version/applicability/persistence/capability/conflict error; field correction/clone/reload/reconcile; không drop unsupported rule hoặc đổi run cũ. | Protocol/rules và source snapshot cùng version; active selection không sửa historical run. |
+| **P12** | Biological hub tools/capability, scenario/revision CRUD, calculation history và independent report/export. | Auth/membership; scenario key/context/source/assumptions; module capability. | Scenario/history lưu riêng; tool unavailable hiện rõ; clone và export giữ lineage; không cần QA case. | `BIOLOGICAL_SCENARIO_INVALID`, `SCENARIO_REVISION_NOT_FOUND`, `SCENARIO_IMMUTABLE`, `MODULE_UNAVAILABLE`, scope/session/persistence/export error; giữ form, query/retry hoặc tạo scenario mới. | Biological namespace không có automatic `qa_case_id`/patient linkage; assumptions/model/version snapshot. |
+| **P13** | BED/EQD2 validate/calculate, curve, table/marker, save/replay/export. | Saved scenario revision; finite D/n/d/alpha-beta; source/override; curve bounds. | Known-answer; formula/context/source hiển thị; chart/table/export cùng result dataset/hash; zero là giá trị hợp lệ khi được khai báo. | Fraction/consistency/nonfinite/source/range/point/revision/idempotency/persistence error; `valid=false` hoặc 4xx, không clamp/đổi input/tạo chart một phần. | Lưu input/result/model version; export snapshot, không tính lại từ scenario hiện tại. |
+| **P14** | Multi-option comparison, compatibility, baseline, absolute/% delta, chart/table/reorder/clone/export. | 2–10 completed P13 snapshots hoặc input hợp lệ; common context/model; stable option IDs. | Options giữ input; delta đúng; baseline zero trả `null` + reason; reorder chỉ đổi thứ tự. | Option/context/alpha-beta/baseline/idempotency/persistence/overflow error hoặc warning; giữ option hợp lệ, không phát hành ranking khi context không tương thích. | Snapshot copy values; no-QA linkage; same comparison replay same hash. |
+| **P15** | Course/recovery/no-recovery, cumulative scalar, sensitivity, interruption, compensation alternatives/export. | Course dates/fractions/dose; tissue/alpha-beta; explicit recovery/time/source assumptions. | Mỗi course và tổng scalar giải thích được; delivered/remaining schedule và alternatives đúng integer; export independent. | Interval/schedule/recovery/context/spatial/persistence error; chặn field, warning assumption, `UNAVAILABLE` spatial, tạo scenario mới; không sửa prescription/RTPLAN. | Scalar result không được gọi là spatial cumulative dose; source/assumption/time model snapshot. |
+| **P16** | Dose-limit/treatment-protocol/knowledge search, validate/import, draft/clone/publish/archive/compare, explicit-use binding. | Typed context/metric/operator/unit/volume; citation/source; safe content; import preview. | Entry version/citation/applicability rõ; published immutable; valid rows import; explicit-use snapshot được tool chọn chủ động. | Source/unit/operator/content/link/import/version/scope/persistence error; sửa row/clone/retry sau reconcile; không auto-select conflict/limit hoặc biến thành QA PASS. | Content hash, effective values và source revision lưu cùng snapshot; internal/user-defined label giữ nguyên. |
+| **P17** | DVH input discovery, geometry/ROI validation, dose-native/CT overlay, preview/save/history/export/report binding. | VALID RTDOSE + RTSTRUCT cùng case/org; CT chỉ khi overlay; checksum/manifest hợp lệ. | Dose-native không cần CT; ROI theo ROINumber; full/overlap policy; metrics/coverage/result hash tái hiện. | Manifest/source/unit/grid/frame/ROI/contour/coverage/CT/resource/idempotency error; FULL chặn coverage thiếu, OVERLAP warning; không clip/gán zero/đoán transform. | `dvh_analysis_runs` immutable, schema/engine/input hash; limit/margin chỉ có explicit compatible snapshot. |
+| **P18** | RC manifest, integrated QA/Biological/P17 journeys, golden, fault/restart/concurrency/load, backup/restore, pilot/regression. | Candidate SHA/config/schema/fixtures locked; staging safe fault target; restore point. | E2E UI→service→storage/queue/worker; restore count/hash/source equality; workload measured; pilot issue becomes regression. | Regression/restore/duplicate/performance/capability/evidence mismatch; chặn RC, giữ artifact, RCA/fix/rerun, không sửa expected. | Test evidence immutable and tied to candidate; no destructive fault test on production. |
+| **P19** | Production promotion, migration, DNS/TLS/CORS/Auth, public web/API, remote E2E, monitor/rollback. | Approved RC + backup + compatible schema; private DB/Redis/worker; public web config. | External HTTPS, login/deep-link/upload/job/report/toolkit, service version parity and rollback proof. | Domain/config/schema/version/remote/budget error; no partial promote, keep last-good, rollback or rebuild public config; health alone insufficient. | Expand/contract migration; public bundle never contains secret; backup precedes destructive/config-changing step. |
+| **P20** | Monitor/alert, backup/restore runbook, support guide, incident/RCA, maintenance release/regression. | Production observability/config, owner/contact, retention/budget and staging path. | Alert received; restore drill meets recorded target; operator follows guide; old results remain after maintenance. | Backup/alert/capacity/engine-change/recurring incident; keep last-good, correct policy/channel, RCA + regression + runbook update. | Maintenance never rewrites history; backup cleanup only after valid retention/restore evidence. |
+
+### 13.3. Quy tắc nghiệm thu một feature và một operation
+
+Một `FR-Pxx-yy` chỉ đạt `FEATURE_COMPLETE` khi tất cả điều kiện sau cùng đúng trên candidate đang xét:
+
+| Nhóm kiểm | Điều kiện bắt buộc |
+| :--- | :--- |
+| Happy path | Có testcase `S` chứng minh input tối thiểu và ít nhất một biến thể hợp lệ; output, ID, trạng thái cuối và next action đúng. |
+| Boundary/empty | Có zero/optional/empty/min/max/dữ liệu dài phù hợp; không clamp/truncate hoặc tạo dữ liệu giả. |
+| Validation | Có field và cross-field invalid; không side effect trước khi request được chấp nhận. |
+| Scope/lifecycle | Có not-found, archived, inactive parent và organization khác; response boundary-safe, không lộ metadata. |
+| Retry/concurrency | Có double-submit/idempotency, unknown outcome, concurrent revision; không duplicate hoặc silent overwrite. |
+| Dependency | Có DB/object/Auth/Redis/worker/renderer failure phù hợp; retry bounded hoặc terminal FAILED, accepted ID và source vẫn tồn tại. |
+| Restart/reconnect | Refresh browser và restart thành phần phù hợp vẫn đọc cùng operation/snapshot; không spinner vô hạn. |
+| Output/provenance | History/drill-down/export trả đúng source, revision, version, unit, assumption, warning và hash. |
+| UX/accessibility | Loading/empty/ready/warning/error/conflict/offline; label/unit/focus/keyboard/mobile/long Vietnamese text; không chỉ dùng màu. |
+| Evidence/release | Record có test/FR/contract/SHA/schema/fixture/expected/observed/evidence/recovery; cùng candidate với code đang bàn giao. |
+
+Không được gọi operation là `COMPLETED` nếu chưa có output bền vững hoặc empty output có reason hợp lệ. Không được gọi quality result là `PASS` nếu chỉ có HTTP 200 hoặc technical status `COMPLETED`. Không được gọi phase là `DONE-v2` nếu feature MUST bên trong còn `TARGET`, `NOT_RUN`, `BLOCKED`, `FAIL` hoặc evidence lệch SHA/schema/config.
+
+### 13.4. Quy tắc mapping lỗi và version hóa contract
+
+- Tên lỗi trong plan là taxonomy; khi triển khai phải chọn một mã chính, status HTTP, `retryable`, field/location, side effect và next action. Không trả chuỗi ghép kiểu `A_OR_B`.
+- Thay đổi field, unit, calculation formula, DICOM geometry, error code, status transition, snapshot schema, route hoặc public configuration là contract change. Phải tạo version/revision, cập nhật OpenAPI và chạy affected tests.
+- Thay đổi chỉ ở display label/layout không được làm đổi semantic field hoặc result hash. Nếu đổi label có thể gây hiểu sai metric, đó là change cần review và regression UI.
+- Thay đổi source/config/model/protocol/template tạo output mới; không update ngược snapshot cũ. Rerun phải có operation/run/revision ID mới, trừ exact idempotent replay.
+- Khi specification và source không khớp, đánh `DOCUMENT_CONFLICT` hoặc `IMPLEMENTATION_GAP`; không sửa specification theo response hiện tại chỉ để checkbox xanh. Sau quyết định phạm vi mới, đồng bộ BA → specification → technical → plan → progress.
+
+### 13.5. Quy tắc riêng cho các nhóm có rủi ro tính đúng
+
+1. **DICOM/Gamma/DVH:** metadata, pixel scaling, geometry, frame/UID, coverage và denominator là input có ý nghĩa; filename/ROIName/HTTP status không phải authority. Không auto-align hoặc bỏ điểm lỗi để tăng tỷ lệ pass.
+2. **BED/EQD2/re-irradiation:** formula/model/alpha-beta/recovery/temporal assumption phải nằm trong snapshot; scalar không tự biến thành cumulative spatial dose; compensation không tự biến thành prescription.
+3. **Report/export:** renderer chỉ đọc snapshot; export cũ không bị thay bởi live data; format không hỗ trợ phải báo rõ; byte/hash/determinism và Unicode/bảng dài là một phần acceptance.
+4. **Trend:** chỉ aggregate các source có compatibility signature; điểm thiếu không được biến thành zero; drill-down phải quay về source run/case đúng organization.
+5. **Public deployment:** web/API/worker/schema/Auth/queue phải được kiểm theo cùng release manifest; PostgreSQL, Redis, worker và object bucket private theo topology; URL public không chứng minh workflow đã pass.
