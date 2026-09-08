@@ -1337,7 +1337,7 @@ Các mã dưới đây là error code đã có trong engine/API P15 và phải g
 - **Mục tiêu:** Tra cứu và tái sử dụng nội dung có nguồn, context và version trong công cụ tính toán; không biến thư viện thành prescription, QA tolerance hoặc quyết định PASS/FAIL.
 - **Contract:** specification §8 / SPEC-P16; các contract chung §2–§7 áp dụng khi có liên quan.
 - **Owner thực thi:** người/agent phụ trách module ghi tên trong checkpoint; người dùng cung cấp dữ liệu hoặc đánh giá workflow khi cần, không có cấp phê duyệt theo chức danh.
-- **Trạng thái test v2:** LOCAL_VERIFIED trên working tree candidate; STAGING_PENDING. Local evidence không tự đóng staging/release gate.
+- **Trạng thái test v2:** `STAGING_SMOKE_VERIFIED` trên candidate web build `9262bfd` và API schema `20260908_0016`; exit/release closure vẫn mở. Browser smoke không thay thế direct PostgreSQL, scope, full fault-matrix và manifest evidence.
 
 ### Workflow P16
 
@@ -1356,7 +1356,8 @@ Các mã dưới đây là error code đã có trong engine/API P15 và phải g
 - [x] P16-W03 — Structured JSON content/citation an toàn; reject active markup/non-finite data; không fetch URL external/private.
 - [x] P16-W04 — Explicit-use snapshot có target/override whitelist, source version/hash và cảnh báo; chưa tự bind vào P13–P15/P17.
 - [x] P16-VERIFY-LOCAL — `test_biological_library.py`, full backend, Ruff/mypy, frontend lint/typecheck/Vitest/build, migration và OpenAPI trên cùng candidate.
-- [ ] P16-VERIFY-STAGING — deploy schema `20260908_0016`, authenticated browser/API lifecycle, import/use/export, direct DB row/hash/scope và full negative matrix.
+- [x] P16-VERIFY-STAGING-SMOKE — deploy schema `20260908_0016`, authenticated browser route, create DRAFT → publish → explicit-use snapshot → archive, import preview có row hợp lệ/lỗi và refresh/readback.
+- [ ] P16-VERIFY-STAGING-CLOSURE — direct PostgreSQL row/hash/scope, compare/history/export thực tế, đầy đủ negative/fault matrix và redacted release manifest.
 - [ ] P16-HANDOFF — cập nhật contract/OpenAPI, migration/release notes, checkpoint, deployment manifest và backlog integration còn lại.
 
 ### Trường hợp chạy đúng P16
@@ -1752,6 +1753,7 @@ Bảng này là chỉ mục điều hành ngắn gọn; mỗi phase vẫn phải
 | P14 | P13 engine và common biological context đã stable | 2–10 options → common context/model → baseline → calculate delta/chart → reorder/clone/export | Missing/invalid option, context mismatch, baseline missing/zero, alpha/beta mismatch, idempotency conflict, persistence uncertainty, limit/truncate | Same revision/context, `null + BASELINE_ZERO`, warning/ranking policy, option IDs/order, no-truncate evidence; giữ options hợp lệ | Comparison known delta, zero handling, history/export/clone pass |
 | P15 | P13/P14 scalar result và time/course model đã stable | Courses → tissue/alpha-beta → no-recovery/recovery → cumulative/sensitivity → interruption → compensation alternatives → export | Interval/recovery/source/context, nonuniform schedule, overlap, noninteger, missing spatial registration/OAR dose | Assumption/source/sensitivity snapshot, scalar-vs-spatial capability, integer schedule; chặn nhánh unsupported, không sửa treatment | Scalar/recovery/compensation negative matrix và independent export pass |
 | P16 | P12/P13 source/applicability contract đã stable; migration `20260908_0016` và validator candidate đã pass local | Bootstrap scope → search/filter exact → detail/source → validate/create DRAFT → clone/publish/archive/history/compare/export → import preview/commit → explicit-use snapshot | Request/schema, missing source, metric/unit/operator/volume, no-match, broken/unverified reference, duplicate/import, unsafe content, stale revision, immutable lifecycle, cross-scope/not-found, unsupported override, version conflict, persistence uncertainty | Local: 3 focused tests + full backend + Ruff/mypy + frontend + migration/OpenAPI. Staging: readiness/schema, authenticated browser/API, DB row/hash/scope, negative matrix and manifest; row-level repair, no auto-apply | P16 local implementation and contract docs pass; staging/release evidence and direct calculator binding remain open |
+| P16 | P12/P13 source/applicability contract đã stable; migration `20260908_0016` và validator candidate đã pass local | Bootstrap scope → search/filter exact → detail/source → validate/create DRAFT → clone/publish/archive/history/compare/export → import preview/commit → explicit-use snapshot | Request/schema, missing source, metric/unit/operator/volume, no-match, broken/unverified reference, duplicate/import, unsafe content, stale revision, immutable lifecycle, cross-scope/not-found, unsupported override, version conflict, persistence uncertainty | Local: 3 focused tests + full backend + Ruff/mypy + frontend + migration/OpenAPI. Staging smoke: web build `9262bfd`, API schema `20260908_0016`, DRAFT/publish/archive, invalid import row and explicit-use snapshot `1de9704f6b061e35…`. Closure: DB row/hash/scope, compare/history/export, full negative matrix and manifest | P16 implementation and browser smoke pass; database/scope/fault/release closure and direct calculator binding remain open |
 | P17 | P6 DICOM metadata và geometry fixtures đã stable | Dataset select → frame/grid/ROI preflight → overlay → DVH/profile → metric/export | Missing CT/RTSTRUCT, frame/grid/ROI/contour/codec/coverage; dose-only fallback | Geometry oracle, coverage denominator, source UID/checksum, visual/table fallback; không gán zero hoặc giả spatial | Supported/unsupported geometry, DVH and staging evidence pass |
 | P18 | P0–P17 release contracts và candidate manifest đã khóa | RC → integrated E2E → golden → failure/restart/concurrency/load → backup/restore → pilot → regression | Result regression, restore incomplete, duplicate replay, capacity, unsupported pilot data, evidence mismatch | Immutable RC manifest, workload/log/restore/checksum/pilot issues; giữ candidate, mở issue/regression, không sửa expected | MUST E2E/restore/performance/pilot pass, không SEV0/1 |
 | P19 | P18 RC, production backup, DNS/TLS/Auth/CORS và service IDs đã kiểm | Backup → migration compatible → API/worker/renderer/web → public smoke → remote E2E → monitor/rollback rehearsal | Domain/TLS, build config, schema/version mismatch, private dependency, remote E2E/resource | Promotion manifest, public URLs, service/schema/engine versions, rollback record; không promote partial, giữ last-good | Website HTTPS và workflow từ mạng ngoài pass, rollback/backup evidence pass |
@@ -1869,8 +1871,8 @@ Template checkpoint (cần điền giá trị thật):
 
 ~~~yaml
 plan_version: "2.9"
-current_phase: P16
-current_work_package: P16-VERIFY-LOCAL
+current_phase: P17
+current_work_package: P17-W01
 status: IN_PROGRESS
 source_commit: "<actual-sha>"
 implemented_requirements: []
@@ -1898,7 +1900,7 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 ### 7.2. Kết quả lần sửa tài liệu này
 
-Đã rebaseline tài liệu thành BA v0.16, specification v1.10 và plan v3.0; bổ sung từ điển trạng thái, error taxonomy, operation/evidence contract, B01–B12 và ma trận bao phủ P0–P20. P16 đã có implementation local trên working tree candidate với migration `20260908_0016`, API/UI/library validator và test local; staging browser/API/DB/scope/release evidence còn mở. P15 replay/direct PostgreSQL/scope/full error/release gates cũng vẫn mở theo progress log. Không phase nào được đánh dấu `DONE-v2` chỉ vì local test, HTTP 200 hoặc Railway báo Online.
+Đã rebaseline tài liệu thành BA v0.16, specification v1.10 và plan v3.0; bổ sung từ điển trạng thái, error taxonomy, operation/evidence contract, B01–B12 và ma trận bao phủ P0–P20. P16 đã có implementation local và staging browser smoke trên migration `20260908_0016`: DRAFT/publish/archive, import row-level error và explicit-use snapshot đã được kiểm bằng dữ liệu tổng hợp; direct PostgreSQL/scope/fault/release closure vẫn mở. P15 replay/direct PostgreSQL/scope/full error/release gates cũng vẫn mở theo progress log. Công việc hiện chuyển sang P17, nhưng không phase nào được đánh dấu `DONE-v2` chỉ vì local test, HTTP 200 hoặc Railway báo Online.
 
 
 ## 8. Ma trận FR → contract → testcase ban đầu
