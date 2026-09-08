@@ -168,6 +168,19 @@ export function GammaPage() {
     ? resultMetrics.percentiles as JsonRecord
     : undefined
   const gammaMap = records(activeRun?.result_snapshot.gamma_map)
+  const snapshotConfiguration = activeRun?.config_snapshot ?? {}
+  const snapshotDimensionality = typeof snapshotConfiguration.dimensionality === 'string'
+    ? snapshotConfiguration.dimensionality
+    : '—'
+  const snapshotPassTarget = typeof snapshotConfiguration.pass_rate_threshold_percent === 'number'
+    ? snapshotConfiguration.pass_rate_threshold_percent
+    : undefined
+  const snapshotCoveragePolicy = typeof snapshotConfiguration.coverage_policy === 'string'
+    ? snapshotConfiguration.coverage_policy
+    : undefined
+  const snapshotMaxGamma = typeof snapshotConfiguration.max_gamma === 'number'
+    ? snapshotConfiguration.max_gamma
+    : undefined
   const busy = createMutation.isPending || retryMutation.isPending
   const selectedReference = eligibleArtifacts.find((item) => item.id === selectedReferenceId)
   const selectedEvaluation = eligibleArtifacts.find((item) => item.id === selectedEvaluationId)
@@ -226,11 +239,11 @@ export function GammaPage() {
       <section className="panel gamma-panel">
         <div className="panel-heading"><div><p className="eyebrow">JOB / RESULT</p><h2>Tiến độ và kết quả</h2></div><strong>{runs.data?.total ?? '—'}</strong></div>
         {runs.isPending ? <p>Đang tải lịch sử Gamma…</p> : runs.error ? <div className="alert alert--error"><p>{errorMessage(runs.error)}</p><button onClick={() => void runs.refetch()}>Thử lại</button></div> : !activeRun ? <p className="empty-state">Chưa có Gamma run. Chọn input và đưa job vào hàng đợi.</p> : <>
-          <div className="gamma-run-meta"><span>Run <code>{activeRun.id}</code></span><span>Profile <strong>{activeRun.workflow_profile}</strong></span><span>Trạng thái <strong className={statusClass(activeRun.status)}>{activeRun.status}</strong></span><span>Tiến độ {activeRun.progress_percent}%</span><span>Attempt {activeRun.attempt_count}</span><span>Engine {activeRun.engine_version}</span></div>
+          <div className="gamma-run-meta"><span>Run <code>{activeRun.id}</code></span><span>Profile <strong>{activeRun.workflow_profile}</strong></span><span>Config snapshot <strong>{snapshotDimensionality} · {textValue(snapshotCoveragePolicy)} · max γ {textValue(snapshotMaxGamma)}</strong></span><span>Trạng thái <strong className={statusClass(activeRun.status)}>{activeRun.status}</strong></span><span>Tiến độ {activeRun.progress_percent}%</span><span>Attempt {activeRun.attempt_count}</span><span>Engine {activeRun.engine_version}</span></div>
           {isActiveJob(activeRun) && <div className="gamma-progress"><div style={{ width: `${activeRun.progress_percent}%` }} /><p>Job đang được worker xử lý; trang sẽ tự đồng bộ sau mỗi 2,5 giây.</p></div>}
           {activeRun.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Gamma không hoàn tất</h3><ul>{activeRun.error_snapshot.map((item, index) => <li key={`${String(item.code)}-${index}`}><strong>{textValue(item.code)}</strong>: {textValue(item.message, JSON.stringify(item))}</li>)}</ul><button disabled={busy} onClick={() => retryMutation.mutate(activeRun.id)}>Retry job</button></div>}
-          {activeRun.result_snapshot.overall_status && <div className="gamma-result-banner"><span className={statusClass(String(activeRun.result_snapshot.overall_status))}>{String(activeRun.result_snapshot.overall_status)}</span><strong>{textValue(resultMetrics?.pass_rate_percent)}%</strong><span>pass rate · target {textValue(configuration.pass_rate_threshold_percent)}%</span></div>}
-          {resultMetrics && <div className="metric-grid gamma-metrics"><article><span>Evaluated points</span><strong>{textValue(resultMetrics.evaluated_points)}</strong></article><article><span>Passing points</span><strong>{textValue(resultMetrics.passing_points)}</strong></article><article><span>Excluded points</span><strong>{textValue(resultMetrics.excluded_points)}</strong></article><article><span>Gamma P95</span><strong>{textValue(percentiles?.p95)}</strong></article></div>}
+          {activeRun.result_snapshot.overall_status && <div className="gamma-result-banner"><span className={statusClass(String(activeRun.result_snapshot.overall_status))}>{String(activeRun.result_snapshot.overall_status)}</span><strong>{textValue(resultMetrics?.pass_rate_percent)}%</strong><span>pass rate · target {textValue(snapshotPassTarget)}%</span></div>}
+          {resultMetrics && <div className="metric-grid gamma-metrics"><article><span>Evaluated points</span><strong>{textValue(resultMetrics.evaluated_points)}</strong></article><article><span>Passing points</span><strong>{textValue(resultMetrics.passing_points)}</strong></article><article><span>Non-passing points</span><strong>{textValue(resultMetrics.nonpassing_points)}</strong></article><article><span>Excluded points</span><strong>{textValue(resultMetrics.excluded_points)}</strong></article><article><span>Coverage</span><strong>{textValue(resultMetrics.coverage_fraction)}</strong></article><article><span>Gamma P95</span><strong>{textValue(percentiles?.p95)}</strong></article></div>}
           {activeRun.warning_snapshot.length > 0 && <div className="alert alert--warning"><strong>Cảnh báo:</strong><ul>{activeRun.warning_snapshot.map((item, index) => <li key={`${String(item.code)}-${index}`}>{textValue(item.message, JSON.stringify(item))}</li>)}</ul></div>}
           {gammaMap.length > 0 && <div className="table-wrap"><table className="gamma-map-table"><caption>Gamma map · hiển thị tối đa 100 điểm đầu trong snapshot</caption><thead><tr><th>Row</th><th>Column</th><th>Reference dose</th><th>Gamma</th><th>Status</th></tr></thead><tbody>{gammaMap.slice(0, 100).map((item, index) => <tr key={`${String(item.row)}-${String(item.column)}-${index}`}><td>{textValue(item.row)}</td><td>{textValue(item.column)}</td><td>{textValue(item.reference_dose_gy)} Gy</td><td>{textValue(item.gamma)}</td><td><span className={statusClass(String(item.status))}>{textValue(item.status)}</span></td></tr>)}</tbody></table></div>}
         </>}
