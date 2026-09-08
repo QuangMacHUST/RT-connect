@@ -1526,8 +1526,8 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 
 ### Checkpoint staging P17 — 2026-09-09
 
-- API `Railway-API-staging`, worker `RT-connect-gamma-worker-staging` và web `RT-connect-web-staging` đều deploy `SUCCESS` từ candidate `a546bb1` trước khi bổ sung CT binding local; API `/api/v1/health`, `/api/v1/ready`, `/api/v1/version` và web root đều trả HTTP 200. Sau khi commit CT binding cuối cùng, phải tạo lại deployment evidence với source SHA thực tế; không kế thừa deployment cũ.
-- `/api/v1/ready` xác nhận `schema_revision=20260908_0017`; `/api/v1/version` xác nhận environment `staging`, schema `20260908_0017`, build identifier `9262bfd`. Web đã serve bundle P17 mới và route `/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh` mở được trong phiên Auth hiện tại.
+- API `Railway-API-staging`, worker `RT-connect-gamma-worker-staging` và web `RT-connect-web-staging` đều deploy `SUCCESS` từ candidate `893ae2d46c197b80fc78e29cdea25ab19a54154c`: API deployment `c5807acb-dd49-4279-8304-ecc95141543d`, web `b46d7617-8545-40dc-82b6-d2f42103d696`, worker `3b0b89e3-b633-4477-9bda-48d01af2f3be`. API `/api/v1/health`, `/api/v1/ready`, `/api/v1/version` và web root đều trả HTTP 200.
+- `/api/v1/ready` xác nhận `schema_revision=20260908_0017`; `/api/v1/version` xác nhận environment `staging`, schema `20260908_0017`, nhưng application build identifier vẫn là `9262bfd` thay vì source SHA. Web đã serve bundle CT preview mới; OpenAPI public có route `/dvh/ct-preview`. Việc làm cho version endpoint mang source-identifiable release ID là gap P19, không được bỏ qua trong release manifest.
 - Browser preflight hiển thị `1 dose · 0 structure`, RTDOSE hợp lệ và các nút tính bị disable đúng contract. Đây là bằng chứng empty-input/error-prevention, chưa phải bằng chứng DVH completed.
 - Fixture cần dùng tiếp: `docs/fixtures/p17-rtstruct-v1-smoke.dcm`, tạo bởi `scripts/generate-p17-dvh-structure-fixture.py`, SHA-256 `16a79df3129757d9df8b48bd095f0b4b70b24713ea5255e24719d46e6808d401`; local oracle `FULL_ROI`, 4 voxels, mean `6.5 Gy`, D95 `5.15 Gy`.
 
