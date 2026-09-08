@@ -1,9 +1,9 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.4**; ngày 2026-09-08.
-- Nguồn nghiệp vụ: business-analysis.md v0.10.
-- Kế hoạch triển khai: plan.md v2.4, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.2.
+- File: specification.md; version **1.5**; ngày 2026-09-08.
+- Nguồn nghiệp vụ: business-analysis.md v0.11.
+- Kế hoạch triển khai: plan.md v2.5, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.3.
 - Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng chứng runtime.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
@@ -711,18 +711,69 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 | Hạng mục | Đặc tả |
 | :--- | :--- |
 | Module/requirement | MOD-10; FR-P12-01 đến FR-P12-04 |
-| Input và dữ liệu hiển thị | Scenario name/type/tissue/context/source/assumptions; scenario revision; calculation model/version/input/result; search/history/bookmark. |
-| Model/storage | BiologicalScenario, ScenarioRevision, CalculationRun; namespace độc lập QA. |
-| Operation/API surface | Target /biological/scenarios, /biological/calculations; /biological/reports; scoped history. |
-| Transaction/invariant | Save input không đồng nghĩa đã tính; result liên kết đúng input revision; clone transaction. |
+| Input và dữ liệu hiển thị | `scenario_key` uppercase stable key; name/type/tissue/clinical context; `source_type` + reference; finite JSON `assumptions`; status/revision/lineage; tool capability; calculation model/version/input/result khi P13–P15 mở. |
+| Model/storage | `BiologicalScenario`, `BiologicalScenarioRevision`, `BiologicalCalculationRun`; namespace độc lập QA, không bắt buộc `qa_case_id`/patient FK. Migration implementation: `20260908_0012`. |
+| Operation/API surface | `/api/v1/organizations/{organization_id}/biological/tools`, `/summary`, `/scenarios`, `/scenarios/{id}/revisions`, `/calculations` và `/calculations/{id}`; report Biological là integration target của P9/P12. |
+| Transaction/invariant | Validate-only không mutation; create/update/transition ghi scenario + revision + audit atomic; save input không đồng nghĩa đã tính; calculation phải pin input revision; clone giữ source revision lineage; archived không bị xóa. |
 | Output bàn giao | Biological Hub/history/base contracts và independent report integration. |
-| Success oracle | TC-P12-S01 đến TC-P12-S04 trong plan |
-| Error/recovery oracle | TC-P12-E01 đến TC-P12-E05 trong plan |
-| Exit | Không automatic QA linkage; scenario save/reopen/clone/history/export và scoped errors pass. |
+| Success oracle | TC-P12-S01 đến TC-P12-S09 trong plan |
+| Error/recovery oracle | TC-P12-E01 đến TC-P12-E12 trong plan |
+| Exit | Local + staging route/mutation/snapshot/scope evidence; không automatic QA linkage; report integration và capability state không được giả. |
+
+#### SPEC-P12.1 — Canonical resource fields
+
+| Resource | Required contract |
+| :--- | :--- |
+| `BiologicalScenario` | `id: UUID`; `organization_id: UUID`; `scenario_key: string` matching `^[A-Z][A-Z0-9_.-]{0,119}$`, unique within organization; `name` 1–240; `scenario_type` 1–80; `tissue_context` 1–240; nullable `clinical_context` ≤4000; `source_type ∈ {USER_DEFINED,REFERENCE,INTERNAL,SITE_APPROVED}`; nullable `source_reference` ≤1000; `assumptions: JSON object`; `status ∈ {DRAFT,SAVED,ARCHIVED}`; positive integer `revision`; optional `source_scenario_revision_id`; actor/timestamps. |
+| `BiologicalScenarioRevision` | `id`, organization/scenario IDs, monotonic `revision_number`, copied status, immutable `snapshot`, actor and creation time. Unique by `(scenario_id, revision_number)`; every current scenario revision must have one snapshot. |
+| `BiologicalCalculationRun` | `id`, organization/scenario/revision IDs, `calculation_type`, `model_key`, `model_version`, technical status, immutable `input_snapshot`/`result_snapshot`, warning/error snapshots, actor/timestamps. P12 only exposes read contract; P13–P15 own creation. |
+
+`clinical_context` is a working note, not a patient record. The API/UI must not accept a patient identifier as a hidden lookup key. A user-provided dataset is a separate explicit source contract and must carry source identity/checksum before a later module can consume it.
+
+#### SPEC-P12.2 — Exact operation contract
+
+| Method and path | Request | `2xx` behavior | Side effect |
+| :--- | :--- | :--- | :--- |
+| `GET /organizations/{org}/biological/tools` | None | `200` list of six tools with `tool_key`, label, route, phase, status, description and `available` | No mutation; all tools not implemented yet return `PLANNED`/`false`. |
+| `GET /organizations/{org}/biological/summary` | None | `200` organization-scoped counts for total/draft/saved/archived scenarios, completed calculations and biological exports | No mutation. |
+| `POST /organizations/{org}/biological/scenarios/validate` | Create-shaped scenario | `200 {valid, errors[], warnings[]}`; valid response does not mean persisted | None. Duplicate key is a validation result, not a partial create. |
+| `GET /organizations/{org}/biological/scenarios` | `q`, `status`, `include_archived`, `offset`, `limit` | Typed collection, stable `updated_at DESC` order, total and effective archive flag | No mutation; archived excluded unless explicit status/include flag. |
+| `POST /organizations/{org}/biological/scenarios` | Create-shaped scenario | `201` DRAFT scenario at revision 1 with initial snapshot | Scenario, revision and audit commit together. |
+| `GET /organizations/{org}/biological/scenarios/{id}` | None | `200` detail with latest snapshot | No mutation; lookup is organization-scoped before detail. |
+| `GET /organizations/{org}/biological/scenarios/{id}/revisions` | None | `200` newest-first immutable revision list | No mutation. |
+| `PATCH /organizations/{org}/biological/scenarios/{id}` | `expected_revision` + one or more editable fields | `200` updated DRAFT with exactly one revision increment | Only DRAFT; update, revision snapshot and audit are atomic. |
+| `POST /organizations/{org}/biological/scenarios/{id}/save` | `expected_revision` | `200` SAVED scenario with one new revision | Only DRAFT; saved content becomes immutable. |
+| `POST /organizations/{org}/biological/scenarios/{id}/clone` | Optional valid new key/name | `201` new DRAFT rev 1 with source revision lineage | New ID/key; source unchanged; clone snapshot is independent. |
+| `POST /organizations/{org}/biological/scenarios/{id}/archive` | `expected_revision` | `200` ARCHIVED scenario with one new revision | History remains readable; archive is not hard delete. |
+| `GET /organizations/{org}/biological/calculations` | Optional `scenario_id`, `offset`, `limit` | Typed calculation collection scoped to org/scenario | No mutation. |
+| `GET /organizations/{org}/biological/calculations/{id}` | None | `200` immutable calculation snapshot | No mutation; P12 does not invent a result. |
+
+#### SPEC-P12.3 — State and error mapping
+
+| Condition | HTTP/contract | Required recovery and invariant |
+| :--- | :--- | :--- |
+| Missing/expired bearer or Auth outage | `401` `SESSION_UNAVAILABLE` or shared auth error | Reauthenticate/refresh once according to policy; never anonymous fallback; retain safe UI draft. |
+| Organization mismatch | `403` `ORGANIZATION_SCOPE_MISMATCH` | Stop before resource lookup; do not reveal whether the ID exists. |
+| Scenario/revision/calculation not found inside scope | `404` `SCENARIO_NOT_FOUND` or `CALCULATION_NOT_FOUND` | Generic not-found UI; no cross-org metadata. |
+| Pydantic shape/key/range error | `422` shared validation envelope / `REQUEST_VALIDATION_FAILED` | Field-level messages; no mutation. Clone keys use the same regex as create. |
+| Unsupported source or non-finite assumptions | `422` `BIOLOGICAL_CONTEXT_INVALID` | Correct field and retained form; no implicit conversion or citation. |
+| `REFERENCE` has no citation | `422` `BIOLOGICAL_CONTEXT_INVALID` | Require `source_reference`; do not invent source. |
+| Duplicate organization key | `409` `SCENARIO_KEY_CONFLICT` | Query/open existing item or choose another key; no second scenario. |
+| Stale `expected_revision` | `409` `SCENARIO_REVISION_CONFLICT` | Reload current version or clone; never silently overwrite. |
+| Edit/save already SAVED or ARCHIVED | `409` `SCENARIO_IMMUTABLE` | Preserve old snapshot; clone for a new working scenario. |
+| Archive already ARCHIVED | `409` `SCENARIO_IMMUTABLE` | No extra revision or deletion. |
+| No editable fields in PATCH | `400` `NO_CHANGES` | Keep current snapshot and ask for a real change. |
+| Database/commit failure | `503` `SCENARIO_PERSISTENCE_FAILED` | Roll back transaction; retry only after checking whether the prior operation committed. |
+| Client loses response after mutation | `409/503` `MUTATION_RESULT_UNKNOWN` target | Query by returned/request idempotency context before retry; do not assume “not created”. |
+| Tool is not implemented | Capability response `PLANNED`/`available=false`; calculation command is not exposed | Show disabled CTA and preserve scenario; no fake RUNNING/COMPLETED calculation. |
+
+Current P12 implementation provides the route/resource/lifecycle contract above. It intentionally does not yet create BED/EQD2/re-irradiation calculation runs or Biological report exports; those are P13–P15/P9 work packages and must not be described as available until their own tests pass.
 
 **Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer cần recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
 
-**Failure contract:** SCENARIO_NOT_FOUND; BIOLOGICAL_CONTEXT_INVALID; SCENARIO_REVISION_CONFLICT; MODEL_VERSION_UNAVAILABLE; MODULE_UNAVAILABLE. Đây là taxonomy target; mapping sang error codes thực tế phải được ghi trong contract test trước khi triển khai.
+**Failure contract:** SPEC-P12.3 là mapping chi tiết. Những mã target chưa xuất hiện trong route lifecycle hiện tại (`MODEL_VERSION_UNAVAILABLE`, `MODULE_UNAVAILABLE`, `MUTATION_RESULT_UNKNOWN`) phải được dùng khi module/operation tương ứng được mở; không giả vờ đã kiểm chứng chúng ở local chỉ vì tài liệu đã liệt kê.
+
+**P12 implementation status 2026-09-08:** migration `20260908_0012` đã upgrade tới head trên PostgreSQL local; route/API/UI và `test_biological.py` focused pass, full backend/frontend/OpenAPI gate đang được re-run trên candidate. Đây là local implementation evidence; staging browser/DB-state/no-QA-linkage, P9 Biological renderer integration, complete negative matrix và release manifest vẫn mở.
 
 <a id="spec-p13"></a>
 

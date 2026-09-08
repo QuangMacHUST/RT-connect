@@ -199,6 +199,41 @@ td code { color: #075e67; font-size: .78rem; }
 .diff-grid { display: grid; gap: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 16px; }
 .diff-grid p { color: #526e80; font-size: .78rem; overflow-wrap: anywhere; }
 .diff-grid code { color: #075e67; }
+.biological-page { max-width: 1240px; }
+.biological-notice { align-items: flex-start; background: #eaf7f5; border: 1px solid #9bd8cf; border-left: 4px solid #0d9488; border-radius: 4px; color: #194e4a; display: flex; flex-direction: column; gap: 5px; line-height: 1.5; margin-top: 18px; padding: 13px 16px; }
+.biological-notice strong { color: #075e67; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; }
+.biological-notice span { color: #3d6470; font-size: .86rem; }
+.biological-metrics { margin-top: 18px; }
+.biological-metric-card--info { border-left-color: #6b7db3; }
+.biological-tools-panel { margin-top: 18px; }
+.biological-tool-grid { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px; }
+.biological-tool-card { background: #f8fbfc; border: 1px solid #d4e0e6; border-top: 3px solid #aabcc8; display: flex; flex-direction: column; min-height: 182px; padding: 14px; }
+.biological-tool-card--available { border-top-color: #0d9488; }
+.biological-tool-card h3 { color: #173c5d; font-size: .98rem; margin: 14px 0 7px; }
+.biological-tool-card p { color: #526e80; font-size: .8rem; line-height: 1.5; margin-bottom: 14px; }
+.biological-tool-card button, .biological-tool-card .button-link { align-self: flex-start; margin-top: auto; }
+.biological-tool-card__top { align-items: center; display: flex; justify-content: space-between; gap: 8px; }
+.biological-tool-icon { align-items: center; background: #dff1ef; border: 1px solid #9bd8cf; border-radius: 50%; color: #087785; display: inline-flex; font-size: 1.25rem; height: 32px; justify-content: center; width: 32px; }
+.biological-workspace-grid { display: grid; gap: 12px; grid-template-columns: minmax(0, 1.65fr) minmax(260px, .75fr); margin-top: 12px; }
+.biological-side-column { display: grid; gap: 12px; align-content: start; }
+.biological-side-column .panel { min-height: 0; }
+.biological-filter-row { align-items: end; display: grid; gap: 10px; grid-template-columns: minmax(0, 1.5fr) minmax(130px, .6fr) auto; margin-top: 16px; }
+.biological-filter-row label, .biological-form-grid label { color: #334155; display: grid; font-size: .82rem; font-weight: 600; gap: 6px; }
+.biological-filter-row input, .biological-filter-row select, .biological-form-grid input, .biological-form-grid select, .biological-form-grid textarea { border: 1px solid #c8d5de; border-radius: 4px; color: #0f172a; font: inherit; min-height: 38px; padding: 8px 10px; }
+.biological-filter-row .checkbox-row { margin: 0 0 8px; white-space: nowrap; }
+.biological-scenario-table { min-width: 850px; }
+.biological-editor-panel, .biological-history-panel { margin-top: 12px; }
+.biological-form-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 18px; }
+.biological-form-grid textarea { min-height: 84px; resize: vertical; }
+.biological-form-grid__wide { grid-column: 1 / -1; }
+.biological-editor-actions { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.biological-history-panel table { min-width: 780px; }
+.biological-history-panel td code { display: block; max-width: 540px; max-height: 110px; overflow: auto; white-space: pre-wrap; }
+.biological-provenance-panel ul, .biological-workflow-panel ol { color: #334e68; display: grid; gap: 10px; line-height: 1.45; margin: 14px 0; padding-left: 20px; }
+.biological-provenance-panel li { padding-left: 2px; }
+.biological-provenance-panel li strong { color: #075e67; display: inline-block; min-width: 100px; }
+.biological-provenance-panel li span { color: #617787; font-size: .8rem; }
+.biological-workflow-panel ol { margin-bottom: 18px; }
 
 .auth-layout { display: grid; grid-template-columns: minmax(300px, 42%) minmax(0, 58%); min-height: 100vh; }
 .auth-brand { background: #0f2744; color: #eaf1ff; display: flex; flex-direction: column; gap: 32px; justify-content: center; min-height: 100%; padding: clamp(32px, 6vw, 88px); }
@@ -242,7 +277,8 @@ td code { color: #075e67; font-size: .78rem; }
   .sidebar__caption, .sidebar__footer { display: none; }
   .status-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .management-grid, .report-layout, .trend-admin-grid, .protocol-layout { grid-template-columns: 1fr; }
+  .management-grid, .report-layout, .trend-admin-grid, .protocol-layout, .biological-workspace-grid { grid-template-columns: 1fr; }
+  .biological-tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .archive-layout { grid-template-columns: 1fr; }
   .auth-layout { grid-template-columns: 1fr; }
   .auth-brand { min-height: auto; padding: 32px; }
@@ -256,7 +292,9 @@ td code { color: #075e67; font-size: .78rem; }
   .inline-form { align-items: stretch; flex-direction: column; }
   .filter-row { grid-template-columns: 1fr; }
   .artifact-upload { grid-template-columns: 1fr; }
-  .machine-qa-protocol-controls, .gamma-input-grid, .gamma-config-grid, .report-form-grid, .report-json-grid, .trend-filter-grid, .form-grid, .protocol-form-grid, .diff-grid { grid-template-columns: 1fr; }
+  .machine-qa-protocol-controls, .gamma-input-grid, .gamma-config-grid, .report-form-grid, .report-json-grid, .trend-filter-grid, .form-grid, .protocol-form-grid, .diff-grid, .biological-filter-row, .biological-form-grid { grid-template-columns: 1fr; }
+  .biological-tool-grid { grid-template-columns: 1fr; }
+  .biological-form-grid__wide { grid-column: auto; }
   .report-block-editor__top { grid-template-columns: auto 1fr; }
   .report-block-editor__top .table-actions { grid-column: 1 / -1; justify-content: start; }
   .auth-panel { padding: 16px; }

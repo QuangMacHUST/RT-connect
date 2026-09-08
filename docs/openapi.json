@@ -737,6 +737,737 @@
         "title": "BaselineResponse",
         "type": "object"
       },
+      "BiologicalCalculationCollectionResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BiologicalCalculationResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "offset",
+          "limit"
+        ],
+        "title": "BiologicalCalculationCollectionResponse",
+        "type": "object"
+      },
+      "BiologicalCalculationResponse": {
+        "properties": {
+          "calculation_type": {
+            "title": "Calculation Type",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by_user_identity_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By User Identity Id"
+          },
+          "error_snapshot": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Error Snapshot",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "input_snapshot": {
+            "additionalProperties": true,
+            "title": "Input Snapshot",
+            "type": "object"
+          },
+          "model_key": {
+            "title": "Model Key",
+            "type": "string"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "result_snapshot": {
+            "additionalProperties": true,
+            "title": "Result Snapshot",
+            "type": "object"
+          },
+          "scenario_id": {
+            "format": "uuid",
+            "title": "Scenario Id",
+            "type": "string"
+          },
+          "scenario_revision_id": {
+            "format": "uuid",
+            "title": "Scenario Revision Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          },
+          "warning_snapshot": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Warning Snapshot",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "organization_id",
+          "scenario_id",
+          "scenario_revision_id",
+          "calculation_type",
+          "model_key",
+          "model_version",
+          "status",
+          "input_snapshot",
+          "result_snapshot",
+          "warning_snapshot",
+          "error_snapshot",
+          "created_by_user_identity_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "BiologicalCalculationResponse",
+        "type": "object"
+      },
+      "BiologicalScenarioCloneRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 240,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "scenario_key": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "pattern": "^[A-Z][A-Z0-9_.-]{0,119}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scenario Key"
+          }
+        },
+        "title": "BiologicalScenarioCloneRequest",
+        "type": "object"
+      },
+      "BiologicalScenarioCollectionResponse": {
+        "properties": {
+          "include_archived": {
+            "title": "Include Archived",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BiologicalScenarioResponse"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "limit": {
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "title": "Offset",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "offset",
+          "limit",
+          "include_archived"
+        ],
+        "title": "BiologicalScenarioCollectionResponse",
+        "type": "object"
+      },
+      "BiologicalScenarioCreateRequest": {
+        "properties": {
+          "assumptions": {
+            "additionalProperties": true,
+            "title": "Assumptions",
+            "type": "object"
+          },
+          "clinical_context": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clinical Context"
+          },
+          "name": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "scenario_key": {
+            "maxLength": 120,
+            "minLength": 1,
+            "pattern": "^[A-Z][A-Z0-9_.-]{0,119}$",
+            "title": "Scenario Key",
+            "type": "string"
+          },
+          "scenario_type": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Scenario Type",
+            "type": "string"
+          },
+          "source_reference": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Reference"
+          },
+          "source_type": {
+            "default": "USER_DEFINED",
+            "enum": [
+              "USER_DEFINED",
+              "REFERENCE",
+              "INTERNAL",
+              "SITE_APPROVED"
+            ],
+            "title": "Source Type",
+            "type": "string"
+          },
+          "tissue_context": {
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Tissue Context",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scenario_key",
+          "name",
+          "scenario_type",
+          "tissue_context"
+        ],
+        "title": "BiologicalScenarioCreateRequest",
+        "type": "object"
+      },
+      "BiologicalScenarioPatchRequest": {
+        "properties": {
+          "assumptions": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assumptions"
+          },
+          "clinical_context": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clinical Context"
+          },
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 240,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "scenario_type": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scenario Type"
+          },
+          "source_reference": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Reference"
+          },
+          "source_type": {
+            "anyOf": [
+              {
+                "enum": [
+                  "USER_DEFINED",
+                  "REFERENCE",
+                  "INTERNAL",
+                  "SITE_APPROVED"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Type"
+          },
+          "tissue_context": {
+            "anyOf": [
+              {
+                "maxLength": 240,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tissue Context"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "BiologicalScenarioPatchRequest",
+        "type": "object"
+      },
+      "BiologicalScenarioResponse": {
+        "properties": {
+          "assumptions": {
+            "additionalProperties": true,
+            "title": "Assumptions",
+            "type": "object"
+          },
+          "clinical_context": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clinical Context"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by_user_identity_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By User Identity Id"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "latest_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Snapshot"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "scenario_key": {
+            "title": "Scenario Key",
+            "type": "string"
+          },
+          "scenario_type": {
+            "title": "Scenario Type",
+            "type": "string"
+          },
+          "source_reference": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Reference"
+          },
+          "source_scenario_revision_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Scenario Revision Id"
+          },
+          "source_type": {
+            "title": "Source Type",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "tissue_context": {
+            "title": "Tissue Context",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "organization_id",
+          "scenario_key",
+          "name",
+          "scenario_type",
+          "tissue_context",
+          "clinical_context",
+          "source_type",
+          "source_reference",
+          "assumptions",
+          "status",
+          "revision",
+          "source_scenario_revision_id",
+          "created_by_user_identity_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "BiologicalScenarioResponse",
+        "type": "object"
+      },
+      "BiologicalScenarioRevisionResponse": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by_user_identity_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By User Identity Id"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "revision_number": {
+            "title": "Revision Number",
+            "type": "integer"
+          },
+          "scenario_id": {
+            "format": "uuid",
+            "title": "Scenario Id",
+            "type": "string"
+          },
+          "snapshot": {
+            "additionalProperties": true,
+            "title": "Snapshot",
+            "type": "object"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "organization_id",
+          "scenario_id",
+          "revision_number",
+          "status",
+          "snapshot",
+          "created_by_user_identity_id",
+          "created_at"
+        ],
+        "title": "BiologicalScenarioRevisionResponse",
+        "type": "object"
+      },
+      "BiologicalScenarioTransitionRequest": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "BiologicalScenarioTransitionRequest",
+        "type": "object"
+      },
+      "BiologicalSummaryResponse": {
+        "properties": {
+          "archived_scenarios": {
+            "title": "Archived Scenarios",
+            "type": "integer"
+          },
+          "completed_calculations": {
+            "title": "Completed Calculations",
+            "type": "integer"
+          },
+          "draft_scenarios": {
+            "title": "Draft Scenarios",
+            "type": "integer"
+          },
+          "exported_reports": {
+            "title": "Exported Reports",
+            "type": "integer"
+          },
+          "organization_id": {
+            "format": "uuid",
+            "title": "Organization Id",
+            "type": "string"
+          },
+          "saved_scenarios": {
+            "title": "Saved Scenarios",
+            "type": "integer"
+          },
+          "total_scenarios": {
+            "title": "Total Scenarios",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "organization_id",
+          "total_scenarios",
+          "draft_scenarios",
+          "saved_scenarios",
+          "archived_scenarios",
+          "completed_calculations",
+          "exported_reports"
+        ],
+        "title": "BiologicalSummaryResponse",
+        "type": "object"
+      },
+      "BiologicalToolResponse": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "phase": {
+            "title": "Phase",
+            "type": "string"
+          },
+          "route": {
+            "title": "Route",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "tool_key": {
+            "title": "Tool Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "tool_key",
+          "label",
+          "route",
+          "phase",
+          "status",
+          "available",
+          "description"
+        ],
+        "title": "BiologicalToolResponse",
+        "type": "object"
+      },
+      "BiologicalValidationResponse": {
+        "properties": {
+          "errors": {
+            "items": {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "object"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "object"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "valid",
+          "errors",
+          "warnings"
+        ],
+        "title": "BiologicalValidationResponse",
+        "type": "object"
+      },
       "Body_upload_artifact_api_v1_qa_cases__case_id__artifacts_post": {
         "properties": {
           "artifact_type": {
@@ -6862,6 +7593,875 @@
         "summary": "Update Organization",
         "tags": [
           "organization"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/biological/calculations": {
+      "get": {
+        "operationId": "list_biological_calculations_api_v1_organizations__organization_id__biological_calculations_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scenario_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Scenario Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiologicalCalculationCollectionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Biological Calculations",
+        "tags": [
+          "biological"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/biological/calculations/{calculation_id}": {
+      "get": {
+        "operationId": "get_biological_calculation_api_v1_organizations__organization_id__biological_calculations__calculation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "calculation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Calculation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiologicalCalculationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Biological Calculation",
+        "tags": [
+          "biological"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/biological/scenarios": {
+      "get": {
+        "operationId": "list_biological_scenarios_api_v1_organizations__organization_id__biological_scenarios_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 240,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "DRAFT",
+                    "SAVED",
+                    "ARCHIVED"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_archived",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Archived",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiologicalScenarioCollectionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Biological Scenarios",
+        "tags": [
+          "biological"
+        ]
+      },
+      "post": {
+        "operationId": "create_biological_scenario_api_v1_organizations__organization_id__biological_scenarios_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiologicalScenarioCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiologicalScenarioResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Biological Scenario",
+        "tags": [
+          "biological"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/biological/scenarios/validate": {
+      "post": {
+        "operationId": "validate_biological_scenario_api_v1_organizations__organization_id__biological_scenarios_validate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiologicalScenarioCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiologicalValidationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Validate Biological Scenario",
+        "tags": [
+          "biological"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/biological/scenarios/{scenario_id}": {
+      "get": {
+        "operationId": "get_biological_scenario_api_v1_organizations__organization_id__biological_scenarios__scenario_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scenario_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Scenario Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiologicalScenarioResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Biological Scenario",
+        "tags": [
+          "biological"
+        ]
+      },
+      "patch": {
+        "operationId": "update_biological_scenario_api_v1_organizations__organization_id__biological_scenarios__scenario_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scenario_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Scenario Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiologicalScenarioPatchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiologicalScenarioResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Update Biological Scenario",
+        "tags": [
+          "biological"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/biological/scenarios/{scenario_id}/archive": {
+      "post": {
+        "operationId": "archive_biological_scenario_api_v1_organizations__organization_id__biological_scenarios__scenario_id__archive_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scenario_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Scenario Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiologicalScenarioTransitionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiologicalScenarioResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Archive Biological Scenario",
+        "tags": [
+          "biological"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/biological/scenarios/{scenario_id}/clone": {
+      "post": {
+        "operationId": "clone_biological_scenario_api_v1_organizations__organization_id__biological_scenarios__scenario_id__clone_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scenario_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Scenario Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiologicalScenarioCloneRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiologicalScenarioResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Clone Biological Scenario",
+        "tags": [
+          "biological"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/biological/scenarios/{scenario_id}/revisions": {
+      "get": {
+        "operationId": "list_biological_scenario_revisions_api_v1_organizations__organization_id__biological_scenarios__scenario_id__revisions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scenario_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Scenario Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BiologicalScenarioRevisionResponse"
+                  },
+                  "title": "Response List Biological Scenario Revisions Api V1 Organizations  Organization Id  Biological Scenarios  Scenario Id  Revisions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Biological Scenario Revisions",
+        "tags": [
+          "biological"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/biological/scenarios/{scenario_id}/save": {
+      "post": {
+        "operationId": "save_biological_scenario_api_v1_organizations__organization_id__biological_scenarios__scenario_id__save_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scenario_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Scenario Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BiologicalScenarioTransitionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiologicalScenarioResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Save Biological Scenario",
+        "tags": [
+          "biological"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/biological/summary": {
+      "get": {
+        "operationId": "biological_summary_api_v1_organizations__organization_id__biological_summary_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BiologicalSummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Biological Summary",
+        "tags": [
+          "biological"
+        ]
+      }
+    },
+    "/api/v1/organizations/{organization_id}/biological/tools": {
+      "get": {
+        "operationId": "list_biological_tools_api_v1_organizations__organization_id__biological_tools_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "organization_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Organization Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/BiologicalToolResponse"
+                  },
+                  "title": "Response List Biological Tools Api V1 Organizations  Organization Id  Biological Tools Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Biological Tools",
+        "tags": [
+          "biological"
         ]
       }
     },

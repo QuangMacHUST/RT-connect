@@ -229,6 +229,117 @@ class QAProtocolRule(TimestampedIdMixin, Base):
     reference: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
 
+class BiologicalScenario(TimestampedIdMixin, Base):
+    """Independent biological calculation scenario, never a QA/patient record."""
+
+    __tablename__ = "biological_scenarios"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "scenario_key",
+            name="uq_biological_scenarios_organization_key",
+        ),
+        Index("ix_biological_scenarios_organization_status", "organization_id", "status"),
+        Index("ix_biological_scenarios_organization_updated", "organization_id", "updated_at"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    scenario_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    name: Mapped[str] = mapped_column(String(240), nullable=False)
+    scenario_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    tissue_context: Mapped[str] = mapped_column(String(240), nullable=False)
+    clinical_context: Mapped[str | None] = mapped_column(String(4000), nullable=True)
+    source_type: Mapped[str] = mapped_column(
+        String(40), nullable=False, server_default="USER_DEFINED"
+    )
+    source_reference: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    assumptions: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="DRAFT")
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    source_scenario_revision_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("biological_scenario_revisions.id"), nullable=True, index=True
+    )
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+
+
+class BiologicalScenarioRevision(TimestampedIdMixin, Base):
+    """Append-only input snapshot for one independent biological scenario."""
+
+    __tablename__ = "biological_scenario_revisions"
+    __table_args__ = (
+        UniqueConstraint(
+            "scenario_id",
+            "revision_number",
+            name="uq_biological_scenario_revisions_number",
+        ),
+        Index(
+            "ix_biological_scenario_revisions_organization_scenario",
+            "organization_id",
+            "scenario_id",
+        ),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    scenario_id: Mapped[UUID] = mapped_column(
+        ForeignKey("biological_scenarios.id"), nullable=False, index=True
+    )
+    revision_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False)
+    snapshot: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+
+
+class BiologicalCalculationRun(TimestampedIdMixin, Base):
+    """Immutable calculation output linked to a biological scenario revision."""
+
+    __tablename__ = "biological_calculation_runs"
+    __table_args__ = (
+        Index(
+            "ix_biological_calculation_runs_organization_scenario",
+            "organization_id",
+            "scenario_id",
+        ),
+        Index(
+            "ix_biological_calculation_runs_organization_status",
+            "organization_id",
+            "status",
+        ),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    scenario_id: Mapped[UUID] = mapped_column(
+        ForeignKey("biological_scenarios.id"), nullable=False, index=True
+    )
+    scenario_revision_id: Mapped[UUID] = mapped_column(
+        ForeignKey("biological_scenario_revisions.id"), nullable=False, index=True
+    )
+    calculation_type: Mapped[str] = mapped_column(String(80), nullable=False)
+    model_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    model_version: Mapped[str] = mapped_column(String(80), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="COMPLETED")
+    input_snapshot: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
+    result_snapshot: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False)
+    warning_snapshot: Mapped[list[dict[str, object]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    error_snapshot: Mapped[list[dict[str, object]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+
+
 class MachineQARun(TimestampedIdMixin, Base):
     """Draft or completed Machine QA run with immutable result snapshots."""
 

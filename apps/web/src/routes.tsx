@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { AuthCallbackPage } from './pages/AuthCallbackPage'
+import { BiologicalToolkitPage } from './pages/BiologicalToolkitPage'
 import { HomeDashboardPage } from './pages/HomeDashboardPage'
 import { GammaPage } from './pages/GammaPage'
 import { LoginPage } from './pages/LoginPage'
@@ -30,6 +31,7 @@ export function ApplicationRoutes() {
       <Route path="/app/reports" element={<ProtectedRoute><ReportBuilderPage /></ProtectedRoute>} />
       <Route path="/app/trend" element={<ProtectedRoute><TrendPage /></ProtectedRoute>} />
       <Route path="/app/qa-protocols" element={<ProtectedRoute><QAProtocolPage /></ProtectedRoute>} />
+      <Route path="/app/biological" element={<ProtectedRoute><BiologicalToolkitPage /></ProtectedRoute>} />
       <Route path="/app/qa/cases/:caseId/machine-qa" element={<ProtectedRoute><MachineQAPage /></ProtectedRoute>} />
       <Route path="/app/qa/cases/:caseId/gamma" element={<ProtectedRoute><GammaPage /></ProtectedRoute>} />
       <Route path="/app/system/status" element={<PlatformStatusPage />} />

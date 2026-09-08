@@ -2,26 +2,26 @@
 
 ## Documentation and implementation rebaseline — 2026-09-08
 
-`business-analysis.md` v0.10, `specification.md` v1.4, `technical-specification.md` v1.2 và `plan.md` v2.4 bổ sung requirement, contract, testcase và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
+`business-analysis.md` v0.11, `specification.md` v1.5, `technical-specification.md` v1.3 và `plan.md` v2.5 bổ sung requirement, contract, testcase và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
 
-Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness, staging Trend và staging Protocol consumer vẫn phải được đối soát theo plan §1.2–§1.3. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Next work lấy từ plan v2.4 và specification §11; P11 hiện mới `LOCAL_VERIFIED`.
+Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness, staging Trend và staging Protocol consumer vẫn phải được đối soát theo plan §1.2–§1.3. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Next work lấy từ plan v2.5 và specification §11; P12 hiện mới `LOCAL_VERIFIED`.
 
 ## Current checkpoint
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
-- **Current phase:** P11 — QA Protocol Library và rule version; P7/P9/P10 là consumer dependencies, còn P8/P9/P10 remaining release gates vẫn mở.
-- **Current status:** IN_PROGRESS — P11 có migration `20260908_0011`, protocol lifecycle/validation/clone/compare API, library UI và Machine QA active-only selection. Backend full suite `81/81`, focused P11 `3/3`, Ruff/mypy, frontend lint/typecheck/Vitest `1/1` và build pass local. Staging browser/consumer snapshot, complete P11 S/E/C matrix, visual/accessibility và release manifest chưa đóng.
-- **Last authoritative check:** 2026-09-08 — local PostgreSQL đã ở migration head `20260908_0011`; working tree hiện tại đã pass các gate local nêu trên. Evidence staging P8/P10 bên dưới vẫn có giá trị cho candidate tương ứng, nhưng không được dùng để suy ra P11 staging hoặc production readiness.
-- **Next exact step:** commit/push P11 cùng tài liệu v0.10/v1.4/v1.2/v2.4; cập nhật `SCHEMA_REVISION=20260908_0011` cho API/worker staging nếu biến đang pin, chờ API/web deploy, kiểm `/api/v1/ready` và chạy browser protocol lifecycle + Machine QA consumer snapshot trên đúng SHA.
+- **Current phase:** P12 — Biological Hub và calculation history độc lập; P8/P9/P10/P11 remaining release gates vẫn mở, P13 là module kế tiếp sau P12 staging closure.
+- **Current status:** IN_PROGRESS — P12 có migration `20260908_0012`, scoped scenario/revision/calculation read model, lifecycle API/UI và Stitch screen `b32ef9de691f48449ec23e491a6b634d`. Local focused P12, full backend, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head pass; P12 renderer integration, staging browser/DB-state/no-QA-linkage, complete negative matrix và release manifest chưa đóng.
+- **Last authoritative check:** 2026-09-08 — local PostgreSQL đã upgrade tới `20260908_0012 (head)`; OpenAPI đã regenerate, frontend build pass và P12 focused suite pass trên working tree candidate. Evidence staging P8/P10/P11 bên dưới vẫn có giá trị cho candidate tương ứng, nhưng không được dùng để suy ra P12 staging hoặc production readiness.
+- **Next exact step:** commit/push P12 cùng tài liệu v0.11/v1.5/v1.3/v2.5; cập nhật/kiểm `SCHEMA_REVISION=20260908_0012` trên API/worker staging nếu biến đang pin, chờ deploy đúng SHA, kiểm `/api/v1/ready` và chạy browser P12 validate→create→edit→save→clone→archive→history với DB/scope evidence.
 
 ## Source documents read
 
 | Source | Version | Status |
 | :--- | :--- | :--- |
-| `business-analysis.md` | 0.10 | Business source; detailed workflow/error/recovery matrix, protocol lifecycle and feature-completion definition |
-| `specification.md` | 1.4 | Behavior/data/error/numeric contracts; exact P10/P11 API, model, validation and consumer contracts |
-| `technical-specification.md` | 1.2 | Architecture reference; P10 projection/baseline/maintenance and P11 implementation addendum |
-| `plan.md` | 2.4 | Phase/workflow/S-E/C tests, DoR/DoD, execution packet, P10/P11 checkpoints and staging gates |
+| `business-analysis.md` | 0.11 | Business source; detailed workflow/error/recovery matrix, protocol lifecycle, P12 scenario contract and feature-completion definition |
+| `specification.md` | 1.5 | Behavior/data/error/numeric contracts; exact P10/P11/P12 API, model, validation and consumer contracts |
+| `technical-specification.md` | 1.3 | Architecture reference; P10/P11 plus P12 bounded-context implementation addenda |
+| `plan.md` | 2.5 | Phase/workflow/S-E/C tests, DoR/DoD, execution ledger, P10/P11/P12 checkpoints and staging gates |
 
 ## Phase status
 
@@ -39,7 +39,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | P9 | STAGING E2E PARTIAL / LOCAL VERIFIED | Report revision/export browser smoke on staging; recheck current candidate, visual/export failure gate remains |
 | P10 | STAGING SMOKE PARTIAL / EXIT OPEN | Migration `20260908_0010`, API/UI slice, 7 focused tests and authenticated staging trend smoke pass; large-series, complete negative matrix, visual/accessibility and release evidence remain |
 | P11 | LOCAL VERIFIED / STAGING OPEN | Migration `20260908_0011`, library API/UI and local `3/3`; staging browser/consumer snapshot and full S/E/C evidence remain |
-| P12 | NOT_STARTED | Biological screen must be regenerated |
+| P12 | LOCAL VERIFIED / STAGING OPEN | Migration `20260908_0012`, Biological Hub route/API/UI, scenario revision/clone/archive and local focused/full gates; staging browser/DB-state/no-QA-linkage, renderer integration and full S/E/C remain |
 | P13 | NOT_STARTED | Depends on P12 |
 | P14 | NOT_STARTED | Depends on P13 |
 | P15 | NOT_STARTED | Depends on P13/P14 |
@@ -64,8 +64,9 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | Kho lưu trữ QA & Thư mục | `4c9ec57310fd404cbae3b53b0bab2368` | MOD-03 |
 | Phân tích PSQA Gamma Workspace | `ffb87901b3194bd3aff8760c54c2f9f4` | MOD-04/MOD-06 |
 | Trình biên soạn Báo cáo - Report Builder Studio | `a1478466ace843c5aaf9a15dfc58273e` | MOD-07 |
+| Biological Toolkit — Independent Calculation Hub | `b32ef9de691f48449ec23e491a6b634d` | MOD-10/P12 |
 
-`get_project` still exposes the four old Biological instances as `hidden`. They are deprecated and must not be restored or used as design-to-code sources. P12–P15 will create new screens one at a time in the same project.
+`get_project` still exposes the four old Biological instances as `hidden`. They are deprecated and must not be restored or used as design-to-code sources. P12 now has a new active design source; P13–P15 will create new screens one at a time in the same project. P12 screenshot asset is `50e2c49b3ec743a59f9d99e8b13e694f` and the generated HTML asset is `d79a76c00dd64ea4a8d7384095860552`.
 
 ## Live Railway evidence — verified 2026-09-06
 
@@ -118,6 +119,14 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - Backend full suite passed **81/81**; Ruff and strict mypy passed. Frontend lint/typecheck/Vitest `1/1` and production build passed; the build emits only the known large-bundle warning.
 - OpenAPI was regenerated after registering the P11 router. The P11 UI route is `/app/qa-protocols`; the API base surface is `/api/v1/organizations/{organization_id}/qa-protocols`.
 - This is local evidence only. P11 staging still requires deployment with schema `20260908_0011`, authenticated browser lifecycle, active protocol consumed by a new Machine QA/Gamma run, old snapshot readback, negative scope/conflict/persistence/capability cases, and release-manifest evidence.
+
+## Local P12 Biological Hub evidence — verified 2026-09-08
+
+- Migration `20260908_0012_biological_scenarios.py` upgraded successfully on local PostgreSQL and is the current Alembic head. It adds organization-scoped `biological_scenarios`, append-only `biological_scenario_revisions` and the read model for `biological_calculation_runs` without a mandatory QA-case/patient relationship.
+- P12 API routes are registered under `/api/v1/organizations/{organization_id}/biological`; validate-only, create DRAFT, DRAFT patch with optimistic revision, save to SAVED, clone with source lineage, archive, default archived filtering, revision history, summary/tools and scoped calculation reads are implemented.
+- Focused `apps/api/tests/test_biological.py` passed; full backend suite passed after updating the expected schema revision to `20260908_0012`. Ruff/mypy passed, OpenAPI was regenerated, and frontend lint/typecheck/Vitest/build passed. The Vite build emits only the known large-bundle warning.
+- The P12 web route is `/app/biological` and uses the generated Stitch screen `b32ef9de691f48449ec23e491a6b634d`. Cards for P13–P16 remain explicitly `PLANNED`/disabled; the UI does not create fake calculation runs and does not link scenarios to QA cases automatically.
+- This is local evidence only. P12 staging still requires deploy on the candidate SHA, authenticated browser create→validate→edit→save→clone→archive→history/filter, response plus PostgreSQL state checks, refresh/reconnect behavior, negative scope/conflict/source/session/persistence cases and the P9 independent Biological report integration decision.
 
 ## Historical Railway evidence (superseded)
 

@@ -5,10 +5,10 @@
 - **Tên sản phẩm:** RT-CONNECT
 - **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
 - **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
-- **Phiên bản tài liệu:** 0.10 — catalogue tính năng, workflow, ngoại lệ, phục hồi và tiêu chí nghiệm thu theo P0–P20; bổ sung contract vận hành QA Protocol Library (2026-09-08)
+- **Phiên bản tài liệu:** 0.11 — catalogue tính năng, workflow, ngoại lệ, phục hồi và tiêu chí nghiệm thu theo P0–P20; bổ sung contract thực thi Biological Hub P12 (2026-09-08)
 - **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
-Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.10 tại mục 21 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
+Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.11 tại mục 21 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
 
 ---
 
@@ -1178,9 +1178,9 @@ Clinical MVP tập trung vào Machine QA, PSQA Gamma, report, trend, input valid
 `specification.md`, `technical-specification.md` và `plan.md` được xây dựng từ các yêu cầu, quy tắc và tiêu chí nghiệm thu trong tài liệu này. Google Stitch cung cấp thiết kế trực quan; Railway và Supabase cung cấp hạ tầng đã chọn; không nguồn nào trong số đó được tự thay thế hoặc làm mất requirement nghiệp vụ.
 
 
-## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.10
+## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.11
 
-Bổ sung ngày 2026-09-08 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi và phạm vi nghiệm thu. `specification.md` v1.4 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v2.4 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
+Bổ sung ngày 2026-09-08 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi và phạm vi nghiệm thu. `specification.md` v1.5 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v2.5 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
 
 ### 21.1. Các quyết định sản phẩm giữ nguyên
 
@@ -1435,6 +1435,49 @@ Mã FR-Pxx-yy là yêu cầu có thể truy vết. Các phase nền tảng/tri�
 **Luồng chính:** Vào tab Biological Toolkit. → Chọn công cụ hoặc mở scenario cũ. → Nhập dữ liệu thủ công hoặc dataset riêng do user chọn. → Lưu scenario và calculation revision. → Mở lại, clone hoặc export calculation report độc lập.
 
 **Nghiệm thu nhóm:** Không automatic QA linkage; scenario save/reopen/clone/history/export và scoped errors pass.
+
+**Đặc tả nghiệp vụ chi tiết P12:**
+
+- `scenario_key` là mã nghiệp vụ do người dùng đặt, duy nhất trong một organization, viết hoa theo quy ước `A-Z`, số, dấu chấm, gạch ngang hoặc gạch dưới. Đổi tên hiển thị không được đổi mã hoặc ID đã dùng trong history.
+- Một scenario tối thiểu có tên, loại kịch bản, mô/bối cảnh mô, bối cảnh làm việc, loại nguồn, nguồn tham chiếu và object `assumptions`. `assumptions` là dữ liệu JSON hữu hạn để lưu giả định; không chấp nhận `NaN`, `Infinity`, object không serialize được hoặc nội dung chứa định danh người bệnh.
+- Các loại nguồn ban đầu là `USER_DEFINED`, `REFERENCE`, `INTERNAL` và `SITE_APPROVED`. `REFERENCE` bắt buộc có citation/URL/tài liệu tham chiếu; nguồn còn lại vẫn phải được hiển thị rõ để người dùng biết đây là dữ liệu nào.
+- Trạng thái nghiệp vụ P12 là `DRAFT` → `SAVED` → `ARCHIVED`. `DRAFT` có thể sửa; `SAVED` là snapshot đã lưu để dùng lại; `ARCHIVED` không dùng cho thao tác mới nhưng vẫn phải tìm và mở được. Không có bước phê duyệt hay cấp quyền theo chức danh.
+- Mỗi lần tạo, sửa, save, clone hoặc archive phải tạo một `revision` append-only. Calculation ở P13–P15 sẽ tham chiếu một revision cụ thể; việc sửa scenario về sau không được thay đổi input của calculation cũ.
+- Clone phải tạo ID và `scenario_key` mới, sao chép sâu assumptions/context và lưu `source_scenario_revision_id`. Sửa hoặc archive bản clone không được làm thay đổi bản nguồn.
+- Biological Hub chỉ là namespace tính toán/tra cứu độc lập. P12 không tạo foreign key bắt buộc tới QA case, machine, patient record, prescription hoặc treatment order; dữ liệu dose/structure chỉ vào khi người dùng chủ động chọn và có provenance riêng.
+
+**Các nhánh chạy đúng phải quan sát được:**
+
+| Mã | Tình huống | Kết quả nghiệp vụ bắt buộc |
+| :--- | :--- | :--- |
+| P12-S01 | Organization chưa có scenario | Hub hiển thị empty state, hướng dẫn tạo scenario và sáu capability card; không tạo dữ liệu giả. |
+| P12-S02 | Validate scenario hợp lệ | Trả kết quả hợp lệ nhưng không ghi database; người dùng vẫn giữ nguyên form để quyết định tạo. |
+| P12-S03 | Tạo scenario mới | Tạo DRAFT revision 1, có ID, created/updated timestamp và snapshot ban đầu. |
+| P12-S04 | Sửa DRAFT với revision hiện tại | Lưu đúng field được thay đổi, tăng revision một lần và thêm snapshot mới. |
+| P12-S05 | Save DRAFT | Chuyển thành SAVED, khóa nội dung hiện tại khỏi sửa trực tiếp và giữ các revision trước. |
+| P12-S06 | Clone SAVED/ARCHIVED | Tạo DRAFT mới, giữ lineage/source và không thay đổi bản nguồn hoặc calculation cũ. |
+| P12-S07 | Lọc/tìm history | Kết quả chỉ thuộc organization, lọc status/search đúng và archived chỉ xuất hiện khi yêu cầu rõ. |
+| P12-S08 | Mở lại sau refresh | Scenario, assumptions, source và revision hiển thị đúng snapshot server; không phụ thuộc state trong browser. |
+| P12-S09 | Capability P13–P16 chưa mở | Card có trạng thái `PLANNED`, không dẫn tới route chết và không giả vờ đã tính. |
+
+**Các nhánh lỗi và cách phục hồi nghiệp vụ:**
+
+| Mã | Kích hoạt | Phản hồi người dùng và dữ liệu phải giữ |
+| :--- | :--- | :--- |
+| P12-E01 | Session hết hạn hoặc Auth không sẵn sàng | Dừng request, giữ form/filter nếu còn an toàn, yêu cầu đăng nhập lại; không dùng anonymous hoặc user giả. |
+| P12-E02 | Organization không thuộc membership hiện tại | Hiển thị lỗi phạm vi chung; không tiết lộ scenario có tồn tại hay không và không truy vấn detail ngoài scope. |
+| P12-E03 | `scenario_key` trùng | Đánh dấu key, giữ các field khác, không tạo scenario thứ hai; người dùng đổi key hoặc mở bản có sẵn. |
+| P12-E04 | Field thiếu/sai format hoặc assumptions không phải JSON hữu hạn | Trả lỗi field-level, không ghi mutation; giữ toàn bộ input có thể sửa. |
+| P12-E05 | `REFERENCE` thiếu nguồn | Chặn validate/create, chỉ rõ source reference bắt buộc; không tự chèn citation. |
+| P12-E06 | Scenario/revision không tồn tại trong scope | Hiển thị not found chung và quay về danh sách; không suy luận hoặc hiển thị metadata của tổ chức khác. |
+| P12-E07 | Revision đã cũ | Báo bản hiện tại đã thay đổi, giữ draft đang soạn và cho tải bản mới/clone; không ghi đè im lặng. |
+| P12-E08 | Sửa hoặc save scenario đã SAVED/ARCHIVED | Chặn bằng trạng thái immutable; hướng dẫn clone để tạo scenario mới, không đổi bản cũ. |
+| P12-E09 | Archive scenario đã archived | Không tạo revision giả; hiển thị trạng thái hiện tại và cho phép quay lại history. |
+| P12-E10 | Module/model chưa được triển khai | Card và API trả capability unavailable; không tạo calculation RUNNING/COMPLETED giả. |
+| P12-E11 | Database timeout/lỗi commit hoặc client mất response sau commit | Giữ form và operation context; query lại scenario/idempotency trước khi retry, không nhân bản record. |
+| P12-E12 | API/UI response không hợp lệ hoặc mất mạng khi đang đọc | Hiển thị lỗi/retry, không xóa cache draft hợp lệ, sau reconnect tải lại từ server và báo nếu snapshot đã đổi. |
+
+**Điều cấm ở P12:** không tự kéo patient/QA context vào scenario; không gọi kết quả HTTP 200 là calculation thành công; không tự sinh PASS/FAIL; không tự chọn alpha/beta, dose limit hoặc prescription; không xóa revision, lineage, audit hoặc result cũ để làm giao diện “sạch”.
 
 #### P13 — BED, EQD2 và đồ thị theo tổng liều
 

@@ -438,6 +438,81 @@ export type TrendResource = {
   warnings: string[]
 }
 
+export type BiologicalScenarioResource = {
+  id: string
+  organization_id: string
+  scenario_key: string
+  name: string
+  scenario_type: string
+  tissue_context: string
+  clinical_context: string | null
+  source_type: string
+  source_reference: string | null
+  assumptions: Record<string, unknown>
+  status: string
+  revision: number
+  source_scenario_revision_id: string | null
+  created_by_user_identity_id: string | null
+  created_at: string
+  updated_at: string
+  latest_snapshot: Record<string, unknown> | null
+}
+export type BiologicalScenarioCreateInput = {
+  scenario_key: string
+  name: string
+  scenario_type: string
+  tissue_context: string
+  clinical_context?: string | null
+  source_type?: 'USER_DEFINED' | 'REFERENCE' | 'INTERNAL' | 'SITE_APPROVED'
+  source_reference?: string | null
+  assumptions?: Record<string, unknown>
+}
+export type BiologicalScenarioRevisionResource = {
+  id: string
+  organization_id: string
+  scenario_id: string
+  revision_number: number
+  status: string
+  snapshot: Record<string, unknown>
+  created_by_user_identity_id: string | null
+  created_at: string
+}
+export type BiologicalCalculationResource = {
+  id: string
+  organization_id: string
+  scenario_id: string
+  scenario_revision_id: string
+  calculation_type: string
+  model_key: string
+  model_version: string
+  status: string
+  input_snapshot: Record<string, unknown>
+  result_snapshot: Record<string, unknown>
+  warning_snapshot: Array<Record<string, unknown>>
+  error_snapshot: Array<Record<string, unknown>>
+  created_by_user_identity_id: string | null
+  created_at: string
+  updated_at: string
+}
+export type BiologicalToolResource = {
+  tool_key: string
+  label: string
+  route: string
+  phase: string
+  status: string
+  available: boolean
+  description: string
+}
+export type BiologicalSummaryResource = {
+  organization_id: string
+  total_scenarios: number
+  draft_scenarios: number
+  saved_scenarios: number
+  archived_scenarios: number
+  completed_calculations: number
+  exported_reports: number
+}
+
 const qaProtocolRuleSchema = z.object({
   id: z.string().uuid(), metric_key: z.string(), display_name: z.string(), unit: z.string(),
   rule_type: z.string(), target_value: z.number().nullable(), lower_limit: z.number().nullable(),
@@ -573,6 +648,50 @@ const trendSchema = z.object({
   from_at: z.string().nullable(), to_at: z.string().nullable(), total_points: z.number().int(),
   series: z.array(trendSeriesSchema), maintenance_events: z.array(maintenanceSchema),
   baselines: z.array(baselineSchema), warnings: z.array(z.string())
+})
+const biologicalScenarioSchema = z.object({
+  id: z.string().uuid(), organization_id: z.string().uuid(), scenario_key: z.string(),
+  name: z.string(), scenario_type: z.string(), tissue_context: z.string(),
+  clinical_context: z.string().nullable(), source_type: z.string(), source_reference: z.string().nullable(),
+  assumptions: z.record(z.string(), z.unknown()), status: z.string(), revision: z.number().int(),
+  source_scenario_revision_id: z.string().uuid().nullable(),
+  created_by_user_identity_id: z.string().uuid().nullable(), created_at: z.string(), updated_at: z.string(),
+  latest_snapshot: z.record(z.string(), z.unknown()).nullable()
+})
+const biologicalScenarioCollectionSchema = z.object({
+  items: z.array(biologicalScenarioSchema), total: z.number().int(), offset: z.number().int(),
+  limit: z.number().int(), include_archived: z.boolean()
+})
+const biologicalScenarioRevisionSchema = z.object({
+  id: z.string().uuid(), organization_id: z.string().uuid(), scenario_id: z.string().uuid(),
+  revision_number: z.number().int(), status: z.string(), snapshot: z.record(z.string(), z.unknown()),
+  created_by_user_identity_id: z.string().uuid().nullable(), created_at: z.string()
+})
+const biologicalCalculationSchema = z.object({
+  id: z.string().uuid(), organization_id: z.string().uuid(), scenario_id: z.string().uuid(),
+  scenario_revision_id: z.string().uuid(), calculation_type: z.string(), model_key: z.string(),
+  model_version: z.string(), status: z.string(), input_snapshot: z.record(z.string(), z.unknown()),
+  result_snapshot: z.record(z.string(), z.unknown()),
+  warning_snapshot: z.array(z.record(z.string(), z.unknown())),
+  error_snapshot: z.array(z.record(z.string(), z.unknown())),
+  created_by_user_identity_id: z.string().uuid().nullable(), created_at: z.string(), updated_at: z.string()
+})
+const biologicalCalculationCollectionSchema = z.object({
+  items: z.array(biologicalCalculationSchema), total: z.number().int(), offset: z.number().int(), limit: z.number().int()
+})
+const biologicalToolSchema = z.object({
+  tool_key: z.string(), label: z.string(), route: z.string(), phase: z.string(), status: z.string(),
+  available: z.boolean(), description: z.string()
+})
+const biologicalSummarySchema = z.object({
+  organization_id: z.string().uuid(), total_scenarios: z.number().int(), draft_scenarios: z.number().int(),
+  saved_scenarios: z.number().int(), archived_scenarios: z.number().int(),
+  completed_calculations: z.number().int(), exported_reports: z.number().int()
+})
+const biologicalValidationSchema = z.object({
+  valid: z.boolean(),
+  errors: z.array(z.object({ code: z.string(), field: z.string().nullable(), message: z.string() })),
+  warnings: z.array(z.object({ code: z.string(), field: z.string().nullable(), message: z.string() }))
 })
 
 const makeCorrelationId = () => crypto.randomUUID()
@@ -905,6 +1024,89 @@ export class ApiClient {
 
   compareQAProtocols(accessToken: string, organizationId: string, protocolId: string, otherId: string): Promise<QAProtocolCompareResource> {
     return this.get(`/organizations/${organizationId}/qa-protocols/${protocolId}/compare?other_id=${encodeURIComponent(otherId)}`, qaProtocolCompareSchema, accessToken)
+  }
+
+  biologicalTools(accessToken: string, organizationId: string): Promise<BiologicalToolResource[]> {
+    return this.get(`/organizations/${organizationId}/biological/tools`, z.array(biologicalToolSchema), accessToken)
+  }
+
+  biologicalSummary(accessToken: string, organizationId: string): Promise<BiologicalSummaryResource> {
+    return this.get(`/organizations/${organizationId}/biological/summary`, biologicalSummarySchema, accessToken)
+  }
+
+  biologicalScenarios(accessToken: string, organizationId: string, params: {
+    q?: string
+    status?: 'DRAFT' | 'SAVED' | 'ARCHIVED'
+    include_archived?: boolean
+  } = {}): Promise<{ items: BiologicalScenarioResource[]; total: number; offset: number; limit: number; include_archived: boolean }> {
+    const query = new URLSearchParams()
+    if (params.q) query.set('q', params.q)
+    if (params.status) query.set('status', params.status)
+    if (params.include_archived || params.status === 'ARCHIVED') query.set('include_archived', 'true')
+    const suffix = query.toString() ? `?${query.toString()}` : ''
+    return this.get(`/organizations/${organizationId}/biological/scenarios${suffix}`, biologicalScenarioCollectionSchema, accessToken)
+  }
+
+  validateBiologicalScenario(accessToken: string, organizationId: string, body: BiologicalScenarioCreateInput): Promise<{ valid: boolean; errors: Array<{ code: string; field: string | null; message: string }>; warnings: Array<{ code: string; field: string | null; message: string }> }> {
+    return this.request(`/organizations/${organizationId}/biological/scenarios/validate`, biologicalValidationSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  createBiologicalScenario(accessToken: string, organizationId: string, body: BiologicalScenarioCreateInput): Promise<BiologicalScenarioResource> {
+    return this.request(`/organizations/${organizationId}/biological/scenarios`, biologicalScenarioSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  biologicalScenario(accessToken: string, organizationId: string, scenarioId: string): Promise<BiologicalScenarioResource> {
+    return this.get(`/organizations/${organizationId}/biological/scenarios/${scenarioId}`, biologicalScenarioSchema, accessToken)
+  }
+
+  updateBiologicalScenario(accessToken: string, organizationId: string, scenarioId: string, body: {
+    expected_revision: number
+    name?: string
+    scenario_type?: string
+    tissue_context?: string
+    clinical_context?: string | null
+    source_type?: BiologicalScenarioCreateInput['source_type']
+    source_reference?: string | null
+    assumptions?: Record<string, unknown>
+  }): Promise<BiologicalScenarioResource> {
+    return this.request(`/organizations/${organizationId}/biological/scenarios/${scenarioId}`, biologicalScenarioSchema, accessToken, {
+      method: 'PATCH', body: JSON.stringify(body)
+    })
+  }
+
+  saveBiologicalScenario(accessToken: string, organizationId: string, scenarioId: string, expectedRevision: number): Promise<BiologicalScenarioResource> {
+    return this.request(`/organizations/${organizationId}/biological/scenarios/${scenarioId}/save`, biologicalScenarioSchema, accessToken, {
+      method: 'POST', body: JSON.stringify({ expected_revision: expectedRevision })
+    })
+  }
+
+  cloneBiologicalScenario(accessToken: string, organizationId: string, scenarioId: string, body: { scenario_key?: string; name?: string } = {}): Promise<BiologicalScenarioResource> {
+    return this.request(`/organizations/${organizationId}/biological/scenarios/${scenarioId}/clone`, biologicalScenarioSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  archiveBiologicalScenario(accessToken: string, organizationId: string, scenarioId: string, expectedRevision: number): Promise<BiologicalScenarioResource> {
+    return this.request(`/organizations/${organizationId}/biological/scenarios/${scenarioId}/archive`, biologicalScenarioSchema, accessToken, {
+      method: 'POST', body: JSON.stringify({ expected_revision: expectedRevision })
+    })
+  }
+
+  biologicalScenarioRevisions(accessToken: string, organizationId: string, scenarioId: string): Promise<BiologicalScenarioRevisionResource[]> {
+    return this.get(`/organizations/${organizationId}/biological/scenarios/${scenarioId}/revisions`, z.array(biologicalScenarioRevisionSchema), accessToken)
+  }
+
+  biologicalCalculations(accessToken: string, organizationId: string, scenarioId?: string): Promise<{ items: BiologicalCalculationResource[]; total: number; offset: number; limit: number }> {
+    const suffix = scenarioId ? `?scenario_id=${encodeURIComponent(scenarioId)}` : ''
+    return this.get(`/organizations/${organizationId}/biological/calculations${suffix}`, biologicalCalculationCollectionSchema, accessToken)
+  }
+
+  biologicalCalculation(accessToken: string, organizationId: string, calculationId: string): Promise<BiologicalCalculationResource> {
+    return this.get(`/organizations/${organizationId}/biological/calculations/${calculationId}`, biologicalCalculationSchema, accessToken)
   }
 
   seedMachineQAProtocol(accessToken: string, organizationId: string): Promise<QAProtocolResource> {

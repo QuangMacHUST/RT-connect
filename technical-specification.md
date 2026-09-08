@@ -3,15 +3,15 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.2 — đồng bộ specification.md v1.4 và plan.md v2.4, bổ sung P11 QA Protocol Library (2026-09-08)
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.10
+- **Phiên bản:** 1.3 — đồng bộ specification.md v1.5 và plan.md v2.5, bổ sung P12 Biological Hub implementation contract (2026-09-08)
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.11
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
 
 Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
-> Đồng bộ v1.2: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§8 là authority cho hành vi/validation/error/thuật toán. P6–P11 hiện đã có các slice code được ghi rõ trong mục 0.4; phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+> Đồng bộ v1.3: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§8 là authority cho hành vi/validation/error/thuật toán. P6–P12 hiện đã có các slice code được ghi rõ trong mục 0.4; phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -88,8 +88,9 @@ Phần 0.1–0.3 là baseline lịch sử ngày 2026-09-04 và không được �
 | P9 | Report template/revision/block/export renderer | `20260908_0009` |
 | P10 | Trend query/aggregate/export/rebuild, BaselineVersion, MaintenanceEvent/Revisions, source drill-down | `20260908_0010` |
 | P11 | QA Protocol Library, rule validation, lifecycle, clone/compare and active-only Machine QA consumer | `20260908_0011` |
+| P12 | Biological Hub, independent scenario/revision/history, capability discovery and scoped calculation read model | `20260908_0012` |
 
-Ngày 2026-09-08, P11 đã bổ sung model/API/UI và migration `20260908_0011`. Checkpoint local hiện có backend full suite **81/81 PASS**, focused P11 **3/3 PASS**, Ruff/mypy PASS, frontend lint/typecheck/Vitest **1/1**/build PASS; build còn cảnh báo bundle lớn. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser/consumer workflow trước khi đổi trạng thái phase.
+Ngày 2026-09-08, P11 và P12 đã bổ sung model/API/UI và migrations `20260908_0011`/`20260908_0012`. P12 giữ Biological như bounded context độc lập, không có FK bắt buộc tới QACase/patient. Checkpoint local phải ghi đủ full suite, focused P12, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head trên cùng SHA; build warning không được coi là lỗi chức năng nhưng phải theo dõi bundle budget. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
 
 ---
 
@@ -798,6 +799,18 @@ Các entity chính:
 
 Các entity này không có qa_case_id mặc định. Nếu user xuất kết quả, tạo BiologicalReport độc lập.
 
+### 4.17.1. P12 implementation contract
+
+Slice P12 hiện thực ba bảng nền tảng trong namespace nghiệp vụ riêng:
+
+- `biological_scenarios`: organization-scoped stable key, tên/loại/context, source/reference, finite assumptions, trạng thái `DRAFT|SAVED|ARCHIVED`, revision và lineage tới source scenario revision khi clone.
+- `biological_scenario_revisions`: snapshot append-only của từng revision, unique theo scenario + revision number; dùng để mở lại đúng input đã lưu.
+- `biological_calculation_runs`: model/version, input/result/warning/error snapshot và liên kết scenario revision; P12 chỉ cung cấp read contract, P13–P15 mới tạo calculation thật.
+
+Tất cả query đầu tiên đều kèm `organization_id` sau khi resolve membership. Mutation create/update/save/clone/archive ghi header, snapshot và audit trong một transaction. `PATCH` bắt `expected_revision`; chỉ DRAFT sửa trực tiếp; clone tạo ID/key mới và không sửa nguồn. `validate` là validate-only. `ARCHIVED` bị loại khỏi list mặc định nhưng history/detail vẫn đọc được.
+
+API implementation prefix là `/api/v1/organizations/{organization_id}/biological` với các nhóm `/tools`, `/summary`, `/scenarios`, `/scenarios/{id}/revisions` và `/calculations`. P13–P16 capability được trả là `PLANNED`/`available=false` cho tới khi có engine, UI route và test/fixture tương ứng; không tạo calculation giả chỉ để làm card hoạt động.
+
 ### 4.18. Audit Event
 
 Các trường chính:
@@ -1098,6 +1111,8 @@ trên staging vẫn là điều kiện đóng P8.
 | POST | /trend/events | Ghi sự kiện bảo trì/thay đổi |
 
 ### 6.7. Biological Toolkit
+
+API target và implementation phải dùng organization-scoped prefix `/api/v1/organizations/{organization_id}/biological`; bảng dưới đây mô tả target toàn bộ, còn route lifecycle P12 đã hiện thực được ghi trong `specification.md` SPEC-P12. Không gọi các target endpoint là available trước khi phase tương ứng có test và evidence.
 
 | Method | Path | Mục đích |
 | :--- | :--- | :--- |
