@@ -2,7 +2,7 @@
 
 ## Documentation and implementation rebaseline — 2026-09-09
 
-`business-analysis.md` v0.20, `specification.md` v1.14, `technical-specification.md` v1.12 và `plan.md` v3.7 bổ sung requirement, state contract, testcase, workflow, error/recovery contract và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
+`business-analysis.md` v0.20, `specification.md` v1.14, `technical-specification.md` v1.12 và `plan.md` v3.8 bổ sung requirement, state contract, testcase, workflow, error/recovery contract và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
 
 Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness, staging Trend và staging Protocol consumer vẫn phải được đối soát theo plan §1.2–§1.6. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Checkpoint trước đã xác minh browser staging P13/P14 trên candidate `31a5900`; PostgreSQL row query trực tiếp, organization-scope negative probe và release-manifest closure vẫn là gate riêng. P15 hiện đã có staging browser smoke trên candidate `09acb90`, nhưng direct PostgreSQL/scope/replay/release gates còn mở.
 
@@ -17,6 +17,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 ## P18/P19 implementation support — 2026-09-09
 
 - `apps/api/tests/test_p18_integration.py` bổ sung local integrated pack `P18-W00`: hai hành trình đi qua FastAPI route thật, organization membership scope, nested QA case, artifact/object storage, Machine QA, Gamma worker boundary, report export, trend projection và Biological Toolkit. Kết quả hiện tại: **2 passed**; đây là `LOCAL_VERIFIED` support evidence, không thay staging/pilot/backup-restore.
+- `apps/web/playwright.config.ts` bổ sung local `P18-W01a`: Chromium desktop VN timezone, mobile VN timezone và desktop UTC; `npm run test:e2e` đạt **3 passed**. Đây chỉ là responsive/timezone support evidence; tenant/dataset/Auth matrix trên staging và remote browser vẫn mở.
 - `scripts/verify-public-deployment.ps1` bổ sung verifier không dùng credential: kiểm HTTP health/readiness, schema revision, release version, OpenAPI CT preview route, public web index/bundle, CT preview marker và build label; có thể ghi JSON evidence bằng `-OutputPath`. Lần chạy staging ngày 2026-09-09 với version `65dd52b` và schema `20260908_0017` đạt **10/10 checks**. Script chỉ là public smoke tool, không thay authenticated E2E, rollback rehearsal hoặc production gate.
 - `scripts/verify-local-backup-restore.py` bổ sung P18-W03a: local PostgreSQL custom dump và MinIO object inventory được restore vào database/bucket tạm, row/object inventory hash khớp, rồi cleanup database/bucket đạt. Evidence tại `docs/evidence/p18-local-backup-restore-20260909.json`; đây là local support, không thay provider backup/restore staging hoặc RPO/RTO.
 - Evidence tương ứng được lưu tại `docs/evidence/p19-staging-public-smoke-20260909.json`; file chỉ chứa public URL, HTTP/result metadata, bundle hash và không chứa credential, database URL hay dữ liệu bệnh nhân.
@@ -28,7 +29,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | `business-analysis.md` | 0.20 | Business source; detailed feature behavior/workflow/error/recovery/state matrix, P0–P20 contracts and P17 limit/report/CT preview requirements |
 | `specification.md` | 1.14 | Behavior/data/error/state/numeric contracts; feature operation matrix, operation envelope, evidence schema and exact P10/P11/P12/P13/P14/P15/P16/P17 contracts including binding/report/CT preview |
 | `technical-specification.md` | 1.12 | Architecture reference; P10/P11/P12 plus P13/P14/P15/P16/P17 bounded-context implementation addenda, resource policy, CT preview adapter and P18 local backup/restore support |
-| `plan.md` | 3.7 | Phase/workflow/S-E/C/B tests, DoR/DoD, execution gates, execution ledger, full coverage matrix, P10–P18 checkpoints, binding/report/CT work packages, backup/restore support and staging gates |
+| `plan.md` | 3.8 | Phase/workflow/S-E/C/B tests, DoR/DoD, execution gates, execution ledger, full coverage matrix, P10–P18 checkpoints, binding/report/CT work packages, backup/restore support, local browser matrix and staging gates |
 
 ## Phase status
 
@@ -52,7 +53,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | P15 | STAGING SMOKE VERIFIED / FINAL GATE OPEN | Migration `20260908_0015`, scalar re-irradiation/fraction-compensation engine/API/UI, recovery/sensitivity, nonuniform schedule, delivered-prefix alternatives, interruption/time model, immutable snapshot và JSON/CSV export; browser happy path đã pass trên deployment `008ec1d1-3215-44c7-9d64-fb06dc024e58`; replay/DB/scope/full S-E/release evidence còn mở |
 | P16 | STAGING SMOKE VERIFIED / EXIT OPEN | Migration `20260908_0016`, web build `9262bfd`; staging DRAFT/publish/archive, import row-level invalid, explicit-use snapshot đã pass; direct PostgreSQL/hash/scope, compare/history/export, full fault matrix và release evidence còn mở |
 | P17 | LOCAL CT/BINDING/REPORT READY / STAGING DATA OPEN | Engine/API/UI/migration, bounded CT preview, explicit P11/P16 limit binding and DVH report-source local gates pass; RTSTRUCT/CT fixture upload + DVH run, staging binding/report/CT, fault/volume and release evidence remain |
-| P18 | LOCAL SUPPORT ONLY | `P18-W00` integrated API pack và `P18-W03a` local backup/restore pass; browser matrix, fault/load, provider restore/RPO/RTO và pilot remain open |
+| P18 | LOCAL SUPPORT ONLY | `P18-W00` integrated API pack, `P18-W01a` local browser matrix và `P18-W03a` local backup/restore pass; authenticated tenant/dataset matrix, fault/load, provider restore/RPO/RTO và pilot remain open |
 | P19 | PUBLIC SMOKE TOOL READY | Public deployment verifier exists and passed current staging candidate; promotion, remote E2E, DNS/TLS/Auth and rollback remain open |
 | P20 | NOT_STARTED | Initial operations package after P19 |
 

@@ -8,5 +8,18 @@ export default defineConfig({
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }]
+  projects: [
+    {
+      name: 'chromium-desktop-vn',
+      use: { ...devices['Desktop Chrome'], timezoneId: 'Asia/Ho_Chi_Minh' }
+    },
+    {
+      name: 'chromium-mobile-vn',
+      use: { ...devices['Pixel 7'], timezoneId: 'Asia/Ho_Chi_Minh' }
+    },
+    {
+      name: 'chromium-desktop-utc',
+      use: { ...devices['Desktop Chrome'], timezoneId: 'UTC' }
+    }
+  ]
 })
