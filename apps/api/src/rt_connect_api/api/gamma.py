@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import tempfile
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
@@ -338,6 +340,72 @@ def _validate_workflow_profile(
     raise DomainError("GAMMA_WORKFLOW_PROFILE_INVALID", "Unsupported Gamma workflow profile.", 422)
 
 
+def _grid_voxel_count(artifact: Artifact) -> int:
+    """Return the validated voxel count used by the Gamma resource preflight."""
+
+    raw_grid = artifact.metadata_snapshot.get("grid")
+    if not isinstance(raw_grid, dict):
+        raise DomainError(
+            "GAMMA_GRID_METADATA_MISSING",
+            "Gamma resource preflight requires validated grid dimensions.",
+            422,
+        )
+    raw_shape = raw_grid.get("shape")
+    if isinstance(raw_shape, list) and raw_shape:
+        dimensions = raw_shape
+    else:
+        dimensions = [raw_grid.get("rows"), raw_grid.get("columns")]
+        if raw_grid.get("frames") is not None:
+            dimensions.append(raw_grid.get("frames"))
+    if any(isinstance(item, bool) or not isinstance(item, int) or item <= 0 for item in dimensions):
+        raise DomainError(
+            "GAMMA_GRID_METADATA_INVALID",
+            "Gamma resource preflight found invalid validated grid dimensions.",
+            422,
+        )
+    return int(math.prod(int(item) for item in dimensions))
+
+
+def _resource_budget_snapshot(
+    request: Request, reference: Artifact, evaluation: Artifact
+) -> dict[str, object]:
+    """Reject workloads that could exhaust the worker before they enter the queue."""
+
+    settings = request.app.state.settings
+    reference_voxels = _grid_voxel_count(reference)
+    evaluation_voxels = _grid_voxel_count(evaluation)
+    limit = int(settings.gamma_max_voxels)
+    oversized = {
+        label: count
+        for label, count in (
+            ("reference", reference_voxels),
+            ("evaluation", evaluation_voxels),
+        )
+        if count > limit
+    }
+    if oversized:
+        raise DomainError(
+            "GAMMA_RESOURCE_LIMIT",
+            "The selected Gamma grid exceeds the configured worker voxel limit.",
+            422,
+            details=[
+                {
+                    "field": f"{label}_voxels",
+                    "message": f"{label} grid contains {count} voxels; the limit is {limit}.",
+                }
+                for label, count in oversized.items()
+            ],
+        )
+    return {
+        "max_voxels": limit,
+        "reference_voxels": reference_voxels,
+        "evaluation_voxels": evaluation_voxels,
+        "total_voxels": reference_voxels + evaluation_voxels,
+        "max_candidate_evaluations": int(settings.gamma_max_candidate_evaluations),
+        "execution_deadline_seconds": int(settings.gamma_execution_deadline_seconds),
+    }
+
+
 def _fingerprint(payload: GammaRunCreateRequest) -> str:
     canonical = json.dumps(
         {
@@ -430,6 +498,7 @@ def enqueue_gamma_run(
         session, context, case, payload.evaluation_artifact_id, "evaluation"
     )
     _validate_workflow_profile(payload.workflow_profile, reference, evaluation)
+    resource_budget = _resource_budget_snapshot(request, reference, evaluation)
     request_fingerprint = _fingerprint(payload)
     existing = session.scalar(
         select(GammaAnalysisRun).where(
@@ -463,6 +532,7 @@ def enqueue_gamma_run(
         config_snapshot={
             **payload.configuration.model_dump(mode="json"),
             "workflow_profile": payload.workflow_profile,
+            "resource_budget": resource_budget,
         },
         input_manifest_snapshot={
             "reference": _input_snapshot(reference, reference_manifest),
@@ -641,13 +711,17 @@ class GammaLeaseLost(RuntimeError):
     """Raised when a worker no longer owns the fenced Gamma run lease."""
 
 
+class GammaExecutionDeadline(RuntimeError):
+    """Raised when a Gamma attempt exceeds its configured execution deadline."""
+
+
 def acquire_gamma_run_lease(
     session: Session,
     run: GammaAnalysisRun,
     worker_id: str,
     *,
     expected_dispatch_attempt: int | None = None,
-    lease_seconds: int = 900,
+    lease_seconds: int = 120,
 ) -> str | None:
     """Atomically move a queued run to RUNNING and create its attempt record."""
 
@@ -720,7 +794,12 @@ def _lease_update(
 
 
 def _heartbeat_gamma_run(
-    session: Session, run: GammaAnalysisRun, lease_token: str, progress_percent: int
+    session: Session,
+    run: GammaAnalysisRun,
+    lease_token: str,
+    progress_percent: int,
+    *,
+    lease_seconds: int = 120,
 ) -> None:
     now = datetime.now(UTC)
     _lease_update(
@@ -730,7 +809,7 @@ def _heartbeat_gamma_run(
         {
             "progress_percent": progress_percent,
             "heartbeat_at": now,
-            "lease_expires_at": now + timedelta(seconds=900),
+            "lease_expires_at": now + timedelta(seconds=lease_seconds),
         },
     )
     session.commit()
@@ -745,18 +824,22 @@ def _finish_gamma_attempt(
     errors: list[dict[str, object]],
     result_snapshot: dict[str, object] | None = None,
     warning_snapshot: list[dict[str, object]] | None = None,
+    retry_delay_seconds: float = 0.0,
 ) -> None:
     now = datetime.now(UTC)
+    retrying = status == "RETRYING"
     values: dict[str, object] = {
         "status": status,
-        "progress_percent": 100,
+        "progress_percent": 0 if retrying else 100,
         "error_snapshot": errors,
-        "completed_at": now,
+        "completed_at": None if retrying else now,
         "heartbeat_at": now,
         "worker_id": None,
         "lease_token": None,
         "lease_expires_at": None,
     }
+    if retrying:
+        values["result_snapshot"] = {}
     if result_snapshot is not None:
         values["result_snapshot"] = result_snapshot
     if warning_snapshot is not None:
@@ -770,8 +853,21 @@ def _finish_gamma_attempt(
             GammaRunAttempt.lease_token == lease_token,
             GammaRunAttempt.status == "RUNNING",
         )
-        .values(status=status, completed_at=now, error_snapshot=errors)
+        .values(
+            status="FAILED" if retrying else status,
+            completed_at=now,
+            error_snapshot=errors,
+        )
     )
+    if retrying:
+        outbox = _ensure_dispatch_outbox(session, run)
+        outbox.status = "PENDING"
+        outbox.available_at = now + timedelta(seconds=max(0.0, retry_delay_seconds))
+        outbox.published_at = None
+        raw_code = errors[0].get("code") if errors else None
+        outbox.last_error = (
+            raw_code if isinstance(raw_code, str) else "GAMMA_RETRY_SCHEDULED"
+        )
     session.commit()
 
 
@@ -782,15 +878,29 @@ def process_gamma_run(
     *,
     lease_token: str | None = None,
     worker_id: str = "gamma-direct",
+    lease_seconds: int = 120,
+    max_attempts: int = 3,
+    execution_deadline_seconds: int = 900,
+    retry_delay_seconds: float = 0.0,
 ) -> None:
     """Execute one run under a database-fenced lease."""
 
     if lease_token is not None and run.status != "RUNNING":
         return
     if lease_token is None:
-        lease_token = acquire_gamma_run_lease(session, run, worker_id)
+        lease_token = acquire_gamma_run_lease(
+            session, run, worker_id, lease_seconds=lease_seconds
+        )
     if lease_token is None:
         return
+    started_monotonic = time.monotonic()
+
+    def check_deadline() -> None:
+        if time.monotonic() - started_monotonic > execution_deadline_seconds:
+            raise GammaExecutionDeadline(
+                "Gamma execution exceeded its configured deadline."
+            )
+
     reference_path: Path | None = None
     evaluation_path: Path | None = None
     try:
@@ -806,13 +916,20 @@ def process_gamma_run(
             _object_key_from_snapshot(run, "reference", session), reference_path
         )
         _verify_snapshot_checksum(run, "reference", reference_path)
-        _heartbeat_gamma_run(session, run, lease_token, 25)
+        check_deadline()
+        _heartbeat_gamma_run(
+            session, run, lease_token, 25, lease_seconds=lease_seconds
+        )
         storage.download_to_path(
             _object_key_from_snapshot(run, "evaluation", session), evaluation_path
         )
         _verify_snapshot_checksum(run, "evaluation", evaluation_path)
-        _heartbeat_gamma_run(session, run, lease_token, 45)
+        check_deadline()
+        _heartbeat_gamma_run(
+            session, run, lease_token, 45, lease_seconds=lease_seconds
+        )
         result = calculate_gamma_from_paths(reference_path, evaluation_path, run.config_snapshot)
+        check_deadline()
         raw_warnings = result.get("warnings", [])
         _finish_gamma_attempt(
             session,
@@ -823,6 +940,25 @@ def process_gamma_run(
             result_snapshot=result,
             warning_snapshot=raw_warnings if isinstance(raw_warnings, list) else [],
         )
+    except GammaLeaseLost:
+        # A stale worker must leave the message pending for the queue/recovery
+        # path. Calling the finish helper here would itself violate fencing.
+        raise
+    except GammaExecutionDeadline as exc:
+        status_value = "RETRYING" if run.attempt_count < max_attempts else "FAILED"
+        _finish_gamma_attempt(
+            session,
+            run,
+            lease_token,
+            status=status_value,
+            errors=[
+                {
+                    "code": "GAMMA_EXECUTION_DEADLINE",
+                    "message": str(exc),
+                }
+            ],
+            retry_delay_seconds=retry_delay_seconds,
+        )
     except GammaEngineError as exc:
         _finish_gamma_attempt(
             session,
@@ -832,17 +968,19 @@ def process_gamma_run(
             errors=[{"code": exc.code, "message": exc.message, "details": exc.details}],
         )
     except ObjectStorageError:
+        status_value = "RETRYING" if run.attempt_count < max_attempts else "FAILED"
         _finish_gamma_attempt(
             session,
             run,
             lease_token,
-            status="FAILED",
+            status=status_value,
             errors=[
                 {
                     "code": "GAMMA_STORAGE_UNAVAILABLE",
                     "message": "Gamma input could not be read from object storage.",
                 }
             ],
+            retry_delay_seconds=retry_delay_seconds,
         )
     except Exception:
         _finish_gamma_attempt(

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import os
+import random
 import time
 from datetime import UTC, datetime, timedelta
 
@@ -34,35 +35,76 @@ from rt_connect_api.services.redis_queue import (
 logger = logging.getLogger(__name__)
 
 
-def recover_stale_runs(session: Session, timeout_seconds: int = 900) -> int:
-    """Return abandoned RUNNING rows to the queue after a heartbeat timeout."""
+def _as_utc(value: datetime | None) -> datetime | None:
+    """Normalize SQLite's naive timestamp round-trip to the UTC contract."""
 
-    cutoff = datetime.now(UTC) - timedelta(seconds=timeout_seconds)
+    if value is None:
+        return None
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
+def _retry_delay_seconds(attempt_count: int, settings: object) -> float:
+    """Return bounded exponential backoff with jitter for a next attempt."""
+
+    base = float(getattr(settings, "gamma_retry_backoff_base_seconds", 5))
+    maximum = float(getattr(settings, "gamma_retry_backoff_max_seconds", 300))
+    exponential = min(maximum, base * (2 ** max(0, attempt_count - 1)))
+    return random.uniform(0.0, exponential) if exponential else 0.0
+
+
+def recover_stale_runs(
+    session: Session,
+    timeout_seconds: int = 120,
+    *,
+    max_attempts: int = 3,
+    retry_delay_seconds: float = 0.0,
+) -> int:
+    """Return abandoned RUNNING rows to the queue after heartbeat/lease expiry."""
+
+    now = datetime.now(UTC)
+    cutoff = now - timedelta(seconds=timeout_seconds)
     stale_runs = list(
         session.scalars(
             select(GammaAnalysisRun).where(
                 GammaAnalysisRun.status == "RUNNING",
-                GammaAnalysisRun.heartbeat_at.is_not(None),
-                GammaAnalysisRun.heartbeat_at < cutoff,
+                (
+                    (
+                        GammaAnalysisRun.heartbeat_at.is_not(None)
+                        & (GammaAnalysisRun.heartbeat_at < cutoff)
+                    )
+                    | (
+                        GammaAnalysisRun.lease_expires_at.is_not(None)
+                        & (GammaAnalysisRun.lease_expires_at < now)
+                    )
+                ),
             )
         )
     )
     if not stale_runs:
         return 0
     for run in stale_runs:
+        lease_expiry = _as_utc(run.lease_expires_at)
+        lease_expired = lease_expiry is not None and lease_expiry < now
+        error_code = "GAMMA_LEASE_EXPIRED" if lease_expired else "GAMMA_WORKER_HEARTBEAT_TIMEOUT"
         error_snapshot: list[dict[str, object]] = [
             {
-                "code": "GAMMA_WORKER_HEARTBEAT_TIMEOUT",
-                "message": "The previous worker stopped reporting heartbeat.",
+                "code": error_code,
+                "message": (
+                    "The previous worker lease expired."
+                    if lease_expired
+                    else "The previous worker stopped reporting heartbeat."
+                ),
             }
         ]
-        run.status = "RETRYING"
-        run.progress_percent = 0
+        retrying = run.attempt_count < max_attempts
+        run.status = "RETRYING" if retrying else "FAILED"
+        run.progress_percent = 0 if retrying else 100
         run.error_snapshot = error_snapshot
         run.heartbeat_at = None
         run.worker_id = None
         run.lease_token = None
         run.lease_expires_at = None
+        run.completed_at = None if retrying else now
         session.execute(
             update(GammaRunAttempt)
             .where(
@@ -73,11 +115,16 @@ def recover_stale_runs(session: Session, timeout_seconds: int = 900) -> int:
             )
             .values(
                 status="FAILED",
-                completed_at=datetime.now(UTC),
+                completed_at=now,
                 error_snapshot=error_snapshot,
             )
         )
-        _ensure_dispatch_outbox(session, run)
+        if retrying:
+            outbox = _ensure_dispatch_outbox(session, run)
+            outbox.status = "PENDING"
+            outbox.available_at = now + timedelta(seconds=max(0.0, retry_delay_seconds))
+            outbox.published_at = None
+            outbox.last_error = error_code
     session.commit()
     return len(stale_runs)
 
@@ -118,7 +165,15 @@ def publish_pending_dispatches(
     return published
 
 
-def process_next_gamma_run(session: Session, storage: ObjectStorage) -> bool:
+def process_next_gamma_run(
+    session: Session,
+    storage: ObjectStorage,
+    *,
+    lease_seconds: int = 120,
+    max_attempts: int = 3,
+    execution_deadline_seconds: int = 900,
+    retry_delay_seconds: float = 0.0,
+) -> bool:
     """Claim and process one queued/retrying Gamma run, if one exists."""
 
     run = session.scalar(
@@ -130,12 +185,27 @@ def process_next_gamma_run(session: Session, storage: ObjectStorage) -> bool:
     )
     if run is None:
         return False
-    process_gamma_run(session, run, storage)
+    process_gamma_run(
+        session,
+        run,
+        storage,
+        lease_seconds=lease_seconds,
+        max_attempts=max_attempts,
+        execution_deadline_seconds=execution_deadline_seconds,
+        retry_delay_seconds=retry_delay_seconds,
+    )
     return True
 
 
 def process_gamma_queue_message(
-    session: Session, storage: ObjectStorage, message: GammaQueueMessage
+    session: Session,
+    storage: ObjectStorage,
+    message: GammaQueueMessage,
+    *,
+    lease_seconds: int = 120,
+    max_attempts: int = 3,
+    execution_deadline_seconds: int = 900,
+    retry_delay_seconds: float = 0.0,
 ) -> bool:
     """Process a Redis message only when its organization-scoped run is available."""
 
@@ -157,10 +227,21 @@ def process_gamma_queue_message(
         run,
         worker_id,
         expected_dispatch_attempt=message.attempt,
+        lease_seconds=lease_seconds,
     )
     if lease_token is None:
         return False
-    process_gamma_run(session, run, storage, lease_token=lease_token, worker_id=worker_id)
+    process_gamma_run(
+        session,
+        run,
+        storage,
+        lease_token=lease_token,
+        worker_id=worker_id,
+        lease_seconds=lease_seconds,
+        max_attempts=max_attempts,
+        execution_deadline_seconds=execution_deadline_seconds,
+        retry_delay_seconds=retry_delay_seconds,
+    )
     return True
 
 
@@ -189,7 +270,12 @@ def main() -> None:
         logger.info("Gamma worker using Redis Streams queue")
         while True:
             with factory(bind=engine) as session:
-                recover_stale_runs(session)
+                recover_stale_runs(
+                    session,
+                    timeout_seconds=settings.gamma_lease_seconds,
+                    max_attempts=settings.gamma_retry_max_attempts,
+                    retry_delay_seconds=_retry_delay_seconds(1, settings),
+                )
                 publish_pending_dispatches(session, queue)
             try:
                 message = queue.claim(block_ms=int(poll_seconds * 1000))
@@ -203,7 +289,26 @@ def main() -> None:
                 continue
             try:
                 with factory(bind=engine) as session:
-                    process_gamma_queue_message(session, storage, message)
+                    run = session.scalar(
+                        select(GammaAnalysisRun).where(
+                            GammaAnalysisRun.id == message.run_id,
+                            GammaAnalysisRun.organization_id == message.organization_id,
+                        )
+                    )
+                    retry_delay = (
+                        _retry_delay_seconds(run.attempt_count, settings)
+                        if run is not None
+                        else 0.0
+                    )
+                    process_gamma_queue_message(
+                        session,
+                        storage,
+                        message,
+                        lease_seconds=settings.gamma_lease_seconds,
+                        max_attempts=settings.gamma_retry_max_attempts,
+                        execution_deadline_seconds=settings.gamma_execution_deadline_seconds,
+                        retry_delay_seconds=retry_delay,
+                    )
                 queue.acknowledge(message.message_id)
             except Exception:
                 logger.exception("Gamma queue message processing failed")
@@ -214,8 +319,20 @@ def main() -> None:
                 return
     while True:
         with factory(bind=engine) as session:
-            recover_stale_runs(session)
-            processed = process_next_gamma_run(session, storage)
+            recover_stale_runs(
+                session,
+                timeout_seconds=settings.gamma_lease_seconds,
+                max_attempts=settings.gamma_retry_max_attempts,
+                retry_delay_seconds=_retry_delay_seconds(1, settings),
+            )
+            processed = process_next_gamma_run(
+                session,
+                storage,
+                lease_seconds=settings.gamma_lease_seconds,
+                max_attempts=settings.gamma_retry_max_attempts,
+                execution_deadline_seconds=settings.gamma_execution_deadline_seconds,
+                retry_delay_seconds=_retry_delay_seconds(1, settings),
+            )
         if run_once or not processed:
             if run_once:
                 return

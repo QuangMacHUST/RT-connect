@@ -22,11 +22,16 @@ class ApiError(BaseModel):
 
 class DomainError(Exception):
     def __init__(
-        self, code: str, message: str, status_code: int = status.HTTP_400_BAD_REQUEST
+        self,
+        code: str,
+        message: str,
+        status_code: int = status.HTTP_400_BAD_REQUEST,
+        details: list[dict[str, object]] | None = None,
     ) -> None:
         self.code = code
         self.message = message
         self.status_code = status_code
+        self.details = details or []
         super().__init__(message)
 
 
@@ -52,7 +57,21 @@ def _response(
 
 async def domain_error_handler(request: Request, exc: Exception) -> JSONResponse:
     assert isinstance(exc, DomainError)
-    return _response(request, exc.code, exc.message, exc.status_code)
+    details: list[ErrorDetail] = []
+    for item in exc.details:
+        raw_field = item.get("field")
+        raw_message = item.get("message")
+        details.append(
+            ErrorDetail(
+                field=raw_field if isinstance(raw_field, str) else None,
+                message=(
+                    raw_message
+                    if isinstance(raw_message, str)
+                    else "The supplied value is invalid."
+                ),
+            )
+        )
+    return _response(request, exc.code, exc.message, exc.status_code, details)
 
 
 async def validation_error_handler(request: Request, exc: Exception) -> JSONResponse:

@@ -337,3 +337,44 @@ def test_psqa_profile_rejects_json_only_inputs_before_enqueue() -> None:
         )
         assert rejected.status_code == 422, rejected.text
         assert rejected.json()["code"] == "RTDOSE_REQUIRED"
+
+
+def test_gamma_resource_preflight_rejects_oversized_validated_grid() -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.state.settings.gamma_max_voxels = 3
+        client.app.dependency_overrides[artifact_storage] = lambda: storage
+        client.app.dependency_overrides[gamma_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+        ids = []
+        for role, dataset_id in (("REFERENCE", "reference"), ("EVALUATION", "evaluation")):
+            uploaded = client.post(
+                f"/api/v1/qa-cases/{case_id}/artifacts",
+                files={
+                    "file": (
+                        f"{dataset_id}.json",
+                        _measurement_bytes(dataset_id, [1, 2, 3, 4]),
+                        "application/json",
+                    )
+                },
+                data={"artifact_type": "MEASUREMENT", "logical_role": role},
+            )
+            assert uploaded.status_code == 201, uploaded.text
+            artifact_id = uploaded.json()["id"]
+            validation = client.post(f"/api/v1/artifacts/{artifact_id}/validate")
+            assert validation.json()["result"] == "VALID"
+            ids.append(artifact_id)
+
+        rejected = client.post(
+            f"/api/v1/qa-cases/{case_id}/gamma-runs",
+            json={
+                "reference_artifact_id": ids[0],
+                "evaluation_artifact_id": ids[1],
+                "idempotency_key": "gamma-resource-limit-001",
+                "workflow_profile": "ENGINE_TEST",
+            },
+        )
+
+        assert rejected.status_code == 422, rejected.text
+        assert rejected.json()["code"] == "GAMMA_RESOURCE_LIMIT"
+        assert rejected.json()["details"][0]["field"] == "reference_voxels"

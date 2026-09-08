@@ -987,8 +987,11 @@ PostgreSQL đã có terminal state. PostgreSQL vẫn là nguồn dữ liệu ngh
 lease, attempt, heartbeat, result và error snapshot; Redis không phải nguồn dữ liệu duy nhất.
 Khi không có `REDIS_URL`, local worker dùng database polling để giữ môi trường phát triển đơn
 giản. Queue metrics không trả payload bệnh nhân; các bộ đếm stream là operational metrics,
-còn bộ đếm Gamma run trong response được scope theo organization. Lease/retry deadline 900 s
-hiện là checkpoint implementation; target 120 s/3 attempts chỉ đóng sau benchmark và failure injection.
+còn bộ đếm Gamma run trong response được scope theo organization. Implementation hiện dùng
+lease/visibility 120 s, tối đa 3 automatic attempts, exponential backoff có jitter, execution
+deadline 900 s, voxel limit và candidate-evaluation limit từ `Settings`; release manifest phải
+ghi giá trị effective của từng environment và benchmark/failure injection phải chứng minh chúng
+không gây mất job hoặc chạy vô hạn.
 
 Staging phải chứng minh cả hai service API và worker nhận cùng reference `REDIS_URL`, worker
 log khởi động bằng Redis Streams thay vì polling, một run Gamma đi qua queue thật, message
@@ -1020,9 +1023,11 @@ Engine `gamma-nd-p8.2` nhận profile đã khóa của `gamma.measurement.v1` v�
 Kết quả lưu dimensionality, source format, grid summary, map điểm, số điểm
 evaluated/passing/nonpassing/excluded/no-candidate/censored, pass rate, coverage fraction,
 percentile exactness, histogram, warning, configuration, input checksum và engine version.
-Đây là deterministic engineering/golden slice; test local chỉ chứng minh phạm vi fixture. Gate
-phát triển, pilot và release theo plan.md v2.1. Independent oracle, coordinate frame mở rộng,
-resource limit, crash/ack injection và staging E2E vẫn là điều kiện đóng P8.
+Đây là deterministic engineering/golden slice; test local hiện có exhaustive independent node
+oracle và các guard resource/retry, nhưng không thay thế benchmark theo phần cứng hoặc
+commissioning. Gate phát triển, pilot và release theo plan.md v2.1. Coordinate frame mở rộng,
+crash/ack/dead-letter injection, large workload benchmark và evidence effective schema/release
+trên staging vẫn là điều kiện đóng P8.
 
 ### 6.6. Report và trend
 

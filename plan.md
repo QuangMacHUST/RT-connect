@@ -38,7 +38,7 @@ Test chỉ dùng NOT_RUN / PASS / FAIL / BLOCKED / NOT_APPLICABLE. NOT_APPLICABL
 | P2–P3 | Có staged Auth/onboarding/dashboard và health smoke | Kiểm session expiry, runtime config, schema readiness và dashboard đầy đủ; không suy diễn từ session còn đăng nhập. |
 | P4–P5 | CRUD hierarchy/folder/case có staged smoke | Invitation/member flow, restore, simultaneous edits, complete filter/history là gate bổ sung cần kiểm/triển khai. |
 | P6–P7 | Synthetic upload/validation và Machine QA evaluate/rerun/compare đã được ghi | Round-trip checksum evidence, declared-type mismatch, interrupted upload, autosave/concurrency và broader boundary tests cần kiểm. |
-| P8 | 2D JSON/Redis worker/retry có evidence; slice RTDOSE/3D, workflow profile, coverage policy và fenced dispatch đã có local code/test | RTDOSE/3D staging, semantic/scientific independent oracle, lease/outbox failure injection, retry/resource limits và large workload chưa được coi là hoàn tất. |
+| P8 | 2D JSON/Redis worker/retry và 3D PSQA RTDOSE + measurement đã có staging evidence; slice coverage policy và fenced dispatch đã có local code/test | Semantic/scientific independent oracle, lease/outbox failure injection, bounded retry/resource limits và large workload chưa được coi là hoàn tất. |
 | P9–P17 | Chưa có evidence triển khai module đầy đủ | Thực hiện các gói công việc bên dưới. |
 | P18–P20 | Chưa có evidence integrated release/operations đầy đủ | Không đóng bằng việc Railway báo Online hoặc /health trả 200. |
 
@@ -48,13 +48,13 @@ Các smoke run lịch sử giữ tại progress log: Gamma 2D `e084529d-6bb1-411
 
 | Gap | Bằng chứng source hiện tại | Phase chịu trách nhiệm | Điều kiện đóng | Trạng thái sau kiểm tra 2026-09-08 |
 | :--- | :--- | :--- | :--- | :--- |
-| GAP-01: PSQA chưa bắt RTDOSE rõ theo profile | `gamma.py` đã có `workflow_profile`; PSQA kiểm reference RTDOSE và ENGINE_TEST được gắn nhãn riêng. | P8 | PSQA thiếu RTDOSE bị chặn, JSON-only kiểm thử có nhãn và namespace rõ. | `LOCAL_VERIFIED`; cần staging API/UI contract và real RTDOSE E2E. |
+| GAP-01: PSQA chưa bắt RTDOSE rõ theo profile | `gamma.py` đã có `workflow_profile`; PSQA kiểm reference RTDOSE và ENGINE_TEST được gắn nhãn riêng. | P8 | PSQA thiếu RTDOSE bị chặn, JSON-only kiểm thử có nhãn và namespace rõ. | `STAGING_VERIFIED` cho workflow PSQA 3D trên release `e71e8e1`; negative/profile cases vẫn phải giữ trong regression. |
 | GAP-02: JSON khai báo DICOM vẫn được đọc như measurement | `artifact_validation.py::validate_artifact` hiện dùng declared type làm authority và trả `ARTIFACT_TYPE_MISMATCH` khi content sai. | P6 | Type/content mismatch có kết quả riêng, không tuyên bố DICOM VALID. | `LOCAL_VERIFIED`; cần revalidate sau deploy. |
-| GAP-03: Gamma bỏ NO_CANDIDATE khỏi mẫu số | `calculate_gamma` có `FULL_ROI`/`OVERLAP_ONLY`, counts coverage và không loại điểm thiếu candidate khỏi FULL_ROI. | P8 | Policy coverage/no-candidate theo specification §5; test chứng minh không tăng PASS giả. | `LOCAL_VERIFIED`; independent oracle/convergence còn mở. |
-| GAP-04: Search giới hạn 1×DTA nhưng vẫn xuất percentile gamma | `_candidate_gammas` dùng `max_gamma × DTA`; điểm vượt bound được đánh dấu censored và percentile không giả exact. | P8 | Full gamma search theo max_gamma hoặc output bound có nhãn; percentile không giả exact. | `LOCAL_VERIFIED`; exhaustive/reference oracle và benchmark còn mở. |
-| GAP-05: Lease/attempt/outbox chưa đủ hợp đồng v2 | Models/migration/API/worker đã có lease token, attempt history, dispatch outbox và conditional fencing. | P8 | Hai worker/reclaim/commit/ack failure injection không duplicate hoặc mất accepted job. | `LOCAL_VERIFIED` cho local race/reclaim slice; staging crash/ack injection, bounded retry/resource policy còn mở. |
-| GAP-06: /ready chỉ kiểm DB connection | `db/session.py::database_ready` vẫn chủ yếu kiểm `SELECT 1`; chưa có schema revision gate. | P2/P19 | Có kiểm schema revision riêng hoặc readiness mở rộng; không nói SELECT 1 xác minh migration. | `OPEN`. |
-| GAP-07: Fixture RTDOSE sử dụng CGY và SOP Class tham chiếu ngẫu nhiên | Fixture generator đã chuyển sang GY + `DoseGridScaling=0.01`, RTPlanStorage SOP Class và UID ổn định; fixture tái tạo byte-identical. | P6/P8 | Tạo fixture chuẩn GY + DoseGridScaling tương ứng, RTPlanStorage SOP Class đúng; CGY raw fixture chỉ compatibility/negative test. | `LOCAL_VERIFIED`; cần upload và staging 3D E2E. |
+| GAP-03: Gamma bỏ NO_CANDIDATE khỏi mẫu số | `calculate_gamma` có `FULL_ROI`/`OVERLAP_ONLY`, counts coverage và không loại điểm thiếu candidate khỏi FULL_ROI; independent oracle enumerates all comparison nodes. | P8 | Policy coverage/no-candidate theo specification §5; test chứng minh không tăng PASS giả. | `LOCAL_VERIFIED`; staging negative coverage/convergence còn mở. |
+| GAP-04: Search giới hạn 1×DTA nhưng vẫn xuất percentile gamma | `_candidate_gammas` dùng `max_gamma × DTA`; điểm vượt bound được đánh dấu censored và percentile không giả exact; oracle kiểm tra denominator/status. | P8 | Full gamma search theo max_gamma hoặc output bound có nhãn; percentile không giả exact. | `LOCAL_VERIFIED`; benchmark large workload còn mở. |
+| GAP-05: Lease/attempt/outbox chưa đủ hợp đồng v2 | Models/migration/API/worker đã có lease token, attempt history, dispatch outbox, conditional fencing, bounded retry, backoff và lease-expiry reclaim. | P8 | Hai worker/reclaim/commit/ack failure injection không duplicate hoặc mất accepted job. | `LOCAL_VERIFIED` cho race/reclaim/retry/replay; staging crash/ack/dead-letter/resource policy còn mở. |
+| GAP-06: /ready chỉ kiểm DB connection | `db/session.py::database_ready` hiện kiểm `SELECT 1` và đối chiếu đúng một dòng `alembic_version` với `Settings.schema_revision`. | P2/P19 | Có kiểm schema revision riêng hoặc readiness mở rộng; không nói SELECT 1 xác minh migration. | `LOCAL_VERIFIED`; cần staging evidence với `20260908_0008`. |
+| GAP-07: Fixture RTDOSE sử dụng CGY và SOP Class tham chiếu ngẫu nhiên | Fixture generator đã chuyển sang GY + `DoseGridScaling=0.01`, RTPlanStorage SOP Class và UID ổn định; fixture tái tạo byte-identical. | P6/P8 | Tạo fixture chuẩn GY + DoseGridScaling tương ứng, RTPlanStorage SOP Class đúng; CGY raw fixture chỉ compatibility/negative test. | `STAGING_VERIFIED` cho fixture RTDOSE GY + measurement 3D trên run `df38e7d5-bb4b-4e2b-b949-2310acb1875c`; geometry/scale negative cases còn mở. |
 | GAP-08: Old error example khác API thật | `core/errors.py`, `specification.md` và technical contract đang được đồng bộ về flat envelope. | P0/P1 | Tài liệu và consumer tests cùng schema flat, không còn ví dụ nested gây hiểu sai. | `DOC_UPDATE_PENDING` trong slice này. |
 | GAP-09: Build label không chứng minh source deployed | VITE build label và deployment SHA vẫn là hai nguồn; chưa có release manifest bắt buộc nối chúng. | P3/P19 | Hiển thị build metadata đúng artifact và ghi SHA của từng service. | `OPEN`. |
 
@@ -62,11 +62,11 @@ Các trạng thái trên chỉ là checkpoint, không phải đóng phase. `LOCA
 
 ### 1.4. Checkpoint implementation sau slice P6/P8
 
-- Backend: full suite **58/58 PASS** ngày 2026-09-08; Ruff và strict mypy PASS.
-- Gamma-focused contract: `test_gamma.py` 7/7, `test_gamma_dicom.py` 3/3 và `test_gamma_worker.py` 4/4 PASS; bao gồm declared-type mismatch, RTDOSE GY scaling, PSQA preflight, coverage/no-candidate, censoring và single-holder lease.
+- Backend: full suite **64/64 PASS** ngày 2026-09-08; Ruff và strict mypy PASS.
+- Gamma-focused contract: `test_gamma.py` 8/8, `test_gamma_dicom.py` 3/3, `test_gamma_worker.py` 6/6 và `test_gamma_independent_oracle.py` 3/3 PASS; bao gồm declared-type mismatch, RTDOSE GY scaling, PSQA preflight, resource limit, coverage/no-candidate, censoring, single-holder lease, bounded retry và replay sau commit trước ack.
 - Frontend: lint, typecheck, Vitest **1/1** và production build PASS.
 - Fixture: `gamma-rtdose-v1-smoke.dcm` được sinh lại hai lần với cùng SHA-256 `CA5C9168EB9B045E30A375EDC6B76118EFD754A35815C2860B17CA8944C4480B`.
-- Chưa ghi `STAGING_VERIFIED` cho slice mới: cần deploy cùng migration `20260908_0008`, upload fixture DICOM + measurement thật qua browser, chạy PSQA 3D, kiểm queue/outbox/reclaim và ghi deployment SHA.
+- Staging slice mới đã chạy qua web/API/object storage/Redis worker: web deployment `7f104141-0fe4-4527-b455-a503beaceb20` từ commit `e71e8e1` thành công; run `df38e7d5-bb4b-4e2b-b949-2310acb1875c` dùng PSQA_GAMMA, RTDOSE GY reference + measurement 3D evaluation, cấu hình `3D · FULL_ROI · max γ 2`, đạt `COMPLETED/PASS`, 8/8 evaluated/passing, 0 excluded, coverage `1`, Gamma P95 `0`, attempt 1. Sau reload browser, run và config snapshot vẫn hiển thị đúng; đây là evidence cho staging 3D happy path, không đóng các gate oracle/failure/resource còn lại.
 
 ## 2. Dependency, release và cách chia task
 
@@ -1455,7 +1455,7 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 ### 7.2. Kết quả lần sửa tài liệu này
 
-Đã chi tiết hóa requirement/workflow/error/recovery/exit và xác định gap từ source. Slice P6/P8 đã được sửa và kiểm thử local; tài liệu đã được rebaseline theo evidence mới. Chưa tuyên bố P8 DONE-v2: công việc tiếp theo là deploy migration, chạy RTDOSE/measurement 3D trên staging, bổ sung oracle/failure-injection/benchmark rồi mới chuyển P9.
+Đã chi tiết hóa requirement/workflow/error/recovery/exit và xác định gap từ source. Slice P6/P8 đã được sửa, kiểm thử local và có staging happy path 2D/3D; tài liệu đã được rebaseline theo evidence mới. Chưa tuyên bố P8 DONE-v2: công việc tiếp theo là chứng minh effective schema revision trên staging, failure-injection/dead-letter và large-workload benchmark rồi mới chuyển P9.
 
 
 ## 8. Ma trận FR → contract → testcase ban đầu

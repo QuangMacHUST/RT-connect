@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from uuid import uuid4
 
 from sqlalchemy import create_engine, select
@@ -23,8 +24,9 @@ from rt_connect_api.db.models import (
     QACase,
     Site,
 )
-from rt_connect_api.services.object_storage import InMemoryObjectStorage
-from rt_connect_api.worker import recover_stale_runs
+from rt_connect_api.services.object_storage import InMemoryObjectStorage, ObjectStorageError
+from rt_connect_api.services.redis_queue import GammaQueueMessage
+from rt_connect_api.worker import process_gamma_queue_message, recover_stale_runs
 
 
 def _dataset(dataset_id: str, values: list[float]) -> bytes:
@@ -250,5 +252,82 @@ def test_stale_worker_is_fenced_and_requeued_with_a_new_outbox_intent() -> None:
         assert outbox is not None
         assert outbox.attempt_number == run.attempt_count
         assert outbox.status == "PENDING"
+    finally:
+        session.close()
+
+
+class _AlwaysUnavailableStorage(InMemoryObjectStorage):
+    def download_to_path(self, key: str, destination: Path) -> None:
+        del key, destination
+        raise ObjectStorageError("controlled storage outage")
+
+
+def test_recoverable_storage_failure_is_bounded_to_three_attempts() -> None:
+    session, _, run = _run_fixture()
+    storage = _AlwaysUnavailableStorage()
+    try:
+        for expected_attempt in (1, 2, 3):
+            process_gamma_run(
+                session,
+                run,
+                storage,
+                max_attempts=3,
+                retry_delay_seconds=0,
+            )
+            session.refresh(run)
+            assert run.attempt_count == expected_attempt
+
+            if expected_attempt < 3:
+                assert run.status == "RETRYING"
+                outbox = session.scalar(
+                    select(GammaDispatchOutbox).where(
+                        GammaDispatchOutbox.gamma_run_id == run.id,
+                        GammaDispatchOutbox.attempt_number == expected_attempt,
+                    )
+                )
+                assert outbox is not None
+                assert outbox.status == "PENDING"
+            else:
+                assert run.status == "FAILED"
+                assert run.completed_at is not None
+
+        attempts = list(
+            session.scalars(
+                select(GammaRunAttempt)
+                .where(GammaRunAttempt.gamma_run_id == run.id)
+                .order_by(GammaRunAttempt.attempt_number)
+            )
+        )
+        assert [attempt.status for attempt in attempts] == ["FAILED", "FAILED", "FAILED"]
+        assert len(attempts) == 3
+    finally:
+        session.close()
+
+
+def test_redelivered_message_after_commit_does_not_create_a_second_result() -> None:
+    session, storage, run = _run_fixture()
+    message = GammaQueueMessage(
+        message_id="1-0",
+        run_id=run.id,
+        organization_id=run.organization_id,
+        attempt=run.attempt_count,
+    )
+    try:
+        assert process_gamma_queue_message(session, storage, message) is True
+        session.refresh(run)
+        first_result = dict(run.result_snapshot)
+
+        # Models a worker crash or network failure after the database commit but
+        # before Redis XACK: the replay sees the terminal row and is safe to ack.
+        assert process_gamma_queue_message(session, storage, message) is False
+        session.refresh(run)
+        attempts = list(
+            session.scalars(
+                select(GammaRunAttempt).where(GammaRunAttempt.gamma_run_id == run.id)
+            )
+        )
+        assert run.status == "COMPLETED"
+        assert run.result_snapshot == first_result
+        assert len(attempts) == 1
     finally:
         session.close()

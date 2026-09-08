@@ -14,13 +14,21 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     app_version: str = "0.1.0-dev"
+    schema_revision: str = "20260908_0008"
     log_level: str = "INFO"
     database_url: str | None = None
     redis_url: str | None = None
     gamma_queue_stream: str = "rt-connect:gamma"
     gamma_queue_group: str = "rt-connect-gamma"
-    gamma_queue_visibility_timeout_seconds: int = Field(default=900, ge=30)
+    gamma_queue_visibility_timeout_seconds: int = Field(default=120, ge=30)
     gamma_queue_maxlen: int = Field(default=10_000, ge=100)
+    gamma_lease_seconds: int = Field(default=120, ge=30, le=3600)
+    gamma_retry_max_attempts: int = Field(default=3, ge=1, le=10)
+    gamma_retry_backoff_base_seconds: int = Field(default=5, ge=0, le=3600)
+    gamma_retry_backoff_max_seconds: int = Field(default=300, ge=0, le=86_400)
+    gamma_execution_deadline_seconds: int = Field(default=900, ge=60, le=86_400)
+    gamma_max_voxels: int = Field(default=2_000_000, ge=1_024, le=100_000_000)
+    gamma_max_candidate_evaluations: int = Field(default=50_000_000, ge=10_000)
     cors_allowed_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:5173"]
     )

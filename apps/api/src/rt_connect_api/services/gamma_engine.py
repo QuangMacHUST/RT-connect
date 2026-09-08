@@ -56,6 +56,7 @@ class GammaConfiguration:
     histogram_bins: int
     coverage_policy: str = "FULL_ROI"
     max_gamma: float = 2.0
+    max_candidate_evaluations: int | None = None
 
 
 @dataclass(frozen=True)
@@ -322,6 +323,23 @@ def _configuration_from_mapping(payload: Mapping[str, object]) -> GammaConfigura
     max_gamma = _finite_float(payload.get("max_gamma", 2.0), "max_gamma", positive=True)
     if max_gamma < 1 or max_gamma > 10:
         raise GammaEngineError("GAMMA_CONFIGURATION_INVALID", "max_gamma must be between 1 and 10.")
+    resource_budget = payload.get("resource_budget")
+    raw_candidate_limit: object = None
+    if isinstance(resource_budget, Mapping):
+        raw_candidate_limit = resource_budget.get("max_candidate_evaluations")
+    if raw_candidate_limit is None:
+        candidate_limit = None
+    elif (
+        isinstance(raw_candidate_limit, bool)
+        or not isinstance(raw_candidate_limit, int)
+        or raw_candidate_limit < 10_000
+    ):
+        raise GammaEngineError(
+            "GAMMA_CONFIGURATION_INVALID",
+            "resource_budget.max_candidate_evaluations must be an integer >= 10000.",
+        )
+    else:
+        candidate_limit = raw_candidate_limit
     absolute_value = payload.get("absolute_dose_difference_gy")
     absolute = None if absolute_value is None else _finite_float(
         absolute_value, "absolute_dose_difference_gy", positive=True
@@ -351,6 +369,7 @@ def _configuration_from_mapping(payload: Mapping[str, object]) -> GammaConfigura
         histogram_bins=bins_value,
         coverage_policy=str(coverage_policy),
         max_gamma=max_gamma,
+        max_candidate_evaluations=candidate_limit,
     )
 
 
@@ -426,6 +445,14 @@ def _candidate_gammas(
             if distance > search_radius:
                 continue
             evaluation_value = float(evaluation.values[tuple(evaluation_indices)])
+            if (
+                configuration.max_candidate_evaluations is not None
+                and len(gammas) >= configuration.max_candidate_evaluations
+            ):
+                raise GammaEngineError(
+                    "GAMMA_RESOURCE_LIMIT",
+                    "Gamma candidate evaluation limit was exceeded for one reference point.",
+                )
             gammas.append(
                 math.sqrt(
                     ((evaluation_value - reference_value) / dose_scale) ** 2
@@ -452,6 +479,14 @@ def _candidate_gammas(
         sampled_value = _sample_linear(evaluation, position)
         if sampled_value is None:
             continue
+        if (
+            configuration.max_candidate_evaluations is not None
+            and len(gammas) >= configuration.max_candidate_evaluations
+        ):
+            raise GammaEngineError(
+                "GAMMA_RESOURCE_LIMIT",
+                "Gamma candidate evaluation limit was exceeded for one reference point.",
+            )
         gammas.append(
             math.sqrt(
                 ((sampled_value - reference_value) / dose_scale) ** 2

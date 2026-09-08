@@ -55,8 +55,19 @@ def database_ready(settings: Settings | None = None) -> tuple[bool, str | None]:
     try:
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
+            revision_rows = connection.execute(
+                text("SELECT version_num FROM alembic_version")
+            ).all()
     except Exception:
-        return False, "Database connection failed"
+        return False, "Database connection or schema table failed"
+    revisions = [str(row[0]) for row in revision_rows]
+    expected_revision = (settings or get_settings()).schema_revision
+    if revisions != [expected_revision]:
+        return (
+            False,
+            f"Database schema revision is {','.join(revisions) or 'missing'}; "
+            f"expected {expected_revision}",
+        )
     return True, None
 
 

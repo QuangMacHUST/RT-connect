@@ -195,9 +195,9 @@ COMPLETED chỉ là hoàn thành tính toán; quality có thể PASS/WARNING/FAI
 | Poison/malformed message | Quarantine/dead-letter + diagnostic; không retry vô hạn hoặc expose payload thừa. |
 | Retry | Chỉ lỗi transient theo allowlist; input/config invalid phải sửa rồi tạo run mới. |
 
-Baseline target: heartbeat mỗi 10 s, lease 120 s, supervisor scan 30 s; worker thực thi deadline theo workload. Retry tự động tối đa 3 attempts (gồm attempt đầu), backoff có jitter. Config hiện visibility timeout/lease `900 s` là checkpoint implementation, chưa phải SLO cuối; khi khóa production phải đưa giá trị vào settings, tune và test đồng bộ. Lease hết hạn không được do chính thread tính không gửi được heartbeat.
+Baseline target: heartbeat mỗi 10 s, lease 120 s, supervisor scan 30 s; worker thực thi deadline theo workload. Retry tự động tối đa 3 attempts (gồm attempt đầu), backoff có jitter. P8 implementation hiện đã đưa lease, visibility, retry limit, backoff, execution deadline và voxel/candidate budget vào `Settings`; các giá trị phải được ghi trong release manifest và chỉ thay sau benchmark/failure-injection. Lease hết hạn không được do chính thread tính không gửi được heartbeat.
 
-Slice implementation P8 hiện đã có `GammaRunAttempt`, `GammaDispatchOutbox`, lease token/expiry và conditional update để fencing stale worker. Slice này đã có local race/reclaim tests nhưng chưa chứng minh staging crash, ack failure, bounded retry/dead-letter hoặc resource deadline; các điều kiện đó vẫn là exit gate P8.
+Slice implementation P8 hiện đã có `GammaRunAttempt`, `GammaDispatchOutbox`, lease token/expiry và conditional update để fencing stale worker. Local tests đã bao phủ exhaustive node oracle, bounded recoverable-storage retry, lease expiry/reclaim, candidate/voxel preflight và replay sau commit trước ack; staging crash/ack injection, dead-letter/resource benchmark vẫn là exit gate P8.
 
 DB là source of truth. Redis transport failure/replay không mất accepted run. Reconciliation định kỳ đối soát outbox/queued/stale attempts; không lấy global resource UUID để đọc tenant artifact. Metrics stream toàn cục chỉ dành operational view phù hợp; user workspace counters phải organization-scoped, không cho suy dữ liệu tổ chức khác.
 
@@ -859,9 +859,9 @@ Danh sách errors là baseline có giới hạn, không chứng minh bao phủ m
 
 1. Đối soát FR mới và evidence cũ; đánh dấu NEEDS_REVALIDATION cho phạm vi chưa đủ.
 2. Đã có local closure cho GAP-01/GAP-02/GAP-03/GAP-04/GAP-07 và implementation slice GAP-05; giữ các gate staging/oracle/benchmark mở.
-3. Hoàn thiện mapping error flat cho GAP-08 và release/build manifest cho GAP-09; bổ sung schema revision readiness cho GAP-06.
-4. Deploy migration `20260908_0008` lên staging; kiểm RTDOSE+measurement 3D end-to-end với source đúng frame/profile, queue/outbox và stale-worker behavior.
-5. Bổ sung exhaustive independent Gamma oracle, failure injection, bounded retry/dead-letter và resource/large-input benchmark trước khi đóng P8.
+3. Hoàn thiện mapping error flat cho GAP-08 và release/build manifest cho GAP-09; schema revision readiness cho GAP-06 đã có local implementation, cần chứng minh trên staging.
+4. Kiểm tra staging đang chạy đúng migration `20260908_0008`; RTDOSE+measurement 3D end-to-end với source đúng frame/profile đã PASS trên run `df38e7d5-bb4b-4e2b-b949-2310acb1875c`, còn queue/outbox và stale-worker negative behavior cần evidence tương ứng.
+5. Bổ sung staging crash/ack/dead-letter và resource/large-input benchmark trước khi đóng P8; oracle độc lập, bounded retry và preflight đã có local test.
 6. Chỉ sau khi P8 exit đạt mới tiếp tục P9 theo dependency; không triển khai hoặc thay cấu hình cloud chỉ vì tài liệu có checklist.
 
 ## 12. Nguồn kỹ thuật đã kiểm tra khi viết
