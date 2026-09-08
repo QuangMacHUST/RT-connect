@@ -4,12 +4,14 @@ import json
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 from fastapi.testclient import TestClient
 
 from rt_connect_api.api.artifacts import _storage as artifact_storage
 from rt_connect_api.api.gamma import _storage as gamma_storage
 from rt_connect_api.services.gamma_engine import (
     GammaConfiguration,
+    MeasurementDataset,
     calculate_gamma,
     load_measurement,
 )
@@ -123,6 +125,127 @@ def test_gamma_engine_known_dose_shift_stays_within_dta(tmp_path: Path) -> None:
     assert metrics["percentiles"]["max"] == 1 / 3
 
 
+def test_gamma_full_roi_does_not_drop_points_without_comparison_coverage() -> None:
+    reference = MeasurementDataset(
+        dataset_id="reference",
+        values=np.ones((2, 2), dtype=np.float64),
+        spacing_mm=(1.0, 1.0),
+        origin_mm=(0.0, 0.0),
+        units={"dose": "GY", "position": "mm"},
+    )
+    evaluation = MeasurementDataset(
+        dataset_id="evaluation",
+        values=np.ones((2, 2), dtype=np.float64),
+        spacing_mm=(1.0, 1.0),
+        origin_mm=(100.0, 100.0),
+        units={"dose": "GY", "position": "mm"},
+    )
+    configuration = GammaConfiguration(
+        dimensionality="2D",
+        dose_difference_percent=3.0,
+        dose_difference_mode="RELATIVE",
+        absolute_dose_difference_gy=None,
+        distance_to_agreement_mm=3.0,
+        dose_threshold_percent=0.0,
+        normalization="GLOBAL",
+        interpolation="GRID",
+        pass_rate_threshold_percent=95.0,
+        histogram_bins=10,
+        coverage_policy="FULL_ROI",
+        max_gamma=2.0,
+    )
+
+    result = calculate_gamma(reference, evaluation, configuration)
+
+    metrics = result["metrics"]
+    assert result["overall_status"] == "INVALID"
+    assert metrics["selected_points"] == 4
+    assert metrics["invalid_coverage_points"] == 4
+    assert metrics["pass_rate_percent"] is None
+    assert metrics["passing_points"] == 0
+
+
+def test_gamma_overlap_only_reports_coverage_instead_of_inflating_sample() -> None:
+    reference = MeasurementDataset(
+        dataset_id="reference",
+        values=np.ones((1, 2), dtype=np.float64),
+        spacing_mm=(1.0, 1.0),
+        origin_mm=(0.0, 0.0),
+        units={"dose": "GY", "position": "mm"},
+    )
+    evaluation = MeasurementDataset(
+        dataset_id="evaluation",
+        values=np.ones((1, 1), dtype=np.float64),
+        spacing_mm=(1.0, 1.0),
+        origin_mm=(0.0, 0.0),
+        units={"dose": "GY", "position": "mm"},
+    )
+    configuration = GammaConfiguration(
+        dimensionality="2D",
+        dose_difference_percent=3.0,
+        dose_difference_mode="RELATIVE",
+        absolute_dose_difference_gy=None,
+        distance_to_agreement_mm=0.4,
+        dose_threshold_percent=0.0,
+        normalization="GLOBAL",
+        interpolation="GRID",
+        pass_rate_threshold_percent=95.0,
+        histogram_bins=10,
+        coverage_policy="OVERLAP_ONLY",
+        max_gamma=2.0,
+    )
+
+    result = calculate_gamma(reference, evaluation, configuration)
+
+    metrics = result["metrics"]
+    assert result["overall_status"] == "PASS"
+    assert metrics["evaluated_points"] == 1
+    assert metrics["coverage_excluded_points"] == 1
+    assert metrics["coverage_fraction"] == 0.5
+    assert metrics["pass_rate_percent"] == 100.0
+
+
+def test_gamma_max_limit_marks_high_gamma_as_censored() -> None:
+    reference = MeasurementDataset(
+        dataset_id="reference",
+        values=np.ones((1, 1), dtype=np.float64),
+        spacing_mm=(1.0, 1.0),
+        origin_mm=(0.0, 0.0),
+        units={"dose": "GY", "position": "mm"},
+    )
+    evaluation = MeasurementDataset(
+        dataset_id="evaluation",
+        values=np.full((1, 1), 1.06, dtype=np.float64),
+        spacing_mm=(1.0, 1.0),
+        origin_mm=(0.0, 0.0),
+        units={"dose": "GY", "position": "mm"},
+    )
+    configuration = GammaConfiguration(
+        dimensionality="2D",
+        dose_difference_percent=3.0,
+        dose_difference_mode="RELATIVE",
+        absolute_dose_difference_gy=None,
+        distance_to_agreement_mm=3.0,
+        dose_threshold_percent=0.0,
+        normalization="GLOBAL",
+        interpolation="GRID",
+        pass_rate_threshold_percent=95.0,
+        histogram_bins=10,
+        coverage_policy="FULL_ROI",
+        max_gamma=1.0,
+    )
+
+    result = calculate_gamma(reference, evaluation, configuration)
+
+    metrics = result["metrics"]
+    assert result["overall_status"] == "FAIL"
+    assert metrics["censored_points"] == 1
+    assert metrics["nonpassing_points"] == 1
+    assert metrics["pass_rate_percent"] == 0.0
+    assert metrics["percentiles"]["exact"] is False
+    assert metrics["percentiles"]["reason"] == "GAMMA_CENSORED_POINTS"
+
+
 def test_gamma_enqueue_requires_valid_inputs_and_is_idempotent() -> None:
     storage = InMemoryObjectStorage()
     with _workspace_client() as (client, organization):
@@ -164,6 +287,7 @@ def test_gamma_enqueue_requires_valid_inputs_and_is_idempotent() -> None:
             "reference_artifact_id": reference_id,
             "evaluation_artifact_id": evaluation_id,
             "idempotency_key": "p8-golden-request-001",
+            "workflow_profile": "ENGINE_TEST",
             "configuration": {"dose_threshold_percent": 0},
         }
         queued = client.post(f"/api/v1/qa-cases/{case_id}/gamma-runs", json=request)
@@ -176,3 +300,40 @@ def test_gamma_enqueue_requires_valid_inputs_and_is_idempotent() -> None:
         conflict = {**request, "evaluation_artifact_id": reference_id}
         conflicted = client.post(f"/api/v1/qa-cases/{case_id}/gamma-runs", json=conflict)
         assert conflicted.status_code == 422, conflicted.text
+
+
+def test_psqa_profile_rejects_json_only_inputs_before_enqueue() -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[artifact_storage] = lambda: storage
+        client.app.dependency_overrides[gamma_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+        ids = []
+        for role, dataset_id in (("REFERENCE", "reference"), ("EVALUATION", "evaluation")):
+            uploaded = client.post(
+                f"/api/v1/qa-cases/{case_id}/artifacts",
+                files={
+                    "file": (
+                        f"{dataset_id}.json",
+                        _measurement_bytes(dataset_id, [1, 2, 3, 4]),
+                        "application/json",
+                    )
+                },
+                data={"artifact_type": "MEASUREMENT", "logical_role": role},
+            )
+            assert uploaded.status_code == 201, uploaded.text
+            artifact_id = uploaded.json()["id"]
+            validation = client.post(f"/api/v1/artifacts/{artifact_id}/validate")
+            assert validation.json()["result"] == "VALID"
+            ids.append(artifact_id)
+
+        rejected = client.post(
+            f"/api/v1/qa-cases/{case_id}/gamma-runs",
+            json={
+                "reference_artifact_id": ids[0],
+                "evaluation_artifact_id": ids[1],
+                "idempotency_key": "psqa-requires-rtdose-001",
+            },
+        )
+        assert rejected.status_code == 422, rejected.text
+        assert rejected.json()["code"] == "RTDOSE_REQUIRED"

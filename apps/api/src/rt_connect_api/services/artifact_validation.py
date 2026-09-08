@@ -326,12 +326,12 @@ def _validate_rtdose(
             "DoseGridScaling",
         )
     dose_units = _string(_value(dataset, "DoseUnits"))
-    if dose_units not in {"GY", "CGY"}:
+    if dose_units != "GY":
         _check(
             checks,
-            "RTDOSE_DOSE_UNITS_INVALID",
+            "RTDOSE_DOSE_UNITS_UNSUPPORTED",
             "ERROR",
-            "DoseUnits must be GY or CGY.",
+            "DICOM RTDOSE DoseUnits must be GY for the supported physical-dose profile.",
             "DoseUnits",
         )
     else:
@@ -673,18 +673,70 @@ def validate_measurement(path: Path) -> ValidationResult:
 def validate_artifact(
     path: Path, artifact_type: str, media_type: str, filename: str
 ) -> ValidationResult:
-    lower_name = filename.lower()
-    if (
-        artifact_type == "MEASUREMENT"
-        or media_type == "application/json"
-        or lower_name.endswith(".json")
-    ):
+    """Validate content without allowing filename/MIME hints to override type.
+
+    ``artifact_type`` is part of the upload contract.  A browser may report a
+    misleading MIME type and a file can be renamed, so content detection is
+    only used to explain an obvious DICOM/JSON mismatch.  In particular, a
+    JSON file declared as DICOM must never be routed through the measurement
+    validator and later appear to be a usable RTDOSE input.
+    """
+
+    def mismatch(expected: str, detected: str) -> ValidationResult:
+        check: dict[str, object] = {
+            "code": "ARTIFACT_TYPE_MISMATCH",
+            "status": "ERROR",
+            "field": "artifact_type",
+            "message": f"Artifact is declared as {expected} but its content is {detected}.",
+        }
+        return _result([check], {})
+
+    def is_json_content() -> bool:
+        try:
+            json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            return False
+        return True
+
+    def is_dicom_content() -> bool:
+        try:
+            pydicom.dcmread(path, stop_before_pixels=True, force=False)
+        except Exception:
+            return False
+        return True
+
+    # Explicit declarations are authoritative.  MIME type and filename are
+    # deliberately not allowed to change the validator selected here.
+    if artifact_type == "DICOM":
+        if is_json_content():
+            return mismatch("DICOM", "JSON")
+        return validate_dicom(path)
+    if artifact_type in {"MEASUREMENT", "JSON"}:
+        if is_dicom_content():
+            return mismatch(artifact_type, "DICOM")
         return validate_measurement(path)
-    if (
-        artifact_type == "DICOM"
-        or media_type == "application/dicom"
-        or lower_name.endswith((".dcm", ".dicom"))
-    ):
+    if artifact_type in {"CSV", "IMAGE", "PDF"}:
+        explicit_warning: dict[str, object] = {
+            "code": "VALIDATION_NOT_APPLICABLE",
+            "status": "WARNING",
+            "field": None,
+            "message": (
+                "This explicitly declared artifact type is stored with provenance "
+                "but has no P6 content validator yet."
+            ),
+        }
+        return ValidationResult(
+            result="WARNING",
+            checks=[explicit_warning],
+            warnings=[explicit_warning],
+            errors=[],
+            metadata={},
+        )
+
+    lower_name = filename.lower()
+    if media_type == "application/json" or lower_name.endswith(".json"):
+        return validate_measurement(path)
+    if media_type == "application/dicom" or lower_name.endswith((".dcm", ".dicom")):
         return validate_dicom(path)
     warning_message = (
         "This artifact type is stored with provenance but has no P6 content validator yet."

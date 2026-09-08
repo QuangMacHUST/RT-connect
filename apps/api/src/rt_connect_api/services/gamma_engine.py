@@ -54,6 +54,8 @@ class GammaConfiguration:
     interpolation: str
     pass_rate_threshold_percent: float
     histogram_bins: int
+    coverage_policy: str = "FULL_ROI"
+    max_gamma: float = 2.0
 
 
 @dataclass(frozen=True)
@@ -314,6 +316,12 @@ def _configuration_from_mapping(payload: Mapping[str, object]) -> GammaConfigura
     )
     if threshold < 0 or threshold > 100 or pass_rate < 0 or pass_rate > 100:
         raise GammaEngineError("GAMMA_CONFIGURATION_INVALID", "Percentage values must be 0–100%.")
+    coverage_policy = payload.get("coverage_policy", "FULL_ROI")
+    if coverage_policy not in {"FULL_ROI", "OVERLAP_ONLY"}:
+        raise GammaEngineError("GAMMA_CONFIGURATION_INVALID", "coverage_policy is invalid.")
+    max_gamma = _finite_float(payload.get("max_gamma", 2.0), "max_gamma", positive=True)
+    if max_gamma < 1 or max_gamma > 10:
+        raise GammaEngineError("GAMMA_CONFIGURATION_INVALID", "max_gamma must be between 1 and 10.")
     absolute_value = payload.get("absolute_dose_difference_gy")
     absolute = None if absolute_value is None else _finite_float(
         absolute_value, "absolute_dose_difference_gy", positive=True
@@ -341,6 +349,8 @@ def _configuration_from_mapping(payload: Mapping[str, object]) -> GammaConfigura
         interpolation=str(interpolation),
         pass_rate_threshold_percent=pass_rate,
         histogram_bins=bins_value,
+        coverage_policy=str(coverage_policy),
+        max_gamma=max_gamma,
     )
 
 
@@ -384,19 +394,20 @@ def _candidate_gammas(
     configuration: GammaConfiguration,
 ) -> list[float]:
     reference_position = _point_position(reference, reference_indices)
+    search_radius = configuration.distance_to_agreement_mm * configuration.max_gamma
     dose_scale = _dose_scale(reference_value, float(np.max(reference.values)), configuration)
     if configuration.interpolation == "GRID":
         index_ranges: list[range] = []
         for axis in range(evaluation.values.ndim):
             minimum = math.ceil(
                 (reference_position[axis]
-                 - configuration.distance_to_agreement_mm
+                 - search_radius
                  - evaluation.origin_mm[axis])
                 / evaluation.spacing_mm[axis]
             )
             maximum = math.floor(
                 (reference_position[axis]
-                 + configuration.distance_to_agreement_mm
+                 + search_radius
                  - evaluation.origin_mm[axis])
                 / evaluation.spacing_mm[axis]
             )
@@ -412,7 +423,7 @@ def _candidate_gammas(
                     for axis in range(reference.values.ndim)
                 )
             )
-            if distance > configuration.distance_to_agreement_mm:
+            if distance > search_radius:
                 continue
             evaluation_value = float(evaluation.values[tuple(evaluation_indices)])
             gammas.append(
@@ -425,14 +436,14 @@ def _candidate_gammas(
 
     step = min(*reference.spacing_mm, *evaluation.spacing_mm) / 2
     offsets = np.arange(
-        -configuration.distance_to_agreement_mm,
-        configuration.distance_to_agreement_mm + step / 2,
+        -search_radius,
+        search_radius + step / 2,
         step,
     )
     gammas = []
     for offset_tuple in itertools.product(offsets, repeat=reference.values.ndim):
         distance = math.sqrt(sum(float(offset) ** 2 for offset in offset_tuple))
-        if distance > configuration.distance_to_agreement_mm:
+        if distance > search_radius:
             continue
         position = tuple(
             reference_position[axis] + float(offset_tuple[axis])
@@ -500,6 +511,7 @@ def calculate_gamma(
     gamma_values: list[float] = []
     excluded = 0
     no_candidate = 0
+    censored = 0
     for raw_indices in np.ndindex(reference.values.shape):
         reference_indices = tuple(int(index) for index in raw_indices)
         reference_value = float(reference.values[reference_indices])
@@ -525,31 +537,79 @@ def calculate_gamma(
             )
         if not candidates:
             no_candidate += 1
-            item.update({"gamma": None, "status": "NO_CANDIDATE"})
+            item.update(
+                {
+                    "gamma": None,
+                    "status": "NO_CANDIDATE",
+                    "coverage_status": "EXCLUDED"
+                    if configuration.coverage_policy == "OVERLAP_ONLY"
+                    else "INVALID",
+                }
+            )
             map_items.append(item)
             continue
         gamma = min(candidates)
+        if gamma > configuration.max_gamma:
+            censored += 1
+            item.update(
+                {
+                    "gamma": None,
+                    "gamma_lower_bound": configuration.max_gamma,
+                    "status": "CENSORED",
+                }
+            )
+            map_items.append(item)
+            continue
         gamma_values.append(gamma)
         item.update({"gamma": gamma, "status": "PASS" if gamma <= 1 else "FAIL"})
         map_items.append(item)
 
-    if not gamma_values:
+    selected_points = reference.values.size - excluded
+    if not selected_points or (
+        configuration.coverage_policy == "OVERLAP_ONLY" and not gamma_values and not censored
+    ):
         raise GammaEngineError(
             "GAMMA_NO_EVALUATED_POINTS", "No reference dose point passed the threshold."
         )
+    coverage_excluded = no_candidate if configuration.coverage_policy == "OVERLAP_ONLY" else 0
+    invalid_coverage = no_candidate if configuration.coverage_policy == "FULL_ROI" else 0
+    denominator = len(gamma_values) + censored
     values = np.asarray(gamma_values, dtype=np.float64)
     passing = int(np.count_nonzero(values <= 1))
-    pass_rate = passing / len(gamma_values) * 100
-    percentile_values = {
-        "p50": float(np.percentile(values, 50)),
-        "p90": float(np.percentile(values, 90)),
-        "p95": float(np.percentile(values, 95)),
-        "p99": float(np.percentile(values, 99)),
-        "max": float(np.max(values)),
-    }
+    pass_rate = None if invalid_coverage else passing / denominator * 100
+    if censored or invalid_coverage:
+        percentile_values: dict[str, object] = {
+            "exact": False,
+            "reason": "GAMMA_CENSORED_POINTS" if censored else "GAMMA_INCOMPLETE_COVERAGE",
+            "p50": None,
+            "p90": None,
+            "p95": None,
+            "p99": None,
+            "max": None,
+        }
+    else:
+        percentile_values = {
+            "exact": True,
+            "p50": float(np.percentile(values, 50)),
+            "p90": float(np.percentile(values, 90)),
+            "p95": float(np.percentile(values, 95)),
+            "p99": float(np.percentile(values, 99)),
+            "max": float(np.max(values)),
+        }
     histogram_counts, histogram_edges = np.histogram(
-        values, bins=configuration.histogram_bins, range=(0, max(1.0, float(np.max(values))))
+        values,
+        bins=configuration.histogram_bins,
+        range=(0, max(1.0, float(np.max(values)) if values.size else configuration.max_gamma)),
     )
+    if invalid_coverage:
+        overall_status = "INVALID"
+    else:
+        overall_status = (
+            "PASS"
+            if pass_rate is not None
+            and pass_rate >= configuration.pass_rate_threshold_percent
+            else "FAIL"
+        )
     warnings: list[dict[str, object]] = []
     if excluded:
         warnings.append(
@@ -564,7 +624,22 @@ def calculate_gamma(
             {
                 "code": "GAMMA_NO_CANDIDATE_WITHIN_DTA",
                 "count": no_candidate,
-                "message": "Some evaluated points had no comparison point inside the DTA radius.",
+                "message": (
+                    "Some reference points have no comparison point inside the configured "
+                    "max-gamma search radius; they are invalid coverage or explicitly "
+                    "excluded according to coverage_policy."
+                ),
+            }
+        )
+    if censored:
+        warnings.append(
+            {
+                "code": "GAMMA_SEARCH_CENSORED",
+                "count": censored,
+                "max_gamma": configuration.max_gamma,
+                "message": (
+                    "Some Gamma values are lower bounds because the search limit was reached."
+                ),
             }
         )
     return {
@@ -587,7 +662,15 @@ def calculate_gamma(
         "metrics": {
             "evaluated_points": len(gamma_values),
             "passing_points": passing,
+            "nonpassing_points": denominator - passing,
             "excluded_points": excluded,
+            "selected_points": selected_points,
+            "coverage_excluded_points": coverage_excluded,
+            "invalid_coverage_points": invalid_coverage,
+            "coverage_fraction": (
+                (len(gamma_values) + censored) / selected_points if selected_points else 0.0
+            ),
+            "censored_points": censored,
             "no_candidate_points": no_candidate,
             "pass_rate_percent": pass_rate,
             "percentiles": percentile_values,
@@ -598,9 +681,7 @@ def calculate_gamma(
         },
         "gamma_map": map_items,
         "warnings": warnings,
-        "overall_status": "PASS"
-        if pass_rate >= configuration.pass_rate_threshold_percent
-        else "FAIL",
+        "overall_status": overall_status,
     }
 
 

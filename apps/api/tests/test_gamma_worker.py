@@ -2,19 +2,21 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
-from rt_connect_api.api.gamma import process_gamma_run
+from rt_connect_api.api.gamma import acquire_gamma_run_lease, process_gamma_run
 from rt_connect_api.db.base import Base
 from rt_connect_api.db.models import (
     Artifact,
     Folder,
     GammaAnalysisRun,
+    GammaDispatchOutbox,
+    GammaRunAttempt,
     InputManifest,
     Machine,
     Organization,
@@ -22,6 +24,7 @@ from rt_connect_api.db.models import (
     Site,
 )
 from rt_connect_api.services.object_storage import InMemoryObjectStorage
+from rt_connect_api.worker import recover_stale_runs
 
 
 def _dataset(dataset_id: str, values: list[float]) -> bytes:
@@ -183,12 +186,69 @@ def test_worker_records_deterministic_engine_failure() -> None:
     session, storage, run = _run_fixture()
     invalid_payload = b"{}"
     storage.objects["evaluation-key"] = invalid_payload
-    run.input_manifest_snapshot["evaluation"]["sha256"] = hashlib.sha256(
-        invalid_payload
-    ).hexdigest()
+    run.input_manifest_snapshot = {
+        **run.input_manifest_snapshot,
+        "evaluation": {
+            **run.input_manifest_snapshot["evaluation"],
+            "sha256": hashlib.sha256(invalid_payload).hexdigest(),
+        },
+    }
+    session.commit()
     try:
         process_gamma_run(session, run, storage)
         assert run.status == "FAILED"
         assert run.error_snapshot[0]["code"] == "GAMMA_SCHEMA_UNSUPPORTED"
+    finally:
+        session.close()
+
+
+def test_only_one_worker_can_hold_a_gamma_lease() -> None:
+    session, storage, run = _run_fixture()
+    try:
+        first_token = acquire_gamma_run_lease(session, run, "worker-a")
+        assert first_token is not None
+        assert acquire_gamma_run_lease(session, run, "worker-b") is None
+
+        process_gamma_run(session, run, storage, lease_token=first_token, worker_id="worker-a")
+        assert run.status == "COMPLETED"
+        attempts = list(
+            session.scalars(
+                select(GammaRunAttempt).where(GammaRunAttempt.gamma_run_id == run.id)
+            )
+        )
+        assert len(attempts) == 1
+        assert attempts[0].status == "COMPLETED"
+
+        # A stale completion callback cannot reopen or overwrite a terminal run.
+        process_gamma_run(session, run, storage, lease_token=first_token, worker_id="worker-a")
+        assert run.status == "COMPLETED"
+    finally:
+        session.close()
+
+
+def test_stale_worker_is_fenced_and_requeued_with_a_new_outbox_intent() -> None:
+    session, storage, run = _run_fixture()
+    del storage
+    try:
+        token = acquire_gamma_run_lease(session, run, "worker-a")
+        assert token is not None
+        run.heartbeat_at = datetime.now(UTC) - timedelta(minutes=30)
+        session.commit()
+
+        assert recover_stale_runs(session, timeout_seconds=60) == 1
+        session.refresh(run)
+        assert run.status == "RETRYING"
+        assert run.lease_token is None
+        attempt = session.scalar(
+            select(GammaRunAttempt).where(GammaRunAttempt.gamma_run_id == run.id)
+        )
+        assert attempt is not None
+        assert attempt.status == "FAILED"
+        outbox = session.scalar(
+            select(GammaDispatchOutbox).where(GammaDispatchOutbox.gamma_run_id == run.id)
+        )
+        assert outbox is not None
+        assert outbox.attempt_number == run.attempt_count
+        assert outbox.status == "PENDING"
     finally:
         session.close()

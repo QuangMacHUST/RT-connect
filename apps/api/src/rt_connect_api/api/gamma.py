@@ -8,19 +8,27 @@ from __future__ import annotations
 import hashlib
 import json
 import tempfile
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Request, Response, status
 from pydantic import BaseModel, Field, model_validator
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from rt_connect_api.core.errors import DomainError
-from rt_connect_api.db.models import Artifact, GammaAnalysisRun, InputManifest, QACase, UserIdentity
+from rt_connect_api.db.models import (
+    Artifact,
+    GammaAnalysisRun,
+    GammaDispatchOutbox,
+    GammaRunAttempt,
+    InputManifest,
+    QACase,
+    UserIdentity,
+)
 from rt_connect_api.db.session import get_session
 from rt_connect_api.security.supabase_jwt import AuthenticatedIdentity, require_identity
 from rt_connect_api.services.gamma_engine import (
@@ -44,6 +52,8 @@ class GammaConfigurationRequest(BaseModel):
     dose_threshold_percent: float = Field(default=10.0, ge=0, le=100)
     normalization: Literal["GLOBAL", "LOCAL"] = "GLOBAL"
     interpolation: Literal["GRID", "BILINEAR"] = "GRID"
+    coverage_policy: Literal["FULL_ROI", "OVERLAP_ONLY"] = "FULL_ROI"
+    max_gamma: float = Field(default=2.0, ge=1.0, le=10.0)
     pass_rate_threshold_percent: float = Field(default=95.0, ge=0, le=100)
     histogram_bins: int = Field(default=10, ge=2, le=100)
 
@@ -58,6 +68,9 @@ class GammaRunCreateRequest(BaseModel):
     reference_artifact_id: UUID
     evaluation_artifact_id: UUID
     idempotency_key: str = Field(min_length=8, max_length=200)
+    # PSQA is the clinical-facing contract. JSON-only execution remains
+    # available, but it must be explicitly labelled as an engineering test.
+    workflow_profile: Literal["PSQA_GAMMA", "ENGINE_TEST"] = "PSQA_GAMMA"
     configuration: GammaConfigurationRequest = Field(default_factory=GammaConfigurationRequest)
 
 
@@ -68,6 +81,7 @@ class GammaRunResponse(BaseModel):
     reference_artifact_id: UUID
     evaluation_artifact_id: UUID
     idempotency_key: str
+    workflow_profile: Literal["PSQA_GAMMA", "ENGINE_TEST"]
     status: str
     progress_percent: int
     attempt_count: int
@@ -169,6 +183,9 @@ def _run_or_error(
 
 
 def _run_response(run: GammaAnalysisRun) -> GammaRunResponse:
+    workflow_profile: Literal["PSQA_GAMMA", "ENGINE_TEST"] = "ENGINE_TEST"
+    if run.config_snapshot.get("workflow_profile") == "PSQA_GAMMA":
+        workflow_profile = "PSQA_GAMMA"
     return GammaRunResponse(
         id=run.id,
         organization_id=run.organization_id,
@@ -176,6 +193,7 @@ def _run_response(run: GammaAnalysisRun) -> GammaRunResponse:
         reference_artifact_id=run.reference_artifact_id,
         evaluation_artifact_id=run.evaluation_artifact_id,
         idempotency_key=run.idempotency_key,
+        workflow_profile=workflow_profile,
         status=run.status,
         progress_percent=run.progress_percent,
         attempt_count=run.attempt_count,
@@ -286,11 +304,46 @@ def _input_snapshot(artifact: Artifact, manifest: InputManifest) -> dict[str, ob
     }
 
 
+def _validate_workflow_profile(
+    workflow_profile: str, reference: Artifact, evaluation: Artifact
+) -> None:
+    """Apply semantic input rules that are stronger than file validation."""
+
+    if workflow_profile == "PSQA_GAMMA":
+        if reference.artifact_type != "DICOM" or reference.modality != "RTDOSE":
+            raise DomainError(
+                "RTDOSE_REQUIRED",
+                "PSQA Gamma requires the reference artifact to be a validated RTDOSE DICOM.",
+                422,
+            )
+        if evaluation.artifact_type not in {"MEASUREMENT", "DICOM"} or (
+            evaluation.artifact_type == "DICOM" and evaluation.modality != "RTDOSE"
+        ):
+            raise DomainError(
+                "COMPARISON_REQUIRED",
+                "PSQA Gamma requires a validated measurement or RTDOSE comparison artifact.",
+                422,
+            )
+        return
+    if workflow_profile == "ENGINE_TEST":
+        if reference.artifact_type not in {"MEASUREMENT", "JSON", "DICOM"} or (
+            evaluation.artifact_type not in {"MEASUREMENT", "JSON", "DICOM"}
+        ):
+            raise DomainError(
+                "GAMMA_ENGINE_TEST_INPUT_INVALID",
+                "ENGINE_TEST accepts only validated measurement, JSON or RTDOSE artifacts.",
+                422,
+            )
+        return
+    raise DomainError("GAMMA_WORKFLOW_PROFILE_INVALID", "Unsupported Gamma workflow profile.", 422)
+
+
 def _fingerprint(payload: GammaRunCreateRequest) -> str:
     canonical = json.dumps(
         {
             "reference_artifact_id": str(payload.reference_artifact_id),
             "evaluation_artifact_id": str(payload.evaluation_artifact_id),
+            "workflow_profile": payload.workflow_profile,
             "configuration": payload.configuration.model_dump(mode="json"),
         },
         sort_keys=True,
@@ -299,34 +352,52 @@ def _fingerprint(payload: GammaRunCreateRequest) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def _ensure_dispatch_outbox(session: Session, run: GammaAnalysisRun) -> GammaDispatchOutbox:
+    outbox = session.scalar(
+        select(GammaDispatchOutbox).where(
+            GammaDispatchOutbox.organization_id == run.organization_id,
+            GammaDispatchOutbox.gamma_run_id == run.id,
+            GammaDispatchOutbox.attempt_number == run.attempt_count,
+        )
+    )
+    if outbox is None:
+        outbox = GammaDispatchOutbox(
+            organization_id=run.organization_id,
+            gamma_run_id=run.id,
+            attempt_number=run.attempt_count,
+            status="PENDING",
+            last_error=None,
+        )
+        session.add(outbox)
+        session.flush()
+    return outbox
+
+
 def _dispatch_gamma_run(request: Request, session: Session, run: GammaAnalysisRun) -> None:
     """Publish a run after its database row is committed.
 
     Local development can deliberately omit ``REDIS_URL`` and keep the DB polling
     worker. Staging/production configure Redis, so a publish failure is visible as
-    a failed run that can be retried instead of silently remaining queued forever.
+    a queued run with a durable pending dispatch intent that the worker can reconcile.
     """
 
     queue = get_gamma_queue(request.app.state.settings)
     if queue is None:
         return
+    outbox = _ensure_dispatch_outbox(session, run)
     try:
-        queue.enqueue(run.id, run.organization_id, run.attempt_count)
+        queue.enqueue(run.id, run.organization_id, outbox.attempt_number)
+        outbox.status = "PUBLISHED"
+        outbox.published_at = datetime.now(UTC)
+        outbox.last_error = None
+        session.commit()
     except RedisQueueError as exc:
-        run.status = "FAILED"
-        run.progress_percent = 100
-        run.error_snapshot = [
-            {
-                "code": "GAMMA_QUEUE_UNAVAILABLE",
-                "message": "The configured Gamma queue is unavailable.",
-            }
-        ]
-        run.completed_at = datetime.now(UTC)
-        run.heartbeat_at = run.completed_at
+        outbox.status = "PENDING"
+        outbox.last_error = "GAMMA_QUEUE_UNAVAILABLE"
         session.commit()
         raise DomainError(
             "GAMMA_QUEUE_UNAVAILABLE",
-            "The configured Gamma queue is unavailable; the run can be retried after recovery.",
+            "The configured Gamma queue is unavailable; the dispatch intent will be retried.",
             503,
         ) from exc
 
@@ -358,6 +429,7 @@ def enqueue_gamma_run(
     evaluation, evaluation_manifest = _preflight_artifact(
         session, context, case, payload.evaluation_artifact_id, "evaluation"
     )
+    _validate_workflow_profile(payload.workflow_profile, reference, evaluation)
     request_fingerprint = _fingerprint(payload)
     existing = session.scalar(
         select(GammaAnalysisRun).where(
@@ -388,7 +460,10 @@ def enqueue_gamma_run(
         progress_percent=0,
         attempt_count=0,
         engine_version=ENGINE_VERSION,
-        config_snapshot=payload.configuration.model_dump(mode="json"),
+        config_snapshot={
+            **payload.configuration.model_dump(mode="json"),
+            "workflow_profile": payload.workflow_profile,
+        },
         input_manifest_snapshot={
             "reference": _input_snapshot(reference, reference_manifest),
             "evaluation": _input_snapshot(evaluation, evaluation_manifest),
@@ -400,6 +475,8 @@ def enqueue_gamma_run(
     )
     session.add(run)
     try:
+        session.flush()
+        _ensure_dispatch_outbox(session, run)
         session.commit()
     except IntegrityError as exc:
         session.rollback()
@@ -465,6 +542,10 @@ def retry_gamma_run(
     run.started_at = None
     run.heartbeat_at = None
     run.completed_at = None
+    run.worker_id = None
+    run.lease_token = None
+    run.lease_expires_at = None
+    _ensure_dispatch_outbox(session, run)
     session.commit()
     session.refresh(run)
     _dispatch_gamma_run(request, session, run)
@@ -556,18 +637,160 @@ def compare_gamma_runs(
     )
 
 
-def process_gamma_run(session: Session, run: GammaAnalysisRun, storage: ObjectStorage) -> None:
-    """Worker operation for one queued run; API routes only create/poll/retry jobs."""
+class GammaLeaseLost(RuntimeError):
+    """Raised when a worker no longer owns the fenced Gamma run lease."""
+
+
+def acquire_gamma_run_lease(
+    session: Session,
+    run: GammaAnalysisRun,
+    worker_id: str,
+    *,
+    expected_dispatch_attempt: int | None = None,
+    lease_seconds: int = 900,
+) -> str | None:
+    """Atomically move a queued run to RUNNING and create its attempt record."""
 
     if run.status not in {"QUEUED", "RETRYING"}:
-        return
+        return None
+    if expected_dispatch_attempt is not None and expected_dispatch_attempt != run.attempt_count:
+        return None
     now = datetime.now(UTC)
-    run.status = "RUNNING"
-    run.progress_percent = 5
-    run.attempt_count += 1
-    run.started_at = now
-    run.heartbeat_at = now
+    lease_token = uuid4().hex
+    attempt_number = run.attempt_count + 1
+    result = session.execute(
+        update(GammaAnalysisRun)
+        .where(
+            GammaAnalysisRun.id == run.id,
+            GammaAnalysisRun.organization_id == run.organization_id,
+            GammaAnalysisRun.status.in_(["QUEUED", "RETRYING"]),
+            GammaAnalysisRun.lease_token.is_(None),
+        )
+        .values(
+            status="RUNNING",
+            progress_percent=5,
+            attempt_count=attempt_number,
+            started_at=now,
+            heartbeat_at=now,
+            worker_id=worker_id,
+            lease_token=lease_token,
+            lease_expires_at=now + timedelta(seconds=lease_seconds),
+        )
+    )
+    if int(getattr(result, "rowcount", 0)) != 1:
+        session.rollback()
+        return None
+    session.add(
+        GammaRunAttempt(
+            organization_id=run.organization_id,
+            gamma_run_id=run.id,
+            attempt_number=attempt_number,
+            worker_id=worker_id,
+            lease_token=lease_token,
+            status="RUNNING",
+            error_snapshot=[],
+        )
+    )
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        return None
+    session.refresh(run)
+    return lease_token
+
+
+def _lease_update(
+    session: Session, run: GammaAnalysisRun, lease_token: str, values: dict[str, object]
+) -> None:
+    result = session.execute(
+        update(GammaAnalysisRun)
+        .where(
+            GammaAnalysisRun.id == run.id,
+            GammaAnalysisRun.organization_id == run.organization_id,
+            GammaAnalysisRun.status == "RUNNING",
+            GammaAnalysisRun.lease_token == lease_token,
+        )
+        .values(**values)
+    )
+    if int(getattr(result, "rowcount", 0)) != 1:
+        session.rollback()
+        raise GammaLeaseLost("Gamma worker lease is no longer valid")
+    session.refresh(run)
+
+
+def _heartbeat_gamma_run(
+    session: Session, run: GammaAnalysisRun, lease_token: str, progress_percent: int
+) -> None:
+    now = datetime.now(UTC)
+    _lease_update(
+        session,
+        run,
+        lease_token,
+        {
+            "progress_percent": progress_percent,
+            "heartbeat_at": now,
+            "lease_expires_at": now + timedelta(seconds=900),
+        },
+    )
     session.commit()
+
+
+def _finish_gamma_attempt(
+    session: Session,
+    run: GammaAnalysisRun,
+    lease_token: str,
+    *,
+    status: str,
+    errors: list[dict[str, object]],
+    result_snapshot: dict[str, object] | None = None,
+    warning_snapshot: list[dict[str, object]] | None = None,
+) -> None:
+    now = datetime.now(UTC)
+    values: dict[str, object] = {
+        "status": status,
+        "progress_percent": 100,
+        "error_snapshot": errors,
+        "completed_at": now,
+        "heartbeat_at": now,
+        "worker_id": None,
+        "lease_token": None,
+        "lease_expires_at": None,
+    }
+    if result_snapshot is not None:
+        values["result_snapshot"] = result_snapshot
+    if warning_snapshot is not None:
+        values["warning_snapshot"] = warning_snapshot
+    _lease_update(session, run, lease_token, values)
+    session.execute(
+        update(GammaRunAttempt)
+        .where(
+            GammaRunAttempt.gamma_run_id == run.id,
+            GammaRunAttempt.organization_id == run.organization_id,
+            GammaRunAttempt.lease_token == lease_token,
+            GammaRunAttempt.status == "RUNNING",
+        )
+        .values(status=status, completed_at=now, error_snapshot=errors)
+    )
+    session.commit()
+
+
+def process_gamma_run(
+    session: Session,
+    run: GammaAnalysisRun,
+    storage: ObjectStorage,
+    *,
+    lease_token: str | None = None,
+    worker_id: str = "gamma-direct",
+) -> None:
+    """Execute one run under a database-fenced lease."""
+
+    if lease_token is not None and run.status != "RUNNING":
+        return
+    if lease_token is None:
+        lease_token = acquire_gamma_run_lease(session, run, worker_id)
+    if lease_token is None:
+        return
     reference_path: Path | None = None
     evaluation_path: Path | None = None
     try:
@@ -583,48 +806,62 @@ def process_gamma_run(session: Session, run: GammaAnalysisRun, storage: ObjectSt
             _object_key_from_snapshot(run, "reference", session), reference_path
         )
         _verify_snapshot_checksum(run, "reference", reference_path)
-        run.progress_percent = 25
-        run.heartbeat_at = datetime.now(UTC)
-        session.commit()
+        _heartbeat_gamma_run(session, run, lease_token, 25)
         storage.download_to_path(
             _object_key_from_snapshot(run, "evaluation", session), evaluation_path
         )
         _verify_snapshot_checksum(run, "evaluation", evaluation_path)
-        run.progress_percent = 45
-        run.heartbeat_at = datetime.now(UTC)
-        session.commit()
+        _heartbeat_gamma_run(session, run, lease_token, 45)
         result = calculate_gamma_from_paths(reference_path, evaluation_path, run.config_snapshot)
-        run.result_snapshot = result
         raw_warnings = result.get("warnings", [])
-        run.warning_snapshot = raw_warnings if isinstance(raw_warnings, list) else []
-        run.error_snapshot = []
-        run.progress_percent = 100
-        run.status = "COMPLETED"
-        run.completed_at = datetime.now(UTC)
-        run.heartbeat_at = run.completed_at
+        _finish_gamma_attempt(
+            session,
+            run,
+            lease_token,
+            status="COMPLETED",
+            errors=[],
+            result_snapshot=result,
+            warning_snapshot=raw_warnings if isinstance(raw_warnings, list) else [],
+        )
     except GammaEngineError as exc:
-        run.status = "FAILED"
-        run.progress_percent = 100
-        run.error_snapshot = [{"code": exc.code, "message": exc.message, "details": exc.details}]
-        run.completed_at = datetime.now(UTC)
-        run.heartbeat_at = run.completed_at
+        _finish_gamma_attempt(
+            session,
+            run,
+            lease_token,
+            status="FAILED",
+            errors=[{"code": exc.code, "message": exc.message, "details": exc.details}],
+        )
     except ObjectStorageError:
-        run.status = "FAILED"
-        run.progress_percent = 100
-        run.error_snapshot = [
-            {
-                "code": "GAMMA_STORAGE_UNAVAILABLE",
-                "message": "Gamma input could not be read from object storage.",
-            }
-        ]
-        run.completed_at = datetime.now(UTC)
-        run.heartbeat_at = run.completed_at
+        _finish_gamma_attempt(
+            session,
+            run,
+            lease_token,
+            status="FAILED",
+            errors=[
+                {
+                    "code": "GAMMA_STORAGE_UNAVAILABLE",
+                    "message": "Gamma input could not be read from object storage.",
+                }
+            ],
+        )
+    except Exception:
+        _finish_gamma_attempt(
+            session,
+            run,
+            lease_token,
+            status="FAILED",
+            errors=[
+                {
+                    "code": "GAMMA_EXECUTION_ERROR",
+                    "message": "Gamma execution failed unexpectedly; inspect worker logs.",
+                }
+            ],
+        )
     finally:
         if reference_path is not None:
             reference_path.unlink(missing_ok=True)
         if evaluation_path is not None:
             evaluation_path.unlink(missing_ok=True)
-        session.commit()
 
 
 def _object_key_from_snapshot(run: GammaAnalysisRun, label: str, session: Session) -> str:

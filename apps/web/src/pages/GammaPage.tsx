@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 
-import { ApiClientError, apiClient, type GammaConfiguration, type GammaRunResource } from '../api/client'
+import { ApiClientError, apiClient, type GammaConfiguration, type GammaRunResource, type GammaWorkflowProfile } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 
 type JsonRecord = Record<string, unknown>
@@ -47,6 +47,8 @@ const initialConfiguration: GammaConfiguration = {
   dose_threshold_percent: 10,
   normalization: 'GLOBAL',
   interpolation: 'GRID',
+  coverage_policy: 'FULL_ROI',
+  max_gamma: 2,
   pass_rate_threshold_percent: 95,
   histogram_bins: 10
 }
@@ -58,6 +60,7 @@ export function GammaPage() {
   const accessToken = session?.access_token
   const [referenceId, setReferenceId] = useState<string>()
   const [evaluationId, setEvaluationId] = useState<string>()
+  const [workflowProfile, setWorkflowProfile] = useState<GammaWorkflowProfile>('PSQA_GAMMA')
   const [configuration, setConfiguration] = useState<GammaConfiguration>(initialConfiguration)
   const [selectedRunId, setSelectedRunId] = useState<string>()
   const [comparisonRunId, setComparisonRunId] = useState<string>()
@@ -95,14 +98,18 @@ export function GammaPage() {
   )
   const roleReferenceId = eligibleArtifacts.find((item) => item.logical_roles.includes('REFERENCE'))?.id
   const roleEvaluationId = eligibleArtifacts.find((item) => item.logical_roles.includes('EVALUATION'))?.id
+  const preferredPaqReferenceId = eligibleArtifacts.find((item) => item.artifact_type === 'DICOM' && item.modality === 'RTDOSE' && item.logical_roles.includes('REFERENCE'))?.id
+    ?? eligibleArtifacts.find((item) => item.artifact_type === 'DICOM' && item.modality === 'RTDOSE')?.id
+  const preferredPaqEvaluationId = eligibleArtifacts.find((item) => item.artifact_type === 'MEASUREMENT' && item.logical_roles.includes('EVALUATION'))?.id
+    ?? eligibleArtifacts.find((item) => item.artifact_type === 'MEASUREMENT')?.id
   const selectedReferenceId = referenceId && eligibleArtifacts.some((item) => item.id === referenceId)
     ? referenceId
-    : roleReferenceId ?? eligibleArtifacts[0]?.id ?? ''
-  const selectedEvaluationId = evaluationId && evaluationId !== selectedReferenceId && eligibleArtifacts.some((item) => item.id === evaluationId)
+    : (workflowProfile === 'PSQA_GAMMA' ? preferredPaqReferenceId : roleReferenceId) ?? eligibleArtifacts[0]?.id ?? ''
+  const selectedEvaluationId = (evaluationId && evaluationId !== selectedReferenceId && eligibleArtifacts.some((item) => item.id === evaluationId)
     ? evaluationId
-    : (roleEvaluationId && roleEvaluationId !== selectedReferenceId
-      ? roleEvaluationId
-      : eligibleArtifacts.find((item) => item.id !== selectedReferenceId)?.id ?? '')
+    : ((workflowProfile === 'PSQA_GAMMA' ? preferredPaqEvaluationId : roleEvaluationId) && (workflowProfile === 'PSQA_GAMMA' ? preferredPaqEvaluationId : roleEvaluationId) !== selectedReferenceId
+      ? (workflowProfile === 'PSQA_GAMMA' ? preferredPaqEvaluationId : roleEvaluationId)
+      : eligibleArtifacts.find((item) => item.id !== selectedReferenceId)?.id ?? '')) ?? ''
   const runs = useQuery({
     queryKey: ['gamma-runs', caseId, accessToken],
     queryFn: () => apiClient.gammaRuns(accessToken!, caseId!),
@@ -125,6 +132,7 @@ export function GammaPage() {
       reference_artifact_id: selectedReferenceId,
       evaluation_artifact_id: selectedEvaluationId,
       idempotency_key: `gamma-${crypto.randomUUID()}`,
+      workflow_profile: workflowProfile,
       configuration
     }),
     onSuccess: (run) => {
@@ -161,6 +169,14 @@ export function GammaPage() {
     : undefined
   const gammaMap = records(activeRun?.result_snapshot.gamma_map)
   const busy = createMutation.isPending || retryMutation.isPending
+  const selectedReference = eligibleArtifacts.find((item) => item.id === selectedReferenceId)
+  const selectedEvaluation = eligibleArtifacts.find((item) => item.id === selectedEvaluationId)
+  const profileReady = workflowProfile === 'PSQA_GAMMA'
+    ? selectedReference?.artifact_type === 'DICOM' && selectedReference.modality === 'RTDOSE' && (
+      selectedEvaluation?.artifact_type === 'MEASUREMENT' ||
+      (selectedEvaluation?.artifact_type === 'DICOM' && selectedEvaluation.modality === 'RTDOSE')
+    )
+    : Boolean(selectedReference && selectedEvaluation)
 
   const updateNumber = (key: keyof GammaConfiguration, value: string) => {
     const parsed = Number(value)
@@ -170,7 +186,7 @@ export function GammaPage() {
   return (
     <div className="page">
       <header className="page-header">
-        <div><p className="eyebrow">P8 · MOD-06</p><h1>Phân tích PSQA Gamma Workspace</h1><p>{selectedCase.title} · chọn hai input đã VALID (measurement JSON hoặc RTDOSE), cấu hình Gamma 2D/3D và theo dõi job/result có provenance.</p></div>
+        <div><p className="eyebrow">P8 · MOD-06</p><h1>Phân tích PSQA Gamma Workspace</h1><p>{selectedCase.title} · chọn profile, input đã VALID, cấu hình Gamma 2D/3D và theo dõi job/result có provenance.</p></div>
         <div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">QA Archive</Link><span className="status-badge">API THẬT</span></div>
       </header>
       {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
@@ -179,10 +195,12 @@ export function GammaPage() {
         <div className="panel-heading"><div><p className="eyebrow">INPUT PREFLIGHT</p><h2>Reference / Evaluation</h2></div><strong>{eligibleArtifacts.length}</strong></div>
         {artifacts.isPending ? <p>Đang tải artifact…</p> : artifacts.error ? <div className="alert alert--error"><p>{errorMessage(artifacts.error)}</p><Link className="button-link" to="/app/qa">Mở QA Archive để kiểm tra artifact</Link></div> : eligibleArtifacts.length < 2 ? <div className="empty-state"><p>Cần ít nhất hai artifact measurement/JSON hoặc RTDOSE có trạng thái VALID. Hãy upload và Validate ở QA Archive trước khi đưa vào Gamma.</p><Link className="button-link" to="/app/qa">Đi tới QA Archive</Link></div> : <>
           <div className="gamma-input-grid">
+            <label>Workflow profile<select value={workflowProfile} onChange={(event) => setWorkflowProfile(event.target.value as GammaWorkflowProfile)}><option value="PSQA_GAMMA">PSQA Gamma · RTDOSE bắt buộc</option><option value="ENGINE_TEST">Engine test · JSON/measurement</option></select></label>
             <label>Reference<select value={selectedReferenceId} onChange={(event) => setReferenceId(event.target.value)}>{eligibleArtifacts.map((artifact) => <option key={artifact.id} value={artifact.id}>{artifact.original_filename} · {artifact.sha256.slice(0, 12)}…</option>)}</select></label>
             <label>Evaluation<select value={selectedEvaluationId} onChange={(event) => setEvaluationId(event.target.value)}>{eligibleArtifacts.filter((item) => item.id !== selectedReferenceId).map((artifact) => <option key={artifact.id} value={artifact.id}>{artifact.original_filename} · {artifact.sha256.slice(0, 12)}…</option>)}</select></label>
           </div>
-          <div className="gamma-input-summary"><span>Reference: <strong>{eligibleArtifacts.find((item) => item.id === selectedReferenceId)?.original_filename ?? '—'}</strong></span><span>Evaluation: <strong>{eligibleArtifacts.find((item) => item.id === selectedEvaluationId)?.original_filename ?? '—'}</strong></span><span className="status-badge">PREFLIGHT VALID</span></div>
+          <div className="gamma-input-summary"><span>Reference: <strong>{selectedReference?.original_filename ?? '—'}</strong></span><span>Evaluation: <strong>{selectedEvaluation?.original_filename ?? '—'}</strong></span><span className={profileReady ? 'status-badge' : 'status-badge machine-status--fail'}>{profileReady ? 'PREFLIGHT VALID' : 'PROFILE INPUT MISSING'}</span></div>
+          <p className="form-hint">{workflowProfile === 'PSQA_GAMMA' ? 'PSQA Gamma cần RTDOSE DICOM đã VALID làm Reference và measurement/RTDOSE làm Evaluation.' : 'ENGINE_TEST dành cho kiểm thử engine; không tự được coi là kết quả PSQA lâm sàng.'}</p>
         </>}
       </section>
 
@@ -197,16 +215,18 @@ export function GammaPage() {
           <label>Dose difference mode<select value={configuration.dose_difference_mode} onChange={(event) => setConfiguration((current) => ({ ...current, dose_difference_mode: event.target.value as GammaConfiguration['dose_difference_mode'] }))}><option value="RELATIVE">Relative</option><option value="ABSOLUTE">Absolute</option></select></label>
           <label>Normalization<select value={configuration.normalization} onChange={(event) => setConfiguration((current) => ({ ...current, normalization: event.target.value as GammaConfiguration['normalization'] }))}><option value="GLOBAL">Global</option><option value="LOCAL">Local</option></select></label>
           <label>Interpolation<select value={configuration.interpolation} onChange={(event) => setConfiguration((current) => ({ ...current, interpolation: event.target.value as GammaConfiguration['interpolation'] }))}><option value="GRID">Grid node</option><option value="BILINEAR">Bilinear</option></select></label>
+          <label>Coverage policy<select value={configuration.coverage_policy} onChange={(event) => setConfiguration((current) => ({ ...current, coverage_policy: event.target.value as GammaConfiguration['coverage_policy'] }))}><option value="FULL_ROI">Full ROI · thiếu coverage = INVALID</option><option value="OVERLAP_ONLY">Overlap only · có cảnh báo coverage</option></select></label>
+          <label>Max Gamma search<input type="number" min="1" max="10" step="0.5" value={configuration.max_gamma} onChange={(event) => updateNumber('max_gamma', event.target.value)} /></label>
           {configuration.dose_difference_mode === 'ABSOLUTE' && <label>Absolute dose difference (Gy)<input type="number" min="0.001" step="0.01" value={configuration.absolute_dose_difference_gy ?? ''} onChange={(event) => updateNumber('absolute_dose_difference_gy', event.target.value)} /></label>}
         </div>
         <p className="form-hint">Cấu hình sẽ được snapshot cùng job; đổi cấu hình không làm thay đổi run cũ.</p>
-        <button disabled={busy || eligibleArtifacts.length < 2 || selectedReferenceId === selectedEvaluationId} onClick={() => createMutation.mutate()}>Đưa vào hàng đợi Gamma</button>
+        <button disabled={busy || !profileReady || selectedReferenceId === selectedEvaluationId} onClick={() => createMutation.mutate()}>Đưa vào hàng đợi Gamma</button>
       </section>
 
       <section className="panel gamma-panel">
         <div className="panel-heading"><div><p className="eyebrow">JOB / RESULT</p><h2>Tiến độ và kết quả</h2></div><strong>{runs.data?.total ?? '—'}</strong></div>
         {runs.isPending ? <p>Đang tải lịch sử Gamma…</p> : runs.error ? <div className="alert alert--error"><p>{errorMessage(runs.error)}</p><button onClick={() => void runs.refetch()}>Thử lại</button></div> : !activeRun ? <p className="empty-state">Chưa có Gamma run. Chọn input và đưa job vào hàng đợi.</p> : <>
-          <div className="gamma-run-meta"><span>Run <code>{activeRun.id}</code></span><span>Trạng thái <strong className={statusClass(activeRun.status)}>{activeRun.status}</strong></span><span>Tiến độ {activeRun.progress_percent}%</span><span>Attempt {activeRun.attempt_count}</span><span>Engine {activeRun.engine_version}</span></div>
+          <div className="gamma-run-meta"><span>Run <code>{activeRun.id}</code></span><span>Profile <strong>{activeRun.workflow_profile}</strong></span><span>Trạng thái <strong className={statusClass(activeRun.status)}>{activeRun.status}</strong></span><span>Tiến độ {activeRun.progress_percent}%</span><span>Attempt {activeRun.attempt_count}</span><span>Engine {activeRun.engine_version}</span></div>
           {isActiveJob(activeRun) && <div className="gamma-progress"><div style={{ width: `${activeRun.progress_percent}%` }} /><p>Job đang được worker xử lý; trang sẽ tự đồng bộ sau mỗi 2,5 giây.</p></div>}
           {activeRun.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Gamma không hoàn tất</h3><ul>{activeRun.error_snapshot.map((item, index) => <li key={`${String(item.code)}-${index}`}><strong>{textValue(item.code)}</strong>: {textValue(item.message, JSON.stringify(item))}</li>)}</ul><button disabled={busy} onClick={() => retryMutation.mutate(activeRun.id)}>Retry job</button></div>}
           {activeRun.result_snapshot.overall_status && <div className="gamma-result-banner"><span className={statusClass(String(activeRun.result_snapshot.overall_status))}>{String(activeRun.result_snapshot.overall_status)}</span><strong>{textValue(resultMetrics?.pass_rate_percent)}%</strong><span>pass rate · target {textValue(configuration.pass_rate_threshold_percent)}%</span></div>}

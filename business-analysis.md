@@ -5,10 +5,10 @@
 - **Tên sản phẩm:** RT-CONNECT
 - **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
 - **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
-- **Phiên bản tài liệu:** 0.6 — bổ sung luồng khởi tạo organization cho identity đã xác thực nhưng chưa có membership
+- **Phiên bản tài liệu:** 0.7 — catalogue tính năng, workflow, ngoại lệ và tiêu chí nghiệm thu theo P0–P20 (2026-09-08)
 - **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
-Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Các quyết định về framework, database, server, cấu trúc source code và cách triển khai được mô tả trong `technical-specification.md`; trình tự thực hiện và tiêu chí đóng từng module được mô tả trong `plan.md`.
+Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.7 tại mục 21 phân biệt target cần triển khai với evidence đã có.
 
 ---
 
@@ -108,7 +108,7 @@ Phạm vi truy cập:
 - Người dùng truy cập giao diện web và các API cần thiết qua HTTPS.
 - Các thành viên trong cùng organization sử dụng các chức năng nghiệp vụ ngang nhau như đã nêu ở mục 5.2.
 - Dữ liệu QA, artifact, report và scenario vẫn được gắn với organization để tránh truy vấn nhầm dữ liệu giữa các tổ chức.
-- Database, object storage, worker, queue và DICOM gateway là thành phần hạ tầng phía sau, không phải các dịch vụ public độc lập.
+- Database, worker, queue và DICOM gateway là hạ tầng phía sau, không phải dịch vụ nghiệp vụ public. Object storage giữ bucket private; browser được tải file qua signed URL ngắn hạn sau khi xác minh organization.
 - Nếu chia sẻ nội dung kiến thức hoặc protocol ra ngoài organization trong tương lai, đó sẽ là một yêu cầu sản phẩm riêng; không mặc định mở dữ liệu QA hoặc dữ liệu có định danh cho người dùng ẩn danh.
 
 ### 4.3. Clinical MVP
@@ -1039,7 +1039,7 @@ Mỗi lần tính phải lưu:
 - Upload artifact, chạy analysis, xem report và export hoạt động qua mạng ngoài.
 - Biological Toolkit vẫn hoạt động độc lập với QA case.
 - Mất kết nối hoặc refresh browser không làm mất artifact hoặc tạo analysis trùng.
-- Database, object storage, queue, worker và DICOM gateway không bị mở thành các endpoint public độc lập.
+- Database, queue, worker và DICOM gateway không mở public; object storage không cho anonymous bucket access, nhưng signed HTTPS download đúng scope được phép.
 
 ### 18.11. Nghiệm thu theo module và Google Stitch
 
@@ -1102,7 +1102,7 @@ Mỗi module được đưa lên staging ngay khi hoàn thành để người d�
 - Dataset thật trong pilot và bổ sung regression case.
 - Domain, HTTPS, migration, backup/restore, monitoring và rollback.
 - Public production URL chỉ sau khi staging/pilot đạt tiêu chí release.
-- Chỉ public frontend/API; PostgreSQL, object storage, queue, worker và DICOM gateway không public trực tiếp.
+- Public frontend/API; PostgreSQL, queue, worker và DICOM gateway private. Object storage dùng authenticated access hoặc signed HTTPS URL có hạn, không public bucket.
 
 ---
 
@@ -1112,4 +1112,409 @@ RT-CONNECT là hệ thống quản lý và phân tích QA xạ trị kết hợp
 
 Clinical MVP tập trung vào Machine QA, PSQA Gamma, report, trend, input validation và provenance. Biological Toolkit được tổ chức thành tab riêng, phục vụ tính toán BED/EQD2, đồ thị, so sánh phác đồ, giới hạn liều, protocol điều trị, knowledge library và re-irradiation scenario mà không gắn mặc định với QA case hoặc ca bệnh.
 
-`technical-specification.md` và `plan.md` phải tiếp tục được xây dựng từ các yêu cầu, quy tắc và tiêu chí nghiệm thu trong tài liệu này. Google Stitch cung cấp thiết kế trực quan; Railway và Supabase cung cấp hạ tầng đã chọn; không nguồn nào trong số đó được tự thay thế hoặc làm mất requirement nghiệp vụ.
+`specification.md`, `technical-specification.md` và `plan.md` được xây dựng từ các yêu cầu, quy tắc và tiêu chí nghiệm thu trong tài liệu này. Google Stitch cung cấp thiết kế trực quan; Railway và Supabase cung cấp hạ tầng đã chọn; không nguồn nào trong số đó được tự thay thế hoặc làm mất requirement nghiệp vụ.
+
+
+## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.7
+
+Bổ sung ngày 2026-09-08 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ và phạm vi nghiệm thu. `specification.md` v1.1 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v2.1 quy định task, workflow và test theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
+
+### 21.1. Các quyết định sản phẩm giữ nguyên
+
+- Thành viên cùng organization ngang quyền; không thêm cấp phê duyệt bác sĩ/kỹ sư hay action roles. Membership là ranh giới dữ liệu và xác định tổ chức của tài khoản.
+- User được tùy chỉnh toàn bộ report. Không có canonical block bắt buộc, không ép report giữ cảnh báo/label hoặc lịch sử. Lịch sử nguồn được giữ ở hệ thống để xem lại; việc ẩn block không sửa kết quả engine gốc.
+- Không thêm vòng đời phê duyệt QA case/report. Trạng thái file, lưu nháp, export và job chỉ diễn tả tiến trình kỹ thuật. PASS/FAIL là kết quả rule, không phải quyền thao tác.
+- Biological Toolkit, re-irradiation và bù fraction là công cụ tính toán/scenario riêng. Bảng dose limits và protocol điều trị là thư viện tham khảo, không tự gắn vào hồ sơ QA hay bệnh nhân.
+- Nghiệm thu phát triển bằng test/golden/reference dataset đã mô tả. Pilot/dataset thực tế thuộc P18 và cải tiến P20; không bổ sung phase pháp luật/FDI hoặc quy trình commissioning ngoài lựa chọn đã thống nhất. PASS kiểm thử chỉ chứng minh phạm vi được kiểm thử.
+- P17 có thể không chặn phát hành R1 sớm, nhưng phải hoàn tất trong mục tiêu toàn dự án P0–P19. Spatial re-irradiation không mặc định nằm trong P15 scalar; chỉ công bố capability khi có hợp đồng transform, dữ liệu và test tương ứng.
+- Những yêu cầu chi tiết mới như invitation, restore và sửa đồng thời là phần còn phải triển khai/xác minh; sự hiện diện trong tài liệu không có nghĩa code đã có.
+
+### 21.2. Hành vi chung người dùng cần thấy
+
+| Tình huống | Hành vi nghiệp vụ phải có |
+| :--- | :--- |
+| Mới vào trang | Có tiêu đề, context tổ chức, trạng thái tải và hành động chính đúng module. |
+| Chưa có dữ liệu | Hiển thị rỗng đúng nghĩa và hướng dẫn bước đầu; không bịa dữ liệu minh họa trong workspace thật. |
+| Nhập sai | Đánh dấu field, giữ input hợp lệ, mô tả cần sửa gì; không đổi số hoặc đơn vị ngầm. |
+| Đang lưu/tính/export | Chỉ rõ thao tác đang chạy; job đã nhận có ID/history, tiếp tục được sau refresh. |
+| Mất mạng sau gửi | Phân biệt chưa gửi với chưa biết kết quả; kiểm tra thao tác đã lưu trước khi tạo lại. |
+| Hai người sửa | Báo xung đột phiên bản, cho xem bản mới/copy draft; không ghi đè im lặng. |
+| Lỗi dịch vụ | Hết chờ trong thời gian xác định, có retry và mã hỗ trợ; không hiện stack trace hoặc mật khẩu. |
+| Kết quả vượt giới hạn | Hiển thị FAIL/WARNING cùng actual/limit; đây là kết quả tính hợp lệ, khác lỗi không tính được. |
+| Đổi tên/di chuyển/archive | ID nguồn và history giữ nguyên; có màn hình tìm lại dữ liệu archived. |
+| Đổi protocol/model/template | Tạo version/result/revision mới; bản cũ không lấy dữ liệu live thay cho snapshot. |
+| Thao tác chuyên sâu chưa hỗ trợ | Nêu capability chưa có, không hiển thị điều khiển hoạt động mà engine bỏ qua. |
+| Hủy/đóng tab | Đóng tab không ngầm hủy job đã nhận; hủy tác vụ chỉ được cung cấp nếu backend có contract riêng. |
+
+### 21.3. Tính năng theo phase và module
+
+Mã FR-Pxx-yy là yêu cầu có thể truy vết. Các phase nền tảng/triển khai cũng có FR về khả năng vận hành; đây không phải tab nghiệp vụ mới. Mỗi nhóm có workflow và dữ liệu tối thiểu; các biến thể chạy đúng/lỗi/cách phục hồi được định danh TC-Pxx-Syy/Eyy trong plan.
+
+#### P0 — Baseline, phạm vi và truy vết
+
+**Module:** MOD-00–MOD-16. **Mục tiêu người dùng:** Một baseline tài liệu thống nhất, mọi yêu cầu có phase và tiêu chí kiểm chứng.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P00-01 | Duy trì cùng một phạm vi sản phẩm giữa nghiệp vụ, hợp đồng hành vi và kế hoạch. |
+| FR-P00-02 | Mỗi tính năng có mã và điều kiện nghiệm thu đo được. |
+| FR-P00-03 | Giữ bằng chứng cũ theo thời điểm, không biến lịch sử thành trạng thái hiện tại. |
+| FR-P00-04 | Quản lý thay đổi yêu cầu có tác động, dependency và kiểm thử liên quan. |
+
+**Thông tin tối thiểu:** Phiên bản tài liệu; BR/MOD/FR; route; API operation; test ID; trạng thái evidence; design project/screen/version.
+
+**Luồng chính:** Đọc nghiệp vụ và các quyết định đã thống nhất. → Đối chiếu source, route, migration, test và evidence cũ. → Gắn requirement vào module, phase và test case. → Ghi khác biệt giữa requirement và code thành gap có owner. → Khóa baseline tài liệu và chọn gói công việc chưa đạt đầu tiên.
+
+**Nghiệm thu nhóm:** 100% FR trong catalogue được gán phase/test; không còn xung đột phạm vi chưa có quyết định.
+
+#### P1 — Runtime local, repository và CI
+
+**Module:** MOD-16. **Mục tiêu người dùng:** Clone sạch có thể build, migrate, chạy và kiểm thử theo hướng dẫn.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P01-01 | Khởi động lặp lại được trên máy mới. |
+| FR-P01-02 | Nhận biết hệ thống sẵn sàng hay thiếu thành phần. |
+| FR-P01-03 | Phân biệt cấu hình local với staging/production. |
+| FR-P01-04 | Có bộ kiểm thử tự động trước khi bàn giao thay đổi. |
+
+**Thông tin tối thiểu:** Python/Node version; lockfiles; API/web build SHA; schema head; môi trường local; tên biến cấu hình.
+
+**Luồng chính:** Chuẩn bị runtime theo lockfile. → Khởi động PostgreSQL, Redis và object storage local. → Chạy migration và seed synthetic. → Build web/API; kiểm tra health và route. → Chạy CI trên commit tương ứng, lưu kết quả và hướng dẫn khởi động.
+
+**Nghiệm thu nhóm:** Clean setup và restart pass; CI bắt buộc xanh; migration DB rỗng/upgrade có evidence.
+
+#### P2 — Railway staging, PostgreSQL và nền tảng Supabase Auth
+
+**Module:** MOD-00, MOD-16. **Mục tiêu người dùng:** API staging, database và xác minh identity hoạt động với cấu hình đúng môi trường.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P02-01 | Truy cập staging từ xa qua HTTPS. |
+| FR-P02-02 | Đăng nhập được xác minh bởi Supabase đúng môi trường. |
+| FR-P02-03 | Dữ liệu nghiệp vụ nằm trong PostgreSQL Railway. |
+| FR-P02-04 | Phân biệt lỗi process, migration, database và identity. |
+
+**Thông tin tối thiểu:** Project/environment/service IDs; branch/SHA; Dockerfile/root; PORT; API URL; DB service reference; issuer/audience/JWKS; Auth redirect allowlist.
+
+**Luồng chính:** Đối chiếu service ID và môi trường. → Cấu hình DB reference, PORT và Auth staging. → Build đúng source; chạy pre-deploy migration. → Xác nhận liveness, DB connectivity và schema revision riêng. → Dùng token staging kiểm tra API; lưu deployment manifest không secret.
+
+**Nghiệm thu nhóm:** Đúng source và environment; health, schema, JWT hợp lệ/lỗi pass; không dùng production DB cho smoke staging.
+
+#### P3 — App Shell, đăng nhập, onboarding và Home Dashboard
+
+**Module:** MOD-00, MOD-01. **Mục tiêu người dùng:** Bác sĩ/kỹ sư đăng nhập, vào đúng organization và hiểu trạng thái công việc.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P03-01 | Đăng nhập, đăng xuất, recovery và quay lại trang đang làm. |
+| FR-P03-02 | Onboarding organization khi identity hợp lệ chưa có membership. |
+| FR-P03-03 | Dashboard machine, QA gần đây, cảnh báo và job theo tổ chức. |
+| FR-P03-04 | Điều hướng nhất quán, dùng được bằng bàn phím và trên màn hình nhỏ. |
+
+**Thông tin tối thiểu:** Email/identity; return path nội bộ; organization context; widget counters/recent QA/jobs; loading/empty/error; module availability.
+
+**Luồng chính:** Mở URL hoặc deep-link. → Đăng nhập/khôi phục session và bootstrap identity. → Nếu chưa thuộc tổ chức, tạo organization đầu tiên; nếu đã có thì vào workspace. → Hiển thị dashboard dữ liệu thật và thao tác nhanh. → Logout hoặc hết session thì dọn cache và quay lại đúng luồng đăng nhập.
+
+**Nghiệm thu nhóm:** Happy path, first-use, expiry, offline, deep-link và logout cache tests pass trên staging.
+
+#### P4 — Organization, Site, Machine và thành viên ngang hàng
+
+**Module:** MOD-02. **Mục tiêu người dùng:** Quản lý cấu trúc bệnh viện, thiết bị và đưa đồng nghiệp vào đúng tổ chức.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P04-01 | Tạo, sửa, tìm và archive/restore site/machine. |
+| FR-P04-02 | Machine có định danh ổn định qua đổi tên và sự kiện bảo trì. |
+| FR-P04-03 | Thêm thành viên bằng lời mời có xác thực; mọi thành viên có chức năng ngang nhau. |
+| FR-P04-04 | Xem lịch sử thay đổi hierarchy và thành viên, không mất hồ sơ QA. |
+
+**Thông tin tối thiểu:** Organization name/timezone; site name/code; machine stable ID/name/code/manufacturer/model/energy/mode/status; membership identity/status; revision.
+
+**Luồng chính:** Mở quản lý organization. → Tạo site, tạo machine thuộc site. → Đổi tên/thông tin máy và xem history. → Mời đồng nghiệp bằng luồng nhận lời mời xác thực vào đúng tổ chức. → Archive/restore đối tượng và kiểm tra QA/trend cũ còn đúng định danh.
+
+**Nghiệm thu nhóm:** Hai identity cùng organization dùng được nghiệp vụ; isolate organization khác; rename/archive/restore/concurrent edit pass.
+
+#### P5 — QA Archive, Folder và QA Case
+
+**Module:** MOD-03. **Mục tiêu người dùng:** Tổ chức hồ sơ như cây thư mục và tìm đúng case bằng metadata.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P05-01 | Tạo cây folder lồng nhau, đổi tên và di chuyển về root hoặc folder khác. |
+| FR-P05-02 | Tạo case Daily/Monthly/Annual/Custom, phân loại theo machine và ngày thực hiện. |
+| FR-P05-03 | Tìm/lọc/sắp xếp/phân trang kết hợp; giữ filter trong URL. |
+| FR-P05-04 | Archive/restore không mất input, analysis, report và audit. |
+
+**Thông tin tối thiểu:** Folder name/parent/path/revision; case title/type/cycle/performed_at/site/machine/folder/protocol reference/tags/note; include_archived; search filters.
+
+**Luồng chính:** Tạo cây folder và chọn vị trí. → Tạo case đúng site/machine/cycle/thời điểm. → Tìm bằng text và kết hợp filter, mở deep-link. → Rename/move subtree hoặc chuyển case. → Archive/restore và xem lại case/run/report theo ID cũ.
+
+**Nghiệm thu nhóm:** Nested move, archive/restore, combined search, cross-scope và deep-link tests có evidence.
+
+#### P6 — Upload, Artifact, Manifest và Validation
+
+**Module:** MOD-04. **Mục tiêu người dùng:** Lưu nguyên byte, phân loại đúng và giải thích dữ liệu có dùng được cho workflow hay không.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P06-01 | Upload từng file và hàng đợi nhiều file có trạng thái riêng. |
+| FR-P06-02 | Phân biệt file trùng byte/type/role và file cùng tên khác nội dung. |
+| FR-P06-03 | Input Manifest có geometry, đơn vị và nguồn để truy nguyên. |
+| FR-P06-04 | Validation chi tiết, download nguyên bản và xem lịch sử validation/derived file. |
+
+**Thông tin tối thiểu:** Filename/type/media type/size/SHA256; artifact ID; logical roles; SOP/Study/Series/Frame UIDs; grid/scaling/units; detector/phantom/acquisition; validator version/findings.
+
+**Luồng chính:** Chọn case và file, type/role; hiển thị tên và kích thước trước gửi. → Upload có progress; server kiểm size/checksum và lưu object. → Commit artifact + manifest; hiển thị thành công hoặc duplicate rõ ràng. → Validate nội dung và liên kết dataset; xem findings theo field. → Download file, xác nhận checksum; retry hoặc tạo derived revision khi cần sửa.
+
+**Nghiệm thu nhóm:** Real browser upload→validate→download checksum, duplicate/type/role, interrupted upload và storage failure tests pass.
+
+#### P7 — Machine QA checklist, rule engine và history
+
+**Module:** MOD-05. **Mục tiêu người dùng:** Nhập phép đo, áp protocol đã chọn, xem kết quả và so sánh các lần QA.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P07-01 | Checklist theo Daily/Monthly/Annual/Custom có protocol version. |
+| FR-P07-02 | Lưu nháp phép đo, ghi N/A có lý do và đính kèm dữ liệu. |
+| FR-P07-03 | Rule range/min/max/deviation với actual, limit, margin, trạng thái và giải thích. |
+| FR-P07-04 | Rerun/compare giữ nguyên kết quả cũ và liên kết trend. |
+
+**Thông tin tối thiểu:** Protocol version/rules; metric key/value/unit/required/N-A reason; baseline/tolerance/action; notes/artifact; measurement revision; result actual/limit/margin/status.
+
+**Luồng chính:** Tạo run từ case và protocol version. → Nhập metric, unit và ghi chú; lưu draft. → Validate required/unit/baseline; evaluate một snapshot. → Xem từng metric và kết quả tổng, drill-down về rule. → Rerun tạo lượt mới; compare; đưa metric tương thích vào trend.
+
+**Nghiệm thu nhóm:** Boundary PASS/WARNING/FAIL/N-A, unit/baseline errors và rerun/projection uniqueness đều pass.
+
+#### P8 — PSQA Gamma, RTDOSE, worker và kết quả 2D/3D
+
+**Module:** MOD-06. **Mục tiêu người dùng:** Chạy PSQA từ RTDOSE + comparison qua worker, giữ cấu hình và kết quả tái hiện được.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P08-01 | PSQA bắt buộc RTDOSE và comparison; ENGINE_TEST JSON-only phải được phân biệt rõ. |
+| FR-P08-02 | Gamma 2D/3D với tham số đầy đủ và preflight giải thích lỗi/cảnh báo. |
+| FR-P08-03 | Job bất đồng bộ có progress, retry, timeout và kết quả tồn tại sau reconnect. |
+| FR-P08-04 | Map, histogram, thống kê, dose profile, comparison và nguồn dữ liệu/cấu hình. |
+
+**Thông tin tối thiểu:** Workflow PSQA hoặc ENGINE_TEST; reference/evaluation artifact+role; 2D/3D; DD mode/value; DTA; global/local; threshold/reference level; alignment/frame; interpolation/search/max gamma; ROI; field/composite; run/attempt/engine.
+
+**Luồng chính:** Chọn RTDOSE reference và comparison validated; optional RTPLAN/RTSTRUCT theo mục đích. → Preflight units/geometry/config/profile và ước lượng tài nguyên. → Enqueue idempotent, lưu input/config/engine snapshot; theo dõi trạng thái qua refresh. → Worker claim/heartbeat/tính/lưu result rồi ack. → Xem map/histogram/pass rate/profiles; compare, rerun config mới hoặc retry lỗi hạ tầng.
+
+**Quy tắc nghiệp vụ bổ sung:** PSQA mặc định chỉ nhận reference là DICOM RTDOSE đã validated; comparison là measurement hợp lệ hoặc RTDOSE hợp lệ. JSON-only chỉ được chạy khi người dùng chọn rõ `ENGINE_TEST`, và kết quả phải mang nhãn engineering test, không được tự hiển thị như một kết quả PSQA clinical. `FULL_ROI` không được loại điểm reference thiếu candidate khỏi mẫu số; nếu thiếu coverage thì kết quả phải báo không hợp lệ/pass rate không có giá trị. `OVERLAP_ONLY` là lựa chọn explicit và phải hiển thị tỷ lệ coverage cùng số điểm loại. `max_gamma` là cận tìm kiếm; điểm vượt cận là censored/non-passing, không được hiển thị như một gamma exact. Mỗi lần retry có attempt riêng; worker cũ không được ghi đè kết quả sau khi mất lease. Các quy tắc này không tạo phân cấp hay quyền phê duyệt giữa bác sĩ và kỹ sư.
+
+**Nghiệm thu nhóm:** Tất cả profile được công bố có golden/error tests; RTDOSE+measurement 3D staging, worker crash/retry/concurrency và large workload đạt budget.
+
+#### P9 — Report Builder, revision, preview và export
+
+**Module:** MOD-07. **Mục tiêu người dùng:** Người dùng tùy chỉnh toàn bộ report và xem lại đúng bản từng xuất.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P09-01 | Toàn quyền bố cục, block, label, metric, chart, điều kiện hiển thị và ghi chú. |
+| FR-P09-02 | Lưu template/version và report revision, compare trước/sau. |
+| FR-P09-03 | Preview và export đa định dạng với tiếng Việt và bảng dài. |
+| FR-P09-04 | Truy nguyên nguồn riêng trên màn hình history; report không bị ép block bắt buộc. |
+
+**Thông tin tối thiểu:** Report/title/source refs; template version; block stable IDs/type/label/order/visible/config; notes; revision; render options/font/locale; export format/status/hash.
+
+**Luồng chính:** Chọn case/run hoặc tạo calculation report trong namespace Biological. → Chọn template, thêm/xóa/ẩn/đổi tên/sắp xếp block. → Preview từ snapshot và lưu revision. → Xuất PDF/PNG/CSV/JSON; theo dõi render job. → Mở revision cũ, compare hoặc tạo revision mới, tải đúng artifact đã render.
+
+**Nghiệm thu nhóm:** Tùy chỉnh đầy đủ, old revision reproducibility, tiếng Việt/bảng dài, concurrent edit và render retry pass.
+
+#### P10 — Trend, baseline và sự kiện bảo trì
+
+**Module:** MOD-08. **Mục tiêu người dùng:** Theo dõi phép đo tương thích theo thời gian và drill-down đúng nguồn.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P10-01 | Trend theo máy, metric và chu kỳ với bộ lọc nghiệp vụ. |
+| FR-P10-02 | Baseline, tolerance/action và mốc bảo trì/version protocol. |
+| FR-P10-03 | So sánh nhiều máy khi metric/unit/context tương thích. |
+| FR-P10-04 | Drill-down nguồn, xem outlier và export đúng dữ liệu đang chọn. |
+
+**Thông tin tối thiểu:** Machine/metric/time range/timezone; unit/energy/detector/phantom/protocol/QA cycle; baseline source/effective time; tolerance/action; maintenance events; raw/aggregate series.
+
+**Luồng chính:** Chọn machine, metric và khoảng thời gian. → Chọn filter và nhóm tương thích. → Hiển thị điểm raw, baseline/limits và maintenance markers. → Chọn điểm để mở case/run/report nguồn. → Export cùng bộ lọc, timezone và phương pháp aggregate.
+
+**Nghiệm thu nhóm:** Không trộn máy/unit; baseline/outlier/timezone/filter/export/drill-down và rebuild pass.
+
+#### P11 — QA Protocol Library và rule version
+
+**Module:** MOD-09. **Mục tiêu người dùng:** Tạo và dùng protocol nội bộ có version mà không đổi ngược kết quả cũ.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P11-01 | Library tìm theo QA type/machine/cycle/từ khóa. |
+| FR-P11-02 | Tạo/clone protocol nội bộ và chỉnh rule/limits/baseline. |
+| FR-P11-03 | Version comparison và nguồn tham khảo độc lập nội dung nội bộ. |
+| FR-P11-04 | Áp dụng explicit version cho run mới, giữ version đã dùng trước. |
+
+**Thông tin tối thiểu:** Protocol code/title/type/cycle/applicability; version/changelog; rule key/type/unit/baseline/limits/required; reference citation/source type; archive flag.
+
+**Luồng chính:** Tìm protocol hoặc tạo mới/clone tham khảo. → Sửa rule và applicability; xem ví dụ rule trên sample. → Lưu version nội bộ với nguồn và ghi chú. → Chọn version cho Machine QA/Gamma mới. → So sánh version và mở report cũ để xác nhận snapshot.
+
+**Nghiệm thu nhóm:** Create/clone/version/use/archive và report-old-version tests pass; R1 còn gap phải ghi riêng.
+
+#### P12 — Biological Hub và calculation history độc lập
+
+**Module:** MOD-10. **Mục tiêu người dùng:** Có không gian tính toán riêng với scenario/history/report không cần case QA.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P12-01 | Hub điều hướng BED/EQD2, comparison, tái xạ, bù fraction và library. |
+| FR-P12-02 | Scenario/history tìm theo tên, công cụ, mô và thời gian. |
+| FR-P12-03 | Clone scenario để thử giả định khác mà giữ kết quả cũ. |
+| FR-P12-04 | Report độc lập và nguồn/assumption luôn tra lại được. |
+
+**Thông tin tối thiểu:** Scenario name/type/tissue/context/source/assumptions; scenario revision; calculation model/version/input/result; search/history/bookmark.
+
+**Luồng chính:** Vào tab Biological Toolkit. → Chọn công cụ hoặc mở scenario cũ. → Nhập dữ liệu thủ công hoặc dataset riêng do user chọn. → Lưu scenario và calculation revision. → Mở lại, clone hoặc export calculation report độc lập.
+
+**Nghiệm thu nhóm:** Không automatic QA linkage; scenario save/reopen/clone/history/export và scoped errors pass.
+
+#### P13 — BED, EQD2 và đồ thị theo tổng liều
+
+**Module:** MOD-11. **Mục tiêu người dùng:** Tính LQ minh bạch, kiểm tính nhất quán và export đồ thị/data từ cùng snapshot.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P13-01 | Tính BED/EQD2 từ D/n/d nhất quán, giải thích phép tính. |
+| FR-P13-02 | Chọn mô/alpha-beta hoặc user override có provenance. |
+| FR-P13-03 | Đồ thị theo D, nhiều alpha-beta, marker và bảng số liệu. |
+| FR-P13-04 | Lưu/clone/reopen/export kết quả và graph độc lập. |
+
+**Thông tin tối thiểu:** D [Gy], n nguyên dương, d [Gy/fraction], alpha/beta [Gy], tissue/source/user override; input pair; graph Dmin/Dmax/step, fixed-n hoặc fixed-d, point limit.
+
+**Luồng chính:** Chọn hai input độc lập D/n/d và alpha/beta có nguồn/override. → Kiểm consistency và hiển thị công thức/input đã chuẩn hóa. → Tính BED/EQD2, hiển thị đủ precision và unit. → Chọn curve mode/range/alpha-beta list và xem table/marker. → Lưu calculation/graph snapshot và export.
+
+**Nghiệm thu nhóm:** Known answers/invalid/curve equality/history/export pass; limits/model assumptions có nguồn hoặc user-defined.
+
+#### P14 — So sánh phác đồ xạ trị
+
+**Module:** MOD-12. **Mục tiêu người dùng:** So sánh các phương án fractionation một cách nhất quán về mô, model và context.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P14-01 | So sánh hai hoặc nhiều phương án điều trị, mỗi phương án giữ input riêng. |
+| FR-P14-02 | Chọn baseline và xem chênh lệch tuyệt đối/phần trăm. |
+| FR-P14-03 | Hiển thị khác biệt context/model/alpha-beta để tránh so sánh sai nghĩa. |
+| FR-P14-04 | Lưu comparison, clone và export bảng/đồ thị. |
+
+**Thông tin tối thiểu:** 2–10 phương án ban đầu; name, D/n/d, tissue/alpha-beta/source/model; baseline option; disease/context/technique/time; absolute/% deltas.
+
+**Luồng chính:** Tạo hai phương án hoặc clone từ library/calculation. → Chọn mô/model và phương án baseline. → Validate từng phương án và compatibility giữa các phương án. → Tính bảng BED/EQD2, delta và chart. → Lưu comparison snapshot; clone thêm phương án và export.
+
+**Nghiệm thu nhóm:** Known delta, zero baseline, mismatched context và baseline reorder/delete tests pass.
+
+#### P15 — Re-irradiation, recovery và bù fraction
+
+**Module:** MOD-13. **Mục tiêu người dùng:** Tính scenario nhiều course và các lịch thay thế với giả định rõ ràng.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P15-01 | Nhiều course theo thời gian, BED/EQD2 từng mô và tổng scalar. |
+| FR-P15-02 | So sánh no-recovery/recovery với từng giả định, source và sensitivity. |
+| FR-P15-03 | Bù fraction phân biệt kế hoạch ban đầu, đã thực hiện và các phần còn lại do user nhập. |
+| FR-P15-04 | Scenario clone/history/export; không tự chọn prescription và không coi scalar là cộng liều theo không gian. |
+
+**Thông tin tối thiểu:** Course IDs/date ranges/D/n/d hoặc fraction list; tissue dose metric/unit/alpha-beta; recovery per prior course/evaluation time/source; no-recovery comparator; planned/delivered/remaining fractions; interruption duration; optional time model.
+
+**Luồng chính:** Chọn Re-irradiation hoặc Fraction Compensation trong toolkit. → Nhập các course/đã thực hiện và phương án dự kiến cho đúng mô. → Chọn no-recovery hoặc recovery explicit; xác nhận thời gian nếu model cần. → Tính từng course và cumulative scalar/alternative schedule. → So sánh scenario, sensitivity và export assumptions/result; spatial chỉ khi contract dữ liệu đủ.
+
+**Nghiệm thu nhóm:** No-recovery/recovery, nonuniform fractions, missing time/context, compensation schedule và independent export pass; spatial không giả lập.
+
+#### P16 — Dose limits, phác đồ điều trị và Knowledge Library
+
+**Module:** MOD-14. **Mục tiêu người dùng:** Tra cứu và tái sử dụng nội dung có nguồn, context và version trong công cụ tính toán.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P16-01 | Bảng giới hạn liều theo bệnh lý/fractionation/OAR/metric và nguồn. |
+| FR-P16-02 | Protocol điều trị, phác đồ, hướng dẫn contour/planning ở mức kiến thức. |
+| FR-P16-03 | Knowledge/formula/alpha-beta library với search, tag và phiên bản. |
+| FR-P16-04 | Chọn áp dụng vào calculator explicit; giữ source/override và lịch sử. |
+
+**Thông tin tối thiểu:** Disease/subtype/anatomy/intent/technique/fractions; tissue/OAR; metric Dmax/Dmean/Dxcc/Vx/operator/limit/unit; source type/citation/DOI/URL/version/date/evidence/applicability; content/alpha-beta/model.
+
+**Luồng chính:** Lọc bệnh lý, kỹ thuật, fractions, mô và metric. → Mở entry để xem nguồn và phạm vi áp dụng. → Tạo nội dung nội bộ hoặc clone, chỉnh và lưu version. → User chọn dùng entry vào calculator, review values/source. → Cập nhật library hoặc archive, mở lại calculation cũ giữ source version.
+
+**Nghiệm thu nhóm:** Filter/context/source/version/import/override pass; không seed bảng giới hạn lâm sàng không nguồn.
+
+#### P17 — Visual Dose, DVH và structure review
+
+**Module:** MOD-15. **Mục tiêu người dùng:** Xem dose trên geometry đúng và tính DVH/metric có volume, unit, coverage.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P17-01 | Dose plane/grid không bắt CT; anatomy overlay cần CT tương thích. |
+| FR-P17-02 | DVH theo structure với actual/limit/margin và protocol đã chọn. |
+| FR-P17-03 | Mapping structure thủ công theo ROI ID, kiểm coverage và xem contour. |
+| FR-P17-04 | Report/plot export, history và dataset riêng trong Biological khi user chọn. |
+
+**Thông tin tối thiểu:** RTDOSE/RTSTRUCT/CT refs; Frame/series/contour UIDs; patient LPS geometry; ROI ID/name mapping; rasterization/resampling method; dose bins/volume weights/coverage; Dmean/Dx/Vx.
+
+**Luồng chính:** Chọn dataset: dose-only hoặc dose+CT; DVH cần dose+structures. → Preflight frame/geometry/reference/coverage. → Chọn ROI, manual mapping và rasterization/resampling. → Worker tạo DVH, metric, coverage/uncertainty và overlay. → Review slices/curve/metric, lưu snapshot và report.
+
+**Nghiệm thu nhóm:** Geometry, uniform/box/sphere/holes/coverage, Dx/Vx units và staging DVH E2E pass. P17 bắt buộc cho mục tiêu toàn dự án, tùy chọn chỉ cho R1 sớm.
+
+#### P18 — Kiểm thử tích hợp, độ bền và pilot
+
+**Module:** MOD-16. **Mục tiêu người dùng:** Chứng minh các module phối hợp đúng, phục hồi được và có evidence cho release candidate.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P18-01 | Workflow liên module được kiểm thử có traceability. |
+| FR-P18-02 | Hệ thống phục hồi sau mất mạng, process restart và dependency failure. |
+| FR-P18-03 | Đo hiệu năng/tải/cost theo cấu hình thực tế. |
+| FR-P18-04 | Pilot findings thành regression cases và bản sửa có version. |
+
+**Thông tin tối thiểu:** Release manifest; workload/fixture versions; test IDs; failure injection; expected/observed; latency/memory/job counts; restore time/checksum; pilot issue severity.
+
+**Luồng chính:** Khóa release candidate và data fixtures. → Chạy E2E các hành trình R1/R2/R3. → Thử offline/restart/concurrency/backup-restore trong staging. → Đo hiệu năng và ghi chi phí với workload cụ thể. → Pilot dữ liệu được phép; biến lỗi thành regression; chốt candidate đạt gate.
+
+**Nghiệm thu nhóm:** Toàn bộ MUST tests pass, không còn SEV0/1; restore/rollback/performance evidence; remaining limitations không vi phạm exit scope.
+
+#### P19 — Production website và truy cập từ xa
+
+**Module:** MOD-16. **Mục tiêu người dùng:** Phát hành đúng release qua HTTPS và xác nhận hành trình người dùng ở production.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P19-01 | Website production HTTPS truy cập từ mạng ngoài. |
+| FR-P19-02 | Đăng nhập, upload, job, report/download và toolkit hoạt động từ xa. |
+| FR-P19-03 | Release có version đầy đủ và xử lý lỗi rõ cho người dùng. |
+| FR-P19-04 | Rollback/maintenance giữ dữ liệu và phục hồi dịch vụ. |
+
+**Thông tin tối thiểu:** Approved RC SHA/image digests; API/web/worker/renderer/schema/engine versions; env service IDs; domain/TLS/CORS/Auth URLs; backups; rollback image/schema compatibility.
+
+**Luồng chính:** Đối chiếu release manifest và production configuration. → Backup, kiểm restore point rồi chạy migration compatible. → Deploy các service đúng candidate và public build config production. → Kiểm health/schema/queue/Auth rồi remote E2E có synthetic data. → Ghi release/monitoring; rollback nếu gate lỗi theo điều kiện đã định.
+
+**Nghiệm thu nhóm:** HTTPS + remote workflows + Auth + private dependencies + versions + backup/rollback/alerts đều kiểm chứng.
+
+#### P20 — Gói vận hành ban đầu và cải tiến liên tục
+
+**Module:** MOD-16. **Mục tiêu người dùng:** Bàn giao cách theo dõi, khôi phục và cập nhật hệ thống sau release.
+
+| Requirement | Tính năng phải bàn giao |
+| :--- | :--- |
+| FR-P20-01 | Theo dõi uptime, lỗi, backlog, storage và chi phí. |
+| FR-P20-02 | Backup/restore và quy trình ứng phó incident có người phụ trách. |
+| FR-P20-03 | Hướng dẫn sử dụng/troubleshooting theo lỗi người dùng gặp. |
+| FR-P20-04 | Cải tiến có regression, version và lịch sử release. |
+
+**Thông tin tối thiểu:** Owner/contact; monitoring thresholds; backup schedule/retention/restore drill; cost budget; incident severity; release notes; engine version; maintenance calendar.
+
+**Luồng chính:** Thiết lập monitor và backup schedule đã chọn. → Thử một alert và một restore để xác nhận runbook dùng được. → Bàn giao hướng dẫn thường ngày và xử lý sự cố. → Triage bug/dataset mới thành issue + regression. → Release maintenance qua staging với manifest và ghi kết quả.
+
+**Nghiệm thu nhóm:** Gói vận hành ban đầu có config thực, alert test, backup+restore evidence và người phụ trách; vận hành liên tục không có trạng thái hoàn tất vĩnh viễn.
+
+### 21.4. Phạm vi biến thể bắt buộc
+
+- Mọi chức năng lưu dữ liệu: dữ liệu hợp lệ, thiếu required, sai type/format, biên min/max, dữ liệu trùng, stale revision, mất mạng trước/sau commit, record archived và truy cập khác organization.
+- Mọi phép tính: known answer; input không hợp lệ; đơn vị; precision; zero/negative/nonfinite; thay config/model; mẫu số 0; không có điểm/volume hợp lệ; lưu/mở lại; so sánh và export.
+- Mọi job: accepted/queued/running/completed/failed, worker restart, duplicate dispatch, deadline, retry, nguồn thay đổi, mất dependency và kết quả hiển thị sau reconnect.
+- Mọi library: search/filter/no match, create/clone/version, nguồn thiếu/hỏng, giá trị nội bộ/override, áp dụng explicit và giữ source version cũ.
+- Mọi trang: loading, empty, populated, error, offline, validation, success và khả năng bàn phím; warning/long-running chỉ khi áp dụng.
+
+Không thể liệt kê hữu hạn mọi tổ hợp lỗi có thể xuất hiện. Baseline này bao phủ các nhóm lỗi đã nhận diện; mỗi bug mới phải được gắn requirement, testcase và regression trước khi đóng. Không gọi danh sách là bằng chứng hệ thống không còn lỗi.

@@ -183,3 +183,35 @@ def test_same_bytes_with_different_declared_type_are_not_silently_reused() -> No
         assert stored_as_json.json()["duplicate"] is False
         assert stored_as_json.json()["artifact_type"] == "JSON"
         assert stored_as_json.json()["id"] != stored_as_dicom.json()["id"]
+
+        # The declared DICOM contract must win over the browser's JSON MIME
+        # hint and filename.  The object may be stored for provenance, but it
+        # must be rejected before it can enter Gamma.
+        dicom_validation = client.post(
+            f"/api/v1/artifacts/{stored_as_dicom.json()['id']}/validate"
+        )
+        assert dicom_validation.status_code == 200, dicom_validation.text
+        dicom_body = dicom_validation.json()
+        assert dicom_body["result"] == "INVALID"
+        assert any(
+            item["code"] == "ARTIFACT_TYPE_MISMATCH" for item in dicom_body["errors"]
+        )
+
+
+def test_declared_json_rejects_a_real_dicom_payload() -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+        uploaded = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={"file": ("measurement.json", _ct_bytes(), "application/json")},
+            data={"artifact_type": "JSON", "logical_role": "REFERENCE"},
+        )
+        assert uploaded.status_code == 201, uploaded.text
+
+        validation = client.post(f"/api/v1/artifacts/{uploaded.json()['id']}/validate")
+        assert validation.status_code == 200, validation.text
+        body = validation.json()
+        assert body["result"] == "INVALID"
+        assert any(item["code"] == "ARTIFACT_TYPE_MISMATCH" for item in body["errors"])

@@ -3,13 +3,15 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 0.8
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.6
+- **Phiên bản:** 1.0 — đồng bộ specification.md v1.1 và plan.md v2.1 (2026-09-08)
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.7
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
 
-Tài liệu này chuyển các yêu cầu trong `business-analysis.md` thành kiến trúc, module, hợp đồng dữ liệu, workflow kỹ thuật, cách kiểm thử và tiêu chí triển khai. `plan.md` là trình tự thực hiện theo phase; Google Stitch là nguồn thiết kế trực quan truy cập qua MCP. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
+Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
+
+> Đồng bộ v1.0: các bảng API/entity đề xuất trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§8 là authority cho hành vi/validation/error/thuật toán. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -962,8 +964,9 @@ P7 lưu bốn nhóm dữ liệu: `qa_protocol_versions` và `qa_protocol_rules` 
 
 Rule engine P7 hỗ trợ `RANGE`, `MIN`, `MAX`, `ABSOLUTE_DEVIATION`, `PERCENT_DEVIATION` và `NA`. Thiếu metric bắt buộc, sai unit hoặc giá trị không hợp lệ làm run `FAILED` và lưu `error_snapshot`; lệch trong action band tạo metric `WARNING`; kết quả nằm trong tolerance tạo `PASS`. Protocol seed chỉ là fixture kỹ thuật cho vertical slice, không phải giới hạn lâm sàng mặc định; thư viện protocol được quản trị/version hóa đầy đủ ở P11.
 
-P8 local implementation slice hiện có migration `20260907_0007` và entity
-`gamma_analysis_runs`. Các endpoint thực tế là:
+P8 local implementation slice hiện có migration `20260907_0007` cho Gamma run và
+`20260908_0008` cho lease/attempt/outbox. Các entity reliability hiện có là
+`gamma_analysis_runs`, `gamma_run_attempts` và `gamma_dispatch_outbox`. Các endpoint thực tế là:
 
 | Method | Path | Mục đích |
 | :--- | :--- | :--- |
@@ -974,16 +977,18 @@ P8 local implementation slice hiện có migration `20260907_0007` và entity
 | GET | `/gamma-runs/{id}/compare?other_run_id=...` | So sánh result snapshots của hai run cùng organization |
 | GET | `/gamma/queue-metrics` | Kiểm tra backend queue, Redis stream/pending/consumer metrics và số run theo organization |
 
-API không gọi engine trong request. `rt_connect_api.worker` claim các row
-`QUEUED/RETRYING`, đọc object storage, cập nhật `RUNNING`/heartbeat/progress rồi lưu
-`COMPLETED` hoặc `FAILED`. Khi `REDIS_URL` được cấu hình, API dispatch run vào Redis
-Stream bằng consumer group; worker dùng `XREADGROUP`, reclaim message quá visibility timeout
-bằng `XAUTOCLAIM`, rồi `XACK` sau khi PostgreSQL đã được cập nhật. PostgreSQL vẫn giữ trạng
-thái nghiệp vụ, retry count, heartbeat, result và error snapshot; Redis không phải nguồn dữ
-liệu nghiệp vụ duy nhất. Khi không có `REDIS_URL`, local worker dùng database polling để
-giữ môi trường phát triển đơn giản. Queue metrics không trả payload bệnh nhân; các bộ đếm
-stream là operational metrics của queue, còn bộ đếm Gamma run trong response được scope theo
-organization.
+API không gọi engine trong request. `rt_connect_api.worker` publish các dispatch intent từ
+`gamma_dispatch_outbox`, claim message, lấy lease/fencing token có điều kiện trong PostgreSQL,
+đọc object storage, cập nhật `RUNNING`/heartbeat/progress rồi lưu `COMPLETED` hoặc `FAILED`.
+Mỗi lần thực thi có `gamma_run_attempts`; worker cũ mất lease không được commit. Khi
+`REDIS_URL` được cấu hình, API/dispatcher dùng Redis Stream consumer group; worker dùng
+`XREADGROUP`, reclaim message quá visibility timeout bằng `XAUTOCLAIM`, rồi `XACK` sau khi
+PostgreSQL đã có terminal state. PostgreSQL vẫn là nguồn dữ liệu nghiệp vụ, giữ retry count,
+lease, attempt, heartbeat, result và error snapshot; Redis không phải nguồn dữ liệu duy nhất.
+Khi không có `REDIS_URL`, local worker dùng database polling để giữ môi trường phát triển đơn
+giản. Queue metrics không trả payload bệnh nhân; các bộ đếm stream là operational metrics,
+còn bộ đếm Gamma run trong response được scope theo organization. Lease/retry deadline 900 s
+hiện là checkpoint implementation; target 120 s/3 attempts chỉ đóng sau benchmark và failure injection.
 
 Staging phải chứng minh cả hai service API và worker nhận cùng reference `REDIS_URL`, worker
 log khởi động bằng Redis Streams thay vì polling, một run Gamma đi qua queue thật, message
@@ -997,21 +1002,27 @@ Engine `gamma-nd-p8.2` nhận profile đã khóa của `gamma.measurement.v1` v�
   `mm`, grid 2D hoặc 3D và giá trị inline finite theo row-major shape. `CGY` được
   chuẩn hóa rõ ràng sang `GY`; engine không đoán đơn vị, không tự đổi shape và không
   tự đọc `object_key` trong JSON ở slice này.
-- DICOM RTDOSE được đọc pixel data sau khi artifact đã qua metadata validation. Adapter
-  kiểm tra modality, pixel data, `DoseGridScaling`, `DoseUnits`, `PixelSpacing`,
+- DICOM RTDOSE được đọc pixel data sau khi artifact đã qua metadata validation. Profile
+  chuẩn P8 yêu cầu `DoseUnits=GY`; adapter kiểm tra modality, pixel data, `DoseGridScaling`,
+  `DoseUnits`, `PixelSpacing`,
   `ImagePositionPatient`, `ImageOrientationPatient`, `NumberOfFrames` và
   `GridFrameOffsetVector`; chỉ nhận orientation axial IEC-aligned và grid z-spacing
-  đều. DICOM `CGY` cũng được chuẩn hóa sang `GY`.
+  đều. JSON measurement có thể khai CGY và được chuyển đổi có provenance; DICOM CGY trực tiếp
+  không phải fixture chuẩn P8 và phải bị chặn hoặc được gắn compatibility profile riêng.
 - Grid 3D dùng thứ tự `(frame/z, row/y, column/x)` với spacing và origin cùng thứ tự.
   Reference và evaluation phải cùng số chiều, còn configuration `2D`/`3D` phải khớp
   grid. Measurement JSON và RTDOSE DICOM có thể là hai input của cùng một run.
-- Gamma node search giới hạn vùng candidate theo DTA; interpolation `GRID` và
-  multidimensional linear interpolation được snapshot trong configuration.
+- Gamma node search dùng bán kính `max_gamma × DTA`; interpolation `GRID` và
+  multidimensional linear interpolation được snapshot trong configuration. `FULL_ROI` không
+  bỏ điểm thiếu candidate khỏi mẫu số; `OVERLAP_ONLY` phải ghi coverage fraction; gamma vượt
+  max bound là censored và percentile phải mang nhãn không exact.
 
 Kết quả lưu dimensionality, source format, grid summary, map điểm, số điểm
-evaluated/passing/excluded/no-candidate, pass rate, percentile, histogram, warning,
-configuration, input checksum và engine version. Đây là deterministic engineering/golden
-slice; test local không thay thế commissioning hoặc clinical release.
+evaluated/passing/nonpassing/excluded/no-candidate/censored, pass rate, coverage fraction,
+percentile exactness, histogram, warning, configuration, input checksum và engine version.
+Đây là deterministic engineering/golden slice; test local chỉ chứng minh phạm vi fixture. Gate
+phát triển, pilot và release theo plan.md v2.1. Independent oracle, coordinate frame mở rộng,
+resource limit, crash/ack injection và staging E2E vẫn là điều kiện đóng P8.
 
 ### 6.6. Report và trend
 
@@ -1057,19 +1068,19 @@ slice; test local không thay thế commissioning hoặc clinical release.
 
 ~~~json
 {
-  "error": {
-    "code": "RTDOSE_REQUIRED",
-    "message": "Workflow PSQA Gamma cần RTDOSE.",
-    "details": {
-      "workflow": "PSQA_GAMMA",
-      "missing_roles": ["REFERENCE_DOSE"]
-    },
-    "request_id": "..."
-  }
+  "code": "RTDOSE_REQUIRED",
+  "message": "Workflow PSQA Gamma cần RTDOSE.",
+  "correlation_id": "opaque-request-id",
+  "details": [
+    {"field": "body.reference_artifact_id", "message": "Required RTDOSE reference."}
+  ]
 }
 ~~~
 
-Mã lỗi tối thiểu:
+Envelope phẳng khớp `core/errors.py`. `RTDOSE_REQUIRED`, `COMPARISON_REQUIRED`,
+`GAMMA_WORKFLOW_PROFILE_INVALID` và `GAMMA_QUEUE_UNAVAILABLE` đã có trong P8 API slice;
+engine warning `GAMMA_NO_CANDIDATE_WITHIN_DTA`/`GAMMA_SEARCH_CENSORED` được lưu trong result.
+Các mã còn lại là target và phải được map bằng contract test, không được coi là đã triển khai chỉ vì xuất hiện trong tài liệu (xem specification.md §2.2):
 
 - ORGANIZATION_NOT_FOUND.
 - MACHINE_NOT_FOUND.
@@ -1080,10 +1091,14 @@ Mã lỗi tối thiểu:
 - GEOMETRY_MISMATCH.
 - UNIT_MISSING.
 - RTDOSE_REQUIRED.
-- COMPARE_DATASET_REQUIRED.
+- COMPARISON_REQUIRED.
 - MEASUREMENT_REQUIRED.
 - DVH_INPUT_REQUIRED.
 - GAMMA_CONFIG_INVALID.
+- GAMMA_WORKFLOW_PROFILE_INVALID.
+- GAMMA_QUEUE_UNAVAILABLE.
+- GAMMA_INPUT_NOT_VALIDATED.
+- GAMMA_ARTIFACT_SCOPE_MISMATCH.
 - BIOLOGICAL_INPUT_INVALID.
 - CALCULATION_FAILED.
 - REPORT_RENDER_FAILED.
@@ -1251,13 +1266,9 @@ Ví dụ contract kỹ thuật:
 }
 ~~~
 
-Values có thể nằm trong JSON nhỏ hoặc object riêng. Contract phải có schema validator và fixture.
+Ví dụ object_key phía trên là thiết kế mục tiêu, không phải profile được adapter hiện tại hỗ trợ. Values lớn chỉ được trỏ tới managed artifact đã kiểm organization/checksum; không đọc arbitrary object_key từ input. Contract phải có schema validator và fixture.
 
-P8 initial adapter dùng một profile hẹp hơn để tạo golden test lặp lại: `data_type`
-phải là `dose`, units phải là `GY` và `mm`, encoding phải là `inline-float32`, shape
-phải là ma trận 2D và số value phải khớp chính xác với shape. Profile này được lưu
-trong provenance của từng run; các profile DICOM RTDOSE, cGy/object-key và 3D chỉ
-được mở sau khi có adapter, fixture và golden test riêng.
+Adapter 2D ban đầu là snapshot lịch sử. Code `gamma-nd-p8.2` đã mở rộng inline 2D/3D và RTDOSE như mô tả §6.5, nhưng chưa chứng minh toàn bộ contract target. Profile production, DICOM chuẩn, coordinate frame, denominator/search và oracle được khóa ở specification.md §3.4/§5; các gap P8 vẫn phải được kiểm thử trước đóng phase.
 
 ### 8.3. Pipeline
 

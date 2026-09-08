@@ -185,9 +185,12 @@ export type GammaConfiguration = {
   dose_threshold_percent: number
   normalization: 'GLOBAL' | 'LOCAL'
   interpolation: 'GRID' | 'BILINEAR'
+  coverage_policy: 'FULL_ROI' | 'OVERLAP_ONLY'
+  max_gamma: number
   pass_rate_threshold_percent: number
   histogram_bins: number
 }
+export type GammaWorkflowProfile = 'PSQA_GAMMA' | 'ENGINE_TEST'
 export type GammaRunResource = {
   id: string
   organization_id: string
@@ -195,6 +198,7 @@ export type GammaRunResource = {
   reference_artifact_id: string
   evaluation_artifact_id: string
   idempotency_key: string
+  workflow_profile: GammaWorkflowProfile
   status: string
   progress_percent: number
   attempt_count: number
@@ -254,7 +258,7 @@ const machineQARunSchema = z.object({
 const gammaRunSchema = z.object({
   id: z.string().uuid(), organization_id: z.string().uuid(), qa_case_id: z.string().uuid(),
   reference_artifact_id: z.string().uuid(), evaluation_artifact_id: z.string().uuid(),
-  idempotency_key: z.string(), status: z.string(), progress_percent: z.number().int(),
+  idempotency_key: z.string(), workflow_profile: z.enum(['PSQA_GAMMA', 'ENGINE_TEST']), status: z.string(), progress_percent: z.number().int(),
   attempt_count: z.number().int(), engine_version: z.string(),
   config_snapshot: z.record(z.string(), z.unknown()), input_manifest_snapshot: z.record(z.string(), z.unknown()),
   result_snapshot: z.record(z.string(), z.unknown()), error_snapshot: z.array(z.record(z.string(), z.unknown())),
@@ -584,6 +588,7 @@ export class ApiClient {
     reference_artifact_id: string
     evaluation_artifact_id: string
     idempotency_key: string
+    workflow_profile: GammaWorkflowProfile
     configuration: GammaConfiguration
   }): Promise<GammaRunResource> {
     return this.request(`/qa-cases/${caseId}/gamma-runs`, gammaRunSchema, accessToken, {

@@ -6,7 +6,7 @@ from typing import Any
 
 import numpy as np
 from pydicom.dataset import Dataset, FileDataset, FileMetaDataset
-from pydicom.uid import ExplicitVRLittleEndian, RTDoseStorage, generate_uid
+from pydicom.uid import ExplicitVRLittleEndian, RTDoseStorage, RTPlanStorage, generate_uid
 
 from rt_connect_api.services.artifact_validation import validate_dicom
 from rt_connect_api.services.gamma_engine import calculate_gamma_from_paths, load_gamma_dataset
@@ -70,12 +70,12 @@ def _write_rtdose(path: Path, values: list[int]) -> None:
     dataset.GridFrameOffsetVector = [0.0, 1.0]
     dataset.ImagePositionPatient = [0.0, 0.0, 0.0]
     dataset.ImageOrientationPatient = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0]
-    dataset.DoseGridScaling = 1.0
-    dataset.DoseUnits = "CGY"
+    dataset.DoseGridScaling = 0.01
+    dataset.DoseUnits = "GY"
     dataset.DoseType = "PHYSICAL"
     dataset.DoseSummationType = "PLAN"
     referenced_plan = Dataset()
-    referenced_plan.ReferencedSOPClassUID = generate_uid()
+    referenced_plan.ReferencedSOPClassUID = RTPlanStorage
     referenced_plan.ReferencedSOPInstanceUID = generate_uid()
     dataset.ReferencedRTPlanSequence = [referenced_plan]
     dataset.PixelData = np.asarray(values, dtype=np.uint16).tobytes()
@@ -99,7 +99,7 @@ def test_3d_measurement_grid_is_golden_pass(tmp_path: Path) -> None:
     assert result["reference_grid"]["shape"] == [2, 2, 2]
 
 
-def test_rtdose_cgy_is_scaled_and_can_be_compared_with_3d_measurement(tmp_path: Path) -> None:
+def test_standard_rtdose_gy_scaling_can_be_compared_with_3d_measurement(tmp_path: Path) -> None:
     rtdose = tmp_path / "reference.dcm"
     measurement = tmp_path / "evaluation.json"
     _write_rtdose(rtdose, [100, 200, 300, 400, 500, 600, 700, 800])

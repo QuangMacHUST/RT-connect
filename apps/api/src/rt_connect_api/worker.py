@@ -15,13 +15,18 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from rt_connect_api.api.gamma import process_gamma_run
+from rt_connect_api.api.gamma import (
+    _ensure_dispatch_outbox,
+    acquire_gamma_run_lease,
+    process_gamma_run,
+)
 from rt_connect_api.core.config import get_settings
-from rt_connect_api.db.models import GammaAnalysisRun
+from rt_connect_api.db.models import GammaAnalysisRun, GammaDispatchOutbox, GammaRunAttempt
 from rt_connect_api.db.session import get_engine
 from rt_connect_api.services.object_storage import ObjectStorage, get_storage
 from rt_connect_api.services.redis_queue import (
     GammaQueueMessage,
+    RedisGammaQueue,
     RedisQueueError,
     get_gamma_queue,
 )
@@ -33,34 +38,84 @@ def recover_stale_runs(session: Session, timeout_seconds: int = 900) -> int:
     """Return abandoned RUNNING rows to the queue after a heartbeat timeout."""
 
     cutoff = datetime.now(UTC) - timedelta(seconds=timeout_seconds)
-    stale_ids = list(
+    stale_runs = list(
         session.scalars(
-            select(GammaAnalysisRun.id).where(
+            select(GammaAnalysisRun).where(
                 GammaAnalysisRun.status == "RUNNING",
                 GammaAnalysisRun.heartbeat_at.is_not(None),
                 GammaAnalysisRun.heartbeat_at < cutoff,
             )
         )
     )
-    if not stale_ids:
+    if not stale_runs:
         return 0
-    session.execute(
-        update(GammaAnalysisRun)
-        .where(GammaAnalysisRun.id.in_(stale_ids))
-        .values(
-            status="RETRYING",
-            progress_percent=0,
-            error_snapshot=[
-                {
-                    "code": "GAMMA_WORKER_HEARTBEAT_TIMEOUT",
-                    "message": "The previous worker stopped reporting heartbeat.",
-                }
-            ],
-            heartbeat_at=None,
+    for run in stale_runs:
+        error_snapshot: list[dict[str, object]] = [
+            {
+                "code": "GAMMA_WORKER_HEARTBEAT_TIMEOUT",
+                "message": "The previous worker stopped reporting heartbeat.",
+            }
+        ]
+        run.status = "RETRYING"
+        run.progress_percent = 0
+        run.error_snapshot = error_snapshot
+        run.heartbeat_at = None
+        run.worker_id = None
+        run.lease_token = None
+        run.lease_expires_at = None
+        session.execute(
+            update(GammaRunAttempt)
+            .where(
+                GammaRunAttempt.gamma_run_id == run.id,
+                GammaRunAttempt.organization_id == run.organization_id,
+                GammaRunAttempt.attempt_number == run.attempt_count,
+                GammaRunAttempt.status == "RUNNING",
+            )
+            .values(
+                status="FAILED",
+                completed_at=datetime.now(UTC),
+                error_snapshot=error_snapshot,
+            )
+        )
+        _ensure_dispatch_outbox(session, run)
+    session.commit()
+    return len(stale_runs)
+
+
+def publish_pending_dispatches(
+    session: Session, queue: RedisGammaQueue | None, limit: int = 20
+) -> int:
+    """Reconcile durable DB dispatch intents into Redis without duplicating jobs."""
+
+    if queue is None:
+        return 0
+    now = datetime.now(UTC)
+    pending = list(
+        session.scalars(
+            select(GammaDispatchOutbox)
+            .where(
+                GammaDispatchOutbox.status == "PENDING",
+                GammaDispatchOutbox.available_at <= now,
+            )
+            .order_by(GammaDispatchOutbox.available_at, GammaDispatchOutbox.created_at)
+            .with_for_update(skip_locked=True)
+            .limit(limit)
         )
     )
+    published = 0
+    for outbox in pending:
+        try:
+            queue.enqueue(outbox.gamma_run_id, outbox.organization_id, outbox.attempt_number)
+        except RedisQueueError as exc:
+            outbox.last_error = "GAMMA_QUEUE_UNAVAILABLE"
+            logger.warning("Gamma outbox publish failed: %s", exc)
+            continue
+        outbox.status = "PUBLISHED"
+        outbox.published_at = now
+        outbox.last_error = None
+        published += 1
     session.commit()
-    return len(stale_ids)
+    return published
 
 
 def process_next_gamma_run(session: Session, storage: ObjectStorage) -> bool:
@@ -92,7 +147,20 @@ def process_gamma_queue_message(
     )
     if run is None or run.status not in {"QUEUED", "RETRYING"}:
         return False
-    process_gamma_run(session, run, storage)
+    if message.attempt != run.attempt_count:
+        # A stale Redis message is safe to acknowledge because a recovery
+        # cycle creates a new outbox intent for the current attempt.
+        return False
+    worker_id = os.getenv("GAMMA_QUEUE_CONSUMER", "gamma-worker")
+    lease_token = acquire_gamma_run_lease(
+        session,
+        run,
+        worker_id,
+        expected_dispatch_attempt=message.attempt,
+    )
+    if lease_token is None:
+        return False
+    process_gamma_run(session, run, storage, lease_token=lease_token, worker_id=worker_id)
     return True
 
 
@@ -122,6 +190,7 @@ def main() -> None:
         while True:
             with factory(bind=engine) as session:
                 recover_stale_runs(session)
+                publish_pending_dispatches(session, queue)
             try:
                 message = queue.claim(block_ms=int(poll_seconds * 1000))
             except RedisQueueError:

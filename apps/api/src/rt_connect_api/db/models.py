@@ -327,9 +327,75 @@ class GammaAnalysisRun(TimestampedIdMixin, Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    worker_id: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    lease_token: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
+    lease_expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("user_identities.id"), nullable=True, index=True
     )
+
+
+class GammaRunAttempt(TimestampedIdMixin, Base):
+    """Fenced execution attempt for one Gamma run."""
+
+    __tablename__ = "gamma_run_attempts"
+    __table_args__ = (
+        UniqueConstraint(
+            "gamma_run_id",
+            "attempt_number",
+            name="uq_gamma_run_attempts_run_number",
+        ),
+        Index("ix_gamma_run_attempts_organization_run", "organization_id", "gamma_run_id"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    gamma_run_id: Mapped[UUID] = mapped_column(
+        ForeignKey("gamma_analysis_runs.id"), nullable=False, index=True
+    )
+    attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    worker_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    lease_token: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="RUNNING")
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    error_snapshot: Mapped[list[dict[str, object]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+
+
+class GammaDispatchOutbox(TimestampedIdMixin, Base):
+    """Durable Redis dispatch intent used to reconcile DB/queue failures."""
+
+    __tablename__ = "gamma_dispatch_outbox"
+    __table_args__ = (
+        UniqueConstraint(
+            "gamma_run_id",
+            "attempt_number",
+            name="uq_gamma_dispatch_outbox_run_attempt",
+        ),
+        Index("ix_gamma_dispatch_outbox_status_available", "status", "available_at"),
+        Index("ix_gamma_dispatch_outbox_organization", "organization_id"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    gamma_run_id: Mapped[UUID] = mapped_column(
+        ForeignKey("gamma_analysis_runs.id"), nullable=False, index=True
+    )
+    attempt_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="PENDING")
+    available_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_error: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
 
 class Artifact(TimestampedIdMixin, Base):
