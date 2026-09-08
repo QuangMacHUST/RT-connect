@@ -1,13 +1,13 @@
 {
   "schema_version": "rt-connect.local-backup-restore.v1",
-  "captured_at_utc": "2026-09-08T19:22:04.405173Z",
+  "captured_at_utc": "2026-09-08T19:24:55.939851Z",
   "environment": "local-compose-only",
   "compose_file": "docker-compose.yml",
   "source_database": "rt_connect",
-  "restore_database": "rt_connect_restore_ba3647a0566c",
+  "restore_database": "rt_connect_restore_df077d7a74f4",
   "database_dump": {
     "bytes": 162769,
-    "sha256": "2cd2c185266510dc0f4c13491802ccbe0669ed10a0ca5c6166ac745361d86b2b"
+    "sha256": "8c253a42d375d3d8eeadc9fb9de4390543cfff362fb50fb192e4a3db86708d7b"
   },
   "source_row_counts": {
     "organizations": 1,
@@ -63,8 +63,10 @@
       "name": "database.row_inventory",
       "ok": true,
       "details": {
-        "source_sha256": "5b481e966eb88e7df32b339b317e64802b37da1c9fe17cba7d989d14b45571ed",
-        "restored_sha256": "5b481e966eb88e7df32b339b317e64802b37da1c9fe17cba7d989d14b45571ed"
+        "source_counts_sha256": "5b481e966eb88e7df32b339b317e64802b37da1c9fe17cba7d989d14b45571ed",
+        "restored_counts_sha256": "5b481e966eb88e7df32b339b317e64802b37da1c9fe17cba7d989d14b45571ed",
+        "source_rows_sha256": "678ec496e0c4704a1c1cb84ae6dd3719fc69f8ebd96d7e0c988c31822ac9a4f5",
+        "restored_rows_sha256": "678ec496e0c4704a1c1cb84ae6dd3719fc69f8ebd96d7e0c988c31822ac9a4f5"
       }
     },
     {
@@ -81,9 +83,9 @@
       "name": "disposable-resource-cleanup",
       "ok": true,
       "details": {
-        "restore_database": "rt_connect_restore_ba3647a0566c",
+        "restore_database": "rt_connect_restore_df077d7a74f4",
         "database_dropped": true,
-        "restore_bucket": "rt-connect-restore-e096a0bdc0ec49d3",
+        "restore_bucket": "rt-connect-restore-9022c1bb04b546f1",
         "bucket_removed": true
       }
     }

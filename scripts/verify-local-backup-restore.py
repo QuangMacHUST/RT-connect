@@ -22,7 +22,6 @@ from uuid import uuid4
 
 from minio import Minio
 
-
 ROOT = Path(__file__).resolve().parents[1]
 COMPOSE_FILE = ROOT / "docker-compose.yml"
 SOURCE_DATABASE = "rt_connect"
@@ -126,8 +125,23 @@ def _row_counts(database: str) -> dict[str, int]:
     return result
 
 
-def _inventory_hash(counts: dict[str, int]) -> str:
-    payload = json.dumps(counts, sort_keys=True, separators=(",", ":")).encode("utf-8")
+def _row_fingerprints(database: str) -> dict[str, str]:
+    fingerprints: dict[str, str] = {}
+    for table in TABLES:
+        rows = _psql(
+            database,
+            f"SELECT row_to_json(t)::text FROM {table} AS t ORDER BY row_to_json(t)::text",
+        )
+        digest = hashlib.sha256()
+        for row in rows.splitlines():
+            digest.update(row.encode("utf-8"))
+            digest.update(b"\n")
+        fingerprints[table] = digest.hexdigest()
+    return fingerprints
+
+
+def _inventory_hash(value: dict[str, Any]) -> str:
+    payload = json.dumps(value, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return _sha256_bytes(payload)
 
 
@@ -175,6 +189,8 @@ def _build_report(
     passed: bool,
     source_counts: dict[str, int] | None = None,
     restored_counts: dict[str, int] | None = None,
+    source_fingerprints: dict[str, str] | None = None,
+    restored_fingerprints: dict[str, str] | None = None,
     dump_bytes: int = 0,
     dump_sha256: str | None = None,
     source_objects: int = 0,
@@ -189,13 +205,27 @@ def _build_report(
 ) -> dict[str, Any]:
     source_counts = source_counts or {}
     restored_counts = restored_counts or {}
+    source_fingerprints = source_fingerprints or {}
+    restored_fingerprints = restored_fingerprints or {}
     checks = [
         {
             "name": "database.row_inventory",
-            "ok": bool(source_counts) and source_counts == restored_counts,
+            "ok": (
+                bool(source_counts)
+                and source_counts == restored_counts
+                and source_fingerprints == restored_fingerprints
+            ),
             "details": {
-                "source_sha256": _inventory_hash(source_counts) if source_counts else None,
-                "restored_sha256": _inventory_hash(restored_counts) if restored_counts else None,
+                "source_counts_sha256": _inventory_hash(source_counts) if source_counts else None,
+                "restored_counts_sha256": (
+                    _inventory_hash(restored_counts) if restored_counts else None
+                ),
+                "source_rows_sha256": (
+                    _inventory_hash(source_fingerprints) if source_fingerprints else None
+                ),
+                "restored_rows_sha256": (
+                    _inventory_hash(restored_fingerprints) if restored_fingerprints else None
+                ),
             },
         },
         {
@@ -261,6 +291,8 @@ def verify() -> dict[str, Any]:
     restore_bucket_created = False
     source_counts: dict[str, int] = {}
     restored_counts: dict[str, int] = {}
+    source_fingerprints: dict[str, str] = {}
+    restored_fingerprints: dict[str, str] = {}
     source_objects: dict[str, dict[str, Any]] = {}
     restored_objects: dict[str, dict[str, Any]] = {}
     source_object_hash: str | None = None
@@ -271,6 +303,7 @@ def verify() -> dict[str, Any]:
 
     try:
         source_counts = _row_counts(SOURCE_DATABASE)
+        source_fingerprints = _row_fingerprints(SOURCE_DATABASE)
         source_objects, source_object_hash = _object_inventory(client, SOURCE_BUCKET)
         dump_bytes = _run_compose(
             "exec",
@@ -301,6 +334,7 @@ def verify() -> dict[str, Any]:
             input_bytes=dump_bytes,
         )
         restored_counts = _row_counts(restore_database)
+        restored_fingerprints = _row_fingerprints(restore_database)
         with tempfile.TemporaryDirectory(prefix="rt-connect-backup-") as temporary_directory:
             client.make_bucket(restore_bucket)
             restore_bucket_created = True
@@ -337,6 +371,7 @@ def verify() -> dict[str, Any]:
 
     passed = (
         source_counts == restored_counts
+        and source_fingerprints == restored_fingerprints
         and source_objects == restored_objects
         and bucket_removed
         and database_dropped
@@ -345,6 +380,8 @@ def verify() -> dict[str, Any]:
         passed=passed,
         source_counts=source_counts,
         restored_counts=restored_counts,
+        source_fingerprints=source_fingerprints,
+        restored_fingerprints=restored_fingerprints,
         dump_bytes=len(dump_bytes),
         dump_sha256=_sha256_bytes(dump_bytes) if dump_bytes else None,
         source_objects=len(source_objects),

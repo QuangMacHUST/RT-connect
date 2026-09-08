@@ -160,6 +160,18 @@ def test_p18_qa_journey_crosses_auth_case_artifact_gamma_machineqa_report_and_tr
         assert gamma.status_code == 201, gamma.text
         gamma_id = UUID(gamma.json()["id"])
         assert gamma.json()["status"] == "QUEUED"
+        gamma_replay = client.post(
+            f"/api/v1/qa-cases/{case_id}/gamma-runs",
+            json={
+                "reference_artifact_id": artifact_ids["REFERENCE"],
+                "evaluation_artifact_id": artifact_ids["EVALUATION"],
+                "idempotency_key": "p18-integrated-gamma-001",
+                "workflow_profile": "ENGINE_TEST",
+                "configuration": {"dose_threshold_percent": 0},
+            },
+        )
+        assert gamma_replay.status_code == 200, gamma_replay.text
+        assert gamma_replay.json()["id"] == str(gamma_id)
 
         with _database_session(client) as session:
             gamma_row = session.get(GammaAnalysisRun, gamma_id)
