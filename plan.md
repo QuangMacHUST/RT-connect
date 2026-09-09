@@ -72,7 +72,7 @@ Các trạng thái trên chỉ là checkpoint, không phải đóng phase. `LOCA
 
 - Backend: full suite trên working-tree candidate PASS; P15 API **5/5**, pure engine/error **22/22**, P11 `test_protocol_library.py` **3/3** và các test P14 engine/API/biological **15/15** đã PASS ngày 2026-09-08; Ruff và strict mypy PASS. Đây là local evidence, chưa phải staging/production clinical readiness.
 - Gamma-focused contract: `test_gamma.py` 8/8, `test_gamma_dicom.py` 3/3, `test_gamma_worker.py` 6/6 và `test_gamma_independent_oracle.py` 3/3 PASS; bao gồm declared-type mismatch, RTDOSE GY scaling, PSQA preflight, resource limit, coverage/no-candidate, censoring, single-holder lease, bounded retry và replay sau commit trước ack.
-- Frontend: lint, typecheck, Vitest **1/1** và production build PASS; build chỉ còn cảnh báo bundle JavaScript >500 kB, không phải lỗi functional.
+- Frontend trên candidate hiện tại: lint, typecheck, Vitest **5 passed** (trong đó `SessionErrorPage` onboarding **3/3**) và production build PASS; build chỉ còn cảnh báo bundle JavaScript >500 kB, không phải lỗi functional. Evidence: `docs/evidence/p3-p4-frontend-onboarding-20260909.json`. Các dòng `1/1` ở những checkpoint lịch sử bên dưới được giữ nguyên theo candidate cũ và không đại diện cho tổng test hiện tại.
 - P9 report slice: `test_reports.py` **4/4 PASS**; template/version, organization-scoped source snapshot, full block customization, optimistic revision conflict, dangerous-content validation, deterministic JSON/CSV/PDF/PNG export, warning snapshot và export idempotency đã được kiểm local. Migration `20260908_0009` đã upgrade thành công trên local PostgreSQL; authenticated staging browser đã tạo report revision và tải đủ bốn định dạng trên candidate P9.
 - P10 trend slice: migration `20260908_0010` đã upgrade thành công trên local PostgreSQL; `TrendPoint` có context snapshot, uniqueness theo organization/source run/metric và index theo thời gian. Baseline version, maintenance event/revision, raw/day/week query, compatibility signature, outlier, rebuild idempotency, export và source drill-down đã có API/UI; P10 test riêng **7/7 PASS**.
 - P11 protocol slice: migration `20260908_0011` đã ở head trên local PostgreSQL; `QAProtocolVersion`/`QAProtocolRule` có source, applicability, lineage, revision và rule reference. Validate-only, create/edit/activate/archive, clone deep-copy, compare, organization scope và Machine QA active-only selection đã được kiểm trong `test_protocol_library.py` **3/3 PASS**; staging browser/consumer snapshot và complete S/E/C evidence còn mở.
@@ -463,6 +463,8 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 3. Nếu chưa thuộc tổ chức, tạo organization đầu tiên; nếu đã có thì vào workspace.
 4. Hiển thị dashboard dữ liệu thật và thao tác nhanh.
 5. Logout hoặc hết session thì dọn cache và quay lại đúng luồng đăng nhập.
+
+**Local onboarding regression evidence (2026-09-09):** `SessionErrorPage` đã được kiểm tra 3/3 nhánh: không cho submit tên rỗng; trim tên, gọi `POST /organizations` và chuyển sang `/app` khi thành công; hiển thị lỗi API và giữ nguyên `/auth/session-error` khi tạo organization thất bại. Đây là bằng chứng frontend local, không thay cho Auth thật và PostgreSQL persistence trên staging.
 
 ### Work packages P3
 

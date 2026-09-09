@@ -1,0 +1,27 @@
+{
+  "schema_version": "rt-connect.frontend-onboarding-evidence.v1",
+  "captured_at_utc": "2026-09-09T07:13:40.3714749Z",
+  "scope": "local frontend onboarding regression",
+  "repository_sha": "ea633cd",
+  "route": "/auth/session-error",
+  "test_file": "apps/web/src/pages/SessionErrorPage.test.tsx",
+  "cases": {
+    "empty_name": "PASS",
+    "create_first_organization_and_navigate": "PASS",
+    "api_rejection_stays_on_onboarding": "PASS"
+  },
+  "verification": {
+    "focused_tests": "3 passed",
+    "frontend_full_tests": "5 passed",
+    "lint": "passed",
+    "typecheck": "passed",
+    "build": "passed with existing bundle-size warning"
+  },
+  "assertions": [
+    "The client trims the organization name before calling the API.",
+    "A successful first-organization response navigates to /app.",
+    "An API error is rendered and does not navigate away from onboarding.",
+    "The test uses a synthetic access token and no patient data or secret."
+  ],
+  "secrets": "not_recorded"
+}
