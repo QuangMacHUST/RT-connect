@@ -41,3 +41,6 @@ P17-W06 resource-evidence parity marker: local workload verification pins the AP
 container to 1 CPU/768 MiB and records process RSS plus API responsiveness. Keep
 this marker aligned with the API service root so a release candidate rebuilds all
 three services from the same source commit.
+
+Final staging parity marker (2026-09-10): API, worker and web must be rebuilt
+from the commit carrying this marker before a public exact-SHA check is recorded.
