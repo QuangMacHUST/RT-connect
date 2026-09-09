@@ -1,0 +1,86 @@
+{
+  "schema_version": "rt-connect.p19-staging-source-label.v1",
+  "captured_at_utc": "2026-09-09T09:46:42.0927597Z",
+  "repository_sha": "62a7b5300e39b9e742bee0b7353ff86a559d4abe",
+  "api_base_url": "https://gleaming-cooperation-staging.up.railway.app",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "expected": {
+    "source_sha": "62a7b5300e39b9e742bee0b7353ff86a559d4abe",
+    "schema_revision": "20260909_0018"
+  },
+  "observed_api": {
+    "health": {
+      "status_code": 200,
+      "status": "ok"
+    },
+    "ready": {
+      "status_code": 200,
+      "status": "ready",
+      "schema_revision": "20260909_0018"
+    },
+    "version": {
+      "status_code": 200,
+      "application": "rt-connect-api",
+      "version": "62a7b5300e39b9e742bee0b7353ff86a559d4abe",
+      "environment": "staging",
+      "schema_revision": "20260909_0018",
+      "engine_version": "unavailable-in-p1",
+      "renderer_version": "unavailable-in-p1"
+    }
+  },
+  "observed_web": {
+    "index": {
+      "status_code": 200,
+      "asset": "/assets/index-Dk9-li-i.js"
+    },
+    "bundle": {
+      "status_code": 200,
+      "utf8_bytes": 839130,
+      "sha256": "1b6c59e7b9ce6aaa9f355664582b3b66118c765e7d2e970247394d39935b76c7",
+      "expected_source_sha_embedded": true
+    },
+    "browser_system_status": {
+      "build_label": "62a7b5300e39b9e742bee0b7353ff86a559d4abe",
+      "overall_status": "SẴN SÀNG",
+      "api_health": "OK",
+      "schema_readiness": "READY",
+      "schema_parity": "MATCH",
+      "queue": "redis_stream · available · configured",
+      "organization_runs": {
+        "queued": 0,
+        "running": 0,
+        "retrying": 0,
+        "failed": 0
+      }
+    }
+  },
+  "checks": [
+    {
+      "name": "api.version.source_sha",
+      "passed": true,
+      "details": "observed version equals the deployed repository SHA"
+    },
+    {
+      "name": "api.ready.schema_revision",
+      "passed": true,
+      "details": "observed=20260909_0018; expected=20260909_0018"
+    },
+    {
+      "name": "web.bundle.source_sha",
+      "passed": true,
+      "details": "expected source SHA is embedded in the deployed JavaScript bundle"
+    },
+    {
+      "name": "browser.platform_status",
+      "passed": true,
+      "details": "browser displays the same source SHA, READY, MATCH and available queue"
+    }
+  ],
+  "passed": true,
+  "failed_check_count": 0,
+  "limitations": [
+    "This evidence verifies staging release identity and platform readiness only.",
+    "It does not close P17 DICOM upload, RTSTRUCT/CT validation, DVH replay/export, or clinical commissioning gates.",
+    "No patient data or authentication secrets were used in this probe."
+  ]
+}
