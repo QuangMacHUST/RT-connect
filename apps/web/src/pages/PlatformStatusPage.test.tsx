@@ -41,6 +41,19 @@ test('surfaces readiness failure instead of claiming the platform is ready', asy
 
   renderPage()
 
-  expect(await screen.findByText('Không thể đọc trạng thái API', {}, { timeout: 5000 })).toBeInTheDocument()
+  expect(await screen.findByText('Không thể đọc đầy đủ trạng thái API', {}, { timeout: 5000 })).toBeInTheDocument()
   expect(screen.getByText('schema mismatch')).toBeInTheDocument()
+  expect(screen.getByText('CẦN XEM XÉT')).toBeInTheDocument()
+})
+
+test('marks schema mismatch as needs review even when health is ok', async () => {
+  vi.mocked(apiClient.health).mockResolvedValue({ status: 'ok', timestamp: '2026-09-05T00:00:00Z', correlation_id: 'test-id' })
+  vi.mocked(apiClient.ready).mockResolvedValue({ status: 'ready', timestamp: '2026-09-05T00:00:00Z', correlation_id: 'ready-id', schema_revision: 'schema-a' })
+  vi.mocked(apiClient.version).mockResolvedValue({ application: 'rt-connect-api', version: '0.1.0', environment: 'test', engine_version: 'not-yet', renderer_version: 'not-yet', schema_revision: 'schema-b' })
+
+  renderPage()
+
+  expect(await screen.findByText('CẦN XEM XÉT')).toBeInTheDocument()
+  expect(screen.getByText('MISMATCH')).toBeInTheDocument()
+  expect(screen.getByText(/schema parity phải cùng đạt/)).toBeInTheDocument()
 })

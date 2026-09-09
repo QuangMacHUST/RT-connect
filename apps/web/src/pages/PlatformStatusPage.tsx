@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import { apiClient } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
+import { assessPlatformStatus, endpointValue, schemaParityValue, statusErrorMessage } from './platformStatus'
 
 function StatusCard({ label, value, detail }: { label: string; value: string; detail: string }) {
   return <section className="status-card"><p>{label}</p><strong>{value}</strong><small>{detail}</small></section>
@@ -18,29 +19,47 @@ export function PlatformStatusPage() {
     enabled: Boolean(session?.access_token),
     retry: false
   })
-  const failure = health.error ?? readiness.error ?? version.error
+  const assessment = assessPlatformStatus({
+    health: health.data,
+    readiness: readiness.data,
+    version: version.data,
+    healthError: health.error,
+    readinessError: readiness.error,
+    versionError: version.error,
+    pending: health.isPending || readiness.isPending || version.isPending
+  })
+  const failures = [
+    ['health', health.error],
+    ['ready', readiness.error],
+    ['version', version.error]
+  ].filter(([, error]) => Boolean(error)) as Array<[string, unknown]>
+  const failure = failures[0]?.[1]
+  const platformPending = health.isPending || readiness.isPending || version.isPending
   const retryPlatform = () => void Promise.all([health.refetch(), readiness.refetch(), version.refetch()])
 
   return (
     <div className="page">
       <header className="page-header">
         <div><p className="eyebrow">P1 · DEVELOPMENT FOUNDATION</p><h1>Trạng thái nền tảng</h1><p>Kiểm tra API thực, schema readiness, version contract và đường đi tới các module tiếp theo.</p></div>
-        <span className={failure ? 'status-badge status-badge--warning' : 'status-badge'}>{failure ? 'API cần kiểm tra' : 'Đang kiểm tra API'}</span>
+        <span className={`status-badge ${assessment.badgeClass}`} title={assessment.explanation}>{assessment.label}</span>
       </header>
-      {failure ? (
-        <section aria-live="polite" className="alert alert--error"><h2>Không thể đọc trạng thái API</h2><p>{failure.message}</p><button onClick={retryPlatform}>Thử lại</button></section>
-      ) : health.isPending || readiness.isPending || version.isPending ? (
+      {Boolean(failure) && (
+        <section aria-live="polite" className="alert alert--error"><h2>Không thể đọc đầy đủ trạng thái API</h2><p>{failures.map(([name, error]) => `${name}: ${statusErrorMessage(error)}`).join(' · ')}</p><p>Trạng thái tổng hợp: {assessment.explanation}</p><button onClick={retryPlatform}>Thử lại</button></section>
+      )}
+      {!failure && platformPending ? (
         <section aria-live="polite" className="alert"><h2>Đang kết nối API</h2><p>RT-CONNECT đang lấy health, readiness và release metadata; không dùng dữ liệu mô phỏng.</p></section>
-      ) : health.data && readiness.data && version.data ? (
+      ) : !platformPending ? (
         <div className="status-grid">
-          <StatusCard label="API health" value={health.data.status.toUpperCase()} detail={`Correlation ID: ${health.data.correlation_id}`} />
-          <StatusCard label="Schema readiness" value={readiness.data.status.toUpperCase()} detail={`Schema: ${readiness.data.schema_revision ?? '—'} · Correlation ID: ${readiness.data.correlation_id}`} />
-          <StatusCard label="API version" value={version.data.version} detail={`${version.data.application} · ${version.data.environment}`} />
-          <StatusCard label="Analysis engine" value={version.data.engine_version} detail="Capability sẽ được kích hoạt theo phase" />
-          <StatusCard label="Report renderer" value={version.data.renderer_version} detail="Capability sẽ được kích hoạt theo phase" />
+          <StatusCard label="API health" value={endpointValue(health.data, health.error, health.isPending)} detail={health.data ? `Correlation ID: ${health.data.correlation_id}` : statusErrorMessage(health.error)} />
+          <StatusCard label="Schema readiness" value={endpointValue(readiness.data, readiness.error, readiness.isPending)} detail={readiness.data ? `Schema: ${readiness.data.schema_revision ?? '—'} · Correlation ID: ${readiness.data.correlation_id}` : statusErrorMessage(readiness.error)} />
+          <StatusCard label="API version" value={version.data?.version ?? endpointValue(undefined, version.error, version.isPending)} detail={version.data ? `${version.data.application} · ${version.data.environment}` : statusErrorMessage(version.error)} />
+          <StatusCard label="Schema parity" value={schemaParityValue(readiness.data, version.data, readiness.error ?? version.error)} detail={`${readiness.data?.schema_revision ?? '—'} ↔ ${version.data?.schema_revision ?? '—'}`} />
+          <StatusCard label="Analysis engine" value={version.data?.engine_version ?? '—'} detail="Capability sẽ được kích hoạt theo phase" />
+          <StatusCard label="Report renderer" value={version.data?.renderer_version ?? '—'} detail="Capability sẽ được kích hoạt theo phase" />
         </div>
-      ) : (
-        <section aria-live="polite" className="alert alert--error"><h2>Phản hồi API chưa đầy đủ</h2><p>Không thể hiển thị trạng thái nền tảng khi thiếu một phần contract.</p><button onClick={retryPlatform}>Thử lại</button></section>
+      ) : null}
+      {assessment.key === 'NEEDS_REVIEW' && !failure && !platformPending && (
+        <section aria-live="polite" className="alert alert--warning"><h2>Release cần được xem xét</h2><p>{assessment.explanation}</p><button onClick={retryPlatform}>Kiểm tra lại</button></section>
       )}
       {session?.access_token && queueMetrics.data && (
         <section className="provenance-panel" aria-live="polite">

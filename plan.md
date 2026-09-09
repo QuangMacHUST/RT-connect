@@ -1824,7 +1824,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 ### Work packages P20
 
 - [x] P20-W00 — Tạo support artifact ban đầu tại `docs/runbooks/p20-initial-operations-package.md` và `deployment/railway/production-runbook.md`: topology, thresholds target, backup/restore, incident, maintenance, promotion/rollback và handoff record. Đây là `LOCAL_SUPPORT_ONLY`; chưa có alert channel/restore provider/owner evidence nên không đóng P20.
-- [ ] P20-W01 — Tạo operational dashboard và alert test bằng sự kiện synthetic. Dashboard phải đọc riêng `/api/v1/health`, `/api/v1/ready`, `/api/v1/version` và, khi có session hợp lệ, `/api/v1/gamma/queue-metrics`; nếu `/ready` lỗi hoặc schema lệch thì trạng thái là degraded/needs review dù `/health` vẫn `ok`.
+- [ ] P20-W01 — Tạo operational dashboard và alert test bằng sự kiện synthetic. Dashboard phải đọc riêng `/api/v1/health`, `/api/v1/ready`, `/api/v1/version` và, khi có session hợp lệ, `/api/v1/gamma/queue-metrics`; nếu `/ready` lỗi hoặc schema lệch thì trạng thái là degraded/needs review dù `/health` vẫn `ok`. **Local UI slice verified 2026-09-09:** `PlatformStatusPage` hiển thị từng probe, schema parity và trạng thái tổng hợp `SẴN SÀNG/CẦN XEM XÉT/API KHÔNG KHẢ DỤNG`; frontend 4 files/11 tests, lint, typecheck và build pass. Alert tới kênh thật vẫn `NOT_RUN`.
 - [ ] P20-W02 — Thiết lập backup retention/runbook; restore schedule và evidence template.
 - [ ] P20-W03 — User guides theo task, incident taxonomy và support correlation without secrets.
 - [ ] P20-W04 — Dependency/engine updates có impact set, staging tests và compatibility rollback.
@@ -2097,7 +2097,7 @@ Trước code UI: ghi screen ID/revision, route, API event và FR. Sau code: đ�
 Template checkpoint (cần điền giá trị thật):
 
 ~~~yaml
-plan_version: "4.3"
+plan_version: "4.5"
 current_phase: P17
 current_work_package: P17-W05b.2
 status: IN_PROGRESS
