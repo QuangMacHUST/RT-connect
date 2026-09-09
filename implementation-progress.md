@@ -3,7 +3,7 @@
 ## Documentation and implementation rebaseline — 2026-09-09
 
 Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.17,
-`technical-specification.md` v1.15 và `plan.md` v4.2. Dòng rebaseline lịch sử ngay dưới đây
+`technical-specification.md` v1.15 và `plan.md` v4.3. Dòng rebaseline lịch sử ngay dưới đây
 giữ nguyên để truy vết; không dùng các phiên bản cũ đó làm authority.
 
 `business-analysis.md` v0.21, `specification.md` v1.15, `technical-specification.md` v1.13 và `plan.md` v4.0 bổ sung feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate, state contract, testcase, workflow, error/recovery contract và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
@@ -27,6 +27,8 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - **Config drift:** API `/api/v1/version` và web build hiện vẫn báo `65dd52b` thay vì source candidate `4d3e0d3`. Đây là config label drift (`APP_VERSION`/`VITE_APP_VERSION`), không phải bằng chứng code cũ; phải cập nhật variables trên đúng staging services rồi redeploy/kiểm parity.
 - **Evidence level:** `STAGING_DEPLOYED_AUTH_E2E_OPEN`. Chưa gọi `STAGING_VERIFIED` vì chưa có hai identity/Auth browser flow, direct PostgreSQL row/hash/status/audit query, replay/revoke/expiry/context/concurrency/timeout evidence.
 
+- **Public smoke cập nhật:** `scripts/verify-public-deployment.ps1` đã chạy lại với timeout hữu hạn và bổ sung kiểm tra request thực tế không có Auth. Evidence `docs/evidence/p4-staging-public-smoke-20260909.json` ghi **14/14 checks PASS**: health/readiness HTTP 200, schema head `20260909_0018`, OpenAPI có CT preview/member/invitation, ba route membership/invitation trả `401`, web/bundle và UI markers trả HTTP 200. API/web vẫn quan sát label `65dd52b`; version parity và Authenticated E2E vẫn mở.
+
 ## Current checkpoint
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
@@ -39,7 +41,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 
 - `apps/api/tests/test_p18_integration.py` bổ sung local integrated pack `P18-W00`: hai hành trình đi qua FastAPI route thật, organization membership scope, nested QA case, artifact/object storage, Machine QA, Gamma worker boundary, report export, trend projection và Biological Toolkit. Kết quả hiện tại: **2 passed**; đây là `LOCAL_VERIFIED` support evidence, không thay staging/pilot/backup-restore.
 - `apps/web/playwright.config.ts` bổ sung local `P18-W01a` trên commit `4f9028f`: Chromium desktop VN timezone, mobile VN timezone và desktop UTC; `npm run test:e2e` đạt **3 passed**. Đây chỉ là responsive/timezone support evidence; tenant/dataset/Auth matrix trên staging và remote browser vẫn mở.
-- `scripts/verify-public-deployment.ps1` bổ sung verifier không dùng credential: kiểm HTTP health/readiness, schema revision, release version, OpenAPI CT preview route, public web index/bundle, CT preview marker và build label; có thể ghi JSON evidence bằng `-OutputPath`. Lần chạy staging ngày 2026-09-09 với version `65dd52b` và schema `20260908_0017` đạt **10/10 checks**. Script chỉ là public smoke tool, không thay authenticated E2E, rollback rehearsal hoặc production gate.
+- `scripts/verify-public-deployment.ps1` bổ sung verifier không dùng credential: kiểm HTTP health/readiness, schema revision, release version, OpenAPI CT preview/member/invitation routes, unauthenticated boundary, public web index/bundle, CT preview marker và build label; có thể ghi JSON evidence bằng `-OutputPath`. Lần chạy lịch sử staging ngày 2026-09-09 với schema `20260908_0017` đạt **10/10 checks**; lần chạy hiện hành sau migration P4 với schema head `20260909_0018` đạt **14/14 checks** tại `docs/evidence/p4-staging-public-smoke-20260909.json`. Script chỉ là public smoke tool, không thay authenticated E2E, rollback rehearsal hoặc production gate.
 - `scripts/verify-local-backup-restore.py` bổ sung P18-W03a: local PostgreSQL custom dump và MinIO object inventory được restore vào database/bucket tạm, row/object inventory hash khớp, rồi cleanup database/bucket đạt. Evidence tại `docs/evidence/p18-local-backup-restore-20260909.json`; đây là local support, không thay provider backup/restore staging hoặc RPO/RTO.
 - Evidence tương ứng được lưu tại `docs/evidence/p19-staging-public-smoke-20260909.json`; file chỉ chứa public URL, HTTP/result metadata, bundle hash và không chứa credential, database URL hay dữ liệu bệnh nhân.
 - `docs/runbooks/p20-initial-operations-package.md` và `deployment/railway/production-runbook.md` bổ sung P20-W00 support artifact: vận hành, thresholds target, backup/restore, incident, maintenance, promotion/rollback và handoff template. Đây là tài liệu hỗ trợ `LOCAL_SUPPORT_ONLY`; alert thật, provider restore/RPO-RTO, owner handoff và production release vẫn chưa có evidence.
@@ -55,7 +57,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | `business-analysis.md` | 0.22 | Business source; detailed feature behavior/workflow/error/recovery/state matrix, business feature cards, P4 membership/invitation addendum, phase handoff and P0–P20 contracts |
 | `specification.md` | 1.17 | Behavior/data/error/state/numeric contracts; operation/evidence record, change-impact/release manifest, P20 status/readiness surface and exact P4/P10/P11/P12/P13/P14/P15/P16/P17 contracts including binding/report/CT preview |
 | `technical-specification.md` | 1.15 | Architecture reference; bounded-context implementation addenda, P4 invitation schema/API, P20 status/readiness dashboard boundary, resource policy, CT preview adapter, P18 local backup/restore support and cross-document execution references |
-| `plan.md` | 4.2 | Phase/workflow/S-E/C/B tests, DoR/DoD, dependency graph, execution gates, execution ledger, full coverage matrix, P4 invitation/member work packages, P20 status/readiness dashboard package, binding/report/CT work packages, backup/restore support, local browser matrix, operations runbooks and staging gates |
+| `plan.md` | 4.3 | Phase/workflow/S-E/C/B tests, DoR/DoD, dependency graph, execution gates, execution ledger, full coverage matrix, P4 invitation/member work packages, P20 status/readiness dashboard package, binding/report/CT work packages, backup/restore support, local browser matrix, operations runbooks and staging gates |
 
 ## Phase status
 
@@ -78,7 +80,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | P14 | STAGING SMOKE VERIFIED / FINAL GATE OPEN | Migration `20260908_0014`, browser validate-only/no mutation, save, preview reorder không persist, clone, JSON/CSV export và refresh history đã chạy; direct PostgreSQL row/checksum, organization-scope negative probe và release evidence còn mở |
 | P15 | STAGING SMOKE VERIFIED / FINAL GATE OPEN | Migration `20260908_0015`, scalar re-irradiation/fraction-compensation engine/API/UI, recovery/sensitivity, nonuniform schedule, delivered-prefix alternatives, interruption/time model, immutable snapshot và JSON/CSV export; browser happy path đã pass trên deployment `008ec1d1-3215-44c7-9d64-fb06dc024e58`; replay/DB/scope/full S-E/release evidence còn mở |
 | P16 | STAGING SMOKE VERIFIED / EXIT OPEN | Migration `20260908_0016`, web build `9262bfd`; staging DRAFT/publish/archive, import row-level invalid, explicit-use snapshot đã pass; direct PostgreSQL/hash/scope, compare/history/export, full fault matrix và release evidence còn mở |
-| P17 | LOCAL CT/BINDING/REPORT READY / STAGING DATA OPEN | Engine/API/UI/migration, bounded CT preview, explicit P11/P16 limit binding and DVH report-source local gates pass; RTSTRUCT/CT fixture upload + DVH run, staging binding/report/CT, fault/volume and release evidence remain |
+| P17 | LOCAL CT/BINDING/REPORT READY / STAGING DATA OPEN | Engine/API/UI/migration `20260908_0017`, bounded CT preview, explicit P11/P16 limit binding and DVH report-source local gates pass; current staging schema head is `20260909_0018`; RTSTRUCT/CT fixture upload + DVH run, staging binding/report/CT, fault/volume and release evidence remain |
 | P18 | LOCAL SUPPORT ONLY | `P18-W00` integrated API pack, `P18-W01a` local browser matrix và `P18-W03a` local backup/restore pass; authenticated tenant/dataset matrix, fault/load, provider restore/RPO/RTO và pilot remain open |
 | P19 | PUBLIC SMOKE + MANIFEST TOOL READY | Public deployment verifier và release-manifest tool đã pass local/current staging public smoke; promotion, remote E2E, DNS/TLS/Auth và rollback remain open |
 | P20 | LOCAL SUPPORT ONLY | Initial operations and production rollback runbooks exist; alert, provider backup/restore, owner handoff and maintenance regression evidence remain open |

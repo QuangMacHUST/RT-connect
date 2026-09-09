@@ -26,30 +26,98 @@ function Add-Check {
       ok = $Ok
       status_code = $StatusCode
       details = $Details
-    })
+  })
+}
+
+function Invoke-PublicRequest {
+  param(
+    [string]$Url,
+    [ValidateSet('GET', 'POST')]
+    [string]$Method = 'GET',
+    [string]$Body = ''
+  )
+
+  $statusMarker = '__RT_CONNECT_HTTP_STATUS__'
+  $curlArguments = @(
+    '--silent',
+    '--show-error',
+    '--location',
+    '--max-time',
+    [string]$RequestTimeoutSec,
+    '--request',
+    $Method,
+    '--header',
+    'Accept: application/json',
+    '--write-out',
+    "`n$statusMarker%{http_code}"
+  )
+  if ($Body) {
+    $curlArguments += @('--header', 'Content-Type: application/json', '--data-raw', $Body)
+  }
+  $curlArguments += $Url
+
+  $rawResponse = (& curl.exe @curlArguments 2>&1 | Out-String)
+  if ($LASTEXITCODE -ne 0) {
+    throw $rawResponse.Trim()
+  }
+  $markerIndex = $rawResponse.LastIndexOf($statusMarker)
+  if ($markerIndex -lt 0) {
+    throw 'curl did not return an HTTP status marker.'
+  }
+  $bodyText = $rawResponse.Substring(0, $markerIndex).TrimEnd("`r", "`n")
+  $statusText = $rawResponse.Substring($markerIndex + $statusMarker.Length).Trim()
+  return [pscustomobject]@{
+    Body = $bodyText
+    StatusCode = [int]$statusText
+  }
 }
 
 function Get-JsonEndpoint {
   param([string]$Name, [string]$Url)
   try {
-    $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec $RequestTimeoutSec
+    $response = Invoke-PublicRequest -Url $Url
     if ($response.StatusCode -lt 200 -or $response.StatusCode -ge 300) {
       Add-Check -Name $Name -Url $Url -Ok $false -StatusCode $response.StatusCode -Details 'HTTP status is not 2xx.'
       return $null
     }
     try {
-      $payload = $response.Content | ConvertFrom-Json
+      $payload = $response.Body | ConvertFrom-Json
     }
     catch {
       Add-Check -Name $Name -Url $Url -Ok $false -StatusCode $response.StatusCode -Details 'Response is not valid JSON.'
       return $null
     }
-    return [pscustomobject]@{ Payload = $payload; StatusCode = $response.StatusCode }
+      return [pscustomobject]@{ Payload = $payload; StatusCode = $response.StatusCode }
   }
   catch {
     Add-Check -Name $Name -Url $Url -Ok $false -Details $_.Exception.Message
     return $null
   }
+}
+
+function Get-ExpectedUnauthorizedEndpoint {
+  param(
+    [string]$Name,
+    [string]$Url,
+    [ValidateSet('GET', 'POST')]
+    [string]$Method = 'GET',
+    [string]$Body = ''
+  )
+
+  $statusCode = 0
+  $details = ''
+  try {
+    $response = Invoke-PublicRequest -Url $Url -Method $Method -Body $Body
+    $statusCode = $response.StatusCode
+    $details = "observed_status=$statusCode"
+  }
+  catch {
+    $details = $_.Exception.Message
+  }
+
+  $finalDetails = if ($details) { $details } else { 'No HTTP response.' }
+  Add-Check -Name $Name -Url $Url -Ok ($statusCode -eq 401) -StatusCode $statusCode `
+    -Details $finalDetails
 }
 
 $healthResult = Get-JsonEndpoint -Name 'api.health' -Url "$ApiBaseUrl/api/v1/health"
@@ -103,21 +171,30 @@ if ($null -ne $openapiResult) {
     -Details ("member_invitation_routes_present={0}" -f $organizationLifecycleOk)
 }
 
+$smokeOrganizationId = '00000000-0000-0000-0000-000000000000'
+Get-ExpectedUnauthorizedEndpoint -Name 'api.organization.members.unauthenticated' `
+  -Url "$ApiBaseUrl/api/v1/organizations/$smokeOrganizationId/members"
+Get-ExpectedUnauthorizedEndpoint -Name 'api.organization.invitations.unauthenticated' `
+  -Url "$ApiBaseUrl/api/v1/organizations/$smokeOrganizationId/invitations"
+Get-ExpectedUnauthorizedEndpoint -Name 'api.organization.invitation_accept.unauthenticated' `
+  -Url "$ApiBaseUrl/api/v1/organizations/invitations/accept" -Method 'POST' `
+  -Body '{"token":"public-smoke-invalid-token"}'
+
 try {
-  $webResponse = Invoke-WebRequest -Uri $WebBaseUrl -UseBasicParsing -TimeoutSec $RequestTimeoutSec
+  $webResponse = Invoke-PublicRequest -Url $WebBaseUrl
   $webOk = $webResponse.StatusCode -ge 200 -and $webResponse.StatusCode -lt 300
   Add-Check -Name 'web.index' -Url $WebBaseUrl -Ok $webOk -StatusCode $webResponse.StatusCode `
-    -Details ("bytes={0}" -f ([Text.Encoding]::UTF8.GetByteCount($webResponse.Content)))
+    -Details ("bytes={0}" -f ([Text.Encoding]::UTF8.GetByteCount($webResponse.Body)))
 
-  $assetMatch = [regex]::Match($webResponse.Content, 'assets/[^"''\s]+\.js')
+  $assetMatch = [regex]::Match($webResponse.Body, 'assets/[^"''\s]+\.js')
   if (-not $assetMatch.Success) {
     Add-Check -Name 'web.bundle.discover' -Url $WebBaseUrl -Ok $false -StatusCode $webResponse.StatusCode `
       -Details 'No JavaScript asset was found in the public index.'
   }
   else {
     $bundleUrl = "$WebBaseUrl/$($assetMatch.Value)"
-    $bundleResponse = Invoke-WebRequest -Uri $bundleUrl -UseBasicParsing -TimeoutSec $RequestTimeoutSec
-    $bundleText = $bundleResponse.Content
+    $bundleResponse = Invoke-PublicRequest -Url $bundleUrl
+    $bundleText = $bundleResponse.Body
     $bundleOk = $bundleResponse.StatusCode -ge 200 -and $bundleResponse.StatusCode -lt 300
     Add-Check -Name 'web.bundle' -Url $bundleUrl -Ok $bundleOk -StatusCode $bundleResponse.StatusCode `
       -Details ("bytes={0}; sha256={1}" -f `

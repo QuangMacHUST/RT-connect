@@ -2,7 +2,7 @@
 
 - File: specification.md; version **1.17**; ngày 2026-09-09.
 - Nguồn nghiệp vụ: business-analysis.md v0.22.
-- Kế hoạch triển khai: plan.md v4.2, P0–P20.
+- Kế hoạch triển khai: plan.md v4.3, P0–P20.
 - Kiến trúc nền: technical-specification.md v1.15.
 - Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.17 giữ toàn bộ contract v1.16, làm rõ operation surface của dashboard vận hành P20 (`/health`, `/ready`, `/version` và queue metrics có xác thực) và chốt contract thực thi P4 cho membership/invitation: thành viên ngang quyền, token hash-at-rest, email-bound, one-time, expiry, active-context invariant và các endpoint cụ thể.
 
