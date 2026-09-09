@@ -10,3 +10,6 @@ The rendered build exposes its Git SHA through the build footer and bundle metad
 Railway may skip this service for API-only changes, so a staging release is accepted
 only after the web bundle SHA, `/api/v1/version` SHA, and schema revision agree in
 the public smoke evidence.
+
+Keep the parity marker in this service root as well; the API and web staging
+deployments must advance from the same release commit before public recheck.

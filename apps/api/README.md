@@ -13,3 +13,6 @@ commit. When the web service receives a web-only change, Railway may legitimatel
 skip the API deployment because of path filters. A release candidate is not
 considered integrated until the API and web service report the same Git SHA and
 schema revision in the staging smoke evidence.
+
+The parity marker is intentionally kept under the API service root so a
+web-only documentation commit cannot leave the API on an older candidate.
