@@ -1,0 +1,65 @@
+{
+  "schema_version": "rt-connect.p17-volume-benchmark.v1",
+  "captured_at_utc": "2026-09-09T08:29:39.099937+00:00",
+  "repository_sha": "e04b9cb7b60caea53c5d2a9bab51b790de77abb5",
+  "runtime": {
+    "python": "3.14.7",
+    "platform": "Linux-5.15.167.4-microsoft-standard-WSL2-x86_64-with-glibc2.41",
+    "execution": "docker-compose api service",
+    "image_digest": "sha256:7cc8beba348a15470db28f0c4c7f545f404bc64f31cea9d1b935b9cf96ad66bf",
+    "schema_revision": "20260909_0018",
+    "health_status": "ok",
+    "readiness_status": "ready"
+  },
+  "workload": {
+    "shape_frames_rows_columns": [
+      64,
+      128,
+      128
+    ],
+    "voxel_count": 1048576,
+    "roi": "full grid, one closed contour per frame",
+    "dose_levels_gy": [
+      1.0,
+      2.0,
+      3.0,
+      4.0
+    ],
+    "patient_data": false
+  },
+  "engine_key": "visual-dose.dvh",
+  "engine_version": "p17-dvh-1.1.0",
+  "result_oracle": {
+    "selected_voxel_count": 1048576,
+    "volume_cc": 12582.912000000002,
+    "dmean_gy": 2.5,
+    "dmin_gy": 1.0,
+    "dmax_gy": 4.0
+  },
+  "observations": [
+    {
+      "iteration": 1,
+      "elapsed_seconds": 0.7974651139999764,
+      "peak_traced_bytes": 69237022
+    },
+    {
+      "iteration": 2,
+      "elapsed_seconds": 0.8428859910000028,
+      "peak_traced_bytes": 69232277
+    },
+    {
+      "iteration": 3,
+      "elapsed_seconds": 0.8206197819999943,
+      "peak_traced_bytes": 69229613
+    }
+  ],
+  "summary": {
+    "repeats": 3,
+    "elapsed_seconds_min": 0.7974651139999764,
+    "elapsed_seconds_median": 0.8206197819999943,
+    "elapsed_seconds_max": 0.8428859910000028,
+    "peak_traced_bytes_max": 69237022,
+    "rss_measured": false,
+    "performance_gate": "NOT_ASSESSED"
+  }
+}
