@@ -339,6 +339,44 @@
     },
     "result": "PASS_WITH_BROWSER_FINALIZATION_OPEN"
   },
+  "report_builder_probe": {
+    "captured_at_utc": "2026-09-09T16:04:47.4313514Z",
+    "web_build_label_observed": "da963343e1b691c0d23358c2f4520b0d84f9c2e4",
+    "route": "/app/reports",
+    "source_type": "DVH",
+    "organization_id": "f5f0c4f1-a3ea-460e-85c4-d29671366a27",
+    "qa_case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+    "dvh_run_id": "8000ff9b-7a02-4cec-850e-e27e4fe50cc4",
+    "report_key": "710327d6-07b5-4b6c-b2dd-c03b52a73e01",
+    "revision_number": 1,
+    "title": "P17 staging DVH report smoke",
+    "content_sha256": "fd99a61aed10191ae169155bfd645c02ef56ffda2ded03384efe43b22d01ea85",
+    "source_snapshot": {
+      "captured_at_utc": "2026-09-09T16:03:24.863626Z",
+      "source_id_matches_dvh_run": true,
+      "source_run_status": "COMPLETED",
+      "source_engine_version": "p17-dvh-1.1.0",
+      "source_input_fingerprint": "ed432bafee35aada8fa7eb3a1ed7f50d5ea6322a5ba91af7b410bf1503621bd2",
+      "source_result_sha256": "a2826ddcb002916486886366e8cc50d3eabd3aa735afef18c9f3ca6e43d30a44",
+      "source_limit_binding": null,
+      "source_artifact_checksums_present": true,
+      "result": "PASS"
+    },
+    "export_probe": {
+      "export_job_id": "90dc7b8e-a0ec-44bd-a84a-3b0f421c772f",
+      "format": "JSON",
+      "byte_size": 10536,
+      "renderer_version": "report-renderer-0.1",
+      "browser_object_storage_document_observed": true,
+      "export_content_source_id_matches_dvh_run": true,
+      "export_content_sha256_matches_revision": true,
+      "signed_url_recorded": false,
+      "result": "PASS"
+    },
+    "no_recalculation": true,
+    "no_dvh_run_mutation": true,
+    "result": "PASS_REPORT_SNAPSHOT_AND_JSON_EXPORT"
+  },
   "local_verification": {
     "web_tests": "12 passed",
     "typecheck": "PASS",
@@ -383,6 +421,8 @@
     }
   },
   "open_gates": [
+    "browser export final filename finalization (payload content is already PASS)",
+    "P11/P16 limit or protocol binding staging evidence",
     "full P17 negative/fault/resource/volume evidence",
     "controlled staging resource and worker evidence",
     "release manifest and production promotion evidence"
