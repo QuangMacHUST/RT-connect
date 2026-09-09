@@ -460,7 +460,7 @@ Analytic fixtures: uniform dose box, unequal voxel sizes, sphere convergence, do
 
 ### 7.4. Workload và engineering SLO mục tiêu
 
-Những số dưới là budget nghiệm thu ban đầu, **chưa đo đạt**, cần ghi hardware/resources, software version, cold/warm cache, network và concurrent users trong P8/P18. Không coi gói 5 USD là bảo đảm capacity. P17 đã có local support measurement trong `docs/evidence/p17-local-volume-benchmark-20260909.json`: synthetic `64×128×128` (`1,048,576` voxel), median `1.1705 s`, peak Python-traced allocation `69,239,078` bytes; `performance_gate=NOT_ASSESSED` vì chưa đo RSS/container, concurrency và staging.
+Những số dưới là budget nghiệm thu ban đầu, **chưa đo đạt**, cần ghi hardware/resources, software version, cold/warm cache, network và concurrent users trong P8/P18. Không coi gói 5 USD là bảo đảm capacity. P17 đã có local support measurement trong `docs/evidence/p17-local-volume-benchmark-20260909.json`: synthetic `64×128×128` (`1,048,576` voxel), median `1.2667533 s`, peak Python-traced allocation `69,235,606` bytes; `performance_gate=NOT_ASSESSED` vì chưa đo RSS/container, concurrency và staging.
 
 | Nhóm | Workload chuẩn để đo | Target/gate |
 | :--- | :--- | :--- |

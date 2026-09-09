@@ -1703,7 +1703,7 @@ JWT -> resolve membership/org -> resolve case
 - P17 current slice là synchronous, physical-dose, dose-native grid; CT preview cũng synchronous/read-only. Đã có explicit P11/P16 actual/limit/margin adapter, DVH report source và CT pixel renderer/crosshair/LPS registration payload ở local candidate; chưa có worker queue cho DVH/CT workload lớn, deformable registration, CT series aggregation hoặc staging evidence đầy đủ cho binding/report/CT.
 - CT preview chỉ là bounded visual overlay trên shared Frame of Reference. Không suy ra image registration thành công từ UID giống nhau, không dùng default window/rescale làm clinical metadata, không cho phép output vượt resource policy và không biến overlay warning thành QA result.
 - P17 không tính deformable cumulative dose, không tự cộng dose giữa course, không sửa prescription/RTPLAN/TPS/PACS và không tự tạo QA PASS.
-- Benchmark local P17-W06 dùng `scripts/benchmark-p17-dvh.py` với dữ liệu DICOM tổng hợp tạm thời, mặc định `64×128×128` (`1,048,576` voxel), bốn mức dose lặp lại và ROI phủ toàn grid. Script chỉ đo elapsed time và `tracemalloc` peak, tự xóa file tạm, không ghi database/object/queue; `peak_traced_bytes` không được diễn giải thành RSS. Evidence hiện tại ghi median `1.1705 s`, max `69,239,078` bytes và `performance_gate=NOT_ASSESSED`. Muốn đóng performance gate phải chạy workload tương ứng trong container/worker có CPU/RAM/concurrency được pin, đo RSS và kiểm cả API responsiveness.
+- Benchmark local P17-W06 dùng `scripts/benchmark-p17-dvh.py` với dữ liệu DICOM tổng hợp tạm thời, mặc định `64×128×128` (`1,048,576` voxel), bốn mức dose lặp lại và ROI phủ toàn grid. Script chỉ đo elapsed time và `tracemalloc` peak, tự xóa file tạm, không ghi database/object/queue; `peak_traced_bytes` không được diễn giải thành RSS. Evidence hiện tại ghi median `1.2667533 s`, max `69,235,606` bytes và `performance_gate=NOT_ASSESSED`. Muốn đóng performance gate phải chạy workload tương ứng trong container/worker có CPU/RAM/concurrency được pin, đo RSS và kiểm cả API responsiveness.
 - Các phần mở phải có package/test/evidence riêng ở P17/P18; không dùng ảnh Stitch hoặc `/ready` 200 làm bằng chứng thay thế.
 
 ---
@@ -2176,7 +2176,7 @@ lineage/checksum và thời gian RPO/RTO trên candidate thật.
 
 ### 15.2. Hiệu năng mục tiêu ban đầu
 
-Các mục tiêu này là target kỹ thuật để đo trong phase triển khai, có thể điều chỉnh sau benchmark. P17 đã có một phép đo hỗ trợ local, không thay đổi trạng thái của các target bên dưới: `scripts/benchmark-p17-dvh.py --shape 64x128x128 --repeats 3` cho engine `p17-dvh-1.1.0` đạt median `1.1705 s` trên `1,048,576` voxel và peak Python-traced allocation `69,239,078` bytes. Vì chưa đo RSS/container, concurrent jobs, warm/cold policy và network/API, evidence này có trạng thái `NOT_ASSESSED` và không đóng Gamma large, worker capacity hay release gate:
+Các mục tiêu này là target kỹ thuật để đo trong phase triển khai, có thể điều chỉnh sau benchmark. P17 đã có một phép đo hỗ trợ local, không thay đổi trạng thái của các target bên dưới: `scripts/benchmark-p17-dvh.py --shape 64x128x128 --repeats 3` cho engine `p17-dvh-1.1.0` đạt median `1.2667533 s` trên `1,048,576` voxel và peak Python-traced allocation `69,235,606` bytes. Vì chưa đo RSS/container, concurrent jobs, warm/cold policy và network/API, evidence này có trạng thái `NOT_ASSESSED` và không đóng Gamma large, worker capacity hay release gate:
 
 - API metadata p95 dưới 500 ms trong tải thông thường.
 - Trang danh sách hỗ trợ pagination và không tải toàn bộ artifact.
