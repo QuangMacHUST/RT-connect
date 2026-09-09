@@ -1569,7 +1569,7 @@ Danh sách errors là baseline có giới hạn, không chứng minh bao phủ m
 - Source repository: core/errors.py, db/session.py, alembic/env.py, api/gamma.py, services/gamma_engine.py, services/artifact_validation.py, worker.py, web env/routes và fixture generator.
 - Công thức LQ cơ bản xuất phát từ business-analysis §15.3; recovery profile ở §6.3 là giả định user-defined của sản phẩm, không phải bảng hướng dẫn điều trị.
 
-## 13. Ma trận contract ở cấp operation và tính năng (baseline v1.15, retained in v1.16)
+## 13. Ma trận contract ở cấp operation và tính năng (baseline v1.16, retained in v1.17)
 
 Mục này là lớp nối giữa yêu cầu `FR-Pxx-yy` trong `business-analysis.md` và testcase `TC-Pxx-*` trong `plan.md`. Nó quy định mỗi phase phải expose hành vi nào, điều gì được coi là thành công, lỗi nào phải phân biệt và dữ liệu nào phải được giữ. Đây vẫn là contract mục tiêu; nội dung chưa có trong source phải được ghi `TARGET`, không được đọc như bằng chứng đã triển khai.
 
@@ -1679,7 +1679,7 @@ Không được gọi operation là `COMPLETED` nếu chưa có output bền v�
 4. **Trend:** chỉ aggregate các source có compatibility signature; điểm thiếu không được biến thành zero; drill-down phải quay về source run/case đúng organization.
 5. **Public deployment:** web/API/worker/schema/Auth/queue phải được kiểm theo cùng release manifest; PostgreSQL, Redis, worker và object bucket private theo topology; URL public không chứng minh workflow đã pass.
 
-## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.16
+## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.17
 
 Phần này biến các contract theo phase thành cấu trúc có thể dùng khi viết code, test và bàn giao. Nó không thay thế các field/algorithm contract ở mục 2–8; nó quy định cách chứng minh rằng các contract đó đã được thực thi trên một candidate cụ thể.
 

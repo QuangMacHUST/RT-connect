@@ -2,8 +2,8 @@
 
 - **Trạng thái:** DRAFT / LOCAL_SUPPORT_ONLY
 - **Phạm vi:** vận hành staging, pilot và production theo đúng release manifest
-- **Nguồn:** `business-analysis.md` v0.21, `specification.md` v1.16,
-  `technical-specification.md` v1.14, `plan.md` v4.1
+- **Nguồn:** `business-analysis.md` v0.22, `specification.md` v1.17,
+  `technical-specification.md` v1.15, `plan.md` v4.2
 - **Không phải:** bằng chứng đã cấu hình alert thật, provider backup/restore thật,
   RPO/RTO đã đạt hoặc tuyên bố production clinical readiness
 

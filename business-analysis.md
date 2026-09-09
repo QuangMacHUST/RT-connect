@@ -2066,7 +2066,7 @@ Bảng này là bản đồ ngắn gọn để không bỏ sót phase. `S` là w
 
 Không được dùng cột `S` để bỏ qua cột `E`; một workflow chỉ được gọi là “hoàn thiện” khi cả hai đã có expected/observed/evidence. Khi implementation chưa tồn tại, các mã này vẫn là target và phải giữ `NOT_RUN`, không tạo screenshot hoặc dữ liệu giả để lấp checklist.
 
-## 22. Ma trận hành vi ở cấp tính năng v0.21
+## 22. Ma trận hành vi ở cấp tính năng v0.22
 
 Mục này chuyển catalogue phase ở mục 21 thành một hợp đồng dễ dùng khi thiết kế màn hình, viết API và lập testcase. Mỗi `FR-Pxx-yy` là một nhóm tính năng có thể truy vết; không được coi một nhóm là hoàn thiện chỉ vì một nút trên giao diện đã xuất hiện. Các mô tả dưới đây là yêu cầu nghiệp vụ; field/API/transaction cụ thể được chuẩn hóa tiếp trong `specification.md`.
 
@@ -2151,7 +2151,7 @@ Không thể dự đoán mọi lỗi vendor, dataset hoặc hành vi người d�
 
 Một lỗi thực tế có thể được phát hiện ở production nhưng không được sửa trực tiếp bằng cách sửa DB hoặc xóa history. Phải tái hiện ở môi trường an toàn, phát hành bản sửa qua staging, kiểm chứng rollback/backup và sau đó mới promote. Điều này không tạo phân quyền; đó là quy trình bảo toàn dữ liệu và khả năng tái hiện của sản phẩm.
 
-## 23. Hợp đồng bàn giao nghiệp vụ v0.21
+## 23. Hợp đồng bàn giao nghiệp vụ v0.22
 
 Mục này là lớp điều hành cuối của tài liệu nghiệp vụ. Mục tiêu không phải tạo thêm vai trò hoặc thủ tục phê duyệt, mà là buộc mỗi tính năng phải có một đường đi hoàn chỉnh từ ý định của người dùng đến kết quả có thể kiểm chứng. Một màn hình có đủ nút, một API trả HTTP 200 hoặc một deployment báo `Online` chưa được coi là hoàn thành nghiệp vụ.
 

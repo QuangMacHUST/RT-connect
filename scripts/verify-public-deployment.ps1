@@ -3,6 +3,7 @@ param(
   [string]$WebBaseUrl = 'https://rt-connect-web-staging-staging.up.railway.app',
   [string]$ExpectedVersion = '',
   [string]$ExpectedSchemaRevision = '',
+  [int]$RequestTimeoutSec = 20,
   [string]$OutputPath = ''
 )
 
@@ -31,7 +32,7 @@ function Add-Check {
 function Get-JsonEndpoint {
   param([string]$Name, [string]$Url)
   try {
-    $response = Invoke-WebRequest -Uri $Url -UseBasicParsing
+    $response = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec $RequestTimeoutSec
     if ($response.StatusCode -lt 200 -or $response.StatusCode -ge 300) {
       Add-Check -Name $Name -Url $Url -Ok $false -StatusCode $response.StatusCode -Details 'HTTP status is not 2xx.'
       return $null
@@ -94,10 +95,16 @@ if ($null -ne $openapiResult) {
   $routeOk = $openapiText.Contains('/dvh/ct-preview')
   Add-Check -Name 'api.openapi.ct_preview_route' -Url "$ApiBaseUrl/api/v1/openapi.json" `
     -Ok $routeOk -StatusCode $openapiResult.StatusCode -Details ("route_present={0}" -f $routeOk)
+  $organizationLifecycleOk = $openapiText.Contains('/api/v1/organizations/{organization_id}/members') `
+    -and $openapiText.Contains('/api/v1/organizations/{organization_id}/invitations') `
+    -and $openapiText.Contains('/api/v1/organizations/invitations/accept')
+  Add-Check -Name 'api.openapi.organization_membership_routes' -Url "$ApiBaseUrl/api/v1/openapi.json" `
+    -Ok $organizationLifecycleOk -StatusCode $openapiResult.StatusCode `
+    -Details ("member_invitation_routes_present={0}" -f $organizationLifecycleOk)
 }
 
 try {
-  $webResponse = Invoke-WebRequest -Uri $WebBaseUrl -UseBasicParsing
+  $webResponse = Invoke-WebRequest -Uri $WebBaseUrl -UseBasicParsing -TimeoutSec $RequestTimeoutSec
   $webOk = $webResponse.StatusCode -ge 200 -and $webResponse.StatusCode -lt 300
   Add-Check -Name 'web.index' -Url $WebBaseUrl -Ok $webOk -StatusCode $webResponse.StatusCode `
     -Details ("bytes={0}" -f ([Text.Encoding]::UTF8.GetByteCount($webResponse.Content)))
@@ -109,7 +116,7 @@ try {
   }
   else {
     $bundleUrl = "$WebBaseUrl/$($assetMatch.Value)"
-    $bundleResponse = Invoke-WebRequest -Uri $bundleUrl -UseBasicParsing
+    $bundleResponse = Invoke-WebRequest -Uri $bundleUrl -UseBasicParsing -TimeoutSec $RequestTimeoutSec
     $bundleText = $bundleResponse.Content
     $bundleOk = $bundleResponse.StatusCode -ge 200 -and $bundleResponse.StatusCode -lt 300
     Add-Check -Name 'web.bundle' -Url $bundleUrl -Ok $bundleOk -StatusCode $bundleResponse.StatusCode `
@@ -119,6 +126,10 @@ try {
     $ctPreviewOk = $bundleText.Contains('CT ANATOMY PREVIEW')
     Add-Check -Name 'web.bundle.ct_preview_controls' -Url $bundleUrl -Ok $ctPreviewOk `
       -StatusCode $bundleResponse.StatusCode -Details ("ct_preview_controls_present={0}" -f $ctPreviewOk)
+    $organizationLifecycleUiOk = $bundleText.Contains('Nhận lời mời RT-CONNECT') `
+      -and $bundleText.Contains('Thành viên ngang quyền')
+    Add-Check -Name 'web.bundle.organization_membership_ui' -Url $bundleUrl -Ok $organizationLifecycleUiOk `
+      -StatusCode $bundleResponse.StatusCode -Details ("member_invitation_ui_present={0}" -f $organizationLifecycleUiOk)
     if ($ExpectedVersion) {
       $buildLabelOk = $bundleText.Contains($ExpectedVersion)
       Add-Check -Name 'web.bundle.expected_version' -Url $bundleUrl -Ok $buildLabelOk `

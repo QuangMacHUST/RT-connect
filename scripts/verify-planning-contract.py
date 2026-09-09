@@ -54,10 +54,10 @@ def verify(root: Path) -> dict[str, object]:
             texts[name] = path.read_text(encoding="utf-8")
 
     expected_versions = {
-        "business": (r"\*\*Phiên bản tài liệu:\*\*\s*([0-9]+\.[0-9]+)", "0.21"),
-        "specification": (r"version \*\*([0-9]+\.[0-9]+)\*\*", "1.16"),
-        "technical": (r"\*\*Phiên bản:\*\*\s*([0-9]+\.[0-9]+)", "1.14"),
-        "plan": (r"Phiên bản:\s*\*\*([0-9]+\.[0-9]+)\*\*", "4.1"),
+        "business": (r"\*\*Phiên bản tài liệu:\*\*\s*([0-9]+\.[0-9]+)", "0.22"),
+        "specification": (r"version \*\*([0-9]+\.[0-9]+)\*\*", "1.17"),
+        "technical": (r"\*\*Phiên bản:\*\*\s*([0-9]+\.[0-9]+)", "1.15"),
+        "plan": (r"Phiên bản:\s*\*\*([0-9]+\.[0-9]+)\*\*", "4.2"),
     }
     for name, (pattern, expected) in expected_versions.items():
         observed = _version(pattern, texts.get(name, ""))
@@ -69,10 +69,10 @@ def verify(root: Path) -> dict[str, object]:
         )
 
     references = {
-        "business": "plan.md v4.1",
-        "specification": "plan.md v4.1",
-        "technical": "plan.md v4.1",
-        "progress": "plan.md v4.1",
+        "business": "plan.md v4.2",
+        "specification": "plan.md v4.2",
+        "technical": "plan.md v4.2",
+        "progress": "plan.md v4.2",
     }
     for name, reference in references.items():
         code_span_reference = f"`{reference.split()[0]}` {reference.split()[1]}"
@@ -88,7 +88,8 @@ def verify(root: Path) -> dict[str, object]:
     specification = texts.get("specification", "")
 
     required_markers = {
-        "business.feature_card": (business, "## 23. Hợp đồng bàn giao nghiệp vụ v0.21"),
+        "business.feature_card": (business, "## 23. Hợp đồng bàn giao nghiệp vụ v0.22"),
+        "business.p4_addendum": (business, "## 24. Đặc tả nghiệp vụ bổ sung P4"),
         "business.change_propagation": (business, "### 23.5. Quy tắc lan truyền thay đổi"),
         "specification.operation_contract": (specification, "### 14.1. Hợp đồng operation tối thiểu"),
         "specification.error_record": (specification, "### 14.2. Error/recovery record chuẩn"),

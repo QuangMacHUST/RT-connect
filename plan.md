@@ -36,7 +36,7 @@ Test chỉ dùng NOT_RUN / PASS / FAIL / BLOCKED / NOT_APPLICABLE. NOT_APPLICABL
 | :--- | :--- | :--- |
 | P0–P1 | Có registry, CI, local Compose và migration evidence trong progress log | Đối soát toàn bộ FR mới, contract errors/version và clean setup nếu thay runtime. |
 | P2–P3 | Có staged Auth/onboarding/dashboard và health smoke | Kiểm session expiry, runtime config, schema readiness và dashboard đầy đủ; không suy diễn từ session còn đăng nhập. |
-| P4–P5 | CRUD hierarchy/folder/case có staged smoke; P4 invitation/member slice đã có local code/test trên schema `20260909_0018` | P4 migration/deploy/browser invitation, DB hash/status/audit, active-context/last-member/concurrency; P5 restore, simultaneous edits, complete filter/history là gate bổ sung cần kiểm/triển khai. |
+| P4–P5 | CRUD hierarchy/folder/case có staged smoke; P4 invitation/member slice đã deploy staging và readiness đã lên schema `20260909_0018` | P4 Auth/two-identity browser flow, DB hash/status/audit, active-context/last-member/concurrency/timeout và version-label parity; P5 restore, simultaneous edits, complete filter/history là gate bổ sung cần kiểm/triển khai. |
 | P6–P7 | Synthetic upload/validation và Machine QA evaluate/rerun/compare đã được ghi | Round-trip checksum evidence, declared-type mismatch, interrupted upload, autosave/concurrency và broader boundary tests cần kiểm. |
 | P8 | 2D JSON/Redis worker/retry và 3D PSQA RTDOSE + measurement đã có staging evidence; slice coverage policy và fenced dispatch đã có local code/test | Semantic/scientific independent oracle, lease/outbox failure injection, bounded retry/resource limits và large workload chưa được coi là hoàn tất. |
 | P9 | Có implementation slice backend/frontend và local tests cho template, revision, block, snapshot, renderer, export và idempotency; authenticated browser smoke đã tạo revision và tải JSON/CSV/PDF/PNG trên staging | Recheck trên candidate mới; storage failure/retry, visual byte review và build manifest vẫn là gate riêng. |
@@ -339,6 +339,7 @@ Các quy tắc dưới đây là contract HTTP chung của plan; mỗi phase ph�
 - **Contract:** specification §8 / SPEC-P01; các contract chung §2–§7 áp dụng khi có liên quan.
 - **Owner thực thi:** người/agent phụ trách module ghi tên trong checkpoint; người dùng cung cấp dữ liệu hoặc đánh giá workflow khi cần, không có cấp phê duyệt theo chức danh.
 - **Trạng thái test v2:** NOT_RUN cho đến khi có evidence theo ID dưới đây; không kế thừa PASS tự động từ test cũ.
+- **Checkpoint staging mới nhất (2026-09-09):** source commit `4d3e0d3` đã được public staging phục vụ; API `/api/v1/ready` trả `200` với schema `20260909_0018`, OpenAPI đã có member/invitation routes, và các route mới không có Auth trả `401`. Đây mới là deployment/readiness evidence. API/web vẫn báo effective version `65dd52b` do `APP_VERSION`/`VITE_APP_VERSION` trên Railway chưa được cập nhật; phải sửa config label và chạy lại parity trước khi ghi release evidence. Auth browser với hai identity, PostgreSQL row/hash/status/audit, replay/revoke/expiry/context/concurrency/timeout vẫn mở.
 
 ### Workflow P1
 
@@ -529,9 +530,9 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 ### Work packages P4
 
 - [ ] P04-W01 — Hoàn thiện CRUD/search/pagination và uniqueness scoped organization.
-- [ ] P04-W02 — Tạo invitation một lần, expiry, accept đúng verified identity; không tự join bằng domain email. **Local slice:** model/API/UI đã có; staging migration và browser evidence còn mở.
+- [ ] P04-W02 — Tạo invitation một lần, expiry, accept đúng verified identity; không tự join bằng domain email. **Local slice:** model/API/UI đã có; staging migration/readiness pass, browser/Auth và persistence evidence còn mở.
 - [ ] P04-W03 — Bổ sung optimistic revision cho sửa đồng thời và kiểm tra active parent.
-- [ ] P04-W04 — Hoàn thiện archive/restore, membership lifecycle và audit; không xây action roles. **Local slice:** member toggle/last-active/audit đã có; archive/restore và staging evidence còn mở.
+- [ ] P04-W04 — Hoàn thiện archive/restore, membership lifecycle và audit; không xây action roles. **Local slice:** member toggle/last-active/audit đã có; archive/restore, browser lifecycle, direct DB và staging version evidence còn mở.
 - [ ] P04-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P04-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
 
@@ -2111,7 +2112,7 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 > Đoạn này là mô tả của revision v4.0 trước đó; trạng thái hiện hành của bộ tài liệu nằm ở mục 7.3.
 
-Đợt rebaseline ban đầu đã tạo BA v0.20, specification v1.14, technical-specification v1.11 và plan v3.5; các bản cập nhật kế tiếp giữ lịch sử đó và đã nâng plan lên v3.9/technical-specification v1.12. Revision hiện tại là BA v0.21, specification v1.15, technical-specification v1.13 và plan v4.0, bổ sung feature-card/handoff, operation/error/evidence record, dependency graph và change-impact gate. Bộ tài liệu hiện có ma trận hành vi ở cấp tính năng, từ điển trạng thái, error taxonomy, operation/evidence contract, B01–B12 và ma trận bao phủ P0–P20. P16 đã có implementation local và staging browser smoke trên migration `20260908_0016`, còn direct PostgreSQL/scope/fault/release closure vẫn mở. P17 đã có pure engine/API/UI/migration, explicit P11/P16 limit binding, DVH report source và bounded CT preview local với S12–S16/E24–E30; staging DVH/CT E2E, protocol compatibility, fault/volume, independent oracle và release evidence vẫn mở. P18 hiện có local integrated journey, local browser support matrix và local backup/restore support nhưng staging fault/restore/pilot vẫn mở. P20 đã có runbook support artifact nhưng alert/restore/owner evidence chưa có. Không phase nào được đánh dấu `DONE-v2` chỉ vì local test, HTTP 200 hoặc Railway báo Online.
+Đợt rebaseline ban đầu đã tạo BA v0.20, specification v1.14, technical-specification v1.11 và plan v3.5; các bản cập nhật kế tiếp giữ lịch sử đó và đã nâng plan lên v3.9/technical-specification v1.12. Revision hiện tại là BA v0.22, specification v1.17, technical-specification v1.15 và plan v4.2, bổ sung feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate và contract membership/invitation P4. Bộ tài liệu hiện có ma trận hành vi ở cấp tính năng, từ điển trạng thái, error taxonomy, operation/evidence contract, B01–B12 và ma trận bao phủ P0–P20. P16 đã có implementation local và staging browser smoke trên migration `20260908_0016`, còn direct PostgreSQL/scope/fault/release closure vẫn mở. P17 đã có pure engine/API/UI/migration, explicit P11/P16 limit binding, DVH report source và bounded CT preview local với S12–S16/E24–E30; staging DVH/CT E2E, protocol compatibility, fault/volume, independent oracle và release evidence vẫn mở. P18 hiện có local integrated journey, local browser support matrix và local backup/restore support nhưng staging fault/restore/pilot vẫn mở. P20 đã có runbook support artifact nhưng alert/restore/owner evidence chưa có. Không phase nào được đánh dấu `DONE-v2` chỉ vì local test, HTTP 200 hoặc Railway báo Online.
 
 
 ### 7.3. Revision hiện hành v4.2

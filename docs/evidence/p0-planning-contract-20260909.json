@@ -1,12 +1,12 @@
 {
   "schema_version": "rt-connect.planning-contract-verification.v1",
-  "captured_at_utc": "2026-09-09T03:04:18.795971+00:00",
+  "captured_at_utc": "2026-09-09T06:08:42.882347+00:00",
   "repository": "E:\\hoctap\\2026\\RT-connect",
   "document_versions": {
-    "business": "0.21",
-    "specification": "1.16",
-    "technical": "1.14",
-    "plan": "4.1"
+    "business": "0.22",
+    "specification": "1.17",
+    "technical": "1.15",
+    "plan": "4.2"
   },
   "phase_count": 21,
   "passed": true,
@@ -40,47 +40,52 @@
     {
       "name": "version.business",
       "ok": true,
-      "details": "expected=0.21; observed=0.21"
+      "details": "expected=0.22; observed=0.22"
     },
     {
       "name": "version.specification",
       "ok": true,
-      "details": "expected=1.16; observed=1.16"
+      "details": "expected=1.17; observed=1.17"
     },
     {
       "name": "version.technical",
       "ok": true,
-      "details": "expected=1.14; observed=1.14"
+      "details": "expected=1.15; observed=1.15"
     },
     {
       "name": "version.plan",
       "ok": true,
-      "details": "expected=4.1; observed=4.1"
+      "details": "expected=4.2; observed=4.2"
     },
     {
       "name": "reference.business.plan",
       "ok": true,
-      "details": "required=plan.md v4.1 or `plan.md` v4.1"
+      "details": "required=plan.md v4.2 or `plan.md` v4.2"
     },
     {
       "name": "reference.specification.plan",
       "ok": true,
-      "details": "required=plan.md v4.1 or `plan.md` v4.1"
+      "details": "required=plan.md v4.2 or `plan.md` v4.2"
     },
     {
       "name": "reference.technical.plan",
       "ok": true,
-      "details": "required=plan.md v4.1 or `plan.md` v4.1"
+      "details": "required=plan.md v4.2 or `plan.md` v4.2"
     },
     {
       "name": "reference.progress.plan",
       "ok": true,
-      "details": "required=plan.md v4.1 or `plan.md` v4.1"
+      "details": "required=plan.md v4.2 or `plan.md` v4.2"
     },
     {
       "name": "marker.business.feature_card",
       "ok": true,
-      "details": "required=## 23. Hợp đồng bàn giao nghiệp vụ v0.21"
+      "details": "required=## 23. Hợp đồng bàn giao nghiệp vụ v0.22"
+    },
+    {
+      "name": "marker.business.p4_addendum",
+      "ok": true,
+      "details": "required=## 24. Đặc tả nghiệp vụ bổ sung P4"
     },
     {
       "name": "marker.business.change_propagation",
