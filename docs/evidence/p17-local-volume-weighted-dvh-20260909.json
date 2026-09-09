@@ -2,7 +2,7 @@
   "schema_version": "rt-connect.p17-volume-weighted-dvh-evidence.v1",
   "captured_at_utc": "2026-09-09T07:55:51.2113573Z",
   "scope": "local P17 DVH engine volume weighting and cumulative-DVH metric oracle",
-  "repository_sha": "7377aad3cafa86d00260745a1d49344ce747df4d",
+  "repository_sha": "cdf4372f530880abcc6a097c7b90f699f36135ba",
   "engine_key": "visual-dose.dvh",
   "engine_version": "p17-dvh-1.1.0",
   "verification": {
