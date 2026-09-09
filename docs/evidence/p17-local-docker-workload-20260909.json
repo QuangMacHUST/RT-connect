@@ -1,7 +1,7 @@
 {
   "schema_version": "rt-connect.p17-docker-workload-verification.v1",
-  "captured_at_utc": "2026-09-09T08:34:31.8037534Z",
-  "repository_sha": "b06fa0d73833c100e3df51788509ac67344b6ac5",
+  "captured_at_utc": "2026-09-09T08:43:01.1514284Z",
+  "repository_sha": "4c0a1693cd28ffb05fe66fa60a8bb77999367e84",
   "execution": {
     "compose_file": "docker-compose.yml",
     "service": "api",
@@ -47,25 +47,25 @@
       "observations": [
         {
           "iteration": 1,
-          "elapsed_seconds": 1.0297459490000165,
+          "elapsed_seconds": 0.9846075989999008,
           "peak_traced_bytes": 69237022
         },
         {
           "iteration": 2,
-          "elapsed_seconds": 0.9338707680000198,
+          "elapsed_seconds": 1.0098538839999947,
           "peak_traced_bytes": 69232277
         },
         {
           "iteration": 3,
-          "elapsed_seconds": 0.9256525140000349,
+          "elapsed_seconds": 0.980230215000006,
           "peak_traced_bytes": 69229613
         }
       ],
       "summary": {
         "repeats": 3,
-        "elapsed_seconds_min": 0.9256525140000349,
-        "elapsed_seconds_median": 0.9338707680000198,
-        "elapsed_seconds_max": 1.0297459490000165,
+        "elapsed_seconds_min": 0.980230215000006,
+        "elapsed_seconds_median": 0.9846075989999008,
+        "elapsed_seconds_max": 1.0098538839999947,
         "peak_traced_bytes_max": 69237022,
         "rss_measured": false,
         "performance_gate": "NOT_ASSESSED"
@@ -100,25 +100,25 @@
       "observations": [
         {
           "iteration": 1,
-          "elapsed_seconds": 1.0413936909999961,
+          "elapsed_seconds": 1.048060740999972,
           "peak_traced_bytes": 69237022
         },
         {
           "iteration": 2,
-          "elapsed_seconds": 0.9282509459999915,
+          "elapsed_seconds": 0.938301790999958,
           "peak_traced_bytes": 69232277
         },
         {
           "iteration": 3,
-          "elapsed_seconds": 0.9017110799999841,
+          "elapsed_seconds": 0.9419812820000288,
           "peak_traced_bytes": 69229613
         }
       ],
       "summary": {
         "repeats": 3,
-        "elapsed_seconds_min": 0.9017110799999841,
-        "elapsed_seconds_median": 0.9282509459999915,
-        "elapsed_seconds_max": 1.0413936909999961,
+        "elapsed_seconds_min": 0.938301790999958,
+        "elapsed_seconds_median": 0.9419812820000288,
+        "elapsed_seconds_max": 1.048060740999972,
         "peak_traced_bytes_max": 69237022,
         "rss_measured": false,
         "performance_gate": "NOT_ASSESSED"
@@ -127,26 +127,26 @@
   ],
   "container_memory_sampling": {
     "sample_count": 3,
-    "max_sampled_bytes": 305659904.0,
-    "max_sampled_percent": 3.81,
+    "max_sampled_bytes": 357878989.0,
+    "max_sampled_percent": 4.46,
     "samples": [
       {
-        "captured_at_utc": "2026-09-09T08:34:27.7523001Z",
-        "memory_text": "288.2MiB",
-        "memory_bytes": 302199603,
-        "memory_percent": 3.77
+        "captured_at_utc": "2026-09-09T08:42:57.0705399Z",
+        "memory_text": "337.7MiB",
+        "memory_bytes": 354104115,
+        "memory_percent": 4.41
       },
       {
-        "captured_at_utc": "2026-09-09T08:34:29.6811099Z",
-        "memory_text": "291.5MiB",
-        "memory_bytes": 305659904,
-        "memory_percent": 3.81
+        "captured_at_utc": "2026-09-09T08:42:59.0488229Z",
+        "memory_text": "341.3MiB",
+        "memory_bytes": 357878989,
+        "memory_percent": 4.46
       },
       {
-        "captured_at_utc": "2026-09-09T08:34:31.6837839Z",
-        "memory_text": "128.8MiB",
-        "memory_bytes": 135056589,
-        "memory_percent": 1.68
+        "captured_at_utc": "2026-09-09T08:43:01.0517470Z",
+        "memory_text": "133.2MiB",
+        "memory_bytes": 139670323,
+        "memory_percent": 1.74
       }
     ],
     "is_peak_rss": false
