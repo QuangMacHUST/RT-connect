@@ -17,3 +17,6 @@ The verifier result is a release gate, not just a visual browser check.
 
 P17 release marker: DVH exposes explicit P16/P11 source binding against the
 same API contract; validate the selected source and result provenance in staging.
+
+P19 evidence marker: the `ddfb434` public verifier result is recorded in the
+repository progress log; keep API/web/worker source parity on the next release.
