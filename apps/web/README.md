@@ -28,8 +28,8 @@ email-bound invitation revoke and expiry/reissue lifecycle. Keep this marker in
 the web service root so the API, worker and web services are rebuilt from the
 same commit before the next public source-parity check.
 
-Latest staging parity evidence: `p19-staging-public-smoke-20260910-ec50990.json`
-records API, worker and web source SHA `ec50990395e9bb4b7182ff48c3b2a8e4b2eeb1ca`
+Latest staging parity evidence: `p19-staging-public-smoke-20260910-85ecb0e.json`
+records API, worker and web source SHA `85ecb0ebb025220a79cc82977049d2e16340efb0`
 with schema `20260909_0019`; keep this marker aligned when progress/evidence changes.
 
 Current P17 staging fixture marker: the authenticated case recheck keeps the
@@ -45,7 +45,7 @@ three services from the same source commit.
 P8 staging marker: the existing synthetic RTDOSE reference was rechecked through
 the authenticated Gamma workspace with the 3D measurement fixture; the saved run
 reported `8/8 PASS`. The corresponding browser evidence is
-`p8-staging-rtdose-browser-20260910-ec50990.json`, and the local independent-oracle
+`p8-staging-rtdose-browser-20260910-85ecb0e.json`, and the local independent-oracle
 evidence is `p8-independent-gamma-oracle.json` with `6/6` cases PASS.
 
 Final staging parity marker (2026-09-10): API, worker and web must be rebuilt
