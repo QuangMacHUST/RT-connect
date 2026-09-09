@@ -310,6 +310,47 @@ def test_dvh_api_validates_saves_replays_exports_and_scopes_inputs(tmp_path: Pat
         assert outsider.json()["code"] == "ORGANIZATION_SCOPE_MISMATCH"
 
 
+def test_dvh_saved_snapshot_remains_readable_after_source_bytes_change(tmp_path: Path) -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[artifact_storage] = lambda: storage
+        client.app.dependency_overrides[dvh_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+
+        dose_path = tmp_path / "dose.dcm"
+        structure_path = tmp_path / "structures.dcm"
+        frame_uid = _dose_file(dose_path)
+        _structure_file(structure_path, frame_uid)
+        dose_payload = dose_path.read_bytes()
+        dose = _upload_dicom(client, case_id, "dose.dcm", dose_payload, "REFERENCE")
+        structure = _upload_dicom(
+            client, case_id, "structures.dcm", structure_path.read_bytes(), "RTSTRUCT"
+        )
+        base = f"/api/v1/organizations/{organization.id}/qa-cases/{case_id}/dvh"
+        body = _dvh_body(
+            str(dose["id"]), str(structure["id"]), "dvh-api-snapshot-source-drift"
+        )
+
+        created = client.post(f"{base}/runs", json=body)
+        assert created.status_code == 201, created.text
+        run = created.json()
+        expected_input = deepcopy(run["input_snapshot"])
+        expected_result = deepcopy(run["result_snapshot"])
+
+        dose_key = next(key for key, value in storage.objects.items() if value == dose_payload)
+        storage.objects[dose_key] = dose_payload + b"changed-after-run-persisted"
+
+        detail = client.get(f"{base}/runs/{run['id']}")
+        assert detail.status_code == 200, detail.text
+        assert detail.json()["input_snapshot"] == expected_input
+        assert detail.json()["result_snapshot"] == expected_result
+
+        exported = client.get(f"{base}/runs/{run['id']}/export?export_format=JSON")
+        assert exported.status_code == 200, exported.text
+        assert exported.json()["input_snapshot"] == expected_input
+        assert exported.json()["result_snapshot"] == expected_result
+
+
 def test_dvh_api_rejects_archived_case_and_detects_changed_source(tmp_path: Path) -> None:
     storage = InMemoryObjectStorage()
     with _workspace_client() as (client, organization):

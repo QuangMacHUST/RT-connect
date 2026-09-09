@@ -185,6 +185,22 @@
       "result": "PASS"
     }
   },
+  "snapshot_recheck": {
+    "captured_at_utc": "2026-09-09T14:53:40.178469+00:00",
+    "execution": "Read-only PostgreSQL recheck after the object-storage byte re-hash; no UPDATE, DELETE, or application mutation was issued.",
+    "run_id": "8000ff9b-7a02-4cec-850e-e27e4fe50cc4",
+    "created_at": "2026-09-09 13:38:57.94952+00:00",
+    "updated_at": "2026-09-09 13:38:57.94952+00:00",
+    "request_fingerprint": "ed432bafee35aada8fa7eb3a1ed7f50d5ea6322a5ba91af7b410bf1503621bd2",
+    "result_sha256": "a2826ddcb002916486886366e8cc50d3eabd3aa735afef18c9f3ca6e43d30a44",
+    "assertions": {
+      "snapshot_fields_present": true,
+      "created_equals_updated": true,
+      "fingerprint_matches_saved_run": true,
+      "result_sha256_matches_saved_run": true,
+      "result": "PASS"
+    }
+  },
   "dvh_saved_run": {
     "run_id": "8000ff9b-7a02-4cec-850e-e27e4fe50cc4",
     "engine_version": "p17-dvh-1.1.0",
