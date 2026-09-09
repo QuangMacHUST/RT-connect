@@ -3,7 +3,7 @@
 ## Documentation and implementation rebaseline — 2026-09-09
 
 Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.19,
-`technical-specification.md` v1.18 và `plan.md` v4.8. Dòng rebaseline lịch sử ngay dưới đây
+`technical-specification.md` v1.18 và `plan.md` v4.9. Dòng rebaseline lịch sử ngay dưới đây
 giữ nguyên để truy vết; không dùng các phiên bản cũ đó làm authority.
 
 `business-analysis.md` v0.21, `specification.md` v1.15, `technical-specification.md` v1.13 và `plan.md` v4.0 bổ sung feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate, state contract, testcase, workflow, error/recovery contract và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
@@ -74,7 +74,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | `business-analysis.md` | 0.22 | Business source; detailed feature behavior/workflow/error/recovery/state matrix, business feature cards, P4 membership/invitation addendum, phase handoff and P0–P20 contracts |
 | `specification.md` | 1.19 | Behavior/data/error/state/numeric contracts; operation/evidence record, P17 Docker workload record semantics including cgroup observation, change-impact/release manifest, P20 status/readiness surface and exact P4/P10/P11/P12/P13/P14/P15/P16/P17 contracts including binding/report/CT preview |
 | `technical-specification.md` | 1.18 | Architecture reference; Railway source-identifiable release metadata, bounded-context implementation addenda, P4 invitation schema/API, P17 workload verifier/memory semantics including cgroup observation, P20 status/readiness dashboard boundary, resource policy, CT preview adapter, P18 local backup/restore support and cross-document execution references |
-| `plan.md` | 4.8 | Phase/workflow/S-E/C/B tests, DoR/DoD, dependency graph, execution gates, execution ledger, full coverage matrix, P4 invitation/member work packages, P17 local workload checkpoint with cgroup observation, P20 status/readiness dashboard package, binding/report/CT work packages, backup/restore support, local browser matrix, operations runbooks and staging gates |
+| `plan.md` | 4.9 | Phase/workflow/S-E/C/B tests, DoR/DoD, dependency graph, execution gates, execution ledger, full coverage matrix, P4 invitation/member work packages, P17 local workload checkpoint with cgroup observation, P20 status/readiness dashboard package, binding/report/CT work packages, backup/restore support, local browser matrix, source-parity recovery rule, operations runbooks and staging gates |
 
 ## Phase status
 
@@ -350,7 +350,7 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 ## P17 Docker cgroup memory observation — local support rerun 2026-09-09
 
 - `scripts/verify-p17-docker-workload.ps1` now reads cgroup v1 `memory.current`, `memory.max_usage_in_bytes` and `memory.limit_in_bytes` when available, in addition to sparse `docker stats` samples. The rerun kept 2 concurrent jobs × 3 repeats, 6/6 identical engine/oracle results, `/health=ok`, `/ready=ready`, schema `20260909_0018`, and no patient data.
-- The API container reported cgroup current `148,406,272` bytes and peak `367,915,008` bytes since container start; the local cgroup limit is unbounded/sentinel. These numbers are explicitly `is_peak_rss=false` and are not a performance pass. Evidence was refreshed at `docs/evidence/p17-local-docker-workload-20260909.json`; the contract wording is synchronized in `specification.md` v1.19, `technical-specification.md` v1.18 and `plan.md` v4.8.
+- The API container reported cgroup current `148,406,272` bytes and peak `367,915,008` bytes since container start; the local cgroup limit is unbounded/sentinel. These numbers are explicitly `is_peak_rss=false` and are not a performance pass. Evidence was refreshed at `docs/evidence/p17-local-docker-workload-20260909.json`; the contract wording is synchronized in `specification.md` v1.19, `technical-specification.md` v1.18 and `plan.md` v4.9.
 
 ## P17 explicit limit binding and Report Builder source — local candidate verified 2026-09-08
 
@@ -430,3 +430,11 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - JSON/CSV export payloads were captured again from the browser Downloads directory. JSON (`17,738` bytes) parsed and matched the run/result SHA; CSV (`10,478` bytes, 21 rows) parsed and matched case/engine/result SHA. Both files remain `.crdownload` in the Edge/CUA harness, so final filename finalization is **UNVERIFIED**. The application-content sub-gate is PASS; the browser/runtime finalization observation remains open and is not silently promoted to PASS.
 - Updated evidence: `docs/evidence/p17-staging-dvh-ct-browser-20260909.json` (`latest_runtime_recheck`) and `docs/evidence/p19-staging-public-smoke-20260909-7a340b2.json`. P17 remains `IN_PROGRESS`; remaining gates are browser finalization evidence, full negative/fault/resource/volume checks, binding/report staging evidence, worker/release manifest and production promotion.
 - Report-source follow-up: Report Builder đã tạo revision 1 `P17 staging DVH report smoke` từ đúng saved run `8000ff9b-7a02-4cec-850e-e27e4fe50cc4`; snapshot SHA `fd99a61aed10191ae169155bfd645c02ef56ffda2ded03384efe43b22d01ea85`, input fingerprint và result SHA khớp run. JSON export object-storage document báo `10,536` bytes, renderer `report-renderer-0.1`, source ID và content SHA khớp; không rerun DVH và không mutation `DVHAnalysisRun`. Evidence nằm trong `report_builder_probe` của `docs/evidence/p17-staging-dvh-ct-browser-20260909.json`. P11/P16 limit/protocol binding vẫn chưa được gắn và tiếp tục là gate riêng.
+
+## P17/P19 source-parity recovery — 2026-09-09
+
+- Public verifier phát hiện drift sau commit `0098cf1`: web đã nhận docs-only descendant, còn API vẫn ở `7a340b…` do path filter; đây là deployment/source-parity drift, không phải lỗi case, database hay DVH.
+- Đã đặt parity marker trong cả `apps/api/README.md` và `apps/web/README.md`, push candidate `b0263c932c740d4f36f19867241d5c1e07014765`, chờ Railway deploy đồng bộ và chạy lại verifier với schema `20260909_0019`.
+- Kết quả public **15/15 PASS**; evidence `docs/evidence/p19-staging-public-smoke-20260909-b0263c9.json`. API `/health`, `/ready`, `/version`, OpenAPI và unauthenticated membership boundary PASS; web index/bundle, CT/membership marker và exact source marker PASS.
+- Evidence drift trước sửa được giữ tại `docs/evidence/p19-staging-public-smoke-20260909-drift-0098cf1.json` để truy vết. Quy tắc kế hoạch mới: commit docs/root hoặc chỉ một service phải kèm parity marker/watch-path change hoặc deploy thủ công service còn lại, sau đó exact-SHA verifier mới được phép ghi `source parity PASS`.
+- Fixture RTDOSE tổng hợp được upload theo xác nhận của người dùng từ trước và không upload lại trong lần recovery này; case vẫn giữ `2 RTDOSE · 1 RTSTRUCT · 1 CT`, saved run và report snapshot hiện có.

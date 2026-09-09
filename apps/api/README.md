@@ -16,3 +16,5 @@ schema revision in the staging smoke evidence.
 
 The parity marker is intentionally kept under the API service root so a
 web-only documentation commit cannot leave the API on an older candidate.
+Every staging release must run the exact-SHA public verifier after both
+service deployments settle.
