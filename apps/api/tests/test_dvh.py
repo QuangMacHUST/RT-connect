@@ -2,11 +2,15 @@ from __future__ import annotations
 
 from copy import deepcopy
 from pathlib import Path
+from uuid import UUID
 
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
 from rt_connect_api.api.artifacts import _storage as artifact_storage
 from rt_connect_api.api.dvh import _storage as dvh_storage
+from rt_connect_api.db.models import InputManifest
+from rt_connect_api.db.session import get_session
 from rt_connect_api.services.object_storage import InMemoryObjectStorage, ObjectStorageError
 from test_artifacts import _case
 from test_dvh_engine import _ct_file, _dose_file, _structure_file
@@ -348,3 +352,59 @@ def test_dvh_api_storage_outage_is_explicit_and_does_not_create_a_run(tmp_path: 
         assert response.status_code == 503, response.text
         assert response.json()["code"] == "DVH_STORAGE_UNAVAILABLE"
         assert client.get(f"{base}/runs").json()["total"] == 0
+
+
+def test_dvh_input_discovery_requires_valid_manifest_matching_artifact_checksum(
+    tmp_path: Path,
+) -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[artifact_storage] = lambda: storage
+        client.app.dependency_overrides[dvh_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+        dose_path = tmp_path / "dose.dcm"
+        structure_path = tmp_path / "structures.dcm"
+        frame_uid = _dose_file(dose_path)
+        _structure_file(structure_path, frame_uid)
+        dose = _upload_dicom(client, case_id, "dose.dcm", dose_path.read_bytes(), "REFERENCE")
+        structure = _upload_dicom(
+            client, case_id, "structures.dcm", structure_path.read_bytes(), "RTSTRUCT"
+        )
+        dependency = client.app.dependency_overrides[get_session]
+        session_generator = dependency()
+        session = next(session_generator)
+        try:
+            manifest = session.scalar(
+                select(InputManifest).where(InputManifest.artifact_id == UUID(str(dose["id"])))
+            )
+            assert manifest is not None
+            manifest.validation_summary = {"result": "PENDING"}
+            session.commit()
+        finally:
+            session_generator.close()
+
+        base = f"/api/v1/organizations/{organization.id}/qa-cases/{case_id}/dvh"
+        choices = client.get(f"{base}/inputs")
+        assert choices.status_code == 200, choices.text
+        assert choices.json()["dose_artifacts"] == []
+        assert [item["id"] for item in choices.json()["structure_artifacts"]] == [
+            structure["id"]
+        ]
+
+        session_generator = dependency()
+        session = next(session_generator)
+        try:
+            manifest = session.scalar(
+                select(InputManifest).where(InputManifest.artifact_id == UUID(str(dose["id"])))
+            )
+            assert manifest is not None
+            manifest.validation_summary = {"result": "VALID"}
+            manifest.checksum_at_use = "0" * 64
+            session.commit()
+        finally:
+            session_generator.close()
+
+        body = _dvh_body(str(dose["id"]), str(structure["id"]), "dvh-manifest-checksum")
+        blocked = client.post(f"{base}/validate", json=_validation_body(body))
+        assert blocked.status_code == 422, blocked.text
+        assert blocked.json()["code"] == "DVH_INPUT_MANIFEST_INVALID"

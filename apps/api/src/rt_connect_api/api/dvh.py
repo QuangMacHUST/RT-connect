@@ -231,6 +231,18 @@ def _manifest_for_artifact(
             "The input manifest checksum is malformed.",
             422,
         )
+    artifact_checksum = session.scalar(
+        select(Artifact.sha256).where(
+            Artifact.id == artifact_id,
+            Artifact.organization_id == organization_id,
+        )
+    )
+    if artifact_checksum is None or checksum != artifact_checksum:
+        raise DomainError(
+            "DVH_INPUT_MANIFEST_INVALID",
+            "The input manifest checksum does not match the selected artifact.",
+            422,
+        )
     return manifest
 
 
@@ -588,7 +600,7 @@ def list_dvh_inputs(
 
     context = _context_for_organization(organization_id, identity, session)
     case = _case_or_error(session, context, case_id)
-    artifacts = list(
+    artifact_candidates = list(
         session.scalars(
             select(Artifact)
             .where(
@@ -601,6 +613,25 @@ def list_dvh_inputs(
             .order_by(Artifact.created_at.desc())
         )
     )
+    # The archive may contain an artifact row whose latest manifest is still
+    # pending/invalid (for example after an interrupted validation).  Such a
+    # row must not appear as a selectable DVH input merely because the
+    # artifact itself says VALID.  Resolve the manifest before exposing the
+    # choice; the actual run path repeats this check and pins the same
+    # manifest in its snapshot.
+    artifacts: list[Artifact] = []
+    for artifact in artifact_candidates:
+        try:
+            _manifest_for_artifact(session, context.organization_id, artifact.id)
+        except DomainError as exc:
+            if exc.code in {
+                "DVH_INPUT_MANIFEST_REQUIRED",
+                "DVH_INPUT_NOT_VALIDATED",
+                "DVH_INPUT_MANIFEST_INVALID",
+            }:
+                continue
+            raise
+        artifacts.append(artifact)
     rois: list[dict[str, object]] = []
     if structure_artifact_id is not None:
         structure = _resolve_artifact(
@@ -622,7 +653,10 @@ def list_dvh_inputs(
                     503,
                 ) from exc
             digest = hashlib.sha256(path.read_bytes()).hexdigest()
-            if digest != structure.artifact.sha256:
+            if (
+                digest != structure.artifact.sha256
+                or digest != structure.manifest.checksum_at_use
+            ):
                 raise DomainError(
                     "DVH_SOURCE_CHANGED",
                     "The selected RTSTRUCT no longer matches its stored checksum.",
