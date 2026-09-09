@@ -1,0 +1,61 @@
+{
+  "schema_version": "rt-connect.p8-staging-rtdose-browser.v1",
+  "captured_at_utc": "2026-09-09T20:33:00Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_SYNTHETIC_E2E",
+  "synthetic_only": true,
+  "source_sha": "2b1846a44ca10091df3e043eb478f9ffb6b7bc3e",
+  "schema_revision": "20260909_0019",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "inputs": {
+    "reference": {
+      "filename": "gamma-rtdose-v1-smoke.dcm",
+      "sha256_prefix": "ca5c9168eb9b",
+      "status": "VALID",
+      "already_present_before_run": true,
+      "uploaded_in_this_run": false
+    },
+    "evaluation": {
+      "filename": "gamma-measurement-3d-v1-smoke.json",
+      "sha256_prefix": "3ca7a85e438c",
+      "status": "VALID"
+    }
+  },
+  "workflow": {
+    "profile": "PSQA_GAMMA",
+    "dimensionality": "3D",
+    "coverage_policy": "FULL_ROI",
+    "preflight": "VALID",
+    "action": "enqueue_then_poll_result"
+  },
+  "run": {
+    "id": "1d5ee035-28e0-461a-8a3d-15fef6b883bd",
+    "status": "COMPLETED",
+    "attempt": 1,
+    "engine_version": "gamma-nd-p8.2",
+    "overall_status": "PASS",
+    "evaluated_points": 8,
+    "passing_points": 8,
+    "non_passing_points": 0,
+    "excluded_points": 0,
+    "coverage": 1,
+    "gamma_p95": 0,
+    "pass_rate_percent": 100,
+    "pass_rate_target_percent": 95
+  },
+  "checks": {
+    "build_label_visible": true,
+    "rtdose_reference_selected": true,
+    "preflight_valid": true,
+    "three_dimensional_config_snapshot": true,
+    "job_accepted": true,
+    "worker_completed": true,
+    "result_persisted_and_rendered": true,
+    "all_synthetic_points_passed": true,
+    "no_duplicate_upload": true
+  },
+  "passed": true,
+  "notes": [
+    "The run was created only with synthetic staging fixtures; no patient, PACS or treatment data was used.",
+    "This proves the authenticated staging enqueue-to-worker-to-result path for this fixture; it does not close staging crash/ACK injection, resource-large-input or commissioning gates."
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "schema_version": "rt-connect.p4-staging-auth-organization-browser.v1",
+  "captured_at_utc": "2026-09-09T20:33:00Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_READ_ONLY",
+  "synthetic_only": true,
+  "source_sha": "2b1846a44ca10091df3e043eb478f9ffb6b7bc3e",
+  "schema_revision": "20260909_0019",
+  "route": "/app/organization",
+  "organization": {
+    "name": "Hong ngoc general hospital",
+    "status": "ACTIVE"
+  },
+  "sites": {
+    "total": 1,
+    "items": [
+      {
+        "name": "Staging Synthetic Site",
+        "status": "ACTIVE"
+      }
+    ]
+  },
+  "machines": {
+    "total": 1,
+    "items": [
+      {
+        "stable_machine_id": "STAGING-LINAC-01",
+        "display_name": "Synthetic QA Linac",
+        "status": "ACTIVE"
+      }
+    ]
+  },
+  "members": {
+    "total": 1,
+    "active": 1,
+    "inactive": 0
+  },
+  "invitations": {
+    "total": 0
+  },
+  "checks": {
+    "authenticated_session": true,
+    "organization_loaded": true,
+    "organization_active": true,
+    "site_loaded": true,
+    "machine_loaded": true,
+    "active_member_loaded": true,
+    "peer_membership_copy": true,
+    "no_staging_mutation": true
+  },
+  "passed": true,
+  "notes": [
+    "Browser displayed Build 2b1846a44ca10091df3e043eb478f9ffb6b7bc3e.",
+    "This record proves one authenticated identity can read its active organization context; it does not close the two-identity invitation lifecycle gate."
+  ]
+}
