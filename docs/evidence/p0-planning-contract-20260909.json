@@ -1,12 +1,12 @@
 {
   "schema_version": "rt-connect.planning-contract-verification.v1",
-  "captured_at_utc": "2026-09-09T07:09:04.784249+00:00",
+  "captured_at_utc": "2026-09-09T08:42:12.447241+00:00",
   "repository": "E:\\hoctap\\2026\\RT-connect",
   "document_versions": {
     "business": "0.22",
-    "specification": "1.17",
-    "technical": "1.15",
-    "plan": "4.3"
+    "specification": "1.18",
+    "technical": "1.16",
+    "plan": "4.4"
   },
   "phase_count": 21,
   "passed": true,
@@ -45,37 +45,37 @@
     {
       "name": "version.specification",
       "ok": true,
-      "details": "expected=1.17; observed=1.17"
+      "details": "expected=1.18; observed=1.18"
     },
     {
       "name": "version.technical",
       "ok": true,
-      "details": "expected=1.15; observed=1.15"
+      "details": "expected=1.16; observed=1.16"
     },
     {
       "name": "version.plan",
       "ok": true,
-      "details": "expected=4.3; observed=4.3"
+      "details": "expected=4.4; observed=4.4"
     },
     {
       "name": "reference.business.plan",
       "ok": true,
-      "details": "required=plan.md v4.3 or `plan.md` v4.3"
+      "details": "required=plan.md v4.4 or `plan.md` v4.4"
     },
     {
       "name": "reference.specification.plan",
       "ok": true,
-      "details": "required=plan.md v4.3 or `plan.md` v4.3"
+      "details": "required=plan.md v4.4 or `plan.md` v4.4"
     },
     {
       "name": "reference.technical.plan",
       "ok": true,
-      "details": "required=plan.md v4.3 or `plan.md` v4.3"
+      "details": "required=plan.md v4.4 or `plan.md` v4.4"
     },
     {
       "name": "reference.progress.plan",
       "ok": true,
-      "details": "required=plan.md v4.3 or `plan.md` v4.3"
+      "details": "required=plan.md v4.4 or `plan.md` v4.4"
     },
     {
       "name": "marker.business.feature_card",

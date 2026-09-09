@@ -1,10 +1,10 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.17**; ngày 2026-09-09.
+- File: specification.md; version **1.18**; ngày 2026-09-09.
 - Nguồn nghiệp vụ: business-analysis.md v0.22.
-- Kế hoạch triển khai: plan.md v4.3, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.15.
-- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.17 giữ toàn bộ contract v1.16, làm rõ operation surface của dashboard vận hành P20 (`/health`, `/ready`, `/version` và queue metrics có xác thực) và chốt contract thực thi P4 cho membership/invitation: thành viên ngang quyền, token hash-at-rest, email-bound, one-time, expiry, active-context invariant và các endpoint cụ thể.
+- Kế hoạch triển khai: plan.md v4.4, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.16.
+- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.18 giữ toàn bộ contract v1.17, bổ sung record semantics cho P17 local Docker workload đồng thời và làm rõ sampled container memory không phải peak RSS; đồng thời giữ contract thực thi P4 cho membership/invitation: thành viên ngang quyền, token hash-at-rest, email-bound, one-time, expiry, active-context invariant và các endpoint cụ thể.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
 
@@ -460,7 +460,7 @@ Analytic fixtures: uniform dose box, unequal voxel sizes, sphere convergence, do
 
 ### 7.4. Workload và engineering SLO mục tiêu
 
-Những số dưới là budget nghiệm thu ban đầu, **chưa đo đạt**, cần ghi hardware/resources, software version, cold/warm cache, network và concurrent users trong P8/P18. Không coi gói 5 USD là bảo đảm capacity. P17 đã có local support measurement trong `docs/evidence/p17-local-volume-benchmark-20260909.json` và Docker runtime measurement trong `docs/evidence/p17-local-docker-volume-benchmark-20260909.json`: synthetic `64×128×128` (`1,048,576` voxel), host median `1.2667533 s`, Docker API median `0.8206198 s`; các peak lần lượt là `69,235,606` và `69,237,022` Python-traced bytes. Cả hai giữ `performance_gate=NOT_ASSESSED` vì chưa đo RSS/container limit, concurrency và staging.
+Những số dưới là budget nghiệm thu ban đầu, **chưa đo đạt**, cần ghi hardware/resources, software version, cold/warm cache, network và concurrent users trong P8/P18. Không coi gói 5 USD là bảo đảm capacity. P17 đã có local support measurement trong `docs/evidence/p17-local-volume-benchmark-20260909.json` và Docker runtime measurement trong `docs/evidence/p17-local-docker-volume-benchmark-20260909.json`: synthetic `64×128×128` (`1,048,576` voxel), host median `1.2667533 s`, Docker API median `0.8206198 s`; các peak lần lượt là `69,235,606` và `69,237,022` Python-traced bytes. Bổ sung `docs/evidence/p17-local-docker-workload-20260909.json`: 2 Docker jobs đồng thời × 3 lần, cùng engine/oracle, sampled memory cao nhất `305,659,904 bytes` qua `3` mẫu. Cả ba evidence giữ `performance_gate=NOT_ASSESSED`: Python-traced allocation và `docker stats` sample không phải peak RSS; chưa có pinned service limit, API responsiveness, worker/fault và staging.
 
 | Nhóm | Workload chuẩn để đo | Target/gate |
 | :--- | :--- | :--- |
@@ -1569,7 +1569,7 @@ Danh sách errors là baseline có giới hạn, không chứng minh bao phủ m
 - Source repository: core/errors.py, db/session.py, alembic/env.py, api/gamma.py, services/gamma_engine.py, services/artifact_validation.py, worker.py, web env/routes và fixture generator.
 - Công thức LQ cơ bản xuất phát từ business-analysis §15.3; recovery profile ở §6.3 là giả định user-defined của sản phẩm, không phải bảng hướng dẫn điều trị.
 
-## 13. Ma trận contract ở cấp operation và tính năng (baseline v1.16, retained in v1.17)
+## 13. Ma trận contract ở cấp operation và tính năng (baseline v1.16, retained in v1.17–v1.18)
 
 Mục này là lớp nối giữa yêu cầu `FR-Pxx-yy` trong `business-analysis.md` và testcase `TC-Pxx-*` trong `plan.md`. Nó quy định mỗi phase phải expose hành vi nào, điều gì được coi là thành công, lỗi nào phải phân biệt và dữ liệu nào phải được giữ. Đây vẫn là contract mục tiêu; nội dung chưa có trong source phải được ghi `TARGET`, không được đọc như bằng chứng đã triển khai.
 
@@ -1679,7 +1679,7 @@ Không được gọi operation là `COMPLETED` nếu chưa có output bền v�
 4. **Trend:** chỉ aggregate các source có compatibility signature; điểm thiếu không được biến thành zero; drill-down phải quay về source run/case đúng organization.
 5. **Public deployment:** web/API/worker/schema/Auth/queue phải được kiểm theo cùng release manifest; PostgreSQL, Redis, worker và object bucket private theo topology; URL public không chứng minh workflow đã pass.
 
-## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.17
+## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.18
 
 Phần này biến các contract theo phase thành cấu trúc có thể dùng khi viết code, test và bàn giao. Nó không thay thế các field/algorithm contract ở mục 2–8; nó quy định cách chứng minh rằng các contract đó đã được thực thi trên một candidate cụ thể.
 
@@ -1736,6 +1736,21 @@ Mọi testcase lỗi và mọi lỗi quan sát được trong staging/production
 ~~~
 
 `side_effect_expected` và `side_effect_observed` là bắt buộc vì HTTP 4xx/5xx đúng chưa đủ để chứng minh database, object store, queue hoặc worker không bị ghi một phần. Nếu response mất sau commit, `code` không được tự chuyển thành lỗi tạo mới; record phải thể hiện `OUTCOME_UNKNOWN` và hành động query/reconcile.
+
+Đối với evidence workload P17 không tạo side effect, record phải tách rõ các loại số đo để không biến support measurement thành release gate:
+
+| Trường | Quy tắc bắt buộc |
+| :--- | :--- |
+| `workload.shape` và `voxel_count` | Ghi shape theo thứ tự frame/row/column và số voxel thực tế; không gọi “large” nếu chưa nêu kích thước. |
+| `concurrent_jobs` và `repeats_per_job` | Ghi số job thực sự chạy đồng thời và số lần lặp mỗi job; một lần chạy tuần tự không được ghi là concurrency. |
+| `engine_version`, `source_sha`, `image_digest`, `schema_revision` | Pin runtime và source; evidence lệch engine/source phải bị coi là stale. |
+| `result_oracle` | Mỗi job phải đối chiếu cùng expected Dmin/Dmean/Dmax/volume/selected count; thời gian nhanh không bù được sai oracle. |
+| `peak_traced_bytes` | Chỉ là allocation do Python `tracemalloc` theo dõi, không phải RSS và không phải memory limit của service. |
+| `sampled_container_memory` | Phải ghi `sample_count`, max sampled bytes và `is_peak_rss=false` nếu lấy từ `docker stats`; mẫu thưa không được gọi là peak. |
+| `performance_gate` | Giữ `NOT_ASSESSED` cho đến khi có CPU/RAM/concurrency pin, peak RSS, API responsiveness, fault/retry và environment gate theo P8/P17/P18. |
+| `patient_data` | Workload local phải ghi `false`; fixture synthetic phải có checksum và không ghi vào DB/object store production. |
+
+P17 local Docker workload evidence `docs/evidence/p17-local-docker-workload-20260909.json` đã đáp ứng các trường trên cho 2 job × 3 lần, nhưng chỉ là `LOCAL_DOCKER_CONCURRENCY_MEASURED`; không cho phép suy ra worker capacity, staging hoặc clinical readiness.
 
 Các lớp lỗi và hành vi thực thi:
 
