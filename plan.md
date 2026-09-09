@@ -1,12 +1,12 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
-- Phiên bản: **4.10**, ngày 2026-09-10.
+- Phiên bản: **4.11**, ngày 2026-09-10.
 - Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.22.
 - Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.20.
 - Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.19.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
-- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.9 và bổ sung process-RSS/resource-policy/API-responsiveness evidence cho P17-W06 workload Docker đồng thời sau khi migration P4 `20260909_0018` đã trở thành schema head trên staging; làm rõ `20260908_0017` là migration riêng của P17, không phải schema head hiện hành. Các contract member list/toggle, invitation email-bound one-time, expiry/revoke/replay, active-context invariant và route `/invite` vẫn là authority. Tiếp tục chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20. Các slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local ngày 2026-09-09 được giữ nguyên theo progress log. Case staging P17 hiện đã có 2 RTDOSE, 1 RTSTRUCT và 1 CT hợp lệ; authenticated browser đã chạy được DVH saved-run/replay/refresh, CT overlay/no-overlap smoke và export-content probe. Nội dung JSON/CSV đã parse/hash và khớp snapshot; targeted PostgreSQL row/checksum/scope probe và object-storage byte re-hash đã PASS trong API container staging; việc trình duyệt đổi đuôi file vẫn là một observation riêng. Sau khi phát hiện web-only documentation commit làm web và API trôi source SHA, đã thêm parity marker trong cả `apps/api` và `apps/web`, deploy lại đồng thời và recheck candidate `a5c554cb15a37a9dc4ae3e4ff65ab003c20c4763` đạt 15/15 checks PASS; evidence `docs/evidence/p19-staging-public-smoke-20260910-a5c554c-pass.json`. Không còn coi source-parity là PASS nếu chỉ một service được Railway deploy. Các gate immutable-snapshot mutation guard, browser export finalization, fault/resource/volume, full negative matrix, release manifest và P17 handoff vẫn mở. P17 local resource gate mới đạt `LOCAL_RESOURCE_GATE_PASS` dưới policy `1 CPU/768 MiB`, nhưng không thay worker/service capacity Railway, fault injection hoặc staging evidence. P18 local integrated journey, local backup/restore verifier, ma trận browser/device/timezone/viewport, script kiểm public deployment P19, công cụ release-manifest P19 và gói runbook P20 chỉ là công cụ/evidence hỗ trợ, không tự đóng phase. Không suy diễn từ test local, workload Docker local hoặc một lần Railway báo Online.
+- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.10, bổ sung bằng chứng P8 browser staging cho cặp RTDOSE + measurement 3D và oracle Gamma độc lập 6/6 case; đồng thời ghi rõ fixture RTDOSE đã tồn tại trong case staging nên không upload bản sao. Các thay đổi trước về process-RSS/resource-policy/API-responsiveness P17-W06, migration P4 `20260909_0018`, `20260908_0017` là migration riêng của P17, các contract member/invitation và route `/invite` vẫn là authority. Tiếp tục chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20. Các slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local được giữ nguyên theo progress log. Case staging P17 hiện có 2 RTDOSE, 1 RTSTRUCT và 1 CT hợp lệ; authenticated browser đã chạy DVH saved-run/replay/refresh, CT overlay/no-overlap smoke, export-content probe và Gamma 3D với RTDOSE reference. Nội dung JSON/CSV đã parse/hash và khớp snapshot; targeted PostgreSQL row/checksum/scope probe và object-storage byte re-hash đã PASS trong API container staging; việc trình duyệt đổi đuôi file vẫn là một observation riêng. Candidate public được kiểm exact-SHA `ec50990395e9bb4b7182ff48c3b2a8e4b2eeb1ca` với evidence `docs/evidence/p19-staging-public-smoke-20260910-ec50990.json`. Không coi source-parity là PASS nếu chỉ một service được Railway deploy. Các gate P8 crash/ack/bounded retry/resource-large-input, P17 binding/report/fault/volume/browser export finalization/release và P18–P20 vẫn mở. P17 local resource gate `LOCAL_RESOURCE_GATE_PASS` dưới policy `1 CPU/768 MiB` không thay worker/service capacity Railway hoặc staging fault evidence. Không suy diễn từ test local, workload Docker local hoặc một lần Railway báo Online.
 
 ## 1. Cách thực hiện kế hoạch
 
@@ -38,7 +38,7 @@ Test chỉ dùng NOT_RUN / PASS / FAIL / BLOCKED / NOT_APPLICABLE. NOT_APPLICABL
 | P2–P3 | Có staged Auth/onboarding/dashboard và health smoke | Kiểm session expiry, runtime config, schema readiness và dashboard đầy đủ; không suy diễn từ session còn đăng nhập. |
 | P4–P5 | CRUD hierarchy/folder/case có staged smoke; P4 invitation/member slice đã deploy staging, readiness đã lên schema `20260909_0018` và API/web source-label parity đã pass trên candidate `62a7b5300e39b9e742bee0b7353ff86a559d4abe` | P4 Auth/two-identity browser flow, DB hash/status/audit, active-context/last-member/concurrency/timeout; P5 restore, simultaneous edits, complete filter/history là gate bổ sung cần kiểm/triển khai. |
 | P6–P7 | Synthetic upload/validation và Machine QA evaluate/rerun/compare đã được ghi | Round-trip checksum evidence, declared-type mismatch, interrupted upload, autosave/concurrency và broader boundary tests cần kiểm. |
-| P8 | 2D JSON/Redis worker/retry và 3D PSQA RTDOSE + measurement đã có staging evidence; slice coverage policy và fenced dispatch đã có local code/test | Semantic/scientific independent oracle, lease/outbox failure injection, bounded retry/resource limits và large workload chưa được coi là hoàn tất. |
+| P8 | 2D JSON/Redis worker/retry và 3D PSQA RTDOSE + measurement đã có staging evidence; browser recheck trên `ec50990` thấy `PREFLIGHT VALID`, run 3D `8/8 PASS`; local independent oracle 6/6 case PASS | Semantic/scientific oracle promotion, lease/outbox crash/ack failure injection, bounded retry/dead-letter, staging resource limits và large workload chưa được coi là hoàn tất. |
 | P9 | Có implementation slice backend/frontend và local tests cho template, revision, block, snapshot, renderer, export và idempotency; authenticated browser smoke đã tạo revision và tải JSON/CSV/PDF/PNG trên staging | Recheck trên candidate mới; storage failure/retry, visual byte review và build manifest vẫn là gate riêng. |
 | P10 | Có implementation slice backend/frontend, migration `20260908_0010`, test scope/error/rebuild/event/export và trend UI | Basic staging smoke đã có; large-series budget, complete negative matrix, source/export revalidation và visual/accessibility evidence còn phải làm. |
 | P11 | Có implementation slice backend/frontend, migration `20260908_0011`, protocol lifecycle/validation/compare và active-only consumer | Staging migration/browser/consumer E2E, complete S/E/C evidence và release manifest còn phải làm. |
@@ -783,10 +783,10 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 
 ### Work packages P8
 
-- [ ] P08-W01 — Đóng gap BR-007; explicit workflow profile, unit/frame/transform contracts và supported capabilities. `LOCAL_SLICE_ONLY`: profile/preflight đã có local, staging contract còn mở.
-- [ ] P08-W02 — Khóa thuật toán search/interpolation/global/local/threshold theo specification §5; thêm oracle độc lập. `LOCAL_SLICE_ONLY`: coverage/max-gamma/censor đã có test, exhaustive oracle/convergence còn mở.
-- [ ] P08-W03 — Bổ sung atomic lease/fencing, attempt history, outbox/reconciliation và giới hạn tài nguyên/retry. `LOCAL_SLICE_ONLY`: lease/attempt/outbox đã có local; bounded retry/resource/failure injection còn mở.
-- [ ] P08-W04 — Hoàn thiện Gamma UI configuration/unsupported states, maps/profiles; E2E RTDOSE/3D và workload lớn. `LOCAL_SLICE_ONLY`: UI control đã có; staging upload/3D/large workload còn mở.
+- [ ] P08-W01 — Đóng gap BR-007; explicit workflow profile, unit/frame/transform contracts và supported capabilities. `STAGING_SMOKE`: browser case trên `ec50990` cho thấy profile `PSQA_GAMMA`, RTDOSE reference + measurement 3D và `PREFLIGHT VALID`; geometry/scale negative còn mở.
+- [ ] P08-W02 — Khóa thuật toán search/interpolation/global/local/threshold theo specification §5; thêm oracle độc lập. `LOCAL_VERIFIED`: `scripts/verify-p8-independent-gamma-oracle.py` đối chiếu 6 case GRID/BILINEAR, 2D/3D, GLOBAL/LOCAL, RELATIVE/ABSOLUTE, OVERLAP_ONLY và max-gamma censor; promotion/convergence trên staging còn mở.
+- [ ] P08-W03 — Bổ sung atomic lease/fencing, attempt history, outbox/reconciliation và giới hạn tài nguyên/retry. `LOCAL_SLICE_ONLY`: lease/attempt/outbox đã có local; staging crash/ack, bounded retry/dead-letter và resource/failure injection còn mở.
+- [ ] P08-W04 — Hoàn thiện Gamma UI configuration/unsupported states, maps/profiles; E2E RTDOSE/3D và workload lớn. `STAGING_SMOKE`: run `df38e7d5…` hoàn tất `8/8 PASS`; large workload và fault matrix còn mở.
 - [ ] P08-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P08-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
 
@@ -827,6 +827,13 @@ Slice implementation hiện tại đã được kiểm tra local nhưng chưa đ
 - Chưa covered đủ: staging schema `20260908_0009`; browser report create/edit/export/download; Gamma crash sau commit trước ack; bounded retry/dead-letter; resource/large-input benchmark; P9 visual export review và remote evidence.
 
 Các dòng trên là evidence implementation, không thay cho `P08-VERIFY` và `P08-HANDOFF`.
+
+### Checkpoint bổ sung P8 — 2026-09-10 / candidate `ec50990`
+
+- **Synthetic RTDOSE staging:** người dùng đã xác nhận cho phép upload fixture RTDOSE tổng hợp. Kiểm tra read-only tại case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24` cho thấy `gamma-rtdose-v1-smoke.dcm` đã tồn tại với prefix `ca5c9168…`; vì vậy không upload trùng và không tạo artifact mới. Evidence: `docs/evidence/p8-staging-rtdose-browser-20260910-ec50990.json`.
+- **P8 browser smoke:** Gamma workspace trên web build `ec50990395e9bb4b7182ff48c3b2a8e4b2eeb1ca` chọn profile `PSQA_GAMMA`, RTDOSE reference `gamma-rtdose-v1-smoke.dcm` và measurement 3D evaluation `gamma-measurement-3d-v1-smoke.json`; preflight hiển thị `PREFLIGHT VALID`. Run `df38e7d5-bb4b-4e2d-b949-2310acb1875c` ở trạng thái `COMPLETED`, attempt `1`, engine `gamma-nd-p8.2`, `8/8` evaluated/passing, coverage `1`, P95 `0`, pass rate `100%` so với target `95%`. Đây là staging authenticated browser read-only recheck; không tạo run mới.
+- **Independent numerical oracle:** `scripts/verify-p8-independent-gamma-oracle.py` tự đọc fixture contract và tự liệt kê comparison nodes/sampling lattice, không import production candidate-search helper. Evidence canonical `docs/evidence/p8-independent-gamma-oracle.json` ghi `6/6` case PASS, gồm 2D/3D, GRID/BILINEAR, GLOBAL/LOCAL, RELATIVE/ABSOLUTE, OVERLAP_ONLY và max-gamma censoring. Đây là `LOCAL_INDEPENDENT_ORACLE`, không phải vendor commissioning hoặc release approval.
+- **Trạng thái gate:** P8 chuyển từ “chưa có staging RTDOSE/3D/oracle” sang đã có staging browser smoke và local oracle; vẫn `FULL EXIT GATE OPEN` vì chưa có staging crash sau durable commit trước ack, bounded retry/dead-letter/injection, workload lớn/resource budget, oracle promotion/convergence và release-manifest evidence.
 
 ### Bất biến và điều kiện đóng P8
 
@@ -2161,10 +2168,10 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 **Runtime addendum cùng ngày:** sau source-parity recovery, candidate `b0263c932c740d4f36f19867241d5c1e07014765` đạt **15/15 checks PASS** trên public staging với schema `20260909_0019`; evidence `docs/evidence/p19-staging-public-smoke-20260909-b0263c9.json`. Browser DVH/report evidence vẫn dùng đúng case synthetic đã upload trước đó; không upload lại RTDOSE/RTSTRUCT/CT. Payload JSON/CSV export parse/hash khớp saved snapshot, còn việc browser đổi `.crdownload` thành filename cuối vẫn `UNVERIFIED` và tiếp tục là gate mở. Evidence browser: `docs/evidence/p17-staging-dvh-ct-browser-20260909.json`.
 
-### 7.3. Revision hiện hành v4.10
+### 7.3. Revision hiện hành v4.11
 
 Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.20,
-`technical-specification.md` v1.19 và `plan.md` v4.10. Revision v4.10 giữ status/readiness
+`technical-specification.md` v1.19 và `plan.md` v4.11. Revision v4.11 giữ status/readiness
 surface P20 và bổ sung P4 member/invitation execution contract: workflow `/invite`, token
 hash-at-rest, expiry/revoke/replay, pending uniqueness, active-context và last-active invariant;
 đồng thời pin semantics process peak RSS, policy CPU/RAM và API responsiveness cho P17 Docker workload
@@ -2179,7 +2186,10 @@ API/web source-label parity và platform status dashboard đã được xác min
 `a5c554cb15a37a9dc4ae3e4ff65ab003c20c4763`, nhưng browser/Auth/DB/audit/scope/timeout evidence
 cho invitation vẫn mở. Worker parity, alert thật, backup/restore, owner handoff và production
 evidence vẫn là gate mở. Các đoạn nêu candidate/schema cũ ở phần lịch sử chỉ là evidence của
-lần chạy trước, không phải release hiện tại.
+lần chạy trước, không phải release hiện tại. Bổ sung trong v4.11: candidate `ec50990` có browser
+P8 RTDOSE + measurement 3D smoke `8/8 PASS` và local independent Gamma oracle `6/6 PASS`; hai
+evidence này không đóng crash/ack, retry/dead-letter, resource/large-input, commissioning hoặc
+production promotion.
 
 ## 8. Ma trận FR → contract → testcase ban đầu
 

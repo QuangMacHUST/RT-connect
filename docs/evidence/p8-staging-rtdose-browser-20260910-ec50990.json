@@ -1,0 +1,74 @@
+{
+  "schema_version": "rt-connect.p8-staging-gamma-browser.v1",
+  "captured_at_utc": "2026-09-09T19:07:36Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_READ_ONLY_RECHECK",
+  "environment": "staging",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/gamma",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "source_commit": "ec50990395e9bb4b7182ff48c3b2a8e4b2eeb1ca",
+  "web_build_label_observed": "ec50990395e9bb4b7182ff48c3b2a8e4b2eeb1ca",
+  "data_boundary": "Read-only browser checks against repository-generated synthetic artifacts; no patient, PACS or treatment dataset was used.",
+  "upload_authorization": {
+    "fixture": "gamma-rtdose-v1-smoke.dcm",
+    "authorized_by_user": true,
+    "action": "NOT_REPEATED_EXISTING_ARTIFACT_REUSED",
+    "reason": "The authorized synthetic RTDOSE is already present in the staging case with the expected checksum prefix. No duplicate upload was created."
+  },
+  "inputs": {
+    "workflow_profile": "PSQA_GAMMA",
+    "preflight": "PREFLIGHT VALID",
+    "reference": {
+      "filename": "gamma-rtdose-v1-smoke.dcm",
+      "modality": "RTDOSE",
+      "sha256_prefix": "ca5c9168eb9b…"
+    },
+    "evaluation": {
+      "filename": "gamma-measurement-3d-v1-smoke.json",
+      "modality": "MEASUREMENT",
+      "sha256_prefix": "3ca7a85e438c…"
+    },
+    "result": "PASS"
+  },
+  "configuration": {
+    "dimensionality": "3D",
+    "dose_difference_percent": 3,
+    "distance_to_agreement_mm": 3,
+    "dose_threshold_percent": 10,
+    "pass_rate_target_percent": 95,
+    "dose_difference_mode": "RELATIVE",
+    "normalization": "GLOBAL",
+    "interpolation": "GRID",
+    "coverage_policy": "FULL_ROI",
+    "max_gamma": 2
+  },
+  "saved_run_recheck": {
+    "run_id": "df38e7d5-bb4b-4e2d-b949-2310acb1875c",
+    "status": "COMPLETED",
+    "progress_percent": 100,
+    "attempt": 1,
+    "engine_version": "gamma-nd-p8.2",
+    "overall_result": "PASS",
+    "evaluated_points": 8,
+    "passing_points": 8,
+    "non_passing_points": 0,
+    "excluded_points": 0,
+    "coverage_fraction": 1,
+    "gamma_p95": 0,
+    "pass_rate_percent": 100,
+    "pass_rate_target_percent": 95
+  },
+  "history": {
+    "completed_runs_visible": 6,
+    "refresh_persistence": "OBSERVED",
+    "new_run_created_during_recheck": false
+  },
+  "result": "PASS",
+  "open_gates": [
+    "worker crash after durable commit before acknowledgement",
+    "bounded retry and dead-letter evidence on staging",
+    "large-input and resource-budget evidence on staging",
+    "promotion of the independent oracle and DICOM/vendor commissioning evidence",
+    "P18 integrated release, backup/restore and P19 production promotion"
+  ]
+}

@@ -2,7 +2,7 @@
 
 - File: specification.md; version **1.20**; ngày 2026-09-10.
 - Nguồn nghiệp vụ: business-analysis.md v0.22.
-- Kế hoạch triển khai: plan.md v4.10, P0–P20.
+- Kế hoạch triển khai: plan.md v4.11, P0–P20.
 - Kiến trúc nền: technical-specification.md v1.19.
 - Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.20 giữ toàn bộ contract v1.19, bổ sung semantics cho đo peak RSS của tiến trình benchmark bằng `resource.getrusage`, policy CPU/RAM local cố định, API responsiveness dưới workload và phân biệt rõ process RSS với sampled container memory/cgroup peak tích lũy; đồng thời giữ contract thực thi P4 cho membership/invitation: thành viên ngang quyền, token hash-at-rest, email-bound, one-time, expiry, active-context invariant và các endpoint cụ thể.
 

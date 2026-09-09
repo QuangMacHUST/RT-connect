@@ -27,8 +27,8 @@ recheck are recorded in the repository evidence/progress log. The current
 production public gap is recorded separately; keep API/web/worker source
 parity on the next release.
 
-Latest staging parity evidence: `p19-staging-public-smoke-20260909-38dec53.json`
-records API, worker and web source SHA `38dec53d4e542bdf6c4f808283981b344cae3502`
+Latest staging parity evidence: `p19-staging-public-smoke-20260910-ec50990.json`
+records API, worker and web source SHA `ec50990395e9bb4b7182ff48c3b2a8e4b2eeb1ca`
 with schema `20260909_0019`; keep this marker aligned when progress/evidence changes.
 
 Current P17 staging fixture marker: the authenticated case recheck keeps the
@@ -40,6 +40,12 @@ P17-W06 resource-evidence parity marker: local workload verification pins the AP
 container to 1 CPU/768 MiB and records process RSS plus API responsiveness. Keep
 this marker aligned with the web service root so a release candidate rebuilds all
 three services from the same source commit.
+
+P8 staging marker: the existing synthetic RTDOSE reference was rechecked through
+the authenticated Gamma workspace with the 3D measurement fixture; the saved run
+reported `8/8 PASS`. The corresponding browser evidence is
+`p8-staging-rtdose-browser-20260910-ec50990.json`, and the local independent-oracle
+evidence is `p8-independent-gamma-oracle.json` with `6/6` cases PASS.
 
 Final staging parity marker (2026-09-10): API, worker and web must be rebuilt
 from the commit carrying this marker before a public exact-SHA check is recorded.

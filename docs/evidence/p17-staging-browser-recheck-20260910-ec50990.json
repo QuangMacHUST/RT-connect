@@ -1,0 +1,60 @@
+{
+  "schema_version": "rt-connect.staging-dvh-browser-recheck.v1",
+  "captured_at_utc": "2026-09-09T18:55:08Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_READ_ONLY_RECHECK",
+  "environment": "staging",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "source_commit": "ec50990395e9bb4b7182ff48c3b2a8e4b2eeb1ca",
+  "web_build_label_observed": "ec50990395e9bb4b7182ff48c3b2a8e4b2eeb1ca",
+  "data_boundary": "Read-only browser checks against repository-generated synthetic DICOM artifacts; no patient, PACS or treatment dataset was used and no new upload or DVH run was created during this recheck.",
+  "preflight": {
+    "valid_rtdose_count": 2,
+    "valid_rtstruct_count": 1,
+    "valid_ct_count": 1,
+    "selected_rtdose": "gamma-rtdose-v1-smoke.dcm · ca5c9168eb9b…",
+    "selected_rtstruct": "p17-rtstruct-v1-smoke.dcm · 16a79df31297…",
+    "selected_ct": "p17-ct-v1-smoke.dcm · 0b1d3bfd6adf…",
+    "selected_roi": "#1 · P17_TARGET · 1 contour",
+    "result": "PASS"
+  },
+  "ct_preview": {
+    "frame_index": 0,
+    "visible_slice": "#1",
+    "status": "LPS LINKED",
+    "overlay": "NEAREST_NEIGHBOR_IN_PATIENT_LPS",
+    "roi": "#1 · P17_TARGET",
+    "crosshair": "dose grid center",
+    "result": "PASS",
+    "additional_frame_check": {
+      "frame_index": 2,
+      "visible_slice": "#3",
+      "status": "NO DOSE OVERLAP",
+      "overlay": "NEAREST_NEIGHBOR_IN_PATIENT_LPS",
+      "warning": "The selected CT slice does not intersect the RTDOSE grid; dose overlay is empty.",
+      "result": "EXPECTED_WARNING"
+    }
+  },
+  "validate_only": {
+    "message": "Validation DVH hợp lệ; chưa tạo bản ghi lưu trữ.",
+    "result": "PASS",
+    "side_effect": "NONE"
+  },
+  "saved_run_recheck": {
+    "run_id": "8000ff9b-7a02-4cec-850e-e27e4fe50cc4",
+    "engine_version": "p17-dvh-1.1.0",
+    "coverage_status": "FULL",
+    "selected_voxel_count": 4,
+    "volume_cc": 0.004,
+    "dmean_gy": 6.5,
+    "d95_gy": 5.2,
+    "result": "UNCHANGED_READ_ONLY_RECHECK"
+  },
+  "open_gates": [
+    "P11/P16 compatible binding staging evidence",
+    "full P17 negative/fault/resource/volume and worker evidence",
+    "browser export final filename finalization",
+    "release manifest and production promotion evidence"
+  ]
+}
