@@ -351,6 +351,14 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 - **Next exact action:** use the committed synthetic CT/RTSTRUCT fixture only after the user confirms the browser file-selection step; upload and validate both in the staging case, then capture CT success S12–S16 and error/recovery E24–E30 evidence without using patient data.
 - **Fixture readiness:** the committed CT fixture is now available at `docs/fixtures/p17-ct-v1-smoke.dcm`; its frame 1 is the positive overlay oracle and frame 2 is the explicit no-overlap oracle. The repository hash must be compared with the uploaded artifact manifest before any staging run is treated as evidence.
 
+## P6/P17 Archive DVH preflight truthfulness — local verified 2026-09-09
+
+- The QA Archive DVH shortcut no longer renders a static claim that `RTDOSE + RTSTRUCT` are already `VALID`. It now derives the banner from the current case artifact list and counts only `DICOM` artifacts whose `data_status` is `VALID`, split by `RTDOSE`, `RTSTRUCT` and `CT` modality.
+- The empty/partial-input state is explicit: the staging case with one valid RTDOSE and zero RTSTRUCT is shown as `DVH preflight: 1 RTDOSE · 0 RTSTRUCT · 0 CT VALID`, with the DVH action remaining unavailable at the case workspace until the required inputs exist. The archive hint also states that RTDOSE and RTSTRUCT are required, CT is optional for anatomy overlay, and only validated DICOM artifacts participate in preflight.
+- Loading and artifact-fetch failure have separate labels, so a transient API state is not presented as clinical input readiness. The summary helper is covered by frontend tests for valid/invalid/non-DICOM filtering and loading/error/ready labels.
+- Local verification after the correction: ESLint PASS, TypeScript typecheck PASS, Vitest **8/8** PASS, production build PASS. The existing Vite bundle-size warning remains a performance follow-up only.
+- This correction improves the evidence boundary but does not close P17: authenticated staging upload of the synthetic RTSTRUCT/CT, validation, DVH validate→save→replay→refresh/export, CT preview/overlay, direct database/hash/scope checks, fault/volume/resource gates and independent oracle remain open.
+
 ## Current blockers and required gates
 
 The older Railway-history bullets below are retained as evidence of earlier incidents. The current gates are:
