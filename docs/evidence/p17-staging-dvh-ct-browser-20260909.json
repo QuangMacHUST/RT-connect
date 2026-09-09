@@ -276,6 +276,69 @@
     "byte_level_content_status": "PASS_CONTENT_CAPTURE_WITH_BROWSER_FINALIZATION_NOTE",
     "note": "The browser harness did not expose a download event for the blob-anchor export, but the two downloaded contents were captured from the browser Downloads directory, parsed successfully, and matched the saved run ID, engine, input fingerprint and result SHA. The .crdownload suffix is retained by the browser harness; final filename finalization remains a browser/runtime observation and is not treated as an application-byte failure."
   },
+  "latest_runtime_recheck": {
+    "captured_at_utc": "2026-09-09T15:57:33.3993225Z",
+    "source_commit": "7a340b281f0bf8a91a5c72dc861c71c82009bce8",
+    "public_smoke_evidence": "docs/evidence/p19-staging-public-smoke-20260909-7a340b2.json",
+    "web_build_label_observed": "7a340b281f0bf8a91a5c72dc861c71c82009bce8",
+    "route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh",
+    "preflight": {
+      "valid_rtdose_count": 2,
+      "valid_rtstruct_count": 1,
+      "valid_ct_count": 1,
+      "selected_rtdose": "gamma-rtdose-v1-smoke.dcm · ca5c9168eb9b…",
+      "selected_rtstruct": "p17-rtstruct-v1-smoke.dcm · 16a79df31297…",
+      "selected_ct": "p17-ct-v1-smoke.dcm · 0b1d3bfd6adf…",
+      "selected_roi": "#1 · P17_TARGET · 1 contour",
+      "result": "PASS"
+    },
+    "saved_run_recheck": {
+      "run_id": "8000ff9b-7a02-4cec-850e-e27e4fe50cc4",
+      "engine_version": "p17-dvh-1.1.0",
+      "coverage_status": "FULL",
+      "selected_voxel_count": 4,
+      "volume_cc": 0.004,
+      "dmean_gy": 6.5,
+      "d95_gy": 5.2,
+      "input_fingerprint": "ed432bafee35aada8fa7eb3a1ed7f50d5ea6322a5ba91af7b410bf1503621bd2",
+      "result_sha256": "a2826ddcb002916486886366e8cc50d3eabd3aa735afef18c9f3ca6e43d30a44",
+      "result": "PASS"
+    },
+    "ct_overlay_recheck": {
+      "frame_index": 0,
+      "status": "LPS LINKED",
+      "overlay": "NEAREST_NEIGHBOR_IN_PATIENT_LPS",
+      "roi": "#1 · P17_TARGET",
+      "crosshair": "dose grid center",
+      "result": "PASS"
+    },
+    "export_content_recheck": {
+      "json": {
+        "browser_download_name": "rt-connect-dvh-8000ff9b-7a02-4cec-850e-e27e4fe50cc4 (2).json.crdownload",
+        "utf8_byte_length": 17738,
+        "sha256": "9e1106e3a1e2a5e4964dd109f650c88ea9513d80ae1ec6b0d91b60014b656723",
+        "content_parse": "PASS",
+        "id_matches_run": true,
+        "result_sha256_matches_ui": true,
+        "final_filename": "UNVERIFIED"
+      },
+      "csv": {
+        "browser_download_name": "rt-connect-dvh-8000ff9b-7a02-4cec-850e-e27e4fe50cc4 (1).csv.crdownload",
+        "utf8_byte_length": 10478,
+        "sha256": "c626590dcb470d8d60a67d2f8d7a62c22928de40997d455c960ee22aeed15766",
+        "row_parse": "PASS",
+        "row_count": 21,
+        "case_id_matches_ui": true,
+        "engine_matches_ui": true,
+        "result_sha256_matches_ui": true,
+        "final_filename": "UNVERIFIED"
+      },
+      "content_status": "PASS",
+      "browser_finalization_status": "UNVERIFIED",
+      "note": "The payloads are complete and parse/hash correctly. The Edge/CUA browser harness retains the .crdownload suffix after the click, so this evidence does not claim that the final filename rename completed. This is kept as an open browser/runtime observation, not converted into an application-content failure."
+    },
+    "result": "PASS_WITH_BROWSER_FINALIZATION_OPEN"
+  },
   "local_verification": {
     "web_tests": "12 passed",
     "typecheck": "PASS",
