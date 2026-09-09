@@ -56,7 +56,7 @@ def verify(root: Path) -> dict[str, object]:
     expected_versions = {
         "business": (r"\*\*Phiên bản tài liệu:\*\*\s*([0-9]+\.[0-9]+)", "0.22"),
         "specification": (r"version \*\*([0-9]+\.[0-9]+)\*\*", "1.19"),
-        "technical": (r"\*\*Phiên bản:\*\*\s*([0-9]+\.[0-9]+)", "1.17"),
+        "technical": (r"\*\*Phiên bản:\*\*\s*([0-9]+\.[0-9]+)", "1.18"),
         "plan": (r"Phiên bản:\s*\*\*([0-9]+\.[0-9]+)\*\*", "4.5"),
     }
     for name, (pattern, expected) in expected_versions.items():

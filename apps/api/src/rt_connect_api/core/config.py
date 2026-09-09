@@ -14,6 +14,10 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     app_version: str = "0.1.0-dev"
+    # Railway provides this for Git-triggered deployments.  Keep APP_VERSION as
+    # the local/manual fallback, but prefer the immutable deployment SHA when
+    # the platform supplies it so public release metadata is source-identifiable.
+    railway_git_commit_sha: str | None = None
     schema_revision: str = "20260909_0018"
     log_level: str = "INFO"
     database_url: str | None = None
@@ -64,6 +68,12 @@ class Settings(BaseSettings):
         if self.supabase_jwt_issuer:
             return f"{self.supabase_jwt_issuer.rstrip('/')}/.well-known/jwks.json"
         return None
+
+    @property
+    def release_version(self) -> str:
+        """Return the deployment SHA when Railway exposes one, else APP_VERSION."""
+
+        return self.railway_git_commit_sha or self.app_version
 
 
 @lru_cache

@@ -3,7 +3,7 @@
 - Phiên bản: **4.5**, ngày 2026-09-09.
 - Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.22.
 - Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.19.
-- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.17.
+- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.18.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
 - Phạm vi lần cập nhật này: giữ toàn bộ contract v4.4 và bổ sung record cgroup memory cho P17-W06 workload Docker đồng thời sau khi migration P4 `20260909_0018` đã trở thành schema head trên staging; làm rõ `20260908_0017` là migration riêng của P17, không phải schema head hiện hành. Các contract member list/toggle, invitation email-bound one-time, expiry/revoke/replay, active-context invariant và route `/invite` vẫn là authority. Tiếp tục chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20. Các slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local ngày 2026-09-09 được giữ nguyên theo progress log. Staging DVH saved-run/CT E2E vẫn là gate riêng vì case hiện chưa có RTSTRUCT/CT. P18 local integrated journey, local backup/restore verifier, ma trận browser/device/timezone/viewport, script kiểm public deployment P19, công cụ release-manifest P19 và gói runbook P20 chỉ là công cụ/evidence hỗ trợ, không tự đóng phase. Không suy diễn từ test local, workload Docker local hoặc một lần Railway báo Online.
@@ -64,7 +64,7 @@ Các smoke run lịch sử giữ tại progress log: Gamma 2D `e084529d-6bb1-411
 | GAP-06: /ready chỉ kiểm DB connection | `db/session.py::database_ready` hiện kiểm `SELECT 1` và đối chiếu đúng một dòng `alembic_version` với `Settings.schema_revision`. | P2/P19 | Có kiểm schema revision riêng hoặc readiness mở rộng; không nói SELECT 1 xác minh migration. | `LOCAL_VERIFIED`; public staging smoke hiện hành đối chiếu schema head `20260909_0018`; release manifest vẫn mở. |
 | GAP-07: Fixture RTDOSE sử dụng CGY và SOP Class tham chiếu ngẫu nhiên | Fixture generator đã chuyển sang GY + `DoseGridScaling=0.01`, RTPlanStorage SOP Class và UID ổn định; fixture tái tạo byte-identical. | P6/P8 | Tạo fixture chuẩn GY + DoseGridScaling tương ứng, RTPlanStorage SOP Class đúng; CGY raw fixture chỉ compatibility/negative test. | `STAGING_VERIFIED` cho fixture RTDOSE GY + measurement 3D trên run `df38e7d5-bb4b-4e2b-b949-2310acb1875c`; geometry/scale negative cases còn mở. |
 | GAP-08: Old error example khác API thật | `core/errors.py`, `specification.md` và technical contract đang được đồng bộ về flat envelope. | P0/P1 | Tài liệu và consumer tests cùng schema flat, không còn ví dụ nested gây hiểu sai. | `DOC_SYNCED`; vẫn giữ contract test chống hồi quy. |
-| GAP-09: Build label không chứng minh source deployed | Staging API/web/worker đã được deploy từ commit `2fcf065`; `/api/v1/version`, web bundle và deployment metadata đều cùng nhận diện candidate. Release manifest vẫn là lớp bắt buộc cho promotion production. | P3/P19 | Hiển thị build metadata đúng artifact và ghi SHA của từng service; tạo manifest redacted cho release. | `STAGING_LABEL_VERIFIED`; production manifest `OPEN`. |
+| GAP-09: Build label không chứng minh source deployed | API và frontend đã có contract ưu tiên `RAILWAY_GIT_COMMIT_SHA`; Git-triggered Docker build khai báo SHA làm build argument, còn `APP_VERSION`/`VITE_APP_VERSION` là fallback local/manual. Release manifest vẫn là lớp bắt buộc cho promotion production. | P3/P19 | Deploy lại candidate và chứng minh API/web/worker runtime label cùng source SHA, sau đó ghi SHA từng service vào manifest redacted. | `IMPLEMENTED_LOCAL`; staging source-label recheck và production manifest `OPEN`. |
 
 Các trạng thái trên chỉ là checkpoint, không phải đóng phase. `LOCAL_VERIFIED` nghĩa là có code và test local tương ứng; chỉ `STAGING_VERIFIED` mới chứng minh luồng browser → API → database/object storage → worker → result trên release đang chạy. GAP-06/GAP-09 và phần staging/oracle/benchmark của P8 vẫn chặn DONE-v2.
 
@@ -1879,13 +1879,13 @@ Template phase packet tối thiểu:
 
 ~~~yaml
 phase: Pxx
-phase_version: "4.3"
+phase_version: "4.5"
 status: IN_PROGRESS
 branch: "codex/<branch>"
 source_commit: "<sha>"
 business_analysis_version: "0.22"
-specification_version: "1.17"
-technical_specification_version: "1.15"
+specification_version: "1.19"
+technical_specification_version: "1.18"
 entry_gate:
   dependencies: []
   schema_revision: "<revision-or-null>"
@@ -2129,13 +2129,13 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 > Đoạn này là mô tả của revision v4.0 trước đó; trạng thái hiện hành của bộ tài liệu nằm ở mục 7.3.
 
-Đợt rebaseline ban đầu đã tạo BA v0.20, specification v1.14, technical-specification v1.11 và plan v3.5; các bản cập nhật kế tiếp giữ lịch sử đó và đã nâng plan lên v3.9/technical-specification v1.12. Revision hiện tại là BA v0.22, specification v1.17, technical-specification v1.15 và plan v4.3, bổ sung feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate và contract membership/invitation P4. Bộ tài liệu hiện có ma trận hành vi ở cấp tính năng, từ điển trạng thái, error taxonomy, operation/evidence contract, B01–B12 và ma trận bao phủ P0–P20. P16 đã có implementation local và staging browser smoke trên migration `20260908_0016`, còn direct PostgreSQL/scope/fault/release closure vẫn mở. P17 đã có pure engine/API/UI/migration, explicit P11/P16 limit binding, DVH report source và bounded CT preview local với S12–S16/E24–E30; staging DVH/CT E2E, protocol compatibility, fault/volume, independent oracle và release evidence vẫn mở. P18 hiện có local integrated journey, local browser support matrix và local backup/restore support nhưng staging fault/restore/pilot vẫn mở. Public staging hiện hành đã chứng minh schema head `20260909_0018`, version parity `2fcf065` và Auth boundary unauthenticated qua verifier 14/14; Authenticated E2E và production gates chưa đóng. P20 đã có runbook support artifact nhưng alert/restore/owner evidence chưa có. Không phase nào được đánh dấu `DONE-v2` chỉ vì local test, HTTP 200 hoặc Railway báo Online.
+Đợt rebaseline ban đầu đã tạo BA v0.20, specification v1.14, technical-specification v1.11 và plan v3.5; các bản cập nhật kế tiếp được giữ trong lịch sử. Revision hiện hành của bộ tài liệu là BA v0.22, specification v1.19, technical-specification v1.18 và plan v4.5, bổ sung feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate, contract membership/invitation P4, source-identifiable Railway release metadata và P17 workload semantics. Bộ tài liệu hiện có ma trận hành vi ở cấp tính năng, từ điển trạng thái, error taxonomy, operation/evidence contract, B01–B12 và ma trận bao phủ P0–P20. P16 đã có implementation local và staging browser smoke trên migration `20260908_0016`, còn direct PostgreSQL/scope/fault/release closure vẫn mở. P17 đã có pure engine/API/UI/migration, explicit P11/P16 limit binding, DVH report source và bounded CT preview local với S12–S16/E24–E30; staging DVH/CT E2E, protocol compatibility, fault/volume, independent oracle và release evidence vẫn mở. P18 hiện có local integrated journey, local browser support matrix và local backup/restore support nhưng staging fault/restore/pilot vẫn mở. Public staging hiện hành đã chứng minh schema head `20260909_0018`, version parity `2fcf065` và Auth boundary unauthenticated qua verifier 15/15; source-label recheck sau candidate mới, Authenticated E2E và production gates chưa đóng. P20 đã có runbook support artifact và local status dashboard slice nhưng alert/restore/owner evidence chưa có. Không phase nào được đánh dấu `DONE-v2` chỉ vì local test, HTTP 200 hoặc Railway báo Online.
 
 
 ### 7.3. Revision hiện hành v4.5
 
 Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.19,
-`technical-specification.md` v1.17 và `plan.md` v4.5. Revision v4.5 giữ status/readiness
+`technical-specification.md` v1.18 và `plan.md` v4.5. Revision v4.5 giữ status/readiness
 surface P20 và bổ sung P4 member/invitation execution contract: workflow `/invite`, token
 hash-at-rest, expiry/revoke/replay, pending uniqueness, active-context và last-active invariant;
 đồng thời pin semantics quan sát cgroup memory cho P17 Docker workload mà không coi đó là peak RSS.

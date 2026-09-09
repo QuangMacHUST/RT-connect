@@ -62,7 +62,7 @@ def version(request: Request) -> VersionResponse:
     settings = request.app.state.settings
     return VersionResponse(
         application="rt-connect-api",
-        version=settings.app_version,
+        version=settings.release_version,
         environment=settings.app_env,
         engine_version=settings.engine_version,
         renderer_version=settings.renderer_version,

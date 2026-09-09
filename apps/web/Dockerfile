@@ -9,6 +9,7 @@ ARG VITE_API_BASE_URL
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_PUBLISHABLE_KEY
 ARG VITE_APP_VERSION
+ARG RAILWAY_GIT_COMMIT_SHA
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 ENV VITE_SUPABASE_URL=${VITE_SUPABASE_URL}
 ENV VITE_SUPABASE_PUBLISHABLE_KEY=${VITE_SUPABASE_PUBLISHABLE_KEY}
@@ -17,7 +18,10 @@ ENV VITE_APP_VERSION=${VITE_APP_VERSION}
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-RUN npm run build
+# A Git-triggered Railway build exposes its immutable source SHA as a build
+# argument.  Prefer it over a manually copied VITE_APP_VERSION so the browser
+# build label cannot silently describe an older commit.
+RUN if [ -n "$RAILWAY_GIT_COMMIT_SHA" ]; then VITE_APP_VERSION="$RAILWAY_GIT_COMMIT_SHA" npm run build; else npm run build; fi
 
 FROM nginx:1.29-alpine@sha256:5616878291a2eed594aee8db4dade5878cf7edcb475e59193904b198d9b830de AS runtime
 COPY --from=build /app/dist /usr/share/nginx/html

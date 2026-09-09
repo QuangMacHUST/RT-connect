@@ -1184,7 +1184,7 @@ Bổ sung ngày 2026-09-09 theo yêu cầu chi tiết hóa toàn bộ dự án. 
 
 > Ghi chú đồng bộ: đoạn trên mô tả revision nghiệp vụ v0.22; business requirement không đổi trong
 > lần đồng bộ kỹ thuật này. Revision hiện hành dùng `specification.md` v1.19,
-> `technical-specification.md` v1.17 và `plan.md` v4.5; contract mới làm rõ dashboard
+> `technical-specification.md` v1.18 và `plan.md` v4.5; contract mới làm rõ dashboard
 > health/readiness/version/queue của P20, lifecycle membership/invitation P4 và semantics quan sát
 > cgroup memory của workload P17, không thay đổi nguyên tắc thành viên ngang quyền.
 

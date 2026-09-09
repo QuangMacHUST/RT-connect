@@ -3,6 +3,7 @@ from sqlalchemy import create_engine, text
 
 from rt_connect_api.core.config import Settings
 from rt_connect_api.db.session import database_ready, normalize_database_url
+from rt_connect_api.main import create_app
 
 
 def test_comma_separated_cors_origins_are_supported() -> None:
@@ -81,3 +82,19 @@ def test_version_exposes_release_metadata_without_secrets(client: TestClient) ->
         "renderer_version": "unavailable-in-p1",
         "schema_revision": "20260909_0018",
     }
+
+
+def test_version_prefers_railway_commit_sha_when_available() -> None:
+    settings = Settings(
+        app_env="staging",
+        app_version="stale-configured-label",
+        railway_git_commit_sha="39a079c1234567890abcdef1234567890abcdef1",
+        database_url=None,
+        redis_url=None,
+    )
+
+    with TestClient(create_app(settings)) as test_client:
+        response = test_client.get("/api/v1/version")
+
+    assert response.status_code == 200
+    assert response.json()["version"] == "39a079c1234567890abcdef1234567890abcdef1"

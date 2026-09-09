@@ -3,7 +3,7 @@
 ## Documentation and implementation rebaseline — 2026-09-09
 
 Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.19,
-`technical-specification.md` v1.17 và `plan.md` v4.5. Dòng rebaseline lịch sử ngay dưới đây
+`technical-specification.md` v1.18 và `plan.md` v4.5. Dòng rebaseline lịch sử ngay dưới đây
 giữ nguyên để truy vết; không dùng các phiên bản cũ đó làm authority.
 
 `business-analysis.md` v0.21, `specification.md` v1.15, `technical-specification.md` v1.13 và `plan.md` v4.0 bổ sung feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate, state contract, testcase, workflow, error/recovery contract và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
@@ -57,7 +57,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | :--- | :--- | :--- |
 | `business-analysis.md` | 0.22 | Business source; detailed feature behavior/workflow/error/recovery/state matrix, business feature cards, P4 membership/invitation addendum, phase handoff and P0–P20 contracts |
 | `specification.md` | 1.19 | Behavior/data/error/state/numeric contracts; operation/evidence record, P17 Docker workload record semantics including cgroup observation, change-impact/release manifest, P20 status/readiness surface and exact P4/P10/P11/P12/P13/P14/P15/P16/P17 contracts including binding/report/CT preview |
-| `technical-specification.md` | 1.17 | Architecture reference; bounded-context implementation addenda, P4 invitation schema/API, P17 workload verifier/memory semantics including cgroup observation, P20 status/readiness dashboard boundary, resource policy, CT preview adapter, P18 local backup/restore support and cross-document execution references |
+| `technical-specification.md` | 1.18 | Architecture reference; Railway source-identifiable release metadata, bounded-context implementation addenda, P4 invitation schema/API, P17 workload verifier/memory semantics including cgroup observation, P20 status/readiness dashboard boundary, resource policy, CT preview adapter, P18 local backup/restore support and cross-document execution references |
 | `plan.md` | 4.5 | Phase/workflow/S-E/C/B tests, DoR/DoD, dependency graph, execution gates, execution ledger, full coverage matrix, P4 invitation/member work packages, P17 local workload checkpoint with cgroup observation, P20 status/readiness dashboard package, binding/report/CT work packages, backup/restore support, local browser matrix, operations runbooks and staging gates |
 
 ## Phase status
@@ -334,7 +334,7 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 ## P17 Docker cgroup memory observation — local support rerun 2026-09-09
 
 - `scripts/verify-p17-docker-workload.ps1` now reads cgroup v1 `memory.current`, `memory.max_usage_in_bytes` and `memory.limit_in_bytes` when available, in addition to sparse `docker stats` samples. The rerun kept 2 concurrent jobs × 3 repeats, 6/6 identical engine/oracle results, `/health=ok`, `/ready=ready`, schema `20260909_0018`, and no patient data.
-- The API container reported cgroup current `148,406,272` bytes and peak `367,915,008` bytes since container start; the local cgroup limit is unbounded/sentinel. These numbers are explicitly `is_peak_rss=false` and are not a performance pass. Evidence was refreshed at `docs/evidence/p17-local-docker-workload-20260909.json`; the contract wording is synchronized in `specification.md` v1.19, `technical-specification.md` v1.17 and `plan.md` v4.5.
+- The API container reported cgroup current `148,406,272` bytes and peak `367,915,008` bytes since container start; the local cgroup limit is unbounded/sentinel. These numbers are explicitly `is_peak_rss=false` and are not a performance pass. Evidence was refreshed at `docs/evidence/p17-local-docker-workload-20260909.json`; the contract wording is synchronized in `specification.md` v1.19, `technical-specification.md` v1.18 and `plan.md` v4.5.
 
 ## P17 explicit limit binding and Report Builder source — local candidate verified 2026-09-08
 

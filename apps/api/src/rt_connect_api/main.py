@@ -39,7 +39,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     configure_logging(runtime_settings.log_level)
     app = FastAPI(
         title="RT-CONNECT API",
-        version=runtime_settings.app_version,
+        version=runtime_settings.release_version,
         description="Clinical QA and independent biological calculation platform API.",
         openapi_url="/api/v1/openapi.json",
         docs_url="/api/v1/docs" if runtime_settings.app_env != "production" else None,

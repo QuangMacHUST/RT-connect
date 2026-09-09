@@ -3,7 +3,7 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.17 — đồng bộ specification.md v1.19, plan.md v4.5 và business-analysis.md v0.22; bổ sung record/semantics cho P17 Docker workload đồng thời, gồm sampled `docker stats` và cgroup memory observation, đồng thời phân biệt cả hai với peak RSS; giữ entity/migration/API membership-invitation P4, unique pending invitation và active-context invariant, cùng reference tới feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate và status/readiness surface P20 (2026-09-09)
+- **Phiên bản:** 1.18 — đồng bộ specification.md v1.19, plan.md v4.5 và business-analysis.md v0.22; bổ sung source-identifiable release metadata từ Railway Git SHA cho API/web, cùng record/semantics cho P17 Docker workload đồng thời, gồm sampled `docker stats` và cgroup memory observation, đồng thời phân biệt cả hai với peak RSS; giữ entity/migration/API membership-invitation P4, unique pending invitation và active-context invariant, cùng reference tới feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate và status/readiness surface P20 (2026-09-09)
 - **Nguồn yêu cầu:** business-analysis.md phiên bản 0.22
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
@@ -11,7 +11,7 @@
 
 Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
-> Đồng bộ v1.17: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§14 là authority cho hành vi/validation/error/thuật toán/phase handoff. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; P4 đã bổ sung local membership/invitation slice trên migration `20260909_0018` và public staging đã migrate/deploy/readiness/version-parity pass, nhưng Auth browser và persistence vẫn phải revalidate trước khi gọi available. P17 có CT pixel preview local, explicit P11/P16 binding, DVH report source và Docker workload verifier local; verifier giờ ghi thêm cgroup version/current/peak/limit nhưng cả cgroup peak lẫn `docker stats` sample vẫn không phải peak RSS, còn CT/staging evidence vẫn phải kiểm theo candidate. P18 có local route-to-persistence và local backup/restore support nhưng chưa thay fault/restore/pilot staging gate. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+> Đồng bộ v1.18: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§14 là authority cho hành vi/validation/error/thuật toán/phase handoff. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; P4 đã bổ sung local membership/invitation slice trên migration `20260909_0018` và public staging đã migrate/deploy/readiness/version-parity pass, nhưng Auth browser và persistence vẫn phải revalidate trước khi gọi available. P17 có CT pixel preview local, explicit P11/P16 binding, DVH report source và Docker workload verifier local; verifier giờ ghi thêm cgroup version/current/peak/limit nhưng cả cgroup peak lẫn `docker stats` sample vẫn không phải peak RSS, còn CT/staging evidence vẫn phải kiểm theo candidate. Railway Git-triggered Docker builds phải truyền `RAILWAY_GIT_COMMIT_SHA` vào frontend build và API runtime phải ưu tiên SHA này cho release label; `APP_VERSION`/`VITE_APP_VERSION` chỉ là fallback khi chạy local hoặc không có Git trigger. P18 có local route-to-persistence và local backup/restore support nhưng chưa thay fault/restore/pilot staging gate. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -2358,6 +2358,9 @@ Mỗi change chạy:
 - Configuration template.
 - Test report.
 - Dependency inventory.
+- Source/deployment SHA embedded in API and frontend release metadata when the platform
+  provides `RAILWAY_GIT_COMMIT_SHA`; configured manual version labels remain a local/manual
+  fallback and cannot override the Git-triggered source identity.
 
 ### 17.3. Migration
 
@@ -2384,6 +2387,8 @@ Mỗi release ghi:
 - Dependency lock hash.
 - Test result summary.
 - Known limitations.
+- Source commit SHA and deployment ID; API `/api/v1/version` and the frontend build label
+  must resolve to that SHA for a Git-triggered Railway deployment.
 
 ### 17.5. Public Web Deployment và remote access
 
@@ -2479,7 +2484,10 @@ Frontend và API là các endpoint được public qua HTTPS theo nhu cầu củ
 
 Pipeline public release tối thiểu:
 
-1. Build frontend/API/worker/render image với version cố định.
+1. Build frontend/API/worker/render image với source SHA cố định. Với Git-triggered Railway
+   Docker builds, khai báo `ARG RAILWAY_GIT_COMMIT_SHA`; frontend ưu tiên SHA này khi chạy
+   `npm run build`, còn API đọc biến hệ thống runtime đó cho `/api/v1/version`. Chỉ dùng
+   `APP_VERSION`/`VITE_APP_VERSION` làm fallback ngoài Git-triggered deployment.
 2. Chạy test và scan dependency/image theo năng lực hạ tầng.
 3. Deploy các service vào Railway staging environment.
 4. Chạy smoke test từ browser và API client; `scripts/verify-public-deployment.ps1` có thể tạo public-contract evidence JSON cho health/readiness/schema/version/OpenAPI/web bundle, nhưng không thay authenticated E2E.
