@@ -54,6 +54,12 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - Browser staging đã reload route `/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh`, hiển thị build `ddfb43458ab57caa50387880f0f0538af0eb5ca8`, `2 dose · 1 structure`, RTDOSE/RTSTRUCT/ROI và control P16/P11. Preview import một reference P16 tổng hợp trả `hợp lệ 1, loại 0`, nhưng chưa commit entry mới; vì vậy live P16/P11 evaluation vẫn mở và không được ghi thành PASS.
 - Đây là public parity/UI evidence, không đóng P17 binding/report cloud, full negative/fault/resource/volume, browser download finalization, worker/release manifest, P4 authenticated lifecycle hoặc production promotion.
 
+## P17 current-candidate negative-path recheck — 2026-09-09
+
+- Trên candidate `dd14ef84f16c66bba45851d98d17f2954ef35fc7`, browser staging chọn RTDOSE cũ có UI hash prefix `544f355fa286…` và chạy `Validate & preview`. API/UI trả đúng `DVH_DOSE_UNITS_UNSUPPORTED` với thông báo yêu cầu `DoseUnits=GY`; đây là validate-only nên lịch sử vẫn có `1` run và không tạo bản ghi mới.
+- Sau đó chọn lại RTDOSE tổng hợp hợp lệ với UI hash prefix `ca5c9168eb9b…`; validate trả `Validation DVH hợp lệ; chưa tạo bản ghi lưu trữ.` Saved run `8000ff9b-7a02-4cec-850e-e27e4fe50cc4` vẫn giữ nguyên, không có mutation hoặc duplicate run.
+- Evidence redacted: `docs/evidence/p17-staging-negative-recheck-20260909-dd14ef8.json`. Đây là bằng chứng negative-path trên current candidate; không đóng các gate fault/resource/volume, P11/P16 binding, browser final filename, release manifest hoặc production promotion.
+
 ## Current checkpoint
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.

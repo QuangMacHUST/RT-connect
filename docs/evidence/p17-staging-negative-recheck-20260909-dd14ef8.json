@@ -1,0 +1,36 @@
+{
+  "schema_version": "rt-connect.staging-dvh-negative-recheck.v1",
+  "captured_at_utc": "2026-09-09T16:59:09.1555168Z",
+  "environment": "staging",
+  "source_commit": "dd14ef84f16c66bba45851d98d17f2954ef35fc7",
+  "web_build_label": "dd14ef84f16c66bba45851d98d17f2954ef35fc7",
+  "route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "synthetic_fixture_boundary": true,
+  "operation": "Validate & preview",
+  "invalid_rtdose_recheck": {
+    "selected_artifact": "gamma-rtdose-v1-smoke.dcm",
+    "staging_ui_sha256_prefix": "544f355fa286",
+    "expected_error_code": "DVH_DOSE_UNITS_UNSUPPORTED",
+    "observed_error_code": "DVH_DOSE_UNITS_UNSUPPORTED",
+    "message": "The P17 physical-dose profile requires DoseUnits=GY; units are never inferred.",
+    "history_total_before": 1,
+    "history_total_after": 1,
+    "run_created": false,
+    "result": "PASS"
+  },
+  "recovery_recheck": {
+    "selected_artifact": "gamma-rtdose-v1-smoke.dcm",
+    "staging_ui_sha256_prefix": "ca5c9168eb9b",
+    "observed_message": "Validation DVH hợp lệ; chưa tạo bản ghi lưu trữ.",
+    "run_created": false,
+    "result": "PASS"
+  },
+  "retained_run": {
+    "run_id": "8000ff9b-7a02-4cec-850e-e27e4fe50cc4",
+    "history_count_after_recheck": 1,
+    "mutation_issued": false,
+    "result": "UNCHANGED"
+  },
+  "data_boundary": "Only repository-generated synthetic DICOM fixtures were selected; no patient, PACS or treatment dataset was used."
+}

@@ -22,5 +22,6 @@ service deployments settle.
 P17 release marker: DVH explicit P16/P11 binding UI is released against the
 same API contract; validate the selected source and result provenance in staging.
 
-P19 evidence marker: the `ddfb434` public verifier result is recorded in the
-repository progress log; keep API/web/worker source parity on the next release.
+P19 evidence marker: the `dd14ef8` public verifier and P17 negative-path
+recheck are recorded in the repository evidence/progress log; keep
+API/web/worker source parity on the next release.
