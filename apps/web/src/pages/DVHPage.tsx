@@ -247,14 +247,21 @@ export function DVHPage() {
   const organizationId = bootstrap.data?.organization.id
   const cases = useQuery({ queryKey: ['dvh-case', organizationId, caseId, accessToken], queryFn: () => apiClient.qaCases(accessToken!, organizationId!), enabled: Boolean(accessToken && organizationId && caseId), retry: false })
   const selectedCase = useMemo(() => cases.data?.items.find((item) => item.id === caseId), [cases.data, caseId])
-  const inputs = useQuery({
-    queryKey: ['dvh-inputs', organizationId, caseId, selectedStructureId, accessToken],
-    queryFn: () => apiClient.dvhInputs(accessToken!, organizationId!, caseId!, selectedStructureId),
+  const inputManifest = useQuery({
+    queryKey: ['dvh-input-manifest', organizationId, caseId, accessToken],
+    queryFn: () => apiClient.dvhInputs(accessToken!, organizationId!, caseId!),
     enabled: Boolean(accessToken && organizationId && caseId && selectedCase), retry: false
   })
-  const doseId = selectedDoseId && inputs.data?.dose_artifacts.some((item) => item.id === selectedDoseId) ? selectedDoseId : inputs.data?.dose_artifacts[0]?.id ?? ''
-  const structureId = selectedStructureId && inputs.data?.structure_artifacts.some((item) => item.id === selectedStructureId) ? selectedStructureId : inputs.data?.structure_artifacts[0]?.id ?? ''
-  const roiOptions = useMemo(() => (inputs.data?.rois ?? []).map((item) => ({ number: numberValue(item.roi_number), name: textValue(item.name), contours: numberValue(item.contour_count) })).filter((item): item is { number: number; name: string; contours: number | undefined } => item.number !== undefined), [inputs.data?.rois])
+  const manifestData = inputManifest.data
+  const structureId = selectedStructureId && manifestData?.structure_artifacts.some((item) => item.id === selectedStructureId) ? selectedStructureId : manifestData?.structure_artifacts[0]?.id ?? ''
+  const inputs = useQuery({
+    queryKey: ['dvh-inputs', organizationId, caseId, structureId, accessToken],
+    queryFn: () => apiClient.dvhInputs(accessToken!, organizationId!, caseId!, structureId),
+    enabled: Boolean(accessToken && organizationId && caseId && selectedCase && structureId), retry: false
+  })
+  const inputData = inputs.data ?? manifestData
+  const doseId = selectedDoseId && inputData?.dose_artifacts.some((item) => item.id === selectedDoseId) ? selectedDoseId : inputData?.dose_artifacts[0]?.id ?? ''
+  const roiOptions = useMemo(() => (inputData?.rois ?? []).map((item) => ({ number: numberValue(item.roi_number), name: textValue(item.name), contours: numberValue(item.contour_count) })).filter((item): item is { number: number; name: string; contours: number | undefined } => item.number !== undefined), [inputData?.rois])
   const effectiveRoi = roiOptions.some((item) => item.number === roiNumber) ? roiNumber : roiOptions[0]?.number ?? 0
   const ctPreview = useQuery({
     queryKey: ['dvh-ct-preview', organizationId, caseId, doseId, selectedCtId, structureId, effectiveRoi, ctFrameIndex, accessToken],
@@ -336,20 +343,25 @@ export function DVHPage() {
 
   const previewResult = validation?.valid ? validation.preview ?? undefined : undefined
   const result = activeRun?.result_snapshot ?? previewResult
-  const inputError = inputs.error ? errorMessage(inputs.error) : undefined
+  const inputRequestError = inputManifest.error ?? inputs.error
+  const inputError = inputRequestError ? errorMessage(inputRequestError) : undefined
+  const refetchInputs = () => {
+    void inputManifest.refetch()
+    if (structureId) void inputs.refetch()
+  }
   const busy = validateMutation.isPending || createMutation.isPending
   return <div className="page page--dvh">
     <header className="page-header"><div><p className="eyebrow">P17 · MOD-15</p><h1>Visual Dose / DVH Workspace</h1><p>{selectedCase.title} · phân tích physical-dose DVH từ RTDOSE và RTSTRUCT đã VALID, kèm preview dose-native và provenance.</p></div><div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">QA Archive</Link><Link className="button-link button-secondary" to={`/app/qa/cases/${caseId}/gamma`}>Gamma</Link><span className="status-badge">API THẬT</span></div></header>
     {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
     <section className="biological-notice dvh-notice"><strong>PHYSICAL DOSE · P17</strong><span>RTDOSE được quy đổi bằng DoseGridScaling và chỉ chấp nhận DoseUnits=GY. CT là liên kết hình học tùy chọn; khi không chọn CT, kết quả vẫn là DVH trên dose-native grid và không được gọi là anatomy overlay.</span></section>
-    <section className="panel dvh-panel"><div className="panel-heading"><div><p className="eyebrow">INPUT PREFLIGHT</p><h2>Chọn dữ liệu DICOM đã VALID</h2></div><span className={inputs.error ? 'status-badge machine-status--fail' : 'status-badge'}>{inputs.data ? `${inputs.data.dose_artifacts.length} dose · ${inputs.data.structure_artifacts.length} structure` : 'Đang tải'}</span></div>
-      {inputError ? <div className="alert alert--error"><p>{inputError}</p><button onClick={() => void inputs.refetch()}>Thử lại</button></div> : inputs.isPending ? <p>Đang tải input manifest…</p> : <div className="dvh-input-grid">
-        <label>RTDOSE · dose<select value={doseId} onChange={(event) => setSelectedDoseId(event.target.value)}><option value="">Chọn RTDOSE</option>{(inputs.data?.dose_artifacts ?? []).map((item) => <option key={item.id} value={item.id}>{item.original_filename} · {item.sha256.slice(0, 12)}…</option>)}</select></label>
-        <label>RTSTRUCT · structures<select value={structureId} onChange={(event) => { setSelectedStructureId(event.target.value); setRoiNumber(0); setValidation(undefined) }}><option value="">Chọn RTSTRUCT</option>{(inputs.data?.structure_artifacts ?? []).map((item) => <option key={item.id} value={item.id}>{item.original_filename} · {item.sha256.slice(0, 12)}…</option>)}</select></label>
-        <label>CT · optional overlay<select value={selectedCtId} onChange={(event) => { setSelectedCtId(event.target.value); setCtFrameIndex(0); setValidation(undefined) }}><option value="">Không chọn CT · dose-native</option>{(inputs.data?.ct_artifacts ?? []).map((item) => <option key={item.id} value={item.id}>{item.original_filename} · {item.sha256.slice(0, 12)}…</option>)}</select></label>
+    <section className="panel dvh-panel"><div className="panel-heading"><div><p className="eyebrow">INPUT PREFLIGHT</p><h2>Chọn dữ liệu DICOM đã VALID</h2></div><span className={inputRequestError ? 'status-badge machine-status--fail' : 'status-badge'}>{inputData ? `${inputData.dose_artifacts.length} dose · ${inputData.structure_artifacts.length} structure` : 'Đang tải'}</span></div>
+      {inputError ? <div className="alert alert--error"><p>{inputError}</p><button onClick={refetchInputs}>Thử lại</button></div> : !inputData ? <p>Đang tải input manifest…</p> : <div className="dvh-input-grid">
+        <label>RTDOSE · dose<select value={doseId} onChange={(event) => setSelectedDoseId(event.target.value)}><option value="">Chọn RTDOSE</option>{inputData.dose_artifacts.map((item) => <option key={item.id} value={item.id}>{item.original_filename} · {item.sha256.slice(0, 12)}…</option>)}</select></label>
+        <label>RTSTRUCT · structures<select value={structureId} onChange={(event) => { setSelectedStructureId(event.target.value); setRoiNumber(0); setValidation(undefined) }}><option value="">Chọn RTSTRUCT</option>{inputData.structure_artifacts.map((item) => <option key={item.id} value={item.id}>{item.original_filename} · {item.sha256.slice(0, 12)}…</option>)}</select></label>
+        <label>CT · optional overlay<select value={selectedCtId} onChange={(event) => { setSelectedCtId(event.target.value); setCtFrameIndex(0); setValidation(undefined) }}><option value="">Không chọn CT · dose-native</option>{inputData.ct_artifacts.map((item) => <option key={item.id} value={item.id}>{item.original_filename} · {item.sha256.slice(0, 12)}…</option>)}</select></label>
         <label>ROI · chọn theo ROINumber<select value={effectiveRoi || ''} onChange={(event) => setRoiNumber(Number(event.target.value))}><option value="">Chọn ROI</option>{roiOptions.map((item) => <option key={item.number} value={item.number}>#{item.number} · {item.name} · {item.contours ?? 0} contour</option>)}</select></label>
       </div>}
-      {structureId && inputs.data?.rois.length === 0 && <p className="form-hint">RTSTRUCT đã chọn nhưng chưa có ROI để chọn hoặc chưa đọc được contour definition.</p>}
+      {structureId && inputData && inputData.rois.length === 0 && !inputs.isPending && <p className="form-hint">RTSTRUCT đã chọn nhưng chưa có ROI để chọn hoặc chưa đọc được contour definition.</p>}
       <p className="form-hint">Tên ROI chỉ để hiển thị; engine luôn tính theo số ROI duy nhất trong RTSTRUCT. Artifact không ở trạng thái VALID sẽ không xuất hiện trong danh sách.</p>
     </section>
     <section className="panel dvh-panel"><div className="panel-heading"><div><p className="eyebrow">CALCULATION CONTRACT</p><h2>Tham số và chính sách coverage</h2></div><span className="status-badge">NO PRESCRIPTION</span></div><div className="dvh-config-grid">
