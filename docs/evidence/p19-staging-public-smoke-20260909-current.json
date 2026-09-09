@@ -1,6 +1,6 @@
 {
   "schema_version": "rt-connect.public-deployment-verification.v1",
-  "captured_at_utc": "2026-09-09T08:45:51.7959544Z",
+  "captured_at_utc": "2026-09-09T09:00:57.0076629Z",
   "api_base_url": "https://gleaming-cooperation-staging.up.railway.app",
   "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
   "expected_version": "2fcf065",
@@ -89,28 +89,28 @@
     },
     {
       "name": "web.bundle",
-      "url": "https://rt-connect-web-staging-staging.up.railway.app/assets/index-BQaaLe8x.js",
+      "url": "https://rt-connect-web-staging-staging.up.railway.app/assets/index-7zlr-Qxu.js",
       "ok": true,
       "status_code": 200,
-      "details": "bytes=836124; sha256=0d26ea91779cc24e8c829289f174edd8bb279325326ef862df19cf97bfaf7432"
+      "details": "bytes=837127; sha256=93b0fc4ce8e112b722babc9ea9f32330a281096e2fb4ab5f67dab2a65ab83c08"
     },
     {
       "name": "web.bundle.ct_preview_controls",
-      "url": "https://rt-connect-web-staging-staging.up.railway.app/assets/index-BQaaLe8x.js",
+      "url": "https://rt-connect-web-staging-staging.up.railway.app/assets/index-7zlr-Qxu.js",
       "ok": true,
       "status_code": 200,
       "details": "ct_preview_controls_present=True"
     },
     {
       "name": "web.bundle.organization_membership_ui",
-      "url": "https://rt-connect-web-staging-staging.up.railway.app/assets/index-BQaaLe8x.js",
+      "url": "https://rt-connect-web-staging-staging.up.railway.app/assets/index-7zlr-Qxu.js",
       "ok": true,
       "status_code": 200,
       "details": "member_invitation_ui_present=True"
     },
     {
       "name": "web.bundle.expected_version",
-      "url": "https://rt-connect-web-staging-staging.up.railway.app/assets/index-BQaaLe8x.js",
+      "url": "https://rt-connect-web-staging-staging.up.railway.app/assets/index-7zlr-Qxu.js",
       "ok": true,
       "status_code": 200,
       "details": "expected=2fcf065; present=True"

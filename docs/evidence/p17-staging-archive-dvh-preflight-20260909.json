@@ -1,0 +1,37 @@
+{
+  "schema_version": "rt-connect.staging-archive-dvh-preflight.v1",
+  "captured_at_utc": "2026-09-09T09:00:57Z",
+  "verification_level": "STAGING_RUNTIME_UI_PROBE",
+  "source_commit_pushed": "558febf26335b3aa533989f0ceb9aebceee4ec6f",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "bundle": {
+    "path": "assets/index-7zlr-Qxu.js",
+    "sha256": "93b0fc4ce8e112b722babc9ea9f32330a281096e2fb4ab5f67dab2a65ab83c08",
+    "http_status": 200,
+    "dynamic_dvh_label_present": true,
+    "old_static_valid_label_absent": true,
+    "logical_role_hint_present": true
+  },
+  "browser_observation": {
+    "url": "https://rt-connect-web-staging-staging.up.railway.app/app/qa",
+    "build_label": "2fcf065",
+    "dvh_preflight_label": "DVH preflight: 1 RTDOSE · 0 RTSTRUCT · 0 CT VALID",
+    "dvh_action_is_not_input_ready": true,
+    "artifact_count": 7,
+    "valid_rtdose_count": 1,
+    "valid_rtstruct_count": 0,
+    "valid_ct_count": 0
+  },
+  "checks": [
+    { "name": "dynamic_label_reflects_current_artifacts", "passed": true },
+    { "name": "static_ready_claim_removed", "passed": true },
+    { "name": "missing_rtstruct_is_visible", "passed": true },
+    { "name": "ct_is_documented_as_optional_overlay_input", "passed": true }
+  ],
+  "limitations": [
+    "This is an authenticated UI/runtime probe of an empty/partial-input state, not a DVH calculation result.",
+    "The synthetic RTSTRUCT and CT fixtures have not been uploaded; P17 staging DVH/CT gates remain open.",
+    "The web build label remains the existing API release label 2fcf065; source-to-runtime release-manifest parity is a separate P19 gate."
+  ]
+}
