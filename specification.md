@@ -1753,6 +1753,8 @@ Mọi testcase lỗi và mọi lỗi quan sát được trong staging/production
 
 P17 local Docker workload evidence `docs/evidence/p17-local-docker-workload-20260909.json` đã đáp ứng các trường trên cho 2 job × 3 lần, bổ sung cgroup v1 observation, nhưng chỉ là `LOCAL_DOCKER_CONCURRENCY_MEASURED`; không cho phép suy ra worker capacity, staging hoặc clinical readiness.
 
+Known-answer oracle của fixture P17 được chạy riêng bằng `scripts/verify-p17-independent-dvh-oracle.py`: script tự kiểm tra contour/ROI, lấy bốn voxel theo fixture contract, tự tính volume, Dmin/Dmean/Dmax, D2/D50/D95/D98 và Vx rồi mới so sánh với engine. Evidence `docs/evidence/p17-independent-dvh-oracle-20260909.json` phải ghi fixture hashes, expected/observed và từng comparison; **13/13 comparisons PASS** là `LOCAL_INDEPENDENT_ORACLE_VERIFIED`. Đây chưa phải oracle độc lập cho mọi DICOM/vendor hoặc commissioning/reference acceptance, nên staging/reference gate vẫn mở.
+
 Các lớp lỗi và hành vi thực thi:
 
 | Lớp | HTTP thường dùng | `retryable` mặc định | Phải chứng minh |

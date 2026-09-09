@@ -1,0 +1,136 @@
+{
+  "schema_version": "rt-connect.p17-independent-dvh-oracle.v1",
+  "captured_at_utc": "2026-09-09T09:16:55.523385+00:00",
+  "repository_sha": "d6bb0e4a105520a3cdd157ed0801cc71b5ae4862",
+  "fixture_sha256": {
+    "dose": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
+    "structure": "16a79df3129757d9df8b48bd095f0b4b70b24713ea5255e24719d46e6808d401"
+  },
+  "engine": {
+    "key": "visual-dose.dvh",
+    "version": "p17-dvh-1.1.0"
+  },
+  "reference_oracle": {
+    "selected_voxel_count": 4,
+    "volume_cc": 0.004,
+    "Dmin_gy": 5.0,
+    "Dmean_gy": 6.5,
+    "Dmax_gy": 8.0,
+    "Dx_gy": {
+      "D2_gy": 8.0,
+      "D50_gy": 7.0,
+      "D95_gy": 5.2,
+      "D98_gy": 5.08
+    },
+    "Vx_percent": {
+      "V0_gy": 100.0,
+      "V5_gy": 100.0,
+      "V8_gy": 25.0,
+      "V20_gy": 0.0
+    }
+  },
+  "observed_engine_metrics": {
+    "selected_voxel_count": 4,
+    "volume_cc": 0.004,
+    "Dmin_gy": 5.0,
+    "Dmean_gy": 6.5,
+    "Dmax_gy": 8.0,
+    "Dx_gy": {
+      "D2_gy": 8.0,
+      "D50_gy": 7.0,
+      "D95_gy": 5.2,
+      "D98_gy": 5.08
+    },
+    "Vx_percent": {
+      "V0_gy": 100.0,
+      "V5_gy": 100.0,
+      "V8_gy": 25.0,
+      "V20_gy": 0.0
+    }
+  },
+  "comparisons": [
+    {
+      "name": "selected_voxel_count",
+      "expected": 4,
+      "observed": 4,
+      "passed": true
+    },
+    {
+      "name": "volume_cc",
+      "expected": 0.004,
+      "observed": 0.004,
+      "passed": true
+    },
+    {
+      "name": "Dmin_gy",
+      "expected": 5.0,
+      "observed": 5.0,
+      "passed": true
+    },
+    {
+      "name": "Dmean_gy",
+      "expected": 6.5,
+      "observed": 6.5,
+      "passed": true
+    },
+    {
+      "name": "Dmax_gy",
+      "expected": 8.0,
+      "observed": 8.0,
+      "passed": true
+    },
+    {
+      "name": "Dx_gy.D2_gy",
+      "expected": 8.0,
+      "observed": 8.0,
+      "passed": true
+    },
+    {
+      "name": "Dx_gy.D50_gy",
+      "expected": 7.0,
+      "observed": 7.0,
+      "passed": true
+    },
+    {
+      "name": "Dx_gy.D95_gy",
+      "expected": 5.2,
+      "observed": 5.2,
+      "passed": true
+    },
+    {
+      "name": "Dx_gy.D98_gy",
+      "expected": 5.08,
+      "observed": 5.08,
+      "passed": true
+    },
+    {
+      "name": "Vx_percent.V0_gy",
+      "expected": 100.0,
+      "observed": 100.0,
+      "passed": true
+    },
+    {
+      "name": "Vx_percent.V5_gy",
+      "expected": 100.0,
+      "observed": 100.0,
+      "passed": true
+    },
+    {
+      "name": "Vx_percent.V8_gy",
+      "expected": 25.0,
+      "observed": 25.0,
+      "passed": true
+    },
+    {
+      "name": "Vx_percent.V20_gy",
+      "expected": 0.0,
+      "observed": 0.0,
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "limitations": [
+    "The oracle is a committed synthetic known-answer fixture, not a vendor/reference implementation for arbitrary clinical data.",
+    "This run is local engineering evidence and does not close staging, commissioning or clinical release gates."
+  ]
+}

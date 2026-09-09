@@ -1608,6 +1608,10 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 
 Đây là `LOCAL_DOCKER_CONCURRENCY_MEASURED`, giúp kiểm tra không có sai khác oracle giữa hai job đồng thời và ghi nhận cgroup memory observation. Cgroup v1 peak là số tích lũy từ lúc container start, không phải peak RSS riêng của workload; local container cũng không có limit hữu hạn. Vì vậy chưa đóng performance gate: còn thiếu workload/worker reference có CPU-RAM-concurrency pin, peak RSS/service limit, API responsiveness dưới tải, fault/retry và staging evidence. Không dùng checkpoint này để suy ra khả năng xử lý dữ liệu lâm sàng hoặc production capacity.
 
+### Checkpoint independent DVH oracle P17 — 2026-09-09
+
+`scripts/verify-p17-independent-dvh-oracle.py` đọc trực tiếp hai fixture tổng hợp đã pin hash, kiểm tra RTSTRUCT ROI/contour expected, tự lấy bốn dose voxel từ RTDOSE và tự tính volume, Dmin, Dmean, Dmax, D2, D50, D95, D98 và Vx. Sau đó script mới gọi engine `visual-dose.dvh` để đối chiếu. Kết quả **13/13 comparisons PASS**; evidence `docs/evidence/p17-independent-dvh-oracle-20260909.json`. Đây là `LOCAL_INDEPENDENT_ORACLE_VERIFIED` cho known-answer fixture, không phải vendor/reference implementation cho dữ liệu bất kỳ và không đóng staging, commissioning hay clinical release gate.
+
 <a id="phase-18"></a>
 
 ## P18 — Kiểm thử tích hợp, độ bền và pilot
