@@ -1,0 +1,71 @@
+{
+  "schema_version": "rt-connect.p8-local-redis-worker-smoke.v1",
+  "captured_at_utc": "2026-09-09T20:20:09.324873+00:00",
+  "verification_level": "LOCAL_COMPOSE_REDIS_WORKER",
+  "synthetic_only": true,
+  "source_commit": "f8de071d171a017e5bb6124125414a4357cb5ddb",
+  "topology": {
+    "database": "temporary SQLite file",
+    "queue": "local Redis 7 service",
+    "object_storage": "local MinIO disposable bucket",
+    "worker": "separate rt_connect_api.worker process"
+  },
+  "fixture": {
+    "payload_sha256": "ee3075cf212289c9d99477ee78e6f2197d28eaf06e0c7b87eb6ca4478882006f",
+    "grid_shape": [
+      2,
+      2
+    ],
+    "organization_id": "762b9056-77cf-407a-b65a-eae777933c59",
+    "case_id": "796c20a4-f1a0-48da-9daf-e239307330b2"
+  },
+  "happy_path": {
+    "run_id": "b6b21a08-ab2b-4e7b-a95e-4c05e25547ca",
+    "checks": {
+      "status": true,
+      "overall_status": true,
+      "evaluated_points": true,
+      "attempt_count": true,
+      "attempt_terminal": true,
+      "replay_guard": true,
+      "duplicate_dispatch_deduplicated": true
+    }
+  },
+  "bounded_retry_dead_letter": {
+    "run_id": "aaee237f-c800-4f72-8b68-cdcc7335d7d6",
+    "checks": {
+      "status": true,
+      "bounded_attempts": true,
+      "attempts_terminal": true,
+      "dead_letter_written": true,
+      "dead_letter_source": true,
+      "queue_acknowledged": true
+    },
+    "worker_attempt_output_count": 3
+  },
+  "malformed_message_quarantine": {
+    "source_message_id": "1788985206564-0",
+    "checks": {
+      "worker_completed": true,
+      "dead_letter_written": true,
+      "error_code": true,
+      "source_message_recorded": true,
+      "payload_value_not_copied": true,
+      "queue_acknowledged": true
+    },
+    "queue_metrics_after_ack": {
+      "backend": "redis_stream",
+      "stream_length": 5,
+      "pending_count": 0,
+      "consumer_count": 1
+    }
+  },
+  "queue_metrics_after_ack": {
+    "backend": "redis_stream",
+    "stream_length": 5,
+    "pending_count": 0,
+    "consumer_count": 1
+  },
+  "cleanup": "temporary database, stream, keys and MinIO bucket removed in finally",
+  "passed": true
+}
