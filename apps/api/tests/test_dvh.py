@@ -5,6 +5,7 @@ from pathlib import Path
 from uuid import UUID
 
 from fastapi.testclient import TestClient
+from pydicom.uid import generate_uid
 from sqlalchemy import select
 
 from rt_connect_api.api.artifacts import _storage as artifact_storage
@@ -124,6 +125,26 @@ def test_dvh_api_validates_saves_replays_exports_and_scopes_inputs(tmp_path: Pat
         assert run["engine_version"] == "p17-dvh-1.0.0"
         assert run["result_snapshot"]["result_sha256"]
         assert run["input_snapshot"]["dose"]["manifest_checksum_at_use"] == dose["sha256"]
+
+        ct_body = dict(body)
+        ct_body.update(
+            {
+                "ct_artifact_id": ct["id"],
+                "idempotency_key": "dvh-api-ct-001",
+            }
+        )
+        ct_run_response = client.post(f"{base}/runs", json=ct_body)
+        assert ct_run_response.status_code == 201, ct_run_response.text
+        ct_run = ct_run_response.json()
+        assert ct_run["ct_artifact_id"] == ct["id"]
+        assert ct_run["input_snapshot"]["ct"]["artifact_id"] == ct["id"]
+        assert (
+            ct_run["result_snapshot"]["ct"]["frame_of_reference_uid"]
+            == frame_uid
+        )
+        assert ct_run["result_snapshot"]["visual_preview"]["mode"] == (
+            "DOSE_WITH_CT_FRAME_LINK"
+        )
 
         limit = client.post(
             f"/api/v1/organizations/{organization.id}/biological/library",
@@ -263,7 +284,7 @@ def test_dvh_api_validates_saves_replays_exports_and_scopes_inputs(tmp_path: Pat
         replay = client.post(f"{base}/runs", json=body)
         assert replay.status_code == 200, replay.text
         assert replay.json()["id"] == run["id"]
-        assert client.get(f"{base}/runs").json()["total"] == 3
+        assert client.get(f"{base}/runs").json()["total"] == 4
         assert client.get(f"{base}/runs/{run['id']}").json()["id"] == run["id"]
 
         conflict = deepcopy(body)
@@ -399,12 +420,131 @@ def test_dvh_input_discovery_requires_valid_manifest_matching_artifact_checksum(
             )
             assert manifest is not None
             manifest.validation_summary = {"result": "VALID"}
-            manifest.checksum_at_use = "0" * 64
+            manifest.checksum_at_use = "not-a-checksum"
             session.commit()
         finally:
             session_generator.close()
 
         body = _dvh_body(str(dose["id"]), str(structure["id"]), "dvh-manifest-checksum")
+        malformed = client.post(f"{base}/validate", json=_validation_body(body))
+        assert malformed.status_code == 422, malformed.text
+        assert malformed.json()["code"] == "DVH_INPUT_MANIFEST_INVALID"
+
+        session_generator = dependency()
+        session = next(session_generator)
+        try:
+            manifest = session.scalar(
+                select(InputManifest).where(InputManifest.artifact_id == UUID(str(dose["id"])))
+            )
+            assert manifest is not None
+            manifest.checksum_at_use = "0" * 64
+            session.commit()
+        finally:
+            session_generator.close()
+
         blocked = client.post(f"{base}/validate", json=_validation_body(body))
         assert blocked.status_code == 422, blocked.text
         assert blocked.json()["code"] == "DVH_INPUT_MANIFEST_INVALID"
+
+
+def test_dvh_ct_preview_api_covers_frame_mismatch_no_overlap_and_resource_limit(
+    tmp_path: Path,
+) -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[artifact_storage] = lambda: storage
+        client.app.dependency_overrides[dvh_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+
+        dose_path = tmp_path / "dose.dcm"
+        frame_uid = _dose_file(dose_path)
+        dose = _upload_dicom(client, case_id, "dose.dcm", dose_path.read_bytes(), "REFERENCE")
+        base = f"/api/v1/organizations/{organization.id}/qa-cases/{case_id}/dvh"
+
+        mismatch_ct_path = tmp_path / "mismatch-ct.dcm"
+        _ct_file(mismatch_ct_path, generate_uid())
+        mismatch_ct = _upload_dicom(
+            client,
+            case_id,
+            "mismatch-ct.dcm",
+            mismatch_ct_path.read_bytes(),
+            "CT",
+        )
+        mismatch = client.get(
+            f"{base}/ct-preview",
+            params={
+                "dose_artifact_id": dose["id"],
+                "ct_artifact_id": mismatch_ct["id"],
+                "frame_index": 0,
+            },
+        )
+        assert mismatch.status_code == 422, mismatch.text
+        assert mismatch.json()["code"] == "DICOM_FRAME_MISMATCH"
+
+        matching_ct_path = tmp_path / "matching-ct.dcm"
+        _ct_file(matching_ct_path, frame_uid, origin_z=20.0)
+        matching_ct = _upload_dicom(
+            client,
+            case_id,
+            "matching-ct.dcm",
+            matching_ct_path.read_bytes(),
+            "CT",
+        )
+        no_overlap = client.get(
+            f"{base}/ct-preview",
+            params={
+                "dose_artifact_id": dose["id"],
+                "ct_artifact_id": matching_ct["id"],
+                "frame_index": 2,
+            },
+        )
+        assert no_overlap.status_code == 200, no_overlap.text
+        assert no_overlap.json()["registration"]["overlay_available"] is False
+        assert no_overlap.json()["overlay"]["valid_pixel_count"] == 0
+        assert any(
+            item["code"] == "CT_DOSE_NO_OVERLAP" for item in no_overlap.json()["warnings"]
+        )
+
+        client.app.state.settings.dvh_max_ct_pixels = 10
+        resource_limited = client.get(
+            f"{base}/ct-preview",
+            params={
+                "dose_artifact_id": dose["id"],
+                "ct_artifact_id": matching_ct["id"],
+                "frame_index": 0,
+            },
+        )
+        assert resource_limited.status_code == 422, resource_limited.text
+        assert resource_limited.json()["code"] == "DVH_RESOURCE_LIMIT"
+        assert client.get(f"{base}/runs").json()["total"] == 0
+
+
+def test_dvh_ct_preview_rejects_changed_ct_bytes_after_validation(tmp_path: Path) -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[artifact_storage] = lambda: storage
+        client.app.dependency_overrides[dvh_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+
+        dose_path = tmp_path / "dose.dcm"
+        frame_uid = _dose_file(dose_path)
+        dose = _upload_dicom(client, case_id, "dose.dcm", dose_path.read_bytes(), "REFERENCE")
+        ct_path = tmp_path / "ct.dcm"
+        _ct_file(ct_path, frame_uid)
+        ct_payload = ct_path.read_bytes()
+        ct = _upload_dicom(client, case_id, "ct.dcm", ct_payload, "CT")
+        object_key = next(key for key, value in storage.objects.items() if value == ct_payload)
+        storage.objects[object_key] = ct_payload + b"changed-after-validation"
+
+        base = f"/api/v1/organizations/{organization.id}/qa-cases/{case_id}/dvh"
+        response = client.get(
+            f"{base}/ct-preview",
+            params={
+                "dose_artifact_id": dose["id"],
+                "ct_artifact_id": ct["id"],
+                "frame_index": 0,
+            },
+        )
+        assert response.status_code == 409, response.text
+        assert response.json()["code"] == "DVH_SOURCE_CHANGED"
+        assert client.get(f"{base}/runs").json()["total"] == 0

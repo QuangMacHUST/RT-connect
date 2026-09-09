@@ -180,6 +180,7 @@ def _ct_file(
     values: np.ndarray | None = None,
     window: tuple[float, float] | None = (0.0, 400.0),
     photometric: str = "MONOCHROME2",
+    origin_z: float = 0.0,
 ) -> None:
     frames, rows, columns = shape
     sop_instance_uid = generate_uid()
@@ -208,7 +209,7 @@ def _ct_file(
     dataset.PixelSpacing = [2.0, 4.0]
     dataset.SliceThickness = 2.0
     dataset.SpacingBetweenSlices = 2.0
-    dataset.ImagePositionPatient = [0.0, 0.0, 0.0]
+    dataset.ImagePositionPatient = [0.0, 0.0, origin_z]
     dataset.ImageOrientationPatient = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0]
     dataset.RescaleSlope = 1.0
     dataset.RescaleIntercept = -1000.0
