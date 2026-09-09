@@ -10,6 +10,14 @@ giữ nguyên để truy vết; không dùng các phiên bản cũ đó làm aut
 
 Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness, staging Trend và staging Protocol consumer vẫn phải được đối soát theo plan §1.2–§1.6. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Checkpoint trước đã xác minh browser staging P13/P14 trên candidate `31a5900`; PostgreSQL row query trực tiếp, organization-scope negative probe và release-manifest closure vẫn là gate riêng của các phase đó. P17 hiện đã có targeted PostgreSQL row/checksum/scope probe và object-storage byte re-hash cho case staging; immutable snapshot/fault/resource/release gates còn mở.
 
+## Current continuation checkpoint — 2026-09-10
+
+- Fresh authenticated browser recheck trên candidate `e8b2e68a3cac296c889ca0c5e31b6fa466d90708` xác nhận route `/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh` đang phục vụ đúng build; case vẫn giữ RTDOSE tổng hợp `ca5c9168…`, RTSTRUCT `16a79df3…`, CT `0b1d3bfd…`, ROI `#1 · P17_TARGET` và saved run `8000ff9b…`.
+- CT frame `#1` tiếp tục trả `LPS LINKED` với overlay `NEAREST_NEIGHBOR_IN_PATIENT_LPS`; frame `#3` trả `NO DOSE OVERLAP` đúng warning contract. Không tạo upload, DVH run hoặc mutation mới trong lần recheck này. Evidence: `docs/evidence/p17-staging-browser-recheck-20260910-e8b2e68.json`.
+- P16/P11 binding được kiểm tra read-only: staging hiện có **0** P16 `DOSE_LIMIT` entry; các protocol ACTIVE chỉ cung cấp metric `output_factor`, `flatness` và `staging_output`, chưa có metric DVH tương thích. Vì vậy binding gate vẫn mở và hệ thống vẫn giữ `NO AUTO-APPLY`.
+- JSON export có payload hoàn chỉnh, parse/hash khớp run (`17,738` bytes); Edge/CUA giữ hậu tố `.crdownload`, nên browser final filename vẫn `UNVERIFIED` và không được diễn giải thành lỗi byte payload.
+- Release manifest redacted cho candidate staging e8b2 đã được tạo ở artifact tạm và verifier trả `valid=true`; ba service Railway cùng SHA và schema `20260909_0019`. `ELIGIBLE` ở đây chỉ là source-clean/service-parity gate, không phải production promotion hoặc clinical readiness.
+
 ## P4 membership/invitation local slice — 2026-09-09
 
 - Source working tree đã bổ sung migration `20260909_0018_organization_invitations`, `OrganizationInvitation`, partial unique index cho invitation PENDING theo organization/email, member list/toggle và các endpoint tạo/list/revoke/accept invitation.

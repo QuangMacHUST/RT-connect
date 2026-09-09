@@ -1,0 +1,73 @@
+{
+  "schema_version": "rt-connect.release-manifest.v1",
+  "release_id": "staging-e8b2e68",
+  "environment": "staging",
+  "source_sha": "e8b2e68a3cac296c889ca0c5e31b6fa466d90708",
+  "source_state": {
+    "branch": "codex/p4-org-site-machine",
+    "working_tree_clean": true
+  },
+  "services": {
+    "api": {
+      "deployment_id": "60436f0b-ad45-4d65-ad6c-6d107260fc20",
+      "sha": "e8b2e68a3cac296c889ca0c5e31b6fa466d90708"
+    },
+    "web": {
+      "deployment_id": "bd5f000c-00be-4b8b-813d-45a409d6a2f5",
+      "sha": "e8b2e68a3cac296c889ca0c5e31b6fa466d90708"
+    },
+    "worker": {
+      "deployment_id": "8906ed5d-3b68-41f6-9d5d-856fbfc75ebe",
+      "sha": "e8b2e68a3cac296c889ca0c5e31b6fa466d90708"
+    },
+    "renderer": {
+      "version": "report-renderer-0.1"
+    }
+  },
+  "schema_revision": "20260909_0019",
+  "engine_versions": {
+    "gamma": "gamma-nd-p8.2",
+    "dvh": "p17-dvh-1.1.0",
+    "biological": "p13-lq-1.0.0;p14-comparison-1.0.0;p15-lq-reirradiation-1.0.0;p15-lq-compensation-1.0.0;biological-library-entry.v1"
+  },
+  "auth_environment": "staging",
+  "database_environment": "staging",
+  "fixture_hashes": [
+    {
+      "path": "docs/fixtures/gamma-rtdose-v1-smoke.dcm",
+      "bytes": 898,
+      "sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b"
+    },
+    {
+      "path": "docs/fixtures/p17-ct-v1-smoke.dcm",
+      "bytes": 842,
+      "sha256": "0b1d3bfd6adf33f139e493ca043e09defe077cab24d57287a6076816315dc088"
+    },
+    {
+      "path": "docs/fixtures/p17-rtstruct-v1-smoke.dcm",
+      "bytes": 866,
+      "sha256": "16a79df3129757d9df8b48bd095f0b4b70b24713ea5255e24719d46e6808d401"
+    }
+  ],
+  "tests": {
+    "local": [
+      "BACKEND_CLEAN_172_PASSED",
+      "PLANNING_CONTRACT_21_PHASES_PASSED",
+      "FRONTEND_LINT_TYPECHECK_BUILD_PASSED"
+    ],
+    "staging": [
+      "P19_PUBLIC_SMOKE_15_OF_15_E8B2E68",
+      "API_WORKER_WEB_SUCCESS_SOURCE_PARITY_E8B2E68",
+      "P17_DVH_CT_BROWSER_EXISTING_FIXTURE_VERIFIED"
+    ],
+    "production": [
+      "PRODUCTION_PROMOTION_BLOCKED_SOURCE_SCHEMA_GAP"
+    ]
+  },
+  "backup_before_change": "STAGING_READ_ONLY_CANDIDATE_NO_DATA_CHANGE",
+  "rollback_target": "38dec53d4e542bdf6c4f808283981b344cae3502",
+  "service_sha_parity": true,
+  "release_gate": "ELIGIBLE",
+  "gate_reasons": [],
+  "manifest_sha256": "09e78df6ad0ab261af5ad5910f02c8e1ee371958033d59a9c737a6ceaed6a525"
+}

@@ -1,0 +1,92 @@
+{
+  "schema_version": "rt-connect.staging-dvh-browser-recheck.v1",
+  "captured_at_utc": "2026-09-09T17:30:42Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_READ_ONLY_RECHECK",
+  "environment": "staging",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "source_commit": "e8b2e68a3cac296c889ca0c5e31b6fa466d90708",
+  "web_build_label_observed": "e8b2e68a3cac296c889ca0c5e31b6fa466d90708",
+  "data_boundary": "Read-only browser checks against repository-generated synthetic DICOM artifacts; no patient, PACS or treatment dataset was used and no new upload or DVH run was created during this recheck.",
+  "preflight": {
+    "valid_rtdose_count": 2,
+    "valid_rtstruct_count": 1,
+    "valid_ct_count": 1,
+    "selected_rtdose": "gamma-rtdose-v1-smoke.dcm · ca5c9168eb9b…",
+    "selected_rtstruct": "p17-rtstruct-v1-smoke.dcm · 16a79df31297…",
+    "selected_ct": "p17-ct-v1-smoke.dcm · 0b1d3bfd6adf…",
+    "selected_roi": "#1 · P17_TARGET · 1 contour",
+    "result": "PASS"
+  },
+  "saved_run_recheck": {
+    "run_id": "8000ff9b-7a02-4cec-850e-e27e4fe50cc4",
+    "engine_version": "p17-dvh-1.1.0",
+    "coverage_status": "FULL",
+    "selected_voxel_count": 4,
+    "volume_cc": 0.004,
+    "dmean_gy": 6.5,
+    "d95_gy": 5.2,
+    "input_fingerprint": "ed432bafee35aada8fa7eb3a1ed7f50d5ea6322a5ba91af7b410bf1503621bd2",
+    "result_sha256": "a2826ddcb002916486886366e8cc50d3eabd3aa735afef18c9f3ca6e43d30a44",
+    "result": "PASS_READ_ONLY_RECHECK"
+  },
+  "ct_checks": [
+    {
+      "frame_index": 0,
+      "visible_slice": "#1",
+      "status": "LPS LINKED",
+      "overlay": "NEAREST_NEIGHBOR_IN_PATIENT_LPS",
+      "roi": "#1 · P17_TARGET",
+      "crosshair": "dose grid center",
+      "result": "PASS"
+    },
+    {
+      "frame_index": 2,
+      "visible_slice": "#3",
+      "status": "NO DOSE OVERLAP",
+      "warning": "The selected CT slice does not intersect the RTDOSE grid; dose overlay is empty.",
+      "result": "EXPECTED_WARNING"
+    }
+  ],
+  "binding_probe": {
+    "p16_source_option": "DOSE_LIMIT",
+    "p16_entry_count": 0,
+    "p16_result": "NO_COMPATIBLE_ENTRY_AVAILABLE",
+    "p11_active_protocols": [
+      {
+        "protocol_key": "MACHINE_QA_BASELINE",
+        "version_number": 1,
+        "metric_keys": ["output_factor", "flatness"]
+      },
+      {
+        "protocol_key": "STAGING_P11_QA",
+        "version_number": 2,
+        "metric_keys": ["staging_output"]
+      }
+    ],
+    "p11_result": "NO_DVH_COMPATIBLE_METRIC_IN_CURRENT_STAGING_PROTOCOLS",
+    "auto_apply": false,
+    "result": "GATE_REMAINS_OPEN_WITH_EXPLICIT_REASON"
+  },
+  "export_content_recheck": {
+    "json": {
+      "browser_download_name": "rt-connect-dvh-8000ff9b-7a02-4cec-850e-e27e4fe50cc4 (4).json.crdownload",
+      "byte_length": 17738,
+      "sha256": "9e1106e3a1e2a5e4964dd109f650c88ea9513d80ae1ec6b0d91b60014b656723",
+      "content_parse": "PASS",
+      "id_matches_run": true,
+      "result_sha256_matches_ui": true,
+      "input_fingerprint_matches_ui": true,
+      "final_filename": "UNVERIFIED"
+    },
+    "browser_finalization_status": "UNVERIFIED",
+    "note": "The Edge/CUA harness retained the .crdownload suffix after the blob-anchor click. The payload itself is complete, parses as the saved run, and matches the UI provenance; filename finalization remains an environment-level open observation."
+  },
+  "open_gates": [
+    "P11/P16 compatible binding staging evidence",
+    "full P17 negative/fault/resource/volume and worker evidence",
+    "browser export final filename finalization",
+    "release manifest and production promotion evidence"
+  ]
+}
