@@ -58,3 +58,6 @@ from the commit carrying this marker before a public exact-SHA check is recorded
 P19 candidate rebuild marker (2026-09-10): this line is intentionally under
 `/apps/api` so Railway services rooted at `/apps/api` cannot remain on an older
 source SHA when the release evidence changes at repository root.
+Staging manifest checkpoint: `d2a5a6b22267d153f26764596b36c78118f67ffa`
+was verified across API, web and worker; keep this service-root marker aligned
+with the next release evidence commit.
