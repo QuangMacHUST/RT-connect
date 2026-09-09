@@ -177,8 +177,7 @@ Get-ExpectedUnauthorizedEndpoint -Name 'api.organization.members.unauthenticated
 Get-ExpectedUnauthorizedEndpoint -Name 'api.organization.invitations.unauthenticated' `
   -Url "$ApiBaseUrl/api/v1/organizations/$smokeOrganizationId/invitations"
 Get-ExpectedUnauthorizedEndpoint -Name 'api.organization.invitation_accept.unauthenticated' `
-  -Url "$ApiBaseUrl/api/v1/organizations/invitations/accept" -Method 'POST' `
-  -Body '{"token":"public-smoke-invalid-token"}'
+  -Url "$ApiBaseUrl/api/v1/organizations/invitations/accept" -Method 'POST'
 
 try {
   $webResponse = Invoke-PublicRequest -Url $WebBaseUrl
@@ -203,10 +202,14 @@ try {
     $ctPreviewOk = $bundleText.Contains('CT ANATOMY PREVIEW')
     Add-Check -Name 'web.bundle.ct_preview_controls' -Url $bundleUrl -Ok $ctPreviewOk `
       -StatusCode $bundleResponse.StatusCode -Details ("ct_preview_controls_present={0}" -f $ctPreviewOk)
-    $organizationLifecycleUiOk = $bundleText.Contains('Nhận lời mời RT-CONNECT') `
-      -and $bundleText.Contains('Thành viên ngang quyền')
+    # Use ASCII route/API markers here. Windows PowerShell 5.1 can decode the
+    # UTF-8 native curl stream with the active console code page, which makes
+    # Vietnamese UI literals unreliable even when the deployed bundle is valid.
+    $organizationLifecycleUiOk = $bundleText.Contains('/invite') `
+      -and $bundleText.Contains('organization-invitations') `
+      -and $bundleText.Contains('/organizations/invitations/accept')
     Add-Check -Name 'web.bundle.organization_membership_ui' -Url $bundleUrl -Ok $organizationLifecycleUiOk `
-      -StatusCode $bundleResponse.StatusCode -Details ("member_invitation_ui_present={0}" -f $organizationLifecycleUiOk)
+      -StatusCode $bundleResponse.StatusCode -Details ("member_invitation_route_markers_present={0}" -f $organizationLifecycleUiOk)
     if ($ExpectedVersion) {
       $buildLabelOk = $bundleText.Contains($ExpectedVersion)
       Add-Check -Name 'web.bundle.expected_version' -Url $bundleUrl -Ok $buildLabelOk `
