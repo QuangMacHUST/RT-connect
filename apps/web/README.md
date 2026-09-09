@@ -19,5 +19,6 @@ P17 release marker: DVH exposes explicit P16/P11 source binding against the
 same API contract; validate the selected source and result provenance in staging.
 
 P19 evidence marker: the `dd14ef8` public verifier and P17 negative-path
-recheck are recorded in the repository evidence/progress log; keep
-API/web/worker source parity on the next release.
+recheck are recorded in the repository evidence/progress log. The current
+production public gap is recorded separately; keep API/web/worker source
+parity on the next release.

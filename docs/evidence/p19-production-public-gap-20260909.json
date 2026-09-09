@@ -1,0 +1,49 @@
+{
+  "schema_version": "rt-connect.production-public-gap.v1",
+  "captured_at_utc": "2026-09-09T17:05:18.1364109Z",
+  "environment": "production",
+  "api_base_url": "https://rt-connect-production.up.railway.app",
+  "deployment_observation": {
+    "service": "RT-connect",
+    "environment_id": "910dff25-75b6-42b2-bf6b-e2601ba9d7d2",
+    "deployment_id": "2d94daa6-ecda-4cc0-aaca-c7afd16cfc8d",
+    "branch": "main",
+    "commit_sha": "fae82738786ef92577dd389711591390f6761741",
+    "status": "SUCCESS"
+  },
+  "public_checks": {
+    "health": {
+      "http_status": 200,
+      "status": "ok",
+      "result": "PASS"
+    },
+    "ready": {
+      "http_status": 200,
+      "status": "ready",
+      "schema_revision_present": false,
+      "result": "BASELINE_ONLY"
+    },
+    "version": {
+      "http_status": 200,
+      "version": "0.1.0-dev",
+      "environment": "development",
+      "source_sha_present": false,
+      "result": "RELEASE_METADATA_NOT_READY"
+    },
+    "openapi": {
+      "http_status": 200,
+      "path_count": 4,
+      "clinical_routes_present": false,
+      "result": "P1_BASELINE_ONLY"
+    }
+  },
+  "release_decision": "PRODUCTION_PROMOTION_BLOCKED",
+  "reasons": [
+    "PRODUCTION_SERVES_P1_BASELINE",
+    "VERSION_ENVIRONMENT_MISMATCH",
+    "MISSING_SCHEMA_REVISION_AND_SOURCE_SHA",
+    "MISSING_CLINICAL_ROUTES",
+    "NO_PRODUCTION_RELEASE_MANIFEST"
+  ],
+  "data_boundary": "Read-only public HTTP and Railway metadata checks; no production login, database mutation, upload or clinical data access was performed."
+}

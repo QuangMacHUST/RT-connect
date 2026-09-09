@@ -60,6 +60,12 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - Sau đó chọn lại RTDOSE tổng hợp hợp lệ với UI hash prefix `ca5c9168eb9b…`; validate trả `Validation DVH hợp lệ; chưa tạo bản ghi lưu trữ.` Saved run `8000ff9b-7a02-4cec-850e-e27e4fe50cc4` vẫn giữ nguyên, không có mutation hoặc duplicate run.
 - Evidence redacted: `docs/evidence/p17-staging-negative-recheck-20260909-dd14ef8.json`. Đây là bằng chứng negative-path trên current candidate; không đóng các gate fault/resource/volume, P11/P16 binding, browser final filename, release manifest hoặc production promotion.
 
+## P19 production public gap recheck — 2026-09-09
+
+- Read-only probe tới `https://rt-connect-production.up.railway.app` trả `/health` HTTP 200 `status=ok` và `/ready` HTTP 200 `status=ready`, nhưng `/version` vẫn trả `version=0.1.0-dev`, `environment=development`, không có source SHA/schema revision; OpenAPI chỉ có 4 route nền tảng P1 và chưa có CT/membership/clinical routes.
+- Railway metadata cho production API ghi deployment `2d94daa6-ecda-4cc0-aaca-c7afd16cfc8d`, branch `main`, commit `fae82738786ef92577dd389711591390f6761741`, `SUCCESS`. Đây là baseline cũ, không phải candidate staging `a39bfa9`.
+- Evidence redacted: `docs/evidence/p19-production-public-gap-20260909.json`. Quyết định hiện tại là `PRODUCTION_PROMOTION_BLOCKED`; không suy diễn production-ready từ health/readiness HTTP 200. Không có login, upload, database mutation hoặc dữ liệu lâm sàng production trong probe.
+
 ## Current checkpoint
 
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
