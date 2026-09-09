@@ -2,7 +2,7 @@
   "schema_version": "rt-connect.local-postgres-migration-evidence.v1",
   "captured_at_utc": "2026-09-09T06:54:29.8588040Z",
   "scope": "local Docker PostgreSQL/Redis/MinIO dependency smoke",
-  "repository_sha": "379b91c",
+  "repository_sha": "c88464f",
   "compose_project": "rt-connect-local",
   "services": {
     "postgres": {
