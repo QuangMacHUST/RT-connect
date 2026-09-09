@@ -147,6 +147,44 @@
       "result": "PASS"
     }
   },
+  "object_storage_probe": {
+    "captured_at_utc": "2026-09-09T14:45:10.8197253Z",
+    "execution": "Read-only byte re-hash executed in the connected Railway staging API container using the configured object-storage adapter; each case artifact was downloaded to a temporary path, hashed, size-checked, and removed. No application data was mutated and no secret or object-storage credential was recorded.",
+    "objects": [
+      {
+        "artifact_id": "737a8999-4abd-4fd4-bded-daf186f0f5be",
+        "byte_size_expected": 898,
+        "byte_size_observed": 898,
+        "sha256_rehashed": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
+        "byte_size_matches_artifact": true,
+        "sha256_matches_artifact": true,
+        "result": "PASS"
+      },
+      {
+        "artifact_id": "6d2ded42-a892-4686-8d76-394819b2f59f",
+        "byte_size_expected": 866,
+        "byte_size_observed": 866,
+        "sha256_rehashed": "16a79df3129757d9df8b48bd095f0b4b70b24713ea5255e24719d46e6808d401",
+        "byte_size_matches_artifact": true,
+        "sha256_matches_artifact": true,
+        "result": "PASS"
+      },
+      {
+        "artifact_id": "1a0254d6-c140-4476-9f22-d761a42de2a0",
+        "byte_size_expected": 842,
+        "byte_size_observed": 842,
+        "sha256_rehashed": "0b1d3bfd6adf33f139e493ca043e09defe077cab24d57287a6076816315dc088",
+        "byte_size_matches_artifact": true,
+        "sha256_matches_artifact": true,
+        "result": "PASS"
+      }
+    ],
+    "assertions": {
+      "object_count": 3,
+      "byte_rehash": true,
+      "result": "PASS"
+    }
+  },
   "dvh_saved_run": {
     "run_id": "8000ff9b-7a02-4cec-850e-e27e4fe50cc4",
     "engine_version": "p17-dvh-1.1.0",
@@ -230,7 +268,7 @@
     "build_warning": "Vite reports a JavaScript chunk larger than 500 kB; tracked as a performance follow-up."
   },
   "open_gates": [
-    "direct immutable-snapshot mutation guard and object-storage byte rehash",
+    "direct immutable-snapshot mutation guard",
     "full P17 negative/fault/resource/volume evidence",
     "controlled staging resource and worker evidence",
     "release manifest and production promotion evidence"
