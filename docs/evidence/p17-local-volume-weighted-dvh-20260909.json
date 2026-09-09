@@ -8,7 +8,7 @@
   "verification": {
     "engine_tests": "14 passed",
     "focused_p17_tests": "27 passed",
-    "full_backend_tests": "passed after clean commit",
+    "full_backend_tests": "169 passed on clean commit 50d890e",
     "ruff": "passed",
     "mypy": "passed; 47 source files",
     "openapi": "passed",
