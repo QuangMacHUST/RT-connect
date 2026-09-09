@@ -27,7 +27,7 @@ import pydicom
 from pydicom.dataset import Dataset
 
 DVH_ENGINE_KEY = "visual-dose.dvh"
-DVH_ENGINE_VERSION = "p17-dvh-1.0.0"
+DVH_ENGINE_VERSION = "p17-dvh-1.1.0"
 DVH_SCHEMA_VERSION = "visual-dose-dvh.result.v1"
 CT_PREVIEW_ENGINE_KEY = "visual-dose.ct-preview"
 CT_PREVIEW_ENGINE_VERSION = "p17-ct-preview-1.0.0"

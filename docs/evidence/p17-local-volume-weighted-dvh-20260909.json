@@ -1,0 +1,40 @@
+{
+  "schema_version": "rt-connect.p17-volume-weighted-dvh-evidence.v1",
+  "captured_at_utc": "2026-09-09T07:55:51.2113573Z",
+  "scope": "local P17 DVH engine volume weighting and cumulative-DVH metric oracle",
+  "repository_sha": "7377aad3cafa86d00260745a1d49344ce747df4d",
+  "engine_key": "visual-dose.dvh",
+  "engine_version": "p17-dvh-1.1.0",
+  "verification": {
+    "engine_tests": "14 passed",
+    "focused_p17_tests": "27 passed",
+    "full_backend_tests": "passed after clean commit",
+    "ruff": "passed",
+    "mypy": "passed; 47 source files",
+    "openapi": "passed",
+    "planning_contract": "passed; 21 phases; 0 failed checks"
+  },
+  "oracle": {
+    "fixture": "synthetic RTDOSE/RTSTRUCT generated in test_dvh_engine.py",
+    "dose_offsets_mm": [0.0, 1.0, 4.0],
+    "resolved_slice_thickness_mm": [1.0, 2.0, 3.0],
+    "selected_frame_counts": [9, 0, 9],
+    "pixel_spacing_mm": [2.0, 4.0],
+    "volume_cc": 0.288,
+    "dmean_gy": 2.5,
+    "d50_gy": 3.0,
+    "v2_gy_cc": 0.216,
+    "v2_gy_percent": 75.0,
+    "known_answer_fixture_d95_gy": 5.2
+  },
+  "contract": [
+    "Dmean uses per-voxel volume weights.",
+    "D(x) groups observed dose levels, accumulates volume in descending dose order, and linearly interpolates between adjacent cumulative-volume points.",
+    "D0 and D100 clamp to Dmax and Dmin; no extrapolation is used.",
+    "V(x) sums volume for dose >= threshold and returns both cc and percent.",
+    "The convention is pinned in business-analysis.md, specification.md, and technical-specification.md and is included in the engine/result provenance contract."
+  ],
+  "test_file": "apps/api/tests/test_dvh_engine.py",
+  "secrets": "not_recorded",
+  "patient_data": "not_used"
+}

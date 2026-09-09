@@ -122,7 +122,7 @@ def test_dvh_api_validates_saves_replays_exports_and_scopes_inputs(tmp_path: Pat
         assert created.status_code == 201, created.text
         run = created.json()
         assert run["status"] == "COMPLETED"
-        assert run["engine_version"] == "p17-dvh-1.0.0"
+        assert run["engine_version"] == "p17-dvh-1.1.0"
         assert run["result_snapshot"]["result_sha256"]
         assert run["input_snapshot"]["dose"]["manifest_checksum_at_use"] == dose["sha256"]
 
