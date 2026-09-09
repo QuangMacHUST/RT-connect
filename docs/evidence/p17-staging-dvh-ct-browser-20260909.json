@@ -283,8 +283,43 @@
     "production_build": "PASS",
     "build_warning": "Vite reports a JavaScript chunk larger than 500 kB; tracked as a performance follow-up."
   },
+  "immutable_snapshot_guard": {
+    "captured_at_utc": "2026-09-09T15:22:47.4860648Z",
+    "deployment_sha": "d04fb5a3561804bd3553b36886902e1c50b2f18f",
+    "schema_revision": "20260909_0019",
+    "execution": "The connected Railway API container queried PostgreSQL trigger metadata and ran a transaction-local temporary-table probe using the deployed trigger function. No retained dvh_analysis_runs row was updated or deleted; the temporary transaction was discarded after the probe.",
+    "database_trigger": {
+      "table": "dvh_analysis_runs",
+      "trigger_name": "trg_dvh_analysis_runs_immutable",
+      "exists": true,
+      "events": [
+        "UPDATE",
+        "DELETE"
+      ]
+    },
+    "transaction_local_probe": {
+      "fixture": "temporary PostgreSQL table, discarded after the connection transaction",
+      "update": {
+        "result": "REJECTED",
+        "error_code": "DVH_RUN_IMMUTABLE"
+      },
+      "delete": {
+        "result": "REJECTED",
+        "error_code": "DVH_RUN_IMMUTABLE"
+      },
+      "rows_remaining_after_rejected_operations": 1
+    },
+    "assertions": {
+      "schema_head_is_guard_migration": true,
+      "target_trigger_exists": true,
+      "update_rejected": true,
+      "delete_rejected": true,
+      "probe_row_preserved": true,
+      "retained_dvh_run_mutated": false,
+      "result": "PASS"
+    }
+  },
   "open_gates": [
-    "direct immutable-snapshot mutation guard",
     "full P17 negative/fault/resource/volume evidence",
     "controlled staging resource and worker evidence",
     "release manifest and production promotion evidence"
