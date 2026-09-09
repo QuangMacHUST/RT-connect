@@ -2,8 +2,8 @@
 
 ## Documentation and implementation rebaseline — 2026-09-09
 
-Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.19,
-`technical-specification.md` v1.18 và `plan.md` v4.9. Dòng rebaseline lịch sử ngay dưới đây
+Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.20,
+`technical-specification.md` v1.19 và `plan.md` v4.10. Dòng rebaseline lịch sử ngay dưới đây
 giữ nguyên để truy vết; không dùng các phiên bản cũ đó làm authority.
 
 `business-analysis.md` v0.21, `specification.md` v1.15, `technical-specification.md` v1.13 và `plan.md` v4.0 bổ sung feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate, state contract, testcase, workflow, error/recovery contract và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
@@ -12,11 +12,13 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 
 ## Current continuation checkpoint — 2026-09-10
 
-- Fresh authenticated browser recheck trên candidate `e8b2e68a3cac296c889ca0c5e31b6fa466d90708` xác nhận route `/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh` đang phục vụ đúng build; case vẫn giữ RTDOSE tổng hợp `ca5c9168…`, RTSTRUCT `16a79df3…`, CT `0b1d3bfd…`, ROI `#1 · P17_TARGET` và saved run `8000ff9b…`.
+- Fresh authenticated browser recheck trên candidate `d0f2f7944c478d210be4cb599fac2d4377f5da49` xác nhận route `/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh` đang phục vụ đúng build; case vẫn giữ RTDOSE tổng hợp `ca5c9168…`, RTSTRUCT `16a79df3…`, CT `0b1d3bfd…`, ROI `#1 · P17_TARGET` và saved run `8000ff9b…`.
 - CT frame `#1` tiếp tục trả `LPS LINKED` với overlay `NEAREST_NEIGHBOR_IN_PATIENT_LPS`; frame `#3` trả `NO DOSE OVERLAP` đúng warning contract. Không tạo upload, DVH run hoặc mutation mới trong lần recheck này. Evidence: `docs/evidence/p17-staging-browser-recheck-20260910-e8b2e68.json`.
 - P16/P11 binding được kiểm tra read-only: staging hiện có **0** P16 `DOSE_LIMIT` entry; các protocol ACTIVE chỉ cung cấp metric `output_factor`, `flatness` và `staging_output`, chưa có metric DVH tương thích. Vì vậy binding gate vẫn mở và hệ thống vẫn giữ `NO AUTO-APPLY`.
 - JSON export có payload hoàn chỉnh, parse/hash khớp run (`17,738` bytes); Edge/CUA giữ hậu tố `.crdownload`, nên browser final filename vẫn `UNVERIFIED` và không được diễn giải thành lỗi byte payload.
-- Release manifest redacted cho candidate staging e8b2 đã được tạo ở artifact tạm và verifier trả `valid=true`; ba service Railway cùng SHA và schema `20260909_0019`. `ELIGIBLE` ở đây chỉ là source-clean/service-parity gate, không phải production promotion hoặc clinical readiness.
+- Validate-only sau khi chọn CT tổng hợp trả `Validation DVH hợp lệ; chưa tạo bản ghi lưu trữ`, CT frame `#1` hiển thị `LPS LINKED` và overlay `NEAREST_NEIGHBOR_IN_PATIENT_LPS`; không tạo upload/run/mutation mới.
+- P17-W06 local resource evidence mới `docs/evidence/p17-local-docker-workload-20260910.json` đạt `LOCAL_RESOURCE_GATE_PASS`: API container `1 CPU/768 MiB`, 2 job × 3 lần, 6/6 process peak RSS, max `127,086,592 bytes`, max elapsed `2.0811 s`, p95 `/health` `166.016 ms`, 0 probe error, engine/oracle nhất quán; cgroup v1 peak `385,990,656 bytes` là quan sát tích lũy từ lúc container start và vẫn được gắn `is_peak_rss=false`.
+- Public verifier exact-SHA trên candidate d0f2 đã pass 15/15 và ba service staging đã cùng source/schema; đây là source-parity/public-boundary evidence, không phải production promotion hoặc clinical readiness.
 
 ## P4 membership/invitation local slice — 2026-09-09
 
@@ -108,9 +110,9 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | Source | Version | Status |
 | :--- | :--- | :--- |
 | `business-analysis.md` | 0.22 | Business source; detailed feature behavior/workflow/error/recovery/state matrix, business feature cards, P4 membership/invitation addendum, phase handoff and P0–P20 contracts |
-| `specification.md` | 1.19 | Behavior/data/error/state/numeric contracts; operation/evidence record, P17 Docker workload record semantics including cgroup observation, change-impact/release manifest, P20 status/readiness surface and exact P4/P10/P11/P12/P13/P14/P15/P16/P17 contracts including binding/report/CT preview |
-| `technical-specification.md` | 1.18 | Architecture reference; Railway source-identifiable release metadata, bounded-context implementation addenda, P4 invitation schema/API, P17 workload verifier/memory semantics including cgroup observation, P20 status/readiness dashboard boundary, resource policy, CT preview adapter, P18 local backup/restore support and cross-document execution references |
-| `plan.md` | 4.9 | Phase/workflow/S-E/C/B tests, DoR/DoD, dependency graph, execution gates, execution ledger, full coverage matrix, P4 invitation/member work packages, P17 local workload checkpoint with cgroup observation, P20 status/readiness dashboard package, binding/report/CT work packages, backup/restore support, local browser matrix, source-parity recovery rule, operations runbooks and staging gates |
+| `specification.md` | 1.20 | Behavior/data/error/state/numeric contracts; process-RSS/resource-policy/API-responsiveness evidence for P17 Docker workload, operation/evidence record, change-impact/release manifest, P20 status/readiness surface and exact P4/P10/P11/P12/P13/P14/P15/P16/P17 contracts including binding/report/CT preview |
+| `technical-specification.md` | 1.19 | Architecture reference; Railway source-identifiable release metadata, bounded-context implementation addenda, P4 invitation schema/API, P17 process-RSS workload verifier/resource policy/API responsiveness, P20 status/readiness dashboard boundary, CT preview adapter, P18 local backup/restore support and cross-document execution references |
+| `plan.md` | 4.10 | Phase/workflow/S-E/C/B tests, DoR/DoD, dependency graph, execution gates, execution ledger, full coverage matrix, P4 invitation/member work packages, P17 local resource-gate checkpoint with process RSS/API responsiveness, P20 status/readiness dashboard package, binding/report/CT work packages, backup/restore support, local browser matrix, source-parity recovery rule, operations runbooks and staging gates |
 
 ## Phase status
 

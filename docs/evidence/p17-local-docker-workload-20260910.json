@@ -1,0 +1,283 @@
+{
+    "schema_version":  "rt-connect.p17-docker-workload-verification.v1",
+    "captured_at_utc":  "2026-09-09T18:12:35.9457876Z",
+    "repository_sha":  "d0f2f7944c478d210be4cb599fac2d4377f5da49",
+    "execution":  {
+                      "compose_file":  "docker-compose.yml",
+                      "service":  "api",
+                      "image_digest":  "sha256:a3329344c7444f044e57a917b6f04d4b95bdfc9ae14d117ff010e92a42734d0e",
+                      "engine_version":  "p17-dvh-1.1.0",
+                      "health_status":  "ok",
+                      "readiness_status":  "ready",
+                      "schema_revision":  "20260909_0019",
+                      "resource_policy":  {
+                                              "memory_limit_bytes":  805306368,
+                                              "cpu_limit":  1,
+                                              "nano_cpus":  1000000000,
+                                              "cpu_quota":  null,
+                                              "cpu_period":  null,
+                                              "source":  "docker inspect HostConfig"
+                                          }
+                  },
+    "workload":  {
+                     "shape":  "64x128x128",
+                     "repeats_per_job":  3,
+                     "concurrent_jobs":  2,
+                     "patient_data":  false
+                 },
+    "job_results":  [
+                        {
+                            "job_number":  1,
+                            "engine_version":  "p17-dvh-1.1.0",
+                            "workload":  {
+                                             "shape_frames_rows_columns":  [
+                                                                               64,
+                                                                               128,
+                                                                               128
+                                                                           ],
+                                             "voxel_count":  1048576,
+                                             "roi":  "full grid, one closed contour per frame",
+                                             "dose_levels_gy":  [
+                                                                    1.0,
+                                                                    2.0,
+                                                                    3.0,
+                                                                    4.0
+                                                                ],
+                                             "patient_data":  false
+                                         },
+                            "result_oracle":  {
+                                                  "selected_voxel_count":  1048576,
+                                                  "volume_cc":  12582.912000000002,
+                                                  "dmean_gy":  2.5,
+                                                  "dmin_gy":  1.0,
+                                                  "dmax_gy":  4.0
+                                              },
+                            "observations":  [
+                                                 {
+                                                     "iteration":  1,
+                                                     "elapsed_seconds":  1.917897241000901,
+                                                     "peak_traced_bytes":  69237022,
+                                                     "peak_rss_bytes":  126726144
+                                                 },
+                                                 {
+                                                     "iteration":  2,
+                                                     "elapsed_seconds":  1.8955963879998308,
+                                                     "peak_traced_bytes":  69232253,
+                                                     "peak_rss_bytes":  127000576
+                                                 },
+                                                 {
+                                                     "iteration":  3,
+                                                     "elapsed_seconds":  2.0810699239991663,
+                                                     "peak_traced_bytes":  69229613,
+                                                     "peak_rss_bytes":  127086592
+                                                 }
+                                             ],
+                            "summary":  {
+                                            "repeats":  3,
+                                            "elapsed_seconds_min":  1.8955963879998308,
+                                            "elapsed_seconds_median":  1.917897241000901,
+                                            "elapsed_seconds_max":  2.0810699239991663,
+                                            "peak_traced_bytes_max":  69237022,
+                                            "peak_rss_bytes_max":  127086592,
+                                            "rss_measured":  true,
+                                            "rss_measurement_source":  "resource.getrusage(RUSAGE_SELF).ru_maxrss",
+                                            "performance_gate":  "NOT_ASSESSED"
+                                        }
+                        },
+                        {
+                            "job_number":  2,
+                            "engine_version":  "p17-dvh-1.1.0",
+                            "workload":  {
+                                             "shape_frames_rows_columns":  [
+                                                                               64,
+                                                                               128,
+                                                                               128
+                                                                           ],
+                                             "voxel_count":  1048576,
+                                             "roi":  "full grid, one closed contour per frame",
+                                             "dose_levels_gy":  [
+                                                                    1.0,
+                                                                    2.0,
+                                                                    3.0,
+                                                                    4.0
+                                                                ],
+                                             "patient_data":  false
+                                         },
+                            "result_oracle":  {
+                                                  "selected_voxel_count":  1048576,
+                                                  "volume_cc":  12582.912000000002,
+                                                  "dmean_gy":  2.5,
+                                                  "dmin_gy":  1.0,
+                                                  "dmax_gy":  4.0
+                                              },
+                            "observations":  [
+                                                 {
+                                                     "iteration":  1,
+                                                     "elapsed_seconds":  1.9904172950009524,
+                                                     "peak_traced_bytes":  69237022,
+                                                     "peak_rss_bytes":  126406656
+                                                 },
+                                                 {
+                                                     "iteration":  2,
+                                                     "elapsed_seconds":  1.8392355619980663,
+                                                     "peak_traced_bytes":  69232253,
+                                                     "peak_rss_bytes":  126672896
+                                                 },
+                                                 {
+                                                     "iteration":  3,
+                                                     "elapsed_seconds":  1.9325533750015893,
+                                                     "peak_traced_bytes":  69229613,
+                                                     "peak_rss_bytes":  126742528
+                                                 }
+                                             ],
+                            "summary":  {
+                                            "repeats":  3,
+                                            "elapsed_seconds_min":  1.8392355619980663,
+                                            "elapsed_seconds_median":  1.9325533750015893,
+                                            "elapsed_seconds_max":  1.9904172950009524,
+                                            "peak_traced_bytes_max":  69237022,
+                                            "peak_rss_bytes_max":  126742528,
+                                            "rss_measured":  true,
+                                            "rss_measurement_source":  "resource.getrusage(RUSAGE_SELF).ru_maxrss",
+                                            "performance_gate":  "NOT_ASSESSED"
+                                        }
+                        }
+                    ],
+    "container_memory_sampling":  {
+                                      "sample_count":  5,
+                                      "max_sampled_bytes":  354104115,
+                                      "max_sampled_percent":  43.97,
+                                      "samples":  [
+                                                      {
+                                                          "captured_at_utc":  "2026-09-09T18:12:27.5275827Z",
+                                                          "memory_text":  "162.2MiB",
+                                                          "memory_bytes":  170079027,
+                                                          "memory_percent":  21.12
+                                                      },
+                                                      {
+                                                          "captured_at_utc":  "2026-09-09T18:12:29.5179047Z",
+                                                          "memory_text":  "334.7MiB",
+                                                          "memory_bytes":  350958387,
+                                                          "memory_percent":  43.58
+                                                      },
+                                                      {
+                                                          "captured_at_utc":  "2026-09-09T18:12:31.5229408Z",
+                                                          "memory_text":  "337.6MiB",
+                                                          "memory_bytes":  353999258,
+                                                          "memory_percent":  43.95
+                                                      },
+                                                      {
+                                                          "captured_at_utc":  "2026-09-09T18:12:33.5305824Z",
+                                                          "memory_text":  "337.7MiB",
+                                                          "memory_bytes":  354104115,
+                                                          "memory_percent":  43.97
+                                                      },
+                                                      {
+                                                          "captured_at_utc":  "2026-09-09T18:12:35.5600613Z",
+                                                          "memory_text":  "128.5MiB",
+                                                          "memory_bytes":  134742016,
+                                                          "memory_percent":  16.73
+                                                      }
+                                                  ],
+                                      "is_peak_rss":  false
+                                  },
+    "cgroup_memory_observation":  {
+                                      "before_workload":  {
+                                                              "available":  true,
+                                                              "cgroup_version":  "v1",
+                                                              "memory_limit_bytes":  805306368,
+                                                              "memory_current_bytes":  139567104,
+                                                              "memory_peak_bytes":  385990656,
+                                                              "peak_metric":  "memory.max_usage_in_bytes",
+                                                              "peak_scope":  "since_container_start",
+                                                              "is_peak_rss":  false
+                                                          },
+                                      "after_workload":  {
+                                                             "available":  true,
+                                                             "cgroup_version":  "v1",
+                                                             "memory_limit_bytes":  805306368,
+                                                             "memory_current_bytes":  139972608,
+                                                             "memory_peak_bytes":  385990656,
+                                                             "peak_metric":  "memory.max_usage_in_bytes",
+                                                             "peak_scope":  "since_container_start",
+                                                             "is_peak_rss":  false
+                                                         },
+                                      "peak_bytes_since_container_start":  385990656,
+                                      "is_peak_rss":  false
+                                  },
+    "process_rss_observation":  {
+                                    "measurement_source":  "resource.getrusage(RUSAGE_SELF).ru_maxrss",
+                                    "peak_rss_bytes_max":  127086592,
+                                    "observation_count":  6,
+                                    "is_peak_rss":  true
+                                },
+    "api_responsiveness":  {
+                               "probe_url":  "http://localhost:8000/api/v1/health",
+                               "sample_count":  7,
+                               "error_count":  0,
+                               "p95_latency_ms":  166.016,
+                               "max_latency_ms":  166.016,
+                               "samples":  [
+                                               {
+                                                   "captured_at_utc":  "2026-09-09T18:12:25.7828553Z",
+                                                   "ok":  true,
+                                                   "status":  "ok",
+                                                   "latency_ms":  5.155,
+                                                   "error":  null
+                                               },
+                                               {
+                                                   "captured_at_utc":  "2026-09-09T18:12:27.6957959Z",
+                                                   "ok":  true,
+                                                   "status":  "ok",
+                                                   "latency_ms":  166.016,
+                                                   "error":  null
+                                               },
+                                               {
+                                                   "captured_at_utc":  "2026-09-09T18:12:29.5234629Z",
+                                                   "ok":  true,
+                                                   "status":  "ok",
+                                                   "latency_ms":  5.353,
+                                                   "error":  null
+                                               },
+                                               {
+                                                   "captured_at_utc":  "2026-09-09T18:12:31.5280066Z",
+                                                   "ok":  true,
+                                                   "status":  "ok",
+                                                   "latency_ms":  4.533,
+                                                   "error":  null
+                                               },
+                                               {
+                                                   "captured_at_utc":  "2026-09-09T18:12:33.5951743Z",
+                                                   "ok":  true,
+                                                   "status":  "ok",
+                                                   "latency_ms":  64.859,
+                                                   "error":  null
+                                               },
+                                               {
+                                                   "captured_at_utc":  "2026-09-09T18:12:35.5640779Z",
+                                                   "ok":  true,
+                                                   "status":  "ok",
+                                                   "latency_ms":  3.426,
+                                                   "error":  null
+                                               },
+                                               {
+                                                   "captured_at_utc":  "2026-09-09T18:12:35.5830731Z",
+                                                   "ok":  true,
+                                                   "status":  "ok",
+                                                   "latency_ms":  3.517,
+                                                   "error":  null
+                                               }
+                                           ],
+                               "passed":  true
+                           },
+    "performance_budget":  {
+                               "rss_limit_fraction":  0.8,
+                               "rss_budget_bytes":  644245094,
+                               "max_elapsed_seconds":  2.0810699239991663,
+                               "elapsed_budget_seconds":  300,
+                               "resource_budget_passed":  true,
+                               "api_responsiveness_passed":  true
+                           },
+    "performance_gate":  "LOCAL_RESOURCE_GATE_PASS",
+    "passed":  true
+}

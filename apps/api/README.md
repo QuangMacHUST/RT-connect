@@ -35,3 +35,8 @@ Current P17 staging fixture marker: the authenticated case recheck keeps the
 synthetic RTDOSE/RTSTRUCT/CT set and saved DVH run `8000ff9b-7a02-4cec-850e-e27e4fe50cc4`.
 This marker is intentionally duplicated under the API service root so a release
 commit that records P17 evidence rebuilds API and worker together with the web.
+
+P17-W06 resource-evidence parity marker: local workload verification pins the API
+container to 1 CPU/768 MiB and records process RSS plus API responsiveness. Keep
+this marker aligned with the web service root so a release candidate rebuilds all
+three services from the same source commit.

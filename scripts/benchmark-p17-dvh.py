@@ -3,9 +3,11 @@
 This is an engine-only benchmark.  It creates temporary, non-patient RTDOSE and
 RTSTRUCT files, measures wall-clock time and Python-traced allocations, and
 never writes a database, queue message, report, or object-storage record.
-Resident memory is intentionally not presented as measured here: the script
-reports ``peak_traced_bytes`` and leaves RSS measurement to the deployment/load
-runner that owns the process container.
+The process also reports its operating-system peak resident set size when the
+runtime exposes ``resource.getrusage``.  That is a measurement for this
+short-lived benchmark process, not an inference from Docker sampling or a
+container cgroup counter; the deployment/load runner still owns the
+service-level CPU/RAM/concurrency gate.
 """
 
 from __future__ import annotations
@@ -15,6 +17,7 @@ import json
 import platform
 import statistics
 import subprocess
+import sys
 import tempfile
 import time
 import tracemalloc
@@ -27,6 +30,11 @@ from pydicom.dataset import Dataset, FileDataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian, RTDoseStorage, RTStructureSetStorage
 
 from rt_connect_api.services.dose_dvh_engine import DVH_ENGINE_VERSION, analyze_dvh
+
+try:
+    import resource as _resource
+except ImportError:  # pragma: no cover - Windows does not expose resource.
+    _resource = None
 
 FIXTURE_UID_ROOT = "1.2.826.0.1.3680043.8.498.999.20"
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -45,6 +53,21 @@ def _repository_sha() -> str | None:
         return None
     value = completed.stdout.strip()
     return value or None
+
+
+def _peak_rss_bytes() -> int | None:
+    """Return process peak RSS in bytes when the host runtime exposes it."""
+
+    if _resource is None:
+        return None
+    usage = float(_resource.getrusage(_resource.RUSAGE_SELF).ru_maxrss)
+    if usage <= 0:
+        return None
+    # Linux and the other Unix implementations used by our containers report
+    # ru_maxrss in KiB; macOS reports bytes.  Keep the evidence explicit so a
+    # Windows/local run with no ``resource`` module is not mislabelled.
+    multiplier = 1 if sys.platform == "darwin" else 1024
+    return int(usage * multiplier)
 
 
 def _parse_shape(value: str) -> tuple[int, int, int]:
@@ -156,7 +179,9 @@ def _build_structure(path: Path, shape: tuple[int, int, int], frame_uid: str) ->
     dataset.save_as(path, write_like_original=False)
 
 
-def _run_once(dose_path: Path, structure_path: Path) -> tuple[float, int, dict[str, Any]]:
+def _run_once(
+    dose_path: Path, structure_path: Path
+) -> tuple[float, int, int | None, dict[str, Any]]:
     tracemalloc.start()
     started = time.perf_counter()
     result = analyze_dvh(
@@ -171,7 +196,7 @@ def _run_once(dose_path: Path, structure_path: Path) -> tuple[float, int, dict[s
     elapsed = time.perf_counter() - started
     _current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
-    return elapsed, peak, result.result
+    return elapsed, peak, _peak_rss_bytes(), result.result
 
 
 def run_benchmark(shape: tuple[int, int, int], repeats: int) -> dict[str, Any]:
@@ -185,17 +210,23 @@ def run_benchmark(shape: tuple[int, int, int], repeats: int) -> dict[str, Any]:
         observations: list[dict[str, Any]] = []
         result: dict[str, Any] = {}
         for index in range(repeats):
-            elapsed, peak, result = _run_once(dose_path, structure_path)
+            elapsed, peak, peak_rss, result = _run_once(dose_path, structure_path)
             observations.append(
                 {
                     "iteration": index + 1,
                     "elapsed_seconds": elapsed,
                     "peak_traced_bytes": peak,
+                    "peak_rss_bytes": peak_rss,
                 }
             )
 
     elapsed_values = [float(item["elapsed_seconds"]) for item in observations]
     peak_values = [int(item["peak_traced_bytes"]) for item in observations]
+    rss_values = [
+        int(item["peak_rss_bytes"])
+        for item in observations
+        if item["peak_rss_bytes"] is not None
+    ]
     return {
         "schema_version": "rt-connect.p17-volume-benchmark.v1",
         "captured_at_utc": datetime.now(UTC).isoformat(),
@@ -227,7 +258,13 @@ def run_benchmark(shape: tuple[int, int, int], repeats: int) -> dict[str, Any]:
             "elapsed_seconds_median": statistics.median(elapsed_values),
             "elapsed_seconds_max": max(elapsed_values),
             "peak_traced_bytes_max": max(peak_values),
-            "rss_measured": False,
+            "peak_rss_bytes_max": max(rss_values) if rss_values else None,
+            "rss_measured": bool(rss_values),
+            "rss_measurement_source": (
+                "resource.getrusage(RUSAGE_SELF).ru_maxrss"
+                if rss_values
+                else "unavailable"
+            ),
             "performance_gate": "NOT_ASSESSED",
         },
     }

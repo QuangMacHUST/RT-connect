@@ -1,10 +1,10 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.19**; ngày 2026-09-09.
+- File: specification.md; version **1.20**; ngày 2026-09-10.
 - Nguồn nghiệp vụ: business-analysis.md v0.22.
-- Kế hoạch triển khai: plan.md v4.9, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.18.
-- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.19 giữ toàn bộ contract v1.18, bổ sung record semantics cho cgroup memory observation của P17 local Docker workload đồng thời và làm rõ cả sampled container memory lẫn cgroup peak đều không phải peak RSS; đồng thời giữ contract thực thi P4 cho membership/invitation: thành viên ngang quyền, token hash-at-rest, email-bound, one-time, expiry, active-context invariant và các endpoint cụ thể.
+- Kế hoạch triển khai: plan.md v4.10, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.19.
+- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.20 giữ toàn bộ contract v1.19, bổ sung semantics cho đo peak RSS của tiến trình benchmark bằng `resource.getrusage`, policy CPU/RAM local cố định, API responsiveness dưới workload và phân biệt rõ process RSS với sampled container memory/cgroup peak tích lũy; đồng thời giữ contract thực thi P4 cho membership/invitation: thành viên ngang quyền, token hash-at-rest, email-bound, one-time, expiry, active-context invariant và các endpoint cụ thể.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
 
@@ -460,7 +460,7 @@ Analytic fixtures: uniform dose box, unequal voxel sizes, sphere convergence, do
 
 ### 7.4. Workload và engineering SLO mục tiêu
 
-Những số dưới là budget nghiệm thu ban đầu, **chưa đo đạt**, cần ghi hardware/resources, software version, cold/warm cache, network và concurrent users trong P8/P18. Không coi gói 5 USD là bảo đảm capacity. P17 đã có local support measurement trong `docs/evidence/p17-local-volume-benchmark-20260909.json` và Docker runtime measurement trong `docs/evidence/p17-local-docker-volume-benchmark-20260909.json`: synthetic `64×128×128` (`1,048,576` voxel), host median `1.2667533 s`, Docker API median `0.8206198 s`; các peak lần lượt là `69,235,606` và `69,237,022` Python-traced bytes. Bổ sung `docs/evidence/p17-local-docker-workload-20260909.json`: 2 Docker jobs đồng thời × 3 lần, cùng engine/oracle, sampled memory cao nhất `142,396,621 bytes` qua `1` mẫu và cgroup v1 peak `367,915,008 bytes` kể từ lúc container start. Cả ba evidence giữ `performance_gate=NOT_ASSESSED`: Python-traced allocation, `docker stats` sample và cgroup peak tích lũy không phải peak RSS; local cgroup không có limit hữu hạn, chưa có pinned service limit, API responsiveness, worker/fault và staging.
+Những số dưới là budget nghiệm thu ban đầu, cần ghi hardware/resources, software version, cold/warm cache, network và concurrent users trong P8/P18. Không coi gói 5 USD là bảo đảm capacity. P17 đã có local support measurement trong `docs/evidence/p17-local-volume-benchmark-20260909.json` và Docker runtime measurement trong `docs/evidence/p17-local-docker-volume-benchmark-20260909.json`: synthetic `64×128×128` (`1,048,576` voxel), host median `1.2667533 s`, Docker API median `0.8206198 s`; các peak cũ lần lượt là `69,235,606` và `69,237,022` Python-traced bytes. Evidence mới `docs/evidence/p17-local-docker-workload-20260910.json` chạy 2 Docker jobs đồng thời × 3 lần dưới policy API `1 CPU/768 MiB`; 6/6 process benchmark đo peak RSS bằng `resource.getrusage`, cao nhất `127,086,592 bytes`, elapsed tối đa `2.0811 s`, p95 `/health` `166.016 ms`, oracle giữ `Dmean=2.5 Gy`, `Dmin=1 Gy`, `Dmax=4 Gy`, và `performance_gate=LOCAL_RESOURCE_GATE_PASS`. Cgroup v1 peak `385,990,656 bytes` kể từ lúc container start chỉ là quan sát tích lũy, còn `docker stats` chỉ là sample; chúng không thay cho process RSS. Đây là local resource gate của P17, chưa đóng worker/service capacity Railway, fault injection, staging workload hoặc P8 Gamma large-workload gate.
 
 | Nhóm | Workload chuẩn để đo | Target/gate |
 | :--- | :--- | :--- |

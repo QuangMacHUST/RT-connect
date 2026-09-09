@@ -76,7 +76,21 @@ function Convert-CgroupMemoryValueToBytes {
 }
 
 function Get-ContainerCgroupMemory {
-  $probe = 'if [ -f /sys/fs/cgroup/memory.peak ]; then printf "cgroup_version=v2\nmemory_limit_bytes=%s\nmemory_current_bytes=%s\nmemory_peak_bytes=%s\n" "$(cat /sys/fs/cgroup/memory.max)" "$(cat /sys/fs/cgroup/memory.current)" "$(cat /sys/fs/cgroup/memory.peak)"; elif [ -f /sys/fs/cgroup/memory/memory.max_usage_in_bytes ]; then printf "cgroup_version=v1\nmemory_limit_bytes=%s\nmemory_current_bytes=%s\nmemory_peak_bytes=%s\n" "$(cat /sys/fs/cgroup/memory/memory.limit_in_bytes)" "$(cat /sys/fs/cgroup/memory/memory.usage_in_bytes)" "$(cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes)"; else printf "cgroup_version=unknown\n"; fi'
+  $probe = @'
+if [ -f /sys/fs/cgroup/memory.peak ]; then
+  printf '%s\n' 'cgroup_version=v2'
+  printf '%s=' 'memory_limit_bytes'; cat /sys/fs/cgroup/memory.max; printf '\n'
+  printf '%s=' 'memory_current_bytes'; cat /sys/fs/cgroup/memory.current; printf '\n'
+  printf '%s=' 'memory_peak_bytes'; cat /sys/fs/cgroup/memory.peak; printf '\n'
+elif [ -f /sys/fs/cgroup/memory/memory.max_usage_in_bytes ]; then
+  printf '%s\n' 'cgroup_version=v1'
+  printf '%s=' 'memory_limit_bytes'; cat /sys/fs/cgroup/memory/memory.limit_in_bytes; printf '\n'
+  printf '%s=' 'memory_current_bytes'; cat /sys/fs/cgroup/memory/memory.usage_in_bytes; printf '\n'
+  printf '%s=' 'memory_peak_bytes'; cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes; printf '\n'
+else
+  printf '%s\n' 'cgroup_version=unknown'
+fi
+'@
   try {
     $raw = Invoke-Docker -Arguments @('exec', $containerName, 'sh', '-c', $probe)
   }
@@ -103,6 +117,61 @@ function Get-ContainerCgroupMemory {
     peak_metric = $peakMetric
     peak_scope = 'since_container_start'
     is_peak_rss = $false
+  }
+}
+
+function Get-ContainerResourcePolicy {
+  $raw = Invoke-Docker -Arguments @(
+    'inspect', $containerName, '--format',
+    '{{.HostConfig.Memory}}|{{.HostConfig.NanoCpus}}|{{.HostConfig.CpuQuota}}|{{.HostConfig.CpuPeriod}}'
+  )
+  $parts = $raw.Trim() -split '\|', 4
+  if ($parts.Count -ne 4) { throw "Could not read resource policy for $containerName." }
+  $memoryBytes = [long]::Parse($parts[0], [Globalization.CultureInfo]::InvariantCulture)
+  $nanoCpus = [long]::Parse($parts[1], [Globalization.CultureInfo]::InvariantCulture)
+  $cpuQuota = [long]::Parse($parts[2], [Globalization.CultureInfo]::InvariantCulture)
+  $cpuPeriod = [long]::Parse($parts[3], [Globalization.CultureInfo]::InvariantCulture)
+  $cpuLimit = if ($nanoCpus -gt 0) {
+    [double]$nanoCpus / 1000000000.0
+  }
+  elseif ($cpuQuota -gt 0 -and $cpuPeriod -gt 0) {
+    [double]$cpuQuota / [double]$cpuPeriod
+  }
+  else {
+    $null
+  }
+  return [ordered]@{
+    memory_limit_bytes = if ($memoryBytes -gt 0) { $memoryBytes } else { $null }
+    cpu_limit = $cpuLimit
+    nano_cpus = if ($nanoCpus -gt 0) { $nanoCpus } else { $null }
+    cpu_quota = if ($cpuQuota -gt 0) { $cpuQuota } else { $null }
+    cpu_period = if ($cpuPeriod -gt 0) { $cpuPeriod } else { $null }
+    source = 'docker inspect HostConfig'
+  }
+}
+
+function Invoke-ApiHealthProbe {
+  $stopwatch = [Diagnostics.Stopwatch]::StartNew()
+  try {
+    $payload = Invoke-RestMethod 'http://localhost:8000/api/v1/health' -TimeoutSec 2
+    $stopwatch.Stop()
+    return [ordered]@{
+      captured_at_utc = (Get-Date).ToUniversalTime().ToString('o')
+      ok = ([string]$payload.status -eq 'ok')
+      status = [string]$payload.status
+      latency_ms = [math]::Round($stopwatch.Elapsed.TotalMilliseconds, 3)
+      error = $null
+    }
+  }
+  catch {
+    $stopwatch.Stop()
+    return [ordered]@{
+      captured_at_utc = (Get-Date).ToUniversalTime().ToString('o')
+      ok = $false
+      status = $null
+      latency_ms = [math]::Round($stopwatch.Elapsed.TotalMilliseconds, 3)
+      error = $_.Exception.Message
+    }
   }
 }
 
@@ -149,7 +218,10 @@ $engineVersion = Invoke-Docker -Arguments @(
 )
 $health = Invoke-RestMethod 'http://localhost:8000/api/v1/health'
 $readiness = Invoke-RestMethod 'http://localhost:8000/api/v1/ready'
+$resourcePolicy = Get-ContainerResourcePolicy
 $cgroupBefore = Get-ContainerCgroupMemory
+$apiProbes = [System.Collections.Generic.List[object]]::new()
+$apiProbes.Add((Invoke-ApiHealthProbe))
 
 $jobs = [System.Collections.Generic.List[object]]::new()
 for ($index = 1; $index -le $ConcurrentJobs; $index++) {
@@ -159,9 +231,10 @@ for ($index = 1; $index -le $ConcurrentJobs; $index++) {
 $samples = [System.Collections.Generic.List[object]]::new()
 $deadline = (Get-Date).AddMinutes($TimeoutMinutes)
 try {
-  while ($true) {
+while ($true) {
     $sample = Get-ContainerMemorySample
     if ($null -ne $sample) { $samples.Add($sample) }
+    $apiProbes.Add((Invoke-ApiHealthProbe))
     $states = @($jobs | ForEach-Object { (Get-Job -Id $_.Id).State })
     if (@($states | Where-Object { $_ -in @('Failed', 'Stopped') }).Count -gt 0) {
       $failedJobs = @($jobs | ForEach-Object { Get-Job -Id $_.Id } | Where-Object { $_.State -in @('Failed', 'Stopped') })
@@ -183,10 +256,74 @@ finally {
     Remove-Job -Id $job.Id -Force -ErrorAction SilentlyContinue
   }
 }
+$apiProbes.Add((Invoke-ApiHealthProbe))
 $cgroupAfter = Get-ContainerCgroupMemory
 
 $memoryValues = @($samples | Where-Object { $null -ne $_.memory_bytes } | ForEach-Object { [long]$_.memory_bytes })
+$rssValues = @(
+  $jobResults |
+    ForEach-Object { $_.observations } |
+    ForEach-Object { $_.peak_rss_bytes } |
+    Where-Object { $null -ne $_ } |
+    ForEach-Object { [long]$_ }
+)
+$elapsedValues = @(
+  $jobResults |
+    ForEach-Object { $_.observations } |
+    ForEach-Object { [double]$_.elapsed_seconds }
+)
+$latencyValues = @(
+  $apiProbes |
+    Where-Object { $_.ok -and $null -ne $_.latency_ms } |
+    ForEach-Object { [double]$_.latency_ms }
+)
+$failedApiProbes = @($apiProbes | Where-Object { -not $_.ok })
+$p95Latency = $null
+if ($latencyValues.Count -gt 0) {
+  $orderedLatencies = @($latencyValues | Sort-Object)
+  $p95Index = [math]::Max(0, [math]::Ceiling($orderedLatencies.Count * 0.95) - 1)
+  $p95Latency = $orderedLatencies[$p95Index]
+}
+$memoryLimitBytes = $resourcePolicy.memory_limit_bytes
+$rssBudgetBytes = if ($null -ne $memoryLimitBytes) {
+  [long][math]::Floor([double]$memoryLimitBytes * 0.8)
+}
+else {
+  $null
+}
+$maxRssBytes = if ($rssValues.Count -gt 0) { ($rssValues | Measure-Object -Maximum).Maximum } else { $null }
+$maxElapsedSeconds = if ($elapsedValues.Count -gt 0) { ($elapsedValues | Measure-Object -Maximum).Maximum } else { $null }
+$resourceEvidenceAvailable = (
+  $rssValues.Count -eq ($ConcurrentJobs * $RepeatsPerJob) -and
+  $null -ne $memoryLimitBytes -and
+  $memoryLimitBytes -gt 0 -and
+  $null -ne $resourcePolicy.cpu_limit -and
+  [double]$resourcePolicy.cpu_limit -gt 0
+)
+$resourceBudgetPassed = (
+  $resourceEvidenceAvailable -and
+  $null -ne $rssBudgetBytes -and
+  [long]$maxRssBytes -lt [long]$rssBudgetBytes -and
+  $null -ne $maxElapsedSeconds -and
+  [double]$maxElapsedSeconds -le ($TimeoutMinutes * 60)
+)
+$apiResponsivenessPassed = (
+  $apiProbes.Count -gt 0 -and
+  $failedApiProbes.Count -eq 0 -and
+  $null -ne $p95Latency -and
+  [double]$p95Latency -le 1000
+)
+$performanceGate = if (-not $resourceEvidenceAvailable) {
+  'NOT_ASSESSED'
+}
+elseif (-not $resourceBudgetPassed -or -not $apiResponsivenessPassed) {
+  'LOCAL_RESOURCE_GATE_FAIL'
+}
+else {
+  'LOCAL_RESOURCE_GATE_PASS'
+}
 $sourceSha = (git -C $root rev-parse HEAD).Trim()
+$cgroupPeakBytes = $cgroupAfter['memory_peak_bytes']
 $report = [ordered]@{
   schema_version = 'rt-connect.p17-docker-workload-verification.v1'
   captured_at_utc = (Get-Date).ToUniversalTime().ToString('o')
@@ -199,6 +336,7 @@ $report = [ordered]@{
     health_status = [string]$health.status
     readiness_status = [string]$readiness.status
     schema_revision = [string]$readiness.schema_revision
+    resource_policy = $resourcePolicy
   }
   workload = [ordered]@{
     shape = $Shape
@@ -217,14 +355,38 @@ $report = [ordered]@{
   cgroup_memory_observation = [ordered]@{
     before_workload = $cgroupBefore
     after_workload = $cgroupAfter
-    peak_bytes_since_container_start = $cgroupAfter.memory_peak_bytes
+    peak_bytes_since_container_start = $cgroupPeakBytes
     is_peak_rss = $false
   }
-  performance_gate = 'NOT_ASSESSED'
+  process_rss_observation = [ordered]@{
+    measurement_source = 'resource.getrusage(RUSAGE_SELF).ru_maxrss'
+    peak_rss_bytes_max = $maxRssBytes
+    observation_count = $rssValues.Count
+    is_peak_rss = ($rssValues.Count -gt 0)
+  }
+  api_responsiveness = [ordered]@{
+    probe_url = 'http://localhost:8000/api/v1/health'
+    sample_count = $apiProbes.Count
+    error_count = $failedApiProbes.Count
+    p95_latency_ms = $p95Latency
+    max_latency_ms = if ($latencyValues.Count -gt 0) { ($latencyValues | Measure-Object -Maximum).Maximum } else { $null }
+    samples = $apiProbes
+    passed = $apiResponsivenessPassed
+  }
+  performance_budget = [ordered]@{
+    rss_limit_fraction = 0.8
+    rss_budget_bytes = $rssBudgetBytes
+    max_elapsed_seconds = $maxElapsedSeconds
+    elapsed_budget_seconds = $TimeoutMinutes * 60
+    resource_budget_passed = $resourceBudgetPassed
+    api_responsiveness_passed = $apiResponsivenessPassed
+  }
+  performance_gate = $performanceGate
   passed = (
     $health.status -eq 'ok' -and
     $readiness.status -eq 'ready' -and
-    @($jobResults | Where-Object { $_.engine_version -ne 'p17-dvh-1.1.0' }).Count -eq 0
+    @($jobResults | Where-Object { $_.engine_version -ne 'p17-dvh-1.1.0' }).Count -eq 0 -and
+    $performanceGate -ne 'LOCAL_RESOURCE_GATE_FAIL'
   )
 }
 
