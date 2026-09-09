@@ -1,15 +1,15 @@
 {
   "schema_version": "rt-connect.staging-dvh-ct-browser.v1",
-  "captured_at_utc": "2026-09-09T13:52:48Z",
+  "captured_at_utc": "2026-09-09T14:14:11Z",
   "verification_level": "STAGING_AUTHENTICATED_BROWSER_E2E_PARTIAL",
   "environment": "staging",
   "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
   "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
-  "source_commit": "fbbfa812feaa164197259f83e581e9271a2df670",
-  "web_build_label": "fbbfa812feaa164197259f83e581e9271a2df670",
+  "source_commit": "4b6423e5efe8fb10a9832bd66ed051f259ccb01b",
+  "web_build_label": "4b6423e5efe8fb10a9832bd66ed051f259ccb01b",
   "web_bundle": {
-    "path": "assets/index-C3XR9KOq.js",
-    "sha256": "b3044e7a9fe572ee94171260545c0e2711593449f43eca0f2415d4f6e6d55ba4",
+    "path": "assets/index-3YPkjzc0.js",
+    "sha256": "f26a4d8185368b2ac39fa88c5297c65fa116ec1b8e4ac283bc1815b0b09b097c",
     "http_status": 200,
     "default_roi_manifest_fix_present": true,
     "empty_ct_preview_fix_present": true
