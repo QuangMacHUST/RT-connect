@@ -28,6 +28,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - **Evidence level:** `STAGING_DEPLOYED_AUTH_E2E_OPEN`. Chưa gọi `STAGING_VERIFIED` vì chưa có hai identity/Auth browser flow, direct PostgreSQL row/hash/status/audit query, replay/revoke/expiry/context/concurrency/timeout evidence.
 
 - **Public smoke cập nhật:** `scripts/verify-public-deployment.ps1` đã chạy lại với timeout hữu hạn và bổ sung kiểm tra request thực tế không có Auth. Evidence `docs/evidence/p4-staging-public-smoke-20260909-2fcf065.json` ghi **14/14 checks PASS**: health/readiness HTTP 200, schema head `20260909_0018`, version `2fcf065`, OpenAPI có CT preview/member/invitation, ba route membership/invitation trả `401`, web/bundle và UI markers trả HTTP 200. Version parity đã đạt; Authenticated E2E vẫn mở.
+- **Public smoke recheck hiện thời:** chạy lại ngày 2026-09-09 với expected version `2fcf065` và schema `20260909_0018`; evidence `docs/evidence/p19-staging-public-smoke-20260909-current.json` đạt **15/15 checks PASS**. API health/readiness/version, OpenAPI CT/member/invitation, unauthenticated `401`, web index/bundle, CT controls, membership UI và web version marker đều được kiểm lại từ URL public hiện tại. Đây là boundary recheck mới nhất, vẫn không thay Authenticated E2E/DICOM upload/DVH run/DB row/release gate.
 
 ## Current checkpoint
 
@@ -82,7 +83,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | P16 | STAGING SMOKE VERIFIED / EXIT OPEN | Migration `20260908_0016`, web build `9262bfd`; staging DRAFT/publish/archive, import row-level invalid, explicit-use snapshot đã pass; direct PostgreSQL/hash/scope, compare/history/export, full fault matrix và release evidence còn mở |
 | P17 | LOCAL CT/BINDING/REPORT READY / STAGING DATA OPEN | Engine/API/UI/migration `20260908_0017`, bounded CT preview, explicit P11/P16 limit binding and DVH report-source local gates pass; current staging schema head is `20260909_0018`; RTSTRUCT/CT fixture upload + DVH run, staging binding/report/CT, fault/volume and release evidence remain |
 | P18 | LOCAL SUPPORT ONLY | `P18-W00` integrated API pack, `P18-W01a` local browser matrix và `P18-W03a` local backup/restore pass; authenticated tenant/dataset matrix, fault/load, provider restore/RPO/RTO và pilot remain open |
-| P19 | PUBLIC SMOKE + MANIFEST TOOL READY | Public deployment verifier và release-manifest tool đã pass local/current staging public smoke; promotion, remote E2E, DNS/TLS/Auth và rollback remain open |
+| P19 | PUBLIC SMOKE + MANIFEST TOOL READY | Public deployment verifier và release-manifest tool đã pass local/current staging public smoke; recheck hiện thời là `docs/evidence/p19-staging-public-smoke-20260909-current.json` với 15/15 checks, version `2fcf065`, schema `20260909_0018`; promotion, remote E2E, DNS/TLS/Auth và rollback remain open |
 | P20 | LOCAL SUPPORT ONLY | Initial operations and production rollback runbooks exist; alert, provider backup/restore, owner handoff and maintenance regression evidence remain open |
 
 ## Live Google Stitch evidence
