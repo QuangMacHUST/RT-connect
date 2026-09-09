@@ -67,3 +67,11 @@ Parity follow-up checkpoint (2026-09-10): documentation evidence commit
 before the API/worker services. Rebuild all three services from the next
 commit carrying this marker and reissue the release manifest only after exact
 SHA parity is observed.
+
+Current staging parity checkpoint (2026-09-10): the artifact-upload compensation
+fix is carried by `ebf1e664c55974b6bc418ff05791edfa5ace93f7`. The public verifier
+recorded health/readiness/schema `20260909_0019`, organization boundary checks,
+CT/membership markers and source parity at 15/15. Any later documentation or
+evidence commit must rebuild API, worker and web before being called the current
+candidate; the synthetic RTDOSE in the staging case is already present and must
+not be duplicated.
