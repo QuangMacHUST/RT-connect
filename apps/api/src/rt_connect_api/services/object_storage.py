@@ -28,6 +28,8 @@ class ObjectStorage(Protocol):
         content_type: str,
     ) -> None: ...
 
+    def delete_object(self, key: str) -> None: ...
+
     def download_to_path(self, key: str, destination: Path) -> None: ...
 
     def presigned_get(self, key: str, expires_seconds: int) -> str: ...
@@ -74,6 +76,21 @@ class MinioObjectStorage:
         except Exception as exc:
             raise ObjectStorageError("Could not persist the uploaded artifact") from exc
 
+    def delete_object(self, key: str) -> None:
+        """Remove an object that has no committed database reference.
+
+        Upload persistence is deliberately a two-resource operation: the
+        object is written before the artifact/manifest transaction commits.
+        Callers use this method only for compensation after that transaction
+        fails.  A failure is surfaced instead of being silently ignored so an
+        operator can reconcile a possible orphan object.
+        """
+
+        try:
+            self.client.remove_object(self.bucket, key)
+        except Exception as exc:
+            raise ObjectStorageError("Could not remove the unreferenced artifact object") from exc
+
     def download_to_path(self, key: str, destination: Path) -> None:
         response = None
         try:
@@ -110,6 +127,9 @@ class InMemoryObjectStorage:
         if len(payload) != length:
             raise ObjectStorageError("Uploaded object length did not match the declared length")
         self.objects[key] = payload
+
+    def delete_object(self, key: str) -> None:
+        self.objects.pop(key, None)
 
     def download_to_path(self, key: str, destination: Path) -> None:
         try:

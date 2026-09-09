@@ -1006,6 +1006,18 @@ User tạo QA case
     -> tạo Analysis Run
 ~~~
 
+#### 5.1.1. Transaction và compensation khi upload artifact
+
+Object storage và Railway PostgreSQL không dùng chung distributed transaction. Upload phải thực hiện theo thứ tự:
+
+1. Đọc multipart theo chunk, tính SHA-256 và dừng ngay khi vượt `MAX_UPLOAD_BYTES`.
+2. Kiểm tra duplicate trong đúng `organization_id + qa_case_id + artifact_type`; nếu cùng bytes/type đã có thì không ghi object mới, chỉ tạo `InputManifest` cho logical role còn thiếu trong một transaction riêng.
+3. Validate content theo `artifact_type`, tạo object key bất biến và ghi object vào durable storage.
+4. Tạo `Artifact`, `InputManifest` và `AuditEvent` trong cùng transaction PostgreSQL; chỉ trả `201` sau khi commit thành công.
+5. Nếu bước 4 thất bại sau khi object đã ghi, rollback transaction và gọi `delete_object(object_key)`. Cleanup thành công thì giữ nguyên lỗi gốc (`ARTIFACT_CONFLICT` hoặc persistence error); cleanup thất bại thì trả `ARTIFACT_PERSISTENCE_FAILED` HTTP 503 và ghi signal để reconciliation tìm object không có row tham chiếu.
+
+`delete_object` là một operation nội bộ của adapter object storage, không expose cho browser. Không xóa theo prefix hoặc theo filename; compensation chỉ được phép dùng object key vừa tạo và phải có log correlation/sha256 đã redaction phù hợp. Orphan retention, inventory và provider reconciliation định kỳ vẫn cần được triển khai/kiểm trong P18/P20.
+
 ### 5.2. Luồng phân tích bất đồng bộ
 
 ~~~text

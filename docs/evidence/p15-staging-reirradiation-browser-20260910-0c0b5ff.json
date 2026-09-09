@@ -1,0 +1,163 @@
+{
+  "schema_version": "rt-connect.p15-staging-reirradiation-browser.v1",
+  "captured_at_utc": "2026-09-09T22:18:30Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_E2E",
+  "environment": "staging",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "route": "/app/biological/re-irradiation",
+  "source_commit": "0c0b5ff18d0ed62984ae9cb31a7d2aa227a2151b",
+  "web_build_label_observed": "0c0b5ff18d0ed62984ae9cb31a7d2aa227a2151b",
+  "synthetic_only": true,
+  "data_boundary": "Authenticated browser checks used only repository-generated biological scenario values; no patient, QA-case, TPS or PACS linkage was created.",
+  "context": {
+    "scenario_id": "4bdcf4e3-41be-41b6-82ff-beeb9e4338c2",
+    "scenario_revision_id": "f9fafce0-e224-40b6-8b2a-a9952093f8dc",
+    "scenario_status": "SAVED",
+    "snapshot_name": "P15 re-irradiation scenario",
+    "operation_type": "REIRRADIATION",
+    "model_key": "biological.re-irradiation",
+    "model_version": "p15-lq-reirradiation-1.0.0",
+    "course_count": 2,
+    "courses": [
+      {
+        "course_id": "course-prior",
+        "label": "Prior course",
+        "is_prior": true,
+        "start_date": "2020-01-01",
+        "end_date": "2020-02-15",
+        "tissue_key": "TARGET",
+        "dose_metric": "TOTAL",
+        "total_dose_gy": 60,
+        "fractions": 30,
+        "dose_per_fraction_gy": 2,
+        "alpha_beta_gy": 10,
+        "alpha_beta_source_type": "USER_DEFINED",
+        "alpha_beta_source_reference": "User-defined P15 scenario assumption"
+      },
+      {
+        "course_id": "course-current",
+        "label": "Current course",
+        "is_prior": false,
+        "start_date": "2026-01-01",
+        "end_date": "2026-02-15",
+        "tissue_key": "TARGET",
+        "dose_metric": "TOTAL",
+        "total_dose_gy": 60,
+        "fractions": 30,
+        "dose_per_fraction_gy": 2,
+        "alpha_beta_gy": 10,
+        "alpha_beta_source_type": "USER_DEFINED",
+        "alpha_beta_source_reference": "User-defined P15 scenario assumption"
+      }
+    ]
+  },
+  "positive_workflows": {
+    "none_recovery": {
+      "validate_only": {
+        "status": "VALIDATION_OK",
+        "side_effect": "NONE",
+        "preview_checksum": "c5d80c8a8a1250b4be683fcb7f2fb988545784e9b5d055e573627de843f88068"
+      },
+      "saved_snapshot": {
+        "snapshot_id": "0ca4900e-d39b-421d-bea6-6177de4b7d2a",
+        "status": "COMPLETED",
+        "recovery_mode": "NONE",
+        "bed_no_recovery_gy": 144,
+        "bed_with_recovery_gy": 144,
+        "eqd2_with_recovery_gy": 120,
+        "checksum": "c5d80c8a8a1250b4be683fcb7f2fb988545784e9b5d055e573627de843f88068"
+      }
+    },
+    "explicit_recovery": {
+      "input": {
+        "recovery_mode": "USER_DEFINED",
+        "recovery_fraction_prior": 0.5,
+        "recovery_source": "User-defined recovery assumption",
+        "evaluation_date": "2026-03-01",
+        "spatial_requested": false,
+        "sensitivity_recovery_fractions": [0, 0.25, 0.5, 0.75, 1]
+      },
+      "validate_only": {
+        "status": "VALIDATION_OK",
+        "side_effect": "NONE",
+        "preview_checksum": "9415496e9d0c3c7bdece622cb74a469fe553f97723cd43ab0d50f70d3a78089a"
+      },
+      "saved_snapshot": {
+        "snapshot_id": "2f66676e-b5b2-4b76-aa9f-e226e9984bae",
+        "status": "COMPLETED",
+        "idempotency_key": "p15-18c3fcca-cb81-4132-a507-4447b11c87c2",
+        "recovery_applied_once_to_prior_courses": true,
+        "spatial_result": null,
+        "spatial_unavailable_code": "SPATIAL_ACCUMULATION_UNAVAILABLE",
+        "bed_no_recovery_gy": 144,
+        "bed_with_recovery_gy": 108,
+        "eqd2_no_recovery_gy": 120,
+        "eqd2_with_recovery_gy": 90,
+        "result_checksum": "9415496e9d0c3c7bdece622cb74a469fe553f97723cd43ab0d50f70d3a78089a"
+      },
+      "sensitivity": [
+        {"recovery_fraction": 0, "bed_gy": 144, "eqd2_gy": 120},
+        {"recovery_fraction": 0.25, "bed_gy": 126, "eqd2_gy": 105},
+        {"recovery_fraction": 0.5, "bed_gy": 108, "eqd2_gy": 90},
+        {"recovery_fraction": 0.75, "bed_gy": 90, "eqd2_gy": 75},
+        {"recovery_fraction": 1, "bed_gy": 72, "eqd2_gy": 60}
+      ],
+      "reload_persistence": {
+        "history_count_after_reload": 3,
+        "newest_snapshot_id": "2f66676e-b5b2-4b76-aa9f-e226e9984bae",
+        "newest_status": "COMPLETED",
+        "checksum_preserved": true,
+        "recovery_fraction_preserved": true,
+        "evaluation_date_preserved": true,
+        "history_append_only_observed": true
+      }
+    }
+  },
+  "capability_negative_path": {
+    "spatial_requested": true,
+    "status": "VALIDATION_OK",
+    "message_code": "SPATIAL_ACCUMULATION_UNAVAILABLE",
+    "spatial_result": null,
+    "scalar_result_retained": true,
+    "new_snapshot_created": false,
+    "interpretation": "The system explicitly reports scalar-only capability and does not fabricate voxel accumulation or registration."
+  },
+  "export_workflow": {
+    "json": {
+      "ui_status": "DOWNLOAD_TRIGGERED",
+      "payload_parse": "VALID",
+      "bytes_observed": 11824,
+      "sha256_observed": "060175efb63affdc240975c1d3b2777a61ea1b9bd2e406ad74cc14762dce64dd",
+      "filename_status": "UNVERIFIED",
+      "reason": "Edge download remained as .crdownload in the browser harness."
+    },
+    "csv": {
+      "ui_status": "DOWNLOAD_TRIGGERED",
+      "header_parse": "VALID",
+      "row_count": 1,
+      "bytes_observed": 282,
+      "sha256_observed": "0bf40d2edc34530cd721b33a4e1dbd274b6225a1f0830b92bcd677cfc87891c6",
+      "filename_status": "UNVERIFIED",
+      "reason": "Edge download remained as .crdownload in the browser harness."
+    }
+  },
+  "checks": {
+    "prior_and_current_course_present": true,
+    "tissue_dose_explicit": true,
+    "recovery_source_and_evaluation_date_snapshot": true,
+    "recovery_applied_once_to_prior": true,
+    "current_course_recovery_zero": true,
+    "sensitivity_is_scenario_not_confidence_interval": true,
+    "spatial_not_fabricated": true,
+    "independent_from_qa_and_patient_data": true,
+    "immutable_history_visible": true,
+    "reload_persistence": true
+  },
+  "open_gates": [
+    "fraction-compensation staging recheck on this source candidate",
+    "same-key replay and different-fingerprint conflict on staging",
+    "direct Railway PostgreSQL row/checksum/scope probe",
+    "full P15 error matrix and resource/fault/release closure",
+    "export final filename verification in a browser/runtime without .crdownload"
+  ]
+}

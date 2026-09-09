@@ -438,15 +438,33 @@ def upload_artifact(
             validation_summary={"state": "PENDING"},
         )
     )
-    session.flush()
-    _audit(
-        session,
-        context,
-        "ARTIFACT_UPLOADED",
-        artifact.id,
-        {"sha256": sha256, "byte_size": byte_size},
-    )
-    _commit_or_raise(session)
+    try:
+        session.flush()
+        _audit(
+            session,
+            context,
+            "ARTIFACT_UPLOADED",
+            artifact.id,
+            {"sha256": sha256, "byte_size": byte_size},
+        )
+        _commit_or_raise(session)
+    except Exception:
+        # The object was already written, but the database transaction did
+        # not commit.  Remove the unreferenced object before returning the
+        # original failure.  If compensation fails, expose a stable
+        # reconciliation signal rather than claiming that the upload failed
+        # cleanly while leaving an orphan in durable storage.
+        session.rollback()
+        try:
+            storage.delete_object(object_key)
+        except ObjectStorageError as cleanup_exc:
+            raise DomainError(
+                "ARTIFACT_PERSISTENCE_FAILED",
+                "Artifact metadata could not be committed and storage cleanup "
+                "requires reconciliation.",
+                503,
+            ) from cleanup_exc
+        raise
     response.status_code = status.HTTP_201_CREATED
     return _artifact_response(artifact, logical_roles=[logical_role])
 

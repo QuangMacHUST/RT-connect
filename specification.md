@@ -708,6 +708,8 @@ Local source đã có model/API/migration `20260909_0018`, frontend client, orga
 
 **Failure contract:** FILE_REQUIRED_OR_EMPTY; UPLOAD_TOO_LARGE; UPLOAD_INTERRUPTED; ARTIFACT_PERSISTENCE_FAILED; ARTIFACT_TYPE_MISMATCH; INPUT_METADATA_INVALID; DOWNLOAD_LINK_EXPIRED. Đây là taxonomy target; mapping sang error codes thực tế phải được ghi trong contract test trước khi triển khai.
 
+**P06-W01 implementation note (2026-09-10):** Khi object đã được ghi nhưng transaction tạo `Artifact` và `InputManifest` không commit, API phải rollback database rồi gọi compensation delete cho đúng object key. Nếu delete thành công, API giữ nguyên lỗi gốc và không để lại artifact metadata; nếu delete thất bại, API trả `ARTIFACT_PERSISTENCE_FAILED` (HTTP 503) để đưa object vào luồng reconciliation, không báo upload thành công. Đây là local implementation evidence; retention/reconciliation provider và staging fault injection vẫn là gate riêng trong plan.
+
 <a id="spec-p07"></a>
 
 ### SPEC-P07 — Machine QA checklist, rule engine và history

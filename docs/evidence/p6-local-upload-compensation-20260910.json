@@ -1,0 +1,42 @@
+{
+  "schema_version": "rt-connect.p06-local-upload-compensation.v1",
+  "captured_at_utc": "2026-09-10",
+  "environment": "local-testclient",
+  "source_commit_before_worktree_change": "0c0b5ff18d0ed62984ae9cb31a7d2aa227a2151b",
+  "working_tree_files": [
+    "apps/api/src/rt_connect_api/api/artifacts.py",
+    "apps/api/src/rt_connect_api/services/object_storage.py",
+    "apps/api/tests/test_artifacts.py",
+    "specification.md",
+    "technical-specification.md",
+    "plan.md",
+    "implementation-progress.md"
+  ],
+  "operation": {
+    "scope": "synthetic QA case and disposable in-memory object storage",
+    "database_commit_failure": {
+      "expected": "rollback database, delete newly written object, preserve original domain error",
+      "observed": "ARTIFACT_CONFLICT returned; object inventory empty; case artifact count zero",
+      "passed": true
+    },
+    "storage_cleanup_failure": {
+      "expected": "do not claim success; return ARTIFACT_PERSISTENCE_FAILED for reconciliation",
+      "observed": "HTTP 503 ARTIFACT_PERSISTENCE_FAILED; unreferenced object remains visible to reconciliation test",
+      "passed": true
+    }
+  },
+  "checks": {
+    "artifact_and_error_contract_tests": "8 passed",
+    "ruff": "passed",
+    "mypy": "passed",
+    "no_patient_data": true,
+    "no_staging_mutation": true,
+    "no_production_mutation": true
+  },
+  "evidence_level": "LOCAL_VERIFIED",
+  "limitations": [
+    "Does not prove Railway/S3 provider behavior or retention reconciliation.",
+    "Does not prove interrupted upload behavior over a real network.",
+    "Does not close the P06 staging browser, P18 restore, or P20 operations gates."
+  ]
+}

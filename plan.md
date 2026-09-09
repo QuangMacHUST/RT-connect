@@ -664,7 +664,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 
 ### Work packages P6
 
-- [ ] P06-W01 — Hoàn thiện streaming size limit, object/DB compensation và cleanup orphan có retention.
+- [x] P06-W01 — Hoàn thiện streaming size limit, object/DB compensation và cleanup orphan có retention. `LOCAL_VERIFIED` (2026-09-10): upload đã xóa object sau khi transaction metadata/manifest thất bại; nếu cleanup storage cũng lỗi thì trả `ARTIFACT_PERSISTENCE_FAILED` để reconciliation. Provider-level orphan retention/reconciliation và staging failure injection vẫn mở.
 - [ ] P06-W02 — Content detection phải đối chiếu declared type; JSON gắn DICOM không được VALID như DICOM.
 - [ ] P06-W03 — Tách file validity với dataset/workflow readiness; geometry linking không dựa filename/PatientID.
 - [ ] P06-W04 — Upload queue/retry, idempotent manifest role, signed URL renewal và checksum round-trip.

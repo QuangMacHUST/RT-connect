@@ -11,7 +11,8 @@ from pydicom import FileDataset, FileMetaDataset
 from pydicom.uid import CTImageStorage, ExplicitVRLittleEndian, generate_uid
 
 from rt_connect_api.api.artifacts import _storage
-from rt_connect_api.services.object_storage import InMemoryObjectStorage
+from rt_connect_api.core.errors import DomainError
+from rt_connect_api.services.object_storage import InMemoryObjectStorage, ObjectStorageError
 from test_workspace import _workspace_client
 
 
@@ -211,3 +212,51 @@ def test_declared_json_rejects_a_real_dicom_payload() -> None:
         body = validation.json()
         assert body["result"] == "INVALID"
         assert any(item["code"] == "ARTIFACT_TYPE_MISMATCH" for item in body["errors"])
+
+
+def test_upload_commit_failure_compensates_object_storage(monkeypatch) -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+
+        def fail_commit(_session) -> None:
+            raise DomainError("ARTIFACT_CONFLICT", "synthetic metadata conflict", 409)
+
+        monkeypatch.setattr("rt_connect_api.api.artifacts._commit_or_raise", fail_commit)
+        response = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={"file": ("synthetic-ct.dcm", _ct_bytes(), "application/dicom")},
+            data={"artifact_type": "DICOM", "logical_role": "CT"},
+        )
+
+        assert response.status_code == 409, response.text
+        assert response.json()["code"] == "ARTIFACT_CONFLICT"
+        assert storage.objects == {}
+        assert client.get(f"/api/v1/qa-cases/{case_id}/artifacts").json()["total"] == 0
+
+
+def test_upload_cleanup_failure_returns_reconciliation_error(monkeypatch) -> None:
+    class CleanupFailureStorage(InMemoryObjectStorage):
+        def delete_object(self, key: str) -> None:
+            raise ObjectStorageError("synthetic cleanup outage")
+
+    storage = CleanupFailureStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+
+        def fail_commit(_session) -> None:
+            raise DomainError("ARTIFACT_CONFLICT", "synthetic metadata conflict", 409)
+
+        monkeypatch.setattr("rt_connect_api.api.artifacts._commit_or_raise", fail_commit)
+        response = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={"file": ("synthetic-ct.dcm", _ct_bytes(), "application/dicom")},
+            data={"artifact_type": "DICOM", "logical_role": "CT"},
+        )
+
+        assert response.status_code == 503, response.text
+        assert response.json()["code"] == "ARTIFACT_PERSISTENCE_FAILED"
+        assert len(storage.objects) == 1
+        assert client.get(f"/api/v1/qa-cases/{case_id}/artifacts").json()["total"] == 0

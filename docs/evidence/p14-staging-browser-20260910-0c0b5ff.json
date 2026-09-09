@@ -1,0 +1,129 @@
+{
+  "schema_version": "rt-connect.p14-staging-plan-comparison-browser.v1",
+  "captured_at_utc": "2026-09-09T22:12:40Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_E2E",
+  "environment": "staging",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "route": "/app/biological/compare",
+  "source_commit": "0c0b5ff18d0ed62984ae9cb31a7d2aa227a2151b",
+  "web_build_label_observed": "0c0b5ff18d0ed62984ae9cb31a7d2aa227a2151b",
+  "synthetic_only": true,
+  "data_boundary": "Authenticated browser checks used only repository-generated biological snapshots; no patient, QA-case, TPS or PACS linkage was created.",
+  "input_context": {
+    "comparison_name": "P14 treatment plan comparison",
+    "scenario_id": "4bdcf4e3-41be-41b6-82ff-beeb9e4338c2",
+    "scenario_revision_id": "f9fafce0-e224-40b6-8b2a-a9952093f8dc",
+    "model_key": "biological.plan-comparison",
+    "model_version": "p14-comparison-1.0.0",
+    "option_order": ["option-a", "option-b"],
+    "baseline_option_id": "option-a",
+    "options": [
+      {
+        "option_id": "option-a",
+        "label": "Phương án A",
+        "calculation_id": "8fda6eb8-2f13-436c-99f8-496876f6198a",
+        "total_dose_gy": 60,
+        "fractions": 30,
+        "dose_per_fraction_gy": 2,
+        "alpha_beta_gy": 10,
+        "bed_gy": 72,
+        "eqd2_gy": 60,
+        "source_type": "USER_DEFINED_SYNTHETIC_SCENARIO"
+      },
+      {
+        "option_id": "option-b",
+        "label": "Phương án B",
+        "calculation_id": "7c229a9c-dff2-4d2d-9eba-3a2bbd6acfbe",
+        "total_dose_gy": 70,
+        "fractions": 35,
+        "dose_per_fraction_gy": 2,
+        "alpha_beta_gy": 10,
+        "bed_gy": 84,
+        "eqd2_gy": 70,
+        "source_type": "USER_DEFINED_SYNTHETIC_SCENARIO"
+      }
+    ]
+  },
+  "positive_workflow": {
+    "validate_only": {
+      "status": "VALIDATION_OK",
+      "side_effect": "NONE",
+      "preview_checksum": "ddeff1b3a40e1c95ca672bd1e29d6e1d1e4e280e46237614bcdc7b2639868cea",
+      "message": "Comparison hợp lệ; validate-only không ghi snapshot."
+    },
+    "save_snapshot": {
+      "comparison_id": "77045b33-117b-4f21-90ec-352cba2f4bf4",
+      "status": "COMPLETED",
+      "baseline_option_id": "option-a",
+      "model_key": "biological.plan-comparison",
+      "model_version": "p14-comparison-1.0.0",
+      "scenario_revision_id": "f9fafce0-e224-40b6-8b2a-a9952093f8dc",
+      "checksum": "ddeff1b3a40e1c95ca672bd1e29d6e1d1e4e280e46237614bcdc7b2639868cea",
+      "idempotency_key": "p14-24f2686f-5d6e-4fb6-bbec-8ae2fe84eef9",
+      "result": {
+        "option_a": {
+          "bed_gy": 72,
+          "eqd2_gy": 60,
+          "delta_bed_gy": 0,
+          "delta_eqd2_gy": 0,
+          "delta_bed_percent": 0,
+          "delta_eqd2_percent": 0,
+          "is_baseline": true
+        },
+        "option_b": {
+          "bed_gy": 84,
+          "eqd2_gy": 70,
+          "delta_bed_gy": 12,
+          "delta_eqd2_gy": 10,
+          "delta_bed_percent": 16.666666666666664,
+          "delta_eqd2_percent": 16.666666666666664,
+          "is_baseline": false
+        }
+      }
+    },
+    "reload_persistence": {
+      "status": "COMPLETED",
+      "newest_comparison_id": "77045b33-117b-4f21-90ec-352cba2f4bf4",
+      "history_count_after_reload": 3,
+      "snapshot_preserved": true,
+      "input_order_preserved": true,
+      "baseline_option_id_preserved": true,
+      "checksum_preserved": true
+    }
+  },
+  "export_workflow": {
+    "json": {
+      "ui_status": "DOWNLOAD_TRIGGERED",
+      "payload_parse": "VALID",
+      "bytes_observed": 6852,
+      "sha256_observed": "4c0ed521babeb5d0806a36650a3e3c09c5c6a0823d839bfd5e2883dec8eb50a",
+      "filename_status": "UNVERIFIED",
+      "reason": "Edge download remained as .crdownload in the browser harness."
+    },
+    "csv": {
+      "ui_status": "DOWNLOAD_TRIGGERED",
+      "header_parse": "VALID",
+      "row_count": 2,
+      "bytes_observed": 673,
+      "sha256_observed": "5f74a36fbac5461cf3ddf43bb589e080b4ddf46cc0db8637716e9298e4df432e",
+      "filename_status": "UNVERIFIED",
+      "reason": "Edge download remained as .crdownload in the browser harness."
+    }
+  },
+  "checks": {
+    "same_scenario_revision": true,
+    "same_model_key_and_version": true,
+    "stable_option_ids": true,
+    "baseline_is_option_id_not_column_position": true,
+    "no_automatic_ranking": true,
+    "no_qa_or_patient_linkage": true,
+    "immutable_history_visible": true,
+    "calculation_snapshot_unchanged": true
+  },
+  "open_gates": [
+    "same-key replay and different-fingerprint conflict on staging",
+    "direct Railway PostgreSQL row/checksum/scope probe",
+    "full cross-module fault/resource/release-manifest closure",
+    "export final filename verification in a browser/runtime without .crdownload"
+  ]
+}

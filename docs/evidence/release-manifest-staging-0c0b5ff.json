@@ -1,0 +1,82 @@
+{
+  "schema_version": "rt-connect.release-manifest.v1",
+  "release_id": "staging-0c0b5ff",
+  "environment": "staging",
+  "source_sha": "0c0b5ff18d0ed62984ae9cb31a7d2aa227a2151b",
+  "source_state": {
+    "branch": "codex/p4-org-site-machine",
+    "working_tree_clean": true
+  },
+  "services": {
+    "api": {
+      "deployment_id": "3766889f-6ff6-4aa9-bee1-2df1ca865af0",
+      "sha": "0c0b5ff18d0ed62984ae9cb31a7d2aa227a2151b"
+    },
+    "web": {
+      "deployment_id": "0cdaeee3-75ca-4115-a1f3-b23b99d26c9f",
+      "sha": "0c0b5ff18d0ed62984ae9cb31a7d2aa227a2151b"
+    },
+    "worker": {
+      "deployment_id": "f4db4c55-8afe-44c3-9393-7bc1ad50e9e6",
+      "sha": "0c0b5ff18d0ed62984ae9cb31a7d2aa227a2151b"
+    },
+    "renderer": {
+      "version": "report-renderer-0.1"
+    }
+  },
+  "schema_revision": "20260909_0019",
+  "engine_versions": {
+    "gamma": "gamma-nd-p8.2",
+    "dvh": "p17-dvh-1.1.0",
+    "biological": "p13-lq-1.0.0;p14-comparison-1.0.0;p15-lq-reirradiation-1.0.0;p15-lq-compensation-1.0.0;biological-library-entry.v1"
+  },
+  "auth_environment": "staging",
+  "database_environment": "staging",
+  "fixture_hashes": [
+    {
+      "path": "docs/fixtures/gamma-measurement-3d-v1-smoke.json",
+      "bytes": 775,
+      "sha256": "3ca7a85e438cb238e44a26e3753ba0862798f576ffe71efed1778fb02794a838"
+    },
+    {
+      "path": "docs/fixtures/gamma-rtdose-v1-smoke.dcm",
+      "bytes": 898,
+      "sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b"
+    },
+    {
+      "path": "docs/fixtures/p17-ct-v1-smoke.dcm",
+      "bytes": 842,
+      "sha256": "0b1d3bfd6adf33f139e493ca043e09defe077cab24d57287a6076816315dc088"
+    },
+    {
+      "path": "docs/fixtures/p17-rtstruct-v1-smoke.dcm",
+      "bytes": 866,
+      "sha256": "16a79df3129757d9df8b48bd095f0b4b70b24713ea5255e24719d46e6808d401"
+    }
+  ],
+  "tests": {
+    "local": [
+      "BACKEND_FULL_SUITE_177_PASSED",
+      "PLANNING_CONTRACT_21_PHASES_PASSED",
+      "FRONTEND_LINT_TYPECHECK_BUILD_PASSED"
+    ],
+    "staging": [
+      "P19_PUBLIC_SMOKE_0C0B5FF_15_OF_15",
+      "P14_PLAN_COMPARISON_COMPLETED_77045B33_RELOAD",
+      "P15_REIRRADIATION_COMPLETED_2F66676E_RECOVERY_0_5",
+      "P15_FRACTION_COMPENSATION_COMPLETED_7D805462_PREFIX_GUARD",
+      "P8_GAMMA_3D_COMPLETED_PASS_8_OF_8_HISTORICAL_D2A5A6B",
+      "P13_BED_EQD2_COMPLETED_HISTORICAL_D2A5A6B",
+      "P17_SYNTHETIC_DICOM_FIXTURES_EXISTING_RECHECK_HISTORICAL_D2A5A6B"
+    ],
+    "production": [
+      "PRODUCTION_PROMOTION_BLOCKED_UNVERIFIED"
+    ]
+  },
+  "backup_before_change": "STAGING_READ_ONLY_NO_DATA_CHANGE",
+  "rollback_target": "staging-d2a5a6b",
+  "service_sha_parity": true,
+  "release_gate": "ELIGIBLE",
+  "gate_reasons": [],
+  "manifest_sha256": "c071601aae12a28bd99adc5324f8857a8fce4fc5c718c3dee3743125ec5b06ab"
+}

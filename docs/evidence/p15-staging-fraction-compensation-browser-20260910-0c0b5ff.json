@@ -1,0 +1,157 @@
+{
+  "schema_version": "rt-connect.p15-staging-fraction-compensation-browser.v1",
+  "captured_at_utc": "2026-09-09T22:24:30Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_E2E",
+  "environment": "staging",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "route": "/app/biological/fraction-compensation",
+  "source_commit": "0c0b5ff18d0ed62984ae9cb31a7d2aa227a2151b",
+  "web_build_label_observed": "0c0b5ff18d0ed62984ae9cb31a7d2aa227a2151b",
+  "synthetic_only": true,
+  "data_boundary": "Authenticated browser checks used only repository-generated biological schedule values; no patient, QA-case, TPS or PACS linkage was created.",
+  "context": {
+    "scenario_id": "4bdcf4e3-41be-41b6-82ff-beeb9e4338c2",
+    "scenario_revision_id": "f9fafce0-e224-40b6-8b2a-a9952093f8dc",
+    "scenario_status": "SAVED",
+    "snapshot_name": "P15 fraction compensation scenario",
+    "operation_type": "FRACTION_COMPENSATION",
+    "model_key": "biological.fraction-compensation",
+    "model_version": "p15-lq-compensation-1.0.0",
+    "alpha_beta_gy": 10,
+    "alpha_beta_source_type": "USER_DEFINED",
+    "alpha_beta_source_reference": "User-defined P15 compensation assumption",
+    "planned_fraction_doses_gy": [2, 2, 2, 2, 2],
+    "delivered_fraction_doses_gy": [2, 2],
+    "remaining_baseline_schedule_gy": [2, 2, 2],
+    "alternatives": [
+      {
+        "alternative_id": "original-remaining",
+        "label": "Continue original schedule",
+        "remaining_fraction_doses_gy": [2, 2, 2]
+      },
+      {
+        "alternative_id": "alternative-1",
+        "label": "Alternative remaining schedule",
+        "remaining_fraction_doses_gy": [2.5, 2.5, 1]
+      }
+    ],
+    "time_model": "NONE"
+  },
+  "positive_workflow": {
+    "validate_only": {
+      "status": "VALIDATION_OK",
+      "side_effect": "NONE",
+      "warning_code": "NO_REPOPULATION_CORRECTION",
+      "message": "No time/repopulation model was applied; results are LQ schedule estimates only."
+    },
+    "saved_snapshot": {
+      "snapshot_id": "7d805462-9b3f-497e-90e9-640b11b7c377",
+      "status": "COMPLETED",
+      "idempotency_key": "p15-133ba9cc-58fe-49a8-b88c-aba2edb15bb6",
+      "request_fingerprint": "1210f3f1adfb419b1274164736ede3a8f92b78bfdc3ec704bac54fdb6fd33609",
+      "result_checksum": "796fbc91e5b0cc2a7b3fc679c8acbbcd4026e9549858b1999dab407697ba86cf",
+      "delivered_prefix": {
+        "fraction_count": 2,
+        "total_dose_gy": 4,
+        "bed_lq_gy": 4.8,
+        "eqd2_lq_gy": 4,
+        "prefix_unchanged": true
+      },
+      "planned_schedule": {
+        "fraction_count": 5,
+        "total_dose_gy": 10,
+        "bed_lq_gy": 12,
+        "eqd2_lq_gy": 10
+      },
+      "alternative_results": [
+        {
+          "alternative_id": "original-remaining",
+          "fraction_count": 5,
+          "remaining_fraction_count": 3,
+          "total_dose_gy": 10,
+          "bed_lq_gy": 12,
+          "eqd2_lq_gy": 10,
+          "delta_bed_vs_planned_gy": 0,
+          "delta_eqd2_vs_planned_gy": 0,
+          "delivered_prefix_unchanged": true
+        },
+        {
+          "alternative_id": "alternative-1",
+          "fraction_count": 5,
+          "remaining_fraction_count": 3,
+          "total_dose_gy": 10,
+          "bed_lq_gy": 12.15,
+          "eqd2_lq_gy": 10.125,
+          "delta_bed_vs_planned_gy": 0.15,
+          "delta_eqd2_vs_planned_gy": 0.125,
+          "delivered_prefix_unchanged": true
+        }
+      ],
+      "spatial_accumulation": "UNAVAILABLE",
+      "prescription_generated": false
+    },
+    "reload_persistence": {
+      "history_count_after_reload": 2,
+      "newest_snapshot_id": "7d805462-9b3f-497e-90e9-640b11b7c377",
+      "newest_status": "COMPLETED",
+      "checksum_preserved": true,
+      "delivered_prefix_preserved": true,
+      "alternative_order_preserved": true,
+      "history_append_only_observed": true
+    }
+  },
+  "negative_and_recovery": {
+    "invalid_delivered_prefix": {
+      "planned_fraction_doses_gy": [2, 2, 2, 2, 2],
+      "delivered_fraction_doses_gy": [2, 3],
+      "status": "VALIDATION_FAILED",
+      "error_code": "FRACTION_SCHEDULE_INVALID",
+      "error_field": "delivered_fraction_doses_gy[1]",
+      "detail": "The delivered prefix must match the original planned schedule.",
+      "new_snapshot_created": false
+    },
+    "recovery": {
+      "restored_delivered_fraction_doses_gy": [2, 2],
+      "status": "VALIDATION_OK",
+      "warning_code": "NO_REPOPULATION_CORRECTION",
+      "side_effect": "NONE"
+    }
+  },
+  "export_workflow": {
+    "json": {
+      "ui_status": "DOWNLOAD_TRIGGERED",
+      "payload_parse": "VALID",
+      "bytes_observed": 5109,
+      "sha256_observed": "f38c2566837ad8f5939cbdccf4b89e5c953a462a0a06347fe6b35f5b26b1dc47",
+      "filename_status": "UNVERIFIED",
+      "reason": "Edge download remained as .crdownload in the browser harness."
+    },
+    "csv": {
+      "ui_status": "DOWNLOAD_TRIGGERED",
+      "header_parse": "VALID",
+      "row_count": 2,
+      "bytes_observed": 448,
+      "sha256_observed": "935b562c66e87e2bf9c5c6c72ab665f73e51bef19a668f69399884bc6a74b352",
+      "filename_status": "UNVERIFIED",
+      "reason": "Edge download remained as .crdownload in the browser harness."
+    }
+  },
+  "checks": {
+    "delivered_is_prefix_of_planned": true,
+    "remaining_alternatives_only_replace_remaining": true,
+    "no_delivered_mutation": true,
+    "lq_schedule_calculation": true,
+    "no_time_model_warning_explicit": true,
+    "spatial_not_fabricated": true,
+    "independent_from_qa_and_patient_data": true,
+    "immutable_history_visible": true,
+    "reload_persistence": true
+  },
+  "open_gates": [
+    "same-key replay and different-fingerprint conflict on staging",
+    "direct Railway PostgreSQL row/checksum/scope probe",
+    "USER_DEFINED_LINEAR time-model staging case",
+    "full P15 error matrix and resource/fault/release closure",
+    "export final filename verification in a browser/runtime without .crdownload"
+  ]
+}

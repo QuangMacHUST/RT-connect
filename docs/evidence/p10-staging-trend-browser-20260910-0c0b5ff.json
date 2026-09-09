@@ -1,0 +1,90 @@
+{
+  "schema_version": "rt-connect.p10-staging-trend-browser.v1",
+  "captured_at_utc": "2026-09-09T23:04:03.3474799Z",
+  "verification": "STAGING_AUTHENTICATED_BROWSER_READ_ONLY",
+  "synthetic_only": true,
+  "source_commit": "0c0b5ff18d0ed62984ae9cb31a7d2aa227a2151b",
+  "environment": "staging",
+  "web_url": "https://rt-connect-web-staging-staging.up.railway.app/app/trend",
+  "organization_context": {
+    "organization_name": "Hong ngoc general hospital",
+    "site_name": "Staging Synthetic Site",
+    "machine_id": "STAGING-LINAC-01",
+    "machine_name": "Synthetic QA Linac"
+  },
+  "filter_observed": {
+    "machine": "STAGING-LINAC-01",
+    "metric_key": "output_factor",
+    "aggregation": "raw",
+    "timezone": "Asia/Ho_Chi_Minh",
+    "date_from": null,
+    "date_to": null,
+    "energy": "6X",
+    "detector": null,
+    "phantom": null,
+    "beam_quality": "TPR20/10",
+    "acquisition_mode": null,
+    "protocol_key": "MACHINE_QA_BASELINE",
+    "qa_cycle": null
+  },
+  "ui_observation": {
+    "api_label": "API THẬT",
+    "compatible_point_count": 6,
+    "compatible_series_count": 3,
+    "baseline_count": 3,
+    "maintenance_marker_count": 1,
+    "series": [
+      {
+        "metric_key": "flatness",
+        "point_count": 2,
+        "unit": "%",
+        "protocol_version": 1,
+        "baseline": 100,
+        "points": [
+          {"value": 100, "status": "PASS", "baseline_delta": 0},
+          {"value": 100, "status": "PASS", "baseline_delta": 0}
+        ]
+      },
+      {
+        "metric_key": "output_factor",
+        "point_count": 2,
+        "unit": "%",
+        "protocol_version": 1,
+        "baseline": 100,
+        "points": [
+          {"value": 100, "status": "PASS", "baseline_delta": 0},
+          {"value": 100, "status": "PASS", "baseline_delta": 0}
+        ]
+      },
+      {
+        "metric_key": "symmetry",
+        "point_count": 2,
+        "unit": "%",
+        "protocol_version": 1,
+        "baseline": 100,
+        "points": [
+          {"value": 1, "status": "PASS", "outlier": true, "baseline_delta": -99},
+          {"value": 1, "status": "PASS", "outlier": true, "baseline_delta": -99}
+        ]
+      }
+    ]
+  },
+  "checks": {
+    "authenticated_browser_context_loaded": true,
+    "real_api_label_visible": true,
+    "organization_scoped_machine_visible": true,
+    "compatible_series_are_separated_by_metric_context": true,
+    "raw_points_and_source_links_visible": true,
+    "baseline_and_maintenance_summary_visible": true,
+    "outlier_marker_and_delta_visible": true,
+    "no_rebuild_clicked": true,
+    "no_export_clicked": true,
+    "no_mutation_performed": true
+  },
+  "evidence_level": "STAGING_SMOKE_READ_ONLY",
+  "limitations": [
+    "This is a current-candidate read-only browser smoke, not full P10 exit evidence.",
+    "Projection rebuild, update/archive baseline UI, complete negative matrix, large-series budget, export-content hash and visual/accessibility review remain open.",
+    "No database mutation, rebuild operation or export operation was performed in this observation."
+  ]
+}
