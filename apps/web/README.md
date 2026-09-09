@@ -22,3 +22,8 @@ P19 evidence marker: the `dd14ef8` public verifier and P17 negative-path
 recheck are recorded in the repository evidence/progress log. The current
 production public gap is recorded separately; keep API/web/worker source
 parity on the next release.
+
+P4 regression marker: the current backend candidate includes local coverage for
+email-bound invitation revoke and expiry/reissue lifecycle. Keep this marker in
+the web service root so the API, worker and web services are rebuilt from the
+same commit before the next public source-parity check.

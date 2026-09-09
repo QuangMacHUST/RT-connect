@@ -204,6 +204,108 @@ def test_invitation_rejects_wrong_identity_and_duplicate_pending() -> None:
         assert rejected.json()["code"] == "INVITATION_INVALID"
 
 
+def test_invitation_revoke_is_terminal_and_allows_a_new_invitation() -> None:
+    with _workspace_client() as (client, organization):
+        created = client.post(
+            f"/api/v1/organizations/{organization.id}/invitations",
+            json={"email": "revoked@example.com"},
+        )
+        assert created.status_code == 201, created.text
+        invitation = created.json()
+
+        revoked = client.post(
+            f"/api/v1/organizations/{organization.id}/invitations/{invitation['id']}/revoke"
+        )
+        assert revoked.status_code == 200, revoked.text
+        assert revoked.json()["status"] == "REVOKED"
+        assert revoked.json()["revoked_at"]
+
+        client.app.dependency_overrides[require_identity] = lambda: AuthenticatedIdentity(
+            subject="synthetic-revoked-invitee-subject",
+            email="revoked@example.com",
+            claims={"sub": "synthetic-revoked-invitee-subject"},
+        )
+        rejected = client.post(
+            "/api/v1/organizations/invitations/accept",
+            json={"token": invitation["token"]},
+        )
+        assert rejected.status_code == 409, rejected.text
+        assert rejected.json()["code"] == "INVITATION_INVALID"
+
+        client.app.dependency_overrides[require_identity] = lambda: AuthenticatedIdentity(
+            subject="synthetic-supabase-subject",
+            email="synthetic.user@example.invalid",
+            claims={"sub": "synthetic-supabase-subject"},
+        )
+        recreated = client.post(
+            f"/api/v1/organizations/{organization.id}/invitations",
+            json={"email": "revoked@example.com"},
+        )
+        assert recreated.status_code == 201, recreated.text
+        assert recreated.json()["id"] != invitation["id"]
+
+        closed = client.get(
+            f"/api/v1/organizations/{organization.id}/invitations",
+            params={"include_closed": True},
+        )
+        assert closed.status_code == 200, closed.text
+        statuses = {item["id"]: item["status"] for item in closed.json()["items"]}
+        assert statuses[invitation["id"]] == "REVOKED"
+        assert statuses[recreated.json()["id"]] == "PENDING"
+
+
+def test_expired_invitation_is_rejected_and_can_be_reissued() -> None:
+    with _workspace_client() as (client, organization):
+        created = client.post(
+            f"/api/v1/organizations/{organization.id}/invitations",
+            json={"email": "expired@example.com", "expires_in_days": 1},
+        )
+        assert created.status_code == 201, created.text
+        invitation = created.json()
+
+        dependency = client.app.dependency_overrides[get_session]
+        session_generator = dependency()
+        session = next(session_generator)
+        try:
+            stored = session.get(OrganizationInvitation, UUID(invitation["id"]))
+            assert stored is not None
+            stored.expires_at = datetime.now(UTC) - timedelta(minutes=1)
+            session.commit()
+        finally:
+            session_generator.close()
+
+        listed = client.get(
+            f"/api/v1/organizations/{organization.id}/invitations",
+            params={"include_closed": True},
+        )
+        assert listed.status_code == 200, listed.text
+        assert listed.json()["items"][0]["status"] == "EXPIRED"
+
+        client.app.dependency_overrides[require_identity] = lambda: AuthenticatedIdentity(
+            subject="synthetic-expired-invitee-subject",
+            email="expired@example.com",
+            claims={"sub": "synthetic-expired-invitee-subject"},
+        )
+        rejected = client.post(
+            "/api/v1/organizations/invitations/accept",
+            json={"token": invitation["token"]},
+        )
+        assert rejected.status_code == 409, rejected.text
+        assert rejected.json()["code"] == "INVITATION_INVALID"
+
+        client.app.dependency_overrides[require_identity] = lambda: AuthenticatedIdentity(
+            subject="synthetic-supabase-subject",
+            email="synthetic.user@example.invalid",
+            claims={"sub": "synthetic-supabase-subject"},
+        )
+        reissued = client.post(
+            f"/api/v1/organizations/{organization.id}/invitations",
+            json={"email": "expired@example.com"},
+        )
+        assert reissued.status_code == 201, reissued.text
+        assert reissued.json()["id"] != invitation["id"]
+
+
 def test_membership_lifecycle_keeps_last_active_member() -> None:
     with _workspace_client() as (client, organization):
         members = client.get(f"/api/v1/organizations/{organization.id}/members").json()["items"]
