@@ -52,7 +52,11 @@ from rt_connect_api.db.models import (  # noqa: E402
     Site,
 )
 from rt_connect_api.services.object_storage import MinioObjectStorage  # noqa: E402
-from rt_connect_api.services.redis_queue import GammaQueueMessage, RedisGammaQueue  # noqa: E402
+from rt_connect_api.services.redis_queue import (  # noqa: E402
+    GammaQueueMessage,
+    RedisGammaQueue,
+    RedisQueueError,
+)
 from rt_connect_api.worker import publish_pending_dispatches  # noqa: E402
 
 
@@ -338,6 +342,7 @@ def verify(output_path: Path) -> dict[str, Any]:
     database_path: Path | None = None
     database_engine: Any = None
     cleanup_run_ids: list[UUID] = []
+    ack_failure_dispatch_key: str | None = None
     try:
         with tempfile.TemporaryDirectory(prefix="rt-connect-gamma-queue-") as temporary_directory:
             database_path = Path(temporary_directory) / "queue-smoke.sqlite3"
@@ -427,6 +432,66 @@ def verify(output_path: Path) -> dict[str, Any]:
                     and good_attempts[0].status == "COMPLETED",
                     "replay_guard": replay_processed is False,
                     "duplicate_dispatch_deduplicated": duplicate_dispatch == "deduplicated",
+                }
+
+                # Simulate the narrow failure window where the durable
+                # COMPLETED state has already been committed but Redis XACK
+                # fails.  The message must remain pending for redelivery, and
+                # the eventual ACK must not create a second result/attempt.
+                ack_failure_dispatch_key = (
+                    f"{stream}:dispatch:{good_run.id}:99"
+                )
+                ack_failure_message_id = queue.enqueue(good_run.id, organization.id, 99)
+                ack_failure_claim = queue.claim(block_ms=100)
+                if not isinstance(ack_failure_claim, GammaQueueMessage):
+                    raise RuntimeError("ACK failure probe did not claim a valid Gamma message")
+                if ack_failure_claim.message_id != ack_failure_message_id:
+                    raise RuntimeError("ACK failure probe claimed an unexpected message")
+
+                original_xack = queue.client.xack
+                ack_failure_state = {"injected": False}
+
+                def fail_ack_once(*args: object, **kwargs: object) -> int:
+                    if not ack_failure_state["injected"]:
+                        ack_failure_state["injected"] = True
+                        from redis.exceptions import RedisError  # noqa: PLC0415
+
+                        raise RedisError("injected ACK transport failure")
+                    return int(original_xack(*args, **kwargs))
+
+                queue.client.xack = fail_ack_once
+                ack_failed = False
+                try:
+                    queue.acknowledge(ack_failure_claim.message_id)
+                except RedisQueueError:
+                    ack_failed = True
+                finally:
+                    queue.client.xack = original_xack
+
+                pending_after_ack_failure = int(queue.metrics()["pending_count"])
+                queue.acknowledge(ack_failure_claim.message_id)
+                pending_after_ack_recovery = int(queue.metrics()["pending_count"])
+                session.expire_all()
+                durable_after_ack_failure = session.get(GammaAnalysisRun, good_run.id)
+                ack_failure_checks = {
+                    "ack_failure_injected": ack_failure_state["injected"],
+                    "ack_error_surface": ack_failed,
+                    "message_remained_pending": pending_after_ack_failure == 1,
+                    "eventual_ack_cleared_pending": pending_after_ack_recovery == 0,
+                    "durable_result_unchanged": durable_after_ack_failure is not None
+                    and durable_after_ack_failure.status == "COMPLETED"
+                    and durable_after_ack_failure.attempt_count == 1,
+                    "no_second_attempt": durable_after_ack_failure is not None
+                    and len(
+                        list(
+                            session.scalars(
+                                select(GammaRunAttempt).where(
+                                    GammaRunAttempt.gamma_run_id == good_run.id
+                                )
+                            )
+                        )
+                    )
+                    == 1,
                 }
 
                 bad_run = _create_run(
@@ -539,7 +604,7 @@ def verify(output_path: Path) -> dict[str, Any]:
                     and all(malformed_checks.values())
                 )
                 evidence: dict[str, Any] = {
-                    "schema_version": "rt-connect.p8-local-redis-worker-smoke.v1",
+                    "schema_version": "rt-connect.p8-local-redis-worker-smoke.v2",
                     "captured_at_utc": datetime.now(UTC).isoformat(),
                     "verification_level": "LOCAL_COMPOSE_REDIS_WORKER",
                     "synthetic_only": True,
@@ -559,6 +624,13 @@ def verify(output_path: Path) -> dict[str, Any]:
                     "happy_path": {
                         "run_id": str(good_run.id),
                         "checks": good_checks,
+                    },
+                    "ack_failure_recovery": {
+                        "run_id": str(good_run.id),
+                        "message_id": ack_failure_message_id,
+                        "checks": ack_failure_checks,
+                        "pending_after_injected_failure": pending_after_ack_failure,
+                        "pending_after_recovery_ack": pending_after_ack_recovery,
                     },
                     "bounded_retry_dead_letter": {
                         "run_id": str(bad_run.id),
@@ -592,6 +664,8 @@ def verify(output_path: Path) -> dict[str, Any]:
                     for run_id in cleanup_run_ids
                     for attempt in range(3)
                 ]
+                if ack_failure_dispatch_key is not None:
+                    dispatch_keys.append(ack_failure_dispatch_key)
                 if dispatch_keys:
                     queue.client.delete(*dispatch_keys)
             except Exception:
