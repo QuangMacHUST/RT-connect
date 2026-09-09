@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import yaml
+
 from rt_connect_api.db.session import normalize_database_url
 
 
@@ -32,6 +34,15 @@ def test_alembic_environment_uses_database_url_normalizer() -> None:
     source = env.read_text(encoding="utf-8")
 
     assert "normalize_database_url(database_url)" in source
+
+
+def test_compose_keeps_schema_revision_as_the_exact_string() -> None:
+    compose = Path(__file__).parents[3] / "docker-compose.yml"
+    configuration = yaml.safe_load(compose.read_text(encoding="utf-8"))
+
+    revision = configuration["services"]["api"]["environment"]["SCHEMA_REVISION"]
+    assert revision == "20260909_0018"
+    assert isinstance(revision, str)
 
 
 def test_gamma_reliability_migration_declares_fenced_dispatch_schema() -> None:

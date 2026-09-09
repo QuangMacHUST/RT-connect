@@ -35,5 +35,14 @@
     "current_revision": "20260909_0018",
     "is_head": true
   },
+  "configuration_regression": {
+    "failure_observed": "An unquoted YAML SCHEMA_REVISION value was rendered as 202609090018, so /api/v1/ready reported not_ready against database revision 20260909_0018.",
+    "fix": "Quote SCHEMA_REVISION in docker-compose.yml and recreate the API container.",
+    "regression_test": "apps/api/tests/test_migration_contract.py::test_compose_keeps_schema_revision_as_the_exact_string",
+    "fixed_readiness": {
+      "status": "ready",
+      "schema_revision": "20260909_0018"
+    }
+  },
   "secrets": "not_recorded"
 }

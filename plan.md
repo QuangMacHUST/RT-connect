@@ -375,7 +375,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 | TC-P01-E01 | Thiếu dependency/lockfile lệch | DEPENDENCY_MISMATCH | Báo runtime/dependency thiếu; cài từ lockfile, không sửa version ngẫu nhiên. |
 | TC-P01-E02 | Cổng đã dùng | PORT_IN_USE | Chỉ rõ cổng; chọn cổng cấu hình hoặc dùng service đúng đang chạy. |
 | TC-P01-E03 | Migration lỗi | MIGRATION_FAILED | Giữ log revision; không đánh dấu ready; sửa migration và chạy lại. |
-| TC-P01-E04 | Thiếu biến môi trường | CONFIGURATION_MISSING | Fail có tên biến thiếu, không in giá trị secret. |
+| TC-P01-E04 | Thiếu biến môi trường hoặc parser triển khai làm đổi kiểu/giá trị revision (ví dụ YAML bỏ dấu `_` trong `20260909_0018`) | CONFIGURATION_INVALID | Fail closed trước khi gọi ready; kiểm tra rendered Compose/Railway effective settings, giữ nguyên chuỗi revision, không in giá trị secret; sửa cấu hình rồi recreate service và chạy lại migration/readiness. |
 | TC-P01-E05 | Web build hoặc OpenAPI lệch | BUILD_CONTRACT_FAILED | CI chặn artifact release đến khi contract đồng bộ. |
 
 ### Bất biến và điều kiện đóng P1
