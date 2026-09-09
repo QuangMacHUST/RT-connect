@@ -17,6 +17,7 @@ from sqlalchemy import (
     UniqueConstraint,
     false,
     func,
+    text,
     true,
 )
 from sqlalchemy.dialects.postgresql import UUID as PostgreSQLUUID
@@ -73,6 +74,50 @@ class OrganizationMembership(TimestampedIdMixin, Base):
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=true())
     organization: Mapped[Organization] = relationship(back_populates="memberships")
     user_identity: Mapped[UserIdentity] = relationship(back_populates="memberships")
+
+
+class OrganizationInvitation(TimestampedIdMixin, Base):
+    """One-time, email-bound invitation; the raw token is never persisted."""
+
+    __tablename__ = "organization_invitations"
+    __table_args__ = (
+        Index(
+            "uq_organization_invitations_pending_email",
+            "organization_id",
+            "invited_email",
+            unique=True,
+            postgresql_where=text("status = 'PENDING'"),
+            sqlite_where=text("status = 'PENDING'"),
+        ),
+        Index(
+            "ix_organization_invitations_lookup",
+            "organization_id",
+            "invited_email",
+            "status",
+        ),
+        Index(
+            "ix_organization_invitations_expires",
+            "organization_id",
+            "expires_at",
+            "status",
+        ),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    invited_email: Mapped[str] = mapped_column(String(320), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, server_default="PENDING")
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+    accepted_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
 
 
 class Site(TimestampedIdMixin, Base):

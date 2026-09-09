@@ -1,5 +1,17 @@
-from uuid import uuid4
+import hashlib
+from datetime import UTC, datetime, timedelta
+from uuid import UUID, uuid4
 
+from sqlalchemy import select
+
+from rt_connect_api.db.models import (
+    Organization,
+    OrganizationInvitation,
+    OrganizationMembership,
+    UserIdentity,
+)
+from rt_connect_api.db.session import get_session
+from rt_connect_api.security.supabase_jwt import AuthenticatedIdentity, require_identity
 from test_workspace import _workspace_client
 
 
@@ -107,3 +119,148 @@ def test_machine_stable_identifier_conflict_is_explicit() -> None:
 
     assert response.status_code == 409
     assert response.json()["code"] == "MACHINE_ID_CONFLICT"
+
+
+def test_member_invitation_is_email_bound_one_time_and_idempotent() -> None:
+    with _workspace_client() as (client, organization):
+        created = client.post(
+            f"/api/v1/organizations/{organization.id}/invitations",
+            json={"email": "Invitee@example.com", "expires_in_days": 7},
+        )
+        assert created.status_code == 201, created.text
+        invitation = created.json()
+        assert invitation["invited_email"] == "invitee@example.com"
+        assert invitation["status"] == "PENDING"
+        token = invitation["token"]
+        assert len(token) >= 20
+
+        listed = client.get(f"/api/v1/organizations/{organization.id}/invitations")
+        assert listed.status_code == 200
+        assert listed.json()["items"][0]["invited_email"] == "invitee@example.com"
+        assert "token" not in listed.json()["items"][0]
+
+        dependency = client.app.dependency_overrides[get_session]
+        session_generator = dependency()
+        session = next(session_generator)
+        try:
+            stored = session.get(OrganizationInvitation, UUID(invitation["id"]))
+            assert stored is not None
+            assert stored.token_hash != token
+            assert len(stored.token_hash) == 64
+        finally:
+            session_generator.close()
+
+        client.app.dependency_overrides[require_identity] = lambda: AuthenticatedIdentity(
+            subject="synthetic-invitee-subject",
+            email="invitee@example.com",
+            claims={"sub": "synthetic-invitee-subject"},
+        )
+        accepted = client.post(
+            "/api/v1/organizations/invitations/accept",
+            json={"token": token},
+        )
+        assert accepted.status_code == 200, accepted.text
+        member_id = accepted.json()["id"]
+        assert accepted.json()["email"] == "invitee@example.com"
+
+        repeated = client.post(
+            "/api/v1/organizations/invitations/accept",
+            json={"token": token},
+        )
+        assert repeated.status_code == 200, repeated.text
+        assert repeated.json()["id"] == member_id
+
+        members = client.get(
+            f"/api/v1/organizations/{organization.id}/members",
+            params={"include_inactive": True},
+        )
+        assert members.status_code == 200
+        assert members.json()["total"] == 2
+
+
+def test_invitation_rejects_wrong_identity_and_duplicate_pending() -> None:
+    with _workspace_client() as (client, organization):
+        payload = {"email": "invitee@example.com"}
+        created = client.post(
+            f"/api/v1/organizations/{organization.id}/invitations", json=payload
+        )
+        assert created.status_code == 201
+        duplicate = client.post(
+            f"/api/v1/organizations/{organization.id}/invitations", json=payload
+        )
+        assert duplicate.status_code == 409
+        assert duplicate.json()["code"] == "INVITATION_ALREADY_PENDING"
+
+        client.app.dependency_overrides[require_identity] = lambda: AuthenticatedIdentity(
+            subject="synthetic-wrong-subject",
+            email="wrong@example.com",
+            claims={"sub": "synthetic-wrong-subject"},
+        )
+        rejected = client.post(
+            "/api/v1/organizations/invitations/accept",
+            json={"token": created.json()["token"]},
+        )
+        assert rejected.status_code == 403
+        assert rejected.json()["code"] == "INVITATION_INVALID"
+
+
+def test_membership_lifecycle_keeps_last_active_member() -> None:
+    with _workspace_client() as (client, organization):
+        members = client.get(f"/api/v1/organizations/{organization.id}/members").json()["items"]
+        assert len(members) == 1
+        last = client.patch(
+            f"/api/v1/organizations/{organization.id}/members/{members[0]['id']}",
+            json={"is_active": False},
+        )
+        assert last.status_code == 409
+        assert last.json()["code"] == "LAST_MEMBERSHIP_CONFLICT"
+
+
+def test_invitation_does_not_create_a_second_active_organization_context() -> None:
+    with _workspace_client() as (client, organization):
+        dependency = client.app.dependency_overrides[get_session]
+        session_generator = dependency()
+        session = next(session_generator)
+        token = "cross-context-invitation-token-123456789"
+        try:
+            identity = session.scalar(
+                select(UserIdentity).where(
+                    UserIdentity.supabase_user_id == "synthetic-supabase-subject"
+                )
+            )
+            assert identity is not None
+            second = Organization(name="Second Synthetic Oncology Center")
+            session.add(second)
+            session.flush()
+            session.add(
+                OrganizationInvitation(
+                    organization_id=second.id,
+                    invited_email="synthetic.user@example.invalid",
+                    token_hash=hashlib.sha256(token.encode()).hexdigest(),
+                    expires_at=datetime.now(UTC) + timedelta(days=7),
+                )
+            )
+            session.commit()
+        finally:
+            session_generator.close()
+
+        response = client.post(
+            "/api/v1/organizations/invitations/accept",
+            json={"token": token},
+        )
+
+        assert response.status_code == 409
+        assert response.json()["code"] == "ORGANIZATION_CONTEXT_ALREADY_ASSIGNED"
+
+        session_generator = dependency()
+        session = next(session_generator)
+        try:
+            memberships = session.scalars(
+                select(OrganizationMembership).where(
+                    OrganizationMembership.user_identity_id == identity.id
+                )
+            ).all()
+            assert len(memberships) == 1
+            assert memberships[0].organization_id == organization.id
+        finally:
+            session_generator.close()

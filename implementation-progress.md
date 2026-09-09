@@ -2,13 +2,22 @@
 
 ## Documentation and implementation rebaseline — 2026-09-09
 
-Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.21, `specification.md` v1.16,
-`technical-specification.md` v1.14 và `plan.md` v4.1. Dòng rebaseline lịch sử ngay dưới đây
+Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.17,
+`technical-specification.md` v1.15 và `plan.md` v4.2. Dòng rebaseline lịch sử ngay dưới đây
 giữ nguyên để truy vết; không dùng các phiên bản cũ đó làm authority.
 
 `business-analysis.md` v0.21, `specification.md` v1.15, `technical-specification.md` v1.13 và `plan.md` v4.0 bổ sung feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate, state contract, testcase, workflow, error/recovery contract và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
 
 Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, RTDOSE/3D staging, independent Gamma oracle, resource/failure-injection, schema-readiness, staging Trend và staging Protocol consumer vẫn phải được đối soát theo plan §1.2–§1.6. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Checkpoint trước đã xác minh browser staging P13/P14 trên candidate `31a5900`; PostgreSQL row query trực tiếp, organization-scope negative probe và release-manifest closure vẫn là gate riêng. P15 hiện đã có staging browser smoke trên candidate `09acb90`, nhưng direct PostgreSQL/scope/replay/release gates còn mở.
+
+## P4 membership/invitation local slice — 2026-09-09
+
+- Source working tree đã bổ sung migration `20260909_0018_organization_invitations`, `OrganizationInvitation`, partial unique index cho invitation PENDING theo organization/email, member list/toggle và các endpoint tạo/list/revoke/accept invitation.
+- Contract giữ nguyên quyết định của người dùng: mọi active member trong cùng organization ngang quyền nghiệp vụ; không có action roles, owner/admin branch hoặc approval hierarchy. `is_active` chỉ là lifecycle/context state và không cho phép tắt member active cuối cùng.
+- Invitation local contract: email trim/case-fold; token random 32 bytes chỉ trả ở response create; database chỉ lưu SHA-256; status `PENDING/ACCEPTED/REVOKED/EXPIRED`; accept kiểm verified email, organization archive, active context khác và hỗ trợ replay cùng token/cùng identity về cùng membership.
+- Frontend đã có member/invitation panels trong `/app/organization` và public `/invite?token=...` route; login giữ return path nội bộ. Token không được đưa vào list/history/localStorage trong implementation slice.
+- Local evidence mới: `test_organization.py` **9 passed**, `test_health.py` và `test_migration_contract.py` trong focused pack tổng **25 passed**, Ruff và strict mypy PASS; frontend lint/typecheck/Vitest/build PASS sau khi thêm route.
+- Đây mới là `LOCAL_SLICE_READY`, chưa phải `STAGING_VERIFIED`: phải deploy candidate, migrate staging lên `20260909_0018`, kiểm Auth thật và hai identity trên browser, xác nhận PostgreSQL rows/hash/status/audit, replay/revoke/expiry/context/scope/concurrency/timeout rồi mới đóng P04-W02/P04-W04/P04-VERIFY.
 
 ## Current checkpoint
 

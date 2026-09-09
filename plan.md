@@ -1,12 +1,12 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
-- Phiên bản: **4.1**, ngày 2026-09-09.
-- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.21.
-- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.16.
-- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.14.
+- Phiên bản: **4.2**, ngày 2026-09-09.
+- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.22.
+- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.17.
+- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.15.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
-- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.0 và bổ sung operation surface/readiness contract cho P20 dashboard; tiếp tục chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20. Các slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, migration schema `20260908_0017`, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local ngày 2026-09-09 được giữ nguyên theo progress log. Staging DVH saved-run/CT E2E vẫn là gate riêng vì case hiện chưa có RTSTRUCT/CT. P18 local integrated journey, local backup/restore verifier, ma trận browser/device/timezone/viewport, script kiểm public deployment P19, công cụ release-manifest P19 và gói runbook P20 chỉ là công cụ/evidence hỗ trợ, không tự đóng phase. Không suy diễn từ test local hoặc một lần Railway báo Online.
+- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.1 và bổ sung contract thực thi P4 cho member list/toggle, invitation email-bound one-time, expiry/revoke/replay, active-context invariant, migration `20260909_0018` và route `/invite`; tiếp tục chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20. Các slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, migration schema `20260908_0017`, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local ngày 2026-09-09 được giữ nguyên theo progress log. Staging DVH saved-run/CT E2E vẫn là gate riêng vì case hiện chưa có RTSTRUCT/CT. P18 local integrated journey, local backup/restore verifier, ma trận browser/device/timezone/viewport, script kiểm public deployment P19, công cụ release-manifest P19 và gói runbook P20 chỉ là công cụ/evidence hỗ trợ, không tự đóng phase. Không suy diễn từ test local hoặc một lần Railway báo Online.
 
 ## 1. Cách thực hiện kế hoạch
 
@@ -36,7 +36,7 @@ Test chỉ dùng NOT_RUN / PASS / FAIL / BLOCKED / NOT_APPLICABLE. NOT_APPLICABL
 | :--- | :--- | :--- |
 | P0–P1 | Có registry, CI, local Compose và migration evidence trong progress log | Đối soát toàn bộ FR mới, contract errors/version và clean setup nếu thay runtime. |
 | P2–P3 | Có staged Auth/onboarding/dashboard và health smoke | Kiểm session expiry, runtime config, schema readiness và dashboard đầy đủ; không suy diễn từ session còn đăng nhập. |
-| P4–P5 | CRUD hierarchy/folder/case có staged smoke | Invitation/member flow, restore, simultaneous edits, complete filter/history là gate bổ sung cần kiểm/triển khai. |
+| P4–P5 | CRUD hierarchy/folder/case có staged smoke; P4 invitation/member slice đã có local code/test trên schema `20260909_0018` | P4 migration/deploy/browser invitation, DB hash/status/audit, active-context/last-member/concurrency; P5 restore, simultaneous edits, complete filter/history là gate bổ sung cần kiểm/triển khai. |
 | P6–P7 | Synthetic upload/validation và Machine QA evaluate/rerun/compare đã được ghi | Round-trip checksum evidence, declared-type mismatch, interrupted upload, autosave/concurrency và broader boundary tests cần kiểm. |
 | P8 | 2D JSON/Redis worker/retry và 3D PSQA RTDOSE + measurement đã có staging evidence; slice coverage policy và fenced dispatch đã có local code/test | Semantic/scientific independent oracle, lease/outbox failure injection, bounded retry/resource limits và large workload chưa được coi là hoàn tất. |
 | P9 | Có implementation slice backend/frontend và local tests cho template, revision, block, snapshot, renderer, export và idempotency; authenticated browser smoke đã tạo revision và tải JSON/CSV/PDF/PNG trên staging | Recheck trên candidate mới; storage failure/retry, visual byte review và build manifest vẫn là gate riêng. |
@@ -220,7 +220,7 @@ Bảng này là bản đồ điều hành một trang. Các bảng `TC-Pxx-Syy` 
 | P1 | Repository và lockfile | Clean setup → runtime → Compose services → migration/seed → health/build/test | `DEPENDENCY_MISMATCH`, `PORT_IN_USE`, `MIGRATION_FAILED`, `CONFIGURATION_MISSING`, `BUILD_CONTRACT_FAILED`; sửa đúng layer và chạy lại từ checkpoint | Log clean setup, schema head, test/build output; migration hoặc CI không reproducible chặn mọi phase sau |
 | P2 | Railway project/service và Auth/DB config | Deploy API/worker đúng source → pre-deploy migration → readiness/schema → JWT smoke | `BUILD_SOURCE_INVALID`, `DATABASE_DRIVER_MISMATCH`, `SERVICE_NOT_LISTENING`, `SCHEMA_NOT_READY`, `AUTH_VERIFICATION_FAILED`, `DEPLOYMENT_CONFIG_DRIFT`; không coi process Online là đủ | Service/environment/SHA/DB/schema/Auth manifest redacted; `health` và `ready` phải tách biệt, schema mismatch chặn |
 | P3 | API/Auth nền tảng đạt | Deep-link → session bootstrap → membership/onboarding → dashboard → logout/expiry | `SIGN_IN_FAILED`, `RECOVERY_LINK_INVALID`, `SESSION_UNAVAILABLE`, `ORGANIZATION_MEMBERSHIP_REQUIRED`, `AUTH_CONFIGURATION_MISSING`, `WORKSPACE_LOAD_FAILED`; retry bounded, không cache nhầm identity | Browser evidence của first-use, existing member, expiry, offline, deep-link; lỗi bootstrap hoặc route blank chặn |
-| P4 | Organization context hợp lệ | Tạo site/machine → rename/archive/restore → invitation → xem history; mọi thành viên dùng cùng nghiệp vụ | `MACHINE_CODE_CONFLICT`, `PARENT_NOT_AVAILABLE`, `REVISION_CONFLICT`, `INVITATION_INVALID`, `LAST_MEMBERSHIP_CONFLICT`, `MUTATION_RESULT_UNKNOWN`; kiểm result trước retry | DB/query scope, stable ID, concurrent edit và invitation evidence; cross-org leak hoặc mutation trùng chặn |
+| P4 | Organization context hợp lệ | Tạo site/machine → rename/archive/restore → member list/toggle → invitation create/accept/replay/revoke/expiry → xem history; mọi thành viên dùng cùng nghiệp vụ | `MACHINE_CODE_CONFLICT`, `PARENT_NOT_AVAILABLE`, `REVISION_CONFLICT`, `INVITATION_INVALID`, `INVITATION_ALREADY_MEMBER`, `INVITATION_ALREADY_PENDING`, `ORGANIZATION_CONTEXT_ALREADY_ASSIGNED`, `LAST_MEMBERSHIP_CONFLICT`, `MUTATION_RESULT_UNKNOWN`; kiểm result trước retry | DB/query scope, stable ID, token hash/status/audit, concurrent edit và invitation evidence; cross-org leak hoặc mutation trùng chặn |
 | P5 | Site/machine và archive shell | Tạo folder lồng nhau → tạo case → search/filter/page → move/rename/archive/restore | `FOLDER_CYCLE`, `FOLDER_NAME_CONFLICT`, `PARENT_NOT_AVAILABLE`, `CASE_HIERARCHY_INVALID`, `PAGE_OUT_OF_RANGE`, `RESTORE_CONFLICT`; giữ cây/case cũ khi fail | Tree trước/sau, combined filters, deep-link, archived restore; mất lineage hoặc partial move chặn |
 | P6 | Case và object storage | Chọn type/role → upload → checksum/object commit → manifest → validation → download | `FILE_REQUIRED_OR_EMPTY`, `UPLOAD_TOO_LARGE`, `UPLOAD_INTERRUPTED`, `ARTIFACT_PERSISTENCE_FAILED`, `ARTIFACT_TYPE_MISMATCH`, `INPUT_METADATA_INVALID`, `DOWNLOAD_LINK_EXPIRED`; reconcile object/DB và retry có kiểm | Hash round-trip, DICOM UID/geometry/unit, valid/invalid/duplicate/type mismatch, signed download; artifact mồ côi hoặc validate giả chặn |
 | P7 | Protocol seed và case input | Chọn protocol version → draft metric → evaluate snapshot → result → rerun/compare/trend | `MEASUREMENT_REQUIRED`, `MEASUREMENT_INVALID`, `BASELINE_ZERO`, `REVISION_CONFLICT`, `DUPLICATE_OPERATION`, `PROTOCOL_NOT_AVAILABLE`; giữ draft, tạo rerun/version mới | Boundary known-answer, N/A reason, immutable result, projection uniqueness; PASS sai hoặc overwrite chặn |
@@ -516,18 +516,22 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 
 ### Workflow P4
 
-1. Mở quản lý organization.
-2. Tạo site, tạo machine thuộc site.
-3. Đổi tên/thông tin máy và xem history.
-4. Mời đồng nghiệp bằng luồng nhận lời mời xác thực vào đúng tổ chức.
-5. Archive/restore đối tượng và kiểm tra QA/trend cũ còn đúng định danh.
+1. Xác nhận candidate, schema head và P3 session/bootstrap; đăng nhập bằng identity synthetic của organization.
+2. Mở quản lý organization; tải organization, site, machine, member và invitation theo cùng context.
+3. Tạo site, tạo machine thuộc site; kiểm tra list/detail/search/pagination và stable IDs.
+4. Đổi tên/thông tin máy, thử stale revision và xem history; xác nhận QA/trend/report source không đổi.
+5. Tạo invitation với email hợp lệ; kiểm email normalization, expiry, token raw chỉ xuất hiện ở response create và row chỉ chứa hash.
+6. Mở `/invite?token=...` bằng identity chưa có context; login nếu cần; accept đúng verified email; kiểm membership ACTIVE, invitation ACCEPTED và audit cùng transaction.
+7. Refresh/replay invitation; thử wrong identity, expired, revoked, duplicate pending, active member và identity có context khác.
+8. Dùng hai member ngang quyền để list/toggle membership; thử deactivate member cuối; xác nhận không có role/action branch.
+9. Archive/restore site/machine và kiểm tra history/QA/trend cũ; không cho thao tác mới khi parent inactive.
 
 ### Work packages P4
 
 - [ ] P04-W01 — Hoàn thiện CRUD/search/pagination và uniqueness scoped organization.
-- [ ] P04-W02 — Tạo invitation một lần, expiry, accept đúng verified identity; không tự join bằng domain email.
+- [ ] P04-W02 — Tạo invitation một lần, expiry, accept đúng verified identity; không tự join bằng domain email. **Local slice:** model/API/UI đã có; staging migration và browser evidence còn mở.
 - [ ] P04-W03 — Bổ sung optimistic revision cho sửa đồng thời và kiểm tra active parent.
-- [ ] P04-W04 — Hoàn thiện archive/restore, membership lifecycle và audit; không xây action roles.
+- [ ] P04-W04 — Hoàn thiện archive/restore, membership lifecycle và audit; không xây action roles. **Local slice:** member toggle/last-active/audit đã có; archive/restore và staging evidence còn mở.
 - [ ] P04-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P04-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
 
@@ -539,10 +543,14 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 | TC-P04-S02 | Đổi tên máy | stable_machine_id và mọi QA/trend/report source không đổi. |
 | TC-P04-S03 | Đồng nghiệp nhận lời mời | Verified identity đúng nhận một membership, có cùng chức năng với thành viên khác. |
 | TC-P04-S04 | Archive và restore | Lịch sử vẫn truy cập; tạo case mới chỉ khi parent đang active. |
+| TC-P04-S05 | Tạo invitation với email hoa/khoảng trắng | Email lưu case-fold; invitation ID/status/expiry có; raw token chỉ có ở response tạo và không có trong list. |
+| TC-P04-S06 | Accept đúng verified email | Membership ACTIVE và invitation ACCEPTED; `accepted_by_user_identity_id`, thời gian và audit khớp; commit là nguyên tử. |
+| TC-P04-S07 | Replay token sau accept | Cùng identity nhận cùng membership ID; tổng membership không tăng; không tạo audit accept trùng ngoài quy ước. |
+| TC-P04-S08 | List/toggle nhiều member ngang quyền | Active/inactive filter, re-activate và audit đúng; không xuất hiện role/action permission. |
 
 ### Trường hợp lỗi và phục hồi P4
 
-Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống; không mặc định đã là error code trong API hiện tại. Khi hiện thực, dùng code cụ thể đã tồn tại nếu cùng nghĩa và cập nhật OpenAPI/mapping; không gửi chuỗi OR làm một code API.
+Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống; mapping API cụ thể phải được ghi trong OpenAPI và test. Với slice hiện tại, các mã invitation/member được triển khai trong `organization.py`; `MACHINE_CODE_CONFLICT`, `PARENT_NOT_AVAILABLE`, `REVISION_CONFLICT` và `MUTATION_RESULT_UNKNOWN` vẫn bao gồm các nhánh P4 chưa đóng.
 
 | Test ID | Trigger — điều kiện lỗi | Phân loại | Expected và đường phục hồi |
 | :--- | :--- | :--- | :--- |
@@ -552,12 +560,20 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 | TC-P04-E04 | Invitation hết hạn/sai identity | INVITATION_INVALID | Không tạo membership; cấp lời mời mới qua luồng thành viên. |
 | TC-P04-E05 | Xóa thành viên active cuối cùng | LAST_MEMBERSHIP_CONFLICT | Giữ ít nhất một thành viên active hoặc xử lý archive organization rõ ràng. |
 | TC-P04-E06 | Mất phản hồi sau create | MUTATION_RESULT_UNKNOWN | Tra idempotency/result trước khi gửi lại, không tạo trùng. |
+| TC-P04-E07 | Email sai format hoặc expires ngoài 1–30 ngày | REQUEST_VALIDATION_FAILED | HTTP 422; giữ form; không tạo invitation/token/audit. |
+| TC-P04-E08 | Email đã là active member | INVITATION_ALREADY_MEMBER | HTTP 409; không tạo invitation mới; dùng membership hiện tại. |
+| TC-P04-E09 | Invitation PENDING trùng organization/email | INVITATION_ALREADY_PENDING | HTTP 409; partial unique index bảo vệ race; dùng token đang có hoặc đợi expiry. |
+| TC-P04-E10 | Identity đã active ở organization khác | ORGANIZATION_CONTEXT_ALREADY_ASSIGNED | HTTP 409; không tạo membership/context thứ hai. |
+| TC-P04-E11 | Invitation revoked/đã accepted bởi identity khác | INVITATION_INVALID | HTTP 409; không tạo/reactivate membership; yêu cầu invitation mới. |
+| TC-P04-E12 | Membership/invitation ID không thuộc scope | MEMBERSHIP_NOT_FOUND / INVITATION_NOT_FOUND | Boundary-safe 403/404; không lộ record ngoài organization. |
+| TC-P04-E13 | DB lỗi hoặc race khi commit invitation/member | INVITATION_CONFLICT / MEMBERSHIP_CONFLICT | Rollback nguyên tử; query state trước retry; không partial row/audit. |
+| TC-P04-E14 | Mất response sau create/accept/revoke | MUTATION_RESULT_UNKNOWN | Query invitation/member/status trước retry; không double-submit mù. |
 
 ### Bất biến và điều kiện đóng P4
 
-- **Dữ liệu phải giữ/transaction:** Accept invitation và membership commit cùng transaction; archive không hard-delete; lịch sử nguồn giữ nguyên.
-- **Bàn giao:** Management screens, membership onboarding, history và contract tests.
-- **Exit gate:** Hai identity cùng organization dùng được nghiệp vụ; isolate organization khác; rename/archive/restore/concurrent edit pass.
+- **Dữ liệu phải giữ/transaction:** Accept invitation và membership commit cùng transaction; unique pending invitation theo organization/email; token raw không lưu; active-context/last-active invariant; archive không hard-delete; lịch sử nguồn giữ nguyên.
+- **Bàn giao:** Management screens, `/invite` membership onboarding, member/invitation API, migration `20260909_0018`, OpenAPI, audit/history và contract tests.
+- **Exit gate:** Hai identity cùng organization dùng được nghiệp vụ ngang nhau; invitation create/accept/replay/revoke/expiry và negative matrix pass; isolate organization khác; rename/archive/restore/concurrent edit/timeout evidence pass.
 - **Kiểm tra chéo:** C03–C09 về scope, retry, đồng thời, mất mạng, session và version phải có evidence hoặc lý do không áp dụng; thêm C10–C16 theo module.
 - **Nếu gate fail:** mở issue với testcase thất bại, giữ evidence/bản dữ liệu trước đó và sửa package liên quan; không thay expected để hợp thức hóa output. Có thể làm task độc lập tiếp theo, nhưng phase vẫn mở.
 
@@ -1845,13 +1861,13 @@ Template phase packet tối thiểu:
 
 ~~~yaml
 phase: Pxx
-phase_version: "4.0"
+phase_version: "4.2"
 status: IN_PROGRESS
 branch: "codex/<branch>"
 source_commit: "<sha>"
-business_analysis_version: "0.21"
-specification_version: "1.15"
-technical_specification_version: "1.13"
+business_analysis_version: "0.22"
+specification_version: "1.17"
+technical_specification_version: "1.15"
 entry_gate:
   dependencies: []
   schema_revision: "<revision-or-null>"
@@ -1892,7 +1908,7 @@ rollback_or_recovery: "<safe recovery/rollback action and evidence>"
 | P1 | Lock/runtime report, Compose run, migration report, CI result, setup guide | Clean clone → services → migrate/seed → API/web → tests/build | Sửa dependency/port/env/migration đúng layer; giữ log lỗi | Clean setup/restart/migration/CI tái lập được |
 | P2 | Redacted deployment manifest, Auth/DB contract, schema/readiness evidence, rollback note | Railway source → build → pre-deploy migration → health/ready → JWT | Giữ last-good; phân biệt build/process/driver/schema/Auth/config drift | Staging dùng DB đúng environment, schema đúng và JWT negative/positive pass |
 | P3 | App-shell route map, Auth state matrix, onboarding evidence, dashboard contract | Deep-link → session → bootstrap → membership/onboarding → dashboard → logout | Clear cache/refresh bounded; không biến outage thành no-organization | Existing member, first-use, expired/offline/deep-link đều có hành vi |
-| P4 | Org/site/machine/member API/UI, migration, audit evidence | Create → rename/archive/restore/invite → history → cross-scope check | Conflict giữ draft; mutation unknown phải query trước retry | Stable ID, scope, equal-member workflow và lifecycle pass |
+| P4 | Org/site/machine/member/invitation API/UI, migration `20260909_0018`, audit evidence | Create → rename/archive/restore → member list/toggle → invite/accept/replay/revoke/expiry → history → cross-scope check | Conflict giữ draft; token không hợp lệ/context khác/last member/concurrent pending/commit unknown phải query hoặc retry đúng contract | Stable ID, scope, equal-member workflow, token hash/status/audit và lifecycle pass |
 | P5 | Folder tree/case contract, cycle/name/move tests, search/page evidence | Nested folder → case → filter/search → move/archive/restore | Atomic move; không xóa history hoặc trả page giả | Tree, case, search, archive/restore và deep-link pass |
 | P6 | Artifact/manifest/validation schema, fixture hashes, object probe, checksum evidence | Browser upload → object → DB manifest → validation → signed download | Reconcile object/DB; file invalid không vào engine; retry từng file | Byte round-trip, type/role/UID/geometry/negative upload pass |
 | P7 | Protocol/rule snapshot, run/result schema, boundary report, trend projection | Case → protocol → draft → evaluate → result → rerun/compare | Giữ draft/run cũ; unit/rule error không tạo PASS | Rule boundary, N/A/missing/unit, immutable rerun/compare pass |
@@ -1934,7 +1950,7 @@ Bảng này là chỉ mục điều hành ngắn gọn; mỗi phase vẫn phải
 | P1 | Clone sạch, đọc lockfile/env contract, kiểm Docker/runtime | Services → migration → synthetic seed → API/web → test/lint/build/OpenAPI → restart | Dependency/lock lệch, port bận, env thiếu, migration fail, build contract fail | Setup report, migration current, CI artifact; sửa đúng layer và chạy lại từ checkpoint | Clean setup, restart, DB upgrade và CI lặp lại được |
 | P2 | Đối chiếu đúng Railway project/environment/service và Supabase project | Source/root/Dockerfile → pre-deploy migration → health → ready/schema → JWT/Auth → manifest | Railpack/source, psycopg scheme, bind/PORT, schema thiếu, JWKS/Auth, config drift | Redacted deployment manifest, health/ready/version, migration log; giữ last-good, không promote khi partial | Staging API/DB/Auth đúng environment; negative JWT và schema gate pass |
 | P3 | Web build có public Auth/API config; Auth redirect đã allowlist | Deep-link → sign-in/recovery → bootstrap → onboarding hoặc workspace → dashboard → logout/expiry | Credential/recovery/session/membership/config/API/CORS/offline | Browser state matrix, bootstrap response, cache-clear evidence; refresh bounded, login lại, không tự gán org | Existing member, first-use, expired session, offline và deep-link pass |
-| P4 | Organization context và schema hierarchy đã sẵn sàng | Create site/machine/member → rename → history → archive/restore/invite | Duplicate code, parent inactive, stale edit, invite invalid, last member, unknown mutation | API/UI/audit/idempotency/scope evidence; conflict giữ draft, query trước retry | Stable IDs, scoped data, lifecycle và ngang quyền pass |
+| P4 | Organization context và schema hierarchy đã sẵn sàng; source head `20260909_0018` | Create site/machine/member → rename → history → archive/restore → invitation create/accept/replay/revoke/expiry | Duplicate code, parent inactive, stale edit, invalid email/token, pending duplicate, active context khác, last member, unknown mutation | API/UI/audit/hash/status/idempotency/scope evidence; conflict giữ draft, query trước retry | Stable IDs, scoped data, invitation lifecycle và ngang quyền pass |
 | P5 | P4 hierarchy có dữ liệu synthetic và parent lookup | Folder lồng nhau → case → search/filter/page → move/rename → archive/restore | Cycle, child-parent, duplicate name, wrong machine/site, out-of-range page, restore conflict | Tree snapshots, atomic mutation and deep-link evidence; rollback subtree, không xóa history | Tree/case/deep-link/filter/archive/restore pass |
 | P6 | Object store, size policy và file fixtures đã kiểm | Select role/type → upload → checksum/object → manifest → validator → signed download | Empty/large/interrupted, object/DB partial, duplicate, declared/detected mismatch, DICOM/measurement invalid, expired link | Byte/hash round-trip, object inventory, manifest/findings; reconcile rồi retry từng operation | File/role/UID/geometry/manifest và negative upload pass |
 | P7 | Machine/protocol seed và P4/P5 case đã sẵn sàng | Select protocol → measurements/N-A → draft → evaluate → result → rerun/compare/trend | Missing/unit/NaN/zero baseline, autosave race, double submit, archived protocol | Known-answer, immutable result, projection uniqueness, browser evidence; tạo run/version mới | Rule boundary, N/A, history, compare và trend projection pass |
@@ -1970,7 +1986,7 @@ Bảng này là chỉ mục điều hành ngắn gọn; mỗi phase vẫn phải
 | P1 | `S01–S03` | `E01–E05` | B01, B02, B04, B09, B11 | D, A, DB, R, P |
 | P2 | `S01–S03` | `E01–E06` | B01, B04, B06, B09, B10, B11 | A, DB, R, P |
 | P3 | `S01–S04` | `E01–E06` | B01, B03, B06, B07, B09, B11 | A, UI, R, P |
-| P4 | `S01–S04` | `E01–E06` | B01, B04, B06, B07, B08, B10 | D, A, DB, UI, R, P |
+| P4 | `S01–S08` | `E01–E14` | B01, B02, B03, B04, B05, B06, B07, B08, B09, B10, B11, B12 | D, A, DB, UI, R, P |
 | P5 | `S01–S04` | `E01–E06` | B01, B02, B04, B05, B06, B08 | D, A, DB, UI, R, P |
 | P6 | `S01–S04` | `E01–E07` | B01, B02, B04, B05, B06, B09, B10, B11, B12 | D, A, DB, UI, R, P |
 | P7 | `S01–S04` | `E01–E06` | B01, B03, B04, B05, B07, B08, B11, B12 | D, A, DB, UI, R, P |
@@ -2063,7 +2079,7 @@ Trước code UI: ghi screen ID/revision, route, API event và FR. Sau code: đ�
 Template checkpoint (cần điền giá trị thật):
 
 ~~~yaml
-plan_version: "3.7"
+plan_version: "4.2"
 current_phase: P17
 current_work_package: P17-W05b.2
 status: IN_PROGRESS
@@ -2098,15 +2114,16 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 Đợt rebaseline ban đầu đã tạo BA v0.20, specification v1.14, technical-specification v1.11 và plan v3.5; các bản cập nhật kế tiếp giữ lịch sử đó và đã nâng plan lên v3.9/technical-specification v1.12. Revision hiện tại là BA v0.21, specification v1.15, technical-specification v1.13 và plan v4.0, bổ sung feature-card/handoff, operation/error/evidence record, dependency graph và change-impact gate. Bộ tài liệu hiện có ma trận hành vi ở cấp tính năng, từ điển trạng thái, error taxonomy, operation/evidence contract, B01–B12 và ma trận bao phủ P0–P20. P16 đã có implementation local và staging browser smoke trên migration `20260908_0016`, còn direct PostgreSQL/scope/fault/release closure vẫn mở. P17 đã có pure engine/API/UI/migration, explicit P11/P16 limit binding, DVH report source và bounded CT preview local với S12–S16/E24–E30; staging DVH/CT E2E, protocol compatibility, fault/volume, independent oracle và release evidence vẫn mở. P18 hiện có local integrated journey, local browser support matrix và local backup/restore support nhưng staging fault/restore/pilot vẫn mở. P20 đã có runbook support artifact nhưng alert/restore/owner evidence chưa có. Không phase nào được đánh dấu `DONE-v2` chỉ vì local test, HTTP 200 hoặc Railway báo Online.
 
 
-### 7.3. Revision hiện hành v4.1
+### 7.3. Revision hiện hành v4.2
 
-Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.21, `specification.md` v1.16,
-`technical-specification.md` v1.14 và `plan.md` v4.1. Revision v4.1 làm rõ status/readiness
-surface của P20: dashboard phải đọc riêng `/api/v1/health`, `/api/v1/ready`, `/api/v1/version`
-và queue metrics có xác thực; `/health=ok` không được hiển thị thành `ready` nếu `/ready`
-thất bại hoặc schema lệch. Slice local tương ứng đã có test frontend; alert thật, backup/restore,
-owner handoff và production evidence vẫn là gate mở. Các đoạn nêu candidate/schema cũ ở phần
-lịch sử chỉ là evidence của lần chạy trước, không phải release hiện tại.
+Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.17,
+`technical-specification.md` v1.15 và `plan.md` v4.2. Revision v4.2 giữ status/readiness
+surface P20 và bổ sung P4 member/invitation execution contract: workflow `/invite`, token
+hash-at-rest, expiry/revoke/replay, pending uniqueness, active-context và last-active invariant.
+Local slice tương ứng đã có model/API/UI/migration/test; staging migration `20260909_0018`,
+browser/Auth/DB/audit/scope/timeout evidence vẫn mở. Alert thật, backup/restore, owner handoff
+và production evidence vẫn là gate mở. Các đoạn nêu candidate/schema cũ ở phần lịch sử chỉ là
+evidence của lần chạy trước, không phải release hiện tại.
 
 ## 8. Ma trận FR → contract → testcase ban đầu
 
@@ -2130,10 +2147,10 @@ Mỗi FR có testcase cụ thể dưới đây; Cxx là ma trận chung §3, Gxx
 | FR-P03-02 | SPEC-P03 | TC-P03-S02, TC-P03-E04 |
 | FR-P03-03 | SPEC-P03 | TC-P03-S03, TC-P03-E06 |
 | FR-P03-04 | SPEC-P03 | TC-P03-S01, TC-P03-E05, C10, C16 |
-| FR-P04-01 | SPEC-P04 | TC-P04-S01, TC-P04-S04, TC-P04-E01, TC-P04-E02, TC-P04-E06 |
+| FR-P04-01 | SPEC-P04 | TC-P04-S01, TC-P04-S04, TC-P04-S05, TC-P04-E01, TC-P04-E02, TC-P04-E06, TC-P04-E12 |
 | FR-P04-02 | SPEC-P04 | TC-P04-S02, TC-P04-E03 |
-| FR-P04-03 | SPEC-P04 | TC-P04-S03, TC-P04-E04, TC-P04-E05 |
-| FR-P04-04 | SPEC-P04 | TC-P04-S04, TC-P04-E02, C09 |
+| FR-P04-03 | SPEC-P04 | TC-P04-S03, TC-P04-S05, TC-P04-S06, TC-P04-S07, TC-P04-S08, TC-P04-E04, TC-P04-E07, TC-P04-E08, TC-P04-E09, TC-P04-E10, TC-P04-E11 |
+| FR-P04-04 | SPEC-P04 | TC-P04-S04, TC-P04-S06, TC-P04-S08, TC-P04-E02, TC-P04-E05, TC-P04-E12, C09 |
 | FR-P05-01 | SPEC-P05 | TC-P05-S01, TC-P05-E01, TC-P05-E02, TC-P05-E03 |
 | FR-P05-02 | SPEC-P05 | TC-P05-S04, TC-P05-E04 |
 | FR-P05-03 | SPEC-P05 | TC-P05-S02, TC-P05-E05, C11 |
@@ -2233,7 +2250,7 @@ Mỗi dòng dưới đây là danh sách hành động tối thiểu, không ph�
 | **P1** | Clone sạch → kiểm lockfile/Docker/Compose → start services → migrate/seed synthetic → API/web → CI → restart. | `S01–S03`, DB rỗng/upgrade, restart giữ dữ liệu. | `E01–E05`, C01/C02/C08/C12/C15: dependency, port, env, migration, build contract. | Setup report, migration revision, CI artifact, build SHA, redacted env matrix. | Không deploy nếu clean setup/restart/migration chưa lặp lại được; mở P2 khi CI và runtime contract xanh. |
 | **P2** | Đối chiếu project/environment/service ID → giữ đúng root và config-as-code đã chọn → effective settings → pre-deploy migration → health/ready/schema → Supabase JWT. | `S01–S03`, hai scheme psycopg3, health/ready/schema tách, token hợp lệ. | `E01–E06`, C03/C06/C08/C12/C16: Railpack, driver, bind/PORT, schema, issuer/JWKS, config drift. | Staging deployment ID/SHA, schema, `/health`/`/ready`/`/version`, Auth contract và manifest không secret. | Dừng nếu environment/DB/identity sai; mở P3 khi staging DB/Auth/version đúng. |
 | **P3** | Đọc Stitch screen/state → AppShell/routes → Auth callback/recovery → bootstrap → onboarding/existing member → dashboard → logout. | `S01–S04`, deep-link, first-use, empty dashboard, refresh/logout. | `E01–E06`, C05–C10/C16: login/recovery/session/membership/config/API/offline. | Browser state matrix, request/correlation IDs, cache/session result, visual/accessibility notes. | Không gọi “organization lỗi” khi API outage; mở P4 khi both onboarding/existing member pass. |
-| **P4** | Chuẩn bị org context → site/machine CRUD → revision/history → invitation accept → archive/restore → cross-scope. | `S01–S04`, stable ID sau rename, hai member ngang quyền. | `E01–E06`, C03–C09: parent/scope/unique/conflict/invite/last member/unknown outcome. | DB rows/history/audit, invitation lifecycle, browser/API evidence và scope query. | Dừng nếu tạo/move chéo organization; mở P5 khi hierarchy lifecycle pass. |
+| **P4** | Chuẩn bị org context → site/machine CRUD → revision/history → member list/toggle → invitation create/accept/replay/revoke/expiry → archive/restore → cross-scope. | `S01–S08`, stable ID sau rename, hai member ngang quyền, token hash/status/audit. | `E01–E14`, C03–C09: parent/scope/unique/conflict/email/token/context/last member/unknown outcome. | DB rows/history/audit, token hash và invitation lifecycle, browser/API evidence, migration `20260909_0018` và scope query. | Dừng nếu tạo/move/accept chéo organization; mở P5 khi hierarchy + membership lifecycle pass. |
 | **P5** | Tạo root/subtree → case metadata → search/filter/page/deep-link → move/rename → archive/restore. | `S01–S04`, filter URL, empty case, history. | `E01–E06`, C03/C05/C06/C09/C11: cycle/name/parent/hierarchy/page/restore. | Tree snapshot before/after, case ID, query/filter, atomic transaction evidence. | Không mở P6 nếu move không atomic hoặc archived history mất. |
 | **P6** | Chọn artifact role/type → upload stream/batch → object/checksum → manifest → file/dataset validation → signed download. | `S01–S04`, byte round-trip, duplicate role, batch independent success. | `E01–E07`, C01–C04/C06/C08/C12–C15: empty/large/interrupted/object-DB mismatch/type/metadata/link expiry. | Fixture/hash, object inventory, manifest/findings, upload operation state và download hash. | Dừng engine input nếu file chưa VALID; mở P7 khi file/role/manifest/negative upload evidence đủ. |
 | **P7** | Chọn protocol/version → tạo run → draft measurements/N-A → evaluate → rule drill-down → rerun/compare/trend projection. | `S01–S04`, known-answer boundary, quality vs technical status. | `E01–E06`, C02/C05/C07/C09/C12/C13: required/unit/baseline/autosave/double submit/archived protocol. | Protocol/rule/measurement/result snapshots, projection uniqueness, UI history. | Không mở P8 nếu result dùng live rule hoặc N/A/FAIL bị nhập nhằng. |

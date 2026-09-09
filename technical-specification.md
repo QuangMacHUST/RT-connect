@@ -3,15 +3,15 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.14 — đồng bộ specification.md v1.16, plan.md v4.1 và business-analysis.md v0.21; bổ sung reference tới feature-card/handoff, operation/error/evidence record, dependency graph và change-impact gate; mô tả status dashboard/readiness surface P20; giữ P17 CT preview/overlay contract, giới hạn tài nguyên, P18 local backup/restore verification harness, local browser/timezone support matrix và P20 operations/production runbook support (2026-09-09)
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.21
+- **Phiên bản:** 1.15 — đồng bộ specification.md v1.17, plan.md v4.2 và business-analysis.md v0.22; bổ sung entity/migration/API membership-invitation P4, unique pending invitation và active-context invariant; giữ reference tới feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate và status/readiness surface P20 (2026-09-09)
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.22
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
 
 Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
-> Đồng bộ v1.14: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§14 là authority cho hành vi/validation/error/thuật toán/phase handoff. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; P17 có CT pixel preview local nhưng explicit P11/P16 binding, DVH report source và CT/staging evidence vẫn phải kiểm theo candidate. P18 có local route-to-persistence và local backup/restore support nhưng chưa thay fault/restore/pilot staging gate. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+> Đồng bộ v1.15: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§14 là authority cho hành vi/validation/error/thuật toán/phase handoff. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; P4 vừa bổ sung local membership/invitation slice trên migration `20260909_0018` nhưng staging phải migrate/deploy/revalidate trước khi gọi available. P17 có CT pixel preview local nhưng explicit P11/P16 binding, DVH report source và CT/staging evidence vẫn phải kiểm theo candidate. P18 có local route-to-persistence và local backup/restore support nhưng chưa thay fault/restore/pilot staging gate. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -94,8 +94,9 @@ Phần 0.1–0.3 là baseline lịch sử ngày 2026-09-04 và không được �
 | P15 | Re-irradiation/fraction-compensation scalar engine, recovery/sensitivity, schedule alternatives, immutable snapshot and JSON/CSV export | `20260908_0015` |
 | P16 | Organization-scoped Biological Knowledge Library: dose limits, treatment-protocol references, knowledge/alpha-beta entries, validation, import, versioning, explicit-use snapshots and export | `20260908_0016` |
 | P17 | RTDOSE/RTSTRUCT physical-dose DVH engine, bounded CT HU/slice/dose/ROI overlay in patient LPS, coverage/metrics, immutable run snapshots, API/UI and JSON/CSV export | `20260908_0017` |
+| P4 addendum | Organization member list/toggle and email-bound one-time invitation lifecycle | `20260909_0018` |
 
-Ngày 2026-09-08, P11–P17 đã bổ sung model/API/UI và migrations `20260908_0011`/`20260908_0012`/`20260908_0013`/`20260908_0014`/`20260908_0015`/`20260908_0016`/`20260908_0017`. P12–P16 giữ Biological như bounded context độc lập, không có FK bắt buộc tới QACase/patient; P17 thuộc QA case và giữ raw DICOM immutable. Checkpoint local phải ghi đủ full suite, focused phase tests, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head trên cùng SHA; build warning không được coi là lỗi chức năng nhưng phải theo dõi bundle budget. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
+Ngày 2026-09-08, P11–P17 đã bổ sung model/API/UI và migrations `20260908_0011`/`20260908_0012`/`20260908_0013`/`20260908_0014`/`20260908_0015`/`20260908_0016`/`20260908_0017`; ngày 2026-09-09 bổ sung P4 membership/invitation và migration `20260909_0018`. P12–P16 giữ Biological như bounded context độc lập, không có FK bắt buộc tới QACase/patient; P17 thuộc QA case và giữ raw DICOM immutable; P4 invitation chỉ lưu token hash và không tạo role hierarchy. Checkpoint local phải ghi đủ full suite, focused phase tests, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head trên cùng SHA; build warning không được coi là lỗi chức năng nhưng phải theo dõi bundle budget. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
 
 ---
 
@@ -413,6 +414,26 @@ Supabase Auth là nguồn identity bên ngoài của RT-CONNECT. Database ứng 
 - `joined_at`, `updated_at`.
 
 Membership chỉ dùng để xác định user thuộc organization nào và áp dụng organization isolation. Không có role hierarchy, không có permission matrix theo hành động và không có nhánh bác sĩ–kỹ sư trong mô hình này. Worker lưu actor snapshot/correlation ID của request tạo job, không giữ user access token lâu dài.
+
+`OrganizationInvitation` là entity P4 bổ sung cho membership onboarding:
+
+| Field | Mapping kỹ thuật | Quy tắc |
+| :--- | :--- | :--- |
+| `id` | UUID primary key | Không dùng làm secret hoặc token. |
+| `organization_id` | FK `organizations.id`, indexed | Mọi truy vấn/repository method phải có organization scope đã resolve. |
+| `invited_email` | `VARCHAR(320)`, required | Trim + Unicode case-fold ở request boundary; dùng để so với verified email claim. |
+| `token_hash` | `VARCHAR(64)`, unique | SHA-256 hex của token random; raw token chỉ tồn tại trong memory/response create. |
+| `status` | `VARCHAR(20)` | `PENDING`, `ACCEPTED`, `REVOKED`, `EXPIRED`; terminal state không mở lại. |
+| `expires_at` | timezone-aware UTC | Default 7 ngày, range 1–30 ngày. |
+| `accepted_at`, `revoked_at` | nullable UTC | Chỉ set ở transition tương ứng. |
+| `created_by_user_identity_id`, `accepted_by_user_identity_id` | nullable FK `user_identities.id` | Provenance actor; không phải role hoặc action permission. |
+| `created_at`, `updated_at` | timestamp mixin | Dùng cho audit/history và ordering. |
+
+Migration `20260909_0018_organization_invitations.py` tạo bảng, foreign keys, index lookup/expiry và partial unique index `uq_organization_invitations_pending_email` trên `(organization_id, invited_email)` với điều kiện `status='PENDING'`. Partial index là lớp bảo vệ cuối cùng cho hai request invite đồng thời; service vẫn phải kiểm trước để trả lỗi dễ hiểu.
+
+Luồng accept tạo `UserIdentity` projection nếu subject chưa có, nhưng chỉ khi request có verified identity. Nó không lưu password, access token hoặc raw invitation token. Trước khi tạo membership, service kiểm một active membership ở organization khác; nếu có trả `ORGANIZATION_CONTEXT_ALREADY_ASSIGNED` để giữ session context đơn trị. Accept membership, chuyển invitation sang `ACCEPTED` và `AuditEvent` phải cùng transaction. Retry cùng token và cùng subject sau commit trả membership đã tồn tại; token của subject khác bị từ chối.
+
+Mọi member active đều gọi được các operation P4; backend không được đọc claim `role` để rẽ nhánh. `PATCH membership` chỉ thay `is_active`, bảo vệ last-active invariant và ghi audit. Đây là lifecycle/scope operation, không phải hệ thống cấp quyền.
 
 ### 4.2. Organization
 
@@ -1096,6 +1117,26 @@ Dashboard endpoint là read model tổng hợp; không chạy analysis khi rende
 | GET | /sites/{id}/machines | Liệt kê machine |
 | POST | /sites/{id}/machines | Tạo machine |
 | PATCH | /machines/{id} | Cập nhật thông tin hiển thị machine |
+
+P4 membership/invitation routes dùng prefix thực tế `/api/v1/organizations` và không có
+action-level role. Các route organization-scoped resolve context trước khi lookup `id`:
+
+| Method | Path | Mục đích và response |
+| :--- | :--- | :--- |
+| GET | `/organizations/{organization_id}/members` | List active members mặc định; `include_inactive=true` để xem lifecycle đầy đủ; có `offset/limit`. |
+| PATCH | `/organizations/{organization_id}/members/{membership_id}` | Toggle `is_active`; bảo vệ last active member; trả member snapshot + audit. |
+| POST | `/organizations/{organization_id}/invitations` | Chuẩn hóa email, tạo token random và trả raw token đúng một lần cùng invitation metadata. |
+| GET | `/organizations/{organization_id}/invitations` | List invitation metadata; mặc định PENDING; `include_closed=true` để xem terminal history; không bao giờ trả raw token. |
+| POST | `/organizations/{organization_id}/invitations/{invitation_id}/revoke` | Chuyển PENDING → REVOKED; token cũ không thể accept. |
+| POST | `/organizations/invitations/accept` | Hash token, kiểm verified email/context/expiry và tạo hoặc reactivate membership trong một transaction. |
+
+Error mapping tối thiểu: request schema → `REQUEST_VALIDATION_FAILED`/422; scope →
+`ORGANIZATION_SCOPE_MISMATCH`/403; chưa có membership → `ORGANIZATION_MEMBERSHIP_REQUIRED`/403;
+duplicate member/pending → `INVITATION_ALREADY_MEMBER` hoặc `INVITATION_ALREADY_PENDING`/409;
+invalid token → `INVITATION_INVALID`/403 hoặc 409 theo nhánh; active context khác →
+`ORGANIZATION_CONTEXT_ALREADY_ASSIGNED`/409; last member → `LAST_MEMBERSHIP_CONFLICT`/409.
+Commit race dùng `INVITATION_CONFLICT` hoặc `MEMBERSHIP_CONFLICT`/409; không trả stack trace,
+secret hay raw token trong error/log.
 
 ### 6.3. Folder và QA case
 

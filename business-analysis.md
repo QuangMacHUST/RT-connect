@@ -5,10 +5,10 @@
 - **Tên sản phẩm:** RT-CONNECT
 - **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
 - **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
-- **Phiên bản tài liệu:** 0.21 — catalogue tính năng, workflow, ngoại lệ, phục hồi, từ điển trạng thái và tiêu chí nghiệm thu theo P0–P20; bổ sung hợp đồng bàn giao nghiệp vụ, ma trận dừng/tiếp tục và quy tắc lan truyền thay đổi (2026-09-09)
+- **Phiên bản tài liệu:** 0.22 — catalogue tính năng, workflow, ngoại lệ, phục hồi, từ điển trạng thái và tiêu chí nghiệm thu theo P0–P20; chốt chi tiết membership/invitation P4 và đồng bộ với migration `20260909_0018` (2026-09-09)
 - **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
-Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.21 tại mục 21–23 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
+Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.22 tại mục 21–24 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
 
 ---
 
@@ -1178,13 +1178,14 @@ Clinical MVP tập trung vào Machine QA, PSQA Gamma, report, trend, input valid
 `specification.md`, `technical-specification.md` và `plan.md` được xây dựng từ các yêu cầu, quy tắc và tiêu chí nghiệm thu trong tài liệu này. Google Stitch cung cấp thiết kế trực quan; Railway và Supabase cung cấp hạ tầng đã chọn; không nguồn nào trong số đó được tự thay thế hoặc làm mất requirement nghiệp vụ.
 
 
-## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.21
+## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.22
 
-Bổ sung ngày 2026-09-09 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu; mục 22 chuẩn hóa hành vi ở cấp tính năng; mục 23 chuẩn hóa gói bàn giao nghiệp vụ và cách quyết định dừng/tiếp tục để không bỏ sót tiền điều kiện, side effect và bằng chứng. `specification.md` v1.15 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v4.0 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
+Bổ sung ngày 2026-09-09 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu; mục 22 chuẩn hóa hành vi ở cấp tính năng; mục 23 chuẩn hóa gói bàn giao nghiệp vụ và cách quyết định dừng/tiếp tục để không bỏ sót tiền điều kiện, side effect và bằng chứng; mục 24 chốt workflow membership/invitation P4 đã được hiện thực ở local. `specification.md` v1.17 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v4.2 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
 
-> Ghi chú đồng bộ: đoạn trên mô tả revision trước. Revision hiện hành dùng `specification.md` v1.16,
-> `technical-specification.md` v1.14 và `plan.md` v4.1; các contract mới làm rõ dashboard
-> health/readiness/version/queue của P20 nhưng không thay đổi nguyên tắc nghiệp vụ.
+> Ghi chú đồng bộ: đoạn trên mô tả revision trước. Revision hiện hành dùng `specification.md` v1.17,
+> `technical-specification.md` v1.15 và `plan.md` v4.2; contract mới làm rõ dashboard
+> health/readiness/version/queue của P20 và lifecycle membership/invitation P4, không thay đổi
+> nguyên tắc thành viên ngang quyền.
 
 ### 21.1. Các quyết định sản phẩm giữ nguyên
 
@@ -2254,3 +2255,125 @@ Dù các màn hình đã dựng xong hoặc website đã truy cập được, d�
 - xuất hiện cross-organization data, secret trong client/log/evidence hoặc capability bị quảng cáo vượt contract.
 
 Đây là điều kiện kiểm soát phạm vi và chất lượng của dự án, không phải một hệ thống phân quyền giữa bác sĩ và kỹ sư. Mọi thành viên active trong cùng organization vẫn sử dụng các nghiệp vụ ngang nhau; lịch sử, snapshot và error/recovery chỉ bảo đảm sản phẩm có thể giải thích và tiếp tục an toàn.
+
+## 24. Đặc tả nghiệp vụ bổ sung P4 — membership và invitation v0.22
+
+Phần này chốt hành vi cụ thể cho việc đưa đồng nghiệp vào cùng organization. Đây là nghiệp vụ cộng tác và xác định phạm vi dữ liệu, không phải hệ thống phân quyền. Tất cả thành viên active trong cùng organization có cùng khả năng nghiệp vụ; `is_active` chỉ biểu thị membership còn được dùng để xác định context hay đã tạm ngưng.
+
+### 24.1. Mục tiêu và user story
+
+| Mã | User story | Kết quả mong muốn |
+| :--- | :--- | :--- |
+| US-P04-01 | Là thành viên đang làm việc trong organization, tôi muốn xem danh sách thành viên | Tôi biết ai đang active/inactive và không nhìn thấy thành viên của organization khác. |
+| US-P04-02 | Là thành viên, tôi muốn mời đồng nghiệp bằng email đã xác định | Hệ thống tạo một lời mời có hạn dùng, không tự động thêm người chỉ vì cùng domain. |
+| US-P04-03 | Là người nhận, tôi muốn đăng nhập bằng đúng email rồi nhận lời mời | Hệ thống kiểm tra identity đã xác thực và thêm đúng membership vào organization trong token. |
+| US-P04-04 | Là thành viên, tôi muốn thu hồi lời mời chưa dùng | Token bị vô hiệu hóa ngay; người giữ token không thể dùng lại. |
+| US-P04-05 | Là thành viên, tôi muốn tạm ngưng/kích hoạt một membership | Phạm vi truy cập thay đổi rõ ràng, không tạo role bác sĩ/kỹ sư hoặc cấp quyền khác nhau. |
+| US-P04-06 | Là người vận hành, tôi muốn biết lịch sử tạo/nhận/thu hồi/thay đổi membership | Audit cho biết actor, organization, thời gian và đối tượng; không lưu token thô hoặc mật khẩu. |
+
+### 24.2. Quyết định sản phẩm đã khóa
+
+1. **Ngang quyền:** mọi member active có cùng đường đi nghiệp vụ để xem dữ liệu, tạo/sửa cấu trúc, tạo lời mời, xem danh sách và thay đổi trạng thái membership. Không có owner/admin/doctor/physicist role trong phạm vi này.
+2. **Một context active:** ở baseline hiện tại một identity chỉ có một organization context active. Nếu identity đã active trong organization khác, việc nhận invitation mới bị từ chối để không làm dashboard và query scope mơ hồ. Đây là quy tắc nhất quán context, không phải phân cấp người dùng.
+3. **Email là điều kiện đối chiếu, không phải quyền:** email trong invitation được trim và case-fold. Chỉ verified email claim của Supabase khớp email đó mới nhận được lời mời; domain giống nhau không đủ.
+4. **Token một lần:** token là chuỗi ngẫu nhiên dùng một lần. Chỉ hash của token được lưu trong database. Token thô chỉ trả đúng một lần trong response tạo lời mời và không xuất hiện trong list, audit, log hoặc export.
+5. **Không tự gửi email trong baseline:** hệ thống tạo token để thành viên chia sẻ qua kênh phù hợp. Việc tích hợp email provider là capability riêng; UI phải nói rõ token/link chưa được gửi tự động nếu chưa có provider.
+6. **Không xóa lịch sử:** thu hồi, hết hạn, inactive hoặc archive chỉ đổi trạng thái; không hard-delete invitation, membership, organization, site, machine hay hồ sơ QA liên quan.
+
+### 24.3. Vòng đời nghiệp vụ
+
+#### Invitation
+
+`PENDING → ACCEPTED`, `PENDING → REVOKED` hoặc `PENDING → EXPIRED`. `ACCEPTED`, `REVOKED` và `EXPIRED` là trạng thái kết thúc; không được mở lại token cũ. Thời hạn mặc định là 7 ngày; người tạo có thể chọn 1–30 ngày. Nếu hệ thống phát hiện lời mời PENDING đã quá hạn, nó hiển thị `EXPIRED` và ghi trạng thái đó khi cần persistence.
+
+#### Membership
+
+`ACTIVE ↔ INACTIVE`, với điều kiện organization luôn còn ít nhất một `ACTIVE` membership. Việc chuyển thành viên cuối cùng sang `INACTIVE` bị từ chối. Re-activate một membership cũ không tạo row mới và không thay đổi identity hoặc lịch sử.
+
+### 24.4. Workflow chính và ngõ rẽ
+
+#### A. Tạo lời mời
+
+1. Thành viên mở Organization → Members → Invite.
+2. Nhập email và thời hạn tùy chọn; giao diện báo lỗi ngay nếu email rỗng/sai format.
+3. Backend resolve identity và active membership trước khi truy cập organization.
+4. Backend chuẩn hóa email, kiểm tra organization active, kiểm tra người nhận đã là active member chưa và kiểm tra lời mời PENDING trùng.
+5. Backend tạo token ngẫu nhiên, lưu SHA-256, thời hạn và actor trong cùng transaction với audit.
+6. UI hiển thị token/link một lần, có nút copy và hướng dẫn người nhận đăng nhập đúng email. Refresh trang không được làm token xuất hiện lại.
+
+Kết quả thành công phải có invitation ID, email chuẩn hóa, status, expiry và token thô trong response tạo. List/history chỉ có metadata, tuyệt đối không có token.
+
+#### B. Nhận lời mời
+
+1. Người nhận mở `/invite?token=...`.
+2. Nếu chưa có session, UI chuyển đến login và giữ return path nội bộ cùng token; không gửi token sang domain khác.
+3. Sau khi Supabase xác thực, UI gọi endpoint accept bằng access token hiện tại.
+4. Backend hash token, tìm invitation, kiểm organization còn active, kiểm expiry/status và so khớp verified email.
+5. Backend kiểm identity chưa có organization context active khác; nếu hợp lệ, tạo hoặc kích hoạt membership trong cùng transaction với việc đánh dấu invitation `ACCEPTED` và audit.
+6. UI hiển thị organization vừa tham gia và nút mở workspace. Refresh hoặc gửi lại cùng token từ cùng identity trả đúng membership cũ, không tạo bản ghi thứ hai.
+
+#### C. Quản lý membership
+
+1. Thành viên mở danh sách Members, có thể xem active và inactive.
+2. Thao tác toggle gửi trạng thái mong muốn; backend kiểm membership thuộc organization trong URL.
+3. Nếu chuyển active cuối cùng thành inactive, backend trả lỗi và không thay đổi row.
+4. Nếu thành công, UI cập nhật list, hiển thị trạng thái mới và giữ audit/history.
+5. Nếu identity tự tạm ngưng chính membership cuối cùng, thao tác vẫn bị chặn theo cùng quy tắc; không có ngoại lệ dựa trên chức danh.
+
+#### D. Thu hồi và hết hạn
+
+- Thu hồi chỉ áp dụng PENDING; token cũ trả `INVITATION_INVALID` sau đó.
+- Hết hạn không tạo membership. UI cho phép tạo invitation mới sau khi invitation cũ đã được đánh dấu EXPIRED.
+- ACCEPTED/REVOKED/EXPIRED không được thu hồi lại hoặc chấp nhận lại.
+
+### 24.5. Ma trận chạy đúng và lỗi phải có
+
+| Mã | Tình huống | Kết quả nghiệp vụ bắt buộc |
+| :--- | :--- | :--- |
+| P04-B01 | Email hợp lệ có chữ hoa/khoảng trắng | Lưu và hiển thị email case-fold; đối chiếu không phân biệt hoa thường. |
+| P04-B02 | Tạo lời mời mới | Có ID/status/expiry; token chỉ xuất hiện ở response tạo; list không lộ token. |
+| P04-B03 | Người nhận đúng email đã verify | Một membership ACTIVE được tạo; invitation ACCEPTED; audit có actor và organization. |
+| P04-B04 | Gửi lại token cùng identity sau accept | Trả cùng membership ID; số membership không tăng. |
+| P04-B05 | Thu hồi trước khi nhận | Invitation REVOKED; accept sau đó bị từ chối; member count không đổi. |
+| P04-B06 | Re-activate membership inactive | Row membership cũ chuyển ACTIVE; không tạo row/identity mới. |
+| P04-B07 | Nhiều site/machine và nhiều member | Mọi member active nhìn cùng hierarchy thuộc đúng organization. |
+| P04-E01 | Token không tồn tại/quá ngắn/đã dùng bởi identity khác | `INVITATION_INVALID`; không lộ chi tiết token hay organization; không side effect. |
+| P04-E02 | Verified email khác email được mời | `INVITATION_INVALID` HTTP 403; không tạo membership. |
+| P04-E03 | Invitation đã hết hạn | `INVITATION_INVALID` HTTP 409; đánh dấu EXPIRED nếu còn PENDING; tạo lời mời mới để phục hồi. |
+| P04-E04 | Có invitation PENDING cùng organization/email | `INVITATION_ALREADY_PENDING` HTTP 409; không tạo token thứ hai. |
+| P04-E05 | Email đã có active membership | `INVITATION_ALREADY_MEMBER` HTTP 409; không tạo lời mời dư. |
+| P04-E06 | Identity đã active trong organization khác | `ORGANIZATION_CONTEXT_ALREADY_ASSIGNED` HTTP 409; không tạo context thứ hai. |
+| P04-E07 | Organization/invitation/member không thuộc scope | `ORGANIZATION_SCOPE_MISMATCH` hoặc not-found boundary-safe; không query dữ liệu ngoài scope. |
+| P04-E08 | Email hoặc expires_in_days không hợp lệ | `REQUEST_VALIDATION_FAILED` HTTP 422; giữ form, không có DB/audit side effect. |
+| P04-E09 | Tắt membership active cuối cùng | `LAST_MEMBERSHIP_CONFLICT` HTTP 409; row vẫn ACTIVE. |
+| P04-E10 | Hai request tạo cùng email đồng thời | Một invitation PENDING; request còn lại nhận conflict; không có hai token active. |
+| P04-E11 | Timeout sau commit khi tạo/nhận/thu hồi | UI coi là outcome unknown, query lại theo ID/token; không gửi lại mù hoặc tạo duplicate. |
+| P04-E12 | DB lỗi trong transaction | Không có membership/invitation/audit một phần; retry chỉ sau khi xác định operation chưa commit. |
+
+### 24.6. Trạng thái giao diện bắt buộc
+
+| State | Nội dung và hành động |
+| :--- | :--- |
+| Loading | Skeleton/table loading; không cho double-submit; giữ email đang nhập. |
+| Empty members | Hướng dẫn organization mới và nút Invite; không hiển thị dữ liệu mẫu. |
+| Empty invitations | Nêu chưa có lời mời PENDING và nút tạo invitation. |
+| Created token | Token/link, copy action, cảnh báo chỉ hiển thị một lần và hướng dẫn login đúng email. |
+| Success accept | Organization name, membership status ACTIVE, nút mở workspace. |
+| Wrong identity/expired/revoked | Thông báo nguyên nhân ở mức đủ dùng, nút đăng nhập identity khác hoặc xin invitation mới. |
+| Scope/context conflict | Nêu tài khoản đã có context; không hiển thị organization thứ hai hoặc dữ liệu suy đoán. |
+| Network/unknown | Phân biệt “chưa nhận request” và “đã nhận nhưng chưa biết kết quả”; có retry/query. |
+| Offline/session expired | Giữ token ở URL nội bộ và return path; không lưu token vào localStorage/log; yêu cầu đăng nhập lại. |
+
+### 24.7. Tiêu chí nghiệm thu P4 bổ sung
+
+P4 chỉ có thể đóng khi các điều kiện sau được kiểm trên cùng candidate:
+
+- Hai identity synthetic cùng organization xem được cùng hierarchy và dùng cùng đường đi nghiệp vụ; không có role/action branch.
+- Tạo → list → accept đúng email → refresh/replay → revoke/expire → tạo lại invitation cho cùng email đều có kết quả đúng và không duplicate.
+- Database chỉ có token hash 64 ký tự, không có token thô trong row, audit, log hoặc response list/history.
+- Identity có context active khác không được nhận invitation làm phát sinh organization membership thứ hai.
+- Toggle inactive/active giữ stable identity và không cho organization mất member active cuối cùng.
+- Cross-organization lookup, invitation sai scope, concurrent duplicate và timeout sau commit có evidence API/DB/UI tương ứng.
+- OpenAPI, migration `20260909_0018`, frontend route `/invite`, Auth return path và test IDs cùng được cập nhật; staging phải chạy migration trước khi dùng API mới.
+
+Phần này là yêu cầu nghiệp vụ đã chốt; trạng thái đã triển khai hay chưa phải đọc từ `implementation-progress.md`. Local tests không được diễn giải thành staging hoặc clinical readiness.

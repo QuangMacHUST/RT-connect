@@ -1,10 +1,10 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.16**; ngày 2026-09-09.
-- Nguồn nghiệp vụ: business-analysis.md v0.21.
-- Kế hoạch triển khai: plan.md v4.1, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.14.
-- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.16 giữ toàn bộ contract v1.15, làm rõ operation surface của dashboard vận hành P20 (`/health`, `/ready`, `/version` và queue metrics có xác thực) và quy tắc không được hiển thị nền tảng là sẵn sàng khi readiness/schema thất bại.
+- File: specification.md; version **1.17**; ngày 2026-09-09.
+- Nguồn nghiệp vụ: business-analysis.md v0.22.
+- Kế hoạch triển khai: plan.md v4.2, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.15.
+- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.17 giữ toàn bộ contract v1.16, làm rõ operation surface của dashboard vận hành P20 (`/health`, `/ready`, `/version` và queue metrics có xác thực) và chốt contract thực thi P4 cho membership/invitation: thành viên ngang quyền, token hash-at-rest, email-bound, one-time, expiry, active-context invariant và các endpoint cụ thể.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
 
@@ -569,18 +569,104 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 | Hạng mục | Đặc tả |
 | :--- | :--- |
 | Module/requirement | MOD-02; FR-P04-01 đến FR-P04-04 |
-| Input và dữ liệu hiển thị | Organization name/timezone; site name/code; machine stable ID/name/code/manufacturer/model/energy/mode/status; membership identity/status; revision. |
-| Model/storage | Organization/Site/Machine + revision; Membership/Invitation target P4 bổ sung; invite hash, expiry và accepted identity. |
-| Operation/API surface | CRUD organization/site/machine đã có một phần; /organizations/{id}/invitations và accept là target mới. |
-| Transaction/invariant | Accept invitation và membership commit cùng transaction; archive không hard-delete; lịch sử nguồn giữ nguyên. |
-| Output bàn giao | Management screens, membership onboarding, history và contract tests. |
-| Success oracle | TC-P04-S01 đến TC-P04-S04 trong plan |
-| Error/recovery oracle | TC-P04-E01 đến TC-P04-E06 trong plan |
-| Exit | Hai identity cùng organization dùng được nghiệp vụ; isolate organization khác; rename/archive/restore/concurrent edit pass. |
+| Input và dữ liệu hiển thị | Organization name/timezone; site name/code; machine stable ID/name/code/manufacturer/model/energy/mode/status; membership identity/status; invitation email/status/expiry; revision. |
+| Model/storage | Organization/Site/Machine + revision; `OrganizationMembership`; `OrganizationInvitation` với token hash, expiry, status và accepted identity; không lưu token thô/password. |
+| Operation/API surface | CRUD organization/site/machine; `GET /organizations/{organization_id}/members`; `PATCH /organizations/{organization_id}/members/{membership_id}`; `POST/GET /organizations/{organization_id}/invitations`; `POST /organizations/{organization_id}/invitations/{invitation_id}/revoke`; `POST /organizations/invitations/accept`. |
+| Transaction/invariant | Resolve active membership trước mọi organization query; accept tạo/reactivate membership và đánh dấu invitation ACCEPTED cùng transaction; unique pending invitation theo organization/email; một identity không có active context ở organization khác; archive không hard-delete; luôn giữ ít nhất một active member. |
+| Output bàn giao | Management screens, `/invite` onboarding, member/invitation lifecycle, audit/history, migration `20260909_0018`, OpenAPI và contract tests. |
+| Success oracle | `TC-P04-S01` đến `TC-P04-S08` trong plan |
+| Error/recovery oracle | `TC-P04-E01` đến `TC-P04-E12` trong plan |
+| Exit | Hai identity cùng organization dùng được nghiệp vụ ngang nhau; invitation email-bound/one-time/expiry/revoke/replay pass; isolate organization khác; rename/archive/restore/concurrent/timeout pass. |
+
+#### SPEC-P04.1 — Quy tắc identity, scope và ngang quyền
+
+1. Mọi endpoint nghiệp vụ P4 yêu cầu Supabase access token hợp lệ và resolve `UserIdentity → active OrganizationMembership → Organization` trước khi truy vấn resource theo ID. `organization_id` từ URL chỉ là assertion cần kiểm tra, không phải nguồn cấp quyền.
+2. Một active identity có một active organization context trong baseline này. Invitation tới organization khác khi identity đã có context active bị từ chối bằng `ORGANIZATION_CONTEXT_ALREADY_ASSIGNED` HTTP 409; không tạo membership thứ hai.
+3. Tất cả active member trong cùng organization dùng cùng nghiệp vụ. Không có `role`, `owner`, `admin`, `doctor`, `physicist` hoặc action permission branch trong request, model, UI hay endpoint.
+4. `is_active` của membership chỉ là trạng thái vòng đời phạm vi. Organization không được rơi vào trạng thái không còn active member: chuyển active member cuối cùng sang inactive trả `LAST_MEMBERSHIP_CONFLICT` HTTP 409 và không đổi row.
+5. Không được query global membership/resource rồi mới lọc organization. Với organization khác, endpoint phải trả boundary-safe 403/404 theo contract mà không lộ tên, email, count, invitation status hoặc lịch sử của organization đó.
+
+#### SPEC-P04.2 — Entity và trạng thái invitation
+
+`organization_invitations` có tối thiểu các trường:
+
+| Field | Type/constraint | Semantics |
+| :--- | :--- | :--- |
+| `id` | UUID primary key | Định danh invitation, không chứa thông tin bí mật. |
+| `organization_id` | UUID FK, required | Organization đích; mọi lookup phải kèm scope đã resolve. |
+| `invited_email` | string ≤320, required, normalized | Email đã trim/case-fold, dùng đối chiếu với verified email claim. |
+| `token_hash` | SHA-256 hex 64, unique, required | Chỉ lưu hash token; không lưu raw token. |
+| `status` | `PENDING|ACCEPTED|REVOKED|EXPIRED` | Vòng đời một chiều từ PENDING tới terminal state. |
+| `expires_at` | UTC datetime, required | Mặc định +7 ngày, cho phép 1–30 ngày. |
+| `accepted_at`/`revoked_at` | UTC datetime nullable | Thời điểm terminal tương ứng. |
+| `created_by_user_identity_id` | UUID FK nullable | Actor snapshot cho provenance, không phải role. |
+| `accepted_by_user_identity_id` | UUID FK nullable | Verified identity đã nhận; chỉ set khi ACCEPTED. |
+| `created_at`/`updated_at` | UTC datetime | Audit thời gian. |
+
+Database phải có unique partial index cho `(organization_id, invited_email)` khi `status='PENDING'`, cùng index phục vụ expiry/organization lookup. `ACCEPTED`, `REVOKED` và `EXPIRED` không thể được accept/revoke lại. Khi đọc invitation PENDING quá hạn, response hiển thị `EXPIRED`; khi mutation kiểm tra quá hạn, backend phải persist trạng thái EXPIRED trước khi trả lỗi nếu transaction còn an toàn.
+
+#### SPEC-P04.3 — API contract cụ thể
+
+Tất cả response lỗi dùng error envelope chung §2.2 với `code`, `message`, `correlation_id`, `details[]`; không trả stack trace/token/password.
+
+| Method/path | Request | Success | Side effect/notes |
+| :--- | :--- | :--- | :--- |
+| `GET /organizations/{organization_id}/members` | `include_inactive` (default false), `offset ≥0`, `limit 1..100` | 200 `{items,total,offset,limit}`; mỗi member có id/org/email/display_name/is_active | Scope lookup trước; mặc định chỉ active, không có token. |
+| `PATCH /organizations/{organization_id}/members/{membership_id}` | `{is_active: boolean}` | 200 member snapshot | Audit + update transaction; chặn last active; mọi active member gọi được. |
+| `POST /organizations/{organization_id}/invitations` | `{email, expires_in_days?: 1..30}` | 201 invitation metadata + `token` raw | Raw token chỉ trả response này; hash/row/audit commit cùng transaction. |
+| `GET /organizations/{organization_id}/invitations` | `include_closed` (default false), `offset`, `limit` | 200 metadata collection, không có token | Default chỉ PENDING; closed chỉ trả khi gọi rõ. Status expiry được tính đúng UTC. |
+| `POST /organizations/{organization_id}/invitations/{invitation_id}/revoke` | none | 200 invitation metadata status REVOKED | Chỉ PENDING; idempotent replay không mở lại token; audit cùng transaction. |
+| `POST /organizations/invitations/accept` | `{token}`; Bearer identity phải có verified email | 200 membership `{id,organization_id,email,display_name,is_active}` | Hash token; kiểm status/expiry/org/email/context; membership + ACCEPTED + audit cùng transaction. Cùng token/cùng identity trả cùng member ID. |
+
+Validation request trước transaction:
+
+- Email được trim/case-fold và phải phù hợp format tối thiểu `local@domain`; không chấp nhận chuỗi chỉ có domain, whitespace hoặc vượt 320 ký tự.
+- `expires_in_days` là integer 1–30; không làm tròn, clamp hoặc nhận số âm/float/string mơ hồ.
+- Token accept phải là chuỗi 20–256 ký tự; token không hợp lệ không được dùng để suy ra organization.
+- Invitation create kiểm active member cùng email trước; nếu có trả `INVITATION_ALREADY_MEMBER` 409. Nếu có PENDING chưa hết hạn trả `INVITATION_ALREADY_PENDING` 409. Partial unique index là lớp bảo vệ race cuối cùng.
+
+#### SPEC-P04.4 — Workflow và state assertion
+
+**Tạo invitation:** validate request → resolve active context → kiểm organization active → kiểm member/pending duplicate → tạo raw random token trong memory → lưu SHA-256 + expiry + creator → ghi audit → commit → trả metadata/token một lần. Nếu commit unknown, client query invitation list/operation theo context trước khi tạo lại; không hiển thị “đã tạo” chỉ vì request đã gửi.
+
+**Accept:** nhận token → hash và lookup exact hash → kiểm organization active/status/expiry → resolve/create application identity từ verified subject → kiểm verified email exact normalized → kiểm active context khác → create hoặc reactivate membership → set ACCEPTED/accepted identity/time → audit → commit. Commit race phải rollback; request lặp cùng token và cùng identity chỉ replay membership đã accepted, không tạo row mới.
+
+**Revoke/expire:** resolve context → lookup scoped invitation → chỉ PENDING mới revoke; expiry tự chuyển EXPIRED khi được phát hiện an toàn. Sau terminal status, token không được accept và không được cấp lại bằng cách sửa status; phải tạo invitation mới.
+
+**Member toggle:** resolve context → lookup membership cùng organization → khi deactivate đếm active member → nếu count ≤1 trả conflict không side effect; nếu hợp lệ update + audit transaction → list sau refresh phản ánh status mới.
+
+#### SPEC-P04.5 — Error/recovery mapping
+
+| Condition | HTTP/code | Must not happen | Recovery |
+| :--- | :--- | :--- | :--- |
+| Identity chưa có active membership khi gọi organization endpoint | 403 `ORGANIZATION_MEMBERSHIP_REQUIRED` | Không auto-create organization, không trả dữ liệu demo. | Về onboarding hoặc accept invitation hợp lệ. |
+| URL organization khác membership | 403 `ORGANIZATION_SCOPE_MISMATCH` | Không lộ existence/detail. | Chọn context hiện tại. |
+| Email/token/expiry range sai | 422 `REQUEST_VALIDATION_FAILED` | Không tạo row/audit/token. | Sửa field; giữ input hợp lệ. |
+| Token không tồn tại, revoked, expired, dùng bởi identity khác | 403/409 `INVITATION_INVALID` | Không tạo/reactivate membership. | Xin token mới hoặc đăng nhập đúng email. |
+| Email đã là active member | 409 `INVITATION_ALREADY_MEMBER` | Không tạo invitation dư. | Dùng membership hiện có. |
+| Pending cùng organization/email | 409 `INVITATION_ALREADY_PENDING` | Không tạo hai token active. | Dùng token đang có hoặc chờ expiry rồi tạo mới. |
+| Identity có active context ở organization khác | 409 `ORGANIZATION_CONTEXT_ALREADY_ASSIGNED` | Không tạo membership thứ hai. | Dùng context hiện tại hoặc tạm ngưng theo workflow rõ ràng trước khi nhận. |
+| Membership/invitation ID không thuộc organization | 404/403 boundary-safe `MEMBERSHIP_NOT_FOUND`/`INVITATION_NOT_FOUND` | Không query/return foreign record. | Reload danh sách đúng context. |
+| Deactivate active member cuối | 409 `LAST_MEMBERSHIP_CONFLICT` | Không đổi `is_active`. | Giữ ít nhất một active member. |
+| Concurrent pending create/update | 409 `INVITATION_CONFLICT`/`MEMBERSHIP_CONFLICT` | Không commit một phần hoặc silent overwrite. | Query current state rồi retry safe. |
+| Timeout sau server commit | UI `OUTCOME_UNKNOWN` | Không submit lại mù, không duplicate. | Query ID/list/replay token theo contract. |
+| Database/audit commit failure | 409/5xx mapped persistence error | Không báo success hoặc để invitation/membership một phần. | Rollback/reconcile rồi retry bounded. |
+
+#### SPEC-P04.6 — UI, security và evidence contract
+
+- `/app/organization` có các vùng organization/site/machine, Members và Invitations; mỗi vùng có loading, empty, ready, validation, conflict, offline và error state.
+- `/invite?token=...` là route public để đọc token từ URL; nếu chưa login, chuyển tới `/auth/login?returnTo=/invite?...` bằng return path nội bộ. Sau login, gọi accept một lần; không lưu raw token vào localStorage, analytics, audit hoặc log.
+- Sau create, UI cho copy token/link và nói rõ token chỉ xuất hiện trong phiên tạo. Sau refresh hoặc list, token biến mất khỏi response/list.
+- UI phải phân biệt `INVITATION_INVALID`, `ORGANIZATION_CONTEXT_ALREADY_ASSIGNED`, `LAST_MEMBERSHIP_CONFLICT` và outage; không gom tất cả thành “không có organization”.
+- Evidence tối thiểu: response đã redaction, invitation/member IDs, DB row kiểm `token_hash` không phải token raw, status transition, audit event, organization scope, migration/OpenAPI SHA, browser route và replay/negative result.
+
+#### SPEC-P04.7 — Current implementation boundary
+
+Local source đã có model/API/migration `20260909_0018`, frontend client, organization management member/invitation panels và public `/invite` route. Focused API, migration contract, Ruff/mypy và frontend checks phải được ghi trong progress packet. Đây chưa phải `STAGING_VERIFIED`: staging phải chạy migration head `20260909_0018`, deploy cùng candidate, kiểm Auth thực, browser accept/replay/revoke/expiry, PostgreSQL rows và scope/timeout evidence trước khi mở P5.
 
 **Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Không dùng response thành công của một bước để suy các dependency đã sẵn sàng.
 
-**Failure contract:** MACHINE_CODE_CONFLICT; PARENT_NOT_AVAILABLE; REVISION_CONFLICT; INVITATION_INVALID; LAST_MEMBERSHIP_CONFLICT; MUTATION_RESULT_UNKNOWN. Đây là taxonomy target; mapping sang error codes thực tế phải được ghi trong contract test trước khi triển khai.
+**Failure contract:** `MACHINE_CODE_CONFLICT`; `PARENT_NOT_AVAILABLE`; `REVISION_CONFLICT`; `INVITATION_INVALID`; `INVITATION_ALREADY_MEMBER`; `INVITATION_ALREADY_PENDING`; `INVITATION_CONFLICT`; `ORGANIZATION_CONTEXT_ALREADY_ASSIGNED`; `LAST_MEMBERSHIP_CONFLICT`; `MEMBERSHIP_NOT_FOUND`; `INVITATION_NOT_FOUND`; `MUTATION_RESULT_UNKNOWN`. Các mã đã có trong source là mapping hiện tại; mã chưa có route tương ứng vẫn là target và phải được ghi trong contract test trước khi tuyên bố phase hoàn tất.
 
 <a id="spec-p05"></a>
 

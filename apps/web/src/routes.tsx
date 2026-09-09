@@ -21,6 +21,7 @@ import { PasswordRecoveryPage } from './pages/PasswordRecoveryPage'
 import { PlatformStatusPage } from './pages/PlatformStatusPage'
 import { QAProtocolPage } from './pages/QAProtocolPage'
 import { SessionErrorPage } from './pages/SessionErrorPage'
+import { InvitationAcceptPage } from './pages/InvitationAcceptPage'
 
 export function ApplicationRoutes() {
   return (
@@ -30,6 +31,7 @@ export function ApplicationRoutes() {
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/auth/recovery" element={<PasswordRecoveryPage />} />
       <Route path="/auth/session-error" element={<SessionErrorPage />} />
+      <Route path="/invite" element={<InvitationAcceptPage />} />
       <Route path="/app" element={<ProtectedRoute><HomeDashboardPage /></ProtectedRoute>} />
       <Route path="/app/organization" element={<ProtectedRoute><OrganizationManagementPage /></ProtectedRoute>} />
       <Route path="/app/qa" element={<ProtectedRoute><QAArchivePage /></ProtectedRoute>} />

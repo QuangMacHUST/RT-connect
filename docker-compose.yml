@@ -7,7 +7,7 @@ services:
     environment:
       APP_ENV: development
       APP_VERSION: 0.1.0-dev
-      SCHEMA_REVISION: 20260908_0017
+      SCHEMA_REVISION: 20260909_0018
       LOG_LEVEL: INFO
       DATABASE_URL: postgresql+psycopg://rt_connect:rt_connect@postgres:5432/rt_connect
       REDIS_URL: redis://redis:6379/0

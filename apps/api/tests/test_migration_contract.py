@@ -109,3 +109,22 @@ def test_biological_library_migration_declares_context_source_and_immutable_line
     assert '"content_sha256"' in source
     assert '"source_entry_id"' in source
     assert "def downgrade()" in source
+
+
+def test_organization_invitation_migration_declares_email_bound_one_time_schema() -> None:
+    migration = (
+        Path(__file__).parents[1]
+        / "alembic"
+        / "versions"
+        / "20260909_0018_organization_invitations.py"
+    )
+    source = migration.read_text(encoding="utf-8")
+
+    assert 'revision: str = "20260909_0018"' in source
+    assert 'down_revision: str | Sequence[str] | None = "20260908_0017"' in source
+    assert '"organization_invitations"' in source
+    assert '"invited_email"' in source
+    assert '"token_hash"' in source
+    assert '"accepted_by_user_identity_id"' in source
+    assert "uq_organization_invitations_pending_email" in source
+    assert "def downgrade()" in source

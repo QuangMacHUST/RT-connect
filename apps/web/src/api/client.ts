@@ -48,6 +48,23 @@ export type DashboardSummary = {
   warnings: string[]
 }
 export type OrganizationResource = { id: string; name: string; is_archived: boolean }
+export type OrganizationMemberResource = {
+  id: string
+  organization_id: string
+  email: string | null
+  display_name: string | null
+  is_active: boolean
+}
+export type OrganizationInvitationResource = {
+  id: string
+  organization_id: string
+  invited_email: string
+  status: string
+  expires_at: string
+  accepted_at: string | null
+  revoked_at: string | null
+}
+export type OrganizationInvitationCreatedResource = OrganizationInvitationResource & { token: string }
 export type SiteResource = { id: string; organization_id: string; name: string; is_archived: boolean }
 export type MachineResource = {
   id: string
@@ -1475,6 +1492,57 @@ export class ApiClient {
       protocol_version_id: z.string().uuid().nullable(), status_note: z.string().nullable(),
       case_status: z.string(), is_archived: z.boolean()
     }), accessToken, { method: 'PATCH', body: JSON.stringify(body) })
+  }
+
+  organizationMembers(accessToken: string, organizationId: string, includeInactive = true): Promise<Collection<OrganizationMemberResource>> {
+    return this.get(`/organizations/${organizationId}/members?include_inactive=${includeInactive}`, z.object({
+      items: z.array(z.object({
+        id: z.string().uuid(), organization_id: z.string().uuid(), email: z.string().nullable(),
+        display_name: z.string().nullable(), is_active: z.boolean()
+      })),
+      total: z.number().int(), offset: z.number().int(), limit: z.number().int()
+    }), accessToken)
+  }
+
+  updateOrganizationMember(accessToken: string, organizationId: string, membershipId: string, isActive: boolean): Promise<OrganizationMemberResource> {
+    return this.request(`/organizations/${organizationId}/members/${membershipId}`, z.object({
+      id: z.string().uuid(), organization_id: z.string().uuid(), email: z.string().nullable(),
+      display_name: z.string().nullable(), is_active: z.boolean()
+    }), accessToken, { method: 'PATCH', body: JSON.stringify({ is_active: isActive }) })
+  }
+
+  organizationInvitations(accessToken: string, organizationId: string, includeClosed = true): Promise<Collection<OrganizationInvitationResource>> {
+    return this.get(`/organizations/${organizationId}/invitations?include_closed=${includeClosed}`, z.object({
+      items: z.array(z.object({
+        id: z.string().uuid(), organization_id: z.string().uuid(), invited_email: z.string(),
+        status: z.string(), expires_at: z.string(), accepted_at: z.string().nullable(),
+        revoked_at: z.string().nullable()
+      })),
+      total: z.number().int(), offset: z.number().int(), limit: z.number().int()
+    }), accessToken)
+  }
+
+  createOrganizationInvitation(accessToken: string, organizationId: string, email: string, expiresInDays = 7): Promise<OrganizationInvitationCreatedResource> {
+    return this.request(`/organizations/${organizationId}/invitations`, z.object({
+      id: z.string().uuid(), organization_id: z.string().uuid(), invited_email: z.string(),
+      status: z.string(), expires_at: z.string(), accepted_at: z.string().nullable(),
+      revoked_at: z.string().nullable(), token: z.string()
+    }), accessToken, { method: 'POST', body: JSON.stringify({ email, expires_in_days: expiresInDays }) })
+  }
+
+  revokeOrganizationInvitation(accessToken: string, organizationId: string, invitationId: string): Promise<OrganizationInvitationResource> {
+    return this.request(`/organizations/${organizationId}/invitations/${invitationId}/revoke`, z.object({
+      id: z.string().uuid(), organization_id: z.string().uuid(), invited_email: z.string(),
+      status: z.string(), expires_at: z.string(), accepted_at: z.string().nullable(),
+      revoked_at: z.string().nullable()
+    }), accessToken, { method: 'POST' })
+  }
+
+  acceptOrganizationInvitation(accessToken: string, token: string): Promise<OrganizationMemberResource> {
+    return this.request('/organizations/invitations/accept', z.object({
+      id: z.string().uuid(), organization_id: z.string().uuid(), email: z.string().nullable(),
+      display_name: z.string().nullable(), is_active: z.boolean()
+    }), accessToken, { method: 'POST', body: JSON.stringify({ token }) })
   }
 
   artifacts(accessToken: string, caseId: string): Promise<{ items: ArtifactResource[]; total: number; offset: number; limit: number }> {

@@ -4,7 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthProvider'
 
 function safeReturnTo(value: string | null): string {
-  return value?.startsWith('/app') ? value : '/app'
+  return value?.startsWith('/app') || value?.startsWith('/invite') ? value : '/app'
 }
 
 export function LoginPage() {
