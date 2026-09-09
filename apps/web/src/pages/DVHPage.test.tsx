@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, expect, test, vi } from 'vitest'
 
@@ -97,4 +97,37 @@ test('automatically loads the first valid RTSTRUCT ROI after the manifest reques
   expect(screen.getByText('Chưa chọn CT')).toBeInTheDocument()
   expect(vi.mocked(apiClient.dvhInputs).mock.calls).toHaveLength(2)
   expect(vi.mocked(apiClient.dvhInputs).mock.calls[1]?.[3]).toBe(structureId)
+})
+
+test('keeps the blob URL alive until a DVH export has started', async () => {
+  vi.mocked(apiClient.dvhRuns).mockResolvedValue({
+    items: [{
+      id: '8000ff9b-7a02-4cec-850e-e27e4fe50cc4', organization_id: organizationId, qa_case_id: caseId,
+      dose_artifact_id: '737a8999-4abd-4fd4-bded-daf186f0f5be', structure_artifact_id: structureId,
+      ct_artifact_id: null, roi_number: 1, idempotency_key: 'dvh-export-test-001', engine_key: 'visual-dose.dvh',
+      engine_version: 'p17-dvh-1.1.0', status: 'COMPLETED', input_snapshot: { request_fingerprint: 'input-fp' },
+      result_snapshot: { result_sha256: 'result-sha' }, warning_snapshot: [], error_snapshot: [],
+      created_by_user_identity_id: null, created_at: '2026-09-09T00:00:00Z', updated_at: '2026-09-09T00:00:00Z'
+    }], total: 1
+  })
+  vi.mocked(apiClient.downloadDvh).mockResolvedValue(new Blob(['{}'], { type: 'application/json' }))
+  const createObjectUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test')
+  const revokeObjectUrl = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
+  const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
+
+  renderPage()
+  fireEvent.click(await screen.findByRole('button', { name: /^JSON$/ }))
+
+  await waitFor(() => expect(vi.mocked(apiClient.downloadDvh)).toHaveBeenCalledWith(
+    'access-token', organizationId, caseId, '8000ff9b-7a02-4cec-850e-e27e4fe50cc4', 'JSON'
+  ))
+  expect(createObjectUrl).toHaveBeenCalledOnce()
+  expect(anchorClick).toHaveBeenCalledOnce()
+  expect(revokeObjectUrl).not.toHaveBeenCalled()
+
+  await new Promise((resolve) => setTimeout(resolve, 1050))
+  expect(revokeObjectUrl).toHaveBeenCalledWith('blob:test')
+  createObjectUrl.mockRestore()
+  revokeObjectUrl.mockRestore()
+  anchorClick.mockRestore()
 })

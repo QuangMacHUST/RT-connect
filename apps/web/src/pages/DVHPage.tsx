@@ -329,8 +329,13 @@ export function DVHPage() {
       const anchor = document.createElement('a')
       anchor.href = url
       anchor.download = `rt-connect-dvh-${activeRun.id}.${format.toLowerCase()}`
+      anchor.style.display = 'none'
+      document.body.appendChild(anchor)
       anchor.click()
-      URL.revokeObjectURL(url)
+      anchor.remove()
+      // Keep the Blob URL alive until the browser has started consuming it.
+      // Revoking it synchronously can leave Chromium downloads in .crdownload.
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000)
     } catch (error) {
       setMessage(errorMessage(error))
     }
