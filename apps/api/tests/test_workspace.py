@@ -57,7 +57,17 @@ def _workspace_client(
             )
         session.commit()
 
-    app = create_app(Settings(app_env="test", database_url="sqlite+pysqlite:///:memory:"))
+    # Keep workspace integration tests deterministic even when the repository
+    # root .env configures the developer's local Redis instance.  Production
+    # must still require Redis for asynchronous Gamma dispatch; these tests
+    # exercise the database-backed route boundary and process the run directly.
+    app = create_app(
+        Settings(
+            app_env="test",
+            database_url="sqlite+pysqlite:///:memory:",
+            redis_url=None,
+        )
+    )
     app.dependency_overrides[require_identity] = lambda: AuthenticatedIdentity(
         subject="synthetic-supabase-subject",
         email="synthetic.user@example.invalid",
