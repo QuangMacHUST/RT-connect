@@ -428,6 +428,11 @@ td code { color: #075e67; font-size: .78rem; }
 .dvh-input-grid label, .dvh-config-grid label { color: #334155; display: grid; font-size: .82rem; font-weight: 600; gap: 6px; }
 .dvh-input-grid select, .dvh-config-grid input, .dvh-config-grid select { border: 1px solid #c8d5de; border-radius: 4px; color: #0f172a; font: inherit; min-height: 38px; padding: 8px 10px; }
 .dvh-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.dvh-binding-panel { background: #fbfdfd; border: 1px solid #b8dfd8; margin-top: 16px; padding: 14px; }
+.dvh-binding-panel .panel-heading { margin: 0; }
+.dvh-binding-panel h3 { color: #102a43; font-size: .98rem; margin: 0; }
+.dvh-binding-panel .form-hint { margin-bottom: 0; }
+.dvh-limit-result { background: #fbfdfd; margin-top: 12px; }
 .dvh-quick-link { align-items: center; background: #f1f8f7; border: 1px solid #b8dfd8; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; margin: 0 0 16px; padding: 11px 12px; }
 .dvh-quick-link .form-hint { margin: 0; }
 .dvh-result-banner { align-items: center; background: #f1f8f7; border: 1px solid #b8dfd8; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; margin-top: 16px; padding: 13px 14px; }

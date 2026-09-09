@@ -17,6 +17,8 @@ vi.mock('../api/client', () => ({
     dvhInputs: vi.fn(),
     dvhCtPreview: vi.fn(),
     dvhRuns: vi.fn(),
+    biologicalLibrary: vi.fn(),
+    qaProtocols: vi.fn(),
     validateDvh: vi.fn(),
     createDvhRun: vi.fn(),
     downloadDvh: vi.fn()
@@ -76,6 +78,8 @@ beforeEach(() => {
     .mockResolvedValueOnce(inputManifest)
     .mockResolvedValueOnce(selectedStructureInputs)
   vi.mocked(apiClient.dvhRuns).mockResolvedValue({ items: [], total: 0 })
+  vi.mocked(apiClient.biologicalLibrary).mockResolvedValue({ items: [], total: 0, offset: 0, limit: 100, include_archived: false })
+  vi.mocked(apiClient.qaProtocols).mockResolvedValue({ items: [], total: 0, offset: 0, limit: 100, include_archived: false })
 })
 
 function renderPage() {
@@ -130,4 +134,32 @@ test('keeps the blob URL alive until a DVH export has started', async () => {
   createObjectUrl.mockRestore()
   revokeObjectUrl.mockRestore()
   anchorClick.mockRestore()
+})
+
+test('sends only the explicitly selected P16 limit binding', async () => {
+  vi.mocked(apiClient.biologicalLibrary).mockResolvedValue({
+    items: [{
+      id: 'limit-entry-id', organization_id: organizationId, entry_type: 'DOSE_LIMIT', entry_key: 'P17_TEST_DMAX', name: 'Synthetic Dmax limit', version_number: 1, status: 'PUBLISHED', revision: 1,
+      description: null, effective_note: null, disease: 'Synthetic QA', disease_subtype: null, anatomy_site: 'Synthetic target', treatment_intent: null, technique: 'TEST', fractions: null,
+      tissue_or_oar: 'Synthetic target', metric_key: 'DMAX', operator: 'MAX', limit_value: 10, lower_limit: null, upper_limit: null, unit: 'Gy', volume_cc: null, metric_parameter: null,
+      alpha_beta_gy: null, model_key: null, model_version: null, applicability: {}, content: {}, source_type: 'USER_DEFINED', source_reference: null, reference_status: 'AVAILABLE', source_date: null,
+      evidence_level: 'SYNTHETIC', citation: {}, content_sha256: 'c'.repeat(64), source_entry_id: null, created_by_user_identity_id: null, created_at: '2026-09-09T00:00:00Z', updated_at: '2026-09-09T00:00:00Z'
+    }], total: 1, offset: 0, limit: 100, include_archived: false
+  })
+  vi.mocked(apiClient.validateDvh).mockResolvedValue({ valid: false, errors: [], warnings: [], normalized_input: null, preview: null })
+
+  renderPage()
+  expect(await screen.findByRole('option', { name: '#1 · P17_TARGET · 1 contour' })).toBeInTheDocument()
+  fireEvent.change(screen.getByLabelText('Nguồn binding'), { target: { value: 'DOSE_LIMIT' } })
+  const limitSelect = await screen.findByRole('combobox', { name: 'P16 DOSE_LIMIT' })
+  const limitOption = await screen.findByRole('option', { name: /P17_TEST_DMAX · Synthetic Dmax limit/ })
+  ;(limitSelect as HTMLSelectElement).value = 'limit-entry-id'
+  ;(limitOption as HTMLOptionElement).selected = true
+  fireEvent.change(limitSelect)
+  await waitFor(() => expect(limitSelect).toHaveValue('limit-entry-id'))
+  fireEvent.click(screen.getByRole('button', { name: 'Validate & preview' }))
+
+  await waitFor(() => expect(vi.mocked(apiClient.validateDvh)).toHaveBeenCalledWith(
+    'access-token', organizationId, caseId, expect.objectContaining({ limit_entry_id: 'limit-entry-id' })
+  ))
 })

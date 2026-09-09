@@ -14,3 +14,6 @@ the public smoke evidence.
 Keep the parity marker in this service root as well; the API and web staging
 deployments must advance from the same release commit before public recheck.
 The verifier result is a release gate, not just a visual browser check.
+
+P17 release marker: DVH exposes explicit P16/P11 source binding against the
+same API contract; validate the selected source and result provenance in staging.

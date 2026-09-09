@@ -9,7 +9,9 @@ import {
   type DvhRequest,
   type DvhRunInput,
   type DvhRunResource,
-  type DvhValidationResource
+  type DvhValidationResource,
+  type BiologicalLibraryEntryResource,
+  type QAProtocolResource
 } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 
@@ -200,6 +202,7 @@ function ResultPanel({ result }: { result: JsonRecord | undefined }) {
   const vxCc = asRecord(metrics.Vx_cc)
   const curve = chartPoints(result)
   const warnings = Array.isArray(result.warnings) ? result.warnings : []
+  const limitEvaluation = asRecord(result.limit_evaluation)
   return <>
     <div className="dvh-result-banner">
       <div><span className={statusClass(String(coverage.status ?? 'FULL'))}>{textValue(coverage.status, 'FULL')}</span><strong>{textValue(roi.name)}</strong><span>ROI #{textValue(roi.roi_number)} · {textValue(roi.contour_count)} contour</span></div>
@@ -221,6 +224,7 @@ function ResultPanel({ result }: { result: JsonRecord | undefined }) {
       <tr><td>Vx absolute</td><td>{Object.entries(vxCc).map(([key, value]) => `${key.replace('_gy', '')}: ${formatNumber(value)} cc`).join(' · ') || '—'}</td><td>Absolute selected volume</td></tr>
       <tr><td>Input dose</td><td>{formatNumber(dose.minimum_gy)}–{formatNumber(dose.maximum_gy)} Gy</td><td>{textValue(dose.units)} · {textValue(dose.dose_type)}</td></tr>
     </tbody></table></div>
+    {Object.keys(limitEvaluation).length > 0 && <section className="dvh-subpanel dvh-limit-result"><div className="panel-heading"><div><p className="eyebrow">EXPLICIT LIMIT EVALUATION</p><h3>Đánh giá theo nguồn đã chọn</h3></div><span className={statusClass(textValue(limitEvaluation.status))}>{textValue(limitEvaluation.status)}</span></div><div className="dvh-chart-legend"><span>Metric: {textValue(limitEvaluation.metric_key)}</span><span>Actual: {formatNumber(limitEvaluation.actual)} {textValue(limitEvaluation.actual_unit)}</span><span>Limit: {textValue(limitEvaluation.operator)} · {textValue(limitEvaluation.limit)}</span><span>Margin: {formatNumber(limitEvaluation.margin)} {textValue(limitEvaluation.margin_unit)}</span></div><p className="form-hint">Source {textValue(limitEvaluation.source_type)} · {textValue(limitEvaluation.source_id)} · explicit_selection={String(limitEvaluation.explicit_selection === true)} · auto_applied={String(limitEvaluation.auto_applied === true)}</p></section>}
     {warnings.length > 0 && <div className="alert alert--warning"><strong>Cảnh báo cần xem xét</strong><ul>{warnings.map((item, index) => <li key={`${textValue(asRecord(item).code)}-${index}`}>{textValue(asRecord(item).message, JSON.stringify(item))}</li>)}</ul></div>}
   </>
 }
@@ -239,6 +243,10 @@ export function DVHPage() {
   const [sliceThickness, setSliceThickness] = useState('')
   const [dxText, setDxText] = useState('2, 50, 95, 98')
   const [vxText, setVxText] = useState('0, 20, 30, 40, 50')
+  const [bindingSource, setBindingSource] = useState<'NONE' | 'DOSE_LIMIT' | 'PROTOCOL'>('NONE')
+  const [selectedLimitEntryId, setSelectedLimitEntryId] = useState('')
+  const [selectedProtocolVersionId, setSelectedProtocolVersionId] = useState('')
+  const [selectedProtocolMetricKey, setSelectedProtocolMetricKey] = useState('')
   const [message, setMessage] = useState<string>()
   const [validation, setValidation] = useState<DvhValidationResource>()
   const [selectedRunId, setSelectedRunId] = useState<string>()
@@ -274,6 +282,18 @@ export function DVHPage() {
     enabled: Boolean(accessToken && organizationId && caseId && doseId && selectedCtId), retry: false
   })
   const runs = useQuery({ queryKey: ['dvh-runs', organizationId, caseId, accessToken], queryFn: () => apiClient.dvhRuns(accessToken!, organizationId!, caseId!), enabled: Boolean(accessToken && organizationId && caseId && selectedCase), retry: false })
+  const doseLimitEntries = useQuery({
+    queryKey: ['dvh-dose-limit-entries', organizationId, accessToken],
+    queryFn: () => apiClient.biologicalLibrary(accessToken!, organizationId!, { entry_type: 'DOSE_LIMIT', status: 'PUBLISHED' }),
+    enabled: Boolean(accessToken && organizationId && bindingSource === 'DOSE_LIMIT'), retry: false
+  })
+  const activeProtocols = useQuery({
+    queryKey: ['dvh-active-protocols', organizationId, accessToken],
+    queryFn: () => apiClient.qaProtocols(accessToken!, organizationId!, { status: 'ACTIVE' }),
+    enabled: Boolean(accessToken && organizationId && bindingSource === 'PROTOCOL'), retry: false
+  })
+  const selectedProtocol = useMemo(() => activeProtocols.data?.items.find((item) => item.id === selectedProtocolVersionId), [activeProtocols.data?.items, selectedProtocolVersionId])
+  const protocolMetricOptions = useMemo(() => (selectedProtocol?.rules ?? []).filter((rule) => ['MAX', 'MIN', 'RANGE', 'TARGET'].includes(rule.rule_type)), [selectedProtocol?.rules])
   const activeRun: DvhRunResource | undefined = useMemo(() => runs.data?.items.find((item) => item.id === selectedRunId) ?? runs.data?.items[0], [runs.data, selectedRunId])
   const buildRequest = (): DvhRequest | null => {
     const dx = parseNumberList(dxText)
@@ -291,6 +311,14 @@ export function DVHPage() {
       setMessage('Slice thickness phải là số dương hoặc để trống để dùng metadata DICOM.')
       return null
     }
+    if (bindingSource === 'DOSE_LIMIT' && !selectedLimitEntryId) {
+      setMessage('Đã chọn nguồn DOSE_LIMIT nhưng chưa chọn entry P16.')
+      return null
+    }
+    if (bindingSource === 'PROTOCOL' && (!selectedProtocolVersionId || !selectedProtocolMetricKey)) {
+      setMessage('Đã chọn nguồn QA protocol nhưng chưa chọn version ACTIVE và metric rule.')
+      return null
+    }
     return {
       dose_artifact_id: doseId,
       structure_artifact_id: structureId,
@@ -300,7 +328,9 @@ export function DVHPage() {
       slice_thickness_mm: thickness,
       dx_percentages: dx,
       vx_doses_gy: vx,
-      preview_limit: 4096
+      preview_limit: 4096,
+      ...(bindingSource === 'DOSE_LIMIT' ? { limit_entry_id: selectedLimitEntryId } : {}),
+      ...(bindingSource === 'PROTOCOL' ? { protocol_version_id: selectedProtocolVersionId, protocol_metric_key: selectedProtocolMetricKey } : {})
     }
   }
   const validateMutation = useMutation({
@@ -374,7 +404,7 @@ export function DVHPage() {
       <label>Slice thickness (mm) · single-frame only<input inputMode="decimal" value={sliceThickness} placeholder="Để trống: dùng DICOM metadata" onChange={(event) => setSliceThickness(event.target.value)} /></label>
       <label>D2/Dx (%)<input value={dxText} onChange={(event) => setDxText(event.target.value)} /></label>
       <label>Vx dose (Gy)<input value={vxText} onChange={(event) => setVxText(event.target.value)} /></label>
-    </div><p className="form-hint">D(x) dùng quantile tuyến tính; V(x) là thể tích nhận ít nhất ngưỡng x Gy. Danh sách sẽ được chuẩn hóa và snapshot cùng run.</p><div className="dvh-actions"><button disabled={busy || !doseId || !structureId || !effectiveRoi} onClick={runValidation}>{validateMutation.isPending ? 'Đang validate…' : 'Validate & preview'}</button><button className="button-secondary" disabled={busy || !doseId || !structureId || !effectiveRoi} onClick={saveRun}>{createMutation.isPending ? 'Đang lưu…' : 'Tính và lưu DVH run'}</button></div></section>
+    </div><p className="form-hint">D(x) dùng quantile tuyến tính; V(x) là thể tích nhận ít nhất ngưỡng x Gy. Danh sách sẽ được chuẩn hóa và snapshot cùng run.</p><section className="dvh-binding-panel"><div className="panel-heading"><div><p className="eyebrow">OPTIONAL EXPLICIT BINDING</p><h3>Chọn nguồn giới hạn để đánh giá</h3></div><span className="status-badge">NO AUTO-APPLY</span></div><div className="dvh-config-grid"><label>Nguồn binding<select value={bindingSource} onChange={(event) => { const value = event.target.value as 'NONE' | 'DOSE_LIMIT' | 'PROTOCOL'; setBindingSource(value); setSelectedLimitEntryId(''); setSelectedProtocolVersionId(''); setSelectedProtocolMetricKey(''); setValidation(undefined) }}><option value="NONE">Không dùng P16/P11</option><option value="DOSE_LIMIT">P16 · DOSE_LIMIT đã publish</option><option value="PROTOCOL">P11 · QA protocol ACTIVE</option></select></label>{bindingSource === 'DOSE_LIMIT' && <label>P16 DOSE_LIMIT<select value={selectedLimitEntryId} onChange={(event) => { setSelectedLimitEntryId(event.target.value); setValidation(undefined) }}><option value="">Chọn entry P16</option>{(doseLimitEntries.data?.items ?? []).map((entry: BiologicalLibraryEntryResource) => <option key={entry.id} value={entry.id}>{entry.entry_key} · {entry.name} · v{entry.version_number} · {entry.metric_key ?? '—'} · {entry.operator ?? '—'} {entry.limit_value ?? entry.upper_limit ?? '—'} {entry.unit ?? ''}</option>)}</select></label>}{bindingSource === 'PROTOCOL' && <><label>P11 protocol ACTIVE<select value={selectedProtocolVersionId} onChange={(event) => { setSelectedProtocolVersionId(event.target.value); setSelectedProtocolMetricKey(''); setValidation(undefined) }}><option value="">Chọn protocol version</option>{(activeProtocols.data?.items ?? []).map((protocol: QAProtocolResource) => <option key={protocol.id} value={protocol.id}>{protocol.protocol_key} · {protocol.name} · v{protocol.version_number}</option>)}</select></label><label>Metric rule<select value={selectedProtocolMetricKey} onChange={(event) => { setSelectedProtocolMetricKey(event.target.value); setValidation(undefined) }} disabled={!selectedProtocol}><option value="">Chọn metric rule</option>{protocolMetricOptions.map((rule) => <option key={rule.metric_key} value={rule.metric_key}>{rule.metric_key} · {rule.rule_type} · {rule.target_value ?? rule.upper_limit ?? rule.lower_limit ?? '—'} {rule.unit}</option>)}</select></label></>}</div><p className="form-hint">Binding chỉ được tạo khi người dùng chọn rõ một nguồn. Không tự tìm, không xếp hạng, không biến reference thành prescription; snapshot lưu source, revision, rule, actual, limit và margin.</p>{bindingSource === 'DOSE_LIMIT' && doseLimitEntries.error && <div className="alert alert--error"><p>{errorMessage(doseLimitEntries.error)}</p></div>}{bindingSource === 'PROTOCOL' && activeProtocols.error && <div className="alert alert--error"><p>{errorMessage(activeProtocols.error)}</p></div>}</section><div className="dvh-actions"><button disabled={busy || !doseId || !structureId || !effectiveRoi} onClick={runValidation}>{validateMutation.isPending ? 'Đang validate…' : 'Validate & preview'}</button><button className="button-secondary" disabled={busy || !doseId || !structureId || !effectiveRoi} onClick={saveRun}>{createMutation.isPending ? 'Đang lưu…' : 'Tính và lưu DVH run'}</button></div></section>
     {validation && !validation.valid && <section className="alert alert--error"><h3>DVH không hợp lệ</h3><ul>{validation.errors.map((item, index) => <li key={`${textValue(asRecord(item).code)}-${index}`}><strong>{textValue(asRecord(item).code)}</strong> · {textValue(asRecord(item).message, JSON.stringify(item))}</li>)}</ul></section>}
     <section className="panel dvh-panel"><div className="panel-heading"><div><p className="eyebrow">RESULT / PROVENANCE</p><h2>Kết quả DVH</h2></div><div className="page-header__actions">{activeRun && <><button className="button-secondary" onClick={() => void download('JSON')}>JSON</button><button className="button-secondary" onClick={() => void download('CSV')}>CSV</button></>}</div></div><ResultPanel result={result} />
       <div className="dvh-ct-workspace"><CtPreviewPanel preview={ctPreview.data} onFrameChange={setCtFrameIndex} isPending={Boolean(selectedCtId) && ctPreview.isPending} error={ctPreview.error ? errorMessage(ctPreview.error) : undefined} onRetry={() => void ctPreview.refetch()} /></div>

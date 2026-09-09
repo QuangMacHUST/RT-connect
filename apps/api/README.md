@@ -18,3 +18,6 @@ The parity marker is intentionally kept under the API service root so a
 web-only documentation commit cannot leave the API on an older candidate.
 Every staging release must run the exact-SHA public verifier after both
 service deployments settle.
+
+P17 release marker: DVH explicit P16/P11 binding UI is released against the
+same API contract; validate the selected source and result provenance in staging.
