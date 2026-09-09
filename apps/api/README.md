@@ -55,3 +55,6 @@ does not replace staging fault injection, Railway capacity evidence or clinical 
 
 Final staging parity marker (2026-09-10): API, worker and web must be rebuilt
 from the commit carrying this marker before a public exact-SHA check is recorded.
+P19 candidate rebuild marker (2026-09-10): this line is intentionally under
+`/apps/api` so Railway services rooted at `/apps/api` cannot remain on an older
+source SHA when the release evidence changes at repository root.
