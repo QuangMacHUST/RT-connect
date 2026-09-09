@@ -61,3 +61,9 @@ source SHA when the release evidence changes at repository root.
 Staging manifest checkpoint: `d2a5a6b22267d153f26764596b36c78118f67ffa`
 was verified across API, web and worker; keep this service-root marker aligned
 with the next release evidence commit.
+
+Parity follow-up checkpoint (2026-09-10): documentation evidence commit
+`e1336b7ed3ad49b6683f9234bde3d9c22d1a885f` caused the web service to rebuild
+before the API/worker services. Rebuild all three services from the next
+commit carrying this marker and reissue the release manifest only after exact
+SHA parity is observed.
