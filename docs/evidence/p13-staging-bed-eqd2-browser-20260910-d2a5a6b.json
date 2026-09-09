@@ -1,0 +1,109 @@
+{
+  "schema_version": "rt-connect.p13-staging-bed-eqd2-browser.v1",
+  "captured_at_utc": "2026-09-09T21:48:53Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_E2E",
+  "environment": "staging",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "route": "/app/biological/bed-eqd2",
+  "source_commit": "d2a5a6b22267d153f26764596b36c78118f67ffa",
+  "web_build_label_observed": "d2a5a6b22267d153f26764596b36c78118f67ffa",
+  "synthetic_only": true,
+  "data_boundary": "Authenticated browser checks used only the repository-generated biological scenario and known-answer values; no patient, QA-case, TPS or PACS linkage was created.",
+  "scenario": {
+    "label": "Staging P12 Biological Scenario rev2 · STAGING_P12_BIO",
+    "input_revision": "f9fafce0-e224-40b6-8b2a-a9952093f8dc",
+    "status": "SAVED",
+    "source_type": "USER_DEFINED",
+    "source_note": "Synthetic known-answer fixture / user-defined model"
+  },
+  "positive_workflow": {
+    "input": {
+      "total_dose_gy": 60,
+      "fractions_n": 30,
+      "dose_per_fraction_gy": 2,
+      "alpha_beta_gy": 10,
+      "tolerance_gy": 0.01,
+      "curve_mode": "FIXED_N",
+      "curve_d_min_gy": 0,
+      "curve_d_max_gy": 100,
+      "curve_step_gy": 1,
+      "alpha_beta_curves_gy": [2, 3, 10],
+      "point_limit": 501
+    },
+    "validate_only": {
+      "status": "VALIDATION_OK",
+      "message": "Input hợp lệ; validate-only không ghi calculation vào database.",
+      "preview_checksum": "0d9dff8f381ca6dd3066d0606ea2a8ad452bcd47c25e5fa300bddf8d866c4c19",
+      "side_effect": "NONE"
+    },
+    "saved_snapshot": {
+      "calculation_id": "8fda6eb8-2f13-436c-99f8-496876f6198a",
+      "status": "COMPLETED",
+      "model": "biological.bed-eqd2",
+      "model_version": "p13-lq-1.0.0",
+      "bed_gy": 72,
+      "eqd2_gy": 60,
+      "dataset_checksum": "0d9dff8f381ca6dd3066d0606ea2a8ad452bcd47c25e5fa300bddf8d866c4c19",
+      "idempotency_key": "p13-84d01c6b-74e9-4fba-9080-b8f0caff7dd7",
+      "curve_points": 303
+    },
+    "reload_persistence": {
+      "history_count_after_reload": 3,
+      "newest_calculation_id": "8fda6eb8-2f13-436c-99f8-496876f6198a",
+      "newest_status": "COMPLETED",
+      "newest_output": "BED=72 Gy; EQD2=60 Gy",
+      "snapshot_preserved": true
+    }
+  },
+  "negative_and_recovery": {
+    "invalid_input": {
+      "total_dose_gy": 61,
+      "fractions_n": 30,
+      "dose_per_fraction_gy": 2,
+      "tolerance_gy": 0.01,
+      "status": "VALIDATION_FAILED",
+      "errors": [
+        {
+          "field": "total_dose_gy",
+          "code": "FRACTIONATION_INCONSISTENT",
+          "detail": "Difference is 1 Gy; tolerance is 0.01 Gy."
+        },
+        {
+          "field": "dose_per_fraction_gy",
+          "code": "FRACTIONATION_INCONSISTENT",
+          "detail": "Check D = n × d or provide only two independent values."
+        }
+      ],
+      "invalid_snapshot_created": false
+    },
+    "recovery": {
+      "restored_total_dose_gy": 60,
+      "status": "VALIDATION_OK",
+      "history_after_recovery": 3,
+      "no_duplicate_snapshot_from_invalid_attempt": true
+    }
+  },
+  "checks": {
+    "authenticated_session": true,
+    "saved_scenario_loaded": true,
+    "known_answer_bed_eqd2": true,
+    "curve_dataset_rendered": true,
+    "validate_only_non_mutating": true,
+    "invalid_cross_field_error": true,
+    "recovery_to_valid_input": true,
+    "reload_preserves_latest_snapshot": true,
+    "independent_biological_namespace": true,
+    "no_patient_or_qa_linkage": true
+  },
+  "passed": true,
+  "open_gates": [
+    "same-key replay and different-fingerprint idempotency conflict on staging",
+    "direct Railway PostgreSQL row/checksum/scope query for this calculation",
+    "staging JSON/CSV download byte and filename verification",
+    "full P13 boundary/resource/fault matrix and release-manifest closure"
+  ],
+  "notes": [
+    "The RTDOSE fixture requested by the user was already present in the staging case and was not uploaded a second time.",
+    "This record is staging evidence for the independent calculation tool; it is not a treatment prescription, QA result or clinical-readiness claim."
+  ]
+}
