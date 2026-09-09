@@ -1,7 +1,7 @@
 {
   "schema_version": "rt-connect.p17-independent-dvh-oracle.v1",
-  "captured_at_utc": "2026-09-09T09:16:55.523385+00:00",
-  "repository_sha": "d6bb0e4a105520a3cdd157ed0801cc71b5ae4862",
+  "captured_at_utc": "2026-09-09T09:19:11.813314+00:00",
+  "repository_sha": "be3823f46bb6badb1084aaf67490f9127c6e2445",
   "fixture_sha256": {
     "dose": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
     "structure": "16a79df3129757d9df8b48bd095f0b4b70b24713ea5255e24719d46e6808d401"
