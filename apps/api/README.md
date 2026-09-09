@@ -26,3 +26,7 @@ P19 evidence marker: the `dd14ef8` public verifier and P17 negative-path
 recheck are recorded in the repository evidence/progress log. The current
 production public gap is recorded separately; keep API/web/worker source
 parity on the next release.
+
+Latest staging parity evidence: `p19-staging-public-smoke-20260909-38dec53.json`
+records API, worker and web source SHA `38dec53d4e542bdf6c4f808283981b344cae3502`
+with schema `20260909_0019`; keep this marker aligned when progress/evidence changes.
