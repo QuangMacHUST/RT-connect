@@ -2450,8 +2450,10 @@ support cho P19-W01. Tool nhận metadata đã được operator thu thập, has
 repository, loại bỏ secret-like value và tạo manifest canonical có `manifest_sha256`.
 Manifest ghi riêng SHA nguồn của API/web/worker; nếu working tree bẩn hoặc service SHA
 không đồng nhất với `source_sha`, output vẫn được giữ để điều tra nhưng có
-`release_gate=RELEASE_BLOCKED` và exit code khác 0. `--verify-manifest` kiểm tra schema,
-secret scan và canonical hash; nó không gọi Railway, Supabase hoặc PostgreSQL và không thể
+`release_gate=RELEASE_BLOCKED` và exit code khác 0. Validator tự tính lại service parity và
+gate reasons thay vì tin cờ có sẵn. `--verify-manifest` kiểm tra schema, secret scan và
+canonical hash; hash này không phải chữ ký chống giả mạo, nên artifact lưu trữ phải được
+bảo toàn qua cơ chế review/retention phù hợp. Tool không gọi Railway, Supabase hoặc PostgreSQL và không thể
 thay thế remote E2E, backup/restore, rollback rehearsal hay production promotion.
 
 #### 17.5.5. Kiểm thử remote access

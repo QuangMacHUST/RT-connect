@@ -1675,7 +1675,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 ### Work packages P19
 
 - [x] P19-W00 — Reusable public deployment verifier tại `scripts/verify-public-deployment.ps1`: health/readiness/schema/version/OpenAPI/public web bundle và CT preview marker; chỉ là smoke/evidence tool, không thay remote E2E hoặc rollback rehearsal.
-- [x] P19-W01 — Có công cụ tạo/kiểm tra manifest bất biến tại `scripts/create-release-manifest.py` và `scripts/release_manifest.py`: ghi source SHA, SHA từng service, schema, engine/renderer, fixture hash, test IDs, backup/rollback reference; kiểm tra secret-like value và tự đánh dấu `RELEASE_BLOCKED` khi working tree bẩn hoặc SHA service không khớp source. Đây là implementation support; promotion thật, service metadata thật và remote E2E vẫn phải ghi trong manifest đúng candidate.
+- [x] P19-W01 — Có công cụ tạo/kiểm tra manifest bất biến tại `scripts/create-release-manifest.py` và `scripts/release_manifest.py`: ghi source SHA, SHA từng service, schema, engine/renderer, fixture hash, test IDs, backup/rollback reference; kiểm tra secret-like value và tự đánh dấu `RELEASE_BLOCKED` khi working tree bẩn hoặc SHA service không khớp source. Validator tự tính lại parity/gate, không tin các cờ do người sửa manifest nhập vào. `manifest_sha256` là hash integrity của nội dung canonical, không phải chữ ký chống giả mạo; file evidence phải được giữ bất biến trong review/artifact store. Đây là implementation support; promotion thật, service metadata thật và remote E2E vẫn phải ghi trong manifest đúng candidate.
 - [ ] P19-W02 — Effective settings matrix web/API/worker; migrations single runner, private DB/Redis.
 - [ ] P19-W03 — DNS/TLS/CORS/SPA fallback/Supabase redirects/build-time vars smoke.
 - [ ] P19-W04 — External browser/device journeys; version mismatch checks, rollback rehearsal and monitoring hooks.
@@ -1732,8 +1732,9 @@ manifest đó để promote. Kiểm tra lại manifest đã lưu bằng:
   --verify-manifest "docs/evidence/release-manifest-staging.json"
 ~~~
 
-`--verify-manifest` phải trả `valid=true`; `valid=true` chỉ chứng minh cấu trúc/hash của
-manifest, còn `release_gate=ELIGIBLE` mới là điều kiện tối thiểu để tiếp tục xem xét
+`--verify-manifest` phải trả `valid=true`; `valid=true` chỉ chứng minh cấu trúc, secret scan
+và tính nhất quán/hash canonical của manifest, không chứng minh file chưa bị thay thế bởi
+một bên có quyền ghi. `release_gate=ELIGIBLE` mới là điều kiện tối thiểu để tiếp tục xem xét
 promotion. `ELIGIBLE` vẫn không thay thế remote E2E, backup/restore hoặc rollback rehearsal.
 
 ### Trường hợp chạy đúng P19
