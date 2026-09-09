@@ -15,6 +15,7 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    event,
     false,
     func,
     text,
@@ -621,6 +622,35 @@ class DVHAnalysisRun(TimestampedIdMixin, Base):
     )
     created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+
+
+@event.listens_for(DVHAnalysisRun, "before_update")
+def _reject_dvh_analysis_run_update(
+    mapper: object, connection: object, target: DVHAnalysisRun
+) -> None:
+    """Keep persisted DVH snapshots append-only at the ORM boundary.
+
+    The PostgreSQL migration adds the authoritative database trigger.  This
+    mapper guard keeps the same invariant visible to local SQLite tests and to
+    accidental ORM mutations before a transaction reaches the database.
+    """
+
+    raise ValueError(
+        "DVH_RUN_IMMUTABLE: persisted DVH analysis runs cannot be updated; "
+        "create a new run for changed inputs."
+    )
+
+
+@event.listens_for(DVHAnalysisRun, "before_delete")
+def _reject_dvh_analysis_run_delete(
+    mapper: object, connection: object, target: DVHAnalysisRun
+) -> None:
+    """Keep persisted DVH snapshots available for history and provenance."""
+
+    raise ValueError(
+        "DVH_RUN_IMMUTABLE: persisted DVH analysis runs cannot be deleted; "
+        "retain the snapshot and create a new run if needed."
     )
 
 

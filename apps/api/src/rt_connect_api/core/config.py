@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     # the local/manual fallback, but prefer the immutable deployment SHA when
     # the platform supplies it so public release metadata is source-identifiable.
     railway_git_commit_sha: str | None = None
-    schema_revision: str = "20260909_0018"
+    schema_revision: str = "20260909_0019"
     log_level: str = "INFO"
     database_url: str | None = None
     redis_url: str | None = None

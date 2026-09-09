@@ -3,7 +3,7 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.18 — đồng bộ specification.md v1.19, plan.md v4.8 và business-analysis.md v0.22; bổ sung source-identifiable release metadata từ Railway Git SHA cho API/web, record/semantics cho P17 Docker workload đồng thời, export-content evidence và targeted direct PostgreSQL row/checksum/scope evidence; giữ entity/migration/API membership-invitation P4, unique pending invitation và active-context invariant, cùng reference tới feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate và status/readiness surface P20 (2026-09-09)
+- **Phiên bản:** 1.18 — đồng bộ specification.md v1.19, plan.md v4.8 và business-analysis.md v0.22; bổ sung source-identifiable release metadata từ Railway Git SHA cho API/web, record/semantics cho P17 Docker workload đồng thời, export-content evidence và targeted direct PostgreSQL row/checksum/scope evidence; giữ entity/migration/API membership-invitation P4, unique pending invitation và active-context invariant, cùng reference tới feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate và status/readiness surface P20 (2026-09-09). P17 bổ sung migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`, song song ORM guard và negative mutation test.
 - **Nguồn yêu cầu:** business-analysis.md phiên bản 0.22
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh

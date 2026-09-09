@@ -4,13 +4,17 @@ from copy import deepcopy
 from pathlib import Path
 from uuid import UUID
 
+import pytest
 from fastapi.testclient import TestClient
 from pydicom.uid import generate_uid
-from sqlalchemy import select
+from sqlalchemy import create_engine, select
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from rt_connect_api.api.artifacts import _storage as artifact_storage
 from rt_connect_api.api.dvh import _storage as dvh_storage
-from rt_connect_api.db.models import InputManifest
+from rt_connect_api.db.base import Base
+from rt_connect_api.db.models import DVHAnalysisRun, InputManifest
 from rt_connect_api.db.session import get_session
 from rt_connect_api.services.object_storage import InMemoryObjectStorage, ObjectStorageError
 from test_artifacts import _case
@@ -349,6 +353,44 @@ def test_dvh_saved_snapshot_remains_readable_after_source_bytes_change(tmp_path:
         assert exported.status_code == 200, exported.text
         assert exported.json()["input_snapshot"] == expected_input
         assert exported.json()["result_snapshot"] == expected_result
+
+
+def test_dvh_saved_run_rejects_orm_update_and_delete() -> None:
+    engine = create_engine(
+        "sqlite+pysqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    with factory() as session:
+        run = DVHAnalysisRun(
+            organization_id=UUID("00000000-0000-0000-0000-000000000001"),
+            qa_case_id=UUID("00000000-0000-0000-0000-000000000002"),
+            dose_artifact_id=UUID("00000000-0000-0000-0000-000000000003"),
+            structure_artifact_id=UUID("00000000-0000-0000-0000-000000000004"),
+            roi_number=1,
+            idempotency_key="dvh-immutable-001",
+            request_fingerprint="a" * 64,
+            engine_key="p17-dvh",
+            engine_version="test",
+            status="COMPLETED",
+            input_snapshot={"schema_version": "test"},
+            result_snapshot={"result_sha256": "b" * 64},
+            warning_snapshot=[],
+            error_snapshot=[],
+        )
+        session.add(run)
+        session.commit()
+
+        run.status = "MUTATED"
+        with pytest.raises(ValueError, match="DVH_RUN_IMMUTABLE"):
+            session.commit()
+        session.rollback()
+
+        session.delete(run)
+        with pytest.raises(ValueError, match="DVH_RUN_IMMUTABLE"):
+            session.commit()
 
 
 def test_dvh_api_rejects_archived_case_and_detects_changed_source(tmp_path: Path) -> None:

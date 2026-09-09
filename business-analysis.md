@@ -5,7 +5,7 @@
 - **Tên sản phẩm:** RT-CONNECT
 - **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
 - **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
-- **Phiên bản tài liệu:** 0.22 — catalogue tính năng, workflow, ngoại lệ, phục hồi, từ điển trạng thái và tiêu chí nghiệm thu theo P0–P20; chốt chi tiết membership/invitation P4 và đồng bộ với migration `20260909_0018` (2026-09-09)
+- **Phiên bản tài liệu:** 0.22 — catalogue tính năng, workflow, ngoại lệ, phục hồi, từ điển trạng thái và tiêu chí nghiệm thu theo P0–P20; chốt chi tiết membership/invitation P4, bảo toàn snapshot phân tích P17 và đồng bộ triển khai với migration `20260909_0018` + guard `20260909_0019` (2026-09-09)
 - **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
 Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.22 tại mục 21–24 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.

@@ -41,7 +41,7 @@ def test_compose_keeps_schema_revision_as_the_exact_string() -> None:
     configuration = yaml.safe_load(compose.read_text(encoding="utf-8"))
 
     revision = configuration["services"]["api"]["environment"]["SCHEMA_REVISION"]
-    assert revision == "20260909_0018"
+    assert revision == "20260909_0019"
     assert isinstance(revision, str)
 
 
@@ -138,4 +138,22 @@ def test_organization_invitation_migration_declares_email_bound_one_time_schema(
     assert '"token_hash"' in source
     assert '"accepted_by_user_identity_id"' in source
     assert "uq_organization_invitations_pending_email" in source
+    assert "def downgrade()" in source
+
+
+def test_dvh_immutability_migration_declares_database_guard() -> None:
+    migration = (
+        Path(__file__).parents[1]
+        / "alembic"
+        / "versions"
+        / "20260909_0019_dvh_immutability.py"
+    )
+    source = migration.read_text(encoding="utf-8")
+
+    assert 'revision: str = "20260909_0019"' in source
+    assert 'down_revision: str | Sequence[str] | None = "20260909_0018"' in source
+    assert "dvh_analysis_runs" in source
+    assert "BEFORE UPDATE OR DELETE" in source
+    assert "DVH_RUN_IMMUTABLE" in source
+    assert "DROP TRIGGER" in source
     assert "def downgrade()" in source
