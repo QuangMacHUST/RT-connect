@@ -48,5 +48,10 @@ reported `8/8 PASS`. The corresponding browser evidence is
 `p8-staging-rtdose-browser-20260910-85ecb0e.json`, and the local independent-oracle
 evidence is `p8-independent-gamma-oracle.json` with `6/6` cases PASS.
 
+Local queue marker: the repository Compose stack now includes the separate Gamma worker needed
+to consume Redis-dispatched runs. `scripts/verify-local-gamma-queue.py` records local-only
+happy-path, replay, bounded-retry and dead-letter evidence; do not interpret it as staging or
+production verification.
+
 Final staging parity marker (2026-09-10): API, worker and web must be rebuilt
 from the commit carrying this marker before a public exact-SHA check is recorded.

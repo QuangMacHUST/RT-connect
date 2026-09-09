@@ -1,5 +1,39 @@
 name: rt-connect-local
 
+x-api-environment: &api-environment
+  APP_ENV: development
+  APP_VERSION: 0.1.0-dev
+  # Quote revision IDs: YAML treats an unquoted underscore-separated
+  # numeric value as a number and silently removes the underscore.
+  SCHEMA_REVISION: "20260909_0019"
+  LOG_LEVEL: INFO
+  DATABASE_URL: postgresql+psycopg://rt_connect:rt_connect@postgres:5432/rt_connect
+  REDIS_URL: redis://redis:6379/0
+  S3_ENDPOINT: http://minio:9000
+  S3_REGION: us-east-1
+  S3_BUCKET: rt-connect-artifacts
+  S3_ACCESS_KEY_ID: local-development-only
+  S3_SECRET_ACCESS_KEY: local-development-only
+  S3_SIGNED_URL_TTL_SECONDS: 900
+  GAMMA_QUEUE_VISIBILITY_TIMEOUT_SECONDS: 120
+  GAMMA_LEASE_SECONDS: 120
+  GAMMA_RETRY_MAX_ATTEMPTS: 3
+  GAMMA_RETRY_BACKOFF_BASE_SECONDS: 5
+  GAMMA_RETRY_BACKOFF_MAX_SECONDS: 300
+  GAMMA_EXECUTION_DEADLINE_SECONDS: 900
+  GAMMA_MAX_VOXELS: 2000000
+  GAMMA_MAX_CANDIDATE_EVALUATIONS: 50000000
+  # Pydantic Settings parses collection values from JSON in environment variables.
+  CORS_ALLOWED_ORIGINS: '["http://localhost:5173"]'
+
+x-api-dependencies: &api-dependencies
+  postgres:
+    condition: service_healthy
+  redis:
+    condition: service_healthy
+  minio:
+    condition: service_started
+
 services:
   api:
     build:
@@ -9,38 +43,22 @@ services:
     # be measured separately before any production capacity claim.
     cpus: "1.0"
     mem_limit: 768m
-    environment:
-      APP_ENV: development
-      APP_VERSION: 0.1.0-dev
-      # Quote revision IDs: YAML treats an unquoted underscore-separated
-      # numeric value as a number and silently removes the underscore.
-      SCHEMA_REVISION: "20260909_0019"
-      LOG_LEVEL: INFO
-      DATABASE_URL: postgresql+psycopg://rt_connect:rt_connect@postgres:5432/rt_connect
-      REDIS_URL: redis://redis:6379/0
-      S3_ENDPOINT: http://minio:9000
-      S3_REGION: us-east-1
-      S3_BUCKET: rt-connect-artifacts
-      S3_ACCESS_KEY_ID: local-development-only
-      S3_SECRET_ACCESS_KEY: local-development-only
-      S3_SIGNED_URL_TTL_SECONDS: 900
-      GAMMA_QUEUE_VISIBILITY_TIMEOUT_SECONDS: 120
-      GAMMA_LEASE_SECONDS: 120
-      GAMMA_RETRY_MAX_ATTEMPTS: 3
-      GAMMA_RETRY_BACKOFF_BASE_SECONDS: 5
-      GAMMA_RETRY_BACKOFF_MAX_SECONDS: 300
-      GAMMA_EXECUTION_DEADLINE_SECONDS: 900
-      GAMMA_MAX_VOXELS: 2000000
-      GAMMA_MAX_CANDIDATE_EVALUATIONS: 50000000
-      # Pydantic Settings parses collection values from JSON in environment variables.
-      CORS_ALLOWED_ORIGINS: '["http://localhost:5173"]'
+    environment: *api-environment
     ports:
       - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+    depends_on: *api-dependencies
+
+  worker:
+    build:
+      context: ./apps/api
+    # Keep the local Gamma worker bounded independently from the API. This
+    # makes the Redis/lease/retry path reproducible without running a worker on
+    # the host and avoids mistaking an API-only Compose stack for an E2E stack.
+    cpus: "1.0"
+    mem_limit: 768m
+    environment: *api-environment
+    command: ["python", "-m", "rt_connect_api.worker"]
+    depends_on: *api-dependencies
 
   web:
     build:

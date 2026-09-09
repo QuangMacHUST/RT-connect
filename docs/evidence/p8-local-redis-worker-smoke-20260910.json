@@ -1,0 +1,54 @@
+{
+  "schema_version": "rt-connect.p8-local-redis-worker-smoke.v1",
+  "captured_at_utc": "2026-09-09T19:47:07.784342+00:00",
+  "verification_level": "LOCAL_COMPOSE_REDIS_WORKER",
+  "synthetic_only": true,
+  "source_commit": "d8277263b9241066c2a8972a7553c659501b82f2",
+  "topology": {
+    "database": "temporary SQLite file",
+    "queue": "local Redis 7 service",
+    "object_storage": "local MinIO disposable bucket",
+    "worker": "separate rt_connect_api.worker process"
+  },
+  "fixture": {
+    "payload_sha256": "ee3075cf212289c9d99477ee78e6f2197d28eaf06e0c7b87eb6ca4478882006f",
+    "grid_shape": [
+      2,
+      2
+    ],
+    "organization_id": "cd954dff-ed8e-4f7c-8e75-b7c85968f2e6",
+    "case_id": "7e643487-908d-40f8-8f0f-bbc89534eac8"
+  },
+  "happy_path": {
+    "run_id": "02c4a56c-3236-4079-ae67-62f8ccffedff",
+    "checks": {
+      "status": true,
+      "overall_status": true,
+      "evaluated_points": true,
+      "attempt_count": true,
+      "attempt_terminal": true,
+      "replay_guard": true,
+      "duplicate_dispatch_deduplicated": true
+    }
+  },
+  "bounded_retry_dead_letter": {
+    "run_id": "a438b9f0-218c-4f50-977c-ca2efd354e4c",
+    "checks": {
+      "status": true,
+      "bounded_attempts": true,
+      "attempts_terminal": true,
+      "dead_letter_written": true,
+      "dead_letter_source": true,
+      "queue_acknowledged": true
+    },
+    "worker_attempt_output_count": 3
+  },
+  "queue_metrics_after_ack": {
+    "backend": "redis_stream",
+    "stream_length": 4,
+    "pending_count": 0,
+    "consumer_count": 1
+  },
+  "cleanup": "temporary database, stream, keys and MinIO bucket removed in finally",
+  "passed": true
+}

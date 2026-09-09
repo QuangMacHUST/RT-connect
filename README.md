@@ -49,9 +49,11 @@ development machine with Docker Desktop's Linux engine.
    docker compose up --build --wait
    ```
 
-   The API health endpoint is `http://localhost:8000/api/v1/health`; the web shell is
-   `http://localhost:5173`. Run `docker compose down -v` only when you intentionally want
-   to remove local development database and object-storage volumes.
+   This starts API, web, PostgreSQL, Redis, MinIO and the separate Gamma worker. The API health
+   endpoint is `http://localhost:8000/api/v1/health`; the web shell is `http://localhost:5173`.
+   A stack with API and Redis but without `worker` is not a complete local queue workflow: Gamma
+   runs can be accepted and remain queued. Run `docker compose down -v` only when you
+   intentionally want to remove local development database and object-storage volumes.
 
 5. To run focused verification without containers, execute:
 
@@ -60,6 +62,20 @@ development machine with Docker Desktop's Linux engine.
    ```
 
    Use `-WithContainers` only after Docker Desktop is installed and running.
+
+6. To verify the real local Redis/worker path with disposable synthetic data, run:
+
+   ```powershell
+   .\apps\api\.venv\Scripts\python.exe `
+     .\scripts\verify-local-gamma-queue.py `
+     --output .\docs\evidence\p8-local-redis-worker-smoke-YYYYMMDD.json
+   ```
+
+   The verifier uses a temporary database, a unique Redis stream and a disposable MinIO bucket;
+   it checks a successful job, duplicate dispatch, terminal replay, three bounded storage-failure
+   attempts, dead-letter quarantine and zero pending messages, then removes those resources.
+   Its result is local support evidence only and must not be read as staging or clinical-release
+   approval.
 
 ## Current scope
 

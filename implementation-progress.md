@@ -27,6 +27,12 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - Script `scripts/verify-p8-independent-gamma-oracle.py` đã được kiểm bằng Ruff và chạy thành công. Oracle tự parse fixture contract, exhaustive GRID node và BILINEAR sampling lattice, sau đó đối chiếu public `calculate_gamma`; 6/6 case PASS, gồm 2D/3D, GRID/BILINEAR, GLOBAL/LOCAL, RELATIVE/ABSOLUTE, OVERLAP_ONLY và max-gamma censoring. Evidence: `docs/evidence/p8-independent-gamma-oracle.json`.
 - `P8` vẫn chưa được đóng: local oracle không thay cho staging oracle promotion/commissioning; chưa có evidence staging cho worker crash sau durable commit trước ACK, bounded retry/dead-letter/failure injection, large-input/resource budget hoặc release manifest. Các gate này được giữ mở trong `plan.md`.
 
+## P8 local Redis/worker queue smoke — 2026-09-10
+
+- `docker-compose.yml` đã được bổ sung service `worker` riêng với cùng runtime contract với API: PostgreSQL, Redis, MinIO, Gamma lease/retry/resource settings. `docker compose config --quiet` PASS và container worker khởi động với `queue_backend=redis_stream`.
+- `scripts/verify-local-gamma-queue.py` đã chạy thành công với `docs/evidence/p8-local-redis-worker-smoke-20260910.json`, `verification_level=LOCAL_COMPOSE_REDIS_WORKER`, `synthetic_only=true`, `passed=true`. Verifier tạo tài nguyên tạm và kiểm tra job `COMPLETED/PASS` 4/4, duplicate dispatch, terminal replay guard, storage failure bounded ở 3 attempts, dead-letter cho attempt cuối và Redis `pending_count=0` sau ACK.
+- Kết quả này nâng P08-W03 từ `LOCAL_SLICE_ONLY` lên `LOCAL_COMPOSE_VERIFIED`, nhưng không nâng P8 thành `DONE-v2`: staging crash/ACK injection, staging resource/large-input, oracle promotion/convergence và release-manifest evidence vẫn mở.
+
 ## P4 membership/invitation local slice — 2026-09-09
 
 - Source working tree đã bổ sung migration `20260909_0018_organization_invitations`, `OrganizationInvitation`, partial unique index cho invitation PENDING theo organization/email, member list/toggle và các endpoint tạo/list/revoke/accept invitation.
