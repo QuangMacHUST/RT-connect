@@ -2,7 +2,7 @@
 
 - File: specification.md; version **1.19**; ngày 2026-09-09.
 - Nguồn nghiệp vụ: business-analysis.md v0.22.
-- Kế hoạch triển khai: plan.md v4.5, P0–P20.
+- Kế hoạch triển khai: plan.md v4.6, P0–P20.
 - Kiến trúc nền: technical-specification.md v1.18.
 - Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.19 giữ toàn bộ contract v1.18, bổ sung record semantics cho cgroup memory observation của P17 local Docker workload đồng thời và làm rõ cả sampled container memory lẫn cgroup peak đều không phải peak RSS; đồng thời giữ contract thực thi P4 cho membership/invitation: thành viên ngang quyền, token hash-at-rest, email-bound, one-time, expiry, active-context invariant và các endpoint cụ thể.
 

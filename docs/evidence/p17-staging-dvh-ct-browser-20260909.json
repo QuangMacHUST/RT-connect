@@ -1,0 +1,120 @@
+{
+  "schema_version": "rt-connect.staging-dvh-ct-browser.v1",
+  "captured_at_utc": "2026-09-09T13:52:48Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_E2E_PARTIAL",
+  "environment": "staging",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "source_commit": "fbbfa812feaa164197259f83e581e9271a2df670",
+  "web_build_label": "fbbfa812feaa164197259f83e581e9271a2df670",
+  "web_bundle": {
+    "path": "assets/index-C3XR9KOq.js",
+    "sha256": "b3044e7a9fe572ee94171260545c0e2711593449f43eca0f2415d4f6e6d55ba4",
+    "http_status": 200,
+    "default_roi_manifest_fix_present": true,
+    "empty_ct_preview_fix_present": true
+  },
+  "synthetic_artifacts": [
+    {
+      "artifact_id": "737a8999-4abd-4fd4-bded-daf186f0f5be",
+      "filename": "gamma-rtdose-v1-smoke.dcm",
+      "logical_role": "REFERENCE",
+      "modality": "RTDOSE",
+      "data_status": "VALID",
+      "local_fixture_sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
+      "staging_ui_sha256_prefix": "ca5c9168eb9b045e"
+    },
+    {
+      "artifact_id": "6d2ded42-a892-4686-8d76-394819b2f59f",
+      "filename": "p17-rtstruct-v1-smoke.dcm",
+      "logical_role": "RTSTRUCT",
+      "modality": "RTSTRUCT",
+      "data_status": "VALID",
+      "local_fixture_sha256": "16a79df3129757d9df8b48bd095f0b4b70b24713ea5255e24719d46e6808d401",
+      "staging_ui_sha256_prefix": "16a79df3129757d9"
+    },
+    {
+      "artifact_id": "1a0254d6-c140-4476-9f22-d761a42de2a0",
+      "filename": "p17-ct-v1-smoke.dcm",
+      "logical_role": "CT",
+      "modality": "CT",
+      "data_status": "VALID",
+      "local_fixture_sha256": "0b1d3bfd6adf33f139e493ca043e09defe077cab24d57287a6076816315dc088",
+      "staging_ui_sha256_prefix": "0b1d3bfd6adf33f1"
+    }
+  ],
+  "preflight": {
+    "valid_rtdose_count": 2,
+    "valid_rtstruct_count": 1,
+    "valid_ct_count": 1,
+    "selected_rtdose": "gamma-rtdose-v1-smoke.dcm · ca5c9168eb9b…",
+    "selected_rtstruct": "p17-rtstruct-v1-smoke.dcm · 16a79df31297…",
+    "selected_roi": "#1 · P17_TARGET · 1 contour"
+  },
+  "dvh_saved_run": {
+    "run_id": "8000ff9b-7a02-4cec-850e-e27e4fe50cc4",
+    "engine_version": "p17-dvh-1.1.0",
+    "coverage_status": "FULL",
+    "selected_voxel_count": 4,
+    "volume_cc": 0.004,
+    "dmean_gy": 6.5,
+    "dmin_gy": 5.0,
+    "dmax_gy": 8.0,
+    "d95_gy": 5.2,
+    "input_fingerprint": "ed432bafee35aada8fa7eb3a1ed7f50d5ea6322a5ba91af7b410bf1503621bd2",
+    "result_sha256": "a2826ddcb002916486886366e8cc50d3eabd3aa735afef18c9f3ca6e43d30a44",
+    "replay_after_refresh": true
+  },
+  "ct_browser_checks": [
+    {
+      "frame_index": 0,
+      "visible_slice": "#1",
+      "status": "LPS LINKED",
+      "overlay_text": "NEAREST_NEIGHBOR_IN_PATIENT_LPS",
+      "roi_text": "#1 · P17_TARGET",
+      "crosshair": "dose grid center",
+      "result": "PASS"
+    },
+    {
+      "frame_index": 2,
+      "visible_slice": "#3",
+      "status": "NO DOSE OVERLAP",
+      "warning_text": "The selected CT slice does not intersect the RTDOSE grid; dose overlay is empty.",
+      "result": "EXPECTED_WARNING"
+    }
+  ],
+  "ui_regression_checks": [
+    {
+      "name": "fresh_dvh_navigation_loads_default_roi",
+      "passed": true
+    },
+    {
+      "name": "no_ct_selection_shows_empty_state",
+      "passed": true
+    },
+    {
+      "name": "web_build_contains_source_commit",
+      "passed": true
+    }
+  ],
+  "export_probe": {
+    "json_csv_buttons_visible": true,
+    "automated_download_event": "UNVERIFIED",
+    "note": "The browser harness did not expose a download event for the blob-anchor export; no byte-level export pass is claimed."
+  },
+  "local_verification": {
+    "web_tests": "12 passed",
+    "typecheck": "PASS",
+    "lint": "PASS",
+    "production_build": "PASS",
+    "build_warning": "Vite reports a JavaScript chunk larger than 500 kB; tracked as a performance follow-up."
+  },
+  "open_gates": [
+    "direct PostgreSQL row, checksum, organization-scope and immutable snapshot query",
+    "byte-level JSON/CSV export verification",
+    "full P17 negative/fault/resource/volume evidence",
+    "controlled staging resource and worker evidence",
+    "release manifest and production promotion evidence"
+  ],
+  "data_boundary": "Only repository-generated synthetic DICOM fixtures were uploaded; no patient, PACS or treatment dataset was used."
+}

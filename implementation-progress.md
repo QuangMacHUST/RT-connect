@@ -3,7 +3,7 @@
 ## Documentation and implementation rebaseline — 2026-09-09
 
 Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.19,
-`technical-specification.md` v1.18 và `plan.md` v4.5. Dòng rebaseline lịch sử ngay dưới đây
+`technical-specification.md` v1.18 và `plan.md` v4.6. Dòng rebaseline lịch sử ngay dưới đây
 giữ nguyên để truy vết; không dùng các phiên bản cũ đó làm authority.
 
 `business-analysis.md` v0.21, `specification.md` v1.15, `technical-specification.md` v1.13 và `plan.md` v4.0 bổ sung feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate, state contract, testcase, workflow, error/recovery contract và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
@@ -340,7 +340,7 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 ## P17 Docker cgroup memory observation — local support rerun 2026-09-09
 
 - `scripts/verify-p17-docker-workload.ps1` now reads cgroup v1 `memory.current`, `memory.max_usage_in_bytes` and `memory.limit_in_bytes` when available, in addition to sparse `docker stats` samples. The rerun kept 2 concurrent jobs × 3 repeats, 6/6 identical engine/oracle results, `/health=ok`, `/ready=ready`, schema `20260909_0018`, and no patient data.
-- The API container reported cgroup current `148,406,272` bytes and peak `367,915,008` bytes since container start; the local cgroup limit is unbounded/sentinel. These numbers are explicitly `is_peak_rss=false` and are not a performance pass. Evidence was refreshed at `docs/evidence/p17-local-docker-workload-20260909.json`; the contract wording is synchronized in `specification.md` v1.19, `technical-specification.md` v1.18 and `plan.md` v4.5.
+- The API container reported cgroup current `148,406,272` bytes and peak `367,915,008` bytes since container start; the local cgroup limit is unbounded/sentinel. These numbers are explicitly `is_peak_rss=false` and are not a performance pass. Evidence was refreshed at `docs/evidence/p17-local-docker-workload-20260909.json`; the contract wording is synchronized in `specification.md` v1.19, `technical-specification.md` v1.18 and `plan.md` v4.6.
 
 ## P17 explicit limit binding and Report Builder source — local candidate verified 2026-09-08
 
@@ -397,3 +397,12 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Production has not yet received the P6 artifact branch; promotion remains intentionally gated by the staging artifact E2E and later clinical-module gates.
 - The final P17 staging smoke requires an explicit upload of the repository's synthetic RTSTRUCT fixture into the staging QA case; no patient or clinical dataset is needed. Until that action is completed, the browser can verify deployment and empty-input behavior but not the saved DVH run path.
 - Four Biological designs must be regenerated in P12–P15.
+
+## P17 staging RTDOSE/RTSTRUCT/CT browser smoke — verified 2026-09-09
+
+- **Scope and authorization:** after explicit user confirmation, only the repository-generated synthetic RTDOSE fixture was uploaded to the existing staging case; the case already contained the synthetic RTSTRUCT and CT fixtures uploaded earlier. No patient, PACS or treatment dataset was used.
+- **Artifact evidence:** case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24` exposes two valid RTDOSE artifacts, one valid RTSTRUCT and one valid CT. The selected RTDOSE is `gamma-rtdose-v1-smoke.dcm` with local SHA-256 `ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b`; staging UI shows the matching prefix `ca5c9168eb9b045e…`. RTSTRUCT and CT UI prefixes match local fixture hashes `16a79df3129757d9…` and `0b1d3bfd6adf33f1…` respectively. Artifact IDs and the complete redacted evidence record are in `docs/evidence/p17-staging-dvh-ct-browser-20260909.json`.
+- **Fresh browser workflow:** web build `fbbfa812feaa164197259f83e581e9271a2df670` was deployed from the pushed branch. On fresh navigation to `/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh`, the default valid RTSTRUCT automatically loads ROI `#1 · P17_TARGET · 1 contour`; `Validate & preview` and `Tính và lưu DVH run` are enabled. The saved run `8000ff9b-7a02-4cec-850e-e27e4fe50cc4` reappears after refresh with engine `p17-dvh-1.1.0`, `FULL` coverage, 4 voxels, volume `0.004 cc`, Dmean `6.500 Gy`, D95 `5.200 Gy`, input fingerprint and result SHA preserved.
+- **CT browser workflow:** selecting CT frame `#1` returns `LPS LINKED`, `NEAREST_NEIGHBOR_IN_PATIENT_LPS`, ROI `#1 · P17_TARGET`, and crosshair `dose grid center`. Selecting frame `#3` (`frame_index=2`, the repository's no-overlap oracle) returns `NO DOSE OVERLAP` and the expected warning that the selected CT slice does not intersect the RTDOSE grid; the dose overlay is empty. This confirms both the positive overlay and the bounded warning path on staging.
+- **Frontend correction shipped with the smoke:** `apps/web/src/pages/DVHPage.tsx` now separates the initial input manifest from the structure-specific ROI request and renders `Chưa chọn CT` when the optional CT query is disabled; `apps/web/src/pages/DVHPage.test.tsx` pins both behaviors. Web typecheck, lint, Vitest **12/12** and production build pass; the existing Vite chunk-size warning remains a performance follow-up.
+- **Boundary:** this closes the authenticated browser upload/validation/ROI/DVH/CT-preview sub-slice only. Byte-level JSON/CSV export was not claimed because the browser harness did not expose the blob-anchor download event. Direct PostgreSQL row/checksum/organization-scope query, full negative/fault/resource/volume gates, P11/P16 binding/report cloud evidence, release manifest and production promotion remain open. The older “fixture not uploaded” bullets above are historical checkpoints and are superseded by this section.

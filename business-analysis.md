@@ -1180,11 +1180,11 @@ Clinical MVP tập trung vào Machine QA, PSQA Gamma, report, trend, input valid
 
 ## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.22
 
-Bổ sung ngày 2026-09-09 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu; mục 22 chuẩn hóa hành vi ở cấp tính năng; mục 23 chuẩn hóa gói bàn giao nghiệp vụ và cách quyết định dừng/tiếp tục để không bỏ sót tiền điều kiện, side effect và bằng chứng; mục 24 chốt workflow membership/invitation P4 đã được hiện thực ở local. `specification.md` v1.19 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v4.5 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
+Bổ sung ngày 2026-09-09 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu; mục 22 chuẩn hóa hành vi ở cấp tính năng; mục 23 chuẩn hóa gói bàn giao nghiệp vụ và cách quyết định dừng/tiếp tục để không bỏ sót tiền điều kiện, side effect và bằng chứng; mục 24 chốt workflow membership/invitation P4 đã được hiện thực ở local. `specification.md` v1.19 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v4.6 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
 
 > Ghi chú đồng bộ: đoạn trên mô tả revision nghiệp vụ v0.22; business requirement không đổi trong
 > lần đồng bộ kỹ thuật này. Revision hiện hành dùng `specification.md` v1.19,
-> `technical-specification.md` v1.18 và `plan.md` v4.5; contract mới làm rõ dashboard
+> `technical-specification.md` v1.18 và `plan.md` v4.6; contract mới làm rõ dashboard
 > health/readiness/version/queue của P20, lifecycle membership/invitation P4 và semantics quan sát
 > cgroup memory của workload P17, không thay đổi nguyên tắc thành viên ngang quyền.
 
