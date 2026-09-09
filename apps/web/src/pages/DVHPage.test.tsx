@@ -94,6 +94,7 @@ test('automatically loads the first valid RTSTRUCT ROI after the manifest reques
 
   expect(await screen.findByRole('option', { name: '#1 · P17_TARGET · 1 contour' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Validate & preview' })).toBeEnabled()
+  expect(screen.getByText('Chưa chọn CT')).toBeInTheDocument()
   expect(vi.mocked(apiClient.dvhInputs).mock.calls).toHaveLength(2)
   expect(vi.mocked(apiClient.dvhInputs).mock.calls[1]?.[3]).toBe(structureId)
 })
