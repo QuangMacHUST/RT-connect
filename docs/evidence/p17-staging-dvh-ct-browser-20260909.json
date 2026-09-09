@@ -64,6 +64,89 @@
       "recovery": "Restored the newly uploaded RTDOSE with UI hash prefix ca5c9168eb9b… and validation passed without creating another saved run."
     }
   ],
+  "direct_postgresql_probe": {
+    "captured_at_utc": "2026-09-09T14:34:15.6331177Z",
+    "execution": "Read-only query executed in the connected Railway staging API container against its configured PostgreSQL database; no application mutation or secret output.",
+    "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+    "organization_id": "f5f0c4f1-a3ea-460e-85c4-d29671366a27",
+    "artifact_rows": [
+      {
+        "artifact_id": "737a8999-4abd-4fd4-bded-daf186f0f5be",
+        "filename": "gamma-rtdose-v1-smoke.dcm",
+        "modality": "RTDOSE",
+        "data_status": "VALID",
+        "byte_size": 898,
+        "sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
+        "organization_scope_matches": true,
+        "case_scope_matches": true
+      },
+      {
+        "artifact_id": "6d2ded42-a892-4686-8d76-394819b2f59f",
+        "filename": "p17-rtstruct-v1-smoke.dcm",
+        "modality": "RTSTRUCT",
+        "data_status": "VALID",
+        "byte_size": 866,
+        "sha256": "16a79df3129757d9df8b48bd095f0b4b70b24713ea5255e24719d46e6808d401",
+        "organization_scope_matches": true,
+        "case_scope_matches": true
+      },
+      {
+        "artifact_id": "1a0254d6-c140-4476-9f22-d761a42de2a0",
+        "filename": "p17-ct-v1-smoke.dcm",
+        "modality": "CT",
+        "data_status": "VALID",
+        "byte_size": 842,
+        "sha256": "0b1d3bfd6adf33f139e493ca043e09defe077cab24d57287a6076816315dc088",
+        "organization_scope_matches": true,
+        "case_scope_matches": true
+      }
+    ],
+    "manifest_rows": [
+      {
+        "artifact_id": "737a8999-4abd-4fd4-bded-daf186f0f5be",
+        "logical_role": "REFERENCE",
+        "validation_result": "VALID",
+        "organization_scope_matches": true,
+        "checksum_matches_artifact": true
+      },
+      {
+        "artifact_id": "6d2ded42-a892-4686-8d76-394819b2f59f",
+        "logical_role": "RTSTRUCT",
+        "validation_result": "VALID",
+        "organization_scope_matches": true,
+        "checksum_matches_artifact": true
+      },
+      {
+        "artifact_id": "1a0254d6-c140-4476-9f22-d761a42de2a0",
+        "logical_role": "CT",
+        "validation_result": "VALID",
+        "organization_scope_matches": true,
+        "checksum_matches_artifact": true
+      }
+    ],
+    "dvh_run_row": {
+      "run_id": "8000ff9b-7a02-4cec-850e-e27e4fe50cc4",
+      "organization_scope_matches": true,
+      "case_scope_matches": true,
+      "status": "COMPLETED",
+      "engine_version": "p17-dvh-1.1.0",
+      "dose_artifact_id": "737a8999-4abd-4fd4-bded-daf186f0f5be",
+      "structure_artifact_id": "6d2ded42-a892-4686-8d76-394819b2f59f",
+      "ct_artifact_id": "1a0254d6-c140-4476-9f22-d761a42de2a0",
+      "request_fingerprint": "ed432bafee35aada8fa7eb3a1ed7f50d5ea6322a5ba91af7b410bf1503621bd2",
+      "result_sha256": "a2826ddcb002916486886366e8cc50d3eabd3aa735afef18c9f3ca6e43d30a44",
+      "input_snapshot_checksums_match_manifest": true
+    },
+    "assertions": {
+      "artifact_row_count": 3,
+      "manifest_row_count": 3,
+      "run_row_count": 1,
+      "artifact_scope": true,
+      "manifest_scope": true,
+      "run_scope": true,
+      "result": "PASS"
+    }
+  },
   "dvh_saved_run": {
     "run_id": "8000ff9b-7a02-4cec-850e-e27e4fe50cc4",
     "engine_version": "p17-dvh-1.1.0",
@@ -147,7 +230,7 @@
     "build_warning": "Vite reports a JavaScript chunk larger than 500 kB; tracked as a performance follow-up."
   },
   "open_gates": [
-    "direct PostgreSQL row, checksum, organization-scope and immutable snapshot query",
+    "direct immutable-snapshot mutation guard and object-storage byte rehash",
     "full P17 negative/fault/resource/volume evidence",
     "controlled staging resource and worker evidence",
     "release manifest and production promotion evidence"
