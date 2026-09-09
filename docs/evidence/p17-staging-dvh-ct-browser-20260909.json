@@ -51,6 +51,19 @@
     "selected_rtstruct": "p17-rtstruct-v1-smoke.dcm · 16a79df31297…",
     "selected_roi": "#1 · P17_TARGET · 1 contour"
   },
+  "negative_checks": [
+    {
+      "name": "old_rtdose_units_rejected",
+      "selected_artifact_description": "Older staging RTDOSE with UI hash prefix 544f355fa286…",
+      "operation": "Validate & preview",
+      "result": "EXPECTED_ERROR",
+      "error_code": "DVH_DOSE_UNITS_UNSUPPORTED",
+      "message": "The P17 physical-dose profile requires DoseUnits=GY; units are never inferred.",
+      "history_total_after_validate": 1,
+      "run_created": false,
+      "recovery": "Restored the newly uploaded RTDOSE with UI hash prefix ca5c9168eb9b… and validation passed without creating another saved run."
+    }
+  ],
   "dvh_saved_run": {
     "run_id": "8000ff9b-7a02-4cec-850e-e27e4fe50cc4",
     "engine_version": "p17-dvh-1.1.0",
