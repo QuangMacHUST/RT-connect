@@ -251,6 +251,27 @@ def _run_worker_until_terminal(
     return run, output
 
 
+def _run_worker_once(
+    worker_environment: dict[str, str],
+    *,
+    timeout_seconds: float = 10.0,
+) -> str:
+    """Run the one-shot worker for a dispatch that has no database run row."""
+
+    process = _start_worker(worker_environment)
+    try:
+        output, _ = process.communicate(timeout=timeout_seconds)
+    except subprocess.TimeoutExpired as exc:
+        process.kill()
+        output, _ = process.communicate(timeout=5)
+        raise RuntimeError(f"Worker did not drain the one-shot queue message: {output}") from exc
+    if process.returncode != 0:
+        raise RuntimeError(
+            f"Worker exited unsuccessfully while draining the one-shot queue message: {output}"
+        )
+    return output
+
+
 def _environment(database_path: Path, stream: str, group: str, bucket: str) -> dict[str, str]:
     return {
         "APP_ENV": "development",
@@ -474,7 +495,49 @@ def verify(output_path: Path) -> dict[str, Any]:
                     ),
                     "queue_acknowledged": int(queue_metrics["pending_count"]) == 0,
                 }
-                passed = all(good_checks.values()) and all(failure_checks.values())
+                malformed_secret = f"synthetic-secret-{token}"
+                malformed_message_id = str(
+                    queue.client.xadd(
+                        stream,
+                        {
+                            "job_type": "GAMMA",
+                            "run_id": "not-a-uuid",
+                            "organization_id": str(organization.id),
+                            "attempt": "0",
+                            "secret_value": malformed_secret,
+                        },
+                    )
+                )
+                malformed_worker_output = _run_worker_once(environment_base)
+                dead_letter_entries_after_malformed = queue.client.xrange(
+                    queue.dead_letter_stream_name
+                )
+                malformed_dead_letter = next(
+                    (
+                        fields
+                        for _, fields in dead_letter_entries_after_malformed
+                        if fields.get("source_message_id") == malformed_message_id
+                    ),
+                    None,
+                )
+                malformed_queue_metrics = queue.metrics()
+                malformed_checks = {
+                    "worker_completed": "Quarantined malformed Gamma queue message"
+                    in malformed_worker_output,
+                    "dead_letter_written": malformed_dead_letter is not None,
+                    "error_code": malformed_dead_letter is not None
+                    and malformed_dead_letter.get("error_code") == "GAMMA_QUEUE_MESSAGE_INVALID",
+                    "source_message_recorded": malformed_dead_letter is not None
+                    and malformed_dead_letter.get("source_message_id") == malformed_message_id,
+                    "payload_value_not_copied": malformed_dead_letter is not None
+                    and malformed_secret not in str(malformed_dead_letter),
+                    "queue_acknowledged": int(malformed_queue_metrics["pending_count"]) == 0,
+                }
+                passed = (
+                    all(good_checks.values())
+                    and all(failure_checks.values())
+                    and all(malformed_checks.values())
+                )
                 evidence: dict[str, Any] = {
                     "schema_version": "rt-connect.p8-local-redis-worker-smoke.v1",
                     "captured_at_utc": datetime.now(UTC).isoformat(),
@@ -502,7 +565,12 @@ def verify(output_path: Path) -> dict[str, Any]:
                         "checks": failure_checks,
                         "worker_attempt_output_count": len(retry_outputs),
                     },
-                    "queue_metrics_after_ack": queue_metrics,
+                    "malformed_message_quarantine": {
+                        "source_message_id": malformed_message_id,
+                        "checks": malformed_checks,
+                        "queue_metrics_after_ack": malformed_queue_metrics,
+                    },
+                    "queue_metrics_after_ack": malformed_queue_metrics,
                     "cleanup": (
                         "temporary database, stream, keys and MinIO bucket removed in finally"
                     ),
