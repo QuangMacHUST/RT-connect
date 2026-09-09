@@ -31,3 +31,8 @@ same commit before the next public source-parity check.
 Latest staging parity evidence: `p19-staging-public-smoke-20260909-38dec53.json`
 records API, worker and web source SHA `38dec53d4e542bdf6c4f808283981b344cae3502`
 with schema `20260909_0019`; keep this marker aligned when progress/evidence changes.
+
+Current P17 staging fixture marker: the authenticated case recheck keeps the
+synthetic RTDOSE/RTSTRUCT/CT set and saved DVH run `8000ff9b-7a02-4cec-850e-e27e4fe50cc4`.
+This marker is intentionally duplicated under the web service root so the
+release candidate is rebuilt with the same source commit across API, worker and web.
