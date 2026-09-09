@@ -1,0 +1,39 @@
+{
+  "schema_version": "rt-connect.local-postgres-migration-evidence.v1",
+  "captured_at_utc": "2026-09-09T06:54:29.8588040Z",
+  "scope": "local Docker PostgreSQL/Redis/MinIO dependency smoke",
+  "repository_sha": "379b91c",
+  "compose_project": "rt-connect-local",
+  "services": {
+    "postgres": {
+      "image": "postgres:17-alpine@sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73",
+      "status": "running",
+      "health": "healthy"
+    },
+    "redis": {
+      "image": "redis:7-alpine@sha256:ff02b58f971e7d7d156a1267e283fcbbeee91773b6aa36c49dac28ecfe28eadf",
+      "status": "running",
+      "health": "healthy"
+    },
+    "minio": {
+      "image": "minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936",
+      "status": "running",
+      "health": "not_configured"
+    }
+  },
+  "migration": {
+    "database_engine": "PostgreSQL",
+    "command": "alembic upgrade head",
+    "first_run": {
+      "from_revision": "20260908_0017",
+      "to_revision": "20260909_0018",
+      "result": "PASS"
+    },
+    "repeat_run": {
+      "result": "PASS_NO_PENDING_MIGRATIONS"
+    },
+    "current_revision": "20260909_0018",
+    "is_head": true
+  },
+  "secrets": "not_recorded"
+}
