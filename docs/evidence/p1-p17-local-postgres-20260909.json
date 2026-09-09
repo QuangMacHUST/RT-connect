@@ -44,5 +44,13 @@
       "schema_revision": "20260909_0018"
     }
   },
+  "verification": {
+    "backend": "168 passed",
+    "focused_p17": "26 passed",
+    "frontend": "lint, typecheck, Vitest 2 passed, build passed",
+    "static_checks": "Ruff and strict mypy passed",
+    "openapi": "passed",
+    "compose_config": "passed"
+  },
   "secrets": "not_recorded"
 }
