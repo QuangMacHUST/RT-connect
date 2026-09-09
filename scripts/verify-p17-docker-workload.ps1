@@ -64,6 +64,48 @@ function Get-ContainerMemorySample {
   }
 }
 
+function Convert-CgroupMemoryValueToBytes {
+  param([AllowNull()][string]$Value)
+  if ([string]::IsNullOrWhiteSpace($Value)) { return $null }
+  $trimmed = $Value.Trim()
+  if ($trimmed -eq 'max') { return $null }
+  if ($trimmed -notmatch '^[0-9]+$') { return $null }
+  $number = [long]::Parse($trimmed, [Globalization.CultureInfo]::InvariantCulture)
+  if ($number -ge [long]::MaxValue / 2) { return $null }
+  return $number
+}
+
+function Get-ContainerCgroupMemory {
+  $probe = 'if [ -f /sys/fs/cgroup/memory.peak ]; then printf "cgroup_version=v2\nmemory_limit_bytes=%s\nmemory_current_bytes=%s\nmemory_peak_bytes=%s\n" "$(cat /sys/fs/cgroup/memory.max)" "$(cat /sys/fs/cgroup/memory.current)" "$(cat /sys/fs/cgroup/memory.peak)"; elif [ -f /sys/fs/cgroup/memory/memory.max_usage_in_bytes ]; then printf "cgroup_version=v1\nmemory_limit_bytes=%s\nmemory_current_bytes=%s\nmemory_peak_bytes=%s\n" "$(cat /sys/fs/cgroup/memory/memory.limit_in_bytes)" "$(cat /sys/fs/cgroup/memory/memory.usage_in_bytes)" "$(cat /sys/fs/cgroup/memory/memory.max_usage_in_bytes)"; else printf "cgroup_version=unknown\n"; fi'
+  try {
+    $raw = Invoke-Docker -Arguments @('exec', $containerName, 'sh', '-c', $probe)
+  }
+  catch {
+    return [ordered]@{
+      available = $false
+      error = $_.Exception.Message
+      is_peak_rss = $false
+    }
+  }
+  $values = @{}
+  foreach ($line in ($raw -split "`r?`n")) {
+    $match = [regex]::Match($line, '^(?<key>[a-z_]+)=(?<value>.*)$')
+    if ($match.Success) { $values[$match.Groups['key'].Value] = $match.Groups['value'].Value }
+  }
+  $version = if ($values.ContainsKey('cgroup_version')) { [string]$values['cgroup_version'] } else { 'unknown' }
+  $peakMetric = if ($version -eq 'v2') { 'memory.peak' } elseif ($version -eq 'v1') { 'memory.max_usage_in_bytes' } else { $null }
+  return [ordered]@{
+    available = $version -in @('v1', 'v2')
+    cgroup_version = $version
+    memory_limit_bytes = if ($values.ContainsKey('memory_limit_bytes')) { Convert-CgroupMemoryValueToBytes $values['memory_limit_bytes'] } else { $null }
+    memory_current_bytes = if ($values.ContainsKey('memory_current_bytes')) { Convert-CgroupMemoryValueToBytes $values['memory_current_bytes'] } else { $null }
+    memory_peak_bytes = if ($values.ContainsKey('memory_peak_bytes')) { Convert-CgroupMemoryValueToBytes $values['memory_peak_bytes'] } else { $null }
+    peak_metric = $peakMetric
+    peak_scope = 'since_container_start'
+    is_peak_rss = $false
+  }
+}
+
 function Start-BenchmarkJob {
   param([int]$JobNumber)
   $jobScript = {
@@ -107,6 +149,7 @@ $engineVersion = Invoke-Docker -Arguments @(
 )
 $health = Invoke-RestMethod 'http://localhost:8000/api/v1/health'
 $readiness = Invoke-RestMethod 'http://localhost:8000/api/v1/ready'
+$cgroupBefore = Get-ContainerCgroupMemory
 
 $jobs = [System.Collections.Generic.List[object]]::new()
 for ($index = 1; $index -le $ConcurrentJobs; $index++) {
@@ -140,6 +183,7 @@ finally {
     Remove-Job -Id $job.Id -Force -ErrorAction SilentlyContinue
   }
 }
+$cgroupAfter = Get-ContainerCgroupMemory
 
 $memoryValues = @($samples | Where-Object { $null -ne $_.memory_bytes } | ForEach-Object { [long]$_.memory_bytes })
 $sourceSha = (git -C $root rev-parse HEAD).Trim()
@@ -168,6 +212,12 @@ $report = [ordered]@{
     max_sampled_bytes = if ($memoryValues.Count) { ($memoryValues | Measure-Object -Maximum).Maximum } else { $null }
     max_sampled_percent = if (@($samples | Where-Object { $null -ne $_.memory_percent }).Count) { (@($samples | ForEach-Object { $_.memory_percent }) | Measure-Object -Maximum).Maximum } else { $null }
     samples = $samples
+    is_peak_rss = $false
+  }
+  cgroup_memory_observation = [ordered]@{
+    before_workload = $cgroupBefore
+    after_workload = $cgroupAfter
+    peak_bytes_since_container_start = $cgroupAfter.memory_peak_bytes
     is_peak_rss = $false
   }
   performance_gate = 'NOT_ASSESSED'

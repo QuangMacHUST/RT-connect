@@ -2,8 +2,8 @@
 
 ## Documentation and implementation rebaseline — 2026-09-09
 
-Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.18,
-`technical-specification.md` v1.16 và `plan.md` v4.4. Dòng rebaseline lịch sử ngay dưới đây
+Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.19,
+`technical-specification.md` v1.17 và `plan.md` v4.5. Dòng rebaseline lịch sử ngay dưới đây
 giữ nguyên để truy vết; không dùng các phiên bản cũ đó làm authority.
 
 `business-analysis.md` v0.21, `specification.md` v1.15, `technical-specification.md` v1.13 và `plan.md` v4.0 bổ sung feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate, state contract, testcase, workflow, error/recovery contract và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
@@ -35,7 +35,7 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - **Goal:** Hoàn thiện RT-CONNECT theo `plan.md` từ P0 đến P19 và thiết lập baseline vận hành P20.
 - **Current phase:** P17 — Visual Dose, DVH và structure review; P17 vẫn là phase thực thi chính vì staging case còn thiếu RTSTRUCT/CT và các gate DVH/CT/binding/report/oracle/fault/container-RSS/concurrency chưa đóng. Local synthetic volume measurement đã có nhưng chưa phải performance gate. Song song, P4 invitation/member slice đã có candidate `2fcf065` được API/web/worker staging phục vụ với migration `20260909_0018`; version parity đã pass.
 - **Current status:** IN_PROGRESS — P17 local slice đã có pure RTDOSE/RTSTRUCT engine, migration `20260908_0017`, API inputs/validate/save/history/export, organization/case scope, checksum/idempotency snapshot, explicit P11/P16 limit binding, DVH report source, bounded CT preview/overlay và route `/app/qa/cases/:caseId/dvh`. P4 public staging hiện trả readiness schema `20260909_0018`, OpenAPI có member/invitation routes, web bundle có UI invitation/member; P17 staging saved-run/CT/binding/report, P4 Auth/two-identity/DB lifecycle, P8/P9/P10/P11/P12/P13/P14/P15/P16 closure và production release vẫn mở.
-- **Last authoritative check:** 2026-09-09 — full backend suite sau P17 weighted-DVH fix đạt **169 passed**; focused P4 organization **9 passed**, combined P4 health/migration pack **25 passed**, Ruff/mypy, frontend lint/typecheck/**5 passed**/build và OpenAPI check PASS. Public staging smoke hiện hành `docs/evidence/p4-staging-public-smoke-20260909-2fcf065.json` đạt **14/14**: health/readiness/version/openapi/web HTTP 200, readiness schema `20260909_0018`, version `2fcf065`, new unauthenticated member/invitation routes HTTP 401. P17 fixture/oracle và authenticated browser evidence lịch sử vẫn giữ ở các mục bên dưới; không dùng chúng để suy ra P4 invitation lifecycle đã staging-verified.
+- **Last authoritative check:** 2026-09-09 — full backend suite sau P17 weighted-DVH fix đạt **169 passed**; focused P4 organization **9 passed**, combined P4 health/migration pack **25 passed**, Ruff/mypy, frontend lint/typecheck/**8 passed**/build và OpenAPI check PASS. Public staging smoke hiện hành `docs/evidence/p19-staging-public-smoke-20260909-current.json` đạt **15/15**: health/readiness/version/openapi/web HTTP 200, readiness schema `20260909_0018`, version `2fcf065`, new unauthenticated member/invitation routes HTTP 401. P17 fixture/oracle và authenticated browser evidence lịch sử vẫn giữ ở các mục bên dưới; không dùng chúng để suy ra P4 invitation lifecycle đã staging-verified.
 - **Next exact step:** sau khi user xác nhận thao tác chọn file, upload fixture RTSTRUCT và CT tổng hợp vào case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`, validate/tạo Input Manifest tương ứng; sau đó chạy browser DVH validate→save→replay→refresh→JSON/CSV và CT preview frame 1/2, đối chiếu hash/expected. Giữ P16 closure checklist song song; chỉ chuyển P17 sang staging smoke verified sau khi có run ID, preview hash và direct source evidence.
 
 ## P18/P19 implementation support — 2026-09-09
@@ -56,9 +56,9 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | Source | Version | Status |
 | :--- | :--- | :--- |
 | `business-analysis.md` | 0.22 | Business source; detailed feature behavior/workflow/error/recovery/state matrix, business feature cards, P4 membership/invitation addendum, phase handoff and P0–P20 contracts |
-| `specification.md` | 1.18 | Behavior/data/error/state/numeric contracts; operation/evidence record, P17 Docker workload record semantics, change-impact/release manifest, P20 status/readiness surface and exact P4/P10/P11/P12/P13/P14/P15/P16/P17 contracts including binding/report/CT preview |
-| `technical-specification.md` | 1.16 | Architecture reference; bounded-context implementation addenda, P4 invitation schema/API, P17 workload verifier/memory semantics, P20 status/readiness dashboard boundary, resource policy, CT preview adapter, P18 local backup/restore support and cross-document execution references |
-| `plan.md` | 4.4 | Phase/workflow/S-E/C/B tests, DoR/DoD, dependency graph, execution gates, execution ledger, full coverage matrix, P4 invitation/member work packages, P17 local workload checkpoint, P20 status/readiness dashboard package, binding/report/CT work packages, backup/restore support, local browser matrix, operations runbooks and staging gates |
+| `specification.md` | 1.19 | Behavior/data/error/state/numeric contracts; operation/evidence record, P17 Docker workload record semantics including cgroup observation, change-impact/release manifest, P20 status/readiness surface and exact P4/P10/P11/P12/P13/P14/P15/P16/P17 contracts including binding/report/CT preview |
+| `technical-specification.md` | 1.17 | Architecture reference; bounded-context implementation addenda, P4 invitation schema/API, P17 workload verifier/memory semantics including cgroup observation, P20 status/readiness dashboard boundary, resource policy, CT preview adapter, P18 local backup/restore support and cross-document execution references |
+| `plan.md` | 4.5 | Phase/workflow/S-E/C/B tests, DoR/DoD, dependency graph, execution gates, execution ledger, full coverage matrix, P4 invitation/member work packages, P17 local workload checkpoint with cgroup observation, P20 status/readiness dashboard package, binding/report/CT work packages, backup/restore support, local browser matrix, operations runbooks and staging gates |
 
 ## Phase status
 
@@ -325,6 +325,11 @@ Failed deployment root cause from build log: Railpack could not determine a buil
 - **Local dependency checkpoint:** Docker PostgreSQL 17, Redis 7 và MinIO pinned image đã chạy; Alembic `upgrade head` lần đầu nâng `20260908_0017 → 20260909_0018`, lần chạy lặp lại không còn migration pending, `alembic current` xác nhận `20260909_0018 (head)`. Evidence: `docs/evidence/p1-p17-local-postgres-20260909.json`; không ghi connection string hoặc secret.
 - **Configuration regression found and fixed:** Docker Compose từng parse `SCHEMA_REVISION: 20260909_0018` không nháy thành `202609090018`, làm `/api/v1/ready` báo `not_ready` dù DB đúng revision. Đã quote giá trị, thêm test `test_compose_keeps_schema_revision_as_the_exact_string`, recreate API container; readiness sau sửa trả `ready` với `20260909_0018`. Đây là lý do phải kiểm rendered effective config chứ không chỉ đọc file YAML.
 - **Not yet evidenced:** deployment of this CT delta on staging, authenticated staging CT artifact upload and browser overlay, direct PostgreSQL row/checksum/scope query, object-storage drift/fault recovery, controlled container peak RSS/resource gate, full negative matrix, staging P11/P16 actual-limit binding/report source and independent/reference DVH oracle. Local 1M-voxel and 2-job Docker concurrency measurements are recorded separately and are not release gates.
+
+## P17 Docker cgroup memory observation — local support rerun 2026-09-09
+
+- `scripts/verify-p17-docker-workload.ps1` now reads cgroup v1 `memory.current`, `memory.max_usage_in_bytes` and `memory.limit_in_bytes` when available, in addition to sparse `docker stats` samples. The rerun kept 2 concurrent jobs × 3 repeats, 6/6 identical engine/oracle results, `/health=ok`, `/ready=ready`, schema `20260909_0018`, and no patient data.
+- The API container reported cgroup current `148,406,272` bytes and peak `367,915,008` bytes since container start; the local cgroup limit is unbounded/sentinel. These numbers are explicitly `is_peak_rss=false` and are not a performance pass. Evidence was refreshed at `docs/evidence/p17-local-docker-workload-20260909.json`; the contract wording is synchronized in `specification.md` v1.19, `technical-specification.md` v1.17 and `plan.md` v4.5.
 
 ## P17 explicit limit binding and Report Builder source — local candidate verified 2026-09-08
 

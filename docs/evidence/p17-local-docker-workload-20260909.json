@@ -1,7 +1,7 @@
 {
   "schema_version": "rt-connect.p17-docker-workload-verification.v1",
-  "captured_at_utc": "2026-09-09T08:43:01.1514284Z",
-  "repository_sha": "4c0a1693cd28ffb05fe66fa60a8bb77999367e84",
+  "captured_at_utc": "2026-09-09T09:05:10.6907137Z",
+  "repository_sha": "a8302034b32018313e2e42f372ead2827d72a99b",
   "execution": {
     "compose_file": "docker-compose.yml",
     "service": "api",
@@ -47,25 +47,25 @@
       "observations": [
         {
           "iteration": 1,
-          "elapsed_seconds": 0.9846075989999008,
+          "elapsed_seconds": 1.0551659380003002,
           "peak_traced_bytes": 69237022
         },
         {
           "iteration": 2,
-          "elapsed_seconds": 1.0098538839999947,
+          "elapsed_seconds": 0.9709570380000514,
           "peak_traced_bytes": 69232277
         },
         {
           "iteration": 3,
-          "elapsed_seconds": 0.980230215000006,
+          "elapsed_seconds": 0.9502848110000741,
           "peak_traced_bytes": 69229613
         }
       ],
       "summary": {
         "repeats": 3,
-        "elapsed_seconds_min": 0.980230215000006,
-        "elapsed_seconds_median": 0.9846075989999008,
-        "elapsed_seconds_max": 1.0098538839999947,
+        "elapsed_seconds_min": 0.9502848110000741,
+        "elapsed_seconds_median": 0.9709570380000514,
+        "elapsed_seconds_max": 1.0551659380003002,
         "peak_traced_bytes_max": 69237022,
         "rss_measured": false,
         "performance_gate": "NOT_ASSESSED"
@@ -100,25 +100,25 @@
       "observations": [
         {
           "iteration": 1,
-          "elapsed_seconds": 1.048060740999972,
+          "elapsed_seconds": 1.0495295549999355,
           "peak_traced_bytes": 69237022
         },
         {
           "iteration": 2,
-          "elapsed_seconds": 0.938301790999958,
+          "elapsed_seconds": 0.9766150830000697,
           "peak_traced_bytes": 69232277
         },
         {
           "iteration": 3,
-          "elapsed_seconds": 0.9419812820000288,
+          "elapsed_seconds": 0.9612749150001036,
           "peak_traced_bytes": 69229613
         }
       ],
       "summary": {
         "repeats": 3,
-        "elapsed_seconds_min": 0.938301790999958,
-        "elapsed_seconds_median": 0.9419812820000288,
-        "elapsed_seconds_max": 1.048060740999972,
+        "elapsed_seconds_min": 0.9612749150001036,
+        "elapsed_seconds_median": 0.9766150830000697,
+        "elapsed_seconds_max": 1.0495295549999355,
         "peak_traced_bytes_max": 69237022,
         "rss_measured": false,
         "performance_gate": "NOT_ASSESSED"
@@ -126,29 +126,41 @@
     }
   ],
   "container_memory_sampling": {
-    "sample_count": 3,
-    "max_sampled_bytes": 357878989.0,
-    "max_sampled_percent": 4.46,
+    "sample_count": 1,
+    "max_sampled_bytes": 142396621.0,
+    "max_sampled_percent": 1.77,
     "samples": [
       {
-        "captured_at_utc": "2026-09-09T08:42:57.0705399Z",
-        "memory_text": "337.7MiB",
-        "memory_bytes": 354104115,
-        "memory_percent": 4.41
-      },
-      {
-        "captured_at_utc": "2026-09-09T08:42:59.0488229Z",
-        "memory_text": "341.3MiB",
-        "memory_bytes": 357878989,
-        "memory_percent": 4.46
-      },
-      {
-        "captured_at_utc": "2026-09-09T08:43:01.0517470Z",
-        "memory_text": "133.2MiB",
-        "memory_bytes": 139670323,
-        "memory_percent": 1.74
+        "captured_at_utc": "2026-09-09T09:05:10.2941424Z",
+        "memory_text": "135.8MiB",
+        "memory_bytes": 142396621,
+        "memory_percent": 1.77
       }
     ],
+    "is_peak_rss": false
+  },
+  "cgroup_memory_observation": {
+    "before_workload": {
+      "available": true,
+      "cgroup_version": "v1",
+      "memory_limit_bytes": null,
+      "memory_current_bytes": 145281024,
+      "memory_peak_bytes": 365690880,
+      "peak_metric": "memory.max_usage_in_bytes",
+      "peak_scope": "since_container_start",
+      "is_peak_rss": false
+    },
+    "after_workload": {
+      "available": true,
+      "cgroup_version": "v1",
+      "memory_limit_bytes": null,
+      "memory_current_bytes": 148406272,
+      "memory_peak_bytes": 367915008,
+      "peak_metric": "memory.max_usage_in_bytes",
+      "peak_scope": "since_container_start",
+      "is_peak_rss": false
+    },
+    "peak_bytes_since_container_start": 367915008,
     "is_peak_rss": false
   },
   "performance_gate": "NOT_ASSESSED",
