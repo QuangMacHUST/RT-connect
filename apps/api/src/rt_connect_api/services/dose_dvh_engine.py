@@ -1369,8 +1369,62 @@ def validate_ct_frame(
     }
 
 
-def _metric_quantile(values: np.ndarray, percent: float) -> float:
-    return float(np.quantile(values, 1.0 - percent / 100.0, method="linear"))
+def _metric_quantile(
+    values: np.ndarray, weights: np.ndarray, percent: float
+) -> float:
+    """Return the dose covering ``percent`` of selected volume.
+
+    The P17 contract uses a volume-weighted, piecewise-linear inverse
+    cumulative DVH. Dose samples are grouped by observed dose, ordered from
+    high to low, and cumulative selected volume is used as the independent
+    axis. A requested percentile is linearly interpolated between adjacent
+    observed dose levels; requests outside the observed range are clamped to
+    the corresponding minimum/maximum dose rather than extrapolated.
+    """
+
+    dose_values = np.asarray(values, dtype=np.float64).reshape(-1)
+    volume_weights = np.asarray(weights, dtype=np.float64).reshape(-1)
+    if (
+        dose_values.size == 0
+        or dose_values.shape != volume_weights.shape
+        or np.any(~np.isfinite(dose_values))
+        or np.any(~np.isfinite(volume_weights))
+        or np.any(volume_weights <= 0)
+    ):
+        raise DVHEngineError(
+            "DVH_METRIC_INVALID",
+            "Dose quantile values and volume weights must be finite and positive.",
+        )
+
+    dose_levels, inverse = np.unique(dose_values, return_inverse=True)
+    level_weights = np.bincount(inverse, weights=volume_weights)
+    order = np.argsort(dose_levels)[::-1]
+    dose_levels = dose_levels[order]
+    level_weights = level_weights[order]
+    total_volume = float(np.sum(level_weights))
+    target_volume = total_volume * (percent / 100.0)
+
+    if target_volume <= 0:
+        return float(dose_levels[0])
+    if target_volume >= total_volume:
+        return float(dose_levels[-1])
+
+    cumulative_volume = 0.0
+    previous_dose = float(dose_levels[0])
+    previous_volume = 0.0
+    for dose_level, level_volume in zip(dose_levels, level_weights, strict=True):
+        cumulative_volume += float(level_volume)
+        if target_volume <= cumulative_volume:
+            current_dose = float(dose_level)
+            span = cumulative_volume - previous_volume
+            if span <= 0:
+                return current_dose
+            fraction = (target_volume - previous_volume) / span
+            return previous_dose + fraction * (current_dose - previous_dose)
+        previous_dose = float(dose_level)
+        previous_volume = cumulative_volume
+
+    return float(dose_levels[-1])
 
 
 def _normalize_percentages(values: Sequence[float], field: str) -> tuple[float, ...]:
@@ -1491,7 +1545,9 @@ def analyze_dvh(
     if not math.isfinite(volume_cc) or volume_cc <= 0:
         raise DVHEngineError("DVH_EMPTY_STRUCTURE", "The rasterized ROI volume is not positive.")
     dx = {
-        f"D{int(value) if value.is_integer() else value:g}_gy": _metric_quantile(selected, value)
+        f"D{int(value) if value.is_integer() else value:g}_gy": _metric_quantile(
+            selected, selected_volumes, value
+        )
         for value in dx_values
     }
     vx_percent: dict[str, float] = {}

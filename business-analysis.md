@@ -1733,7 +1733,7 @@ Các mã trên là contract thực thi của slice P15, khác với việc chỉ
 **Metric và quy ước nghiệp vụ**
 
 - `Dmin/Dmean/Dmax` là metric trên các voxel được rasterize, không phải point-dose tại biên. `Dmean` là trung bình có trọng số thể tích; mỗi slice dùng slice thickness tương ứng.
-- `D(x)` là dose quantile sao cho x% thể tích nhận ít nhất dose đó, dùng interpolation đã snapshot. `D2`, `D50`, `D95`, `D98` là các preset ban đầu; danh sách user nhập phải hữu hạn và nằm trong `[0,100]`.
+- `D(x)` là dose covering x% thể tích đã chọn. Metric dùng volume-weighted piecewise-linear inverse cumulative DVH: các voxel được gom theo dose quan sát, sắp từ cao xuống thấp, cộng dồn thể tích theo từng mức dose rồi nội suy tuyến tính giữa hai mức dose kề nhau; yêu cầu ngoài khoảng dose quan sát chỉ được kẹp về Dmax/Dmin, không ngoại suy. Quy ước này phải được snapshot cùng engine version. `D2`, `D50`, `D95`, `D98` là các preset ban đầu; danh sách user nhập phải hữu hạn và nằm trong `[0,100]`.
 - `V(x)` là thể tích có dose `>= x Gy`; output đồng thời có cc và % của thể tích ROI được chọn. Ngưỡng phải finite, không âm và được snapshot.
 - `FULL_ROI` yêu cầu toàn bộ contour nằm trong dose grid; nếu thiếu coverage thì không tính kết luận full-ROI. `OVERLAP_ONLY` chỉ tính phần giao, bắt buộc hiển thị warning `DVH_PARTIAL_COVERAGE` và phần thể tích không được quan sát.
 - Dose-only mode phải gắn nhãn rõ “dose-native grid”, không dùng chữ “anatomy overlay”. Kết quả hợp lệ có warning vẫn là kết quả có điều kiện, không tự thành PASS/FAIL QA.

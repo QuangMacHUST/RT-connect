@@ -373,6 +373,47 @@ def test_full_coverage_rejects_outside_contour_but_overlap_mode_is_explicit(
     assert any(item["code"] == "DVH_PARTIAL_COVERAGE" for item in overlap.warnings)
 
 
+def test_dvh_weights_nonuniform_slice_thickness_and_vx_cc(tmp_path: Path) -> None:
+    dose_path = tmp_path / "dose-nonuniform.dcm"
+    structure_path = tmp_path / "structures-nonuniform.dcm"
+    values = np.stack(
+        [
+            np.full((5, 5), 100, dtype=np.uint16),
+            np.full((5, 5), 200, dtype=np.uint16),
+            np.full((5, 5), 300, dtype=np.uint16),
+        ]
+    )
+    frame_uid = _dose_file(dose_path, offsets=[0.0, 1.0, 4.0], values=values)
+    contours = [
+        _contour(
+            [
+                _world_point(0.5, 0.5, z),
+                _world_point(0.5, 3.5, z),
+                _world_point(3.5, 3.5, z),
+                _world_point(3.5, 0.5, z),
+            ]
+        )
+        for z in (0.0, 4.0)
+    ]
+    _structure_file(structure_path, frame_uid, contours=contours)
+
+    analysis = analyze_dvh(
+        dose_path,
+        structure_path,
+        roi_number=1,
+        dx_percentages=[50],
+        vx_doses_gy=[2],
+    )
+
+    assert analysis.result["geometry"]["slice_thickness_mm"] == [1.0, 2.0, 3.0]
+    assert analysis.result["coverage"]["frame_counts"] == [9, 0, 9]
+    assert analysis.result["metrics"]["volume_cc"] == pytest.approx(0.288)
+    assert analysis.result["metrics"]["Dmean_gy"] == pytest.approx(2.5)
+    assert analysis.result["metrics"]["Dx_gy"]["D50_gy"] == pytest.approx(3.0)
+    assert analysis.result["metrics"]["Vx_cc"]["V2_gy"] == pytest.approx(0.216)
+    assert analysis.result["metrics"]["Vx_percent"]["V2_gy"] == pytest.approx(75.0)
+
+
 def test_committed_staging_fixture_matches_the_dose_grid() -> None:
     root = Path(__file__).resolve().parents[3]
     analysis = analyze_dvh(
@@ -385,7 +426,7 @@ def test_committed_staging_fixture_matches_the_dose_grid() -> None:
     assert analysis.result["coverage"]["status"] == "FULL"
     assert analysis.result["coverage"]["selected_voxel_count"] == 4
     assert analysis.result["dose"]["mean_gy"] == 6.5
-    assert analysis.result["metrics"]["Dx_gy"]["D95_gy"] == 5.15
+    assert analysis.result["metrics"]["Dx_gy"]["D95_gy"] == 5.2
 
 
 def test_committed_staging_ct_fixture_matches_dose_and_roi_oracle() -> None:

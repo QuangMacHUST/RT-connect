@@ -1654,7 +1654,7 @@ P17 hiện được hiện thực bởi bốn lớp tách biệt, để phần s
 - `ImageOrientationPatient` gồm direction của columns trước, direction của rows sau. `PixelSpacing` giữ thứ tự `(row_spacing, column_spacing)`. Normal là tích có hướng `row × column`; điểm contour patient LPS được chiếu về frame/row/column theo affine này.
 - `GridFrameOffsetVector` được chuẩn hóa thành một vector kể cả trường hợp single-frame pydicom trả scalar. Slice thickness lấy metadata hợp lệ hoặc request override dương cho single-frame; nhiều frame phải có spacing/thickness hợp lệ.
 - ROI contour được chọn bằng `ROINumber`; polygon kín rasterize trên frame gần z-offset nhất. Contour `CLOSED_PLANAR_XOR` và hole/disjoint dùng parity; không phụ thuộc contour winding. Contour ngoài grid được đếm để áp dụng coverage policy, không silently clip thành zero dose.
-- Voxel volume dùng `row_spacing × column_spacing × slice_thickness / 1000` cc. `Dmean` là weighted average; `D(x)` dùng `np.quantile(values, 1-x/100, method="linear")`; `V(x)` cộng volume của voxel có dose `>= x` và trả cả cc/%.
+- Voxel volume dùng `row_spacing × column_spacing × slice_thickness / 1000` cc. `Dmean` là weighted average; `D(x)` gom các dose quan sát bằng nhau, sắp dose giảm dần, cộng dồn `voxel_volume_cc` và nội suy tuyến tính giữa hai điểm cumulative-volume kề nhau; `D0=Dmax`, `D100=Dmin`, ngoài khoảng quan sát không ngoại suy. `V(x)` cộng volume của voxel có dose `>= x` và trả cả cc/%. Quy ước này phải nằm trong engine version/result snapshot.
 
 #### 9.5.2a. CT preview và patient-LPS overlay
 
