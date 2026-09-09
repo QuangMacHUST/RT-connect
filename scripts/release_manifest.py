@@ -233,6 +233,7 @@ def validate_manifest(manifest: Mapping[str, Any]) -> list[str]:
         "release_id",
         "environment",
         "source_sha",
+        "source_state",
         "services",
         "schema_revision",
         "engine_versions",
@@ -265,6 +266,18 @@ def validate_manifest(manifest: Mapping[str, Any]) -> list[str]:
     if not isinstance(source_sha, str) or not SHA_PATTERN.fullmatch(source_sha):
         errors.append("source_sha is invalid")
 
+    source_state = manifest.get("source_state")
+    working_tree_clean: bool | None = None
+    if not isinstance(source_state, Mapping):
+        errors.append("source_state must be an object")
+    else:
+        if not isinstance(source_state.get("branch"), str) or not source_state.get("branch"):
+            errors.append("source_state.branch is missing")
+        if not isinstance(source_state.get("working_tree_clean"), bool):
+            errors.append("source_state.working_tree_clean must be boolean")
+        else:
+            working_tree_clean = source_state["working_tree_clean"]
+
     services = manifest.get("services")
     service_shas: set[str] = set()
     if not isinstance(services, Mapping):
@@ -286,8 +299,10 @@ def validate_manifest(manifest: Mapping[str, Any]) -> list[str]:
         if not isinstance(renderer, Mapping) or not isinstance(renderer.get("version"), str):
             errors.append("services.renderer.version is missing")
 
+    actual_service_sha_parity: bool | None = None
     if service_shas and isinstance(source_sha, str) and SHA_PATTERN.fullmatch(source_sha):
         expected_parity = len(service_shas) == 1 and next(iter(service_shas)) == source_sha.lower()
+        actual_service_sha_parity = expected_parity
         if manifest.get("service_sha_parity") is not expected_parity:
             errors.append("service_sha_parity does not match service/source SHAs")
 
@@ -314,8 +329,15 @@ def validate_manifest(manifest: Mapping[str, Any]) -> list[str]:
         if manifest["manifest_sha256"] != expected_hash:
             errors.append("manifest_sha256 does not match canonical content")
 
-    if manifest.get("release_gate") == "ELIGIBLE" and manifest.get("gate_reasons") != []:
-        errors.append("ELIGIBLE manifest must have no gate_reasons")
-    if manifest.get("release_gate") == "RELEASE_BLOCKED" and not isinstance(manifest.get("gate_reasons"), list):
-        errors.append("RELEASE_BLOCKED manifest must have gate_reasons")
+    if actual_service_sha_parity is not None and working_tree_clean is not None:
+        expected_reasons: list[str] = []
+        if not working_tree_clean:
+            expected_reasons.append("WORKING_TREE_DIRTY")
+        if not actual_service_sha_parity:
+            expected_reasons.append("SERVICE_SOURCE_SHA_MISMATCH")
+        expected_gate = "ELIGIBLE" if not expected_reasons else "RELEASE_BLOCKED"
+        if manifest.get("gate_reasons") != expected_reasons:
+            errors.append("gate_reasons do not match source state and service/source SHAs")
+        if manifest.get("release_gate") != expected_gate:
+            errors.append("release_gate does not match gate_reasons")
     return errors

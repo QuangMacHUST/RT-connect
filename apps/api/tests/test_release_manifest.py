@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -106,3 +107,35 @@ def test_secret_like_backup_reference_is_rejected(tmp_path: Path) -> None:
     assert result.returncode == 2
     assert not output.exists()
     assert "secret-like" in result.stderr
+
+
+def test_manifest_verifier_recomputes_the_promotion_gate(tmp_path: Path) -> None:
+    output = tmp_path / "manifest.json"
+    result = _run_manifest(output, FIXTURE)
+    assert result.returncode == 0, result.stderr
+
+    manifest = json.loads(output.read_text(encoding="utf-8"))
+    manifest["services"]["web"]["sha"] = "b" * 40
+    manifest["service_sha_parity"] = True
+    manifest["release_gate"] = "ELIGIBLE"
+    manifest["gate_reasons"] = []
+    unsigned = dict(manifest)
+    unsigned.pop("manifest_sha256")
+    manifest["manifest_sha256"] = hashlib.sha256(
+        json.dumps(
+            unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+    ).hexdigest()
+    output.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    verified = subprocess.run(
+        [sys.executable, str(SCRIPT), "--verify-manifest", str(output)],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    verification = json.loads(verified.stdout)
+    assert verified.returncode == 2
+    assert verification["valid"] is False
+    assert any("service/source SHAs" in error for error in verification["errors"])
