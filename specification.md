@@ -1164,7 +1164,7 @@ Validation errors are not QA `FAIL`; a valid dose-limit result is not a clinical
 | Transaction/invariant | Resolve scope before first resource query; validate/checksum before engine; validate-only creates no row; saved run pins all input/geometry/config/source hashes; unique `(organization_id,idempotency_key)` prevents duplicate; export serializes snapshot. |
 | Execution | DVH run hiện là synchronous API execution. CT preview là read-only synchronous operation, có resource limit riêng và không tạo `dvh_analysis_runs`. Explicit P11/P16 adapter có thể resolve một source được chọn, snapshot và evaluate actual/limit/margin; không search hoặc auto-apply. Async worker/large workload vẫn là package riêng. |
 | Output | `DvhInputsResponse`, `DvhValidationResponse`, `DvhRunResponse`, dose-native visual preview, CT preview, curve, metrics, coverage, warning, provenance, optional `limit_binding`, optional `limit_evaluation` và JSON/CSV export. Without an explicit compatible source, `actual/limit/margin` is absent/N/A. A selected source warning may make display `status=REVIEW_REQUIRED` while `rule_status` remains PASS/FAIL. |
-| Success oracle | TC-P17-S01 đến TC-P17-S16 trong plan |
+| Success oracle | TC-P17-S01 đến TC-P17-S17 trong plan |
 | Error/recovery oracle | TC-P17-E01 đến TC-P17-E30 trong plan; generic B01–B12 and C03–C16 apply where relevant. |
 | Exit | Local engine/API/UI/migration checks pass; staging browser→API→PostgreSQL/object storage, geometry/DVH oracle, scope/checksum/idempotency, negative/fault/volume/export evidence pass. |
 
@@ -1505,7 +1505,7 @@ Mỗi phase kế thừa B01–B12 ở mục 2 và phải có các lớp kiểm t
 | P14 | `TC-P14-S01..S06`, `E01..E10` | D, A, DB, UI, R, P | 2–10 options, baseline/zero policy, context warning, reorder preview, clone/export. |
 | P15 | `TC-P15-S01..S08`, `E01..E14` | D, A, DB, UI, R, P | Course/tissue/recovery, nonuniform schedule, prefix alternative, spatial unavailable, export. |
 | P16 | `TC-P16-S01..S04`, `E01..E06` | D, A, DB, UI, R, P | Source/applicability/version/import, no-match, link/content safety và explicit use. |
-| P17 | `TC-P17-S01..S16`, `E01..E30` | D, A, DB, UI, R, V, P | Frame/grid/ROI/coverage, bounded CT HU/LPS overlay/no-overlap oracle, DVH oracle, dose-only fallback, visual/table and source lineage. |
+| P17 | `TC-P17-S01..S17`, `E01..E30` | D, A, DB, UI, R, V, P | Frame/grid/ROI/coverage, bounded CT HU/LPS overlay/no-overlap oracle, volume-weighted cumulative-DVH oracle, dose-only fallback, visual/table and source lineage. |
 | P18 | `TC-P18-S01..S04`, `E01..E06` | D, A, DB, UI, R, V, P | Integrated RC, golden diff, restart/concurrency, load, backup/restore, pilot severity. |
 | P19 | `TC-P19-S01..S04`, `E01..E06` | A, DB, UI, R, V, P | Public HTTPS, Auth/CORS, service/schema/config manifest, remote E2E and rollback. |
 | P20 | `TC-P20-S01..S04`, `E01..E05` | A, DB, R, V, P | Real alert, backup/restore drill, owner/runbook, capacity and result-change regression. |

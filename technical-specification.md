@@ -1641,6 +1641,8 @@ P17 hiện được hiện thực bởi bốn lớp tách biệt, để phần s
 | CT preview/web | `create_ct_preview`, `GET .../dvh/ct-preview`, `apps/web/src/pages/DVHPage.tsx` | Đọc CT bounded single-file/multi-frame, rescale HU, window/level, chọn frame, map dose/ROI bằng patient LPS nearest-neighbor, vẽ grayscale/overlay/crosshair. Read-only, không tạo DVH run. |
 | Report integration/web | `apps/api/src/rt_connect_api/api/reports.py`, `apps/web/src/pages/ReportBuilderPage.tsx`, route `/app/qa/cases/:caseId/dvh` | DVH route chọn input/ROI/policy, validate-preview, save, hiển thị metric/curve/dose-native mask/CT preview/history/provenance và JSON/CSV; Report Builder chọn run DVH theo case và lưu source snapshot. Route DVH không nằm trong global sidebar. |
 
+**Engine identity:** `visual-dose.dvh` / `p17-dvh-1.1.0`. Bản `1.1.0` pin volume-weighted cumulative-DVH interpolation cho `D(x)` và phải được lưu trong mọi result snapshot; không đọc lại run cũ bằng engine mới rồi ghi đè kết quả cũ.
+
 #### 9.5.1. Input resolution và boundary
 
 1. `organization_id` trong URL phải khớp membership của JWT; `case_id` phải thuộc organization và chưa archive.

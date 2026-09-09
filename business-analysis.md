@@ -1770,6 +1770,7 @@ Các mã trên là contract thực thi của slice P15, khác với việc chỉ
 | TC-P17-S14 | Có RTSTRUCT/ROINumber hợp lệ khi mở CT preview | Overlay trả `roi_mask` cùng lưới output, ROI number/name/contour count đúng; ROI lookup vẫn theo ROINumber, không theo ROIName. |
 | TC-P17-S15 | CT thiếu WindowCenter/WindowWidth hoặc single-slice thiếu thickness | Preview vẫn thành công với warning `CT_WINDOW_DEFAULTED` và/hoặc `CT_SLICE_SPACING_DEFAULTED`; warning nói rõ đây là display/navigation default, không phải dữ liệu lâm sàng mới. |
 | TC-P17-S16 | CT slice không giao với dose grid | CT grayscale vẫn hiển thị, `overlay_available=false`, valid count bằng 0 và warning `CT_DOSE_NO_OVERLAP`; không vẽ dose giả và không báo thành công overlay. |
+| TC-P17-S17 | RTDOSE có z-offset không đều `[0, 1, 4] mm`, ROI chỉ chọn lát đầu/cuối và pixel spacing không vuông | Slice thickness được resolve `[1, 2, 3] mm`; volume, Dmean, D50 và V2cc/V2% dùng đúng trọng số từng lát; kết quả deterministic và snapshot nêu rõ quy ước cumulative-DVH. |
 
 **Trường hợp lỗi và đường phục hồi bắt buộc**
 
@@ -2059,7 +2060,7 @@ Bảng này là bản đồ ngắn gọn để không bỏ sót phase. `S` là w
 | P14 | P13 options → common context → baseline → delta/chart → reorder/clone/export | `TC-P14-S01..S06` | `TC-P14-E01..E10` | Delta/zero policy, no-truncate, lineage và persisted snapshot. |
 | P15 | Courses → tissue/model → recovery → cumulative/sensitivity → compensation/export | `TC-P15-S01..S08` | `TC-P15-E01..E14` | Scalar/recovery/alternative snapshot; spatial capability rõ ràng. |
 | P16 | Search → source/applicability → create/clone/version → citation/import → explicit use → compare/export/archive | `TC-P16-S01..S04` | `TC-P16-E01..E10` | Library version, citation, import report, no-match, scope/lifecycle/persistence behavior và explicit snapshot. |
-| P17 | Dataset → geometry preflight → overlay → DVH/profile → metric/export | `TC-P17-S01..S16` | `TC-P17-E01..E30` | Frame/ROI/coverage/CT overlay oracle, visual/table fallback, source hash và lineage. |
+| P17 | Dataset → geometry preflight → overlay → DVH/profile → metric/export | `TC-P17-S01..S17` | `TC-P17-E01..E30` | Frame/ROI/coverage/CT overlay oracle, volume-weighted cumulative-DVH oracle, visual/table fallback, source hash và lineage. |
 | P18 | RC → integrated/golden/fault/load → restore → pilot → regression | `TC-P18-S01..S04` | `TC-P18-E01..E06` | RC manifest, workload, restore, pilot issue và severity. |
 | P19 | Backup → promote services/schema → domain/Auth → remote E2E → rollback | `TC-P19-S01..S04` | `TC-P19-E01..E06` | Public URL, HTTPS, version/config manifest và rollback rehearsal. |
 | P20 | Monitor/alert → backup/restore drill → runbook → incident → maintenance | `TC-P20-S01..S04` | `TC-P20-E01..E05` | Alert, restore, owner, RCA/regression và backlog vận hành. |
