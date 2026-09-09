@@ -10,7 +10,13 @@ giữ nguyên để truy vết; không dùng các phiên bản cũ đó làm aut
 
 Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử trừ những dòng được ghi rõ là checkpoint mới. Không tự kế thừa DONE sang gate v2: invitation/restore/concurrent edits, P8 crash/ack/bounded retry/resource-large-input, schema-readiness, staging Trend và staging Protocol consumer vẫn phải được đối soát theo plan §1.2–§1.6. Câu “only remaining gates” trong checkpoint cũ không còn là danh sách đầy đủ. Checkpoint trước đã xác minh browser staging P13/P14 trên candidate `31a5900`; PostgreSQL row query trực tiếp, organization-scope negative probe và release-manifest closure vẫn là gate riêng của các phase đó. P8 hiện đã có staging RTDOSE + measurement 3D browser smoke và local independent oracle 6/6; crash/ack/resource/release gates còn mở. P17 hiện đã có targeted PostgreSQL row/checksum/scope probe và object-storage byte re-hash cho case staging; immutable snapshot/fault/resource/release gates còn mở.
 
-## Current staging parity and public recheck — 2026-09-10 / `ebf1e66`
+## Latest staging parity before P09 export change — 2026-09-10 / `b4e2446`
+
+- Sau khi ghi nhận public smoke của `ebf1e66`, commit tài liệu/parity `b4e24468149f070dd77b80e0d2ada3fa20445ce4` đã được Railway rebuild đồng bộ. API `d922b60f-a538-4853-b558-60657a1fefef`, web `e7802242-47bb-4f98-8053-e8b3a3e384b6` và worker `5e0a7920-96af-4dca-b936-af633a3293a1` đều `SUCCESS`, cùng branch `codex/p4-org-site-machine`, root tương ứng `/apps/api`, `/apps/web`, `/apps/api`.
+- Public verifier với expected source SHA `b4e24468149f070dd77b80e0d2ada3fa20445ce4` và schema `20260909_0019` đạt **15/15 checks PASS**. Evidence: `docs/evidence/p19-staging-public-smoke-20260910-b4e2446.json`.
+- Fresh browser sau cache-bust xác nhận build `b4e24468149f070dd77b80e0d2ada3fa20445ce4`, API `OK`, schema `READY/MATCH`; case staging vẫn có fixture RTDOSE tổng hợp đã cho phép sử dụng, không tạo bản trùng. Đây là mốc runtime trước khi P09 export-compensation code được đưa vào candidate kế tiếp.
+
+## Staging parity and public recheck — 2026-09-10 / `ebf1e66`
 
 - Commit `ebf1e664c55974b6bc418ff05791edfa5ace93f7` đã được push lên branch `codex/p4-org-site-machine`. Railway read-only metadata xác nhận API, web và worker staging đều chạy đúng commit này và đều `SUCCESS`: API `44fba031-2fa2-4d3b-9d42-9b1055a7bafd`, web `d744b68c-7b1b-4b35-aa0e-02eaa89e8b71`, worker `5aab77bc-f1fd-4db2-90bc-8b6b6a9913bf`. API giữ `/apps/api`, healthcheck `/api/v1/health`, pre-deploy `alembic upgrade head`; worker giữ `/apps/api` và `python -m rt_connect_api.worker`, không dùng HTTP healthcheck.
 - Ba image digest khác nhau theo vai trò nhưng source commit, branch và runtime `V2` khớp. API image là `sha256:ec5d709b41bc06091594ef349b4eba2598ee8be300a337a481b1a14f8f24cf7d`, web `sha256:edb959b6a7bc9d7ee4584bfe96fbe30d762524d2727ace5cea73c4f3f6415c44`, worker `sha256:8e4801d12ea48b98ed9b9507ff40b85fbf50b1c9316d300f08b97021e41732ad`.
@@ -46,6 +52,12 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - Nhánh metadata conflict tổng hợp trả lại lỗi gốc `ARTIFACT_CONFLICT`, object storage không còn object và danh sách case không có artifact mồ côi. Nhánh cleanup storage lỗi trả `ARTIFACT_PERSISTENCE_FAILED` HTTP 503, giữ signal để reconciliation; không trả success khi chưa có metadata durable.
 - Regression `tests/test_artifacts.py` và `tests/test_error_contract.py`: **8 passed**; `Ruff` sau sửa line length và `mypy src`: **PASS**. Evidence chi tiết: `docs/evidence/p6-local-upload-compensation-20260910.json`.
 - **Evidence level:** `LOCAL_VERIFIED` cho compensation path và memory storage double. Provider retention/inventory reconciliation, interrupted multipart trên network thật và staging failure injection vẫn mở; không dùng checkpoint này để kết luận P06 hoặc P18/P20 đã đóng.
+
+## P09 local export compensation recheck — 2026-09-10
+
+- Export report hiện commit claim `QUEUED` trước, render từ revision snapshot, ghi object, sau đó mới commit metadata `COMPLETED` cùng hash/size/media/warnings. Nếu commit metadata cuối thất bại, API rollback session và xóa đúng object key; nếu cleanup thất bại, API trả HTTP 503 `REPORT_EXPORT_PERSISTENCE_FAILED` với signal reconciliation và không phát signed URL.
+- `tests/test_reports.py`, `tests/test_artifacts.py` và `tests/test_error_contract.py` đạt **14 passed**; nhánh retry cùng idempotency key sau compensation tạo đúng một export, còn nhánh cleanup failure giữ object để reconciliation nhưng không trả success. Ruff và mypy đều PASS.
+- Evidence: `docs/evidence/p9-local-export-compensation-20260910.json`. **Evidence level:** `LOCAL_VERIFIED` cho transaction/compensation path với in-memory storage; provider/network fault injection, orphan inventory, retention, restore và visual export vẫn mở.
 
 ## P10 staging Trend read-only recheck — 2026-09-10 / `0c0b5ff`
 

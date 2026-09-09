@@ -1,0 +1,33 @@
+{
+  "schema_version": "rt-connect.p09-local-export-compensation.v1",
+  "captured_at_utc": "2026-09-09T23:42:00Z",
+  "environment": "local-testclient",
+  "source_commit_before_worktree_change": "b4e24468149f070dd77b80e0d2ada3fa20445ce4",
+  "scope": "P09 export object/metadata compensation only",
+  "patient_data": false,
+  "fixture_type": "synthetic biological report revision",
+  "checks": [
+    {
+      "test_id": "TC-P09-E07",
+      "scenario": "final ExportJob metadata commit fails after object write",
+      "observed": "HTTP 503 REPORT_EXPORT_PERSISTENCE_FAILED; exact object key deleted; storage inventory empty; retry with same idempotency key completed one export",
+      "passed": true
+    },
+    {
+      "test_id": "TC-P09-E08",
+      "scenario": "final metadata commit fails and object cleanup fails",
+      "observed": "HTTP 503 REPORT_EXPORT_PERSISTENCE_FAILED; reconciliation signal returned; object remained observable for repair; no COMPLETED response or signed URL",
+      "passed": true
+    }
+  ],
+  "focused_tests": "tests/test_reports.py tests/test_artifacts.py tests/test_error_contract.py: 14 passed",
+  "static_checks": {
+    "ruff": true,
+    "mypy": true
+  },
+  "limitations": [
+    "Local in-memory storage double only; Railway/S3 provider failure injection is not covered.",
+    "Retention, orphan inventory, reconciliation worker and restore drill remain P18/P20 gates.",
+    "This evidence does not establish staging or production readiness."
+  ]
+}

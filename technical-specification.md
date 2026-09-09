@@ -1367,6 +1367,7 @@ Các mã còn lại là target và phải được map bằng contract test, kh�
 - CALCULATION_FAILED.
 - REPORT_RENDER_FAILED.
 - EXPORT_FAILED.
+- REPORT_EXPORT_PERSISTENCE_FAILED.
 
 P17 hiện đã có các mã engine/API cụ thể sau và phải giữ nguyên khi mở rộng UI hoặc worker: `DVH_INPUT_MANIFEST_REQUIRED`, `DVH_INPUT_NOT_VALIDATED`, `DVH_INPUT_MANIFEST_INVALID`, `DVH_INPUT_SCOPE_MISMATCH`, `DVH_INPUTS_MUST_DIFFER`, `DVH_DOSE_ARTIFACT_INVALID`, `DVH_STRUCTURE_ARTIFACT_INVALID`, `DVH_ANATOMY_ARTIFACT_INVALID`, `DICOM_GEOMETRY_INVALID`, `DICOM_CAPABILITY_UNSUPPORTED`, `DICOM_FRAME_MISMATCH`, `DVH_DOSE_UNITS_UNSUPPORTED`, `DVH_DOSE_VALUES_INVALID`, `DVH_ROI_INVALID`, `CONTOUR_GEOMETRY_INVALID`, `DVH_EMPTY_STRUCTURE`, `DVH_INCOMPLETE_COVERAGE`, `DVH_PARTIAL_COVERAGE`, `DVH_COVERAGE_POLICY_INVALID`, `DVH_METRIC_INVALID`, `DVH_RESOURCE_LIMIT`, `DVH_SOURCE_CHANGED`, `DVH_IDEMPOTENCY_CONFLICT`, `DVH_STORAGE_UNAVAILABLE`, `DVH_EXECUTION_FAILED`, `DVH_PERSISTENCE_FAILED`, `DVH_RUN_NOT_FOUND`, `DVH_LIMIT_BINDING_CONFLICT`, `DVH_LIMIT_OVERRIDE_INVALID`, `DVH_LIMIT_ENTRY_NOT_FOUND`, `DVH_LIMIT_NOT_AVAILABLE`, `DVH_LIMIT_ENTRY_INVALID`, `DVH_PROTOCOL_NOT_FOUND`, `DVH_PROTOCOL_NOT_AVAILABLE`, `DVH_PROTOCOL_RULE_REQUIRED`, `DVH_PROTOCOL_RULE_NOT_FOUND`, `DVH_PROTOCOL_RULE_UNSUPPORTED`, `DVH_PROTOCOL_RULE_INVALID`, `DVH_LIMIT_METRIC_NOT_COMPUTED`, `DVH_LIMIT_METRIC_UNSUPPORTED`, `DVH_LIMIT_UNIT_MISMATCH` và `DVH_LIMIT_DEFINITION_INVALID`. `DVH_DOSE_ONLY_MODE` là warning; CT preview bổ sung warning `CT_RESCALE_DEFAULTED`, `CT_WINDOW_DEFAULTED`, `CT_SLICE_SPACING_DEFAULTED`, `CT_DOSE_NO_OVERLAP`. `QA_CASE_ARCHIVED` và `ORGANIZATION_SCOPE_MISMATCH` là boundary/lifecycle errors dùng chung. Mọi code mới phải có mapping HTTP, field details, UI message, recovery và test ID trong specification/plan.
 
@@ -1859,6 +1860,33 @@ Block registry tối thiểu:
 - Output lưu engine/render version.
 - Tái render từ snapshot không đọc dữ liệu đang thay đổi.
 - Export CSV/JSON dùng schema version rõ ràng.
+
+### 11.5. Export object và metadata transaction
+
+`ExportJob` là metadata durable; bytes render nằm trong object storage và không được
+coi là export hoàn tất nếu chưa có row `ExportJob` với `status=COMPLETED`, object key,
+SHA-256, byte size, media type và warning snapshot. Flow chuẩn của `POST
+/reports/{report_key}/revisions/{revision_id}/exports` là:
+
+1. Resolve `organization_id`, revision và idempotency fingerprint; cùng key khác
+   fingerprint trả `EXPORT_IDEMPOTENCY_CONFLICT` trước khi ghi object.
+2. Tạo hoặc chuyển job về `QUEUED`, commit claim trước khi render để retry có
+   identity bền vững.
+3. Render từ immutable revision snapshot, ghi object bằng key chứa organization,
+   report, revision, job ID và extension; không ghi đè export của job khác.
+4. Gán `COMPLETED` cùng hash/size/media/warnings rồi commit metadata. Chỉ sau commit
+   thành công mới trả `201`/`200` và signed URL.
+5. Nếu commit metadata thất bại sau khi object đã ghi, rollback session và gọi
+   `ObjectStorage.delete_object` đúng exact key. Compensation thành công trả
+   `REPORT_EXPORT_PERSISTENCE_FAILED` HTTP 503 với hướng dẫn retry; compensation
+   thất bại vẫn trả HTTP 503 cùng code nhưng phải gắn signal `reconciliation`. Không
+   trả `COMPLETED`, không phát signed URL và không xóa theo prefix/filename.
+
+Lỗi ghi object/bucket trước bước 4 dùng `REPORT_STORAGE_UNAVAILABLE`; lỗi render dùng
+`REPORT_RENDER_FAILED` và giữ job `FAILED` nếu transition đó commit được. Export cũ,
+report revision và analysis result không bị sửa khi một lần export mới thất bại.
+Provider inventory, orphan reconciliation, retention và restore drill được kiểm ở
+P18/P20; local in-memory double không thay thế provider/network evidence.
 
 ---
 

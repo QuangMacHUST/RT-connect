@@ -763,14 +763,16 @@ Local source đã có model/API/migration `20260909_0018`, frontend client, orga
 | Transaction/invariant | Save revision chỉ một lần trên expected revision; export failure không mutate result; giữ file gốc export để byte reproducibility. |
 | Output bàn giao | Builder/viewer/history/compare/renderer; visual export fixtures. |
 | Success oracle | TC-P09-S01 đến TC-P09-S04 trong plan |
-| Error/recovery oracle | TC-P09-E01 đến TC-P09-E06 trong plan |
+| Error/recovery oracle | TC-P09-E01 đến TC-P09-E08 trong plan |
 | Exit | Tùy chỉnh đầy đủ, old revision reproducibility, tiếng Việt/bảng dài, concurrent edit và render retry pass. |
 
 **Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer cần recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
 
-**Failure contract:** REPORT_REVISION_CONFLICT; REPORT_SOURCE_UNAVAILABLE; REPORT_CONTENT_INVALID; REPORT_RENDER_FAILED; EXPORT_FORMAT_UNSUPPORTED; DOWNLOAD_LINK_EXPIRED. Đây là taxonomy target; mapping sang error codes thực tế phải được ghi trong contract test trước khi triển khai.
+**Failure contract:** REPORT_REVISION_CONFLICT; REPORT_SOURCE_UNAVAILABLE; REPORT_CONTENT_INVALID; REPORT_RENDER_FAILED; EXPORT_FORMAT_UNSUPPORTED; DOWNLOAD_LINK_EXPIRED; REPORT_STORAGE_UNAVAILABLE; EXPORT_IDEMPOTENCY_CONFLICT; REPORT_EXPORT_PERSISTENCE_FAILED. Đây là taxonomy target; mapping sang error codes thực tế phải được ghi trong contract test trước khi triển khai.
 
 **P9 implementation contract hiện tại:** `ReportRevision.source_snapshot` là nguồn dữ liệu của revision, không phải live query khi mở lại. Khi tạo revision mới từ `QA_CASE`, backend đọc case hiện tại trong đúng organization rồi ghi snapshot mới; revision cũ không đổi. Block có stable ID, type, label, sort order, visibility, config và source binding; user có thể ẩn hoặc xóa warning/provenance khỏi layout theo quyết định sản phẩm, nhưng hệ thống vẫn giữ content hash, source snapshot, actor và timestamps ở lineage. Nội dung JSON tree bị giới hạn depth/size, số phải finite, block ID/order phải duy nhất; script, `javascript:` và payload nguy hiểm bị từ chối. Renderer hiện hỗ trợ JSON, CSV, PDF và PNG; output được hash, lưu object storage và trả signed URL. PDF fallback nếu không có font Unicode phù hợp phải ghi `warning_snapshot`, không được giả vờ rằng bản render tiếng Việt hoàn hảo. Cùng organization + idempotency key + fingerprint phải trả export cũ; cùng key khác request phải trả conflict.
+
+**P9 export persistence addendum (2026-09-10):** Export được xử lý theo thứ tự `claim job → commit trạng thái QUEUED → render immutable revision snapshot → ghi object bằng exact object key → cập nhật status/sha256/byte_size/media_type/warnings → commit metadata`. Nếu bước commit metadata cuối thất bại, API phải rollback phần cập nhật job, gọi `delete_object` đúng key vừa ghi và trả `REPORT_EXPORT_PERSISTENCE_FAILED` HTTP 503; không trả `COMPLETED`, không trả signed URL và retry cùng idempotency key phải tiếp tục được. Nếu compensation delete thất bại, API vẫn trả cùng code 503 nhưng message phải nêu rõ `reconciliation`; object inventory/repair job là trách nhiệm P18/P20. Không xóa theo filename/prefix và không xóa export đã có của một job khác. `REPORT_STORAGE_UNAVAILABLE` chỉ dùng cho lỗi ghi object/bucket trước khi object được coi là durable; `EXPORT_IDEMPOTENCY_CONFLICT` giữ nguyên khi cùng key trỏ tới request fingerprint khác.
 
 <a id="spec-p10"></a>
 
@@ -1502,7 +1504,7 @@ Mỗi phase kế thừa B01–B12 ở mục 2 và phải có các lớp kiểm t
 | P6 | `TC-P06-S01..S04`, `E01..E07` | D, A, DB, UI, R, P | Byte/hash round-trip, object/DB reconcile, type/role/UID/geometry và signed link. |
 | P7 | `TC-P07-S01..S04`, `E01..E06` | D, A, DB, UI, R, P | Known-answer, rule boundary, N/A reason, immutable rerun và projection uniqueness. |
 | P8 | `TC-P08-S01..S05`, `E01..E10` | D, A, DB, UI, R, V, P | Gamma oracle, coverage/denominator/censoring, DICOM 2D/3D, lease/fencing/crash/dead-letter. |
-| P9 | `TC-P09-S01..S04`, `E01..E06` | D, A, DB, UI, R, V, P | Full block customization, snapshot, 4 format, Unicode/long report, render/storage retry. |
+| P9 | `TC-P09-S01..S04`, `E01..E08` | D, A, DB, UI, R, V, P | Full block customization, snapshot, 4 format, Unicode/long report, render/storage retry và export object/metadata compensation. |
 | P10 | `TC-P10-S01..S08`, `E01..E12` | D, A, DB, UI, R, V, P | Compatibility/timezone/aggregate equality, baseline/event, rebuild, source drill-down/export. |
 | P11 | `TC-P11-S01..S09`, `E01..E16` | D, A, DB, UI, R, P | Immutable version/source, clone deep-copy, active consumer, stale conflict và scope. |
 | P12 | `TC-P12-S01..S09`, `E01..E12` | D, A, DB, UI, R, P | Independent namespace, revision/history/clone/archive, capability và no-QA linkage. |

@@ -1531,7 +1531,30 @@ def create_report_export(
     job.warning_snapshot = [
         {"code": "REPORT_RENDER_WARNING", "message": warning} for warning in warnings
     ]
-    session.commit()
+    try:
+        session.commit()
+    except Exception as exc:
+        # The export object was written before its durable job metadata.  A
+        # failed metadata commit must not leave an object that looks complete
+        # but cannot be reached from the database.  Roll back the job update,
+        # compensate the exact object key, and expose a reconciliation signal
+        # if compensation itself is unavailable.
+        session.rollback()
+        try:
+            storage.delete_object(object_key)
+        except ObjectStorageError as cleanup_exc:
+            raise DomainError(
+                "REPORT_EXPORT_PERSISTENCE_FAILED",
+                "Report export metadata could not be committed and storage cleanup "
+                "requires reconciliation.",
+                503,
+            ) from cleanup_exc
+        raise DomainError(
+            "REPORT_EXPORT_PERSISTENCE_FAILED",
+            "Report export metadata could not be committed; the temporary object "
+            "was removed. Retry the export.",
+            503,
+        ) from exc
     session.refresh(job)
     response.status_code = status.HTTP_201_CREATED if is_new else status.HTTP_200_OK
     return _export_response(

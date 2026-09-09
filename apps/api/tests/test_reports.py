@@ -3,10 +3,16 @@ from __future__ import annotations
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
 from rt_connect_api.api.reports import _storage as report_storage
-from rt_connect_api.services.object_storage import InMemoryObjectStorage
+from rt_connect_api.services.object_storage import InMemoryObjectStorage, ObjectStorageError
 from test_workspace import _workspace_client
+
+
+class _CleanupFailingStorage(InMemoryObjectStorage):
+    def delete_object(self, key: str) -> None:
+        raise ObjectStorageError("synthetic cleanup failure")
 
 
 def _qa_case(client: TestClient, organization_id: str) -> str:
@@ -240,3 +246,74 @@ def test_report_exports_are_deterministic_idempotent_and_downloadable() -> None:
         )
         assert different_payload.status_code == 409, different_payload.text
         assert different_payload.json()["code"] == "EXPORT_IDEMPOTENCY_CONFLICT"
+
+
+def test_report_export_metadata_failure_compensates_rendered_object(
+    monkeypatch,
+) -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[report_storage] = lambda: storage
+        report = client.post(
+            f"/api/v1/organizations/{organization.id}/reports",
+            json={"source_type": "BIOLOGICAL", "title": "Retryable export"},
+        )
+        assert report.status_code == 201, report.text
+        report_key = report.json()["report_key"]
+        revision_id = report.json()["id"]
+        original_commit = Session.commit
+        commit_count = 0
+
+        def fail_once(session: Session) -> None:
+            nonlocal commit_count
+            commit_count += 1
+            if commit_count == 2:
+                raise RuntimeError("synthetic final metadata commit failure")
+            original_commit(session)
+
+        monkeypatch.setattr(Session, "commit", fail_once)
+        failed = client.post(
+            f"/api/v1/reports/{report_key}/revisions/{revision_id}/exports",
+            json={"export_format": "JSON", "idempotency_key": "p9-compensate-001"},
+        )
+        assert failed.status_code == 503, failed.text
+        assert failed.json()["code"] == "REPORT_EXPORT_PERSISTENCE_FAILED"
+        assert storage.objects == {}
+
+        retried = client.post(
+            f"/api/v1/reports/{report_key}/revisions/{revision_id}/exports",
+            json={"export_format": "JSON", "idempotency_key": "p9-compensate-001"},
+        )
+        assert retried.status_code == 200, retried.text
+        assert retried.json()["status"] == "COMPLETED"
+        assert len(storage.objects) == 1
+
+
+def test_report_export_cleanup_failure_returns_reconciliation_signal(monkeypatch) -> None:
+    storage = _CleanupFailingStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[report_storage] = lambda: storage
+        report = client.post(
+            f"/api/v1/organizations/{organization.id}/reports",
+            json={"source_type": "BIOLOGICAL", "title": "Reconciliation export"},
+        )
+        assert report.status_code == 201, report.text
+        original_commit = Session.commit
+        commit_count = 0
+
+        def fail_final_commit(session: Session) -> None:
+            nonlocal commit_count
+            commit_count += 1
+            if commit_count == 2:
+                raise RuntimeError("synthetic final metadata commit failure")
+            original_commit(session)
+
+        monkeypatch.setattr(Session, "commit", fail_final_commit)
+        failed = client.post(
+            f"/api/v1/reports/{report.json()['report_key']}/revisions/"
+            f"{report.json()['id']}/exports",
+            json={"export_format": "JSON", "idempotency_key": "p9-reconcile-001"},
+        )
+        assert failed.status_code == 503, failed.text
+        assert failed.json()["code"] == "REPORT_EXPORT_PERSISTENCE_FAILED"
+        assert len(storage.objects) == 1

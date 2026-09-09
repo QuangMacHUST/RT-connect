@@ -226,7 +226,7 @@ Bảng này là bản đồ điều hành một trang. Các bảng `TC-Pxx-Syy` 
 | P6 | Case và object storage | Chọn type/role → upload → checksum/object commit → manifest → validation → download | `FILE_REQUIRED_OR_EMPTY`, `UPLOAD_TOO_LARGE`, `UPLOAD_INTERRUPTED`, `ARTIFACT_PERSISTENCE_FAILED`, `ARTIFACT_TYPE_MISMATCH`, `INPUT_METADATA_INVALID`, `DOWNLOAD_LINK_EXPIRED`; reconcile object/DB và retry có kiểm | Hash round-trip, DICOM UID/geometry/unit, valid/invalid/duplicate/type mismatch, signed download; artifact mồ côi hoặc validate giả chặn |
 | P7 | Protocol seed và case input | Chọn protocol version → draft metric → evaluate snapshot → result → rerun/compare/trend | `MEASUREMENT_REQUIRED`, `MEASUREMENT_INVALID`, `BASELINE_ZERO`, `REVISION_CONFLICT`, `DUPLICATE_OPERATION`, `PROTOCOL_NOT_AVAILABLE`; giữ draft, tạo rerun/version mới | Boundary known-answer, N/A reason, immutable result, projection uniqueness; PASS sai hoặc overwrite chặn |
 | P8 | Validated artifacts, Redis, worker và schema | Preflight profile → enqueue idempotent → lease/heartbeat → compute → durable result → ack → compare/retry | `RTDOSE_REQUIRED_OR_COMPARISON_REQUIRED`, `GAMMA_INPUT_INCOMPATIBLE`, `GAMMA_CONFIG_UNSUPPORTED`, `GAMMA_NO_EVALUATED_POINTS`, `GAMMA_LOCAL_ZERO_REFERENCE`, `GAMMA_DISPATCH_UNAVAILABLE`, `GAMMA_EXECUTION_INTERRUPTED`, `GAMMA_DICOM_UNSUPPORTED`, `GAMMA_RESOURCE_LIMIT`, `GAMMA_SOURCE_CHANGED`; outbox/reclaim/fencing/bounded retry | Independent oracle, 2D/3D, FULL_ROI/OVERLAP_ONLY, censoring, crash/ack/retry/dead-letter, resource benchmark, staging evidence; denominator/source/duplicate sai chặn |
-| P9 | P7/P8 contracts và schema `20260908_0009` | Chọn source/template → edit mọi block → snapshot revision → preview → export → reload/history/download | `REPORT_REVISION_CONFLICT`, `REPORT_SOURCE_UNAVAILABLE`, `REPORT_CONTENT_INVALID`, `REPORT_RENDER_FAILED`, `EXPORT_FORMAT_UNSUPPORTED`, `DOWNLOAD_LINK_EXPIRED`, cùng storage/idempotency conflict; giữ revision cũ, retry export | 4 format, UTF-8/PDF warning, hash/idempotency, browser storage download, visual review; source live làm đổi revision cũ chặn |
+| P9 | P7/P8 contracts và schema `20260908_0009` | Chọn source/template → edit mọi block → snapshot revision → preview → export → reload/history/download | `REPORT_REVISION_CONFLICT`, `REPORT_SOURCE_UNAVAILABLE`, `REPORT_CONTENT_INVALID`, `REPORT_RENDER_FAILED`, `EXPORT_FORMAT_UNSUPPORTED`, `DOWNLOAD_LINK_EXPIRED`, `REPORT_STORAGE_UNAVAILABLE`, `EXPORT_IDEMPOTENCY_CONFLICT`, `REPORT_EXPORT_PERSISTENCE_FAILED`; giữ revision cũ, compensation/reconciliation và retry export | 4 format, UTF-8/PDF warning, hash/idempotency, browser storage download, visual review, object/metadata failure injection; source live làm đổi revision cũ chặn |
 | P10 | P7 results và P9 report source | Chọn machine/metric/time → compatible series → baseline/markers → drill-down/export | `TREND_SERIES_INCOMPATIBLE`, `DATE_RANGE_INVALID`, `TREND_EMPTY`, `TREND_BASELINE_INVALID`, `TREND_DUPLICATE_SOURCE`, `TREND_SOURCE_ARCHIVED`; tách series và rebuild projection | Raw/aggregate equality, timezone, extrema, maintenance marker, source link; trộn unit/machine hoặc mất raw chặn |
 | P11 | P7 protocol use và P9 source; migration `20260908_0011` | Resolve org → search/detail → new/clone → validate-only → save DRAFT → activate → consumer snapshot → compare/archive | `REQUEST_VALIDATION_FAILED`, `PROTOCOL_APPLICABILITY_INVALID`, `PROTOCOL_RULE_INVALID`, `PROTOCOL_VERSION_CONFLICT`, `REFERENCE_REQUIRED`, `PROTOCOL_VERSION_IMMUTABLE`, `PROTOCOL_NOT_AVAILABLE`, `PROTOCOL_CAPABILITY_MISMATCH`, `PROTOCOL_NOT_FOUND`, `PROTOCOL_PERSISTENCE_FAILED`, `MUTATION_RESULT_UNKNOWN`; giữ draft và query trước retry | Version/rule/reference lineage, active-only consumer, old-result snapshot, no cross-org leak; rule mơ hồ, update ngược hoặc partial transaction chặn |
 | P12 | Auth/org và report shell | Mở Biological Hub → chọn tool → nhập scenario độc lập → save revision → history/clone/export | `SCENARIO_NOT_FOUND`, `BIOLOGICAL_CONTEXT_INVALID`, `SCENARIO_REVISION_CONFLICT`, `MODEL_VERSION_UNAVAILABLE`, `MODULE_UNAVAILABLE`; giữ scenario, nêu capability rõ | Không cần QA case/patient; scoped history, independent report; P13/P14/P15 available và P16 planned đúng capability; automatic QA linkage hoặc route giả chặn |
@@ -877,7 +877,7 @@ Các dòng trên là evidence implementation, không thay cho `P08-VERIFY` và `
 - [x] P09-W01 — Block schema + revision optimistic save; source_binding theo stable ID, không label. `LOCAL_VERIFIED`.
 - [x] P09-W02 — Snapshot source/result/template/assets khi save; old revision không đọc live query. `LOCAL_VERIFIED`.
 - [x] P09-W03 — Renderer font/assets pinned, sandbox rich text/URL và deterministic render options. JSON/CSV/PDF/PNG renderer đã có; font/visual fixture staging còn mở.
-- [x] P09-W04 — Export jobs idempotent theo revision/options; checksum, retention và retry độc lập analysis. Durable export + idempotency đã có; retry/retention workload còn mở.
+- [x] P09-W04 — Export jobs idempotent theo revision/options; checksum, retention và retry độc lập analysis. Durable export + idempotency + local object/metadata compensation đã có; provider retention/reconciliation, retry workload và visual export còn mở.
 - [ ] P09-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P09-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
 
@@ -902,10 +902,12 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 | TC-P09-E04 | Renderer timeout/OOM | REPORT_RENDER_FAILED | Export failed có retry; không thay analysis hoặc bản export trước. |
 | TC-P09-E05 | Định dạng không hỗ trợ/chart lỗi | EXPORT_FORMAT_UNSUPPORTED | Báo đúng block/format; không trả file trống là success. |
 | TC-P09-E06 | Download hết hạn | DOWNLOAD_LINK_EXPIRED | Cấp link mới cho cùng revision sau kiểm scope. |
+| TC-P09-E07 | Object đã ghi nhưng commit metadata `ExportJob` thất bại | REPORT_EXPORT_PERSISTENCE_FAILED | Rollback job update, xóa đúng object key, trả HTTP 503 và cho retry cùng idempotency key; không trả COMPLETED/signed URL. |
+| TC-P09-E08 | Commit metadata thất bại và cleanup object cũng thất bại | REPORT_EXPORT_PERSISTENCE_FAILED + reconciliation | Trả HTTP 503 với signal reconciliation; giữ job chưa hoàn tất, ghi diagnostic an toàn, không tự xóa theo prefix và không báo export thành công. |
 
 ### Bất biến và điều kiện đóng P9
 
-- **Dữ liệu phải giữ/transaction:** Save revision chỉ một lần trên expected revision; export failure không mutate result; giữ file gốc export để byte reproducibility.
+- **Dữ liệu phải giữ/transaction:** Save revision chỉ một lần trên expected revision; export failure không mutate result; giữ file gốc export để byte reproducibility; nếu commit metadata sau object write thất bại thì rollback + exact-key compensation, nếu cleanup thất bại phải phát signal reconciliation.
 - **Bàn giao:** Builder/viewer/history/compare/renderer; visual export fixtures.
 - **Exit gate:** Tùy chỉnh đầy đủ, old revision reproducibility, tiếng Việt/bảng dài, concurrent edit và render retry pass.
 - **Kiểm tra chéo:** C03–C09 về scope, retry, đồng thời, mất mạng, session và version phải có evidence hoặc lý do không áp dụng; thêm C10–C16 theo module.
@@ -2245,7 +2247,7 @@ Mỗi FR có testcase cụ thể dưới đây; Cxx là ma trận chung §3, Gxx
 | FR-P08-04 | SPEC-P08 | TC-P08-S01, TC-P08-S03, C13, G01, G02, G03, G04, G05, G06, G07, G08, G09, G10 |
 | FR-P09-01 | SPEC-P09 | TC-P09-S01, TC-P09-E03, C10 |
 | FR-P09-02 | SPEC-P09 | TC-P09-S02, TC-P09-E01, C09 |
-| FR-P09-03 | SPEC-P09 | TC-P09-S03, TC-P09-E04, TC-P09-E05, TC-P09-E06 |
+| FR-P09-03 | SPEC-P09 | TC-P09-S03, TC-P09-E04, TC-P09-E05, TC-P09-E06, TC-P09-E07, TC-P09-E08 |
 | FR-P09-04 | SPEC-P09 | TC-P09-S04, TC-P09-E02, C13 |
 | FR-P10-01 | SPEC-P10 | TC-P10-S01, TC-P10-S05, TC-P10-S08, TC-P10-E01, TC-P10-E02, TC-P10-E03, TC-P10-E07 |
 | FR-P10-02 | SPEC-P10 | TC-P10-S02, TC-P10-S06, TC-P10-E04, TC-P10-E08, TC-P10-E09 |
