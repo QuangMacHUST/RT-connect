@@ -1,0 +1,24 @@
+{
+  "evidence_id": "p4-local-peer-membership-20260910",
+  "verification_level": "LOCAL_API_CONTRACT",
+  "synthetic_only": true,
+  "date": "2026-09-10",
+  "command": "apps/api/.venv/Scripts/python.exe -m pytest -q tests/test_organization.py",
+  "result": {
+    "passed": true,
+    "tests_passed": 12,
+    "tests_failed": 0
+  },
+  "assertions": [
+    "An invited verified identity accepts a one-time invitation.",
+    "The invited identity resolves the same organization context through session bootstrap.",
+    "The invited identity can read the organization site and machine surface.",
+    "The invited identity can update machine metadata.",
+    "The invited identity can list members and toggle another membership active/inactive.",
+    "No doctor/engineer action role or approval branch is used in the test."
+  ],
+  "limitations": [
+    "This is a local synthetic identity test, not a Supabase two-account browser test.",
+    "It does not verify Railway PostgreSQL rows, invitation token hash, audit persistence, concurrency, or staging delivery."
+  ]
+}

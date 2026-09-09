@@ -366,3 +366,73 @@ def test_invitation_does_not_create_a_second_active_organization_context() -> No
             assert memberships[0].organization_id == organization.id
         finally:
             session_generator.close()
+
+
+def test_invited_peer_identity_has_the_same_organization_actions() -> None:
+    """The membership boundary is shared; it is not an action-role boundary."""
+
+    with _workspace_client() as (client, organization):
+        invitation_response = client.post(
+            f"/api/v1/organizations/{organization.id}/invitations",
+            json={"email": "peer.engineer@example.invalid"},
+        )
+        assert invitation_response.status_code == 201, invitation_response.text
+        invitation = invitation_response.json()
+
+        peer = AuthenticatedIdentity(
+            subject="synthetic-peer-engineer-subject",
+            email="peer.engineer@example.invalid",
+            claims={"sub": "synthetic-peer-engineer-subject"},
+        )
+        client.app.dependency_overrides[require_identity] = lambda: peer
+
+        accepted = client.post(
+            "/api/v1/organizations/invitations/accept",
+            json={"token": invitation["token"]},
+        )
+        assert accepted.status_code == 200, accepted.text
+        peer_membership_id = accepted.json()["id"]
+
+        bootstrap = client.get("/api/v1/session/bootstrap")
+        assert bootstrap.status_code == 200, bootstrap.text
+        assert bootstrap.json()["organization"]["id"] == str(organization.id)
+
+        sites = client.get(f"/api/v1/organizations/{organization.id}/sites")
+        assert sites.status_code == 200, sites.text
+        site_id = sites.json()["items"][0]["id"]
+        machines = client.get(
+            f"/api/v1/organizations/{organization.id}/sites/{site_id}/machines"
+        )
+        assert machines.status_code == 200, machines.text
+        machine = machines.json()["items"][0]
+
+        updated_machine = client.patch(
+            f"/api/v1/organizations/{organization.id}/sites/{site_id}/machines/{machine['id']}",
+            json={"display_name": "Peer-updated Synthetic Linac"},
+        )
+        assert updated_machine.status_code == 200, updated_machine.text
+        assert updated_machine.json()["display_name"] == "Peer-updated Synthetic Linac"
+
+        members = client.get(
+            f"/api/v1/organizations/{organization.id}/members",
+            params={"include_inactive": True},
+        )
+        assert members.status_code == 200, members.text
+        assert members.json()["total"] == 2
+        original_member = next(
+            item for item in members.json()["items"] if item["id"] != peer_membership_id
+        )
+
+        deactivated = client.patch(
+            f"/api/v1/organizations/{organization.id}/members/{original_member['id']}",
+            json={"is_active": False},
+        )
+        assert deactivated.status_code == 200, deactivated.text
+        assert deactivated.json()["is_active"] is False
+
+        reactivated = client.patch(
+            f"/api/v1/organizations/{organization.id}/members/{original_member['id']}",
+            json={"is_active": True},
+        )
+        assert reactivated.status_code == 200, reactivated.text
+        assert reactivated.json()["is_active"] is True
