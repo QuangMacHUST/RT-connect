@@ -1,15 +1,18 @@
 from uuid import uuid4
 
-import pytest
-
 from rt_connect_api.core.config import Settings
-from rt_connect_api.services.redis_queue import RedisGammaQueue, RedisQueueError, get_gamma_queue
+from rt_connect_api.services.redis_queue import (
+    InvalidGammaQueueMessage,
+    RedisGammaQueue,
+    get_gamma_queue,
+)
 
 
 class FakeRedis:
     def __init__(self) -> None:
         self.dispatch_seen = False
         self.acknowledged: list[str] = []
+        self.xadd_calls: list[tuple[str, dict[str, str]]] = []
 
     def ping(self) -> bool:
         return True
@@ -23,7 +26,8 @@ class FakeRedis:
         self.dispatch_seen = True
         return True
 
-    def xadd(self, *_: object, **__: object) -> str:
+    def xadd(self, stream: str, fields: dict[str, str], **_: object) -> str:
+        self.xadd_calls.append((stream, fields))
         return "1-0"
 
     def xautoclaim(self, *_: object, **__: object) -> list[object]:
@@ -96,11 +100,45 @@ def test_redis_queue_enqueue_claim_ack_and_metrics() -> None:
     assert dead_letter_id == "1-0"
 
 
-def test_redis_queue_rejects_invalid_message() -> None:
-    with pytest.raises(RedisQueueError):
-        RedisGammaQueue._parse_entries(
-            [("1-0", {"run_id": "not-a-uuid", "organization_id": str(ORGANIZATION_ID)})]
-        )
+def test_redis_queue_classifies_invalid_message_for_quarantine() -> None:
+    message = RedisGammaQueue._parse_entries(
+        [
+            (
+                "1-0",
+                {
+                    "run_id": "not-a-uuid",
+                    "organization_id": str(ORGANIZATION_ID),
+                    "attempt": "0",
+                    "secret_value": "must-not-be-copied",
+                },
+            )
+        ]
+    )
+    assert isinstance(message, InvalidGammaQueueMessage)
+    assert message.error_code == "GAMMA_QUEUE_MESSAGE_INVALID"
+    assert message.reason == "identity_or_attempt_invalid"
+    assert "secret_value" in message.payload_keys
+
+
+def test_redis_queue_dead_letter_keeps_malformed_payload_values_out_of_quarantine() -> None:
+    queue, client = _queue()
+    message = InvalidGammaQueueMessage(
+        message_id="2-0",
+        reason="identity_or_attempt_invalid",
+        payload_keys=("attempt", "run_id", "secret_value"),
+    )
+
+    assert queue.dead_letter(message, message.error_code) == "1-0"
+    stream, fields = client.xadd_calls[-1]
+    assert stream == "test-stream:dead-letter"
+    assert fields == {
+        "job_type": "GAMMA",
+        "source_message_id": "2-0",
+        "error_code": "GAMMA_QUEUE_MESSAGE_INVALID",
+        "diagnostic": "identity_or_attempt_invalid",
+        "payload_keys": "attempt,run_id,secret_value",
+    }
+    assert "must-not-be-copied" not in str(fields)
 
 
 def test_get_gamma_queue_keeps_db_fallback_when_unconfigured() -> None:

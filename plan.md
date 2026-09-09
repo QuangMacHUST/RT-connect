@@ -1,9 +1,9 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
-- Phiên bản: **4.11**, ngày 2026-09-10.
+- Phiên bản: **4.12**, ngày 2026-09-10.
 - Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.22.
-- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.20.
-- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.19.
+- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.21.
+- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.20.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
 - Phạm vi lần cập nhật này: giữ toàn bộ contract v4.10, bổ sung bằng chứng P8 browser staging cho cặp RTDOSE + measurement 3D và oracle Gamma độc lập 6/6 case; đồng thời ghi rõ fixture RTDOSE đã tồn tại trong case staging nên không upload bản sao. Các thay đổi trước về process-RSS/resource-policy/API-responsiveness P17-W06, migration P4 `20260909_0018`, `20260908_0017` là migration riêng của P17, các contract member/invitation và route `/invite` vẫn là authority. Tiếp tục chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20. Các slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local được giữ nguyên theo progress log. Case staging P17 hiện có 2 RTDOSE, 1 RTSTRUCT và 1 CT hợp lệ; authenticated browser đã chạy DVH saved-run/replay/refresh, CT overlay/no-overlap smoke, export-content probe và Gamma 3D với RTDOSE reference. Nội dung JSON/CSV đã parse/hash và khớp snapshot; targeted PostgreSQL row/checksum/scope probe và object-storage byte re-hash đã PASS trong API container staging; việc trình duyệt đổi đuôi file vẫn là một observation riêng. Candidate public được kiểm exact-SHA `85ecb0ebb025220a79cc82977049d2e16340efb0` với evidence `docs/evidence/p19-staging-public-smoke-20260910-85ecb0e.json`; API, worker và web cùng source/schema. Không coi source-parity là PASS nếu chỉ một service được Railway deploy. Các gate P8 crash/ack/bounded retry/resource-large-input, P17 binding/report/fault/volume/browser export finalization/release và P18–P20 vẫn mở. P17 local resource gate `LOCAL_RESOURCE_GATE_PASS` dưới policy `1 CPU/768 MiB` không thay worker/service capacity Railway hoặc staging fault evidence. **Delta local queue:** `docker-compose.yml` hiện có service `worker` tách khỏi API; verifier disposable `scripts/verify-local-gamma-queue.py` đã chạy thành công happy path, duplicate/replay guard, bounded storage retry 3 attempts, dead-letter và zero pending Redis message. Đây là local support evidence, không thay staging fault/resource/release gate. Không suy diễn từ test local, workload Docker local hoặc một lần Railway báo Online.
@@ -785,7 +785,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 
 - [ ] P08-W01 — Đóng gap BR-007; explicit workflow profile, unit/frame/transform contracts và supported capabilities. `STAGING_SMOKE`: browser case trên `ec50990` cho thấy profile `PSQA_GAMMA`, RTDOSE reference + measurement 3D và `PREFLIGHT VALID`; geometry/scale negative còn mở.
 - [ ] P08-W02 — Khóa thuật toán search/interpolation/global/local/threshold theo specification §5; thêm oracle độc lập. `LOCAL_VERIFIED`: `scripts/verify-p8-independent-gamma-oracle.py` đối chiếu 6 case GRID/BILINEAR, 2D/3D, GLOBAL/LOCAL, RELATIVE/ABSOLUTE, OVERLAP_ONLY và max-gamma censor; promotion/convergence trên staging còn mở.
-- [ ] P08-W03 — Bổ sung atomic lease/fencing, attempt history, outbox/reconciliation và giới hạn tài nguyên/retry. `LOCAL_COMPOSE_VERIFIED`: lease/attempt/outbox, terminal replay guard, bounded storage retry 3 attempts, dead-letter và zero pending Redis message đã được chạy bằng `scripts/verify-local-gamma-queue.py` trên Compose có worker riêng; staging crash/ack, bounded retry/dead-letter và resource/failure injection còn mở.
+- [ ] P08-W03 — Bổ sung atomic lease/fencing, attempt history, outbox/reconciliation và giới hạn tài nguyên/retry. `LOCAL_COMPOSE_VERIFIED`: lease/attempt/outbox, terminal replay guard, bounded storage retry 3 attempts, dead-letter và zero pending Redis message đã được chạy bằng `scripts/verify-local-gamma-queue.py` trên Compose có worker riêng. Redis message malformed hiện được phân loại thành `GAMMA_QUEUE_MESSAGE_INVALID`, quarantine bằng dead-letter diagnostic bounded rồi mới ACK; payload values không được sao chép vào quarantine. Staging crash/ack, bounded retry/dead-letter và resource/failure injection còn mở.
 - [ ] P08-W04 — Hoàn thiện Gamma UI configuration/unsupported states, maps/profiles; E2E RTDOSE/3D và workload lớn. `STAGING_SMOKE`: run `df38e7d5…` hoàn tất `8/8 PASS`; large workload và fault matrix còn mở.
 - [ ] P08-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P08-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
@@ -816,6 +816,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 | TC-P08-E08 | Dose scale/UID/codec unsupported | GAMMA_DICOM_UNSUPPORTED | Mã cụ thể; input còn nguyên, cho chọn adapter/cấu hình khác. |
 | TC-P08-E09 | Vượt resource limit | GAMMA_RESOURCE_LIMIT | Từ chối preflight hoặc terminate có error; không treo API. |
 | TC-P08-E10 | Checksum khác snapshot | GAMMA_SOURCE_CHANGED | Dừng attempt; không commit result từ input khác. |
+| TC-P08-E11 | Redis Stream entry thiếu UUID/attempt, sai payload hoặc sai job type | GAMMA_QUEUE_MESSAGE_INVALID | Worker tạo quarantine record giới hạn message id/reason/key summary, ACK sau khi dead-letter thành công; không retry vô hạn và không lưu payload value tùy ý. Nếu dead-letter/ACK lỗi, giữ message pending để reconciliation xử lý lại. |
 
 ### Checkpoint thực thi P8 ngày 2026-09-08
 
@@ -840,6 +841,7 @@ Các dòng trên là evidence implementation, không thay cho `P08-VERIFY` và `
 - `docker-compose.yml` hiện khởi chạy API, web, PostgreSQL, Redis, MinIO và một `worker` riêng cùng bộ cấu hình Gamma. Điều này là điều kiện tối thiểu để local Compose không bị nhầm là chỉ có API nhận job.
 - `scripts/verify-local-gamma-queue.py` dùng SQLite tạm, Redis stream riêng và bucket MinIO riêng; không đọc hoặc ghi dữ liệu local hiện có. Kết quả `docs/evidence/p8-local-redis-worker-smoke-20260910.json` đạt `passed=true` với các assertion: job tốt `COMPLETED/PASS`, 4/4 điểm được tính, duplicate dispatch bị deduplicate, replay sau terminal state không tạo attempt thứ hai, lỗi storage được retry đúng 3 attempt, run terminal `FAILED`, dead-letter có source/run/attempt, và `pending_count=0` sau ACK.
 - Các tài nguyên disposable được dọn trong `finally`; evidence chỉ ghi metadata tổng hợp, hash fixture và trạng thái, không ghi credential hay payload bệnh nhân. Đây là `LOCAL_COMPOSE_REDIS_WORKER`, không phải staging fault injection, Railway capacity, provider restore hoặc clinical release evidence.
+- Test queue cũng bao phủ malformed-message quarantine: parser trả về `GAMMA_QUEUE_MESSAGE_INVALID`, dead-letter chỉ giữ reason và tối đa 20 payload key, không copy giá trị payload; worker chỉ ACK sau khi quarantine thành công. Terminal `FAILED` redelivery cũng thử dead-letter lại trước ACK, tránh mất quarantine nếu lần ACK trước đó bị lỗi.
 - **Gate còn mở:** staging phải chạy failure injection có kiểm soát cho crash sau durable commit trước ACK, reclaim/lease, retry/dead-letter và large-input/resource budget; sau đó mới đối chiếu oracle promotion/convergence và release manifest.
 
 ### Bất biến và điều kiện đóng P8
@@ -2175,10 +2177,10 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 **Runtime addendum cùng ngày:** sau source-parity recovery, candidate `b0263c932c740d4f36f19867241d5c1e07014765` đạt **15/15 checks PASS** trên public staging với schema `20260909_0019`; evidence `docs/evidence/p19-staging-public-smoke-20260909-b0263c9.json`. Browser DVH/report evidence vẫn dùng đúng case synthetic đã upload trước đó; không upload lại RTDOSE/RTSTRUCT/CT. Payload JSON/CSV export parse/hash khớp saved snapshot, còn việc browser đổi `.crdownload` thành filename cuối vẫn `UNVERIFIED` và tiếp tục là gate mở. Evidence browser: `docs/evidence/p17-staging-dvh-ct-browser-20260909.json`.
 
-### 7.3. Revision hiện hành v4.11
+### 7.3. Revision hiện hành v4.12
 
-Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.20,
-`technical-specification.md` v1.19 và `plan.md` v4.11. Revision v4.11 giữ status/readiness
+Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.21,
+`technical-specification.md` v1.20 và `plan.md` v4.12. Revision v4.12 giữ status/readiness
 surface P20 và bổ sung P4 member/invitation execution contract: workflow `/invite`, token
 hash-at-rest, expiry/revoke/replay, pending uniqueness, active-context và last-active invariant;
 đồng thời pin semantics process peak RSS, policy CPU/RAM và API responsiveness cho P17 Docker workload
@@ -2193,10 +2195,11 @@ API/web source-label parity và platform status dashboard đã được xác min
 `a5c554cb15a37a9dc4ae3e4ff65ab003c20c4763`, nhưng browser/Auth/DB/audit/scope/timeout evidence
 cho invitation vẫn mở. Worker parity, alert thật, backup/restore, owner handoff và production
 evidence vẫn là gate mở. Các đoạn nêu candidate/schema cũ ở phần lịch sử chỉ là evidence của
-lần chạy trước, không phải release hiện tại. Bổ sung trong v4.11: candidate `85ecb0e` có browser
+lần chạy trước, không phải release hiện tại. Bổ sung trong v4.12: candidate `85ecb0e` có browser
 P8 RTDOSE + measurement 3D smoke `8/8 PASS` và local independent Gamma oracle `6/6 PASS`; hai
 evidence này không đóng crash/ack, retry/dead-letter, resource/large-input, commissioning hoặc
-production promotion.
+production promotion. P8-W03 local queue contract cũng đã ghi nhận quarantine malformed Redis
+message và terminal-failure redelivery; staging failure-injection vẫn là gate riêng.
 
 ## 8. Ma trận FR → contract → testcase ban đầu
 

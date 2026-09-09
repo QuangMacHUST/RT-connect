@@ -2,8 +2,8 @@
 
 ## Documentation and implementation rebaseline — 2026-09-09
 
-Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.20,
-`technical-specification.md` v1.19 và `plan.md` v4.11. Dòng rebaseline lịch sử ngay dưới đây
+Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.21,
+`technical-specification.md` v1.20 và `plan.md` v4.12. Dòng rebaseline lịch sử ngay dưới đây
 giữ nguyên để truy vết; không dùng các phiên bản cũ đó làm authority.
 
 `business-analysis.md` v0.21, `specification.md` v1.15, `technical-specification.md` v1.13 và `plan.md` v4.0 bổ sung feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate, state contract, testcase, workflow, error/recovery contract và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.
@@ -32,6 +32,13 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 - `docker-compose.yml` đã được bổ sung service `worker` riêng với cùng runtime contract với API: PostgreSQL, Redis, MinIO, Gamma lease/retry/resource settings. `docker compose config --quiet` PASS và container worker khởi động với `queue_backend=redis_stream`.
 - `scripts/verify-local-gamma-queue.py` đã chạy thành công với `docs/evidence/p8-local-redis-worker-smoke-20260910.json`, `verification_level=LOCAL_COMPOSE_REDIS_WORKER`, `synthetic_only=true`, `passed=true`. Verifier tạo tài nguyên tạm và kiểm tra job `COMPLETED/PASS` 4/4, duplicate dispatch, terminal replay guard, storage failure bounded ở 3 attempts, dead-letter cho attempt cuối và Redis `pending_count=0` sau ACK.
 - Kết quả này nâng P08-W03 từ `LOCAL_SLICE_ONLY` lên `LOCAL_COMPOSE_VERIFIED`, nhưng không nâng P8 thành `DONE-v2`: staging crash/ACK injection, staging resource/large-input, oracle promotion/convergence và release-manifest evidence vẫn mở.
+- Reliability hardening tiếp theo đã được kiểm tra local: Redis entry malformed không còn làm parser ném lỗi rồi giữ poison message pending vô hạn. Worker phân loại `GAMMA_QUEUE_MESSAGE_INVALID`, ghi dead-letter diagnostic bounded (message id/reason/key summary, không copy payload value) và chỉ ACK sau khi quarantine thành công; terminal `FAILED` redelivery cũng thử dead-letter lại trước ACK. Đây là local contract/test evidence, chưa phải staging fault-injection evidence.
+
+## P17 staging CT preview recheck — 2026-09-10 / candidate `85ecb0e`
+
+- Trên case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`, fixture synthetic đã có sẵn: 2 RTDOSE VALID, 1 RTSTRUCT VALID, 1 CT VALID và ROI `#1 · P17_TARGET`. Không upload lại RTDOSE và không tạo run mới.
+- Chọn CT `p17-ct-v1-smoke.dcm` rồi chạy `Validate & preview`: UI trả `Validation DVH hợp lệ; chưa tạo bản ghi lưu trữ.` CT slice `#1` hiển thị `LPS LINKED`, `NEAREST_NEIGHBOR_IN_PATIENT_LPS`, ROI overlay đúng và crosshair tại dose grid center; saved run `8000ff9b…` giữ nguyên. Evidence: `docs/evidence/p17-staging-browser-recheck-20260910-85ecb0e.json`.
+- Đây là authenticated browser read-only evidence trên candidate `85ecb0ebb025220a79cc82977049d2e16340efb0`; nó chỉ đóng thêm positive CT-preview/validate recheck, không đóng P17 binding P11/P16, failure/resource/volume, export filename hay release gate.
 
 ## P4 membership/invitation local slice — 2026-09-09
 
@@ -123,9 +130,9 @@ Các trạng thái/evidence bên dưới giữ nguyên phạm vi lịch sử tr�
 | Source | Version | Status |
 | :--- | :--- | :--- |
 | `business-analysis.md` | 0.22 | Business source; detailed feature behavior/workflow/error/recovery/state matrix, business feature cards, P4 membership/invitation addendum, phase handoff and P0–P20 contracts |
-| `specification.md` | 1.20 | Behavior/data/error/state/numeric contracts; process-RSS/resource-policy/API-responsiveness evidence for P17 Docker workload, operation/evidence record, change-impact/release manifest, P20 status/readiness surface and exact P4/P10/P11/P12/P13/P14/P15/P16/P17 contracts including binding/report/CT preview |
-| `technical-specification.md` | 1.19 | Architecture reference; Railway source-identifiable release metadata, bounded-context implementation addenda, P4 invitation schema/API, P17 process-RSS workload verifier/resource policy/API responsiveness, P20 status/readiness dashboard boundary, CT preview adapter, P18 local backup/restore support and cross-document execution references |
-| `plan.md` | 4.10 | Phase/workflow/S-E/C/B tests, DoR/DoD, dependency graph, execution gates, execution ledger, full coverage matrix, P4 invitation/member work packages, P17 local resource-gate checkpoint with process RSS/API responsiveness, P20 status/readiness dashboard package, binding/report/CT work packages, backup/restore support, local browser matrix, source-parity recovery rule, operations runbooks and staging gates |
+| `specification.md` | 1.21 | Behavior/data/error/state/numeric contracts; process-RSS/resource-policy/API-responsiveness evidence for P17 Docker workload, operation/evidence record, change-impact/release manifest, P20 status/readiness surface and exact P4/P10/P11/P12/P13/P14/P15/P16/P17 contracts including binding/report/CT preview and malformed Redis quarantine-before-ACK |
+| `technical-specification.md` | 1.20 | Architecture reference; Railway source-identifiable release metadata, bounded-context implementation addenda, P4 invitation schema/API, P8 Redis malformed-message quarantine, P17 process-RSS workload verifier/resource policy/API responsiveness, P20 status/readiness dashboard boundary, CT preview adapter, P18 local backup/restore support and cross-document execution references |
+| `plan.md` | 4.12 | Phase/workflow/S-E/C/B tests, DoR/DoD, dependency graph, execution gates, execution ledger, full coverage matrix, P4 invitation/member work packages, P8 local worker/quarantine evidence, P17 local resource-gate checkpoint with process RSS/API responsiveness, P20 status/readiness dashboard package, binding/report/CT work packages, backup/restore support, local browser matrix, source-parity recovery rule, operations runbooks and staging gates |
 
 ## Phase status
 

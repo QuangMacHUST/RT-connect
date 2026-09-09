@@ -33,6 +33,22 @@ class GammaQueueMessage:
     attempt: int
 
 
+@dataclass(frozen=True)
+class InvalidGammaQueueMessage:
+    """A Redis entry that can be quarantined without trusting its payload."""
+
+    message_id: str
+    reason: str
+    payload_keys: tuple[str, ...] = ()
+
+    @property
+    def error_code(self) -> str:
+        return "GAMMA_QUEUE_MESSAGE_INVALID"
+
+
+GammaQueueClaim = GammaQueueMessage | InvalidGammaQueueMessage
+
+
 class RedisGammaQueue:
     """Redis Streams implementation used by the API and the Gamma worker."""
 
@@ -101,7 +117,7 @@ class RedisGammaQueue:
         except RedisError as exc:
             raise RedisQueueError("Gamma job could not be published to Redis") from exc
 
-    def claim(self, block_ms: int = 2_000) -> GammaQueueMessage | None:
+    def claim(self, block_ms: int = 2_000) -> GammaQueueClaim | None:
         """Claim a stale pending message first, then wait for a new message."""
 
         self.ensure_ready()
@@ -141,7 +157,7 @@ class RedisGammaQueue:
         except RedisError as exc:
             raise RedisQueueError("Gamma job acknowledgement failed") from exc
 
-    def dead_letter(self, message: GammaQueueMessage, error_code: str) -> str:
+    def dead_letter(self, message: GammaQueueClaim, error_code: str) -> str:
         """Persist a terminal dispatch failure before its source is acknowledged.
 
         The database remains authoritative for the run/result.  This stream is
@@ -150,18 +166,31 @@ class RedisGammaQueue:
         failed job into the normal consumer group.
         """
 
+        fields: dict[str, str] = {
+            "job_type": "GAMMA",
+            "source_message_id": message.message_id,
+            "error_code": error_code,
+        }
+        if isinstance(message, GammaQueueMessage):
+            fields.update(
+                {
+                    "run_id": str(message.run_id),
+                    "organization_id": str(message.organization_id),
+                    "attempt": str(message.attempt),
+                }
+            )
+        else:
+            fields.update(
+                {
+                    "diagnostic": message.reason,
+                    "payload_keys": ",".join(message.payload_keys),
+                }
+            )
         try:
             return str(
                 self.client.xadd(
                     self.dead_letter_stream_name,
-                    {
-                        "job_type": "GAMMA",
-                        "source_message_id": message.message_id,
-                        "run_id": str(message.run_id),
-                        "organization_id": str(message.organization_id),
-                        "attempt": str(message.attempt),
-                        "error_code": error_code,
-                    },
+                    fields,
                     maxlen=self.maxlen,
                     approximate=True,
                 )
@@ -193,21 +222,28 @@ class RedisGammaQueue:
             raise RedisQueueError("Gamma queue metrics are unavailable") from exc
 
     @staticmethod
-    def _parse_entries(entries: object) -> GammaQueueMessage | None:
+    def _parse_entries(entries: object) -> GammaQueueClaim | None:
         if not isinstance(entries, list | tuple) or not entries:
             return None
         entry = entries[0]
         if not isinstance(entry, list | tuple) or len(entry) != 2:
             return None
         message_id, payload = entry
-        if not isinstance(message_id, str) or not isinstance(payload, dict):
+        if not isinstance(message_id, str):
             return None
+        if not isinstance(payload, dict):
+            return InvalidGammaQueueMessage(message_id, "payload_not_mapping")
+        payload_keys = tuple(sorted(str(key) for key in payload)[:20])
+        if payload.get("job_type") not in (None, "GAMMA"):
+            return InvalidGammaQueueMessage(message_id, "job_type_invalid", payload_keys)
         try:
             run_id = UUID(str(payload["run_id"]))
             organization_id = UUID(str(payload["organization_id"]))
             attempt = int(str(payload["attempt"]))
-        except (KeyError, TypeError, ValueError) as exc:
-            raise RedisQueueError("Redis Gamma queue contains an invalid message") from exc
+            if attempt < 0:
+                raise ValueError("attempt_negative")
+        except (KeyError, TypeError, ValueError):
+            return InvalidGammaQueueMessage(message_id, "identity_or_attempt_invalid", payload_keys)
         return GammaQueueMessage(
             message_id=message_id,
             run_id=run_id,

@@ -1,10 +1,10 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.20**; ngày 2026-09-10.
+- File: specification.md; version **1.21**; ngày 2026-09-10.
 - Nguồn nghiệp vụ: business-analysis.md v0.22.
-- Kế hoạch triển khai: plan.md v4.11, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.19.
-- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.20 giữ toàn bộ contract v1.19, bổ sung semantics cho đo peak RSS của tiến trình benchmark bằng `resource.getrusage`, policy CPU/RAM local cố định, API responsiveness dưới workload và phân biệt rõ process RSS với sampled container memory/cgroup peak tích lũy; đồng thời giữ contract thực thi P4 cho membership/invitation: thành viên ngang quyền, token hash-at-rest, email-bound, one-time, expiry, active-context invariant và các endpoint cụ thể.
+- Kế hoạch triển khai: plan.md v4.12, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.20.
+- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.21 giữ toàn bộ contract v1.20, bổ sung contract thực thi cho malformed Redis dispatch: phân loại `GAMMA_QUEUE_MESSAGE_INVALID`, quarantine diagnostic bounded, không sao chép payload value và chỉ ACK sau khi dead-letter thành công; terminal `FAILED` redelivery phải thử lại dead-letter trước ACK. Các semantics peak RSS/resource/API responsiveness P17 và contract P4 membership/invitation vẫn được giữ nguyên.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
 
@@ -278,7 +278,7 @@ COMPLETED chỉ là hoàn thành tính toán; quality có thể PASS/WARNING/FAI
 
 Baseline target: heartbeat mỗi 10 s, lease 120 s, supervisor scan 30 s; worker thực thi deadline theo workload. Retry tự động tối đa 3 attempts (gồm attempt đầu), backoff có jitter. P8 implementation hiện đã đưa lease, visibility, retry limit, backoff, execution deadline và voxel/candidate budget vào `Settings`; các giá trị phải được ghi trong release manifest và chỉ thay sau benchmark/failure-injection. Lease hết hạn không được do chính thread tính không gửi được heartbeat.
 
-Slice implementation P8 hiện đã có `GammaRunAttempt`, `GammaDispatchOutbox`, lease token/expiry và conditional update để fencing stale worker. Local tests đã bao phủ exhaustive node oracle, bounded recoverable-storage retry, lease expiry/reclaim, candidate/voxel preflight và replay sau commit trước ack; staging crash/ack injection, dead-letter/resource benchmark vẫn là exit gate P8.
+Slice implementation P8 hiện đã có `GammaRunAttempt`, `GammaDispatchOutbox`, lease token/expiry và conditional update để fencing stale worker. Local tests đã bao phủ exhaustive node oracle, bounded recoverable-storage retry, lease expiry/reclaim, candidate/voxel preflight, replay sau commit trước ack và malformed-message quarantine; staging crash/ack injection, dead-letter/resource benchmark vẫn là exit gate P8.
 
 DB là source of truth. Redis transport failure/replay không mất accepted run. Reconciliation định kỳ đối soát outbox/queued/stale attempts; không lấy global resource UUID để đọc tenant artifact. Metrics stream toàn cục chỉ dành operational view phù hợp; user workspace counters phải organization-scoped, không cho suy dữ liệu tổ chức khác.
 
@@ -1682,7 +1682,7 @@ Không được gọi operation là `COMPLETED` nếu chưa có output bền v�
 4. **Trend:** chỉ aggregate các source có compatibility signature; điểm thiếu không được biến thành zero; drill-down phải quay về source run/case đúng organization.
 5. **Public deployment:** web/API/worker/schema/Auth/queue phải được kiểm theo cùng release manifest; PostgreSQL, Redis, worker và object bucket private theo topology; URL public không chứng minh workflow đã pass.
 
-## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.19
+## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.21
 
 Phần này biến các contract theo phase thành cấu trúc có thể dùng khi viết code, test và bàn giao. Nó không thay thế các field/algorithm contract ở mục 2–8; nó quy định cách chứng minh rằng các contract đó đã được thực thi trên một candidate cụ thể.
 

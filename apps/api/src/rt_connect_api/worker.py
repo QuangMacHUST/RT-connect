@@ -27,6 +27,7 @@ from rt_connect_api.db.session import get_engine
 from rt_connect_api.services.object_storage import ObjectStorage, get_storage
 from rt_connect_api.services.redis_queue import (
     GammaQueueMessage,
+    InvalidGammaQueueMessage,
     RedisGammaQueue,
     RedisQueueError,
     get_gamma_queue,
@@ -287,6 +288,20 @@ def main() -> None:
                 if run_once:
                     return
                 continue
+            if isinstance(message, InvalidGammaQueueMessage):
+                try:
+                    queue.dead_letter(message, message.error_code)
+                    queue.acknowledge(message.message_id)
+                    logger.error(
+                        "Quarantined malformed Gamma queue message id=%s reason=%s",
+                        message.message_id,
+                        message.reason,
+                    )
+                except Exception:
+                    logger.exception("Malformed Gamma queue message quarantine failed")
+                if run_once:
+                    return
+                continue
             try:
                 with factory(bind=engine) as session:
                     run = session.scalar(
@@ -300,7 +315,7 @@ def main() -> None:
                         if run is not None
                         else 0.0
                     )
-                    processed = process_gamma_queue_message(
+                    process_gamma_queue_message(
                         session,
                         storage,
                         message,
@@ -309,7 +324,7 @@ def main() -> None:
                         execution_deadline_seconds=settings.gamma_execution_deadline_seconds,
                         retry_delay_seconds=retry_delay,
                     )
-                    if processed and run is not None and run.status == "FAILED":
+                    if run is not None and run.status == "FAILED":
                         raw_error = (
                             run.error_snapshot[0].get("code") if run.error_snapshot else None
                         )
