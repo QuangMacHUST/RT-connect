@@ -1,0 +1,27 @@
+{
+  "evidence_id": "P20-STAGING-PUBLIC-PARITY-20260911-06B818F",
+  "phase": "P20",
+  "work_package": "P20-W01",
+  "status": "STAGING_VERIFIED_SLICE",
+  "captured_at": "2026-09-11",
+  "environment": "staging",
+  "source_commit": "06b818fc6edc0ebe4353c1fd018c519ccfc6f25f",
+  "schema_revision": "20260909_0019",
+  "services": {
+    "api": {"service_id": "9b35bf0b-0419-4679-8af0-e639e5a84713", "deployment_id": "07f847c0-7e05-470a-a161-3758ca174302", "status": "SUCCESS"},
+    "web": {"service_id": "9f23331c-8d5e-45fb-9f11-5aa5e69f76f6", "deployment_id": "0bab32af-56cb-450d-9754-39c4f5b3847f", "status": "SUCCESS"},
+    "worker": {"service_id": "a1e0c389-e527-4d4c-995e-2a48f4795dda", "deployment_id": "a37687b6-b192-44ab-9a47-7acb5f919d85", "status": "SUCCESS"}
+  },
+  "public_verifier": {
+    "script": "scripts/verify-public-deployment.ps1",
+    "passed": true,
+    "failed_check_count": 0,
+    "check_count": 15,
+    "api_base_url": "https://gleaming-cooperation-staging.up.railway.app",
+    "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+    "checks": ["health", "readiness", "schema parity", "exact version SHA", "OpenAPI routes", "unauthenticated Auth boundary", "web index/bundle/source markers"]
+  },
+  "note": "The deployment was checked after the documentation evidence commit; application code and all three Railway services were aligned before this public verification.",
+  "not_verified": ["Authenticated queue failure/retry", "provider backup/restore", "rollback rehearsal", "alert delivery", "full P20 release gate"],
+  "redaction": {"contains_secrets": false, "contains_patient_data": false}
+}

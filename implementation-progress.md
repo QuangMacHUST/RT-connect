@@ -16,6 +16,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 - Local checks trên commit `8c8f9bdb5fb903ebec80e0a3832e743b974398ee`: lint, typecheck, production build và Vitest `8 files / 19 tests` đều PASS. Evidence: [p06-local-upload-queue-helper-20260911.json](docs/evidence/p06-local-upload-queue-helper-20260911.json).
 - Đây vẫn là local hardening slice; staging fault/retry có chủ ý, storage reconciliation, signed-download byte re-hash và full P06 S/E/C/release vẫn mở.
 
+## P20-W01 — final documentation/runtime parity checkpoint — staging verified slice — 2026-09-11 / `06b818f`
+
+- Sau khi ghi evidence, API `07f847c0-7e05-470a-a161-3758ca174302`, web `0bab32af-56cb-450d-9754-39c4f5b3847f` và worker `a37687b6-b192-44ab-9a47-7acb5f919d85` đều `SUCCESS` trên source SHA `06b818fc6edc0ebe4353c1fd018c519ccfc6f25f`.
+- Public verifier đạt `15/15`, `failed_check_count=0`, schema `20260909_0019`; health/readiness/version, OpenAPI/Auth boundary và web bundle source marker đều PASS. Evidence: [p20-staging-public-parity-20260911-06b818f.json](docs/evidence/p20-staging-public-parity-20260911-06b818f.json).
+- Mốc này thay thế checkpoint runtime `7ee71c8` về mặt current-candidate; không thay đổi kết luận rằng P06/P20 full fault, restore, rollback, alert và handoff vẫn mở.
+
 ## P06/P20 — authorized RTDOSE staging upload và current web parity — staging verified slice — 2026-09-11 / `0abba6e`
 
 - Theo xác nhận trực tiếp của người dùng, fixture tổng hợp `docs/fixtures/gamma-rtdose-v1-smoke.dcm` (898 bytes, SHA-256 `ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b`) đã được upload một lần vào case `ed7ddbe5-811a-4463-a270-b0386f64644d` (`P11 E2E Synthetic QA 20260910 B7C3`) trên staging với `REFERENCE/DICOM`.
