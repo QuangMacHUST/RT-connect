@@ -22,6 +22,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 - Chạy read-only trên staging bằng origin thuần sau sửa: `passed=True`, `failed_check_count=0`; không ghi secret hoặc giá trị database URL vào output.
 - Quy tắc vận hành: `VITE_API_BASE_URL` phải là public API HTTPS origin kèm `/api/v1`, còn `CORS_ALLOWED_ORIGINS` chỉ là web origin; hai giá trị không được hoán đổi.
 
+## P08 — Gamma local regression và independent oracle — local verified — 2026-09-11 / `edf3daa`
+
+- Recheck hiện hành đạt `20 tests passed` cho Gamma API/engine/DICOM/worker; independent oracle đạt `6/6` case, planning verifier đạt `21 phase / 0 lỗi`.
+- Phạm vi đã kiểm lại gồm 2D/3D, RTDOSE GY + `DoseGridScaling`, coverage, max-gamma censoring, PSQA preflight/resource limit, lease/fencing, terminal replay, bounded retry/ACK recovery và oracle GRID/BILINEAR + GLOBAL/LOCAL + RELATIVE/ABSOLUTE.
+- Evidence: [p08-local-regression-20260911-edf3daa.json](docs/evidence/p08-local-regression-20260911-edf3daa.json). P08 vẫn mở các gate staging fault/ACK/reclaim/dead-letter, large-input/resource budget, geometry/scale negative matrix, oracle promotion và release handoff.
+
 ## P06 — declared type và upload queue — local verified slice — 2026-09-11
 
 - Artifact validator giữ declared `artifact_type` là hợp đồng chính: payload JSON được khai báo DICOM không đi vào measurement validator và trả `ARTIFACT_TYPE_MISMATCH`; test duplicate cùng checksum/type vẫn tái dùng artifact và thêm role thiếu theo organization scope.

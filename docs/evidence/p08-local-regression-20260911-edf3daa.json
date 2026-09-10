@@ -1,0 +1,47 @@
+{
+  "evidence_id": "P08-LOCAL-REGRESSION-20260911-EDF3DAA",
+  "phase": "P08",
+  "work_packages": ["P08-W01", "P08-W02", "P08-W03", "P08-W04"],
+  "status": "LOCAL_REGRESSION_VERIFIED",
+  "captured_at": "2026-09-11",
+  "source_commit": "edf3daa",
+  "checks": [
+    {
+      "id": "gamma-focused-suite",
+      "command": ".\\apps\\api\\.venv\\Scripts\\python.exe -m pytest apps\\api\\tests\\test_gamma.py apps\\api\\tests\\test_gamma_dicom.py apps\\api\\tests\\test_gamma_worker.py apps\\api\\tests\\test_gamma_independent_oracle.py -q",
+      "exit_code": 0,
+      "observed": "20 tests passed"
+    },
+    {
+      "id": "independent-gamma-oracle",
+      "command": ".\\apps\\api\\.venv\\Scripts\\python.exe scripts\\verify-p8-independent-gamma-oracle.py",
+      "exit_code": 0,
+      "observed": "passed=true; case_count=6; failed_case_count=0"
+    },
+    {
+      "id": "planning-contract",
+      "command": ".\\apps\\api\\.venv\\Scripts\\python.exe scripts\\verify-planning-contract.py --root .",
+      "exit_code": 0,
+      "observed": "21 phases; passed=true; failed_check_count=0"
+    }
+  ],
+  "covered": [
+    "2D/3D deterministic Gamma golden result",
+    "RTDOSE DICOM GY and DoseGridScaling adapter",
+    "FULL_ROI and OVERLAP_ONLY coverage semantics",
+    "max-gamma censoring and percentile warning",
+    "PSQA input/profile preflight and resource limit",
+    "lease/fencing, terminal replay, bounded retry and ACK recovery",
+    "independent GRID/BILINEAR, GLOBAL/LOCAL, RELATIVE/ABSOLUTE oracle cases"
+  ],
+  "remaining_gates": [
+    "Authenticated staging geometry/scale negative matrix on the current candidate",
+    "Crash after durable result before ACK, reclaim and dead-letter injection on staging",
+    "Large-input/resource budget and worker capacity evidence on staging",
+    "Independent oracle promotion/convergence and P08 release handoff"
+  ],
+  "redaction": {
+    "contains_secrets": false,
+    "contains_patient_data": false
+  }
+}
