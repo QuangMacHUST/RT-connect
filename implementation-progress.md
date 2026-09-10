@@ -23,6 +23,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Sau khi push packet P10, API, web và worker staging đã được yêu cầu deploy cùng source SHA `6df4ed581be91f193fe1a07c0fc3ef23c18d70c0`. Public verifier kiểm tra candidate thực tế: `15/15 PASS`, `failed_check_count=0`, API version và web bundle cùng exact SHA, schema `20260909_0019`, `/health` `ok`, `/ready` `ready`, OpenAPI routes và unauthenticated organization boundary đều đúng.
 - Evidence: `docs/evidence/p19-staging-public-smoke-20260910-6df4ed5.json`. Đây chỉ là public contract/source-parity evidence cho staging; không đóng P19 vì authenticated remote E2E, private dependency, backup/restore, rollback, alert và production promotion vẫn chưa có bằng chứng.
 
+## P10 — staging negative/accessibility recheck — partial verified — 2026-09-10 / `a30e365`
+
+- Trên candidate `a30e365`, Trend workspace đã được đọc bằng accessibility tree: lifecycle tables/actions, filter controls, source links và error/empty/retry states đều có semantic text/controls đọc được.
+- Đã kiểm trực tiếp ba negative case bằng browser authenticated: effective interval sai bị chặn với `TREND_BASELINE_INVALID`; metric không tồn tại trả `TREND_EMPTY` với `0` point/series và không zero-fill; timezone sai trả `TREND_TIMEZONE_INVALID` cùng retry. Sau khi khôi phục filter, readback vẫn giữ `7` raw points, `4` series, `4` baselines và `1` active maintenance marker, không có mutation phát sinh từ negative test.
+- Evidence: `docs/evidence/p10-staging-negative-accessibility-20260910-a30e365.json`. Accessibility đạt partial; screenshot visual review, full S/E/C/large-series/effective-time/rebuild và release/production gates vẫn mở.
+
 ## P10 Trend — staging export, drill-down và negative recheck — 2026-09-10 / `6426ceb`
 
 - Candidate `6426ceb50665f1ceae01e011f2ee5bf6b8a16d65` đang có API/web cùng source SHA; API `/health`, `/ready`, `/version`, OpenAPI và web bundle đạt **15/15 public checks**, schema `20260909_0019`.

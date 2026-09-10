@@ -1,0 +1,57 @@
+{
+  "schema_version": "rt-connect.p10-staging-negative-accessibility.v1",
+  "captured_at_utc": "2026-09-10T08:31:10Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_NEGATIVE_AND_ACCESSIBILITY_PARTIAL",
+  "environment": "staging",
+  "candidate_source_sha": "a30e36548b0d1bbd38c4c3aa3d1c964e73158cb4",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "route": "/app/trend?release=a30e365",
+  "data_boundary": "Synthetic Trend records only; no patient, PACS or treatment dataset was used.",
+  "accessibility_observation": {
+    "result": "PASS_PARTIAL",
+    "observed": [
+      "Baseline and maintenance lifecycle headings, tables, rows and action buttons were exposed in the browser accessibility tree.",
+      "Filter controls exposed machine, metric, aggregate, timezone and context fields.",
+      "Trend source links exposed the originating QA case and run identifier.",
+      "Empty, error and success states were exposed as headings/text with actionable retry guidance."
+    ],
+    "visual_screenshot_review": "NOT_RUN"
+  },
+  "negative_cases": [
+    {
+      "test_id": "TC-P10-E09",
+      "action": "Set baseline effective_to before effective_from and submit create baseline.",
+      "observed": "Baseline effective_to must be after effective_from. (TREND_BASELINE_INVALID)",
+      "result": "REJECTED_WITHOUT_NEW_VERSION"
+    },
+    {
+      "test_id": "TC-P10-E03",
+      "action": "Set metric filter to metric_does_not_exist.",
+      "observed": "TREND_EMPTY: no compatible trend points match the selected filters.",
+      "result": "EMPTY_STATE_WITH_ZERO_POINTS_AND_ZERO_SERIES; NO_ZERO_FILL"
+    },
+    {
+      "test_id": "TC-P10-E07",
+      "action": "Set timezone filter to Not/A_Timezone.",
+      "observed": "The requested timezone is not available. (TREND_TIMEZONE_INVALID)",
+      "result": "ERROR_STATE_WITH_RETRY_AND_NO_CROSS_SCOPE_DATA"
+    }
+  ],
+  "post_test_readback": {
+    "result": "RESTORED",
+    "metric_filter": "",
+    "timezone": "Asia/Ho_Chi_Minh",
+    "raw_point_count": 7,
+    "compatible_series_count": 4,
+    "baseline_count": 4,
+    "active_maintenance_marker_count": 1,
+    "persisted_trend_mutation_from_negative_cases": false
+  },
+  "open_gates": [
+    "Visual screenshot review and complete accessibility checklist",
+    "Complete P10 S/E/C matrix, including large-series, effective-time selection and projection repair",
+    "Provider/resource fault evidence and release-manifest closure",
+    "Production and rollback evidence"
+  ],
+  "result": "STAGING_PARTIAL_PASS"
+}
