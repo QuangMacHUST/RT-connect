@@ -80,3 +80,7 @@ protocol revision/source/applicability/rule count from the persisted run snapsho
 and the normal workflow links to QA Protocol Library instead of seeding a
 synthetic protocol. Keep this marker aligned with the API service root so all
 three services are rebuilt from the same source commit.
+
+P11 staging parity rebuild marker (2026-09-10): the web is rebuilt together
+with the API and worker after the watched API marker changes; verify exact
+source SHA and the public bundle before reusing the staging candidate.

@@ -117,3 +117,8 @@ references; evaluation is fail-closed on definition mismatch while allowing the
 accepted ACTIVE snapshot to be evaluated after archive. Trend and report keep
 the pinned protocol lineage. Rebuild API, worker and web from the same commit
 before reusing a P11 staging candidate.
+
+P11 staging parity rebuild marker (2026-09-10): this watched-file marker keeps
+the API source SHA aligned with the web and worker after a root-document-only
+commit. The marker has no runtime behavior; all three services must still be
+rechecked for exact commit SHA, schema revision and successful deployment.
