@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+import zlib
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -7,12 +9,43 @@ from sqlalchemy.orm import Session
 
 from rt_connect_api.api.reports import _storage as report_storage
 from rt_connect_api.services.object_storage import InMemoryObjectStorage, ObjectStorageError
+from rt_connect_api.services.report_renderer import render_report
 from test_workspace import _workspace_client
 
 
 class _CleanupFailingStorage(InMemoryObjectStorage):
     def delete_object(self, key: str) -> None:
         raise ObjectStorageError("synthetic cleanup failure")
+
+
+def test_pdf_renderer_embeds_unicode_text_without_fallback_replacement() -> None:
+    snapshot = {
+        "title": "Báo cáo DVH staging",
+        "source_type": "DVH",
+        "revision_number": 1,
+        "content_sha256": "abc123",
+        "blocks": [
+            {
+                "label": "DVH và đánh giá giới hạn explicit",
+                "block_type": "DVH",
+                "is_visible": True,
+            }
+        ],
+    }
+
+    payload, media_type, extension, warnings = render_report(snapshot, "PDF")
+
+    assert payload.startswith(b"%PDF-1.4")
+    assert media_type == "application/pdf"
+    assert extension == "pdf"
+    assert warnings == []
+    assert b"/ToUnicode" in payload
+    assert b"/FontFile2" in payload
+    expected_text = "DVH và đánh giá giới hạn explicit".encode("utf-16-be").hex().upper().encode(
+        "ascii"
+    )
+    streams = re.findall(rb"stream\r?\n(.*?)\r?\nendstream", payload, flags=re.DOTALL)
+    assert any(expected_text in zlib.decompress(stream) for stream in streams)
 
 
 def _qa_case(client: TestClient, organization_id: str) -> str:

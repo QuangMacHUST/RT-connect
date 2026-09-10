@@ -1,7 +1,14 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
-`technical-specification.md` v1.23 và `plan.md` v4.19.
+`technical-specification.md` v1.24 và `plan.md` v4.19.
+
+## P9 — PDF Unicode renderer correction — local verified / staging revalidation required — 2026-09-10
+
+- Visual inspection of the previous staging PDF export found corrupted Vietnamese glyphs (`?`) even though the payload had a valid PDF header. This was treated as a release-blocking visual defect, not as a cosmetic warning.
+- The renderer is now `report-renderer-0.2`: it embeds the pinned `DejaVuSans.ttf` asset, emits a Type0/CIDFontType2 Unicode font with `Identity-H` encoding, `ToUnicode` mapping and deterministic CID-to-GID mapping. `fonttools==4.63.0` is pinned in both `pyproject.toml` and `requirements.lock`.
+- Local evidence: focused report suite `7 passed`, Ruff pass, strict mypy pass, wheel build pass, wheel inspection confirms `rt_connect_api/assets/DejaVuSans.ttf` is packaged, and Poppler visual inspection shows Vietnamese title/block text without fallback replacement.
+- This correction is not yet a staging release. The new commit must be deployed to API/web/worker with exact-SHA parity; Report Builder must regenerate PDF/PNG/JSON/CSV from the staging DVH report, and the new PDF must be rendered and visually inspected before P9 can advance beyond partial verification. Existing staging evidence remains historical and is not silently rewritten.
 
 ## P17/P19 — current staging DVH export content verification — partial verified — 2026-09-10 / `c11fca0`
 

@@ -3,7 +3,7 @@
 - Phiên bản: **4.19**, ngày 2026-09-10.
 - Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.24.
 - Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.24.
-- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.23.
+- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.24.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
 - Phạm vi lần cập nhật này: giữ toàn bộ contract v4.14, bổ sung P11 consumer snapshot đầy đủ (source/applicability/revision/lineage/rule reference/capability), fail-closed khi protocol/rule lệch snapshot, trend protocol-version lineage và loại bỏ seed synthetic khỏi workflow Machine QA thông thường; đồng thời giữ contract P7 explicit N/A, P10 query count-preflight/raw-aggregate budget/CSV bucket lineage, bằng chứng P8 browser staging và oracle Gamma độc lập. Fixture RTDOSE tổng hợp đã được người dùng cho phép và đã tồn tại hợp lệ trong case staging nên không upload bản sao; workflow Gamma authenticated mới chỉ reuse fixture đó để kiểm tra negative/positive path. Các thay đổi trước về process-RSS/resource-policy/API-responsiveness P17-W06, migration P4 `20260909_0019`, `20260908_0017` là migration riêng; các contract member/invitation và route `/invite` vẫn là authority. Tiếp tục chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20. Các gate staging P8/P9/P10/P11/P12–P20 chưa được tự nâng chỉ vì local test pass hoặc Railway báo Online.
@@ -907,7 +907,7 @@ Các dòng trên là evidence implementation, không thay cho `P08-VERIFY` và `
 
 - [x] P09-W01 — Block schema + revision optimistic save; source_binding theo stable ID, không label. `LOCAL_VERIFIED`.
 - [x] P09-W02 — Snapshot source/result/template/assets khi save; old revision không đọc live query. `LOCAL_VERIFIED`.
-- [x] P09-W03 — Renderer font/assets pinned, sandbox rich text/URL và deterministic render options. JSON/CSV/PDF/PNG renderer đã có; font/visual fixture staging còn mở.
+- [x] P09-W03 — Renderer font/assets pinned, sandbox rich text/URL và deterministic render options. JSON/CSV/PDF/PNG renderer đã có; `report-renderer-0.2` nhúng font Unicode pinned và local visual fixture đã pass, còn staging revalidation.
 - [x] P09-W04 — Export jobs idempotent theo revision/options; checksum, retention và retry độc lập analysis. Durable export + idempotency + local object/metadata compensation đã có; provider retention/reconciliation, retry workload và visual export còn mở.
 - [ ] P09-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P09-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
@@ -970,6 +970,13 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - API/web/worker staging đã được đồng bộ exact source SHA `bd4792505acea66113953f1d525e571cbe8ca155`; public verifier đạt `15/15 PASS`, schema `20260909_0019`. Deployment IDs được ghi trong evidence [p9-p19-staging-report-export-current-20260910-bd47925.json](docs/evidence/p9-p19-staging-report-export-current-20260910-bd47925.json).
 - Trên revision DVH đã tồn tại, JSON/CSV/PDF/PNG export đều tạo thành công và payload bytes được kiểm tra: JSON/CSV parse, PDF `%PDF`, PNG signature. JSON source/revision/content hash khớp provenance; không tạo mutation report mới.
 - Đây là `STAGING_AUTHENTICATED_EXPORT_CONTENT_VERIFIED`, không phải P9 `DONE-v2`: `.crdownload` final rename do CUA không quan sát được, visual human review, storage fault/retry, backup/restore, rollback và production promotion còn mở.
+
+### Checkpoint local P9 — Unicode PDF renderer correction — 2026-09-10
+
+- Visual review của PDF staging cũ phát hiện tiếng Việt bị thay bằng `?`. Đây là lỗi chất lượng output làm mở lại gate visual P9; không coi warning fallback là chấp nhận được.
+- `report_renderer.py` đã chuyển sang `report-renderer-0.2`, nhúng `DejaVuSans.ttf` trong package API và tạo PDF Unicode với Type0/CIDFontType2, `Identity-H`, `ToUnicode` và CID-to-GID map. `fonttools==4.63.0` đã được khóa trong metadata và lockfile.
+- Local gate: focused report `7 passed`, Ruff pass, strict mypy pass, wheel build pass; wheel chứa `rt_connect_api/assets/DejaVuSans.ttf`; PDF fixture có title/block tiếng Việt đã được render bằng Poppler và kiểm tra trực quan thành công.
+- Exit impact: candidate staging cũ vẫn giữ nguyên evidence lịch sử nhưng không còn đủ cho visual PDF gate. Cần commit/deploy exact SHA mới cho API/web/worker, tạo lại bốn export của report DVH staging, kiểm tra payload/hash/renderer `0.2`, render PDF staging bằng Poppler và ghi evidence mới. Nếu một bước fail thì giữ P9 mở và không promote release.
 
 <a id="phase-10"></a>
 

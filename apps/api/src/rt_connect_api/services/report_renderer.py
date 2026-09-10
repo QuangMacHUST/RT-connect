@@ -14,11 +14,16 @@ import json
 import struct
 import zlib
 from collections.abc import Mapping, Sequence
-from typing import Literal
+from pathlib import Path
+from typing import Any, Literal
 
-RENDERER_VERSION = "report-renderer-0.1"
+from fontTools.ttLib import TTFont  # type: ignore[import-untyped]
+
+RENDERER_VERSION = "report-renderer-0.2"
 ExportFormat = Literal["JSON", "CSV", "PDF", "PNG"]
 SUPPORTED_EXPORT_FORMATS: frozenset[str] = frozenset({"JSON", "CSV", "PDF", "PNG"})
+_PDF_FONT_PATH = Path(__file__).resolve().parent.parent / "assets" / "DejaVuSans.ttf"
+_PDF_FONT_NAME = "RTConnectDejaVuSans"
 
 
 class ReportRenderError(ValueError):
@@ -103,36 +108,64 @@ def _render_pdf(
             f"• {_string(block.get('label'), 'Unnamed')} "
             f"[{_string(block.get('block_type'), 'BLOCK')}]"
         )
-    warnings: list[str] = []
-    if any(any(ord(character) > 255 for character in line) for line in lines):
-        warnings.append("PDF fallback font cannot represent all Unicode characters.")
     payload = _pdf_document(lines)
-    return payload, "application/pdf", "pdf", warnings
+    return payload, "application/pdf", "pdf", []
 
 
 def _pdf_document(lines: Sequence[str]) -> bytes:
-    """Build a small valid PDF without executing templates or external tools."""
+    """Build a deterministic one-page PDF with an embedded Unicode TrueType font."""
 
+    normalized_lines = tuple(_normalize_pdf_line(line) for line in lines)
+    font_data, cmap, metrics = _load_pdf_font()
+    codepoints = sorted({ord(character) for line in normalized_lines for character in line})
     stream_lines = ["BT", "/F1 12 Tf", "50 760 Td"]
-    for index, line in enumerate(lines):
+    for index, line in enumerate(normalized_lines):
         if index:
             stream_lines.append("0 -18 Td")
-        safe = line.encode("latin-1", errors="replace").decode("latin-1")
-        escaped = safe.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
-        stream_lines.append(f"({escaped}) Tj")
+        stream_lines.append(f"<{line.encode('utf-16-be').hex().upper()}> Tj")
     stream_lines.append("ET")
-    content = "\n".join(stream_lines).encode("latin-1")
+    content = "\n".join(stream_lines).encode("ascii")
+
+    cid_to_gid = bytearray(65536 * 2)
+    width_entries: list[str] = []
+    for codepoint in codepoints:
+        glyph_name = cmap.get(codepoint, ".notdef")
+        glyph_id = metrics["glyph_ids"].get(glyph_name, 0)
+        struct.pack_into(">H", cid_to_gid, codepoint * 2, glyph_id)
+        advance_width = metrics["widths"].get(glyph_name, metrics["default_width"])
+        width_entries.append(
+            f"{codepoint} [{round(advance_width * 1000 / metrics['units_per_em'])}]"
+        )
+
+    descriptor_bbox = " ".join(str(value) for value in metrics["font_bbox"])
+    descriptor = (
+        f"<< /Type /FontDescriptor /FontName /{_PDF_FONT_NAME} /Flags 32 "
+        f"/FontBBox [{descriptor_bbox}] /ItalicAngle 0 "
+        f"/Ascent {metrics['ascent']} /Descent {metrics['descent']} "
+        f"/CapHeight {metrics['cap_height']} /StemV 80 /FontFile2 10 0 R >>"
+    ).encode("ascii")
+    cid_font = (
+        f"<< /Type /Font /Subtype /CIDFontType2 /BaseFont /{_PDF_FONT_NAME} "
+        f"/CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> "
+        f"/FontDescriptor 8 0 R /DW {metrics['default_width']} "
+        f"/W [{' '.join(width_entries)}] /CIDToGIDMap 9 0 R >>"
+    ).encode("ascii")
+    type0_font = (
+        f"<< /Type /Font /Subtype /Type0 /BaseFont /{_PDF_FONT_NAME} "
+        f"/Encoding /Identity-H /DescendantFonts [7 0 R] /ToUnicode 6 0 R >>"
+    ).encode("ascii")
     objects = [
         b"<< /Type /Catalog /Pages 2 0 R >>",
         b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
         b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
-        b"/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
-        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-        b"<< /Length "
-        + str(len(content)).encode("ascii")
-        + b" >>\nstream\n"
-        + content
-        + b"\nendstream",
+        b"/Resources << /ProcSet [/PDF /Text] /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+        type0_font,
+        _pdf_stream_object(content),
+        _pdf_stream_object(_pdf_to_unicode_cmap(codepoints)),
+        cid_font,
+        descriptor,
+        _pdf_stream_object(bytes(cid_to_gid)),
+        _pdf_stream_object(font_data, extra=f"/Length1 {len(font_data)}".encode("ascii")),
     ]
     document = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
     offsets = [0]
@@ -151,6 +184,83 @@ def _pdf_document(lines: Sequence[str]) -> bytes:
         f"startxref\n{xref_offset}\n%%EOF\n".encode("ascii")
     )
     return bytes(document)
+
+
+def _normalize_pdf_line(line: str) -> str:
+    """Keep text in the BMP, which is the CID range used by Identity-H here."""
+
+    return "".join(character if ord(character) <= 0xFFFF else "\ufffd" for character in line)
+
+
+def _load_pdf_font() -> tuple[bytes, dict[int, str], dict[str, Any]]:
+    if not _PDF_FONT_PATH.is_file():
+        raise ReportRenderError(f"PDF Unicode font is unavailable: {_PDF_FONT_PATH.name}")
+    font_data = _PDF_FONT_PATH.read_bytes()
+    font = TTFont(io.BytesIO(font_data), recalcBBoxes=False, recalcTimestamp=False)
+    try:
+        cmap = font.getBestCmap() or {}
+        head = font["head"]
+        hhea = font["hhea"]
+        os2 = font["OS/2"]
+        units_per_em = int(head.unitsPerEm)
+        scale = 1000 / units_per_em
+        widths = {name: int(value[0]) for name, value in font["hmtx"].metrics.items()}
+        glyph_ids = {name: int(font.getGlyphID(name)) for name in widths}
+        font_bbox = tuple(
+            round(value * scale) for value in (head.xMin, head.yMin, head.xMax, head.yMax)
+        )
+        ascent = round(max(int(hhea.ascent), int(os2.sTypoAscender)) * scale)
+        descent = round(min(int(hhea.descent), int(os2.sTypoDescender)) * scale)
+        cap_height = round(int(getattr(os2, "sCapHeight", os2.sTypoAscender)) * scale)
+        default_width = round(widths.get(".notdef", units_per_em) * scale)
+        metrics: dict[str, Any] = {
+            "units_per_em": units_per_em,
+            "widths": widths,
+            "glyph_ids": glyph_ids,
+            "default_width": default_width,
+            "font_bbox": font_bbox,
+            "ascent": ascent,
+            "descent": descent,
+            "cap_height": cap_height,
+        }
+        return font_data, cmap, metrics
+    finally:
+        font.close()
+
+
+def _pdf_stream_object(data: bytes, *, extra: bytes = b"") -> bytes:
+    compressed = zlib.compress(data, level=9)
+    prefix = b"<< " + extra + b" /Length " + str(len(compressed)).encode("ascii")
+    return prefix + b" /Filter /FlateDecode >>\nstream\n" + compressed + b"\nendstream"
+
+
+def _pdf_to_unicode_cmap(codepoints: Sequence[int]) -> bytes:
+    lines = [
+        "/CIDInit /ProcSet findresource begin",
+        "12 dict begin",
+        "begincmap",
+        "/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def",
+        "/CMapName /Adobe-Identity-UCS def",
+        "/CMapType 2 def",
+        "1 begincodespacerange",
+        "<0000><FFFF>",
+        "endcodespacerange",
+    ]
+    mappings = [f"<{codepoint:04X}> <{codepoint:04X}>" for codepoint in codepoints]
+    for start in range(0, len(mappings), 100):
+        chunk = mappings[start : start + 100]
+        lines.append(f"{len(chunk)} beginbfchar")
+        lines.extend(chunk)
+        lines.append("endbfchar")
+    lines.extend(
+        [
+            "endcmap",
+            "CMapName currentdict /CMap defineresource pop",
+            "end",
+            "end",
+        ]
+    )
+    return "\n".join(lines).encode("ascii")
 
 
 def _render_png(snapshot: Mapping[str, object]) -> bytes:
