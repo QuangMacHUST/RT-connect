@@ -1,0 +1,49 @@
+{
+  "schema_version": "rt-connect.p07-local-explicit-na.v1",
+  "captured_at_utc": "2026-09-10",
+  "environment": "local-testclient-and-frontend-build",
+  "source_commit_before_worktree_change": "c8b1b964f797f26c732755b2d2c19ed80d129838",
+  "working_tree_scope": [
+    "apps/api/src/rt_connect_api/api/machine_qa.py",
+    "apps/api/tests/test_machine_qa.py",
+    "apps/web/src/api/client.ts",
+    "apps/web/src/pages/MachineQAPage.tsx",
+    "apps/web/src/styles.css",
+    "docs/openapi.json",
+    "business-analysis.md",
+    "specification.md",
+    "technical-specification.md",
+    "plan.md",
+    "implementation-progress.md",
+    "scripts/verify-planning-contract.py"
+  ],
+  "data_boundary": "Synthetic QA cases only; no patient, PACS or treatment data.",
+  "contract": {
+    "explicit_na": {
+      "required_fields": ["is_not_applicable", "na_reason"],
+      "numeric_value_when_na": "rejected",
+      "blank_or_whitespace_reason": "rejected",
+      "reason_without_na_flag": "rejected",
+      "metric_status": "NA",
+      "actual": null,
+      "trend_point": "not_created"
+    },
+    "overall_status_precedence": ["FAIL", "REVIEW", "WARNING", "NA", "PASS"]
+  },
+  "checks": {
+    "backend_machine_qa_tests": "6 passed",
+    "frontend_lint": "passed",
+    "frontend_typecheck": "passed",
+    "frontend_vitest": "14 passed",
+    "frontend_build": "passed",
+    "openapi_regenerated": true,
+    "planning_contract_verifier": "passed; 21 phases; 0 failed checks",
+    "duplicate_staging_rtdose_upload": "not performed; matching RTDOSE was already VALID in the authorized staging case"
+  },
+  "evidence_level": "LOCAL_VERIFIED",
+  "limitations": [
+    "The new explicit-N/A code has not yet been verified on a newly deployed staging candidate.",
+    "This does not close P07 staging browser, full cross-phase matrix, or clinical-readiness gates.",
+    "The existing staging RTDOSE fixture remains unchanged; no patient/PACS/treatment linkage was created."
+  ]
+}

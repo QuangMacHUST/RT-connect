@@ -119,6 +119,9 @@ td code { color: #075e67; font-size: .78rem; }
 .machine-qa-run-meta code { color: #075e67; font-size: .7rem; }
 .machine-qa-table { min-width: 820px; }
 .machine-qa-table input { max-width: 150px; width: 100%; }
+.machine-qa-na-control { align-items: center; color: #334155; display: flex; gap: 6px; white-space: nowrap; }
+.machine-qa-na-control input { accent-color: #075e67; max-width: none; width: auto; }
+.machine-qa-na-control + input { margin-top: 6px; }
 .machine-qa-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .machine-status--fail { background: #fde3e3; border-color: #dd7777; color: #8c2020; }
 .machine-status--draft { background: #edf2f6; border-color: #b6c6d1; color: #526e80; }

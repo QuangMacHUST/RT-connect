@@ -1,10 +1,10 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.21**; ngày 2026-09-10.
-- Nguồn nghiệp vụ: business-analysis.md v0.22.
-- Kế hoạch triển khai: plan.md v4.12, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.20.
-- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.21 giữ toàn bộ contract v1.20, bổ sung contract thực thi cho malformed Redis dispatch: phân loại `GAMMA_QUEUE_MESSAGE_INVALID`, quarantine diagnostic bounded, không sao chép payload value và chỉ ACK sau khi dead-letter thành công; terminal `FAILED` redelivery phải thử lại dead-letter trước ACK. Các semantics peak RSS/resource/API responsiveness P17 và contract P4 membership/invitation vẫn được giữ nguyên.
+- File: specification.md; version **1.22**; ngày 2026-09-10.
+- Nguồn nghiệp vụ: business-analysis.md v0.23.
+- Kế hoạch triển khai: plan.md v4.13, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.21.
+- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.22 giữ toàn bộ contract v1.21, bổ sung contract Machine QA explicit N/A: `is_not_applicable`, `na_reason`, lỗi conflict/thiếu lý do, quality status `NA` không phải PASS và không tạo TrendPoint; đồng thời giữ contract malformed Redis dispatch, peak RSS/resource/API responsiveness P17 và P4 membership/invitation.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
 
@@ -723,12 +723,28 @@ Local source đã có model/API/migration `20260909_0018`, frontend client, orga
 | Transaction/invariant | Measurement revision được khóa tại evaluate; result + trend projection commit nhất quán hoặc reconciliation idempotent. |
 | Output bàn giao | Checklist/result/history/compare; known-answer rule tests; staging evidence. |
 | Success oracle | TC-P07-S01 đến TC-P07-S04 trong plan |
-| Error/recovery oracle | TC-P07-E01 đến TC-P07-E06 trong plan |
+| Error/recovery oracle | TC-P07-E01 đến TC-P07-E07 trong plan |
 | Exit | Boundary PASS/WARNING/FAIL/N-A, unit/baseline errors và rerun/projection uniqueness đều pass. |
 
 **Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer cần recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
 
-**Failure contract:** MEASUREMENT_REQUIRED; MEASUREMENT_INVALID; BASELINE_ZERO; REVISION_CONFLICT; DUPLICATE_OPERATION; PROTOCOL_NOT_AVAILABLE. Đây là taxonomy target; mapping sang error codes thực tế phải được ghi trong contract test trước khi triển khai.
+**Machine QA measurement contract:** `MeasurementInput` có `is_not_applicable` mặc định `false`
+và `na_reason` nullable tối đa 1.000 ký tự. Khi cờ N/A bật, `value` phải là `null` và reason
+phải khác rỗng sau trim; server lưu cả cờ và reason trong measurement JSON, result metric và
+protocol/rule snapshot. Khi evaluate, metric N/A có `actual=null`, `margin=null`, `status=NA`;
+metric không tạo `TrendPoint`. Một field có reason nhưng không bật cờ, hoặc có số và bật cờ,
+không được chuẩn hóa im lặng.
+
+Aggregation tổng được xác định độc lập với thứ tự rule: `FAIL > REVIEW > WARNING > NA > PASS`.
+Vì vậy một lượt có PASS + N/A hoàn tất kỹ thuật nhưng `overall_status=NA`; FAIL không bị
+ghi đè bởi REVIEW hoặc N/A. Metric optional bị bỏ trống là “not recorded”, không tự chuyển thành
+N/A; metric bắt buộc bị bỏ trống vẫn tạo lỗi evaluate.
+
+**Failure contract:** `MEASUREMENT_REQUIRED`; `MEASUREMENT_INVALID`; `MACHINE_QA_NA_REASON_REQUIRED`;
+`MACHINE_QA_NA_VALUE_CONFLICT`; `MACHINE_QA_NA_REASON_INVALID`; `BASELINE_ZERO`;
+`REVISION_CONFLICT`; `DUPLICATE_OPERATION`; `PROTOCOL_NOT_AVAILABLE`. Đây là taxonomy target;
+mapping HTTP, field details và recovery phải được giữ trong contract test, không dùng chuỗi OR làm
+một code API.
 
 <a id="spec-p08"></a>
 
@@ -1445,7 +1461,7 @@ Các phase contract ở mục 8 đã nêu trường chi tiết. Bảng dưới �
 | P4 | Organization/site/machine/membership commands | Scoped hierarchy, stable IDs, membership/invitation history | `MACHINE_CODE_CONFLICT`, `PARENT_NOT_AVAILABLE`, `REVISION_CONFLICT`, `INVITATION_INVALID`, `LAST_MEMBERSHIP_CONFLICT`, `MUTATION_RESULT_UNKNOWN`; đối soát idempotency | Cross-org isolation, concurrent edit, archive/restore và ngang quyền pass |
 | P5 | Folder/case create, tree move, search/filter/pagination | Atomic tree/case records và stable deep-links | `FOLDER_CYCLE`, `FOLDER_NAME_CONFLICT`, `PARENT_NOT_AVAILABLE`, `CASE_HIERARCHY_INVALID`, `PAGE_OUT_OF_RANGE`, `RESTORE_CONFLICT`; rollback mutation | Nested tree, archived lineage và combined filter pass |
 | P6 | Multipart file, declared type/role, manifest, validation command | Artifact metadata + object + checksum + findings | `FILE_REQUIRED_OR_EMPTY`, `UPLOAD_TOO_LARGE`, `UPLOAD_INTERRUPTED`, `ARTIFACT_PERSISTENCE_FAILED`, `ARTIFACT_TYPE_MISMATCH`, `INPUT_METADATA_INVALID`, `DOWNLOAD_LINK_EXPIRED`; reconcile/retry | Byte/hash round-trip, DICOM relationship, duplicate role và invalid profile pass |
-| P7 | Protocol version, metric draft, evaluate/rerun | Immutable measurement snapshot/result/trend projection | `MEASUREMENT_REQUIRED`, `MEASUREMENT_INVALID`, `BASELINE_ZERO`, `REVISION_CONFLICT`, `DUPLICATE_OPERATION`, `PROTOCOL_NOT_AVAILABLE`; tạo rerun/version | Known answer/boundary, N/A reason, result immutability và projection unique pass |
+| P7 | Protocol version, metric draft, evaluate/rerun | Immutable measurement snapshot/result/trend projection | `MEASUREMENT_REQUIRED`, `MEASUREMENT_INVALID`, `MACHINE_QA_NA_REASON_REQUIRED`, `MACHINE_QA_NA_VALUE_CONFLICT`, `MACHINE_QA_NA_REASON_INVALID`, `BASELINE_ZERO`, `REVISION_CONFLICT`, `DUPLICATE_OPERATION`, `PROTOCOL_NOT_AVAILABLE`; tạo rerun/version | Known answer/boundary, explicit N/A reason/status, aggregation, result immutability và projection unique pass |
 | P8 | Gamma profile, artifact roles, config, enqueue/outbox | Gamma result/plots/counts/attempt diagnostics | `RTDOSE_REQUIRED_OR_COMPARISON_REQUIRED`, `GAMMA_INPUT_INCOMPATIBLE`, `GAMMA_CONFIG_UNSUPPORTED`, `GAMMA_NO_EVALUATED_POINTS`, `GAMMA_LOCAL_ZERO_REFERENCE`, `GAMMA_DISPATCH_UNAVAILABLE`, `GAMMA_EXECUTION_INTERRUPTED`, `GAMMA_DICOM_UNSUPPORTED`, `GAMMA_RESOURCE_LIMIT`, `GAMMA_SOURCE_CHANGED`; bounded retry/dead-letter | Numeric oracle, coverage/denominator, DICOM 3D, lease fencing, crash/ack, large workload và schema staging pass |
 | P9 | Template/report/revision/block/export command | Immutable report revision, deterministic output, object/hash/signed download | `REPORT_REVISION_CONFLICT`, `REPORT_SOURCE_UNAVAILABLE`, `REPORT_CONTENT_INVALID`, `REPORT_RENDER_FAILED`, `EXPORT_FORMAT_UNSUPPORTED`, `DOWNLOAD_LINK_EXPIRED`, `REPORT_STORAGE_UNAVAILABLE`, `EXPORT_IDEMPOTENCY_CONFLICT`; retry safe | Schema `20260908_0009`, full customization, snapshot immutability, 4-format export, visual and staging evidence |
 | P10 | Trend query, compatibility signature, baseline/event | Raw/aggregate trend + source drill-down | `TREND_SERIES_INCOMPATIBLE`, `DATE_RANGE_INVALID`, `TREND_EMPTY`, `TREND_BASELINE_INVALID`, `TREND_DUPLICATE_SOURCE`, `TREND_SOURCE_ARCHIVED`; rebuild projection | Unit/timezone/filter/export equality and large query pass |
@@ -1502,7 +1518,7 @@ Mỗi phase kế thừa B01–B12 ở mục 2 và phải có các lớp kiểm t
 | P4 | `TC-P04-S01..S04`, `E01..E06` | D, A, DB, UI, R, P | Stable IDs, equal-member scope, invite/lifecycle, concurrent edit và unknown mutation. |
 | P5 | `TC-P05-S01..S04`, `E01..E06` | D, A, DB, UI, R, P | Cây không cycle, move atomic, combined filter/page và restore history. |
 | P6 | `TC-P06-S01..S04`, `E01..E07` | D, A, DB, UI, R, P | Byte/hash round-trip, object/DB reconcile, type/role/UID/geometry và signed link. |
-| P7 | `TC-P07-S01..S04`, `E01..E06` | D, A, DB, UI, R, P | Known-answer, rule boundary, N/A reason, immutable rerun và projection uniqueness. |
+| P7 | `TC-P07-S01..S04`, `E01..E07` | D, A, DB, UI, R, P | Known-answer, rule boundary, explicit N/A reason/status, immutable rerun và projection uniqueness. |
 | P8 | `TC-P08-S01..S05`, `E01..E10` | D, A, DB, UI, R, V, P | Gamma oracle, coverage/denominator/censoring, DICOM 2D/3D, lease/fencing/crash/dead-letter. |
 | P9 | `TC-P09-S01..S04`, `E01..E08` | D, A, DB, UI, R, V, P | Full block customization, snapshot, 4 format, Unicode/long report, render/storage retry và export object/metadata compensation. |
 | P10 | `TC-P10-S01..S08`, `E01..E12` | D, A, DB, UI, R, V, P | Compatibility/timezone/aggregate equality, baseline/event, rebuild, source drill-down/export. |
@@ -1636,7 +1652,7 @@ Quy tắc bắt buộc:
 | **P4** | Organization/site/machine CRUD, stable ID, member invitation, archive/restore/history. | Active identity và organization context; parent active; invitation có token/expiry. | Hierarchy scoped; rename không đổi source IDs; invitation accept idempotent; member cùng org dùng nghiệp vụ ngang nhau. | Unique/parent/revision/invitation/last-member/unknown outcome; 409 giữ draft, query trước retry, cấp invite mới, không hard-delete history. | Mutation + audit cùng transaction; stable IDs và old links không đổi; không có action-level role hierarchy. |
 | **P5** | Folder tree, QA case, combined search/filter/page/deep-link, move/rename/archive/restore. | Site/machine đúng org; folder parent không archived khi tạo/move. | Nested tree đúng; case giữ machine/cycle/time; filter URL tái hiện; archive không xóa history. | `FOLDER_CYCLE`, `FOLDER_NAME_CONFLICT`, `PARENT_NOT_AVAILABLE`, `CASE_HIERARCHY_INVALID`, `PAGE_OUT_OF_RANGE`, `RESTORE_CONFLICT`; atomic rollback subtree và giữ case/run/report. | Move cập nhật path nguyên tử; case/source ID không đổi; archived resource chỉ bị hạn chế thao tác mới. |
 | **P6** | Upload stream/batch, artifact role/type, object commit, manifest, DICOM/measurement validation, signed download. | Case scoped; size/media/type policy; file role; object store available. | Bytes/checksum round-trip; mỗi file có terminal state; manifest ghi UID/geometry/unit/source; duplicate được xử lý rõ. | `FILE_REQUIRED_OR_EMPTY`, `UPLOAD_TOO_LARGE`, `UPLOAD_INTERRUPTED`, `ARTIFACT_TYPE_MISMATCH`, `INPUT_METADATA_INVALID`, `ARTIFACT_PERSISTENCE_FAILED`, `DOWNLOAD_LINK_EXPIRED`; cleanup/reconcile rồi retry đúng operation. | Object và DB được đối soát; không tạo `VALID` giả; raw bytes immutable; signed URL không đổi scope. |
-| **P7** | Machine QA run, measurement draft, N/A, rule evaluation, result/rerun/compare/trend projection. | Active protocol version và machine/case; metric schema/unit/baseline. | `COMPLETED` + quality `PASS/WARNING/FAIL/N/A` đúng rule; actual/limit/margin giải thích; rerun có snapshot mới. | `MEASUREMENT_REQUIRED`, `MEASUREMENT_INVALID`, `BASELINE_ZERO`, `REVISION_CONFLICT`, `DUPLICATE_OPERATION`, `PROTOCOL_NOT_AVAILABLE`; giữ draft/run cũ, tạo revision mới, không tạo trend point trùng. | Evaluate snapshot protocol/rule/measurement; result cũ không resolve live protocol. |
+| **P7** | Machine QA run, measurement draft, N/A, rule evaluation, result/rerun/compare/trend projection. | Active protocol version và machine/case; metric schema/unit/baseline; N/A reason khi metric không áp dụng. | `COMPLETED` + quality `PASS/WARNING/FAIL/N/A` đúng rule; actual/limit/margin giải thích; N/A có `actual=null`, không tạo trend; rerun có snapshot mới. | `MEASUREMENT_REQUIRED`, `MEASUREMENT_INVALID`, `MACHINE_QA_NA_REASON_REQUIRED`, `MACHINE_QA_NA_VALUE_CONFLICT`, `MACHINE_QA_NA_REASON_INVALID`, `BASELINE_ZERO`, `REVISION_CONFLICT`, `DUPLICATE_OPERATION`, `PROTOCOL_NOT_AVAILABLE`; giữ draft/run cũ, tạo revision mới, không tạo trend point trùng. | Evaluate snapshot protocol/rule/measurement; overall precedence `FAIL > REVIEW > WARNING > NA > PASS`; result cũ không resolve live protocol. |
 | **P8** | Gamma preflight, accepted/outbox, queue/lease/attempt/worker, 2D/3D calculation, map/statistics/profile, retry/compare. | Validated RTDOSE + comparison theo profile; configuration/capability/geometry hợp lệ; Redis/worker. | Operation từ `ACCEPTED` đến terminal; result lưu config/engine/input, denominator/coverage/censoring; reconnect đọc lại cùng run. | Missing input, frame/grid/unit/config/no-candidate/local-zero, dispatch/worker/lease/OOM/source drift; 422 hoặc FAILED/RETRYING bounded, dead-letter khi hết retry, không duplicate/worker cũ overwrite. | Lease fencing và attempt audit; `FULL_ROI`/`OVERLAP_ONLY` giữ denominator; JSON-only không giả PSQA. |
 | **P9** | Template/block editor, source snapshot, report revision, preview/render/export/history. | Source thuộc org và operation đã có output; block schema; renderer/font/format capability. | Full customization; revision và bốn export format mở lại deterministic; Biological report giữ namespace độc lập. | Source/revision/content/renderer/storage/download/idempotency error; giữ draft/source/export cũ, retry render/download an toàn, không sửa source. | Revision pins source/config/template; block hidden/deleted không làm mất lineage; export hash thuộc revision. |
 | **P10** | Trend query/raw/aggregate, compatibility, baseline, maintenance event, outlier, drill-down/export/rebuild. | Machine/metric/timezone/context; source result compatible. | Stable series; raw/aggregate có count/extrema/source IDs; baseline/event marker và export cùng filter/timezone. | Incompatible/date/timezone/filter/empty/baseline/duplicate/archive/large query/event conflict; trả warning/error phù hợp, aggregate hoặc tách series, không bịa zero. | Projection uniqueness; rebuild idempotent; source history không bị sửa bởi trend. |
@@ -1686,7 +1702,7 @@ Không được gọi operation là `COMPLETED` nếu chưa có output bền v�
 4. **Trend:** chỉ aggregate các source có compatibility signature; điểm thiếu không được biến thành zero; drill-down phải quay về source run/case đúng organization.
 5. **Public deployment:** web/API/worker/schema/Auth/queue phải được kiểm theo cùng release manifest; PostgreSQL, Redis, worker và object bucket private theo topology; URL public không chứng minh workflow đã pass.
 
-## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.21
+## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.22
 
 Phần này biến các contract theo phase thành cấu trúc có thể dùng khi viết code, test và bàn giao. Nó không thay thế các field/algorithm contract ở mục 2–8; nó quy định cách chứng minh rằng các contract đó đã được thực thi trên một candidate cụ thể.
 

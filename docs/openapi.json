@@ -6280,11 +6280,28 @@
             "title": "Context",
             "type": "object"
           },
+          "is_not_applicable": {
+            "default": false,
+            "title": "Is Not Applicable",
+            "type": "boolean"
+          },
           "metric_key": {
             "maxLength": 120,
             "minLength": 1,
             "title": "Metric Key",
             "type": "string"
+          },
+          "na_reason": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Na Reason"
           },
           "note": {
             "anyOf": [

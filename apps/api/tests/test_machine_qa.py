@@ -137,3 +137,161 @@ def test_machine_qa_rule_boundary_returns_warning_and_fail() -> None:
         assert failed.status_code == 201, failed.text
         result = client.post(f"/api/v1/machine-qa-runs/{failed.json()['id']}/evaluate")
         assert result.json()["overall_status"] == "FAIL"
+
+
+def test_machine_qa_explicit_na_keeps_reason_and_excludes_metric_from_trend() -> None:
+    with _workspace_client() as (client, organization):
+        protocol = client.post(
+            f"/api/v1/organizations/{organization.id}/machine-qa/protocols/seed"
+        ).json()
+        case_id = _case(client, str(organization.id), "Machine QA N/A")
+        measurements = _measurements()
+        measurements[0] = {
+            "metric_key": "output_factor",
+            "value": None,
+            "unit": "%",
+            "is_not_applicable": True,
+            "na_reason": "Output detector was not available for this QA cycle.",
+        }
+        created = client.post(
+            f"/api/v1/qa-cases/{case_id}/machine-qa-runs",
+            json={"protocol_version_id": protocol["id"], "measurements": measurements},
+        )
+        assert created.status_code == 201, created.text
+
+        evaluated = client.post(f"/api/v1/machine-qa-runs/{created.json()['id']}/evaluate")
+        assert evaluated.status_code == 200, evaluated.text
+        body = evaluated.json()
+        assert body["status"] == "COMPLETED"
+        assert body["overall_status"] == "NA"
+        output_factor = next(
+            item
+            for item in body["result_snapshot"]["metrics"]
+            if item["metric_key"] == "output_factor"
+        )
+        assert output_factor["status"] == "NA"
+        assert output_factor["actual"] is None
+        assert output_factor["is_not_applicable"] is True
+        assert output_factor["na_reason"] == (
+            "Output detector was not available for this QA cycle."
+        )
+
+        replay = client.post(f"/api/v1/machine-qa-runs/{created.json()['id']}/evaluate")
+        assert replay.status_code == 200, replay.text
+        assert replay.json()["id"] == body["id"]
+
+        trend = client.get(
+            f"/api/v1/organizations/{organization.id}/trend",
+            params={"metric_key": "output_factor"},
+        )
+        assert trend.status_code == 200, trend.text
+        assert trend.json()["total_points"] == 0
+        assert trend.json()["series"] == []
+        assert any(
+            warning.startswith("TREND_EMPTY") for warning in trend.json()["warnings"]
+        )
+
+        numeric_trend = client.get(
+            f"/api/v1/organizations/{organization.id}/trend",
+            params={"metric_key": "symmetry"},
+        )
+        assert numeric_trend.status_code == 200, numeric_trend.text
+        assert numeric_trend.json()["total_points"] == 1
+
+
+def test_machine_qa_na_requires_reason_and_cannot_have_numeric_value() -> None:
+    with _workspace_client() as (client, organization):
+        protocol = client.post(
+            f"/api/v1/organizations/{organization.id}/machine-qa/protocols/seed"
+        ).json()
+        case_id = _case(client, str(organization.id), "Machine QA N/A validation")
+
+        missing_reason = client.post(
+            f"/api/v1/qa-cases/{case_id}/machine-qa-runs",
+            json={
+                "protocol_version_id": protocol["id"],
+                "measurements": [
+                    {
+                        "metric_key": "output_factor",
+                        "value": None,
+                        "unit": "%",
+                        "is_not_applicable": True,
+                        "na_reason": "  ",
+                    }
+                ],
+            },
+        )
+        assert missing_reason.status_code == 422, missing_reason.text
+        assert missing_reason.json()["code"] == "MACHINE_QA_NA_REASON_REQUIRED"
+        assert missing_reason.json()["details"][0]["field"] == (
+            "measurements.0.na_reason"
+        )
+
+        numeric_value = client.post(
+            f"/api/v1/qa-cases/{case_id}/machine-qa-runs",
+            json={
+                "protocol_version_id": protocol["id"],
+                "measurements": [
+                    {
+                        "metric_key": "output_factor",
+                        "value": 100,
+                        "unit": "%",
+                        "is_not_applicable": True,
+                        "na_reason": "Detector unavailable.",
+                    }
+                ],
+            },
+        )
+        assert numeric_value.status_code == 422, numeric_value.text
+        assert numeric_value.json()["code"] == "MACHINE_QA_NA_VALUE_CONFLICT"
+
+        reason_without_flag = client.post(
+            f"/api/v1/qa-cases/{case_id}/machine-qa-runs",
+            json={
+                "protocol_version_id": protocol["id"],
+                "measurements": [
+                    {
+                        "metric_key": "output_factor",
+                        "value": None,
+                        "unit": "%",
+                        "na_reason": "Detector unavailable.",
+                    }
+                ],
+            },
+        )
+        assert reason_without_flag.status_code == 422, reason_without_flag.text
+        assert reason_without_flag.json()["code"] == "MACHINE_QA_NA_REASON_INVALID"
+
+
+def test_machine_qa_fail_takes_precedence_over_explicit_na() -> None:
+    with _workspace_client() as (client, organization):
+        protocol = client.post(
+            f"/api/v1/organizations/{organization.id}/machine-qa/protocols/seed"
+        ).json()
+        case_id = _case(client, str(organization.id), "Machine QA status precedence")
+        measurements = _measurements()
+        measurements[0] = {
+            "metric_key": "output_factor",
+            "value": None,
+            "unit": "%",
+            "is_not_applicable": True,
+            "na_reason": "Output detector was not available for this QA cycle.",
+        }
+        measurements[1]["value"] = 6.0
+        created = client.post(
+            f"/api/v1/qa-cases/{case_id}/machine-qa-runs",
+            json={"protocol_version_id": protocol["id"], "measurements": measurements},
+        )
+        assert created.status_code == 201, created.text
+
+        evaluated = client.post(f"/api/v1/machine-qa-runs/{created.json()['id']}/evaluate")
+        assert evaluated.status_code == 200, evaluated.text
+        body = evaluated.json()
+        assert body["status"] == "COMPLETED"
+        assert body["overall_status"] == "FAIL"
+        statuses = {
+            item["metric_key"]: item["status"]
+            for item in body["result_snapshot"]["metrics"]
+        }
+        assert statuses["output_factor"] == "NA"
+        assert statuses["symmetry"] == "FAIL"

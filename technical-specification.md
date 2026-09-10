@@ -3,8 +3,8 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.20 — đồng bộ specification.md v1.21, plan.md v4.12 và business-analysis.md v0.22; bổ sung source-identifiable release metadata từ Railway Git SHA cho API/web, process-RSS/resource-policy/API-responsiveness evidence cho P17 Docker workload đồng thời, export-content evidence và targeted direct PostgreSQL row/checksum/scope evidence; giữ entity/migration/API membership-invitation P4, unique pending invitation và active-context invariant, cùng reference tới feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate và status/readiness surface P20 (2026-09-10). P17 bổ sung migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`, song song ORM guard và negative mutation test. P8 bổ sung independent Gamma oracle runner/evidence cho synthetic 2D/3D profile coverage, staging RTDOSE + measurement browser smoke và malformed Redis dispatch quarantine trước ACK.
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.22
+- **Phiên bản:** 1.21 — đồng bộ specification.md v1.22, plan.md v4.13 và business-analysis.md v0.23; bổ sung source-identifiable release metadata từ Railway Git SHA cho API/web, process-RSS/resource-policy/API-responsiveness evidence cho P17 Docker workload đồng thời, export-content evidence và targeted direct PostgreSQL row/checksum/scope evidence; bổ sung Machine QA explicit N/A field/aggregation/trend contract; giữ entity/migration/API membership-invitation P4, unique pending invitation và active-context invariant, cùng reference tới feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate và status/readiness surface P20 (2026-09-10). P17 bổ sung migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`, song song ORM guard và negative mutation test. P8 bổ sung independent Gamma oracle runner/evidence cho synthetic 2D/3D profile coverage, staging RTDOSE + measurement browser smoke và malformed Redis dispatch quarantine trước ACK.
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.23
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
@@ -101,6 +101,13 @@ Ngày 2026-09-08, P11–P17 đã bổ sung model/API/UI và migrations `20260908
 > Revision addendum v1.20: P8 Redis Streams phải đưa malformed dispatch vào quarantine bằng một
 > dead-letter diagnostic bounded, không sao chép payload value; chỉ ACK sau khi dead-letter thành công.
 > Nếu quarantine hoặc ACK lỗi, để message pending để worker/reconciliation thử lại.
+
+> Revision addendum v1.21: P7 Machine QA lưu `is_not_applicable` và `na_reason` trong JSON
+> measurement/result snapshot, không cần migration riêng vì `MachineQARun.measurements` và
+> `result_snapshot` là JSON columns. N/A phải có reason, không được có numeric value, không tạo
+> `TrendPoint` và không được làm overall result thành PASS ngầm. Aggregation dùng precedence
+> `FAIL > REVIEW > WARNING > NA > PASS`; frontend phải có checkbox N/A, input reason, trạng thái
+> disabled cho numeric field và hiển thị reason trong kết quả/history.
 
 ---
 
@@ -1213,9 +1220,9 @@ P7 triển khai thêm các endpoint và snapshot contract sau:
 | POST | `/machine-qa-runs/{id}/rerun` | Tạo lượt mới từ measurement của run đã hoàn tất; không sửa hoặc xóa run nguồn |
 | GET | `/machine-qa-runs/{id}/compare?other_run_id=...` | So sánh metric snapshot của hai run cùng organization |
 
-P7 lưu bốn nhóm dữ liệu: `qa_protocol_versions` và `qa_protocol_rules` là cấu hình có version; `machine_qa_runs` là measurement draft và kết quả đã chốt; `trend_points` là projection từ metric thực tế của run hoàn tất. Khi evaluate, result snapshot giữ lại protocol/rule snapshot, actual, baseline, tolerance, action level, margin, status và thời điểm đánh giá. Run `COMPLETED` hoặc `FAILED` không được sửa; rerun luôn sinh `machine_qa_runs` mới với `supersedes_run_id`. Mọi lookup đầu tiên đều kèm `organization_id` lấy từ membership của identity, không dùng truy vấn resource-ID toàn cục rồi mới kiểm tra scope.
+P7 lưu bốn nhóm dữ liệu: `qa_protocol_versions` và `qa_protocol_rules` là cấu hình có version; `machine_qa_runs` là measurement draft và kết quả đã chốt; `trend_points` là projection từ metric thực tế của run hoàn tất. Mỗi measurement có thể có `is_not_applicable` và `na_reason`; explicit N/A phải có reason sau trim, không có numeric value, được snapshot cùng result và không tạo `TrendPoint`. Khi evaluate, result snapshot giữ lại protocol/rule snapshot, actual, baseline, tolerance, action level, margin, status và thời điểm đánh giá. Overall status dùng precedence `FAIL > REVIEW > WARNING > NA > PASS`; N/A không được trở thành PASS ngầm. Run `COMPLETED` hoặc `FAILED` không được sửa; rerun luôn sinh `machine_qa_runs` mới với `supersedes_run_id`. Mọi lookup đầu tiên đều kèm `organization_id` lấy từ membership của identity, không dùng truy vấn resource-ID toàn cục rồi mới kiểm tra scope.
 
-Rule engine P7 hỗ trợ `RANGE`, `MIN`, `MAX`, `ABSOLUTE_DEVIATION`, `PERCENT_DEVIATION` và `NA`. Thiếu metric bắt buộc, sai unit hoặc giá trị không hợp lệ làm run `FAILED` và lưu `error_snapshot`; lệch trong action band tạo metric `WARNING`; kết quả nằm trong tolerance tạo `PASS`. Protocol seed chỉ là fixture kỹ thuật cho vertical slice, không phải giới hạn lâm sàng mặc định; thư viện protocol được quản trị/version hóa đầy đủ ở P11.
+Rule engine P7 hỗ trợ `RANGE`, `MIN`, `MAX`, `ABSOLUTE_DEVIATION`, `PERCENT_DEVIATION` và `NA`. Thiếu metric bắt buộc, sai unit hoặc giá trị không hợp lệ làm run `FAILED` và lưu `error_snapshot`; explicit N/A hợp lệ tạo quality status `NA`, không phải technical failure và không phải PASS; lệch trong action band tạo metric `WARNING`; kết quả nằm trong tolerance tạo `PASS`. Optional metric bỏ trống là not recorded và bị loại khỏi aggregate/trend; required metric bỏ trống vẫn lỗi evaluate. Protocol seed chỉ là fixture kỹ thuật cho vertical slice, không phải giới hạn lâm sàng mặc định; thư viện protocol được quản trị/version hóa đầy đủ ở P11.
 
 P8 local implementation slice hiện có migration `20260907_0007` cho Gamma run và
 `20260908_0008` cho lease/attempt/outbox. Các entity reliability hiện có là
@@ -1278,7 +1285,7 @@ evaluated/passing/nonpassing/excluded/no-candidate/censored, pass rate, coverage
 percentile exactness, histogram, warning, configuration, input checksum và engine version.
 Đây là deterministic engineering/golden slice; test local hiện có exhaustive independent node
 oracle và các guard resource/retry, nhưng không thay thế benchmark theo phần cứng hoặc
-commissioning. Gate phát triển, pilot và release theo plan.md v4.12. Coordinate frame mở rộng,
+commissioning. Gate phát triển, pilot và release theo plan.md v4.13. Coordinate frame mở rộng,
 crash/ack/dead-letter injection, large workload benchmark và evidence effective schema/release
 trên staging vẫn là điều kiện đóng P8.
 

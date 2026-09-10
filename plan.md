@@ -1,12 +1,12 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
-- Phiên bản: **4.12**, ngày 2026-09-10.
-- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.22.
-- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.21.
-- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.20.
+- Phiên bản: **4.13**, ngày 2026-09-10.
+- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.23.
+- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.22.
+- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.21.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
-- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.10, bổ sung bằng chứng P8 browser staging cho cặp RTDOSE + measurement 3D và oracle Gamma độc lập 6/6 case; đồng thời ghi rõ fixture RTDOSE đã tồn tại trong case staging nên không upload bản sao. Các thay đổi trước về process-RSS/resource-policy/API-responsiveness P17-W06, migration P4 `20260909_0018`, `20260908_0017` là migration riêng của P17, các contract member/invitation và route `/invite` vẫn là authority. Tiếp tục chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20. Các slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local được giữ nguyên theo progress log. Case staging P17 hiện có 2 RTDOSE, 1 RTSTRUCT và 1 CT hợp lệ; authenticated browser đã chạy DVH saved-run/replay/refresh, CT overlay/no-overlap smoke, export-content probe và Gamma 3D với RTDOSE reference. Nội dung JSON/CSV đã parse/hash và khớp snapshot; targeted PostgreSQL row/checksum/scope probe và object-storage byte re-hash đã PASS trong API container staging; việc trình duyệt đổi đuôi file vẫn là một observation riêng. Candidate public được kiểm exact-SHA `85ecb0ebb025220a79cc82977049d2e16340efb0` với evidence `docs/evidence/p19-staging-public-smoke-20260910-85ecb0e.json`; API, worker và web cùng source/schema. Không coi source-parity là PASS nếu chỉ một service được Railway deploy. Các gate P8 crash/ack/bounded retry/resource-large-input, P17 binding/report/fault/volume/browser export finalization/release và P18–P20 vẫn mở. P17 local resource gate `LOCAL_RESOURCE_GATE_PASS` dưới policy `1 CPU/768 MiB` không thay worker/service capacity Railway hoặc staging fault evidence. **Delta local queue:** `docker-compose.yml` hiện có service `worker` tách khỏi API; verifier disposable `scripts/verify-local-gamma-queue.py` đã chạy thành công happy path, duplicate/replay guard, bounded storage retry 3 attempts, dead-letter và zero pending Redis message. Đây là local support evidence, không thay staging fault/resource/release gate. Không suy diễn từ test local, workload Docker local hoặc một lần Railway báo Online.
+- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.12, bổ sung contract và implementation P7 cho explicit N/A có lý do, aggregation tổng định danh và loại trừ metric N/A khỏi trend; giữ bằng chứng P8 browser staging cho cặp RTDOSE + measurement 3D và oracle Gamma độc lập 6/6 case; đồng thời ghi rõ fixture RTDOSE đã tồn tại trong case staging nên không upload bản sao. Các thay đổi trước về process-RSS/resource-policy/API-responsiveness P17-W06, migration P4 `20260909_0018`, `20260908_0017` là migration riêng của P17, các contract member/invitation và route `/invite` vẫn là authority. Tiếp tục chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20. Các slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local được giữ nguyên theo progress log. Case staging P17 hiện có 2 RTDOSE, 1 RTSTRUCT và 1 CT hợp lệ; authenticated browser đã chạy DVH saved-run/replay/refresh, CT overlay/no-overlap smoke, export-content probe và Gamma 3D với RTDOSE reference. Nội dung JSON/CSV đã parse/hash và khớp snapshot; targeted PostgreSQL row/checksum/scope probe và object-storage byte re-hash đã PASS trong API container staging; việc trình duyệt đổi đuôi file vẫn là một observation riêng. Candidate public được kiểm exact-SHA `c8b1b964f797f26c732755b2d2c19ed80d129838` với evidence `docs/evidence/p19-staging-public-smoke-20260910-c8b1b96.json`; API, worker và web cùng source/schema. Không coi source-parity là PASS nếu chỉ một service được Railway deploy. Các gate P8 crash/ack/bounded retry/resource-large-input, P17 binding/report/fault/volume/browser export finalization/release và P18–P20 vẫn mở. P17 local resource gate `LOCAL_RESOURCE_GATE_PASS` dưới policy `1 CPU/768 MiB` không thay worker/service capacity Railway hoặc staging fault evidence. **Delta local queue:** `docker-compose.yml` hiện có service `worker` tách khỏi API; verifier disposable `scripts/verify-local-gamma-queue.py` đã chạy thành công happy path, duplicate/replay guard, bounded storage retry 3 attempts, dead-letter và zero pending Redis message. Đây là local support evidence, không thay staging fault/resource/release gate. Không suy diễn từ test local, workload Docker local hoặc một lần Railway báo Online.
 
 ## 1. Cách thực hiện kế hoạch
 
@@ -224,7 +224,7 @@ Bảng này là bản đồ điều hành một trang. Các bảng `TC-Pxx-Syy` 
 | P4 | Organization context hợp lệ | Tạo site/machine → rename/archive/restore → member list/toggle → invitation create/accept/replay/revoke/expiry → xem history; mọi thành viên dùng cùng nghiệp vụ | `MACHINE_CODE_CONFLICT`, `PARENT_NOT_AVAILABLE`, `REVISION_CONFLICT`, `INVITATION_INVALID`, `INVITATION_ALREADY_MEMBER`, `INVITATION_ALREADY_PENDING`, `ORGANIZATION_CONTEXT_ALREADY_ASSIGNED`, `LAST_MEMBERSHIP_CONFLICT`, `MUTATION_RESULT_UNKNOWN`; kiểm result trước retry | DB/query scope, stable ID, token hash/status/audit, concurrent edit và invitation evidence; cross-org leak hoặc mutation trùng chặn |
 | P5 | Site/machine và archive shell | Tạo folder lồng nhau → tạo case → search/filter/page → move/rename/archive/restore | `FOLDER_CYCLE`, `FOLDER_NAME_CONFLICT`, `PARENT_NOT_AVAILABLE`, `CASE_HIERARCHY_INVALID`, `PAGE_OUT_OF_RANGE`, `RESTORE_CONFLICT`; giữ cây/case cũ khi fail | Tree trước/sau, combined filters, deep-link, archived restore; mất lineage hoặc partial move chặn |
 | P6 | Case và object storage | Chọn type/role → upload → checksum/object commit → manifest → validation → download | `FILE_REQUIRED_OR_EMPTY`, `UPLOAD_TOO_LARGE`, `UPLOAD_INTERRUPTED`, `ARTIFACT_PERSISTENCE_FAILED`, `ARTIFACT_TYPE_MISMATCH`, `INPUT_METADATA_INVALID`, `DOWNLOAD_LINK_EXPIRED`; reconcile object/DB và retry có kiểm | Hash round-trip, DICOM UID/geometry/unit, valid/invalid/duplicate/type mismatch, signed download; artifact mồ côi hoặc validate giả chặn |
-| P7 | Protocol seed và case input | Chọn protocol version → draft metric → evaluate snapshot → result → rerun/compare/trend | `MEASUREMENT_REQUIRED`, `MEASUREMENT_INVALID`, `BASELINE_ZERO`, `REVISION_CONFLICT`, `DUPLICATE_OPERATION`, `PROTOCOL_NOT_AVAILABLE`; giữ draft, tạo rerun/version mới | Boundary known-answer, N/A reason, immutable result, projection uniqueness; PASS sai hoặc overwrite chặn |
+| P7 | Protocol seed và case input | Chọn protocol version → draft metric → evaluate snapshot → result → rerun/compare/trend | `MEASUREMENT_REQUIRED`, `MEASUREMENT_INVALID`, `MACHINE_QA_NA_REASON_REQUIRED`, `MACHINE_QA_NA_VALUE_CONFLICT`, `MACHINE_QA_NA_REASON_INVALID`, `BASELINE_ZERO`, `REVISION_CONFLICT`, `DUPLICATE_OPERATION`, `PROTOCOL_NOT_AVAILABLE`; giữ draft, tạo rerun/version mới | Boundary known-answer, explicit N/A reason, overall aggregation, immutable result, projection uniqueness; PASS sai, N/A giả hoặc overwrite chặn |
 | P8 | Validated artifacts, Redis, worker và schema | Preflight profile → enqueue idempotent → lease/heartbeat → compute → durable result → ack → compare/retry | `RTDOSE_REQUIRED_OR_COMPARISON_REQUIRED`, `GAMMA_INPUT_INCOMPATIBLE`, `GAMMA_CONFIG_UNSUPPORTED`, `GAMMA_NO_EVALUATED_POINTS`, `GAMMA_LOCAL_ZERO_REFERENCE`, `GAMMA_DISPATCH_UNAVAILABLE`, `GAMMA_EXECUTION_INTERRUPTED`, `GAMMA_DICOM_UNSUPPORTED`, `GAMMA_RESOURCE_LIMIT`, `GAMMA_SOURCE_CHANGED`; outbox/reclaim/fencing/bounded retry | Independent oracle, 2D/3D, FULL_ROI/OVERLAP_ONLY, censoring, crash/ack/retry/dead-letter, resource benchmark, staging evidence; denominator/source/duplicate sai chặn |
 | P9 | P7/P8 contracts và schema `20260908_0009` | Chọn source/template → edit mọi block → snapshot revision → preview → export → reload/history/download | `REPORT_REVISION_CONFLICT`, `REPORT_SOURCE_UNAVAILABLE`, `REPORT_CONTENT_INVALID`, `REPORT_RENDER_FAILED`, `EXPORT_FORMAT_UNSUPPORTED`, `DOWNLOAD_LINK_EXPIRED`, `REPORT_STORAGE_UNAVAILABLE`, `EXPORT_IDEMPOTENCY_CONFLICT`, `REPORT_EXPORT_PERSISTENCE_FAILED`; giữ revision cũ, compensation/reconciliation và retry export | 4 format, UTF-8/PDF warning, hash/idempotency, browser storage download, visual review, object/metadata failure injection; source live làm đổi revision cũ chặn |
 | P10 | P7 results và P9 report source | Chọn machine/metric/time → compatible series → baseline/markers → drill-down/export | `TREND_SERIES_INCOMPATIBLE`, `DATE_RANGE_INVALID`, `TREND_EMPTY`, `TREND_BASELINE_INVALID`, `TREND_DUPLICATE_SOURCE`, `TREND_SOURCE_ARCHIVED`; tách series và rebuild projection | Raw/aggregate equality, timezone, extrema, maintenance marker, source link; trộn unit/machine hoặc mất raw chặn |
@@ -717,7 +717,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 ### Workflow P7
 
 1. Tạo run từ case và protocol version.
-2. Nhập metric, unit và ghi chú; lưu draft.
+2. Nhập metric, unit và ghi chú; với metric không áp dụng thì bật N/A và nhập lý do; lưu draft.
 3. Validate required/unit/baseline; evaluate một snapshot.
 4. Xem từng metric và kết quả tổng, drill-down về rule.
 5. Rerun tạo lượt mới; compare; đưa metric tương thích vào trend.
@@ -726,7 +726,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 
 - [ ] P07-W01 — Tách seed synthetic với protocol nội bộ; snapshot đầy đủ rule/unit/baseline.
 - [ ] P07-W02 — Optimistic measurement save và idempotent evaluate cùng expected revision.
-- [ ] P07-W03 — Hoàn thiện boundary rules, zero baseline, missing required và total status aggregation.
+- [x] P07-W03 — Hoàn thiện boundary rules, zero baseline, missing required và total status aggregation; explicit N/A phải có lý do, không nhận giá trị số và không hạ overall thành PASS. `LOCAL_VERIFIED`: backend regression 6/6, frontend lint/typecheck/Vitest/build PASS.
 - [ ] P07-W04 — Trend projection unique source metric; rerun không nhân đôi projection của run cũ.
 - [ ] P07-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P07-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
@@ -752,10 +752,11 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 | TC-P07-E04 | Autosave muộn sau evaluate | REVISION_CONFLICT | Từ chối sửa completed snapshot; cho tạo rerun. |
 | TC-P07-E05 | Evaluate double click | DUPLICATE_OPERATION | Trả cùng kết quả của snapshot; một tập trend points. |
 | TC-P07-E06 | Protocol bị archive | PROTOCOL_NOT_AVAILABLE | Run mới không chọn; run cũ vẫn đọc snapshot. |
+| TC-P07-E07 | Bật N/A nhưng thiếu lý do, gửi giá trị số cùng N/A hoặc gửi lý do khi chưa bật N/A | MACHINE_QA_NA_REASON_REQUIRED / MACHINE_QA_NA_VALUE_CONFLICT / MACHINE_QA_NA_REASON_INVALID | HTTP 422 theo đúng field; không tạo run/result/trend; giữ draft hợp lệ để sửa rồi gửi lại. |
 
 ### Bất biến và điều kiện đóng P7
 
-- **Dữ liệu phải giữ/transaction:** Measurement revision được khóa tại evaluate; result + trend projection commit nhất quán hoặc reconciliation idempotent.
+- **Dữ liệu phải giữ/transaction:** Measurement revision được khóa tại evaluate; result + trend projection commit nhất quán hoặc reconciliation idempotent. Explicit N/A lưu `is_not_applicable=true` cùng `na_reason` đã trim, `value=null`, metric status `NA`, không tạo TrendPoint; aggregation dùng `FAIL > REVIEW > WARNING > NA > PASS`.
 - **Bàn giao:** Checklist/result/history/compare; known-answer rule tests; staging evidence.
 - **Exit gate:** Boundary PASS/WARNING/FAIL/N-A, unit/baseline errors và rerun/projection uniqueness đều pass.
 - **Kiểm tra chéo:** C03–C09 về scope, retry, đồng thời, mất mạng, session và version phải có evidence hoặc lý do không áp dụng; thêm C10–C16 theo module.
@@ -2050,7 +2051,7 @@ Bảng này là chỉ mục điều hành ngắn gọn; mỗi phase vẫn phải
 | P4 | `S01–S08` | `E01–E14` | B01, B02, B03, B04, B05, B06, B07, B08, B09, B10, B11, B12 | D, A, DB, UI, R, P |
 | P5 | `S01–S04` | `E01–E06` | B01, B02, B04, B05, B06, B08 | D, A, DB, UI, R, P |
 | P6 | `S01–S04` | `E01–E07` | B01, B02, B04, B05, B06, B09, B10, B11, B12 | D, A, DB, UI, R, P |
-| P7 | `S01–S04` | `E01–E06` | B01, B03, B04, B05, B07, B08, B11, B12 | D, A, DB, UI, R, P |
+| P7 | `S01–S04` | `E01–E07` | B01, B03, B04, B05, B07, B08, B11, B12 | D, A, DB, UI, R, P |
 | P8 | `S01–S05` | `E01–E10` | B01, B02, B04, B05, B06, B07, B09, B10, B11, B12 | D, A, DB, UI, R, V, P |
 | P9 | `S01–S04` | `E01–E06` | B01, B02, B04, B06, B07, B08, B09, B10, B11, B12 | D, A, DB, UI, R, V, P |
 | P10 | `S01–S08` | `E01–E12` | B01, B02, B03, B04, B05, B06, B08, B11, B12 | D, A, DB, UI, R, V, P |
@@ -2179,29 +2180,32 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 **Runtime addendum cùng ngày:** sau source-parity recovery, candidate `b0263c932c740d4f36f19867241d5c1e07014765` đạt **15/15 checks PASS** trên public staging với schema `20260909_0019`; evidence `docs/evidence/p19-staging-public-smoke-20260909-b0263c9.json`. Browser DVH/report evidence vẫn dùng đúng case synthetic đã upload trước đó; không upload lại RTDOSE/RTSTRUCT/CT. Payload JSON/CSV export parse/hash khớp saved snapshot, còn việc browser đổi `.crdownload` thành filename cuối vẫn `UNVERIFIED` và tiếp tục là gate mở. Evidence browser: `docs/evidence/p17-staging-dvh-ct-browser-20260909.json`.
 
-### 7.3. Revision hiện hành v4.12
+### 7.3. Revision hiện hành v4.13
 
-Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.21,
-`technical-specification.md` v1.20 và `plan.md` v4.12. Revision v4.12 giữ status/readiness
-surface P20 và bổ sung P4 member/invitation execution contract: workflow `/invite`, token
+Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.23, `specification.md` v1.22,
+`technical-specification.md` v1.21 và `plan.md` v4.13. Revision v4.13 giữ status/readiness
+ surface P20, bổ sung P4 member/invitation execution contract và P7 Machine QA explicit-N/A execution contract:
+ workflow `/invite`, token
 hash-at-rest, expiry/revoke/replay, pending uniqueness, active-context và last-active invariant;
 đồng thời pin semantics process peak RSS, policy CPU/RAM và API responsiveness cho P17 Docker workload
 mà không coi cgroup peak tích lũy hoặc sampled container memory là peak RSS; ghi nhận export-content
 parse/hash, targeted direct PostgreSQL row/checksum/scope evidence cùng object-storage byte re-hash
 của run DVH staging với browser finalization note. Public verifier staging hiện đạt 15/15 trên candidate
-`a5c554cb15a37a9dc4ae3e4ff65ab003c20c4763`, evidence `docs/evidence/p19-staging-public-smoke-20260910-a5c554c-pass.json`;
+`c8b1b964f797f26c732755b2d2c19ed80d129838`, evidence `docs/evidence/p19-staging-public-smoke-20260910-c8b1b96.json`;
 probe unauthenticated invitation accept được kiểm tra tại auth boundary bằng POST không body để tránh trộn
 lỗi xác thực với validation payload, còn contract payload vẫn do API tests kiểm.
 Local slice tương ứng đã có model/API/UI/migration/test; staging migration `20260909_0018`,
 API/web source-label parity và platform status dashboard đã được xác minh trên candidate
-`a5c554cb15a37a9dc4ae3e4ff65ab003c20c4763`, nhưng browser/Auth/DB/audit/scope/timeout evidence
+`c8b1b964f797f26c732755b2d2c19ed80d129838`, nhưng browser/Auth/DB/audit/scope/timeout evidence
 cho invitation vẫn mở. Worker parity, alert thật, backup/restore, owner handoff và production
 evidence vẫn là gate mở. Các đoạn nêu candidate/schema cũ ở phần lịch sử chỉ là evidence của
-lần chạy trước, không phải release hiện tại. Bổ sung trong v4.12: candidate `85ecb0e` có browser
+lần chạy trước, không phải release hiện tại. Bổ sung trong v4.13: candidate `85ecb0e` có browser
 P8 RTDOSE + measurement 3D smoke `8/8 PASS` và local independent Gamma oracle `6/6 PASS`; hai
 evidence này không đóng crash/ack, retry/dead-letter, resource/large-input, commissioning hoặc
-production promotion. P8-W03 local queue contract cũng đã ghi nhận quarantine malformed Redis
-message và terminal-failure redelivery; staging failure-injection vẫn là gate riêng.
+ production promotion. P8-W03 local queue contract cũng đã ghi nhận quarantine malformed Redis
+ message và terminal-failure redelivery; staging failure-injection vẫn là gate riêng. P7-W03 local
+  regression hiện đạt 6/6, gồm N/A có lý do, ba trường hợp N/A mâu thuẫn bị HTTP 422, aggregation
+ không hạ overall xuống PASS và loại metric N/A khỏi trend; frontend đã lint/typecheck/Vitest/build PASS.
 
 ## 8. Ma trận FR → contract → testcase ban đầu
 

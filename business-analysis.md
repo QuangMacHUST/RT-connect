@@ -5,10 +5,10 @@
 - **Tên sản phẩm:** RT-CONNECT
 - **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
 - **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
-- **Phiên bản tài liệu:** 0.22 — catalogue tính năng, workflow, ngoại lệ, phục hồi, từ điển trạng thái và tiêu chí nghiệm thu theo P0–P20; chốt chi tiết membership/invitation P4, bảo toàn snapshot phân tích P17 và đồng bộ triển khai với migration `20260909_0018` + guard `20260909_0019` (2026-09-09)
+- **Phiên bản tài liệu:** 0.23 — catalogue tính năng, workflow, ngoại lệ, phục hồi, từ điển trạng thái và tiêu chí nghiệm thu theo P0–P20; bổ sung hợp đồng Machine QA cho N/A có lý do, aggregation không ngầm PASS và trend không nhận điểm N/A; giữ chi tiết membership/invitation P4, snapshot P17 và đồng bộ triển khai với migration `20260909_0018` + guard `20260909_0019` (2026-09-10)
 - **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
-Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.22 tại mục 21–24 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
+Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.23 tại mục 21–24 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
 
 ---
 
@@ -1178,15 +1178,15 @@ Clinical MVP tập trung vào Machine QA, PSQA Gamma, report, trend, input valid
 `specification.md`, `technical-specification.md` và `plan.md` được xây dựng từ các yêu cầu, quy tắc và tiêu chí nghiệm thu trong tài liệu này. Google Stitch cung cấp thiết kế trực quan; Railway và Supabase cung cấp hạ tầng đã chọn; không nguồn nào trong số đó được tự thay thế hoặc làm mất requirement nghiệp vụ.
 
 
-## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.22
+## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.23
 
-Bổ sung ngày 2026-09-09 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu; mục 22 chuẩn hóa hành vi ở cấp tính năng; mục 23 chuẩn hóa gói bàn giao nghiệp vụ và cách quyết định dừng/tiếp tục để không bỏ sót tiền điều kiện, side effect và bằng chứng; mục 24 chốt workflow membership/invitation P4 đã được hiện thực ở local. `specification.md` v1.19 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v4.9 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
+Bổ sung ngày 2026-09-09 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu; mục 22 chuẩn hóa hành vi ở cấp tính năng; mục 23 chuẩn hóa gói bàn giao nghiệp vụ và cách quyết định dừng/tiếp tục để không bỏ sót tiền điều kiện, side effect và bằng chứng; mục 24 chốt workflow membership/invitation P4 đã được hiện thực ở local. Ngày 2026-09-10 bổ sung P7 explicit N/A reason, status aggregation và loại trừ trend projection. `specification.md` v1.22 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v4.13 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md`.
 
-> Ghi chú đồng bộ: đoạn trên mô tả revision nghiệp vụ v0.22; business requirement không đổi trong
-> lần đồng bộ kỹ thuật này. Revision hiện hành dùng `specification.md` v1.21,
-> `technical-specification.md` v1.20 và `plan.md` v4.12; contract mới làm rõ dashboard
-> health/readiness/version/queue của P20, lifecycle membership/invitation P4 và semantics quan sát
-> cgroup memory của workload P17, không thay đổi nguyên tắc thành viên ngang quyền.
+> Ghi chú đồng bộ: v0.22 là revision trước của catalogue. Revision v0.23 bổ sung hành vi
+> Machine QA explicit N/A: cờ `is_not_applicable`, `na_reason` bắt buộc khi N/A, loại trừ giá trị
+> N/A khỏi trend và không coi aggregation có N/A là PASS ngầm. Revision hiện hành dùng
+> `specification.md` v1.22, `technical-specification.md` v1.21 và `plan.md` v4.13; các nguyên tắc
+> thành viên ngang quyền, report toàn quyền và Biological Toolkit độc lập không thay đổi.
 
 ### 21.1. Các quyết định sản phẩm giữ nguyên
 
@@ -1352,6 +1352,14 @@ Mã FR-Pxx-yy là yêu cầu có thể truy vết. Các phase nền tảng/tri�
 **Thông tin tối thiểu:** Protocol version/rules; metric key/value/unit/required/N-A reason; baseline/tolerance/action; notes/artifact; measurement revision; result actual/limit/margin/status.
 
 **Luồng chính:** Tạo run từ case và protocol version. → Nhập metric, unit và ghi chú; lưu draft. → Validate required/unit/baseline; evaluate một snapshot. → Xem từng metric và kết quả tổng, drill-down về rule. → Rerun tạo lượt mới; compare; đưa metric tương thích vào trend.
+
+**Quy tắc N/A bắt buộc:** Một metric được đánh dấu N/A bằng `is_not_applicable=true` phải có
+`na_reason` sau khi trim và không được có giá trị số. Có `na_reason` nhưng không bật cờ N/A,
+hoặc vừa có giá trị số vừa bật N/A, là lỗi input; backend phải giữ draft và trả lỗi theo field.
+Metric N/A được lưu trong measurement/result snapshot với `status=NA` và lý do nguyên bản đã
+chuẩn hóa. Aggregation tổng dùng thứ tự `FAIL > REVIEW > WARNING > NA > PASS`: một lượt chỉ có
+metric PASS và N/A có `overall_status=NA`, không phải PASS; nếu có FAIL thì FAIL vẫn chiếm ưu tiên.
+Metric N/A không tạo `TrendPoint`, không làm tăng mẫu số trend và không được thay bằng số 0.
 
 **Nghiệm thu nhóm:** Boundary PASS/WARNING/FAIL/N-A, unit/baseline errors và rerun/projection uniqueness đều pass.
 
@@ -2051,7 +2059,7 @@ Bảng này là bản đồ ngắn gọn để không bỏ sót phase. `S` là w
 | P4 | Organization → site/machine/member → rename → archive/restore/history | `TC-P04-S01..S04` | `TC-P04-E01..E06` | Stable IDs, scope, ngang quyền và lifecycle history. |
 | P5 | Folder tree → QA case → search/filter/page → move/archive/restore | `TC-P05-S01..S04` | `TC-P05-E01..E06` | Tree snapshot, deep-link và atomic mutation evidence. |
 | P6 | File → object/checksum → manifest → validation → signed download | `TC-P06-S01..S04` | `TC-P06-E01..E07` | Byte round-trip, DICOM/measurement findings và reconcile. |
-| P7 | Protocol → draft metrics/N-A → evaluate → result → rerun/compare/trend | `TC-P07-S01..S04` | `TC-P07-E01..E06` | Known-answer, rule result, immutable rerun và projection. |
+| P7 | Protocol → draft metrics/N-A có lý do → evaluate → result → rerun/compare/trend | `TC-P07-S01..S04` | `TC-P07-E01..E07` | Known-answer, rule result, explicit N/A, immutable rerun và projection không trùng. |
 | P8 | Preflight → accepted/outbox → Redis/lease → Gamma → result → retry/compare | `TC-P08-S01..S05` | `TC-P08-E01..E10` | 2D/3D oracle, denominator, attempt/fencing, fault/resource evidence. |
 | P9 | Source/template → edit block → revision → render → export/history | `TC-P09-S01..S04` | `TC-P09-E01..E08` | Snapshot, 4 format, Unicode/visual/hash, idempotency và object/metadata compensation evidence. |
 | P10 | Filter/context → raw/aggregate → baseline/event → drill-down/export/rebuild | `TC-P10-S01..S08` | `TC-P10-E01..E12` | Compatibility, timezone, source equality và volume evidence. |
@@ -2068,7 +2076,7 @@ Bảng này là bản đồ ngắn gọn để không bỏ sót phase. `S` là w
 
 Không được dùng cột `S` để bỏ qua cột `E`; một workflow chỉ được gọi là “hoàn thiện” khi cả hai đã có expected/observed/evidence. Khi implementation chưa tồn tại, các mã này vẫn là target và phải giữ `NOT_RUN`, không tạo screenshot hoặc dữ liệu giả để lấp checklist.
 
-## 22. Ma trận hành vi ở cấp tính năng v0.22
+## 22. Ma trận hành vi ở cấp tính năng v0.23
 
 Mục này chuyển catalogue phase ở mục 21 thành một hợp đồng dễ dùng khi thiết kế màn hình, viết API và lập testcase. Mỗi `FR-Pxx-yy` là một nhóm tính năng có thể truy vết; không được coi một nhóm là hoàn thiện chỉ vì một nút trên giao diện đã xuất hiện. Các mô tả dưới đây là yêu cầu nghiệp vụ; field/API/transaction cụ thể được chuẩn hóa tiếp trong `specification.md`.
 
@@ -2113,7 +2121,7 @@ Bảng sau là bản đồ nghiệp vụ cấp feature. “Chạy đúng” là 
 | **P4** `FR-P04-01..04`<br>Organization/Site/Machine/member | Tạo organization context → site → machine → sửa/đổi tên → mời member → accept identity đã xác thực → archive/restore → xem history. | Nhiều site/machine; machine đổi tên nhưng stable ID, QA/trend/report không đổi; invitation accept idempotent; hai member dùng cùng nghiệp vụ. | Parent khác org/inactive, code trùng, stale revision, invitation sai identity/hết hạn, xóa member cuối, response mất: giữ draft, fetch current/reconcile idempotency, cấp invitation mới; không hard-delete history. | Hierarchy scoped, membership history, stable IDs, audit/revision. `MACHINE_CODE_CONFLICT`, `PARENT_NOT_AVAILABLE`, `REVISION_CONFLICT`, `INVITATION_INVALID`, `LAST_MEMBERSHIP_CONFLICT`, `MUTATION_RESULT_UNKNOWN`. |
 | **P5** `FR-P05-01..04`<br>Archive/Folder/QA Case | Tạo folder root/con → tạo case theo site/machine/cycle → search/filter/sort/page/deep-link → rename/move subtree/case → archive/restore. | Tên tự do nhưng chuẩn hóa hợp lý; filter giữ trong URL; case không có file vẫn là empty hợp lệ; archive ẩn khỏi list mặc định nhưng history mở được. | Cycle, trùng tên cùng parent, parent archived, machine/site sai, page quá dữ liệu, restore conflict: transaction move nguyên tử, giữ cây trước đó, đổi đích/tên rồi retry; không mất case/run/report. | Folder path/index, case ID, parent/machine snapshot, archived history và deep-link. `FOLDER_CYCLE`, `FOLDER_NAME_CONFLICT`, `PARENT_NOT_AVAILABLE`, `CASE_HIERARCHY_INVALID`, `PAGE_OUT_OF_RANGE`, `RESTORE_CONFLICT`. |
 | **P6** `FR-P06-01..04`<br>Artifact/Manifest/Validation | Chọn case và role/type → upload từng file/batch → progress/checksum/object → commit metadata/manifest → validate file và dataset → signed download/derived revision. | File hợp lệ tải lại byte-identical; duplicate cùng byte được nhận diện; batch thành công từng file độc lập; DICOM/measurement có UID/frame/units/geometry rõ. | 0 byte/quá lớn, interrupted, object/DB partial, declared type khác content, thiếu UID/scaling/geometry, link hết hạn: dừng/cleanup/reconcile; retry file/operation sau query, không tạo VALID giả hoặc đoán metadata. | SHA-256, byte count, artifact role, manifest snapshot/findings, object inventory. `FILE_REQUIRED_OR_EMPTY`, `UPLOAD_TOO_LARGE`, `UPLOAD_INTERRUPTED`, `ARTIFACT_PERSISTENCE_FAILED`, `ARTIFACT_TYPE_MISMATCH`, `INPUT_METADATA_INVALID`, `DOWNLOAD_LINK_EXPIRED`. |
-| **P7** `FR-P07-01..04`<br>Machine QA/rule/history | Chọn cycle và protocol version → tạo run → nhập metric/N-A/notes/artifact → lưu draft → evaluate → drill-down rule → rerun/compare → trend projection. | PASS/WARNING/FAIL/N-A tách rõ; giá trị vượt limit vẫn là run hoàn tất với quality FAIL; zero hợp lệ; rerun có run ID mới và compare không đổi bản cũ. | Missing required, unit/NaN, baseline zero, autosave race, double click, protocol archived: giữ draft, trả field error/conflict, query trước retry, tạo revision/run mới; không biến lỗi thành PASS hoặc trend zero. | Protocol/rule/measurement snapshot, actual/limit/margin, result status, source run và projection uniqueness. `MEASUREMENT_REQUIRED`, `MEASUREMENT_INVALID`, `BASELINE_ZERO`, `REVISION_CONFLICT`, `DUPLICATE_OPERATION`, `PROTOCOL_NOT_AVAILABLE`. |
+| **P7** `FR-P07-01..04`<br>Machine QA/rule/history | Chọn cycle và protocol version → tạo run → nhập metric/N/A có lý do/notes/artifact → lưu draft → evaluate → drill-down rule → rerun/compare → trend projection. | PASS/WARNING/FAIL/N-A tách rõ; giá trị vượt limit vẫn là run hoàn tất với quality FAIL; zero hợp lệ; explicit N/A có lý do và không vào trend; rerun có run ID mới và compare không đổi bản cũ. | Missing required, unit/NaN, N/A thiếu lý do hoặc có giá trị số, baseline zero, autosave race, double click, protocol archived: giữ draft, trả field error/conflict, query trước retry, tạo revision/run mới; không biến lỗi thành PASS hoặc trend zero. | Protocol/rule/measurement snapshot, actual/limit/margin, N/A reason, result status, source run và projection uniqueness. `MEASUREMENT_REQUIRED`, `MEASUREMENT_INVALID`, `MACHINE_QA_NA_REASON_REQUIRED`, `MACHINE_QA_NA_VALUE_CONFLICT`, `MACHINE_QA_NA_REASON_INVALID`, `BASELINE_ZERO`, `REVISION_CONFLICT`, `DUPLICATE_OPERATION`, `PROTOCOL_NOT_AVAILABLE`. |
 | **P8** `FR-P08-01..04`<br>PSQA Gamma | Chọn RTDOSE reference + comparison đã VALID → preflight profile/geometry/config → accept/outbox → Redis/worker lease → Gamma → persist map/statistics/profile → refresh/retry/compare. | PSQA có RTDOSE; ENGINE_TEST JSON-only được gắn nhãn riêng; 2D/3D, global/local, absolute/relative và coverage explicit; result có denominator, counts, map, config/engine snapshot. | Thiếu RTDOSE/comparison, frame/grid/unit sai, config unsupported, no candidate/local zero, Redis/worker/lease/OOM/timeout, source drift: chặn hoặc retry bounded/dead-letter; worker cũ không commit; không bỏ điểm để tăng pass. | Run/attempt/lease/outbox, Gamma oracle, coverage/max-gamma/censoring, input/config/engine version. `RTDOSE_REQUIRED_OR_COMPARISON_REQUIRED`, `GAMMA_INPUT_INCOMPATIBLE`, `GAMMA_CONFIG_UNSUPPORTED`, `GAMMA_NO_EVALUATED_POINTS`, `GAMMA_LOCAL_ZERO_REFERENCE`, `GAMMA_DISPATCH_UNAVAILABLE`, `GAMMA_EXECUTION_INTERRUPTED`, `GAMMA_RESOURCE_LIMIT`, `GAMMA_SOURCE_CHANGED`. |
 | **P9** `FR-P09-01..04`<br>Report Builder | Chọn QA result hoặc Biological calculation → chọn template → thêm/xóa/ẩn/đổi tên/sắp xếp block → preview → lưu revision → render JSON/CSV/PDF/PNG → history/compare/download. | User toàn quyền bố cục; report biological độc lập; long table/Unicode/Vietnamese; preview và export cùng snapshot; revision cũ mở lại đúng nội dung. | Source unavailable/archived, revision conflict, content nguy hiểm, format/font/renderer/storage/download fail, timeout sau commit: giữ draft/source/export cũ, retry render/download có điều kiện; nếu object đã ghi nhưng metadata export không commit thì rollback job update, xóa đúng object key hoặc đưa vào reconciliation; không sửa analysis gốc hoặc báo export thành công giả. | Template/revision/source snapshot, block config, renderer/version, output hash/signed URL và export-job persistence outcome. `REPORT_SOURCE_UNAVAILABLE`, `REPORT_REVISION_CONFLICT`, `REPORT_CONTENT_INVALID`, `REPORT_RENDER_FAILED`, `EXPORT_FORMAT_UNSUPPORTED`, `DOWNLOAD_LINK_EXPIRED`, `REPORT_STORAGE_UNAVAILABLE`, `EXPORT_IDEMPOTENCY_CONFLICT`, `REPORT_EXPORT_PERSISTENCE_FAILED`. |
 | **P10** `FR-P10-01..04`<br>Trend/baseline/maintenance | Chọn machine/metric/timezone → lọc context tương thích → xem raw/aggregate/baseline/limit/maintenance marker → drill-down source → export/rebuild. | Không trộn machine/unit/energy/context; date end inclusive được chuẩn hóa; empty là empty; aggregate giữ count/extrema/source IDs; rebuild lặp lại không nhân đôi. | Date/timezone/filter sai, incompatible series, baseline thiếu/zero, source duplicate/archived/unavailable, query lớn, event conflict: trả field/warning/aggregate phù hợp; không tạo zero giả hoặc nối series sai. | Compatibility signature, source IDs, timezone/aggregation, baseline/event revisions, export snapshot. `TREND_SERIES_INCOMPATIBLE`, `DATE_RANGE_INVALID`, `TREND_TIMEZONE_INVALID`, `TREND_FILTER_INVALID`, `TREND_EMPTY`, `TREND_BASELINE_INVALID`, `TREND_SOURCE_UNAVAILABLE`, `TREND_QUERY_TOO_LARGE`, `MAINTENANCE_EVENT_CONFLICT`. |
@@ -2153,7 +2161,7 @@ Không thể dự đoán mọi lỗi vendor, dataset hoặc hành vi người d�
 
 Một lỗi thực tế có thể được phát hiện ở production nhưng không được sửa trực tiếp bằng cách sửa DB hoặc xóa history. Phải tái hiện ở môi trường an toàn, phát hành bản sửa qua staging, kiểm chứng rollback/backup và sau đó mới promote. Điều này không tạo phân quyền; đó là quy trình bảo toàn dữ liệu và khả năng tái hiện của sản phẩm.
 
-## 23. Hợp đồng bàn giao nghiệp vụ v0.22
+## 23. Hợp đồng bàn giao nghiệp vụ v0.23
 
 Mục này là lớp điều hành cuối của tài liệu nghiệp vụ. Mục tiêu không phải tạo thêm vai trò hoặc thủ tục phê duyệt, mà là buộc mỗi tính năng phải có một đường đi hoàn chỉnh từ ý định của người dùng đến kết quả có thể kiểm chứng. Một màn hình có đủ nút, một API trả HTTP 200 hoặc một deployment báo `Online` chưa được coi là hoàn thành nghiệp vụ.
 
@@ -2258,7 +2266,7 @@ Dù các màn hình đã dựng xong hoặc website đã truy cập được, d�
 
 Đây là điều kiện kiểm soát phạm vi và chất lượng của dự án, không phải một hệ thống phân quyền giữa bác sĩ và kỹ sư. Mọi thành viên active trong cùng organization vẫn sử dụng các nghiệp vụ ngang nhau; lịch sử, snapshot và error/recovery chỉ bảo đảm sản phẩm có thể giải thích và tiếp tục an toàn.
 
-## 24. Đặc tả nghiệp vụ bổ sung P4 — membership và invitation v0.22
+## 24. Đặc tả nghiệp vụ bổ sung P4 — membership và invitation v0.23
 
 Phần này chốt hành vi cụ thể cho việc đưa đồng nghiệp vào cùng organization. Đây là nghiệp vụ cộng tác và xác định phạm vi dữ liệu, không phải hệ thống phân quyền. Tất cả thành viên active trong cùng organization có cùng khả năng nghiệp vụ; `is_active` chỉ biểu thị membership còn được dùng để xác định context hay đã tạm ngưng.
 

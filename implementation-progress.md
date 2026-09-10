@@ -1,9 +1,16 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P07 explicit N/A contract — local verification in progress — 2026-09-10
+
+- Đã triển khai P07 explicit N/A end-to-end ở local: measurement có `is_not_applicable` và `na_reason`; N/A bắt buộc có lý do sau trim, không nhận giá trị số, metric có reason nhưng không bật N/A bị từ chối; quality status là `NA`, overall aggregation dùng `FAIL > REVIEW > WARNING > NA > PASS`, và metric N/A không tạo `TrendPoint`.
+- Backend regression `apps/api/tests/test_machine_qa.py`: **6/6 PASS**; frontend lint, typecheck, Vitest và production build: **PASS**. Đây mới là `LOCAL_VERIFIED`; chưa dùng để khẳng định candidate staging mới đã phục vụ contract này.
+- Tài liệu đã đồng bộ: `business-analysis.md` v0.23, `specification.md` v1.22, `technical-specification.md` v1.21 và `plan.md` v4.13. Planning verifier cần chạy lại sau khi chốt commit; không cần migration mới vì các field nằm trong JSON columns.
+- Case staging đã có fixture RTDOSE tổng hợp đúng từ trước và đã ở trạng thái `VALID`; theo xác nhận upload của người dùng, không tạo artifact RTDOSE trùng.
+
 ## Documentation and implementation rebaseline — 2026-09-09
 
-Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.22, `specification.md` v1.21,
-`technical-specification.md` v1.20 và `plan.md` v4.12. Dòng rebaseline lịch sử ngay dưới đây
+Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.23, `specification.md` v1.22,
+`technical-specification.md` v1.21 và `plan.md` v4.13. Dòng rebaseline lịch sử ngay dưới đây
 giữ nguyên để truy vết; không dùng các phiên bản cũ đó làm authority.
 
 `business-analysis.md` v0.21, `specification.md` v1.15, `technical-specification.md` v1.13 và `plan.md` v4.0 bổ sung feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate, state contract, testcase, workflow, error/recovery contract và gap từ source. Bản plan trước ở `docs/history/plan-v1.5.md`. Slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17 đã được sửa và kiểm thử local; staging E2E chỉ được ghi cho những workflow đã kiểm trực tiếp đúng candidate.

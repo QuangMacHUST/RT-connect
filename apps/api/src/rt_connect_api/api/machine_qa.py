@@ -35,6 +35,8 @@ class MeasurementInput(BaseModel):
     value: float | None = None
     unit: str = Field(min_length=1, max_length=40)
     note: str | None = Field(default=None, max_length=1000)
+    is_not_applicable: bool = False
+    na_reason: str | None = Field(default=None, max_length=1000)
     context: dict[str, str] = Field(default_factory=dict)
 
 
@@ -256,6 +258,37 @@ def _normalise_measurements(measurements: list[MeasurementInput]) -> list[dict[s
                 f"Metric {measurement.metric_key} must contain a finite numeric value.",
                 422,
             )
+        na_reason = measurement.na_reason.strip() if measurement.na_reason else None
+        if measurement.is_not_applicable and measurement.value is not None:
+            raise DomainError(
+                "MACHINE_QA_NA_VALUE_CONFLICT",
+                f"Metric {measurement.metric_key} cannot have a numeric value when marked N/A.",
+                422,
+            )
+        if measurement.is_not_applicable and not na_reason:
+            raise DomainError(
+                "MACHINE_QA_NA_REASON_REQUIRED",
+                f"Metric {measurement.metric_key} needs a reason when marked N/A.",
+                422,
+                details=[
+                    {
+                        "field": f"measurements.{len(normalised)}.na_reason",
+                        "message": "Provide a reason for the N/A value.",
+                    }
+                ],
+            )
+        if not measurement.is_not_applicable and na_reason:
+            raise DomainError(
+                "MACHINE_QA_NA_REASON_INVALID",
+                f"Metric {measurement.metric_key} has an N/A reason but is not marked N/A.",
+                422,
+                details=[
+                    {
+                        "field": f"measurements.{len(normalised)}.is_not_applicable",
+                        "message": "Mark the metric N/A before entering an N/A reason.",
+                    }
+                ],
+            )
         unknown_context = set(measurement.context) - allowed_context_keys
         if unknown_context:
             raise DomainError(
@@ -272,6 +305,8 @@ def _normalise_measurements(measurements: list[MeasurementInput]) -> list[dict[s
                 "value": measurement.value,
                 "unit": measurement.unit,
                 "note": measurement.note,
+                "is_not_applicable": measurement.is_not_applicable,
+                "na_reason": na_reason,
                 "context": dict(sorted(measurement.context.items())),
             }
         )
@@ -427,8 +462,13 @@ def _evaluate_rule(rule: QAProtocolRule, measurement: dict[str, object]) -> dict
         "action_level": rule.action_level,
         "margin": None,
         "status": "REVIEW",
+        "is_not_applicable": measurement.get("is_not_applicable") is True,
+        "na_reason": measurement.get("na_reason"),
         "rule_snapshot": _rule_snapshot(rule),
     }
+    if measurement.get("is_not_applicable") is True:
+        result["status"] = "NA"
+        return result
     if rule.rule_type == "NA":
         result["status"] = "NA"
         return result
@@ -547,14 +587,46 @@ def _evaluate_run(
                 }
             )
             continue
-        if measurement.get("value") is None and rule.required and rule.rule_type != "NA":
+        if rule.rule_type == "PERCENT_DEVIATION" and rule.target_value == 0:
             errors.append(
                 {
-                    "code": "MACHINE_QA_VALUE_MISSING",
+                    "code": "BASELINE_ZERO",
                     "metric_key": rule.metric_key,
-                    "message": f"Required metric {rule.display_name} has no value.",
+                    "message": (
+                        f"Metric {rule.display_name} cannot use percent deviation "
+                        "with a zero baseline."
+                    ),
                 }
             )
+            continue
+        if rule.rule_type == "NA" and measurement.get("is_not_applicable") is not True:
+            errors.append(
+                {
+                    "code": "MACHINE_QA_NA_REASON_REQUIRED",
+                    "metric_key": rule.metric_key,
+                    "message": (
+                        f"Metric {rule.display_name} must be explicitly marked N/A with a reason."
+                    ),
+                }
+            )
+            continue
+        if measurement.get("is_not_applicable") is True:
+            metric_result = _evaluate_rule(rule, measurement)
+            metric_result["context"] = measurement.get("context", {})
+            metrics.append(metric_result)
+            continue
+        if measurement.get("value") is None:
+            if rule.required:
+                errors.append(
+                    {
+                        "code": "MACHINE_QA_VALUE_MISSING",
+                        "metric_key": rule.metric_key,
+                        "message": f"Required metric {rule.display_name} has no value.",
+                    }
+                )
+            # An optional blank field means "not recorded", not N/A.  It is
+            # excluded from the quality aggregate and from trend projection;
+            # an explicit N/A requires the flag and a reason above.
             continue
         metric_result = _evaluate_rule(rule, measurement)
         metric_result["context"] = measurement.get("context", {})
@@ -580,9 +652,21 @@ def _evaluate_run(
         return
 
     statuses = {str(metric["status"]) for metric in metrics}
-    run.overall_status = (
-        "FAIL" if "FAIL" in statuses else "WARNING" if "WARNING" in statuses else "PASS"
-    )
+    # Failure precedence is deterministic and independent of rule order.  An
+    # explicit N/A is a quality outcome, never an implicit PASS; it is also
+    # excluded from TrendPoint creation below because it has no numeric actual
+    # value.  A run with both FAIL and REVIEW remains FAIL so an unresolved
+    # review condition cannot hide a failed metric.
+    if "FAIL" in statuses:
+        run.overall_status = "FAIL"
+    elif "REVIEW" in statuses:
+        run.overall_status = "REVIEW"
+    elif "WARNING" in statuses:
+        run.overall_status = "WARNING"
+    elif "NA" in statuses or not statuses:
+        run.overall_status = "NA"
+    else:
+        run.overall_status = "PASS"
     run.status = "COMPLETED"
     for metric in metrics:
         actual = metric.get("actual")

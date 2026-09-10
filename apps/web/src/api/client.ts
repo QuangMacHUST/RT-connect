@@ -206,6 +206,8 @@ export type MachineQAMeasurement = {
   value: number | null
   unit: string
   note: string | null
+  is_not_applicable?: boolean
+  na_reason?: string | null
   context?: Record<string, string>
 }
 export type MachineQARunResource = {
