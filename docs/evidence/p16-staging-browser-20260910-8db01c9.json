@@ -1,0 +1,64 @@
+{
+  "schema_version": "rt-connect.p16-staging-browser.v1",
+  "recorded_at": "2026-09-10",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_E2E_READBACK",
+  "environment": "staging",
+  "candidate_source_sha_observed": "8db01c982d7169cb250f5bf070c558bab408b7ee",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "route": "/app/biological/knowledge",
+  "data_boundary": "Only a repository-generated synthetic library entry was used. No patient or treatment reference was imported.",
+  "entry": {
+    "entry_key": "STAGING_P16_D95_20260910",
+    "version": 1,
+    "entry_type": "DOSE_LIMIT",
+    "display_name": "Staging synthetic D95 lower reference",
+    "status": "PUBLISHED",
+    "revision": 2,
+    "reference_status": "UNVERIFIED",
+    "context": "Synthetic QA context · P17_TARGET · SYNTHETIC",
+    "tissue": "P17_TARGET",
+    "metric": "D95",
+    "operator": "MIN",
+    "limit_value_gy": 5,
+    "source_type": "USER_DEFINED",
+    "content_sha256": "818d74572b3ca7eb6c1f8ccd43721448a99dfa8488dcaac774ba1b9f9adde85b"
+  },
+  "fresh_readback": {
+    "build_label_observed": "8db01c982d7169cb250f5bf070c558bab408b7ee",
+    "entry_count": 1,
+    "published_count": 1,
+    "draft_count": 0,
+    "status": "PASS"
+  },
+  "explicit_use": {
+    "target_tool": "P17_DVH",
+    "override": { "lower_limit": 4.5 },
+    "override_label": "USER_OVERRIDE",
+    "snapshot_sha256_prefix": "d5f37a51275f4116248c",
+    "observed_message": "Đã tạo use snapshot; chưa tự động áp dụng vào calculator.",
+    "auto_applied": false,
+    "result": "PASS"
+  },
+  "negative_case": {
+    "test_id": "TC-P16-E01",
+    "operation": "EXPLICIT_USE",
+    "invalid_override": { "note": "Synthetic staging explicit-use validation" },
+    "observed_code": "KNOWLEDGE_CONTENT_INVALID",
+    "observed_message": "Only explicit calculator override fields are supported.",
+    "snapshot_created": false,
+    "result": "PASS"
+  },
+  "exports": {
+    "json": "PASS",
+    "csv": "PASS",
+    "filename_completion": "UNVERIFIED_BY_CUA_DOWNLOAD_HARNESS"
+  },
+  "open_gates": [
+    "direct PostgreSQL row/checksum and organization-scope negative probe",
+    "full create/edit/clone/compare/archive/import S/E/C staging matrix",
+    "consumer binding recheck with P17 on current release",
+    "dependency fault/idempotency and release-manifest evidence",
+    "reference correctness remains user/clinical review responsibility"
+  ],
+  "status": "STAGING_PARTIAL_PASS"
+}

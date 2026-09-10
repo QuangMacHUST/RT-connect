@@ -25,6 +25,13 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - JSON/CSV export của cả hai operation pass. Spatial request trả warning `SPATIAL_ACCUMULATION_UNAVAILABLE` và không tạo snapshot; delivered prefix không khớp bị chặn bằng `FRACTION_SCHEDULE_INVALID` và không tạo snapshot. Evidence: [p15-staging-browser-20260910-8d20fc2.json](docs/evidence/p15-staging-browser-20260910-8d20fc2.json).
 - Đây là `STAGING_PARTIAL_PASS`: direct PostgreSQL/scope, idempotency replay/conflict, đầy đủ S/E/C/fault, release manifest và production gates vẫn mở; spatial accumulation vẫn cố ý `UNAVAILABLE`, filename completion download vẫn `UNVERIFIED`.
 
+## P16 — staging Knowledge Library explicit-use boundary and export — partial verified — 2026-09-10 / `8db01c9`
+
+- Trên build `8db01c982d7169cb250f5bf070c558bab408b7ee`, Knowledge Library đọc lại entry `STAGING_P16_D95_20260910 · v1`, `DOSE_LIMIT`, `PUBLISHED · rev 2`, `UNVERIFIED`, context synthetic `P17_TARGET`, `D95 MIN 5 Gy`, content SHA `818d74572b3ca7eb6c1f8ccd43721448a99dfa8488dcaac774ba1b9f9adde85b`.
+- Explicit-use với target `P17_DVH` và override hợp lệ `lower_limit=4.5` tạo snapshot prefix `d5f37a51275f4116248c…`, hiển thị `USER_OVERRIDE` và thông báo chưa tự động áp dụng vào calculator. Export JSON/CSV pass; fresh readback giữ entry `PUBLISHED` và counts `1/1/0`.
+- Override field không được hỗ trợ bị chặn bằng `KNOWLEDGE_CONTENT_INVALID`, không tạo snapshot. Evidence: [p16-staging-browser-20260910-8db01c9.json](docs/evidence/p16-staging-browser-20260910-8db01c9.json).
+- Đây là `STAGING_PARTIAL_PASS`: direct DB/scope, complete lifecycle/import/clone/compare matrix, P17 current-release binding, fault/idempotency, release manifest và production gates vẫn mở; reference `UNVERIFIED` không được diễn giải thành guideline/clinical approval.
+
 ## P19 — staging exact-SHA public verifier after P13 evidence — partial verified — 2026-09-10 / `796e078`
 
 - API, web và worker staging đều deploy thành công từ exact source SHA `796e078af7ff66f4a1f8645061183859420bf785`; deployment IDs lần lượt `02c0d58d-c892-4834-a3ac-26364586bdfa`, `e56ac637-d30c-4ef6-8cc7-46c76da5024f` và `ca73840b-56e6-4a47-a415-69cfe9c1af21`.
