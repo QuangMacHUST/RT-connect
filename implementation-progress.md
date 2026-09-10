@@ -18,6 +18,13 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Fresh tab đọc lại kết quả và history `4` comparison; JSON/CSV export pass. Negative context mismatch khi chọn snapshot khác scenario/revision/tissue bị chặn bằng `COMPARISON_CONTEXT_MISMATCH`, không tạo snapshot. Evidence: [p14-staging-browser-20260910-46121fe.json](docs/evidence/p14-staging-browser-20260910-46121fe.json).
 - Đây là `STAGING_PARTIAL_PASS`: direct PostgreSQL/scope, idempotency replay/conflict, đầy đủ S/E/C/fault, release manifest và production gates vẫn mở; filename completion download vẫn `UNVERIFIED`.
 
+## P15 — staging re-irradiation and fraction compensation — partial verified — 2026-09-10 / `8d20fc2`
+
+- Trên build `8d20fc2bf7d38985875b0ed1a2eaa826bf30586c`, re-irradiation đã validate→save→fresh readback với scenario revision `e3bcce19-d769-4873-b0e6-45a82e66ee32`; run `68c005dc-5a56-4d87-b7e6-1101a470307e` `COMPLETED`, model `biological.re-irradiation · p15-lq-reirradiation-1.0.0`, checksum `b871ba88a1120e35637732f95ad6367cca843fd6eaffb0c4553ca44bb486fd8c`, synthetic OAR tổng `BED=133.3333 Gy3`, `EQD2=80 Gy`, sensitivity recovery và trạng thái `SPATIAL UNAVAILABLE` đọc đúng.
+- Fraction compensation đã validate→save→fresh readback; run `1b7b5cec-0170-409d-81fd-58e1237e2059` `COMPLETED`, model `biological.fraction-compensation · p15-lq-compensation-1.0.0`, checksum `a3067598239035f549c55a70c07f3741f4771f2e5f020dfb1908b33ebd272dd0`. Delivered prefix `2` fraction được khóa; standard còn lại `BED=12/EQD2=10`, alternative `BED=12.2/EQD2=10.1667`, delta BED `+0.2`.
+- JSON/CSV export của cả hai operation pass. Spatial request trả warning `SPATIAL_ACCUMULATION_UNAVAILABLE` và không tạo snapshot; delivered prefix không khớp bị chặn bằng `FRACTION_SCHEDULE_INVALID` và không tạo snapshot. Evidence: [p15-staging-browser-20260910-8d20fc2.json](docs/evidence/p15-staging-browser-20260910-8d20fc2.json).
+- Đây là `STAGING_PARTIAL_PASS`: direct PostgreSQL/scope, idempotency replay/conflict, đầy đủ S/E/C/fault, release manifest và production gates vẫn mở; spatial accumulation vẫn cố ý `UNAVAILABLE`, filename completion download vẫn `UNVERIFIED`.
+
 ## P19 — staging exact-SHA public verifier after P13 evidence — partial verified — 2026-09-10 / `796e078`
 
 - API, web và worker staging đều deploy thành công từ exact source SHA `796e078af7ff66f4a1f8645061183859420bf785`; deployment IDs lần lượt `02c0d58d-c892-4834-a3ac-26364586bdfa`, `e56ac637-d30c-4ef6-8cc7-46c76da5024f` và `ca73840b-56e6-4a47-a415-69cfe9c1af21`.

@@ -1,0 +1,86 @@
+{
+  "schema_version": "rt-connect.p15-staging-browser.v1",
+  "recorded_at": "2026-09-10",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_E2E_READBACK",
+  "environment": "staging",
+  "candidate_source_sha_observed": "8d20fc2bf7d38985875b0ed1a2eaa826bf30586c",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "data_boundary": "Only synthetic Biological scenario values were used. No patient, QA case, RTDOSE, TPS or PACS linkage was created.",
+  "scenario": {
+    "id": "45550fa4-b635-4d9f-90bb-e0d2cd77c531",
+    "scenario_key": "P12_STAGING_BIO_SCENARIO_E21",
+    "revision_id": "e3bcce19-d769-4873-b0e6-45a82e66ee32",
+    "revision_number": 3,
+    "status": "SAVED"
+  },
+  "re_irradiation": {
+    "route": "/app/biological/re-irradiation",
+    "run_id": "68c005dc-5a56-4d87-b7e6-1101a470307e",
+    "status": "COMPLETED",
+    "model_key": "biological.re-irradiation",
+    "model_version": "p15-lq-reirradiation-1.0.0",
+    "result_checksum": "b871ba88a1120e35637732f95ad6367cca843fd6eaffb0c4553ca44bb486fd8c",
+    "input": {
+      "prior_course": { "course_id": "prior-2020", "dose_gy": 50, "fractions": 25, "dose_per_fraction_gy": 2, "alpha_beta_gy": 3, "recovery_mode": "NONE" },
+      "current_course": { "course_id": "current-2026", "dose_gy": 30, "fractions": 15, "dose_per_fraction_gy": 2, "alpha_beta_gy": 3 },
+      "tissue": "Synthetic OAR"
+    },
+    "observed_result": {
+      "groups": 1,
+      "total_dose_gy": 80,
+      "bed_no_recovery_gy3": 133.3333,
+      "bed_with_recovery_gy3": 133.3333,
+      "eqd2_with_recovery_gy": 80,
+      "sensitivity_recovery_fractions": [0, 0.25, 0.5, 0.75, 1],
+      "sensitivity_bed_gy3": [133.3333, 112.5, 91.6667, 70.8333, 50],
+      "spatial_status": "UNAVAILABLE"
+    },
+    "validate_only": "PASS",
+    "fresh_readback": "PASS",
+    "exports": { "json": "PASS", "csv": "PASS", "filename_completion": "UNVERIFIED_BY_CUA_DOWNLOAD_HARNESS" }
+  },
+  "fraction_compensation": {
+    "route": "/app/biological/fraction-compensation",
+    "run_id": "1b7b5cec-0170-409d-81fd-58e1237e2059",
+    "status": "COMPLETED",
+    "model_key": "biological.fraction-compensation",
+    "model_version": "p15-lq-compensation-1.0.0",
+    "result_checksum": "a3067598239035f549c55a70c07f3741f4771f2e5f020dfb1908b33ebd272dd0",
+    "input": {
+      "planned_fraction_doses_gy": [2, 2, 2, 2, 2],
+      "delivered_prefix_gy": [2, 2],
+      "alpha_beta_gy": 10,
+      "alternatives": [
+        { "id": "standard", "remaining_fx": 3, "total_dose_gy": 10, "bed_gy": 12, "eqd2_gy": 10, "delta_bed_gy": 0, "prefix": "UNCHANGED" },
+        { "id": "hypofractionated", "remaining_fx": 3, "total_dose_gy": 10, "bed_gy": 12.2, "eqd2_gy": 10.1667, "delta_bed_gy": 0.2, "prefix": "UNCHANGED" }
+      ],
+      "time_model": "NONE"
+    },
+    "validate_only": "PASS",
+    "fresh_readback": "PASS",
+    "exports": { "json": "PASS", "csv": "PASS", "filename_completion": "UNVERIFIED_BY_CUA_DOWNLOAD_HARNESS" }
+  },
+  "negative_cases": {
+    "spatial_request": {
+      "operation": "VALIDATE_ONLY",
+      "observed_code": "SPATIAL_ACCUMULATION_UNAVAILABLE",
+      "behavior": "warning_only; no voxel accumulation or registration was run; no snapshot created",
+      "result": "PASS"
+    },
+    "delivered_prefix_mismatch": {
+      "operation": "VALIDATE_ONLY",
+      "input_change": "delivered prefix [2,3] against planned [2,2,2,2,2]",
+      "observed_code": "FRACTION_SCHEDULE_INVALID",
+      "behavior": "rejected; no snapshot created",
+      "result": "PASS"
+    }
+  },
+  "open_gates": [
+    "direct PostgreSQL row/checksum and organization-scope negative probe",
+    "same-key replay and different-fingerprint idempotency conflict",
+    "full P15 S/E/C and dependency fault matrix",
+    "release manifest and production parity",
+    "spatial accumulation remains intentionally unavailable"
+  ],
+  "status": "STAGING_PARTIAL_PASS"
+}
