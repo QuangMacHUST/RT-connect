@@ -1,0 +1,47 @@
+{
+  "schema_version": "rt-connect.p11-railway-parity.v1",
+  "captured_at_utc": "2026-09-10T03:53:19Z",
+  "environment": "staging",
+  "candidate": {
+    "source_sha": "907b9d256d221e628a7d5e0b2b578c52b7dd6c14",
+    "branch": "codex/p4-org-site-machine",
+    "schema_revision": "20260909_0019"
+  },
+  "services": {
+    "api": {
+      "service": "Railway-API-staging",
+      "status": "SUCCESS",
+      "root_directory": "/apps/api",
+      "builder": "DOCKERFILE",
+      "healthcheck_path": "/api/v1/health",
+      "pre_deploy_command": ["alembic upgrade head"]
+    },
+    "web": {
+      "service": "RT-connect-web-staging",
+      "status": "SUCCESS",
+      "root_directory": "/apps/web",
+      "builder": "DOCKERFILE",
+      "healthcheck_path": null
+    },
+    "worker": {
+      "service": "RT-connect-gamma-worker-staging",
+      "status": "SUCCESS",
+      "root_directory": "/apps/api",
+      "builder": "DOCKERFILE",
+      "start_command": "python -m rt_connect_api.worker",
+      "healthcheck_path": null,
+      "pre_deploy_command": []
+    }
+  },
+  "source_parity": true,
+  "public_contract": {
+    "verifier": "docs/evidence/p11-public-probe-907b9d2.json",
+    "passed": true,
+    "checks": 15,
+    "failed_checks": 0
+  },
+  "scope": "Read-only Railway deployment metadata and public API/web probe; no staging data mutation.",
+  "staging_fixture": "Authorized synthetic RTDOSE fixture already existed as VALID; no duplicate upload and no new QA run.",
+  "no_secrets_or_phi": true,
+  "not_a_clinical_readiness_claim": true
+}

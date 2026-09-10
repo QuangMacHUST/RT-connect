@@ -122,3 +122,7 @@ P11 staging parity rebuild marker (2026-09-10): this watched-file marker keeps
 the API source SHA aligned with the web and worker after a root-document-only
 commit. The marker has no runtime behavior; all three services must still be
 rechecked for exact commit SHA, schema revision and successful deployment.
+
+P11 parity evidence checkpoint (2026-09-10): the preceding exact-SHA public
+candidate was `907b9d256d221e628a7d5e0b2b578c52b7dd6c14`; the next commit
+carrying this marker is intentionally a fresh three-service rebuild candidate.
