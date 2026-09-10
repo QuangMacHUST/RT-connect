@@ -1,0 +1,65 @@
+{
+  "schema_version": "rt-connect.p11-staging-consumer-browser.v2",
+  "captured_at_utc": "2026-09-10T08:44:18Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_CONSUMER_READBACK_PARTIAL",
+  "environment": "staging",
+  "candidate_source_sha": "27bf05137e065853ed37716a8a7b928dccb03a2f",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "protocol_route": "/app/qa-protocols?release=27bf051",
+  "consumer_route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/machine-qa?release=27bf051",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "data_boundary": "Authenticated browser readback used existing synthetic QA records only; no patient, PACS or treatment dataset was used.",
+  "protocol_library_readback": {
+    "visible_non_archived_versions": 3,
+    "active_protocols": [
+      "MACHINE_QA_BASELINE v1",
+      "STAGING_P11_QA v2"
+    ],
+    "draft_protocols": ["STAGING_P11_E2E_B7C3 v2"],
+    "archived_filter_readback": {
+      "total_versions": 5,
+      "archived_versions": [
+        "STAGING_P11_E2E_B7C3 v1",
+        "STAGING_P11_QA v1"
+      ]
+    },
+    "selected_active_protocol": {
+      "protocol_key": "MACHINE_QA_BASELINE",
+      "version_number": 1,
+      "revision": 1,
+      "status": "ACTIVE",
+      "rule_count": 3,
+      "source_type": "USER_DEFINED",
+      "applicability": {}
+    },
+    "accessibility_result": "Protocol list, status filter, archived checkbox, detail fields, rule table and clone/archive controls were exposed in the browser accessibility tree."
+  },
+  "machine_qa_consumer_readback": {
+    "selected_protocol": "Machine QA baseline v1 ACTIVE",
+    "protocol_revision": 1,
+    "rule_count": 3,
+    "snapshot_message_observed": "Run này đã pin protocol snapshot; archive hoặc version mới không thay đổi kết quả lịch sử.",
+    "run_history_count": 2,
+    "selected_run": {
+      "run_id": "5ac1a1c1-a985-4a40-97e4-0c8a8b6864c0",
+      "status": "COMPLETED",
+      "result": "PASS",
+      "snapshot_protocol": "MACHINE_QA_BASELINE v1",
+      "metrics": 3
+    },
+    "history_readback": "Both existing runs remained COMPLETED/PASS and were readable without creating a new run."
+  },
+  "mutation_boundary": {
+    "new_protocol_created": false,
+    "protocol_archived": false,
+    "new_machine_qa_run_created": false,
+    "fixture_uploaded": false
+  },
+  "open_gates": [
+    "Complete P11 S/E/C matrix on current candidate, including stale/uncertain/scope-negative cases",
+    "Consumer recheck for Gamma, Report, Trend and cross-module old-history after protocol changes",
+    "Direct database lineage/fingerprint evidence and release-manifest closure",
+    "Visual accessibility review beyond accessibility-tree readback and production promotion"
+  ],
+  "result": "STAGING_PARTIAL_PASS"
+}

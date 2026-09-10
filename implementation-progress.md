@@ -23,6 +23,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Sau khi push packet P10, API, web và worker staging đã được yêu cầu deploy cùng source SHA `6df4ed581be91f193fe1a07c0fc3ef23c18d70c0`. Public verifier kiểm tra candidate thực tế: `15/15 PASS`, `failed_check_count=0`, API version và web bundle cùng exact SHA, schema `20260909_0019`, `/health` `ok`, `/ready` `ready`, OpenAPI routes và unauthenticated organization boundary đều đúng.
 - Evidence: `docs/evidence/p19-staging-public-smoke-20260910-6df4ed5.json`. Đây chỉ là public contract/source-parity evidence cho staging; không đóng P19 vì authenticated remote E2E, private dependency, backup/restore, rollback, alert và production promotion vẫn chưa có bằng chứng.
 
+## P11 — staging protocol library and Machine QA consumer readback — partial verified — 2026-09-10 / `27bf051`
+
+- Trên candidate `27bf051`, QA Protocol Library đọc được `3` version không archive; filter archived đọc lại `5` version gồm `STAGING_P11_E2E_B7C3 v1` và `STAGING_P11_QA v1` ở trạng thái `ARCHIVED`. Detail ACTIVE `MACHINE_QA_BASELINE v1` hiển thị revision `1`, `3` rule, source `USER_DEFINED` và applicability `{}`.
+- Trên cùng candidate, Machine QA case staging `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24` đọc đúng protocol ACTIVE, source/revision/rule count và thông báo đã pin protocol snapshot. Hai run lịch sử vẫn `COMPLETED/PASS`, không tạo run mới, không upload fixture và không thay đổi protocol trong lần kiểm tra.
+- Evidence: `docs/evidence/p11-staging-consumer-browser-20260910-27bf051.json`. Đây là authenticated consumer readback `STAGING_PARTIAL_PASS`; full P11 S/E/C, cross-consumer recheck, direct DB lineage, release and production gates vẫn mở.
+
 ## P10 — staging negative/accessibility recheck — partial verified — 2026-09-10 / `a30e365`
 
 - Trên candidate `a30e365`, Trend workspace đã được đọc bằng accessibility tree: lifecycle tables/actions, filter controls, source links và error/empty/retry states đều có semantic text/controls đọc được.

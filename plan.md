@@ -1070,7 +1070,7 @@ P11 local follow-up ngày 2026-09-10 đã hiện thực consumer snapshot `p11.p
 - [x] P11-W01 — Chuẩn hóa protocol family/version/rule stable keys, organization scope, uniqueness và migration `20260908_0011`. `LOCAL_VERIFIED`.
 - [x] P11-W02 — Editor/validator kiểm finite limits, unit, rule type, min/max, target, tolerance/action ordering, duplicate key, source và applicability. `LOCAL_VERIFIED`.
 - [x] P11-W03 — Clone deep-copy rule/reference bindings; lifecycle DRAFT/ACTIVE/ARCHIVED, optimistic revision và active-only consumer selection. `LOCAL_VERIFIED`.
-- [ ] P11-W04 — Nối đầy đủ P7/P8/P9/P10 consumer snapshot, source panel và remove dependency vào seed synthetic trong workflow thường. `IN_PROGRESS`.
+- [ ] P11-W04 — Nối đầy đủ P7/P8/P9/P10 consumer snapshot, source panel và remove dependency vào seed synthetic trong workflow thường. `IN_PROGRESS`: current candidate đã có staging readback cho Protocol Library + Machine QA snapshot; Gamma/Report/Trend consumer matrix và direct lineage/release evidence vẫn mở.
 - [ ] P11-VERIFY — chạy ma trận S/E/C trên local và staging đúng SHA/schema; ghi result/evidence/linked FR; đối chiếu design/data/API.
 - [ ] P11-HANDOFF — cập nhật contract/OpenAPI, migration/release notes, release manifest, staging browser evidence và backlog còn lại.
 
