@@ -1,18 +1,20 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
-- Phiên bản: **4.14**, ngày 2026-09-10.
+- Phiên bản: **4.15**, ngày 2026-09-10.
 - Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.24.
-- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.23.
-- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.22.
+- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.24.
+- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.23.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
-- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.13, bổ sung contract và implementation P7 cho explicit N/A có lý do, aggregation tổng định danh và loại trừ metric N/A khỏi trend; bổ sung P10 query count-preflight, raw/aggregate budget cấu hình được và CSV bucket lineage; giữ bằng chứng P8 browser staging cho cặp RTDOSE + measurement 3D và oracle Gamma độc lập 6/6 case; đồng thời ghi rõ fixture RTDOSE đã tồn tại trong case staging nên không upload bản sao. Các thay đổi trước về process-RSS/resource-policy/API-responsiveness P17-W06, migration P4 `20260909_0018`, `20260908_0017` là migration riêng của P17, các contract member/invitation và route `/invite` vẫn là authority. Tiếp tục chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20. Các slice P6/P8/P9/P10/P11/P12/P13/P14/P15/P16/P17, engine/API/UI Visual Dose/DVH, CT preview bounded single-file/multi-frame, explicit P11/P16 limit binding, DVH report source và kết quả kiểm thử local được giữ nguyên theo progress log. Case staging P17 hiện có 2 RTDOSE, 1 RTSTRUCT và 1 CT hợp lệ; authenticated browser đã chạy DVH saved-run/replay/refresh, CT overlay/no-overlap smoke, export-content probe và Gamma 3D với RTDOSE reference. Nội dung JSON/CSV đã parse/hash và khớp snapshot; targeted PostgreSQL row/checksum/scope probe và object-storage byte re-hash đã PASS trong API container staging; việc trình duyệt đổi đuôi file vẫn là một observation riêng. Candidate public được kiểm exact-SHA `902b75729c97b6927465d70b93225d5702bdc83f` với evidence `docs/evidence/p19-staging-public-smoke-20260910-902b757.json`; API, worker và web cùng source/schema. Không coi source-parity là PASS nếu chỉ một service được Railway deploy. Các gate P8 crash/ack/bounded retry/resource-large-input, P17 binding/report/fault/volume/browser export finalization/release và P18–P20 vẫn mở. P17 local resource gate `LOCAL_RESOURCE_GATE_PASS` dưới policy `1 CPU/768 MiB` không thay worker/service capacity Railway hoặc staging fault evidence. **Delta local queue:** `docker-compose.yml` hiện có service `worker` tách khỏi API; verifier disposable `scripts/verify-local-gamma-queue.py` đã chạy thành công happy path, duplicate/replay guard, bounded storage retry 3 attempts, dead-letter và zero pending Redis message. Đây là local support evidence, không thay staging fault/resource/release gate. Không suy diễn từ test local, workload Docker local hoặc một lần Railway báo Online.
+- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.14, bổ sung P11 consumer snapshot đầy đủ (source/applicability/revision/lineage/rule reference/capability), fail-closed khi protocol/rule lệch snapshot, trend protocol-version lineage và loại bỏ seed synthetic khỏi workflow Machine QA thông thường; đồng thời giữ contract P7 explicit N/A, P10 query count-preflight/raw-aggregate budget/CSV bucket lineage, bằng chứng P8 browser staging và oracle Gamma độc lập. Fixture RTDOSE tổng hợp đã được người dùng cho phép nhưng đã tồn tại hợp lệ trong case staging nên không upload bản sao và không tạo QA run mới. Các thay đổi trước về process-RSS/resource-policy/API-responsiveness P17-W06, migration P4 `20260909_0018`, `20260908_0017` là migration riêng; các contract member/invitation và route `/invite` vẫn là authority. Tiếp tục chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20. Các gate staging P8/P9/P10/P11/P12–P20 chưa được tự nâng chỉ vì local test pass hoặc Railway báo Online.
 
 > Cập nhật candidate P10 ngày 2026-09-10: `a089d2adb103b106bce7d6c96112e3c426d7e8bb` đã được Railway staging deploy đồng thời cho API, web và worker; public verifier đạt 15/15. Evidence runtime/source-parity: `docs/evidence/p10-trend-query-budget-20260910-a089d2a.json`. Các gate large-series authenticated, complete S/E/C, export/source revalidation và visual/accessibility vẫn mở.
 >
 > Follow-up P10 bounded-error UX candidate `a7c1ad4622bbb57599127b96d9ef27451a715ca0` giữ source parity API/web/worker và public verifier 15/15; structured `aggregate`/`matched_points`/`max_points` đã được hiển thị ở web client. Evidence: `docs/evidence/p10-bounded-error-ux-20260910-a7c1ad4.json`.
 >
 > Follow-up P10 SQL preflight candidate `f4197d82bd287112d1aafae44088678cd967cecf` áp dụng context predicate ngay trong bounded source read, giữ fallback case/protocol cho projection cũ và vẫn chạy Python matcher cuối; public verifier 15/15, full backend 185/185. Evidence: `docs/evidence/p10-sql-filtered-preflight-20260910-f4197d8.json`.
+
+> Follow-up P11 consumer snapshot local trên working tree ngày 2026-09-10: run mới pin `p11.protocol-snapshot.v1` ngay khi tạo; snapshot giữ source/applicability/revision/lineage/capability và toàn bộ rule reference; evaluate sau archive vẫn đọc snapshot đã chấp nhận, mismatch fail-closed; Trend giữ `protocol_version_id`; Machine QA UI dẫn người dùng tới QA Protocol Library thay vì seed synthetic. Evidence local: `docs/evidence/p11-consumer-snapshot-20260910-local.json`. Chưa deploy candidate này lên staging và chưa đóng P11 browser/S-E-C/release gates.
 
 ## 1. Cách thực hiện kế hoạch
 
@@ -1025,6 +1027,8 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - **Owner thực thi:** người/agent phụ trách module ghi tên trong checkpoint; người dùng cung cấp dữ liệu hoặc đánh giá workflow khi cần, không có cấp phê duyệt theo chức danh.
 - **Trạng thái hiện tại:** `LOCAL_VERIFIED` cho model, migration `20260908_0011`, validate/create/edit/clone/activate/archive/compare, organization scope và Machine QA active-only selection; staging browser/consumer E2E và release evidence còn mở.
 
+P11 local follow-up ngày 2026-09-10 đã hiện thực consumer snapshot `p11.protocol-snapshot.v1` khi tạo run: snapshot giữ protocol identity/version/status-at-use, source/reference, applicability, lineage, capability và toàn bộ rule reference. Evaluate sau archive vẫn chấp nhận đúng snapshot ACTIVE đã pin; nếu definition hiện tại lệch snapshot thì fail-closed với `MACHINE_QA_PROTOCOL_SNAPSHOT_MISMATCH`. Trend giữ `protocol_version_id`, report Machine QA giữ snapshot nguồn, còn UI không seed synthetic trong workflow thường và đọc source panel từ snapshot của run. Focused `test_protocol_library.py` hiện đạt `4/4`; đây mới là local evidence, chưa đóng staging browser/S-E-C/release.
+
 ### Workflow P11
 
 1. Resolve identity và organization context trước khi đọc library; hiển thị trạng thái loading/empty/error đúng organization.
@@ -1071,6 +1075,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 | TC-P11-S07 | Archive version đang active | Chuyển `ACTIVE → ARCHIVED`; version biến khỏi lựa chọn run mới nhưng detail/history vẫn đọc được. |
 | TC-P11-S08 | Hai thành viên cùng organization thao tác | Cả hai dùng cùng workflow; không yêu cầu role bác sĩ/kỹ sư hoặc approval riêng. |
 | TC-P11-S09 | Run/report cũ sau khi protocol đổi/archive | Snapshot cũ vẫn giữ limit/rule/source/version cũ; run mới chỉ dùng active version explicit. |
+| TC-P11-S10 | Tạo run, archive protocol sau đó mở lại run và source panel | Run/report/trend đọc đúng `p11.protocol-snapshot.v1`, revision/source/applicability/capability/rule reference vẫn là dữ liệu tại thời điểm tạo; không resolve archive revision live. |
 
 ### Trường hợp lỗi và phục hồi P11
 
@@ -1094,6 +1099,7 @@ Mã ở cột “Phân loại” là contract code. Mọi lỗi phải có HTTP 
 | TC-P11-E14 | Mất mạng sau commit trước khi nhận response | `MUTATION_RESULT_UNKNOWN` | Không gửi lại ngay; list/detail theo idempotency/request context, chỉ retry nếu chưa có kết quả. |
 | TC-P11-E15 | DB lỗi/constraint lỗi trong lúc ghi header, rule hoặc audit | `PROTOCOL_PERSISTENCE_FAILED` / `PROTOCOL_VERSION_CONFLICT` | Rollback toàn transaction; không để protocol không có rule hoặc audit giả; retry bounded. |
 | TC-P11-E16 | List/compare response lỗi schema, timeout hoặc session hết hạn | `SERVICE_UNAVAILABLE` / `SESSION_UNAVAILABLE` | Dừng spinner, giữ filter/draft, refresh session một lần hoặc retry có giới hạn; không hiển thị dữ liệu cache của identity khác. |
+| TC-P11-E17 | Snapshot đã pin khác protocol/rule hiện tại ngoài thay đổi lifecycle archive | `MACHINE_QA_PROTOCOL_SNAPSHOT_MISMATCH` | Dừng đánh giá fail-closed, không tạo metric/trend/report result mới; giữ snapshot để điều tra và yêu cầu clone/version mới. |
 
 ### Bất biến và điều kiện đóng P11
 
@@ -2186,10 +2192,11 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 **Runtime addendum cùng ngày:** sau source-parity recovery, candidate `b0263c932c740d4f36f19867241d5c1e07014765` đạt **15/15 checks PASS** trên public staging với schema `20260909_0019`; evidence `docs/evidence/p19-staging-public-smoke-20260909-b0263c9.json`. Browser DVH/report evidence vẫn dùng đúng case synthetic đã upload trước đó; không upload lại RTDOSE/RTSTRUCT/CT. Payload JSON/CSV export parse/hash khớp saved snapshot, còn việc browser đổi `.crdownload` thành filename cuối vẫn `UNVERIFIED` và tiếp tục là gate mở. Evidence browser: `docs/evidence/p17-staging-dvh-ct-browser-20260909.json`.
 
-### 7.3. Revision hiện hành v4.14
+### 7.3. Revision hiện hành v4.15
 
-Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.24, `specification.md` v1.23,
-`technical-specification.md` v1.22 và `plan.md` v4.14. Revision v4.14 giữ status/readiness
+Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.24, `specification.md` v1.24,
+`technical-specification.md` v1.23 và `plan.md` v4.15. Revision v4.15 bổ sung consumer snapshot
+P11 đầy đủ cho Machine QA, trend và report, cùng UI source panel đọc snapshot; revision v4.14 giữ status/readiness
  surface P20, bổ sung P4 member/invitation execution contract và P7 Machine QA explicit-N/A execution contract:
  workflow `/invite`, token
 hash-at-rest, expiry/revoke/replay, pending uniqueness, active-context và last-active invariant;

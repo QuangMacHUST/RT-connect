@@ -1,0 +1,45 @@
+{
+  "schema_version": "rt-connect.p11-consumer-snapshot.v1",
+  "captured_at_utc": "2026-09-10T00:00:00Z",
+  "environment": "local",
+  "candidate": {
+    "source_sha": "pending-commit",
+    "branch": "codex/p4-org-site-machine",
+    "schema_revision": "20260909_0019"
+  },
+  "scope": "local focused protocol consumer snapshot regression; no staging mutation",
+  "implementation": {
+    "snapshot_schema": "p11.protocol-snapshot.v1",
+    "pinned_at": ["machine_qa_run_create", "machine_qa_rerun"],
+    "fields": [
+      "protocol identity/family/version/status_at_use",
+      "revision",
+      "applicability",
+      "source type/reference/source lineage",
+      "engine capability",
+      "complete rule/limit/action/required/note/reference snapshot"
+    ],
+    "archive_behavior": "An accepted ACTIVE snapshot remains evaluable after lifecycle archive; lifecycle revision change alone is not a definition mismatch.",
+    "mismatch_behavior": "Definition/source/applicability/capability/rule mismatch fails closed with MACHINE_QA_PROTOCOL_SNAPSHOT_MISMATCH and does not emit metrics or trend points.",
+    "consumer_lineage": [
+      "Trend source context includes protocol_version_id.",
+      "Machine QA report source preserves the run protocol snapshot.",
+      "Machine QA UI source panel reads pinned snapshot metadata.",
+      "Normal Machine QA workflow does not seed a synthetic protocol."
+    ]
+  },
+  "local_verification": {
+    "focused_protocol_library": "4/4 PASS",
+    "changed_api_ruff": "PASS",
+    "changed_api_mypy": "PASS",
+    "staging_upload": "not performed; authorized RTDOSE fixture already existed as VALID",
+    "new_staging_qa_run": "not created"
+  },
+  "limitations": [
+    "This packet is local implementation evidence only.",
+    "Staging authenticated browser consumer E2E, complete S/E/C, visual/accessibility and release-manifest gates remain open.",
+    "No claim of clinical readiness or production promotion."
+  ],
+  "no_secrets_or_phi": true,
+  "not_a_clinical_readiness_claim": true
+}

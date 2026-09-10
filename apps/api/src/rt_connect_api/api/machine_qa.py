@@ -384,7 +384,12 @@ def _seed_protocol(
 
 
 def _protocol_or_error(
-    session: Session, organization_id: UUID, protocol_id: UUID | None
+    session: Session,
+    organization_id: UUID,
+    protocol_id: UUID | None,
+    *,
+    allow_archived_pinned_snapshot: bool = False,
+    pinned_snapshot: dict[str, object] | None = None,
 ) -> QAProtocolVersion:
     if protocol_id is None:
         raise DomainError("QA_PROTOCOL_REQUIRED", "A QA protocol version is required.", 422)
@@ -396,7 +401,13 @@ def _protocol_or_error(
     )
     if protocol is None:
         raise DomainError("QA_PROTOCOL_NOT_FOUND", "The QA protocol version was not found.", 404)
-    if protocol.status != "ACTIVE":
+    if protocol.status != "ACTIVE" and not (
+        allow_archived_pinned_snapshot
+        and protocol.status == "ARCHIVED"
+        and isinstance(pinned_snapshot, dict)
+        and pinned_snapshot.get("id") == str(protocol.id)
+        and pinned_snapshot.get("status_at_use") == "ACTIVE"
+    ):
         raise DomainError("QA_PROTOCOL_INACTIVE", "The selected QA protocol is not active.", 409)
     return protocol
 
@@ -446,6 +457,64 @@ def _rule_snapshot(rule: QAProtocolRule) -> dict[str, object]:
         "required": rule.required,
         "sort_order": rule.sort_order,
         "note": rule.note,
+        "reference": rule.reference,
+    }
+
+
+def _protocol_snapshot(
+    protocol: QAProtocolVersion, rules: list[QAProtocolRule]
+) -> dict[str, object]:
+    """Return the complete immutable P11 consumer snapshot for a QA run.
+
+    The live protocol row is still returned for library navigation, but a run,
+    report, and trend projection must be understandable without resolving a
+    newer protocol version.  Keep source, applicability, revision, lineage and
+    every rule field in the accepted-run snapshot.
+    """
+
+    rule_types = sorted({rule.rule_type for rule in rules})
+    supported_rule_types = sorted(
+        {
+            "RANGE",
+            "MAX",
+            "MIN",
+            "ABSOLUTE_DEVIATION",
+            "PERCENT_DEVIATION",
+            "NA",
+        }
+    )
+    unsupported_rule_types = sorted(set(rule_types) - set(supported_rule_types))
+    return {
+        "schema_version": "p11.protocol-snapshot.v1",
+        "id": str(protocol.id),
+        "organization_id": str(protocol.organization_id),
+        "protocol_key": protocol.protocol_key,
+        "name": protocol.name,
+        "qa_type": protocol.qa_type,
+        "version_number": protocol.version_number,
+        "revision": protocol.revision,
+        "status_at_use": protocol.status,
+        "description": protocol.description,
+        "effective_note": protocol.effective_note,
+        "applicability": protocol.applicability,
+        "source": {
+            "type": protocol.source_type,
+            "reference": protocol.source_reference,
+            "source_protocol_version_id": (
+                str(protocol.source_protocol_version_id)
+                if protocol.source_protocol_version_id
+                else None
+            ),
+        },
+        "capability": {
+            "consumer": "MACHINE_QA",
+            "engine_key": "machine-qa.rule-evaluator",
+            "engine_version": "p7-rule-evaluator.v1",
+            "status": "SUPPORTED" if not unsupported_rule_types else "UNSUPPORTED",
+            "rule_types": rule_types,
+            "unsupported_rule_types": unsupported_rule_types,
+        },
+        "rules": [_rule_snapshot(rule) for rule in rules],
     }
 
 
@@ -561,6 +630,44 @@ def _evaluate_run(
         run.completed_at = datetime.now(UTC)
         return
 
+    existing_snapshot = run.result_snapshot.get("protocol_snapshot")
+    if isinstance(existing_snapshot, dict):
+        expected_snapshot = _protocol_snapshot(protocol, rules)
+        # An accepted run may be evaluated after its protocol is archived.  In
+        # that case status_at_use remains ACTIVE in the stored snapshot; every
+        # other protocol/source/rule field must still match exactly.
+        expected_snapshot["status_at_use"] = existing_snapshot.get(
+            "status_at_use", expected_snapshot["status_at_use"]
+        )
+        expected_snapshot["revision"] = existing_snapshot.get(
+            "revision", expected_snapshot["revision"]
+        )
+        if existing_snapshot != expected_snapshot:
+            run.status = "FAILED"
+            run.overall_status = None
+            run.completed_at = datetime.now(UTC)
+            run.error_snapshot = [
+                {
+                    "code": "MACHINE_QA_PROTOCOL_SNAPSHOT_MISMATCH",
+                    "message": (
+                        "The pinned protocol snapshot does not match the current "
+                        "protocol definition; evaluation was stopped."
+                    ),
+                }
+            ]
+            run.result_snapshot = {
+                "schema_version": "p7.machine-qa-result.v2",
+                "protocol_snapshot": existing_snapshot,
+                "metrics": [],
+                "evaluated_at": run.completed_at.isoformat(),
+            }
+            return
+        protocol_snapshot = existing_snapshot
+    else:
+        # Legacy draft runs created before P11 pinning are upgraded at the
+        # first evaluation, while new runs always receive a snapshot at create.
+        protocol_snapshot = _protocol_snapshot(protocol, rules)
+
     by_key = {str(item.get("metric_key")): item for item in run.measurements}
     errors: list[dict[str, object]] = []
     metrics: list[dict[str, object]] = []
@@ -636,13 +743,8 @@ def _evaluate_run(
     run.completed_at = datetime.now(UTC)
     run.error_snapshot = errors
     run.result_snapshot = {
-        "protocol_snapshot": {
-            "id": str(protocol.id),
-            "protocol_key": protocol.protocol_key,
-            "name": protocol.name,
-            "version_number": protocol.version_number,
-            "rules": [_rule_snapshot(rule) for rule in rules],
-        },
+        "schema_version": "p7.machine-qa-result.v2",
+        "protocol_snapshot": protocol_snapshot,
         "metrics": metrics,
         "evaluated_at": run.completed_at.isoformat(),
     }
@@ -766,13 +868,18 @@ def create_run(
     case = _case_or_error(session, case_id, context.organization_id)
     protocol = _protocol_or_error(session, context.organization_id, payload.protocol_version_id)
     measurements = _normalise_measurements(payload.measurements)
+    rules = _protocol_rules(session, protocol.id, context.organization_id)
     run = MachineQARun(
         organization_id=context.organization_id,
         qa_case_id=case.id,
         machine_id=case.machine_id,
         protocol_version_id=protocol.id,
         measurements=measurements,
-        result_snapshot={},
+        result_snapshot={
+            "schema_version": "p7.machine-qa-result.v2",
+            "protocol_snapshot": _protocol_snapshot(protocol, rules),
+            "metrics": [],
+        },
         error_snapshot=[],
         created_by_user_identity_id=_actor(session, context),
     )
@@ -856,7 +963,18 @@ def evaluate_run(
         raise DomainError("MACHINE_QA_RUN_IMMUTABLE", "This run cannot be evaluated again.", 409)
     context = resolve_session_context(session, identity)
     case = _case_or_error(session, run.qa_case_id, context.organization_id)
-    protocol = _protocol_or_error(session, context.organization_id, run.protocol_version_id)
+    pinned_snapshot = (
+        run.result_snapshot.get("protocol_snapshot")
+        if isinstance(run.result_snapshot, dict)
+        else None
+    )
+    protocol = _protocol_or_error(
+        session,
+        context.organization_id,
+        run.protocol_version_id,
+        allow_archived_pinned_snapshot=True,
+        pinned_snapshot=pinned_snapshot if isinstance(pinned_snapshot, dict) else None,
+    )
     _evaluate_run(session, run, case, protocol)
     session.commit()
     session.refresh(run)
@@ -882,7 +1000,13 @@ def rerun(
         machine_id=case.machine_id,
         protocol_version_id=protocol.id,
         measurements=list(source.measurements),
-        result_snapshot={},
+        result_snapshot={
+            "schema_version": "p7.machine-qa-result.v2",
+            "protocol_snapshot": _protocol_snapshot(
+                protocol, _protocol_rules(session, protocol.id, context.organization_id)
+            ),
+            "metrics": [],
+        },
         error_snapshot=[],
         supersedes_run_id=source.id,
         created_by_user_identity_id=_actor(session, context),

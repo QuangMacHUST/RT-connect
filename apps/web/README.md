@@ -74,3 +74,9 @@ P07 explicit-N/A marker (2026-09-10): the Machine QA UI exposes the N/A checkbox
 requires a reason, disables the numeric field while selected, and displays the
 reason/status in the result. Keep this marker aligned with the API service root
 so all three services are rebuilt from the same source commit.
+
+P11 consumer-snapshot marker (2026-09-10): the Machine QA source panel reads
+protocol revision/source/applicability/rule count from the persisted run snapshot,
+and the normal workflow links to QA Protocol Library instead of seeding a
+synthetic protocol. Keep this marker aligned with the API service root so all
+three services are rebuilt from the same source commit.

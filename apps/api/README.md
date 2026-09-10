@@ -110,3 +110,10 @@ P07 explicit-N/A marker (2026-09-10): Machine QA now carries an explicit
 trend projection and cannot turn an overall failed run into PASS. Rebuild all
 three services from the commit carrying this marker before reusing the P07
 staging candidate.
+
+P11 consumer-snapshot marker (2026-09-10): Machine QA run creation pins
+`p11.protocol-snapshot.v1` with source, applicability, capability and rule
+references; evaluation is fail-closed on definition mismatch while allowing the
+accepted ACTIVE snapshot to be evaluated after archive. Trend and report keep
+the pinned protocol lineage. Rebuild API, worker and web from the same commit
+before reusing a P11 staging candidate.

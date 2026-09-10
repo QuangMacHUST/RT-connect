@@ -1,10 +1,10 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.23**; ngày 2026-09-10.
+- File: specification.md; version **1.24**; ngày 2026-09-10.
 - Nguồn nghiệp vụ: business-analysis.md v0.24.
-- Kế hoạch triển khai: plan.md v4.14, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.22.
-- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.23 giữ toàn bộ contract v1.22, bổ sung contract Trend query budget: raw/aggregate có giới hạn cấu hình trước khi materialize, aggregate lớn phải có cảnh báo và CSV bucket phải giữ lineage; đồng thời giữ contract Machine QA explicit N/A, malformed Redis dispatch, peak RSS/resource/API responsiveness P17 và P4 membership/invitation.
+- Kế hoạch triển khai: plan.md v4.15, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.23.
+- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.24 giữ toàn bộ contract v1.23, bổ sung consumer snapshot P11 `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/capability/rule lineage, archive semantics và fail-closed khi snapshot lệch; UI phải hiển thị metadata đã pin và workflow thường không seed synthetic. Các contract Trend query budget, Machine QA explicit N/A, malformed Redis dispatch, peak RSS/resource/API responsiveness P17 và P4 membership/invitation vẫn được giữ nguyên.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
 
@@ -889,7 +889,7 @@ một code API.
 
 **Failure contract:** Các mã ở SPEC-P11.2 là taxonomy có thể kiểm chứng. Nếu code triển khai dùng tên tương đương, phải cập nhật OpenAPI, test mapping và plan cùng commit; không để tài liệu và response thực tế lệch nhau.
 
-**P11 implementation status 2026-09-08:** migration `20260908_0011` đã ở head trên PostgreSQL local. Backend full suite `81/81`, focused `test_protocol_library.py` `3/3`, Ruff/mypy, frontend lint/typecheck/Vitest `1/1` và build đã pass local. Đây mới là local implementation evidence; staging browser, consumer snapshot qua P7/P8/P9/P10, complete error/boundary matrix, visual/accessibility và release manifest vẫn mở.
+**P11 implementation status 2026-09-10:** migration `20260908_0011` đã ở head trên PostgreSQL local. Consumer snapshot `p11.protocol-snapshot.v1` được pin khi tạo Machine QA run; evaluate sau archive giữ snapshot ACTIVE đã chấp nhận, mismatch ngoài lifecycle fail-closed; Trend giữ `protocol_version_id`, Machine QA report giữ source snapshot và UI không còn seed synthetic trong workflow thường. Focused `test_protocol_library.py` đạt `4/4`; Ruff/mypy, frontend lint/typecheck và build sẽ được chạy lại trên candidate tài liệu này. Đây mới là local implementation evidence; staging browser, complete S/E/C matrix, visual/accessibility và release manifest vẫn mở.
 
 <a id="spec-p12"></a>
 
@@ -1702,7 +1702,7 @@ Không được gọi operation là `COMPLETED` nếu chưa có output bền v�
 4. **Trend:** chỉ aggregate các source có compatibility signature; điểm thiếu không được biến thành zero; drill-down phải quay về source run/case đúng organization.
 5. **Public deployment:** web/API/worker/schema/Auth/queue phải được kiểm theo cùng release manifest; PostgreSQL, Redis, worker và object bucket private theo topology; URL public không chứng minh workflow đã pass.
 
-## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.23
+## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.24
 
 Phần này biến các contract theo phase thành cấu trúc có thể dùng khi viết code, test và bàn giao. Nó không thay thế các field/algorithm contract ở mục 2–8; nó quy định cách chứng minh rằng các contract đó đã được thực thi trên một candidate cụ thể.
 

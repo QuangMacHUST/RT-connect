@@ -3,7 +3,7 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.22 — đồng bộ specification.md v1.23, plan.md v4.14 và business-analysis.md v0.24; bổ sung source-identifiable release metadata từ Railway Git SHA cho API/web, process-RSS/resource-policy/API-responsiveness evidence cho P17 Docker workload đồng thời, export-content evidence và targeted direct PostgreSQL row/checksum/scope evidence; bổ sung Machine QA explicit N/A field/aggregation/trend contract và P10 Trend query-budget/count-preflight/bucket-export contract; giữ entity/migration/API membership-invitation P4, unique pending invitation và active-context invariant, cùng reference tới feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate và status/readiness surface P20 (2026-09-10). P17 bổ sung migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`, song song ORM guard và negative mutation test. P8 bổ sung independent Gamma oracle runner/evidence cho synthetic 2D/3D profile coverage, staging RTDOSE + measurement browser smoke và malformed Redis dispatch quarantine trước ACK.
+- **Phiên bản:** 1.23 — đồng bộ specification.md v1.24, plan.md v4.15 và business-analysis.md v0.24; bổ sung P11 consumer snapshot `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/revision/lineage/rule reference/capability và fail-closed mismatch sau khi protocol lifecycle thay đổi; bổ sung UI source panel đọc snapshot và loại seed synthetic khỏi workflow thường. Giữ source-identifiable release metadata từ Railway Git SHA cho API/web, process-RSS/resource-policy/API-responsiveness evidence cho P17 Docker workload đồng thời, export-content evidence và targeted direct PostgreSQL row/checksum/scope evidence; giữ Machine QA explicit N/A, P10 Trend query-budget/count-preflight/bucket-export, P4 membership/invitation và status/readiness P20 (2026-09-10). P17 giữ migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`, song song ORM guard và negative mutation test. P8 giữ independent Gamma oracle runner/evidence cho synthetic 2D/3D profile coverage, staging RTDOSE + measurement browser smoke và malformed Redis dispatch quarantine trước ACK.
 - **Nguồn yêu cầu:** business-analysis.md phiên bản 0.24
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
@@ -668,6 +668,19 @@ transition dùng `expected_revision`. Clone deep-copy child rule và ghi source 
 consumer mới phải pin `protocol_version_id` và snapshot rule/limit/source; không resolve lại
 version live khi mở run/report/trend cũ.
 
+P11 consumer snapshot kỹ thuật dùng schema `p11.protocol-snapshot.v1`. Snapshot được tạo tại
+thời điểm run được tạo hoặc rerun, bao gồm protocol identity/family/version, `status_at_use`,
+revision nghiệp vụ, applicability, source type/reference, source lineage, engine capability và
+toàn bộ rule snapshot (limits, action level, required, note, reference). `MachineQARun.result_snapshot`
+là authority khi evaluate/report/trend; protocol row live chỉ dùng để kiểm tra scope và đối chiếu.
+Archive là thay đổi lifecycle được chấp nhận: evaluation vẫn dùng snapshot ACTIVE đã pin và không
+đổi revision snapshot chỉ vì archive. Nếu bất kỳ field định nghĩa, source, applicability, capability
+hoặc rule nào lệch snapshot thì API dừng fail-closed với `MACHINE_QA_PROTOCOL_SNAPSHOT_MISMATCH`,
+không tạo metric/trend/result mới. Trend phải mang `protocol_version_id` trong source context;
+Machine QA UI phải hiển thị source/applicability/revision/rule count từ snapshot và không seed protocol
+synthetic trong workflow thường. Legacy run chưa có snapshot chỉ được nâng cấp tại lần evaluate đầu
+tiên theo policy tương thích đã ghi trong test.
+
 API implementation P11 (base prefix `/api/v1`):
 
 | Method | Path | Mục đích |
@@ -1285,7 +1298,7 @@ evaluated/passing/nonpassing/excluded/no-candidate/censored, pass rate, coverage
 percentile exactness, histogram, warning, configuration, input checksum và engine version.
 Đây là deterministic engineering/golden slice; test local hiện có exhaustive independent node
 oracle và các guard resource/retry, nhưng không thay thế benchmark theo phần cứng hoặc
-commissioning. Gate phát triển, pilot và release theo plan.md v4.14. Coordinate frame mở rộng,
+commissioning. Gate phát triển, pilot và release theo plan.md v4.15. Coordinate frame mở rộng,
 crash/ack/dead-letter injection, large workload benchmark và evidence effective schema/release
 trên staging vẫn là điều kiện đóng P8.
 

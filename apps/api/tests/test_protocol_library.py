@@ -40,6 +40,31 @@ def _definition(*, activate: bool = False) -> dict[str, object]:
     }
 
 
+def _machine_qa_case(client, organization_id: str) -> str:
+    site = client.get(f"/api/v1/organizations/{organization_id}/sites").json()["items"][0]
+    machine = client.get(
+        f"/api/v1/organizations/{organization_id}/sites/{site['id']}/machines"
+    ).json()["items"][0]
+    folder = client.post(
+        f"/api/v1/organizations/{organization_id}/folders", json={"name": "P11 consumer"}
+    )
+    assert folder.status_code == 201, folder.text
+    case = client.post(
+        f"/api/v1/organizations/{organization_id}/qa-cases",
+        json={
+            "site_id": site["id"],
+            "machine_id": machine["id"],
+            "primary_folder_id": folder.json()["id"],
+            "qa_type": "Machine QA",
+            "qa_cycle": "DAILY",
+            "performed_at": "2026-09-10T00:00:00Z",
+            "title": "P11 protocol consumer",
+        },
+    )
+    assert case.status_code == 201, case.text
+    return case.json()["id"]
+
+
 def test_protocol_library_validates_creates_clones_archives_and_compares() -> None:
     with _workspace_client() as (client, organization):
         organization_id = str(organization.id)
@@ -162,3 +187,76 @@ def test_protocol_library_scope_and_machine_qa_only_accept_active_versions() -> 
         archived = client.post(f"{base_url}/{active['id']}/archive", json={"expected_revision": 1})
         assert archived.status_code == 200, archived.text
         assert client.get(machine_qa_url).json()["total"] == 0
+
+
+def test_active_protocol_consumer_pins_source_snapshot_for_run_report_and_trend() -> None:
+    with _workspace_client() as (client, organization):
+        organization_id = str(organization.id)
+        base_url = f"/api/v1/organizations/{organization_id}/qa-protocols"
+        created = client.post(base_url, json=_definition(activate=True))
+        assert created.status_code == 201, created.text
+        active = created.json()
+        case_id = _machine_qa_case(client, organization_id)
+
+        run_response = client.post(
+            f"/api/v1/qa-cases/{case_id}/machine-qa-runs",
+            json={"protocol_version_id": active["id"]},
+        )
+        assert run_response.status_code == 201, run_response.text
+        run = run_response.json()
+        protocol_snapshot = run["result_snapshot"]["protocol_snapshot"]
+        assert protocol_snapshot["schema_version"] == "p11.protocol-snapshot.v1"
+        assert protocol_snapshot["id"] == active["id"]
+        assert protocol_snapshot["revision"] == active["revision"]
+        assert protocol_snapshot["status_at_use"] == "ACTIVE"
+        assert protocol_snapshot["source"] == {
+            "type": "REFERENCE",
+            "reference": "https://example.invalid/site-machine-qa",
+            "source_protocol_version_id": None,
+        }
+        assert protocol_snapshot["applicability"] == {
+            "energies": ["6X"],
+            "qa_cycles": ["DAILY"],
+        }
+        assert protocol_snapshot["rules"][0]["reference"] == (
+            "Synthetic site QA handbook, section 2"
+        )
+        assert protocol_snapshot["capability"]["status"] == "SUPPORTED"
+
+        archived = client.post(
+            f"{base_url}/{active['id']}/archive", json={"expected_revision": active["revision"]}
+        )
+        assert archived.status_code == 200, archived.text
+
+        saved = client.patch(
+            f"/api/v1/machine-qa-runs/{run['id']}/measurements",
+            json={
+                "expected_revision": 0,
+                "measurements": [
+                    {"metric_key": "output_factor", "value": 100, "unit": "%"}
+                ],
+            },
+        )
+        assert saved.status_code == 200, saved.text
+        evaluated = client.post(f"/api/v1/machine-qa-runs/{run['id']}/evaluate")
+        assert evaluated.status_code == 200, evaluated.text
+        assert evaluated.json()["result_snapshot"]["protocol_snapshot"] == protocol_snapshot
+
+        trend = client.get(
+            f"/api/v1/organizations/{organization_id}/trend",
+            params={"metric_key": "output_factor"},
+        )
+        assert trend.status_code == 200, trend.text
+        assert trend.json()["series"][0]["context"]["protocol_version_id"] == active["id"]
+
+        report = client.post(
+            f"/api/v1/organizations/{organization_id}/reports",
+            json={
+                "source_type": "MACHINE_QA",
+                "source_id": run["id"],
+                "title": "P11 consumer snapshot report",
+            },
+        )
+        assert report.status_code == 201, report.text
+        report_snapshot = report.json()["source_snapshot"]["payload"]["result_snapshot"]
+        assert report_snapshot["protocol_snapshot"] == protocol_snapshot

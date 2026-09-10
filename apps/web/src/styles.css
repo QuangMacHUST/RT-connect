@@ -115,6 +115,9 @@ td code { color: #075e67; font-size: .78rem; }
 .machine-qa-protocol-controls label, .compare-controls label { color: #334155; display: grid; font-size: .82rem; font-weight: 600; gap: 6px; }
 .machine-qa-protocol-controls select, .compare-controls select { border: 1px solid #c8d5de; border-radius: 4px; color: #0f172a; font: inherit; min-height: 38px; padding: 8px 10px; }
 .machine-qa-protocol-controls p { margin: 0; }
+.machine-qa-protocol-source { border-left: 3px solid #0f8b8d; color: #334155; display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 14px; padding: 10px 14px; }
+.machine-qa-protocol-source strong { flex-basis: 100%; color: #0f172a; }
+.machine-qa-protocol-source small { flex-basis: 100%; color: #617787; }
 .machine-qa-run-meta { align-items: center; color: #617787; display: flex; flex-wrap: wrap; font-size: .78rem; gap: 12px; margin-top: 16px; }
 .machine-qa-run-meta code { color: #075e67; font-size: .7rem; }
 .machine-qa-table { min-width: 820px; }

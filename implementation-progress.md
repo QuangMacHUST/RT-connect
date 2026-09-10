@@ -1,7 +1,15 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
-Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.23,
-`technical-specification.md` v1.22 và `plan.md` v4.14.
+Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
+`technical-specification.md` v1.23 và `plan.md` v4.15.
+
+## P11 consumer snapshot — local verified, staging open — 2026-09-10
+
+- Machine QA run mới pin `p11.protocol-snapshot.v1` ngay khi tạo hoặc rerun. Snapshot giữ protocol identity/family/version, `status_at_use`, revision, source type/reference/lineage, applicability, engine capability và toàn bộ rule/limit/action/reference snapshot.
+- Evaluation sau khi protocol chuyển `ARCHIVED` vẫn dùng snapshot ACTIVE đã chấp nhận; thay đổi định nghĩa ngoài lifecycle archive bị chặn fail-closed bằng `MACHINE_QA_PROTOCOL_SNAPSHOT_MISMATCH`, không tạo metric/trend/result mới. Legacy run chưa có snapshot chỉ được nâng cấp ở lần evaluate đầu theo compatibility policy.
+- Trend source context giữ `protocol_version_id`; Machine QA report giữ source snapshot; UI source panel đọc revision/source/applicability/rule count từ snapshot của run và workflow thường không còn seed synthetic protocol.
+- Local focused regression `apps/api/tests/test_protocol_library.py`: **4/4 PASS** cho protocol snapshot, archive behavior, Trend lineage và report source. API changed files đã qua Ruff/mypy; web lint/typecheck/build sẽ được kiểm lại trên candidate tài liệu này.
+- Đây là local implementation evidence. Chưa deploy candidate P11 lên staging, chưa chạy authenticated browser create/use/archive/old-history E2E, complete S/E/C, visual/accessibility hoặc release-manifest gate; không upload fixture RTDOSE trùng và không tạo QA run mới trong case staging đã có fixture hợp lệ.
 
 ## P10 Trend query budget — candidate staging parity/public smoke verified — 2026-09-10 / `f4197d8`
 

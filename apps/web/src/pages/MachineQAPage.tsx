@@ -16,6 +16,10 @@ function records(value: unknown): JsonRecord[] {
   return Array.isArray(value) ? value.filter((item): item is JsonRecord => typeof item === 'object' && item !== null && !Array.isArray(item)) : []
 }
 
+function objectValue(value: unknown): JsonRecord | undefined {
+  return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as JsonRecord : undefined
+}
+
 function textValue(value: unknown, fallback = '—'): string {
   return value === null || value === undefined || value === '' ? fallback : String(value)
 }
@@ -123,6 +127,19 @@ export function MachineQAPage() {
     () => runs.data?.items.find((item) => item.id === selectedRunId) ?? runs.data?.items[0],
     [runs.data, selectedRunId]
   )
+  // A persisted run owns its protocol snapshot. Do not redraw an existing
+  // draft/result with a different library selection.
+  const runProtocol = activeRun?.protocol ?? selectedProtocol
+  const pinnedProtocolSnapshot = objectValue(activeRun?.result_snapshot.protocol_snapshot)
+  const pinnedProtocolSource = objectValue(pinnedProtocolSnapshot?.source)
+  const protocolApplicability = pinnedProtocolSnapshot?.applicability ?? runProtocol?.applicability
+  const pinnedProtocolRuleCount = Array.isArray(pinnedProtocolSnapshot?.rules) ? pinnedProtocolSnapshot.rules.length : runProtocol?.rules.length ?? 0
+  const protocolSourceType = textValue(pinnedProtocolSource?.type ?? runProtocol?.source_type)
+  const protocolSourceReference = textValue(pinnedProtocolSource?.reference ?? runProtocol?.source_reference, '')
+  const protocolRevision = textValue(pinnedProtocolSnapshot?.revision ?? runProtocol?.revision)
+  const protocolApplicabilityLabel = typeof protocolApplicability === 'object' && protocolApplicability !== null && !Array.isArray(protocolApplicability) && Object.keys(protocolApplicability).length
+    ? JSON.stringify(protocolApplicability)
+    : 'không giới hạn applicability'
   const [draftValues, setDraftValues] = useState<Record<string, string>>({})
   const [draftNaFlags, setDraftNaFlags] = useState<Record<string, boolean>>({})
   const [draftNaReasons, setDraftNaReasons] = useState<Record<string, string>>({})
@@ -132,15 +149,6 @@ export function MachineQAPage() {
   const refreshRuns = () => {
     void queryClient.invalidateQueries({ queryKey: ['machine-qa-runs', caseId, accessToken] })
   }
-  const seedMutation = useMutation({
-    mutationFn: () => apiClient.seedMachineQAProtocol(accessToken!, organizationId!),
-    onSuccess: (protocol) => {
-      setSelectedProtocolId(protocol.id)
-      setMessage('Đã tạo protocol seed P7. Đây là protocol tổng hợp để kiểm thử, cần thay bằng protocol được cơ sở phê duyệt ở P11.')
-      void queryClient.invalidateQueries({ queryKey: ['machine-qa-protocols', organizationId] })
-    },
-    onError: (error) => setMessage(errorMessage(error))
-  })
   const createRunMutation = useMutation({
     mutationFn: (protocolId: string) => apiClient.createMachineQARun(accessToken!, caseId!, protocolId),
     onSuccess: (run) => {
@@ -198,7 +206,7 @@ export function MachineQAPage() {
   const currentDraftValues = Object.keys(draftValues).length ? draftValues : activeDraft.values
   const currentDraftNaFlags = Object.keys(draftNaFlags).length ? draftNaFlags : activeDraft.naFlags
   const currentDraftNaReasons = Object.keys(draftNaReasons).length ? draftNaReasons : activeDraft.naReasons
-  const currentMeasurements = measurementPayload(selectedProtocol, currentDraftValues, currentDraftNaFlags, currentDraftNaReasons)
+  const currentMeasurements = measurementPayload(runProtocol, currentDraftValues, currentDraftNaFlags, currentDraftNaReasons)
 
   return (
     <div className="page">
@@ -210,14 +218,15 @@ export function MachineQAPage() {
 
       <section className="panel machine-qa-panel">
         <div className="panel-heading"><div><p className="eyebrow">PROTOCOL</p><h2>Protocol Machine QA</h2></div><strong>{protocols.data?.total ?? '—'}</strong></div>
-        {protocols.isPending ? <p>Đang tải protocol…</p> : protocols.error ? <div className="alert alert--error"><p>{errorMessage(protocols.error)}</p><button onClick={() => void protocols.refetch()}>Thử lại</button></div> : protocols.data?.items.length ? <div className="machine-qa-protocol-controls"><label>Protocol đang dùng<select value={selectedProtocol?.id ?? ''} onChange={(event) => setSelectedProtocolId(event.target.value)}>{protocols.data.items.map((protocol) => <option key={protocol.id} value={protocol.id}>{protocol.name} · v{protocol.version_number} · {protocol.status}</option>)}</select></label><p>{selectedProtocol?.effective_note}</p></div> : <div className="empty-state"><p>Organization chưa có protocol Machine QA. Seed protocol P7 để kiểm thử luồng trước; protocol lâm sàng được quản trị ở P11.</p><button disabled={seedMutation.isPending} onClick={() => seedMutation.mutate()}>{seedMutation.isPending ? 'Đang tạo…' : 'Tạo protocol seed P7'}</button></div>}
+        {protocols.isPending ? <p>Đang tải protocol…</p> : protocols.error ? <div className="alert alert--error"><p>{errorMessage(protocols.error)}</p><button onClick={() => void protocols.refetch()}>Thử lại</button></div> : protocols.data?.items.length ? <div className="machine-qa-protocol-controls"><label>Protocol ACTIVE đang dùng<select disabled={Boolean(activeRun)} value={activeRun?.protocol.id ?? selectedProtocol?.id ?? ''} onChange={(event) => setSelectedProtocolId(event.target.value)}>{protocols.data.items.map((protocol) => <option key={protocol.id} value={protocol.id}>{protocol.name} · v{protocol.version_number} · {protocol.status}</option>)}</select></label><p>{runProtocol?.effective_note ?? 'Protocol được pin theo version khi tạo lượt QA.'}</p></div> : <div className="empty-state"><p>Organization chưa có protocol ACTIVE cho Machine QA. Hãy tạo, validate và kích hoạt protocol trong QA Protocol Library trước khi mở lượt đo.</p><Link className="button-link button-secondary" to="/app/qa-protocols">Mở QA Protocol Library</Link></div>}
+        {runProtocol && <div className="machine-qa-protocol-source"><strong>Nguồn và applicability của version đang dùng</strong><span>{protocolSourceType}{protocolSourceReference ? ` · ${protocolSourceReference}` : ' · chưa khai báo reference'}</span><span>Revision {protocolRevision} · {pinnedProtocolRuleCount} rule · {protocolApplicabilityLabel}</span>{activeRun && <small>Run này đã pin protocol snapshot; archive hoặc version mới không thay đổi kết quả lịch sử.</small>}</div>}
       </section>
 
       <section className="panel machine-qa-panel">
         <div className="panel-heading"><div><p className="eyebrow">MEASUREMENT RUN</p><h2>Lượt Machine QA</h2></div>{activeRun && <span className={statusClass(activeRun.overall_status ?? activeRun.status)}>{activeRun.overall_status ?? activeRun.status}</span>}</div>
-        {!selectedProtocol ? <p className="empty-state">Hãy tạo hoặc chọn protocol trước khi tạo lượt đo.</p> : !activeRun ? <div className="empty-state"><p>Chưa có lượt đo cho QA case này.</p><button disabled={createRunMutation.isPending} onClick={() => createRunMutation.mutate(selectedProtocol.id)}>{createRunMutation.isPending ? 'Đang tạo…' : 'Tạo lượt đo nháp'}</button></div> : <>
+        {!selectedProtocol ? <p className="empty-state">Hãy tạo và kích hoạt protocol trong QA Protocol Library trước khi tạo lượt đo.</p> : !activeRun ? <div className="empty-state"><p>Chưa có lượt đo cho QA case này.</p><button disabled={createRunMutation.isPending} onClick={() => createRunMutation.mutate(selectedProtocol.id)}>{createRunMutation.isPending ? 'Đang tạo…' : 'Tạo lượt đo nháp'}</button></div> : <>
           <div className="machine-qa-run-meta"><span>Run <code>{activeRun.id}</code></span><span>Revision {activeRun.measurement_revision}</span><span>Tạo lúc {formatDate(activeRun.created_at)}</span>{activeRun.supersedes_run_id && <span>Rerun từ <code>{activeRun.supersedes_run_id}</code></span>}</div>
-          {activeRun.status === 'DRAFT' && <div className="table-wrap"><table className="machine-qa-table"><thead><tr><th>Metric</th><th>Số đo</th><th>Đơn vị</th><th>Giới hạn protocol</th><th>N/A và lý do</th><th>Ghi chú</th></tr></thead><tbody>{selectedProtocol.rules.map((rule) => { const isNotApplicable = currentDraftNaFlags[rule.metric_key] === true; return <tr key={rule.metric_key}><td><strong>{rule.display_name}</strong><small className="table-subtitle">{rule.metric_key}{rule.required ? ' · bắt buộc' : ''}</small></td><td><input aria-label={rule.display_name} disabled={isNotApplicable} type="number" step="any" value={currentDraftValues[rule.metric_key] ?? ''} onChange={(event) => setDraftValues((current) => ({ ...current, [rule.metric_key]: event.target.value }))} /></td><td>{rule.unit}</td><td>{ruleDescription(rule)}</td><td><label className="machine-qa-na-control"><input type="checkbox" aria-label={`Đánh dấu ${rule.display_name} là N/A`} checked={isNotApplicable} onChange={(event) => { const checked = event.target.checked; setDraftNaFlags((current) => ({ ...current, [rule.metric_key]: checked })); if (checked) setDraftValues((current) => ({ ...current, [rule.metric_key]: '' })); else setDraftNaReasons((current) => ({ ...current, [rule.metric_key]: '' })) }} /><span>N/A</span></label>{isNotApplicable && <input aria-label={`Lý do N/A cho ${rule.display_name}`} required value={currentDraftNaReasons[rule.metric_key] ?? ''} onChange={(event) => setDraftNaReasons((current) => ({ ...current, [rule.metric_key]: event.target.value }))} placeholder="Nêu lý do" />}</td><td>{rule.note ?? '—'}</td></tr> })}</tbody></table></div>}
+          {activeRun.status === 'DRAFT' && <div className="table-wrap"><table className="machine-qa-table"><thead><tr><th>Metric</th><th>Số đo</th><th>Đơn vị</th><th>Giới hạn protocol</th><th>N/A và lý do</th><th>Ghi chú</th></tr></thead><tbody>{runProtocol?.rules.map((rule) => { const isNotApplicable = currentDraftNaFlags[rule.metric_key] === true; return <tr key={rule.metric_key}><td><strong>{rule.display_name}</strong><small className="table-subtitle">{rule.metric_key}{rule.required ? ' · bắt buộc' : ''}</small></td><td><input aria-label={rule.display_name} disabled={isNotApplicable} type="number" step="any" value={currentDraftValues[rule.metric_key] ?? ''} onChange={(event) => setDraftValues((current) => ({ ...current, [rule.metric_key]: event.target.value }))} /></td><td>{rule.unit}</td><td>{ruleDescription(rule)}</td><td><label className="machine-qa-na-control"><input type="checkbox" aria-label={`Đánh dấu ${rule.display_name} là N/A`} checked={isNotApplicable} onChange={(event) => { const checked = event.target.checked; setDraftNaFlags((current) => ({ ...current, [rule.metric_key]: checked })); if (checked) setDraftValues((current) => ({ ...current, [rule.metric_key]: '' })); else setDraftNaReasons((current) => ({ ...current, [rule.metric_key]: '' })) }} /><span>N/A</span></label>{isNotApplicable && <input aria-label={`Lý do N/A cho ${rule.display_name}`} required value={currentDraftNaReasons[rule.metric_key] ?? ''} onChange={(event) => setDraftNaReasons((current) => ({ ...current, [rule.metric_key]: event.target.value }))} placeholder="Nêu lý do" />}</td><td>{rule.note ?? '—'}</td></tr> })}</tbody></table></div>}
           {activeRun.status === 'DRAFT' && <div className="machine-qa-actions"><button disabled={isBusy} onClick={() => saveMutation.mutate({ run: activeRun, measurements: currentMeasurements })}>Lưu bản nháp</button><button disabled={isBusy} onClick={() => evaluateMutation.mutate({ run: activeRun, measurements: currentMeasurements })}>Đánh giá lượt QA</button></div>}
           {activeRun.status !== 'DRAFT' && <div className="machine-qa-actions"><button disabled={isBusy} onClick={() => rerunMutation.mutate(activeRun.id)}>Tạo rerun từ lượt này</button></div>}
           {runErrors.length > 0 && <div className="alert alert--error"><h3>Không thể hoàn tất đánh giá</h3><ul>{runErrors.map((item, index) => <li key={`${String(item.code)}-${index}`}>{textValue(item.message, JSON.stringify(item))}</li>)}</ul></div>}

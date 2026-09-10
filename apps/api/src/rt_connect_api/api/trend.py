@@ -64,6 +64,7 @@ SIGNATURE_KEYS = (
     "qa_cycle",
     "protocol_key",
     "protocol_version",
+    "protocol_version_id",
     "energy",
     "detector",
     "phantom",
@@ -319,6 +320,9 @@ def _source_context(run: MachineQARun, case: QACase, unit: str) -> dict[str, obj
             context["protocol_key"] = protocol_key
         if isinstance(version, int):
             context["protocol_version"] = version
+        protocol_id = protocol.get("id")
+        if isinstance(protocol_id, str):
+            context["protocol_version_id"] = protocol_id
     return context
 
 
