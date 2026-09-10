@@ -50,6 +50,10 @@ class MachineQARunCreateRequest(BaseModel):
     measurements: list[MeasurementInput] = Field(default_factory=list)
 
 
+class MachineQAEvaluateRequest(BaseModel):
+    expected_revision: int | None = Field(default=None, ge=0)
+
+
 class ProtocolRuleResponse(BaseModel):
     id: UUID
     metric_key: str
@@ -436,6 +440,31 @@ def _run_or_error(
             MachineQARun.id == run_id,
             MachineQARun.organization_id == context.organization_id,
         )
+    )
+    if run is None:
+        raise DomainError("MACHINE_QA_RUN_NOT_FOUND", "The Machine QA run was not found.", 404)
+    return run, context
+
+
+def _locked_run_or_error(
+    session: Session, run_id: UUID, identity: AuthenticatedIdentity
+) -> tuple[MachineQARun, SessionContext]:
+    """Load a run with a row lock before an operation can finalize it.
+
+    The lock makes the evaluate transition single-writer on PostgreSQL.  A
+    second request waits for the first transaction, then observes COMPLETED and
+    receives the same immutable snapshot instead of creating duplicate trend
+    projections.
+    """
+
+    context = resolve_session_context(session, identity)
+    run = session.scalar(
+        select(MachineQARun)
+        .where(
+            MachineQARun.id == run_id,
+            MachineQARun.organization_id == context.organization_id,
+        )
+        .with_for_update()
     )
     if run is None:
         raise DomainError("MACHINE_QA_RUN_NOT_FOUND", "The Machine QA run was not found.", 404)
@@ -953,15 +982,25 @@ def update_measurements(
 @router.post("/machine-qa-runs/{run_id}/evaluate", response_model=MachineQARunResponse)
 def evaluate_run(
     run_id: UUID,
+    payload: MachineQAEvaluateRequest | None = None,
     identity: AuthenticatedIdentity = Depends(require_identity),
     session: Session = Depends(get_session),
 ) -> MachineQARunResponse:
-    run, _ = _run_or_error(session, run_id, identity)
+    run, context = _locked_run_or_error(session, run_id, identity)
     if run.status == "COMPLETED":
         return _run_response(session, run)
     if run.status != "DRAFT":
         raise DomainError("MACHINE_QA_RUN_IMMUTABLE", "This run cannot be evaluated again.", 409)
-    context = resolve_session_context(session, identity)
+    expected_revision = payload.expected_revision if payload is not None else None
+    if (
+        expected_revision is not None
+        and expected_revision != run.measurement_revision
+    ):
+        raise DomainError(
+            "MACHINE_QA_REVISION_CONFLICT",
+            "The measurement draft has changed; reload before evaluating.",
+            409,
+        )
     case = _case_or_error(session, run.qa_case_id, context.organization_id)
     pinned_snapshot = (
         run.result_snapshot.get("protocol_snapshot")

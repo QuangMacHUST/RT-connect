@@ -1761,6 +1761,25 @@ Machine QA cho phép:
 - Ghi chú và artifact liên quan.
 - Đưa metric hợp lệ vào trend.
 
+### 10.1.1. Evaluate revision và single-writer finalize
+
+`MachineQARun.measurement_revision` là số phiên bản của measurement draft, bắt đầu từ
+`0` và tăng đúng một lần cho mỗi PATCH được commit. `PATCH /measurements` bắt buộc
+`expected_revision` ở caller chính; revision lệch trả 409 và không thay đổi JSON measurement.
+
+`POST /evaluate` nhận body tùy chọn `expected_revision`. Khi có giá trị, API chỉ finalize
+run nếu run còn `DRAFT` và revision khớp; body rỗng vẫn được chấp nhận cho tương thích
+ngược, nhưng web client phải truyền revision của response autosave. Trên PostgreSQL,
+service tải run bằng `SELECT ... FOR UPDATE` trước khi đọc case/protocol và gọi evaluator.
+Transaction ghi status, error/result snapshot và các `TrendPoint` numeric cùng nhau. Nếu
+request khác đã finalize run, request đó đọc trạng thái terminal và trả đúng snapshot cũ;
+không chạy evaluator lần hai, không tạo point thứ hai. `COMPLETED` là immutable; thay đổi
+measurement chỉ đi qua `rerun`, tạo run ID và source lineage mới.
+
+P7 local contract tests phải bao phủ: caller cũ không body; stale expected revision; autosave
+thành công rồi evaluate bằng revision mới; double-submit/replay; ba trend metric sau replay
+vẫn có đúng ba point; và seed protocol lặp lại không tạo protocol version/rule mới.
+
 ### 10.2. Rule engine
 
 Rule engine cần hỗ trợ:

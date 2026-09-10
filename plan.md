@@ -8,7 +8,7 @@
 - Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.24.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
-- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.14, bổ sung P11 consumer snapshot đầy đủ (source/applicability/revision/lineage/rule reference/capability), fail-closed khi protocol/rule lệch snapshot, trend protocol-version lineage và loại bỏ seed synthetic khỏi workflow Machine QA thông thường; đồng thời giữ contract P7 explicit N/A, P10 query count-preflight/raw-aggregate budget/CSV bucket lineage, bằng chứng P8 browser staging và oracle Gamma độc lập. Fixture RTDOSE tổng hợp đã được người dùng cho phép và đã tồn tại hợp lệ trong case staging nên không upload bản sao; workflow Gamma authenticated mới chỉ reuse fixture đó để kiểm tra negative/positive path. Các thay đổi trước về process-RSS/resource-policy/API-responsiveness P17-W06, migration P4 `20260909_0019`, `20260908_0017` là migration riêng; các contract member/invitation và route `/invite` vẫn là authority. Tiếp tục chi tiết hóa workflow, trường hợp chạy đúng, lỗi, phục hồi, invariant, evidence và exit gate cho P0–P20. Các gate staging P8/P9/P10/P11/P12–P20 chưa được tự nâng chỉ vì local test pass hoặc Railway báo Online.
+- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.14, bổ sung P7 evaluate optimistic revision tùy chọn, PostgreSQL row-lock khi finalize, tương thích caller không body, exact replay không nhân đôi TrendPoint, cùng local evidence cho seed/snapshot/stale-evaluate/replay. Tiếp tục giữ P11 consumer snapshot đầy đủ (source/applicability/revision/lineage/rule reference/capability), fail-closed khi protocol/rule lệch snapshot, trend protocol-version lineage và loại bỏ seed synthetic khỏi workflow Machine QA thông thường; đồng thời giữ contract P7 explicit N/A, P10 query count-preflight/raw-aggregate budget/CSV bucket lineage, bằng chứng P8 browser staging và oracle Gamma độc lập. Fixture RTDOSE tổng hợp đã được người dùng cho phép và đã tồn tại hợp lệ trong case staging nên không upload bản sao; workflow Gamma authenticated mới chỉ reuse fixture đó để kiểm tra negative/positive path. Các gate staging P8/P9/P10/P11/P12–P20 chưa được tự nâng chỉ vì local test pass hoặc Railway báo Online.
 
 > Operational update P8/P18/P19 authenticated Gamma staging E2E ngày 2026-09-10: trên web build `1badb6616d1a68f7178b2aefd10c71adc95a826b`, phiên authenticated đã reuse `gamma-rtdose-v1-smoke.dcm` (RTDOSE/VALID) và `gamma-measurement-3d-v1-smoke.json` trong case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`, không upload bản sao. Chạy cấu hình 2D với measurement 3D tạo run `d902d9c0-3b15-4367-8df9-ca0a6274c3f3` `FAILED` đúng `GAMMA_DIMENSIONALITY_MISMATCH`; đổi sang 3D rồi submit tạo run `86cc4d5e-4a87-4dcb-a6f5-94c125029c60` `COMPLETED/PASS`, 8/8, coverage `1`, Gamma P95 `0`, engine `gamma-nd-p8.2`. Evidence: `docs/evidence/p8-p19-staging-authenticated-gamma-e2e-20260910-1badb66.json`. Đây là `STAGING_AUTHENTICATED_MUTATION_E2E_GAMMA` cho một identity/case; chưa đóng two-identity, direct dependency evidence, full fault/resource matrix, provider restore, rollback hoặc production promotion.
 
@@ -760,10 +760,10 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 
 ### Work packages P7
 
-- [ ] P07-W01 — Tách seed synthetic với protocol nội bộ; snapshot đầy đủ rule/unit/baseline.
-- [ ] P07-W02 — Optimistic measurement save và idempotent evaluate cùng expected revision.
+- [x] P07-W01 — Tách seed synthetic với protocol nội bộ; snapshot đầy đủ rule/unit/baseline. `LOCAL_VERIFIED`: seed lặp lại trả cùng protocol ID, không tạo version/rule mới; evaluate lưu `p11.protocol-snapshot.v1` với source/capability và đủ rule fields.
+- [x] P07-W02 — Optimistic measurement save và idempotent evaluate cùng expected revision. `LOCAL_VERIFIED`: stale evaluate trả `MACHINE_QA_REVISION_CONFLICT`; evaluate với revision mới và exact replay pass; PostgreSQL path dùng row-lock, caller cũ không body vẫn tương thích.
 - [x] P07-W03 — Hoàn thiện boundary rules, zero baseline, missing required và total status aggregation; explicit N/A phải có lý do, không nhận giá trị số và không hạ overall thành PASS. `LOCAL_VERIFIED`: backend regression 6/6, frontend lint/typecheck/Vitest/build PASS.
-- [ ] P07-W04 — Trend projection unique source metric; rerun không nhân đôi projection của run cũ.
+- [x] P07-W04 — Trend projection unique source metric; rerun không nhân đôi projection của run cũ. `LOCAL_VERIFIED`: replay evaluate giữ đúng 3 point cho 3 metric; `test_trend_rebuild_is_idempotent` giữ unique source metric và không tạo thêm projection.
 - [ ] P07-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P07-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
 
@@ -795,6 +795,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - **Dữ liệu phải giữ/transaction:** Measurement revision được khóa tại evaluate; result + trend projection commit nhất quán hoặc reconciliation idempotent. Explicit N/A lưu `is_not_applicable=true` cùng `na_reason` đã trim, `value=null`, metric status `NA`, không tạo TrendPoint; aggregation dùng `FAIL > REVIEW > WARNING > NA > PASS`.
 - **Bàn giao:** Checklist/result/history/compare; known-answer rule tests; staging evidence.
 - **Exit gate:** Boundary PASS/WARNING/FAIL/N-A, unit/baseline errors và rerun/projection uniqueness đều pass.
+- **Local update 2026-09-11:** P07-W01/W02/W04 đã có regression evidence; P07-VERIFY/P07-HANDOFF vẫn mở vì chưa có authenticated staging mutation/current-candidate S/E/C và release handoff packet đầy đủ.
 - **Kiểm tra chéo:** C03–C09 về scope, retry, đồng thời, mất mạng, session và version phải có evidence hoặc lý do không áp dụng; thêm C10–C16 theo module.
 - **Nếu gate fail:** mở issue với testcase thất bại, giữ evidence/bản dữ liệu trước đó và sửa package liên quan; không thay expected để hợp thức hóa output. Có thể làm task độc lập tiếp theo, nhưng phase vẫn mở.
 

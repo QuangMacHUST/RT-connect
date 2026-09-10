@@ -40,7 +40,13 @@ def test_machine_qa_protocol_run_evaluate_rerun_and_compare() -> None:
     with _workspace_client() as (client, organization):
         protocol = client.post(f"/api/v1/organizations/{organization.id}/machine-qa/protocols/seed")
         assert protocol.status_code == 201, protocol.text
-        assert len(protocol.json()["rules"]) == 3
+        protocol_body = protocol.json()
+        assert len(protocol_body["rules"]) == 3
+        seeded_again = client.post(
+            f"/api/v1/organizations/{organization.id}/machine-qa/protocols/seed"
+        )
+        assert seeded_again.status_code == 201, seeded_again.text
+        assert seeded_again.json()["id"] == protocol_body["id"]
         case_id = _case(client, str(organization.id))
 
         created = client.post(
@@ -58,13 +64,31 @@ def test_machine_qa_protocol_run_evaluate_rerun_and_compare() -> None:
         assert draft.status_code == 200, draft.text
         assert draft.json()["measurement_revision"] == 1
 
-        evaluated = client.post(f"/api/v1/machine-qa-runs/{run['id']}/evaluate")
+        evaluated = client.post(
+            f"/api/v1/machine-qa-runs/{run['id']}/evaluate",
+            json={"expected_revision": 1},
+        )
         assert evaluated.status_code == 200, evaluated.text
         assert evaluated.json()["status"] == "COMPLETED"
         assert evaluated.json()["overall_status"] == "PASS"
         assert {item["status"] for item in evaluated.json()["result_snapshot"]["metrics"]} == {
             "PASS"
         }
+        snapshot = evaluated.json()["result_snapshot"]["protocol_snapshot"]
+        assert snapshot["schema_version"] == "p11.protocol-snapshot.v1"
+        assert snapshot["status_at_use"] == "ACTIVE"
+        assert snapshot["source"] == {
+            "type": protocol_body["source_type"],
+            "reference": protocol_body["source_reference"],
+            "source_protocol_version_id": protocol_body["source_protocol_version_id"],
+        }
+        assert snapshot["capability"]["status"] == "SUPPORTED"
+        assert len(snapshot["rules"]) == 3
+        assert all(
+            {"metric_key", "unit", "rule_type", "target_value", "lower_limit", "upper_limit"}
+            <= set(rule)
+            for rule in snapshot["rules"]
+        )
 
         rerun = client.post(f"/api/v1/machine-qa-runs/{run['id']}/rerun")
         assert rerun.status_code == 201, rerun.text
@@ -83,6 +107,54 @@ def test_machine_qa_protocol_run_evaluate_rerun_and_compare() -> None:
         history = client.get(f"/api/v1/qa-cases/{case_id}/machine-qa-runs")
         assert history.status_code == 200
         assert history.json()["total"] == 2
+
+
+def test_machine_qa_evaluate_revision_conflict_and_idempotent_replay() -> None:
+    with _workspace_client() as (client, organization):
+        protocol = client.post(
+            f"/api/v1/organizations/{organization.id}/machine-qa/protocols/seed"
+        ).json()
+        case_id = _case(client, str(organization.id), "Machine QA evaluate revision")
+        created = client.post(
+            f"/api/v1/qa-cases/{case_id}/machine-qa-runs",
+            json={"protocol_version_id": protocol["id"]},
+        )
+        assert created.status_code == 201, created.text
+        run = created.json()
+
+        stale = client.post(
+            f"/api/v1/machine-qa-runs/{run['id']}/evaluate",
+            json={"expected_revision": 1},
+        )
+        assert stale.status_code == 409, stale.text
+        assert stale.json()["code"] == "MACHINE_QA_REVISION_CONFLICT"
+
+        saved = client.patch(
+            f"/api/v1/machine-qa-runs/{run['id']}/measurements",
+            json={"expected_revision": 0, "measurements": _measurements()},
+        )
+        assert saved.status_code == 200, saved.text
+        assert saved.json()["measurement_revision"] == 1
+
+        first = client.post(
+            f"/api/v1/machine-qa-runs/{run['id']}/evaluate",
+            json={"expected_revision": 1},
+        )
+        assert first.status_code == 200, first.text
+        first_body = first.json()
+        assert first_body["status"] == "COMPLETED"
+
+        replay = client.post(
+            f"/api/v1/machine-qa-runs/{run['id']}/evaluate",
+            json={"expected_revision": 1},
+        )
+        assert replay.status_code == 200, replay.text
+        assert replay.json()["id"] == first_body["id"]
+        assert replay.json()["result_snapshot"] == first_body["result_snapshot"]
+
+        trend = client.get(f"/api/v1/organizations/{organization.id}/trend")
+        assert trend.status_code == 200, trend.text
+        assert trend.json()["total_points"] == 3
 
 
 def test_machine_qa_explains_unit_and_required_measurement_failures() -> None:

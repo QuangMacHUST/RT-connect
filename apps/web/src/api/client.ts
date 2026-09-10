@@ -2026,8 +2026,10 @@ export class ApiClient {
     })
   }
 
-  evaluateMachineQARun(accessToken: string, runId: string): Promise<MachineQARunResource> {
-    return this.request(`/machine-qa-runs/${runId}/evaluate`, machineQARunSchema, accessToken, { method: 'POST' })
+  evaluateMachineQARun(accessToken: string, runId: string, expectedRevision?: number): Promise<MachineQARunResource> {
+    return this.request(`/machine-qa-runs/${runId}/evaluate`, machineQARunSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(expectedRevision === undefined ? {} : { expected_revision: expectedRevision })
+    })
   }
 
   rerunMachineQARun(accessToken: string, runId: string): Promise<MachineQARunResource> {

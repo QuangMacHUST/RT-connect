@@ -170,10 +170,12 @@ export function MachineQAPage() {
   })
   const evaluateMutation = useMutation({
     mutationFn: async ({ run, measurements }: { run: MachineQARunResource; measurements: MachineQAMeasurement[] }) => {
+      let evaluatedRevision = run.measurement_revision
       if (run.status === 'DRAFT') {
-        await apiClient.updateMachineQAMeasurements(accessToken!, run.id, run.measurement_revision, measurements)
+        const saved = await apiClient.updateMachineQAMeasurements(accessToken!, run.id, run.measurement_revision, measurements)
+        evaluatedRevision = saved.measurement_revision
       }
-      return apiClient.evaluateMachineQARun(accessToken!, run.id)
+      return apiClient.evaluateMachineQARun(accessToken!, run.id, evaluatedRevision)
     },
     onSuccess: (run) => { setSelectedRunId(run.id); setMessage(`Đã đánh giá lượt QA: ${run.status === 'COMPLETED' ? run.overall_status : run.status}.`); refreshRuns() },
     onError: (error) => setMessage(errorMessage(error))

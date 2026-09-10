@@ -719,8 +719,8 @@ Local source đã có model/API/migration `20260909_0018`, frontend client, orga
 | Module/requirement | MOD-05; FR-P07-01 đến FR-P07-04 |
 | Input và dữ liệu hiển thị | Protocol version/rules; metric key/value/unit/required/N-A reason; baseline/tolerance/action; notes/artifact; measurement revision; result actual/limit/margin/status. |
 | Model/storage | QAProtocolVersion/Rule, MachineQARun, TrendPoint; identity snapshot và audit. |
-| Operation/API surface | /qa-cases/{id}/machine-qa-runs; /machine-qa-runs/{id}/measurements, /evaluate, /rerun, /compare. |
-| Transaction/invariant | Measurement revision được khóa tại evaluate; result + trend projection commit nhất quán hoặc reconciliation idempotent. |
+| Operation/API surface | /qa-cases/{id}/machine-qa-runs; /machine-qa-runs/{id}/measurements, /evaluate, /rerun, /compare. Evaluate nhận body tùy chọn `{expected_revision: integer >= 0}`. |
+| Transaction/invariant | PATCH measurement kiểm optimistic revision. Evaluate với revision đã gửi phải khớp DRAFT hiện tại; PostgreSQL khóa row trước khi finalize; result + trend projection commit trong một transaction và exact replay của COMPLETED chỉ đọc snapshot cũ. |
 | Output bàn giao | Checklist/result/history/compare; known-answer rule tests; staging evidence. |
 | Success oracle | TC-P07-S01 đến TC-P07-S04 trong plan |
 | Error/recovery oracle | TC-P07-E01 đến TC-P07-E07 trong plan |
@@ -740,11 +740,27 @@ Vì vậy một lượt có PASS + N/A hoàn tất kỹ thuật nhưng `overall_
 ghi đè bởi REVIEW hoặc N/A. Metric optional bị bỏ trống là “not recorded”, không tự chuyển thành
 N/A; metric bắt buộc bị bỏ trống vẫn tạo lỗi evaluate.
 
+**Evaluate revision/idempotency contract:** Caller hiện hành nên gửi
+`{"expected_revision": <measurement_revision>}` ở `POST /machine-qa-runs/{id}/evaluate`
+sau khi autosave thành công. Body có thể bỏ qua để tương thích các caller cũ, nhưng UI chính
+phải gửi revision. Với run `DRAFT`, revision lệch trả HTTP 409
+`MACHINE_QA_REVISION_CONFLICT`, không chạy rule engine và không tạo trend projection. API
+khóa row run trên PostgreSQL trong lúc chuyển DRAFT sang COMPLETED/FAILED; request thứ hai
+chờ transaction trước hoàn tất rồi đọc trạng thái terminal. Evaluate lại run COMPLETED trả HTTP
+200 cùng `id`, `measurement_revision`, `result_snapshot` và `error_snapshot` đã lưu, không
+đánh giá lại rule và không tạo thêm `TrendPoint`. Đây là idempotent replay theo run identity,
+không phải cơ chế cho phép sửa result; muốn thay đổi số đo phải tạo rerun mới.
+
 **Failure contract:** `MEASUREMENT_REQUIRED`; `MEASUREMENT_INVALID`; `MACHINE_QA_NA_REASON_REQUIRED`;
 `MACHINE_QA_NA_VALUE_CONFLICT`; `MACHINE_QA_NA_REASON_INVALID`; `BASELINE_ZERO`;
 `REVISION_CONFLICT`; `DUPLICATE_OPERATION`; `PROTOCOL_NOT_AVAILABLE`. Đây là taxonomy target;
 mapping HTTP, field details và recovery phải được giữ trong contract test, không dùng chuỗi OR làm
 một code API.
+
+**P07 implementation update 2026-09-11:** local regression đã kiểm tra seed protocol lặp lại
+không tạo version mới, snapshot `p11.protocol-snapshot.v1` giữ đầy đủ source/capability/rule
+fields, stale evaluate trả `MACHINE_QA_REVISION_CONFLICT`, exact evaluate replay trả cùng
+snapshot, và trend query sau replay vẫn chỉ có một point cho mỗi metric.
 
 <a id="spec-p08"></a>
 
