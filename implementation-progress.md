@@ -1,7 +1,14 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
-`technical-specification.md` v1.23 và `plan.md` v4.16.
+`technical-specification.md` v1.23 và `plan.md` v4.17.
+
+## P12 — staging Biological scenario lifecycle and report integration — partial verified — 2026-09-10 / `e21ad4b`
+
+- Trên web build `e21ad4b7f46aa990ae0bf0d7915b4199e66d62b4`, browser authenticated đã validate scenario tổng hợp mà không tạo mutation; tạo `P12_STAGING_BIO_SCENARIO_E21` ở `DRAFT rev 1`, sửa thành `DRAFT rev 2`, lưu thành `SAVED rev 3`, rồi fresh navigation đọc lại đủ history `3/2/1` cùng snapshot context.
+- Clone tạo key `P12_STAGING_BIO_SCENARIO_E21_COPY_8BBA0AF2`; archive chuyển clone sang `ARCHIVED rev 2`. Bộ lọc archived mặc định ẩn clone và khi bật filter đọc lại đúng trạng thái archived. Negative `REFERENCE` thiếu `source_reference` bị chặn bằng `BIOLOGICAL_CONTEXT_INVALID`, không tạo mutation.
+- P12-W04 report integration đã chạy: Report Builder lưu report `P12 Biological renderer staging` rev 1 với `source_type=BIOLOGICAL`, source ID `45550fa4-b635-4d9f-90bb-e0d2cd77c531`, block `BIOLOGICAL` và snapshot SHA-256 `f7867b11e05095c049dedf153f39db958828722b7761b185da223b53ff492ce0`; fresh readback giữ source/revision/block và hiển thị export JSON/CSV/PDF/PNG. Evidence: `docs/evidence/p12-staging-browser-20260910-e21ad4b.json`.
+- Đây là `STAGING_PARTIAL_PASS`, không phải `DONE-v2`: direct PostgreSQL row/checksum, cross-organization negative probe, đầy đủ S/E/C, resource/provider fault, release manifest và production/rollback vẫn mở. Không có patient data hoặc QA run mới.
 
 ## P18 — local backup/restore bounded failure — blocked — 2026-09-10
 

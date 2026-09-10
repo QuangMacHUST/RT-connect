@@ -1,6 +1,6 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
-- Phiên bản: **4.16**, ngày 2026-09-10.
+- Phiên bản: **4.17**, ngày 2026-09-10.
 - Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.24.
 - Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.24.
 - Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.23.
@@ -17,6 +17,8 @@
 > Follow-up P11 consumer snapshot ngày 2026-09-10: run mới pin `p11.protocol-snapshot.v1` ngay khi tạo; snapshot giữ source/applicability/revision/lineage/capability và toàn bộ rule reference; evaluate sau archive vẫn đọc snapshot đã chấp nhận, mismatch fail-closed; Trend giữ `protocol_version_id`; Machine QA UI dẫn người dùng tới QA Protocol Library thay vì seed synthetic. Local evidence: `docs/evidence/p11-consumer-snapshot-20260910-local.json`. Candidate public `907b9d256d221e628a7d5e0b2b578c52b7dd6c14` đã được Railway rebuild đồng SHA cho API/web/worker và kiểm read-only qua API/web exact-SHA, schema `20260909_0019`, verifier `15/15`; evidence: `docs/evidence/p11-public-probe-907b9d2.json`, `docs/evidence/p11-railway-parity-20260910-907b9d2.json`. Candidate hiện hành `0e30ff1ba768494649d9ce6105dacac9c703a4d4` đã được public verifier kiểm exact SHA/schema `15/15` và browser read-only đã thấy source panel + consumer snapshot marker; evidence: `docs/evidence/p19-staging-public-smoke-20260910-0e30ff1.json`, `docs/evidence/p11-staging-consumer-browser-20260910.json`. Fresh create→evaluate→archive→old-history, complete S/E/C và release gates vẫn mở.
 
 > Operational update P18 ngày 2026-09-10: verifier local backup/restore đã được làm bounded theo từng lệnh Compose và dừng process tree trên Windows. Lần chạy `--command-timeout-seconds 10` bị chặn tại `ps --services --filter status=running` vì Docker CLI/daemon không trả lời; evidence `docs/evidence/p18-local-backup-restore-timeout-20260910.json` ghi `passed=false`, không có restore database/bucket. Đây là bằng chứng dependency failure có giới hạn, không được tính là restore PASS; phải khôi phục Docker rồi chạy lại trước khi đánh giá P18-W03a.
+
+> P12 staging packet ngày 2026-09-10 trên candidate `e21ad4b7f46aa990ae0bf0d7915b4199e66d62b4`: scenario tổng hợp đã chạy validate→DRAFT→revision→SAVED→clone→ARCHIVED→fresh history/filter; negative `REFERENCE` thiếu citation bị chặn bằng `BIOLOGICAL_CONTEXT_INVALID`; Report Builder đã lưu source `BIOLOGICAL` và đọc lại block/snapshot sau fresh navigation. Evidence: `docs/evidence/p12-staging-browser-20260910-e21ad4b.json`. Đây là `STAGING_PARTIAL_PASS`; direct DB/scope, complete S/E/C, fault/resource, manifest và production/rollback chưa đóng.
 
 ## 1. Cách thực hiện kế hoạch
 
@@ -1154,7 +1156,7 @@ Mã ở cột “Phân loại” là contract code. Mọi lỗi phải có HTTP 
 - [x] P12-W03 — Scenario DRAFT/SAVED/ARCHIVED, revision snapshot, history, search, clone và archive API/UI.
 - [ ] P12-W04 — Tái dùng renderer P9 bằng source_type BIOLOGICAL; placeholder module có availability rõ.
 - [x] P12-LOCAL-VERIFY — focused `apps/api/tests/test_biological.py`, full backend, Ruff/mypy, frontend lint/typecheck/Vitest/build và local PostgreSQL migration head đều pass trên candidate hiện tại.
-- [ ] P12-STAGING-VERIFY — deploy đúng SHA; browser create→validate→save→edit/clone/archive/filter/history; kiểm response/DB state và không có QA linkage.
+- [ ] P12-STAGING-VERIFY — deploy đúng SHA; browser create→validate→save→edit/clone/archive/filter/history; kiểm response/DB state và không có QA linkage. Candidate `e21ad4b` đã đạt browser lifecycle/report-integration partial; direct PostgreSQL row/checksum/scope, complete S/E/C, fault/resource và release evidence vẫn mở.
 - [ ] P12-VERIFY — chạy đủ TC-P12-S01..S09, TC-P12-E01..E12 và C/B áp dụng; kiểm namespace độc lập, persistence, scope, refresh/reconnect, export và capability states trên candidate được manifest pin.
 - [ ] P12-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
 

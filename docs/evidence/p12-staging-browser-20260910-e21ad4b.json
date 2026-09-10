@@ -1,0 +1,65 @@
+{
+  "schema_version": "rt-connect.p12-staging-browser.v1",
+  "captured_on": "2026-09-10",
+  "environment": "staging",
+  "source_sha": "e21ad4b7f46aa990ae0bf0d7915b4199e66d62b4",
+  "web_build_observed": "e21ad4b7f46aa990ae0bf0d7915b4199e66d62b4",
+  "url": "https://rt-connect-web-staging-staging.up.railway.app/app/biological",
+  "authenticated": true,
+  "synthetic_only": true,
+  "scenario": {
+    "scenario_id": "45550fa4-b635-4d9f-90bb-e0d2cd77c531",
+    "scenario_key": "P12_STAGING_BIO_SCENARIO_E21",
+    "scenario_type": "GENERAL",
+    "tissue_context": "Synthetic staging tissue revised",
+    "clinical_context": "Synthetic staging validation only; no patient or QA-case linkage.",
+    "source_type": "USER_DEFINED",
+    "create_status": "DRAFT",
+    "create_revision": 1,
+    "edit_revision": 2,
+    "saved_revision": 3,
+    "saved_status": "SAVED",
+    "history_readback": [
+      {"revision": 3, "status": "SAVED"},
+      {"revision": 2, "status": "DRAFT"},
+      {"revision": 1, "status": "DRAFT"}
+    ],
+    "clone_key": "P12_STAGING_BIO_SCENARIO_E21_COPY_8BBA0AF2",
+    "clone_status_after_archive": "ARCHIVED",
+    "clone_revision_after_archive": 2,
+    "archived_filter_readback": true
+  },
+  "negative_case": {
+    "source_type": "REFERENCE",
+    "missing_field": "source_reference",
+    "observed_code": "BIOLOGICAL_CONTEXT_INVALID",
+    "observed_message": "source_reference: Reference is required.",
+    "mutation_created": false
+  },
+  "report_integration": {
+    "report_id_prefix": "a74d7f80",
+    "report_revision": 1,
+    "report_title": "P12 Biological renderer staging",
+    "source_type": "BIOLOGICAL",
+    "source_id": "45550fa4-b635-4d9f-90bb-e0d2cd77c531",
+    "biological_block_present": true,
+    "biological_block_label": "Biological snapshot",
+    "snapshot_sha256": "f7867b11e05095c049dedf153f39db958828722b7761b185da223b53ff492ce0",
+    "fresh_readback": true,
+    "export_controls_visible": ["JSON", "CSV", "PDF", "PNG"]
+  },
+  "scope_and_provenance": {
+    "ui_declares_no_qa_or_patient_linkage": true,
+    "direct_postgresql_row_check": "NOT_RUN",
+    "cross_organization_negative_probe": "NOT_RUN",
+    "patient_data_used": false,
+    "qa_run_created": false
+  },
+  "status": "STAGING_PARTIAL_PASS",
+  "open_gates": [
+    "direct PostgreSQL row/checksum and organization-scope evidence",
+    "complete P12 S/E/C and shared matrix evidence",
+    "provider/resource fault and release-manifest closure",
+    "production/rollback evidence"
+  ]
+}
