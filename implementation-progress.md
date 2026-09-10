@@ -47,6 +47,11 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Khôi phục lại `gamma-rtdose-v1-smoke.dcm` làm Reference đưa preflight về `PREFLIGHT VALID`, nút enqueue hoạt động và history vẫn giữ `10` run; negative test không tạo mutation.
 - Evidence: `docs/evidence/p8-staging-negative-rtdose-required-20260910-37130ec.json`. Đây mới là negative input slice; geometry/frame/dose-scaling, worker fault/retry/resource và release gates vẫn mở.
 
+## P19 — final staging public verifier packet before next handoff — 2026-09-10 / `9fb58ac`
+
+- Exact-SHA public verifier trên candidate `9fb58acadc78938022ffc308181625e0f1596386` đạt `15/15 PASS`, `failed_check_count=0`; API version, web bundle marker và ba service release SHA được kiểm theo candidate, schema `20260909_0019`.
+- Evidence: `docs/evidence/p19-staging-public-smoke-20260910-9fb58ac.json`. Phạm vi chỉ là public contract/source parity; P19 vẫn mở authenticated remote E2E đầy đủ, private DB/Redis, backup/restore, rollback, alert và production promotion.
+
 ## P10 — staging negative/accessibility recheck — partial verified — 2026-09-10 / `a30e365`
 
 - Trên candidate `a30e365`, Trend workspace đã được đọc bằng accessibility tree: lifecycle tables/actions, filter controls, source links và error/empty/retry states đều có semantic text/controls đọc được.
