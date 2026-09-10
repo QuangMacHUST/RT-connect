@@ -3,9 +3,9 @@
 Revision hiện hành: `business-analysis.md` v0.25, `specification.md` v1.26,
 `technical-specification.md` v1.25 và `plan.md` v4.21.
 
-## P20-W01/P08 — current staging candidate public parity — staging verified slice — 2026-09-11 / `d64e64b`
+## P20-W01/P08 — staging parity after P8 implementation candidate — verified checkpoint — 2026-09-11 / `d64e64b`
 
-- Sau khi push candidate `d64e64ba5ac2f17b91d35c231a70092a81101a9c` lên nhánh `codex/p4-org-site-machine`, API và web staging đã phục vụ đúng candidate mới; API `/api/v1/health`, `/api/v1/ready`, `/api/v1/version` đều trả hợp lệ, schema `20260909_0019` giữ đúng.
+- Sau khi push candidate `d64e64ba5ac2f17b91d35c231a70092a81101a9c` lên nhánh `codex/p4-org-site-machine`, API và web staging đã phục vụ đúng candidate đó; API `/api/v1/health`, `/api/v1/ready`, `/api/v1/version` đều trả hợp lệ, schema `20260909_0019` giữ đúng. Đây là checkpoint trước commit docs tiếp theo `20d34ba`.
 - `scripts/verify-public-deployment.ps1` với exact SHA và schema đạt **15/15 PASS**, gồm public health/readiness/version, schema parity, OpenAPI CT preview + organization membership/invitation, unauthenticated 401 boundary, web index/bundle, UI markers và exact source marker. Evidence: [p20-staging-public-smoke-20260911-d64e64b.json](docs/evidence/p20-staging-public-smoke-20260911-d64e64b.json).
 - Fixture RTDOSE tổng hợp đã được người dùng cho phép và đã tồn tại một lần trong case `ed7ddbe5-811a-4463-a270-b0386f64644d`; không tạo bản trùng, không upload thêm artifact và không tạo Gamma run mới trong checkpoint này. Evidence upload/readback: [p06-staging-rtdose-upload-20260911.json](docs/evidence/p06-staging-rtdose-upload-20260911.json).
 - Đây là `STAGING_VERIFIED_SLICE` cho deployment/public contract. Không suy diễn thành authenticated P8 Gamma run, worker parity, queue/resource/fault matrix, storage reconciliation, backup/restore, rollback, pilot hoặc clinical readiness; các gate đó vẫn mở theo `plan.md`.
