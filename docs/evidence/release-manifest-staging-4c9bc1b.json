@@ -1,0 +1,70 @@
+{
+  "schema_version": "rt-connect.release-manifest.v1",
+  "release_id": "staging-4c9bc1b-20260910",
+  "environment": "staging",
+  "source_sha": "4c9bc1bb4838e2864e605ab4fa69c698ecd0759e",
+  "source_state": {
+    "branch": "codex/p4-org-site-machine",
+    "working_tree_clean": true
+  },
+  "services": {
+    "api": {
+      "deployment_id": "753fc39b-244b-4022-aafe-40e634becd49",
+      "sha": "4c9bc1bb4838e2864e605ab4fa69c698ecd0759e"
+    },
+    "web": {
+      "deployment_id": "de98215c-fada-4c29-9867-f757ca37348c",
+      "sha": "4c9bc1bb4838e2864e605ab4fa69c698ecd0759e"
+    },
+    "worker": {
+      "deployment_id": "25c26ce3-6a8c-450d-a641-22a90654d601",
+      "sha": "4c9bc1bb4838e2864e605ab4fa69c698ecd0759e"
+    },
+    "renderer": {
+      "version": "report-renderer-0.1"
+    }
+  },
+  "schema_revision": "20260909_0019",
+  "engine_versions": {
+    "gamma": "gamma-nd-p8.2",
+    "dvh": "p17-dvh-1.1.0",
+    "biological": "p13-lq-1.0.0;p14-comparison-1.0.0;p15-lq-reirradiation-1.0.0;p15-lq-compensation-1.0.0;biological-library-entry.v1"
+  },
+  "auth_environment": "staging",
+  "database_environment": "staging",
+  "fixture_hashes": [
+    {
+      "path": "docs/fixtures/gamma-rtdose-v1-smoke.dcm",
+      "bytes": 898,
+      "sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b"
+    },
+    {
+      "path": "docs/fixtures/p17-ct-v1-smoke.dcm",
+      "bytes": 842,
+      "sha256": "0b1d3bfd6adf33f139e493ca043e09defe077cab24d57287a6076816315dc088"
+    },
+    {
+      "path": "docs/fixtures/p17-rtstruct-v1-smoke.dcm",
+      "bytes": 866,
+      "sha256": "16a79df3129757d9df8b48bd095f0b4b70b24713ea5255e24719d46e6808d401"
+    }
+  ],
+  "tests": {
+    "local": [
+      "BACKEND_FULL_SUITE_100_PERCENT_PASS",
+      "PLANNING_CONTRACT_21_PHASES_PASS",
+      "P09_EXPORT_COMPENSATION_14_PASS"
+    ],
+    "staging": [
+      "P19_PUBLIC_SMOKE_15_OF_15_4C9BC1B",
+      "P17_DVH_EXISTING_VALID_RTDOSE_RTSTRUCT"
+    ],
+    "production": []
+  },
+  "backup_before_change": "STAGING_READ_ONLY_NO_DATA_CHANGE",
+  "rollback_target": "b4e24468149f070dd77b80e0d2ada3fa20445ce4",
+  "service_sha_parity": true,
+  "release_gate": "ELIGIBLE",
+  "gate_reasons": [],
+  "manifest_sha256": "817418b63e4bbd4953f5d422e15566af180d2ada0a5c41ac1c8de652acce003b"
+}

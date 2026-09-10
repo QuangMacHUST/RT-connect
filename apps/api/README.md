@@ -81,3 +81,9 @@ an exact-key object cleanup/reconciliation contract and regression coverage for
 final-commit failure. The commit carrying this marker must rebuild API, worker and
 web before staging parity is rechecked; local evidence is not a provider restore
 or clinical-readiness claim.
+
+Current staging evidence marker (2026-09-10): release manifest
+`docs/evidence/release-manifest-staging-4c9bc1b.json` records the exact staging
+candidate `4c9bc1bb4838e2864e605ab4fa69c698ecd0759e` and the existing synthetic
+RTDOSE/RTSTRUCT/CT fixture hashes. This marker intentionally lives under
+`/apps/api` so API, worker and web are rebuilt before the evidence is reused.
