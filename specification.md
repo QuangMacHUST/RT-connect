@@ -2,7 +2,7 @@
 
 - File: specification.md; version **1.27**; ngày 2026-09-11.
 - Nguồn nghiệp vụ: business-analysis.md v0.26.
-- Kế hoạch triển khai: plan.md v4.22, P0–P20.
+- Kế hoạch triển khai: plan.md v4.23, P0–P20.
 - Kiến trúc nền: technical-specification.md v1.26.
 - Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.26 giữ toàn bộ contract v1.25, bổ sung P8 coordinate-frame/axis-order/explicit-transform contract, compatibility preflight giữa RTDOSE và measurement, identity-transform capability hiện tại và các lỗi fail-closed tương ứng. P11 consumer snapshot `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/capability/rule lineage, archive semantics và fail-closed khi snapshot lệch vẫn được giữ; UI phải hiển thị metadata đã pin và workflow thường không seed synthetic. P9 bổ sung quy tắc namespace idempotency phía client phải thay đổi khi renderer hoặc schema export đổi; server vẫn dùng fingerprint gồm revision, format, render options và renderer version làm authority, để deploy renderer mới không bị replay nhầm export cũ hoặc tạo conflict giả khi người dùng tải lại trang. Các contract Trend query budget, Machine QA explicit N/A, malformed Redis dispatch, peak RSS/resource/API responsiveness P17 và P4 membership/invitation vẫn được giữ nguyên.
 

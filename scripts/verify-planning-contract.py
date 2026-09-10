@@ -57,7 +57,7 @@ def verify(root: Path) -> dict[str, object]:
         "business": (r"\*\*Phiên bản tài liệu:\*\*\s*([0-9]+\.[0-9]+)", "0.26"),
         "specification": (r"version \*\*([0-9]+\.[0-9]+)\*\*", "1.27"),
         "technical": (r"\*\*Phiên bản:\*\*\s*([0-9]+\.[0-9]+)", "1.26"),
-        "plan": (r"Phiên bản:\s*\*\*([0-9]+\.[0-9]+)\*\*", "4.22"),
+        "plan": (r"Phiên bản:\s*\*\*([0-9]+\.[0-9]+)\*\*", "4.23"),
     }
     for name, (pattern, expected) in expected_versions.items():
         observed = _version(pattern, texts.get(name, ""))
@@ -69,10 +69,10 @@ def verify(root: Path) -> dict[str, object]:
         )
 
     references = {
-        "business": "plan.md v4.22",
-        "specification": "plan.md v4.22",
-        "technical": "plan.md v4.22",
-        "progress": "plan.md v4.22",
+        "business": "plan.md v4.23",
+        "specification": "plan.md v4.23",
+        "technical": "plan.md v4.23",
+        "progress": "plan.md v4.23",
     }
     for name, reference in references.items():
         code_span_reference = f"`{reference.split()[0]}` {reference.split()[1]}"

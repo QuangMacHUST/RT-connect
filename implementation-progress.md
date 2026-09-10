@@ -1,7 +1,13 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
 Revision hiện hành: `business-analysis.md` v0.26, `specification.md` v1.27,
-`technical-specification.md` v1.26 và `plan.md` v4.22.
+`technical-specification.md` v1.26 và `plan.md` v4.23.
+
+## P06 — staging RTDOSE signed-download round-trip — verified content / filename open — 2026-09-11 / `67cc42d`
+
+- Từ case staging `ed7ddbe5-811a-4463-a270-b0386f64644d`, Download đã trả đủ 898 bytes của `gamma-rtdose-v1-smoke.dcm`; SHA-256 của content tải về khớp fixture gốc `ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b`.
+- Edge giữ file ở tên `Unconfirmed 912860.crdownload` trong thời gian quan sát dù content đã đủ và hash khớp. Vì vậy content/hash round-trip là **PASS**, còn browser final filename rename là **UNVERIFIED**; không dùng filename để phủ nhận hoặc khẳng định tính đúng của content.
+- Evidence: [p06-staging-rtdose-download-20260911-67cc42d.json](docs/evidence/p06-staging-rtdose-download-20260911-67cc42d.json). Đây là read-only download của fixture đã được cho phép; không upload, thay thế, xóa fixture hoặc tạo Gamma run.
 
 ## P12/P09 — Biological scenario to report integration — local verified — 2026-09-11
 

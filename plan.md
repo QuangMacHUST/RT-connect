@@ -2,7 +2,7 @@
 
 > Cập nhật candidate staging ngày 2026-09-11: sau khi queue orchestration được harden và cập nhật evidence, API `07f847c0-7e05-470a-a161-3758ca174302`, web `0bab32af-56cb-450d-9754-39c4f5b3847f` và worker `a37687b6-b192-44ab-9a47-7acb5f919d85` đều `SUCCESS` trên source SHA `06b818fc6edc0ebe4353c1fd018c519ccfc6f25f`. Public verifier đạt `15/15`, schema `20260909_0019`; web bundle đã chứa upload queue. Fixture RTDOSE tổng hợp `gamma-rtdose-v1-smoke.dcm` đã được upload một lần trước đó vào case staging `ed7ddbe5-811a-4463-a270-b0386f64644d` với `REFERENCE/DICOM`, manifest được tạo và validation `VALID` (0 lỗi, 0 cảnh báo). Đây là `STAGING_VERIFIED_SLICE`, không tự đóng P06-W04/P06-VERIFY hoặc các gate fault/retry, signed-download byte re-hash, storage reconciliation, release và handoff. Evidence parity: `docs/evidence/p20-staging-public-parity-20260911-06b818f.json`; upload: `docs/evidence/p06-staging-rtdose-upload-20260911.json`.
 
-- Phiên bản: **4.22**, ngày 2026-09-11.
+- Phiên bản: **4.23**, ngày 2026-09-11.
 - Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.26.
 - Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.27.
 - Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.26.
@@ -703,7 +703,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - [x] P06-W01 — Hoàn thiện streaming size limit, object/DB compensation và cleanup orphan có retention. `LOCAL_VERIFIED` (2026-09-10): upload đã xóa object sau khi transaction metadata/manifest thất bại; nếu cleanup storage cũng lỗi thì trả `ARTIFACT_PERSISTENCE_FAILED` để reconciliation. Provider-level orphan retention/reconciliation và staging failure injection vẫn mở.
 - [x] P06-W02 — Content detection phải đối chiếu declared type; JSON gắn DICOM không được VALID như DICOM. `LOCAL_VERIFIED` trong `docs/evidence/p06-local-upload-queue-20260911.json`: backend test đã chứng minh `ARTIFACT_TYPE_MISMATCH` cho JSON/DICOM mismatch; staging negative upload vẫn thuộc P06-VERIFY.
 - [x] P06-W03 — Tách file validity với dataset/workflow readiness; geometry linking không dựa filename/PatientID. `LOCAL_VERIFIED_SLICE`: artifact giữ metadata/manifest checksum riêng, downstream DVH chỉ nhận manifest VALID khớp checksum và kiểm tra geometry/frame; full P06 staging linkage matrix vẫn thuộc P06-VERIFY. Evidence: `docs/evidence/p06-local-upload-queue-20260911.json`.
-- [ ] P06-W04 — Upload queue/retry, idempotent manifest role, signed URL renewal và checksum round-trip. `IN_PROGRESS`: UI queue nhiều file, sequential upload, per-file failure và retry đã implement; helper điều phối queue đã được tách và có test bảo vệ success-preservation/case-scoped failed-only retry; API duplicate manifest role và mỗi lần Download cấp request signed URL mới đã có. Staging queue/fault injection và byte-level checksum round-trip vẫn mở. Evidence: `docs/evidence/p06-local-upload-queue-20260911.json`, `docs/evidence/p06-local-upload-queue-helper-20260911.json`.
+- [ ] P06-W04 — Upload queue/retry, idempotent manifest role, signed URL renewal và checksum round-trip. `IN_PROGRESS`: UI queue nhiều file, sequential upload, per-file failure và retry đã implement; helper điều phối queue đã được tách và có test bảo vệ success-preservation/case-scoped failed-only retry; API duplicate manifest role và mỗi lần Download cấp request signed URL mới đã có. Staging queue/fault injection và filename completion vẫn mở; content-level round-trip của fixture RTDOSE đã khớp byte/hash trên deployment `67cc42d`, nhưng browser vẫn giữ tên `.crdownload` trong thời gian quan sát. Evidence: `docs/evidence/p06-local-upload-queue-20260911.json`, `docs/evidence/p06-local-upload-queue-helper-20260911.json`, `docs/evidence/p06-staging-rtdose-download-20260911-67cc42d.json`.
 - [ ] P06-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P06-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
 
@@ -2268,10 +2268,10 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 **Runtime addendum cùng ngày:** sau source-parity recovery, candidate `b0263c932c740d4f36f19867241d5c1e07014765` đạt **15/15 checks PASS** trên public staging với schema `20260909_0019`; evidence `docs/evidence/p19-staging-public-smoke-20260909-b0263c9.json`. Browser DVH/report evidence vẫn dùng đúng case synthetic đã upload trước đó; không upload lại RTDOSE/RTSTRUCT/CT. Payload JSON/CSV export parse/hash khớp saved snapshot, còn việc browser đổi `.crdownload` thành filename cuối vẫn `UNVERIFIED` và tiếp tục là gate mở. Evidence browser: `docs/evidence/p17-staging-dvh-ct-browser-20260909.json`.
 
-### 7.3. Revision hiện hành v4.22
+### 7.3. Revision hiện hành v4.23
 
 Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.26, `specification.md` v1.27,
-`technical-specification.md` v1.26 và `plan.md` v4.22. Các revision trước đã bổ sung consumer snapshot
+`technical-specification.md` v1.26 và `plan.md` v4.23. Các revision trước đã bổ sung consumer snapshot
 P11 đầy đủ cho Machine QA, trend và report, cùng UI source panel đọc snapshot; revision v4.14 giữ status/readiness
  surface P20, bổ sung P4 member/invitation execution contract và P7 Machine QA explicit-N/A execution contract:
  workflow `/invite`, token
