@@ -2123,6 +2123,13 @@ export class ApiClient {
     return this.request(`/organizations/${organizationId}/trend/baselines`, baselineSchema, accessToken, { method: 'POST', body: JSON.stringify(body) })
   }
 
+  updateTrendBaseline(accessToken: string, baselineId: string, body: {
+    expected_version: number; name?: string; tolerance?: number | null; action_level?: number | null;
+    effective_to?: string | null; status?: 'ACTIVE' | 'ARCHIVED'
+  }): Promise<BaselineResource> {
+    return this.request(`/trend-baselines/${baselineId}`, baselineSchema, accessToken, { method: 'PATCH', body: JSON.stringify(body) })
+  }
+
   trendEvents(accessToken: string, organizationId: string, machineId?: string): Promise<MaintenanceEventResource[]> {
     const suffix = machineId ? `?machine_id=${encodeURIComponent(machineId)}` : ''
     return this.get(`/organizations/${organizationId}/trend/events${suffix}`, z.array(maintenanceSchema), accessToken)

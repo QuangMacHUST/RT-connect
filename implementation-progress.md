@@ -3,6 +3,13 @@
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 `technical-specification.md` v1.23 và `plan.md` v4.15.
 
+## P10 Trend — baseline/maintenance lifecycle controls — local verified — 2026-09-10
+
+- Bổ sung client contract `PATCH /trend-baselines/{baseline_id}` ở web và một panel lifecycle thật trên Trend workspace. Người dùng có thể đọc toàn bộ baseline versions, sửa name/tolerance/action level/effective-to, archive version và giữ `expected_version`; version conflict được hiển thị qua cùng structured-error path, không ghi đè silent.
+- Bổ sung maintenance revision panel: sửa marker, archive marker và gửi `expected_revision`; các field thời gian được chuyển lại ISO trước khi gọi API, còn lịch sử revision vẫn do API làm nguồn sự thật.
+- Frontend regression mới: `TrendPage.test.tsx` kiểm chứng save baseline với version `2` và archive maintenance với revision `3`; toàn bộ web suite **17/17 PASS**, typecheck, ESLint và production build PASS. Vite vẫn còn cảnh báo chunk >500 kB, không phải lỗi release.
+- Đây là `LOCAL_VERIFIED` cho UI/client lifecycle slice. Chưa được coi là staging evidence: cần staging deploy exact-SHA, authenticated edit/archive, stale revision `409`, reload/readback và kiểm tra không rewrite các điểm trend lịch sử.
+
 ## P10 Trend — staging export, drill-down và negative recheck — 2026-09-10 / `6426ceb`
 
 - Candidate `6426ceb50665f1ceae01e011f2ee5bf6b8a16d65` đang có API/web cùng source SHA; API `/health`, `/ready`, `/version`, OpenAPI và web bundle đạt **15/15 public checks**, schema `20260909_0019`.

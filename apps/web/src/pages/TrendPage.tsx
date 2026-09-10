@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 
-import { ApiClientError, apiClient, type TrendResource, type TrendSeriesResource } from '../api/client'
+import { ApiClientError, apiClient, type BaselineResource, type MaintenanceEventResource, type TrendResource, type TrendSeriesResource } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 
 function errorMessage(error: unknown): string {
@@ -22,6 +22,31 @@ function dateLabel(value: string): string {
 function localDateTimeValue(value = new Date()): string {
   const pad = (part: number) => String(part).padStart(2, '0')
   return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}`
+}
+
+function localDateTimeFromIso(value: string | null): string {
+  if (!value) return ''
+  const date = new Date(value)
+  return Number.isNaN(date.valueOf()) ? '' : localDateTimeValue(date)
+}
+
+type BaselineEditState = {
+  id: string
+  expectedVersion: number
+  name: string
+  tolerance: string
+  actionLevel: string
+  effectiveTo: string
+}
+
+type MaintenanceEditState = {
+  id: string
+  expectedRevision: number
+  eventType: string
+  title: string
+  startedAt: string
+  endedAt: string
+  notes: string
 }
 
 function chartPoints(series: TrendSeriesResource): string {
@@ -55,6 +80,90 @@ function SeriesCard({ series }: { series: TrendSeriesResource }) {
   </section>
 }
 
+type TrendLifecyclePanelProps = {
+  baselines: BaselineResource[] | undefined
+  events: MaintenanceEventResource[] | undefined
+  machines: ReadonlyArray<{ id: string; display_name: string }>
+  baselineEdit: BaselineEditState | null
+  setBaselineEdit: (value: BaselineEditState | null) => void
+  eventEdit: MaintenanceEditState | null
+  setEventEdit: (value: MaintenanceEditState | null) => void
+  busy: boolean
+  beginBaselineEdit: (item: BaselineResource) => void
+  beginEventEdit: (item: MaintenanceEventResource) => void
+  updateBaseline: (input: { id: string; expectedVersion: number; patch: { name?: string; tolerance?: number | null; action_level?: number | null; effective_to?: string | null; status?: 'ACTIVE' | 'ARCHIVED' } }) => void
+  updateEvent: (input: { id: string; expectedRevision: number; patch: { event_type?: string; title?: string; started_at?: string; ended_at?: string | null; notes?: string | null; status?: 'ACTIVE' | 'ARCHIVED' } }) => void
+}
+
+function TrendLifecyclePanel({
+  baselines,
+  events,
+  machines,
+  baselineEdit,
+  setBaselineEdit,
+  eventEdit,
+  setEventEdit,
+  busy,
+  beginBaselineEdit,
+  beginEventEdit,
+  updateBaseline,
+  updateEvent
+}: TrendLifecyclePanelProps) {
+  const machineName = (machineId: string) => machines.find((machine) => machine.id === machineId)?.display_name ?? machineId.slice(0, 8)
+  return <>
+    {baselineEdit && <section className="panel trend-lifecycle-editor" aria-label="Chỉnh sửa baseline">
+      <div className="panel-heading"><div><p className="eyebrow">BASELINE REVISION {baselineEdit.expectedVersion}</p><h2>Chỉnh sửa baseline version</h2></div><button className="button-secondary" onClick={() => setBaselineEdit(null)} disabled={busy}>Huỷ</button></div>
+      <div className="form-grid">
+        <label>Tên baseline<input value={baselineEdit.name} onChange={(event) => setBaselineEdit({ ...baselineEdit, name: event.target.value })} /></label>
+        <label>Tolerance<input type="number" step="any" value={baselineEdit.tolerance} onChange={(event) => setBaselineEdit({ ...baselineEdit, tolerance: event.target.value })} /></label>
+        <label>Action level<input type="number" step="any" value={baselineEdit.actionLevel} onChange={(event) => setBaselineEdit({ ...baselineEdit, actionLevel: event.target.value })} /></label>
+        <label>Có hiệu lực đến<input type="datetime-local" value={baselineEdit.effectiveTo} onChange={(event) => setBaselineEdit({ ...baselineEdit, effectiveTo: event.target.value })} /></label>
+      </div>
+      <p className="form-hint">Version và giá trị baseline gốc không bị ghi đè. Revision hiện tại là {baselineEdit.expectedVersion}; nếu người khác đã sửa trước đó, API sẽ trả conflict để tải lại.</p>
+      <button disabled={busy || !baselineEdit.name.trim()} onClick={() => updateBaseline({
+        id: baselineEdit.id,
+        expectedVersion: baselineEdit.expectedVersion,
+        patch: {
+          name: baselineEdit.name.trim(),
+          tolerance: baselineEdit.tolerance === '' ? null : Number(baselineEdit.tolerance),
+          action_level: baselineEdit.actionLevel === '' ? null : Number(baselineEdit.actionLevel),
+          effective_to: baselineEdit.effectiveTo ? new Date(baselineEdit.effectiveTo).toISOString() : null
+        }
+      })}>Lưu baseline revision</button>
+    </section>}
+    <section className="panel trend-lifecycle-panel" aria-label="Quản lý baseline version">
+      <div className="panel-heading"><div><p className="eyebrow">BASELINE LIFECYCLE</p><h2>Baseline versions</h2></div><strong>{baselines?.length ?? '—'}</strong></div>
+      {baselines?.length ? <div className="table-wrap"><table><thead><tr><th>Machine / metric</th><th>Version</th><th>Giá trị</th><th>Hiệu lực</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{baselines.map((item) => <tr key={item.id}><td><strong>{machineName(item.machine_id)}</strong><small className="table-subtitle">{item.metric_key} · {item.unit}</small></td><td>{item.version_number}</td><td>{item.baseline_value} · tol {item.tolerance ?? '—'} · action {item.action_level ?? '—'}</td><td>{dateLabel(item.effective_from)}{item.effective_to ? ` – ${dateLabel(item.effective_to)}` : ' – mở'}</td><td><span className={item.status === 'ARCHIVED' ? 'status-badge status-badge--warning' : 'status-badge'}>{item.status}</span></td><td><div className="table-actions"><button className="button-secondary" disabled={busy} onClick={() => beginBaselineEdit(item)}>Sửa</button>{item.status !== 'ARCHIVED' && <button className="button-secondary" disabled={busy} onClick={() => updateBaseline({ id: item.id, expectedVersion: item.version_number, patch: { status: 'ARCHIVED' } })}>Archive</button>}</div></td></tr>)}</tbody></table></div> : <p className="empty-state">Chưa có baseline version.</p>}
+    </section>
+    {eventEdit && <section className="panel trend-lifecycle-editor" aria-label="Chỉnh sửa maintenance marker">
+      <div className="panel-heading"><div><p className="eyebrow">MAINTENANCE REVISION {eventEdit.expectedRevision}</p><h2>Chỉnh sửa maintenance marker</h2></div><button className="button-secondary" onClick={() => setEventEdit(null)} disabled={busy}>Huỷ</button></div>
+      <div className="form-grid">
+        <label>Loại event<input value={eventEdit.eventType} onChange={(event) => setEventEdit({ ...eventEdit, eventType: event.target.value })} /></label>
+        <label>Tiêu đề<input value={eventEdit.title} onChange={(event) => setEventEdit({ ...eventEdit, title: event.target.value })} /></label>
+        <label>Bắt đầu<input type="datetime-local" value={eventEdit.startedAt} onChange={(event) => setEventEdit({ ...eventEdit, startedAt: event.target.value })} /></label>
+        <label>Kết thúc<input type="datetime-local" value={eventEdit.endedAt} onChange={(event) => setEventEdit({ ...eventEdit, endedAt: event.target.value })} /></label>
+        <label>Ghi chú<textarea value={eventEdit.notes} onChange={(event) => setEventEdit({ ...eventEdit, notes: event.target.value })} /></label>
+      </div>
+      <p className="form-hint">Revision hiện tại là {eventEdit.expectedRevision}. Nếu revision đã thay đổi, thao tác bị từ chối và không tạo bản ghi một phần.</p>
+      <button disabled={busy || !eventEdit.title.trim() || !eventEdit.startedAt} onClick={() => updateEvent({
+        id: eventEdit.id,
+        expectedRevision: eventEdit.expectedRevision,
+        patch: {
+          event_type: eventEdit.eventType.trim(),
+          title: eventEdit.title.trim(),
+          started_at: new Date(eventEdit.startedAt).toISOString(),
+          ended_at: eventEdit.endedAt ? new Date(eventEdit.endedAt).toISOString() : null,
+          notes: eventEdit.notes || null
+        }
+      })}>Lưu maintenance revision</button>
+    </section>}
+    <section className="panel trend-lifecycle-panel" aria-label="Quản lý maintenance marker">
+      <div className="panel-heading"><div><p className="eyebrow">MAINTENANCE REVISION HISTORY</p><h2>Maintenance markers</h2></div><strong>{events?.length ?? '—'}</strong></div>
+      {events?.length ? <div className="table-wrap"><table><thead><tr><th>Machine / marker</th><th>Khoảng thời gian</th><th>Revision</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{events.map((item) => <tr key={item.id}><td><strong>{item.title}</strong><small className="table-subtitle">{machineName(item.machine_id)} · {item.event_type}</small></td><td>{dateLabel(item.started_at)}{item.ended_at ? ` – ${dateLabel(item.ended_at)}` : ''}</td><td>{item.revision_number}</td><td><span className={item.status === 'ARCHIVED' ? 'status-badge status-badge--warning' : 'status-badge'}>{item.status}</span></td><td><div className="table-actions"><button className="button-secondary" disabled={busy} onClick={() => beginEventEdit(item)}>Sửa</button>{item.status !== 'ARCHIVED' && <button className="button-secondary" disabled={busy} onClick={() => updateEvent({ id: item.id, expectedRevision: item.revision_number, patch: { status: 'ARCHIVED' } })}>Archive</button>}</div></td></tr>)}</tbody></table></div> : <p className="empty-state">Chưa có maintenance marker.</p>}
+    </section>
+  </>
+}
+
 export function TrendPage() {
   const { session } = useAuth()
   const accessToken = session?.access_token
@@ -86,12 +195,14 @@ export function TrendPage() {
   const [baselineActionLevel, setBaselineActionLevel] = useState('')
   const [baselineEffectiveFrom, setBaselineEffectiveFrom] = useState(() => localDateTimeValue())
   const [baselineEffectiveTo, setBaselineEffectiveTo] = useState('')
+  const [baselineEdit, setBaselineEdit] = useState<BaselineEditState | null>(null)
   const [eventMachineId, setEventMachineId] = useState('')
   const [eventType, setEventType] = useState('MAINTENANCE')
   const [eventTitle, setEventTitle] = useState('')
   const [eventStartedAt, setEventStartedAt] = useState('')
   const [eventEndedAt, setEventEndedAt] = useState('')
   const [eventNotes, setEventNotes] = useState('')
+  const [eventEdit, setEventEdit] = useState<MaintenanceEditState | null>(null)
 
   const queryParams = useMemo(() => ({
     machine_ids: selectedMachineIds,
@@ -113,15 +224,37 @@ export function TrendPage() {
   const baselines = useQuery({ queryKey: ['trend-baselines', organizationId, accessToken], queryFn: () => apiClient.trendBaselines(accessToken!, organizationId!), enabled: Boolean(accessToken && organizationId), retry: false })
   const rebuild = useMutation({ mutationFn: () => apiClient.rebuildTrend(accessToken!, organizationId!), onSuccess: (result) => { setMessage(`Đã rebuild trend: ${result.created_points} điểm mới, ${result.existing_points} điểm đã có.`); void trend.refetch() }, onError: (error) => setMessage(errorMessage(error)) })
   const createBaseline = useMutation({ mutationFn: () => apiClient.createTrendBaseline(accessToken!, organizationId!, { machine_id: baselineMachineId || machines[0]?.id || '', metric_key: baselineMetric, unit: baselineUnit, name: `Baseline ${baselineMetric}`, baseline_value: Number(baselineValue), tolerance: baselineTolerance ? Number(baselineTolerance) : undefined, action_level: baselineActionLevel ? Number(baselineActionLevel) : undefined, effective_from: new Date(baselineEffectiveFrom).toISOString(), effective_to: baselineEffectiveTo ? new Date(baselineEffectiveTo).toISOString() : undefined }), onSuccess: () => { setMessage('Đã tạo baseline version mới.'); void queryClient.invalidateQueries({ queryKey: ['trend-baselines', organizationId] }); void trend.refetch() }, onError: (error) => setMessage(errorMessage(error)) })
+  const updateBaseline = useMutation({ mutationFn: (input: { id: string; expectedVersion: number; patch: { name?: string; tolerance?: number | null; action_level?: number | null; effective_to?: string | null; status?: 'ACTIVE' | 'ARCHIVED' } }) => apiClient.updateTrendBaseline(accessToken!, input.id, { expected_version: input.expectedVersion, ...input.patch }), onSuccess: (_, input) => { setMessage(input.patch.status === 'ARCHIVED' ? 'Đã archive baseline version.' : 'Đã cập nhật baseline version.'); setBaselineEdit(null); void queryClient.invalidateQueries({ queryKey: ['trend-baselines', organizationId] }); void trend.refetch() }, onError: (error) => setMessage(errorMessage(error)) })
   const createEvent = useMutation({ mutationFn: () => apiClient.createTrendEvent(accessToken!, organizationId!, { machine_id: eventMachineId || machines[0]?.id || '', event_type: eventType, title: eventTitle, started_at: eventStartedAt ? new Date(eventStartedAt).toISOString() : new Date().toISOString(), ended_at: eventEndedAt ? new Date(eventEndedAt).toISOString() : undefined, notes: eventNotes }), onSuccess: () => { setMessage('Đã ghi maintenance marker.'); setEventTitle(''); setEventEndedAt(''); setEventNotes(''); void queryClient.invalidateQueries({ queryKey: ['trend-events', organizationId] }); void trend.refetch() }, onError: (error) => setMessage(errorMessage(error)) })
+  const updateEvent = useMutation({ mutationFn: (input: { id: string; expectedRevision: number; patch: { event_type?: string; title?: string; started_at?: string; ended_at?: string | null; notes?: string | null; status?: 'ACTIVE' | 'ARCHIVED' } }) => apiClient.updateTrendEvent(accessToken!, input.id, { expected_revision: input.expectedRevision, ...input.patch }), onSuccess: (_, input) => { setMessage(input.patch.status === 'ARCHIVED' ? 'Đã archive maintenance marker.' : 'Đã cập nhật maintenance marker.'); setEventEdit(null); void queryClient.invalidateQueries({ queryKey: ['trend-events', organizationId] }); void trend.refetch() }, onError: (error) => setMessage(errorMessage(error)) })
+
+  const beginBaselineEdit = (item: BaselineResource) => setBaselineEdit({
+    id: item.id,
+    expectedVersion: item.version_number,
+    name: item.name,
+    tolerance: item.tolerance === null ? '' : String(item.tolerance),
+    actionLevel: item.action_level === null ? '' : String(item.action_level),
+    effectiveTo: localDateTimeFromIso(item.effective_to)
+  })
+
+  const beginEventEdit = (item: MaintenanceEventResource) => setEventEdit({
+    id: item.id,
+    expectedRevision: item.revision_number,
+    eventType: item.event_type,
+    title: item.title,
+    startedAt: localDateTimeFromIso(item.started_at),
+    endedAt: localDateTimeFromIso(item.ended_at),
+    notes: item.notes ?? ''
+  })
 
   if (bootstrap.isPending || sites.isPending) return <main className="auth-state">Đang tải Trend workspace…</main>
   const initialError = bootstrap.error ?? sites.error
   if (initialError || !organizationId) return <div className="page"><section className="alert alert--error"><h1>Không thể mở Trend workspace</h1><p>{errorMessage(initialError)}</p><button onClick={() => void Promise.all([bootstrap.refetch(), sites.refetch()])}>Thử lại</button></section></div>
   const data: TrendResource | undefined = trend.data
   const failure = trend.error ?? events.error ?? baselines.error
-  const busy = rebuild.isPending || createBaseline.isPending || createEvent.isPending
+  const busy = rebuild.isPending || createBaseline.isPending || updateBaseline.isPending || createEvent.isPending || updateEvent.isPending
   return <div className="page">
+    <TrendLifecyclePanel baselines={baselines.data} events={events.data} machines={machines} baselineEdit={baselineEdit} setBaselineEdit={setBaselineEdit} eventEdit={eventEdit} setEventEdit={setEventEdit} busy={busy} beginBaselineEdit={beginBaselineEdit} beginEventEdit={beginEventEdit} updateBaseline={updateBaseline.mutate} updateEvent={updateEvent.mutate} />
     <header className="page-header"><div><p className="eyebrow">P10 · MOD-08</p><h1>Xu hướng QA</h1><p>Theo dõi điểm đo tương thích theo thời gian, giữ nguyên nguồn run/case và đánh dấu baseline, outlier, bảo trì.</p></div><div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">QA Archive</Link><span className="status-badge">API THẬT</span></div></header>
     {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
     {failure && <section className="alert alert--error" role="alert"><h2>Không thể tải đầy đủ Trend</h2><p>{errorMessage(failure)}</p><button onClick={() => void Promise.all([trend.refetch(), events.refetch(), baselines.refetch()])}>Thử lại</button></section>}

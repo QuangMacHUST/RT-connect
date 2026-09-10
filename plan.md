@@ -968,7 +968,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - [x] P10-W01 — Projection unique source_run/metric; index organization/machine/time; rebuild idempotent. `LOCAL_VERIFIED`.
 - [x] P10-W02 — Compatibility signature unit + energy + detector + protocol meaning; explicit normalization. `LOCAL_VERIFIED`.
 - [x] P10-W03 — Raw versus day/week aggregate contract, extrema/source-ID preservation, timezone/range handling và bounded query preflight. `LOCAL_VERIFIED`: raw vượt `TREND_MAX_RAW_POINTS` bị chặn trước materialize; aggregate trong `TREND_MAX_AGGREGATE_SOURCE_POINTS` giữ bucket lineage và export `BUCKET`; workload 100.000 điểm/máy và p95 staging vẫn mở.
-- [x] P10-W04 — Baseline version/event CRUD; chart keyboard/table fallback/export metadata. `LOCAL_VERIFIED` cho API/UI và test; basic authenticated staging create/read smoke đạt, nhưng update/archive UI và visual/accessibility evidence staging còn mở.
+- [x] P10-W04 — Baseline version/event CRUD; chart keyboard/table fallback/export metadata. `LOCAL_VERIFIED` cho API/UI và test; Trend workspace hiện có panel đọc/sửa/archive baseline version và maintenance revision với `expected_version`/`expected_revision`, nhưng authenticated staging update/archive, stale-conflict readback và visual/accessibility evidence vẫn mở.
 - [ ] P10-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P10-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
 
