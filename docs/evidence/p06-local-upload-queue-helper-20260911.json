@@ -1,0 +1,51 @@
+{
+  "evidence_id": "P06-W04-LOCAL-UPLOAD-QUEUE-HELPER-20260911",
+  "phase": "P06",
+  "work_package": "P06-W04",
+  "status": "LOCAL_VERIFIED",
+  "captured_at": "2026-09-11",
+  "source_commit": "8c8f9bdb5fb903ebec80e0a3832e743b974398ee",
+  "scope": "Deterministic browser-side upload queue orchestration",
+  "implementation": [
+    "Queue processing uses a captured item snapshot and processes items sequentially.",
+    "A successful item remains successful when a later item fails; failure is retained on that item.",
+    "Retry mode accepts only FAILED items in the selected case; pending items and other cases are excluded.",
+    "The component passes the captured item to the API adapter, avoiding a stale lookup by item id during an asynchronous batch."
+  ],
+  "checks": [
+    {
+      "id": "web-lint",
+      "command": "npm.cmd run lint",
+      "exit_code": 0,
+      "observed": "ESLint passed"
+    },
+    {
+      "id": "web-typecheck",
+      "command": "npm.cmd run typecheck",
+      "exit_code": 0,
+      "observed": "TypeScript project build passed"
+    },
+    {
+      "id": "web-tests",
+      "command": "npm.cmd test -- --run",
+      "exit_code": 0,
+      "observed": "8 test files passed; 19 tests passed"
+    },
+    {
+      "id": "web-build",
+      "command": "npm.cmd run build",
+      "exit_code": 0,
+      "observed": "Vite production build passed; chunk-size advisory warning retained"
+    }
+  ],
+  "not_verified": [
+    "Staging queue with an intentionally failing upload and browser retry",
+    "Provider storage fault/reconciliation",
+    "Signed-download byte re-hash",
+    "Full P06 S/E/C and release handoff"
+  ],
+  "redaction": {
+    "contains_secrets": false,
+    "contains_patient_data": false
+  }
+}

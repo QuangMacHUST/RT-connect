@@ -10,6 +10,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 - Local checks: backend `test_artifacts.py` `6 passed`; frontend lint, typecheck, Vitest `17/17` và production build PASS. Evidence: [p06-local-upload-queue-20260911.json](docs/evidence/p06-local-upload-queue-20260911.json).
 - Đây là local implementation slice. Chưa đóng P06-W04/P06-VERIFY: staging browser queue với lỗi có chủ ý, storage fault/reconciliation, download byte re-hash và full S/E/C/release evidence còn phải thực hiện.
 
+## P06-W04 — queue orchestration hardening — local verified — 2026-09-11 / `8c8f9bd`
+
+- Tách điều phối upload queue khỏi `QAArchivePage`: batch dùng snapshot item, upload tuần tự, giữ success trước đó khi item sau lỗi, và retry chỉ nhận `FAILED` item thuộc case hiện hành; tránh stale lookup trong async state.
+- Local checks trên commit `8c8f9bdb5fb903ebec80e0a3832e743b974398ee`: lint, typecheck, production build và Vitest `8 files / 19 tests` đều PASS. Evidence: [p06-local-upload-queue-helper-20260911.json](docs/evidence/p06-local-upload-queue-helper-20260911.json).
+- Đây vẫn là local hardening slice; staging fault/retry có chủ ý, storage reconciliation, signed-download byte re-hash và full P06 S/E/C/release vẫn mở.
+
 ## P06/P20 — authorized RTDOSE staging upload và current web parity — staging verified slice — 2026-09-11 / `0abba6e`
 
 - Theo xác nhận trực tiếp của người dùng, fixture tổng hợp `docs/fixtures/gamma-rtdose-v1-smoke.dcm` (898 bytes, SHA-256 `ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b`) đã được upload một lần vào case `ed7ddbe5-811a-4463-a270-b0386f64644d` (`P11 E2E Synthetic QA 20260910 B7C3`) trên staging với `REFERENCE/DICOM`.
