@@ -15,6 +15,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Browser Edge với authenticated session đã đọc `/app/organization`, `/app/qa`, case DVH, `/app/reports`, `/app/biological` và `/app/system/status` trên build `3e79f488...`; DVH deep-link/reload giữ run `d8230d1d...`, D95 `5.200 Gy`, input RTDOSE/RTSTRUCT và warning CT dose-native. Evidence: [p19-staging-authenticated-remote-readback-20260910-3e79f48.json](docs/evidence/p19-staging-authenticated-remote-readback-20260910-3e79f48.json).
 - Status page vẫn hiển thị `failed=1` ở Gamma queue counter lịch sử; readback không che giấu hoặc reset counter. Đây là tín hiệu để P18 fault/incident triage tiếp tục, không được diễn giải là toàn bộ queue đã PASS. P19 vẫn thiếu two-identity/mutation E2E, export/download, rollback, alert/restore và production promotion.
 
+## P18 — staging worker restart/recovery subtest — partial verified — 2026-09-10 / `1c0210c`
+
+- Worker staging được redeploy cùng commit hiện hành để mô phỏng restart có kiểm soát; Railway deployment `b007ed76-f3c6-4ba8-b70d-9001503ad9db` báo `SUCCESS`, metadata giữ root `/apps/api`, start `python -m rt_connect_api.worker`, không healthcheck/pre-deploy.
+- Trước/sau trên `/app/system/status`, health `OK`, readiness `READY`, schema `20260909_0019`, schema parity `MATCH`, Redis `available/configured`, stream `9`, pending `0`; không upload, calculation, report hoặc database/object deletion. Evidence: [p18-staging-worker-restart-recovery-20260910-1c0210c.json](docs/evidence/p18-staging-worker-restart-recovery-20260910-1c0210c.json).
+- Đây chỉ là `STAGING_PARTIAL_RESTART_RECOVERY`; API/DB/Redis/storage/renderer fault injection, retry/dead-letter, restore plan execution, volume/failure budget và full P18 regression/pilot vẫn mở.
+
 ## P13 — staging BED/EQD2 calculation, immutable readback and export — partial verified — 2026-09-10 / `b712a383`
 
 - Trên web build `b712a383fb806188c794481720e7051e89168fe4`, browser authenticated đã chọn scenario SAVED `P12_STAGING_BIO_SCENARIO_E21`, revision `3` (`e3bcce19-d769-4873-b0e6-45a82e66ee32`) và validate-only thành công trước khi lưu snapshot.

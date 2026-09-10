@@ -1,0 +1,44 @@
+{
+  "schema_version": "rt-connect.p18-staging-worker-restart-recovery.v1",
+  "captured_at_utc": "2026-09-10T13:40:29.536Z",
+  "environment": "staging",
+  "source_sha": "1c0210c4286e7aeb3dbb565ce34e5ab474dfa708",
+  "service": "RT-connect-gamma-worker-staging",
+  "service_id": "a1e0c389-e527-4d4c-995e-2a48f4795dda",
+  "deployment_id": "b007ed76-f3c6-4ba8-b70d-9001503ad9db",
+  "deployment_status": "SUCCESS",
+  "fault_action": "redeploy_same_commit_to_restart_worker",
+  "destructive_action": false,
+  "database_or_object_deleted": false,
+  "before": {
+    "system_status_route": "/app/system/status",
+    "health": "OK",
+    "readiness": "READY",
+    "schema_revision": "20260909_0019",
+    "redis_stream": "available/configured",
+    "stream_length": 9,
+    "pending": 0,
+    "failed_counter_observed": 1
+  },
+  "after": {
+    "system_status_route": "/app/system/status",
+    "health": "OK",
+    "readiness": "READY",
+    "schema_revision": "20260909_0019",
+    "schema_parity": "MATCH",
+    "redis_stream": "available/configured",
+    "stream_length": 9,
+    "pending": 0,
+    "page_error": false
+  },
+  "passed": true,
+  "evidence_level": "STAGING_PARTIAL_RESTART_RECOVERY",
+  "limitations": [
+    "This proves same-commit worker restart recovery only; it does not inject API/DB/Redis/storage/renderer failure.",
+    "The historical failed counter was observed before restart and was not reset; post-restart failed-counter value was not used as a pass criterion.",
+    "No new Gamma run, upload, report or database mutation was performed.",
+    "No patient data, token, cookie, secret or database URL is stored in this evidence."
+  ],
+  "contains_patient_data": false,
+  "contains_secrets": false
+}
