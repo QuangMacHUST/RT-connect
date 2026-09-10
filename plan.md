@@ -699,9 +699,9 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 ### Work packages P6
 
 - [x] P06-W01 — Hoàn thiện streaming size limit, object/DB compensation và cleanup orphan có retention. `LOCAL_VERIFIED` (2026-09-10): upload đã xóa object sau khi transaction metadata/manifest thất bại; nếu cleanup storage cũng lỗi thì trả `ARTIFACT_PERSISTENCE_FAILED` để reconciliation. Provider-level orphan retention/reconciliation và staging failure injection vẫn mở.
-- [ ] P06-W02 — Content detection phải đối chiếu declared type; JSON gắn DICOM không được VALID như DICOM.
-- [ ] P06-W03 — Tách file validity với dataset/workflow readiness; geometry linking không dựa filename/PatientID.
-- [ ] P06-W04 — Upload queue/retry, idempotent manifest role, signed URL renewal và checksum round-trip.
+- [x] P06-W02 — Content detection phải đối chiếu declared type; JSON gắn DICOM không được VALID như DICOM. `LOCAL_VERIFIED` trong `docs/evidence/p06-local-upload-queue-20260911.json`: backend test đã chứng minh `ARTIFACT_TYPE_MISMATCH` cho JSON/DICOM mismatch; staging negative upload vẫn thuộc P06-VERIFY.
+- [x] P06-W03 — Tách file validity với dataset/workflow readiness; geometry linking không dựa filename/PatientID. `LOCAL_VERIFIED_SLICE`: artifact giữ metadata/manifest checksum riêng, downstream DVH chỉ nhận manifest VALID khớp checksum và kiểm tra geometry/frame; full P06 staging linkage matrix vẫn thuộc P06-VERIFY. Evidence: `docs/evidence/p06-local-upload-queue-20260911.json`.
+- [ ] P06-W04 — Upload queue/retry, idempotent manifest role, signed URL renewal và checksum round-trip. `IN_PROGRESS`: UI queue nhiều file, sequential upload, per-file failure và retry đã implement/local build verified; API duplicate manifest role và mỗi lần Download cấp request signed URL mới đã có. Staging queue/fault injection và byte-level checksum round-trip vẫn mở. Evidence local: `docs/evidence/p06-local-upload-queue-20260911.json`.
 - [ ] P06-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P06-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
 

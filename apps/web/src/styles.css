@@ -96,6 +96,13 @@ td code { color: #075e67; font-size: .78rem; }
 .artifact-upload { align-items: end; border: 1px solid #dce5ea; display: grid; gap: 10px; grid-template-columns: minmax(0, 2fr) minmax(130px, .7fr) minmax(150px, .8fr) auto; margin-top: 14px; padding: 12px; }
 .artifact-upload label { color: #334155; display: grid; font-size: .78rem; font-weight: 600; gap: 6px; }
 .artifact-upload input, .artifact-upload select { border: 1px solid #c8d5de; border-radius: 4px; color: #0f172a; font: inherit; min-height: 38px; padding: 8px 10px; }
+.artifact-upload-queue { background: #f8fbfc; border: 1px solid #d4e0e6; margin-top: 12px; padding: 12px; }
+.artifact-upload-queue h3 { color: #173c5d; font-size: .95rem; margin: 0; }
+.artifact-upload-queue ul { display: grid; gap: 7px; list-style: none; margin: 12px 0 0; padding: 0; }
+.artifact-upload-queue li { align-items: center; background: #fff; border: 1px solid #dce5ea; display: flex; gap: 10px; justify-content: space-between; padding: 9px 10px; }
+.artifact-upload-queue li > div { display: grid; gap: 3px; min-width: 0; }
+.artifact-upload-queue li strong { color: #173c5d; overflow-wrap: anywhere; }
+.artifact-upload-queue li small, .artifact-upload-queue li .error-text { overflow-wrap: anywhere; }
 .page-header__actions { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
 .machine-qa-panel { margin-top: 18px; }
 .gamma-panel { margin-top: 18px; }

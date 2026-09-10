@@ -8,6 +8,26 @@ import { dvhArtifactStatusLabel, summarizeDvhArtifacts } from './dvhArtifactSumm
 
 const cycles = ['DAILY', 'MONTHLY', 'ANNUAL', 'CUSTOM'] as const
 
+type UploadQueueStatus = 'PENDING' | 'UPLOADING' | 'UPLOADED' | 'FAILED'
+
+type UploadQueueItem = {
+  id: string
+  caseId: string
+  file: File
+  artifactType: string
+  logicalRole: string
+  status: UploadQueueStatus
+  error?: string
+  duplicate?: boolean
+}
+
+function uploadQueueStatusLabel(status: UploadQueueStatus): string {
+  if (status === 'PENDING') return 'Đang chờ'
+  if (status === 'UPLOADING') return 'Đang upload…'
+  if (status === 'UPLOADED') return 'Đã upload'
+  return 'Upload lỗi'
+}
+
 function errorMessage(error: unknown): string {
   if (error instanceof ApiClientError) return `${error.message} (${error.code})`
   return 'Không thể hoàn tất thao tác. Hãy thử lại và kiểm tra kết nối API.'
@@ -68,6 +88,10 @@ export function QAArchivePage() {
   const [artifactType, setArtifactType] = useState('DICOM')
   const [logicalRole, setLogicalRole] = useState('REFERENCE')
   const uploadInputRef = useRef<HTMLInputElement>(null)
+  const uploadQueueIdRef = useRef(0)
+  const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([])
+  const [uploadQueueProcessing, setUploadQueueProcessing] = useState(false)
+  const currentUploadQueue = selectedCase ? uploadQueue.filter((item) => item.caseId === selectedCase.id) : []
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ['folders', organizationId] })
@@ -76,15 +100,6 @@ export function QAArchivePage() {
   const mutation = useMutation({
     mutationFn: (action: () => Promise<unknown>) => action(),
     onSuccess: () => { setMessage('Đã lưu thay đổi.'); refresh() },
-    onError: (error) => setMessage(errorMessage(error))
-  })
-  const uploadMutation = useMutation({
-    mutationFn: ({ file, type, role }: { file: File; type: string; role: string }) => apiClient.uploadArtifact(accessToken!, selectedCase!.id, file, type, role),
-    onSuccess: (artifact) => {
-      setMessage(artifact.duplicate ? 'File trùng checksum; hệ thống dùng lại artifact đã có.' : 'Đã upload artifact và tạo input manifest.')
-      void queryClient.invalidateQueries({ queryKey: ['artifacts', selectedCase?.id] })
-      if (uploadInputRef.current) uploadInputRef.current.value = ''
-    },
     onError: (error) => setMessage(errorMessage(error))
   })
   const validationMutation = useMutation({
@@ -123,10 +138,56 @@ export function QAArchivePage() {
     }))
     setCaseTitle('')
   }
-  const uploadArtifact = () => {
-    const file = uploadInputRef.current?.files?.[0]
-    if (!selectedCase || !file) return setMessage('Hãy chọn một QA case và file trước khi upload.')
-    uploadMutation.mutate({ file, type: artifactType, role: logicalRole })
+  const queueArtifactFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? [])
+    if (!files.length) return
+    const batchId = Date.now()
+    setUploadQueue((current) => [
+      ...current,
+      ...files.map((file, index) => {
+        uploadQueueIdRef.current += 1
+        return {
+          id: `upload-${batchId}-${index}-${uploadQueueIdRef.current}`,
+          caseId: selectedCase!.id,
+          file,
+          artifactType,
+          logicalRole,
+          status: 'PENDING' as const
+        }
+      })
+    ])
+    event.target.value = ''
+    setMessage(`${files.length} file đã được thêm vào hàng đợi upload.`)
+  }
+  const updateUploadQueueItem = (itemId: string, patch: Partial<UploadQueueItem>) => {
+    setUploadQueue((current) => current.map((item) => item.id === itemId ? { ...item, ...patch } : item))
+  }
+  const uploadQueueItem = async (itemId: string) => {
+    const item = uploadQueue.find((candidate) => candidate.id === itemId)
+    if (!selectedCase || !item || item.caseId !== selectedCase.id || item.status === 'UPLOADING') return
+    updateUploadQueueItem(itemId, { status: 'UPLOADING', error: undefined })
+    try {
+      const artifact = await apiClient.uploadArtifact(accessToken!, item.caseId, item.file, item.artifactType, item.logicalRole)
+      updateUploadQueueItem(itemId, { status: 'UPLOADED', duplicate: artifact.duplicate })
+      void queryClient.invalidateQueries({ queryKey: ['artifacts', selectedCase.id] })
+    } catch (error) {
+      updateUploadQueueItem(itemId, { status: 'FAILED', error: errorMessage(error) })
+    }
+  }
+  const uploadPendingQueue = async () => {
+    if (!selectedCase || uploadQueueProcessing) return
+    const pending = currentUploadQueue.filter((item) => item.status === 'PENDING')
+    if (!pending.length) return setMessage('Không có file đang chờ upload.')
+    setUploadQueueProcessing(true)
+    for (const item of pending) await uploadQueueItem(item.id)
+    setUploadQueueProcessing(false)
+    setMessage(`Đã xử lý ${pending.length} file trong hàng đợi; file lỗi có thể retry riêng.`)
+  }
+  const retryUploadQueueItem = async (itemId: string) => {
+    if (uploadQueueProcessing) return
+    setUploadQueueProcessing(true)
+    await uploadQueueItem(itemId)
+    setUploadQueueProcessing(false)
   }
   const downloadArtifact = async (artifactId: string) => {
     try {
@@ -149,11 +210,12 @@ export function QAArchivePage() {
             <div className="panel-heading"><div><p className="eyebrow">P6 · INPUT MANIFEST</p><h2>{selectedCase ? `Artifact của ${selectedCase.title}` : 'Chọn QA case để upload'}</h2></div><strong>{artifacts.data?.total ?? '—'}</strong></div>
             {selectedCase ? <>
               <div className="artifact-upload">
-                <label>File DICOM / measurement<input ref={uploadInputRef} type="file" /></label>
+                <label>File DICOM / measurement<input ref={uploadInputRef} type="file" multiple onChange={queueArtifactFiles} /></label>
                 <label>Loại<select value={artifactType} onChange={(event) => setArtifactType(event.target.value)}><option value="DICOM">DICOM</option><option value="MEASUREMENT">Measurement</option><option value="JSON">JSON</option><option value="OTHER">Other</option></select></label>
                 <label>Logical role<select value={logicalRole} onChange={(event) => setLogicalRole(event.target.value)}><option value="REFERENCE">REFERENCE</option><option value="EVALUATION">EVALUATION</option><option value="CT">CT</option><option value="RTSTRUCT">RTSTRUCT</option><option value="RTPLAN">RTPLAN</option><option value="MEASUREMENT">MEASUREMENT</option></select></label>
-                <button disabled={uploadMutation.isPending} onClick={uploadArtifact}>{uploadMutation.isPending ? 'Đang upload…' : 'Upload artifact'}</button>
+                <button disabled={uploadQueueProcessing || !currentUploadQueue.some((item) => item.status === 'PENDING')} onClick={() => void uploadPendingQueue()}>{uploadQueueProcessing ? 'Đang upload…' : 'Upload hàng đợi'}</button>
               </div>
+              {currentUploadQueue.length > 0 && <section className="artifact-upload-queue" aria-live="polite"><div className="panel-heading"><div><p className="eyebrow">UPLOAD QUEUE</p><h3>Hàng đợi artifact</h3></div><strong>{currentUploadQueue.filter((item) => item.status === 'UPLOADED').length}/{currentUploadQueue.length}</strong></div><ul>{currentUploadQueue.map((item) => <li key={item.id}><div><strong>{item.file.name}</strong><small>{item.file.size.toLocaleString('vi-VN')} bytes · {uploadQueueStatusLabel(item.status)}{item.duplicate ? ' · dùng lại checksum' : ''}</small>{item.error && <span className="error-text">{item.error}</span>}</div>{item.status === 'FAILED' && <button className="button-secondary" disabled={uploadQueueProcessing} onClick={() => void retryUploadQueueItem(item.id)}>Retry</button>}</li>)}</ul><p className="form-hint">Các file thành công được giữ lại; khi một file lỗi, chỉ file đó được retry và không rollback các file đã upload.</p></section>}
               <p className="form-hint">Để chạy DVH, upload và Validate một RTDOSE cùng một RTSTRUCT; chọn đúng Logical role tương ứng. CT là tùy chọn cho anatomy overlay. Chỉ artifact DICOM ở trạng thái VALID mới xuất hiện trong DVH preflight.</p>
               {artifacts.isPending ? <p>Đang tải artifact…</p> : artifacts.error ? <div className="alert alert--error"><p>{errorMessage(artifacts.error)}</p></div> : <div className="table-wrap"><table><thead><tr><th>File</th><th>Type</th><th>Checksum</th><th>Validation</th><th /></tr></thead><tbody>{(artifacts.data?.items ?? []).map((artifact) => <tr key={artifact.id}><td><strong>{artifact.original_filename}</strong><small className="table-subtitle">{artifact.byte_size.toLocaleString('vi-VN')} bytes · {artifact.artifact_type}</small></td><td>{artifact.artifact_type}</td><td><code>{artifact.sha256.slice(0, 16)}…</code></td><td><span className={artifact.data_status === 'INVALID' ? 'status-badge status-badge--warning' : 'status-badge'}>{artifact.data_status}</span></td><td><div className="table-actions"><button className="button-secondary" disabled={validationMutation.isPending} onClick={() => validationMutation.mutate(artifact.id)}>Validate</button><button className="button-secondary" onClick={() => void downloadArtifact(artifact.id)}>Download</button></div></td></tr>)}</tbody></table>{!artifacts.data?.items.length && <p className="empty-state">Chưa có artifact. Upload file đầu tiên để tạo manifest và kiểm tra dữ liệu.</p>}</div>}
             </> : <p className="empty-state">Chọn “Mở case” trong bảng phía trên để quản lý artifact.</p>}

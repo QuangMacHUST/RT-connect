@@ -1,0 +1,58 @@
+{
+  "evidence_id": "P06-W02-W04-LOCAL-UPLOAD-QUEUE-20260911",
+  "phase": "P06",
+  "work_packages": ["P06-W02", "P06-W03", "P06-W04"],
+  "status": "LOCAL_VERIFIED_SLICE",
+  "captured_at": "2026-09-11",
+  "source_commit": "WORKTREE_PENDING_COMMIT",
+  "environment": "local",
+  "scope": "Declared artifact type validation, manifest idempotency and browser upload queue/retry behavior",
+  "implementation": [
+    "Declared DICOM/JSON type is authoritative; content mismatch is rejected with ARTIFACT_TYPE_MISMATCH.",
+    "Artifact provenance keeps file validity separate from later workflow readiness; manifest roles and checksums remain explicit.",
+    "QA Archive accepts multiple files into a per-case queue, captures artifact type and logical role at enqueue time, uploads sequentially, preserves successful items, and exposes retry for failed items only.",
+    "Each download action requests a fresh API download response, so an expired signed URL is not reused by the UI action."
+  ],
+  "checks": [
+    {
+      "id": "artifact-backend",
+      "command": ".\\apps\\api\\.venv\\Scripts\\python.exe -m pytest apps/api/tests/test_artifacts.py -q",
+      "exit_code": 0,
+      "observed": "6 passed; declared-type mismatch, duplicate manifest role, upload compensation and cleanup reconciliation paths covered"
+    },
+    {
+      "id": "web-lint",
+      "command": "npm.cmd run lint",
+      "exit_code": 0,
+      "observed": "ESLint passed"
+    },
+    {
+      "id": "web-typecheck",
+      "command": "npm.cmd run typecheck",
+      "exit_code": 0,
+      "observed": "TypeScript project build passed"
+    },
+    {
+      "id": "web-tests",
+      "command": "npm.cmd test -- --run",
+      "exit_code": 0,
+      "observed": "7 test files passed; 17 tests passed"
+    },
+    {
+      "id": "web-build",
+      "command": "npm.cmd run build",
+      "exit_code": 0,
+      "observed": "Vite production build passed; chunk-size advisory warning retained"
+    }
+  ],
+  "not_verified": [
+    "Staging browser multi-file queue with one intentionally failing upload and retry of only that item",
+    "Provider object-storage fault injection and orphan reconciliation",
+    "Downloaded byte stream re-hash against the artifact checksum through the staging signed URL",
+    "Full P06 S/E/C matrix and release-manifest/handoff evidence"
+  ],
+  "redaction": {
+    "contains_secrets": false,
+    "contains_patient_data": false
+  }
+}

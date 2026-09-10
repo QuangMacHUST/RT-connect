@@ -3,6 +3,13 @@
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 `technical-specification.md` v1.24 và `plan.md` v4.20.
 
+## P06 — declared type và upload queue — local verified slice — 2026-09-11
+
+- Artifact validator giữ declared `artifact_type` là hợp đồng chính: payload JSON được khai báo DICOM không đi vào measurement validator và trả `ARTIFACT_TYPE_MISMATCH`; test duplicate cùng checksum/type vẫn tái dùng artifact và thêm role thiếu theo organization scope.
+- QA Archive đã chuyển từ upload đơn file sang queue theo case: có thể chọn nhiều file, snapshot `artifactType`/`logicalRole` lúc enqueue, upload tuần tự, giữ các file thành công khi một file lỗi và retry riêng file lỗi. Mỗi thao tác Download vẫn gọi API lấy URL mới thay vì giữ lại signed URL cũ.
+- Local checks: backend `test_artifacts.py` `6 passed`; frontend lint, typecheck, Vitest `17/17` và production build PASS. Evidence: [p06-local-upload-queue-20260911.json](docs/evidence/p06-local-upload-queue-20260911.json).
+- Đây là local implementation slice. Chưa đóng P06-W04/P06-VERIFY: staging browser queue với lỗi có chủ ý, storage fault/reconciliation, download byte re-hash và full S/E/C/release evidence còn phải thực hiện.
+
 ## P20-W01 — Operational status auto-refresh — local verified — 2026-09-11 / `7df7cb8`
 
 - Trang `/app/system/status` đã bổ sung polling 30 giây cho health, readiness, version và queue metrics khi có session; polling vẫn chạy khi tab ở nền.
