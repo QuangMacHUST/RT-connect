@@ -901,7 +901,15 @@ def _export_response(
     expires_at: datetime | None = None
     if job.status == "COMPLETED" and job.object_key and storage is not None:
         try:
-            url = storage.presigned_get(job.object_key, ttl_seconds)
+            url = storage.presigned_get(
+                job.object_key,
+                ttl_seconds,
+                response_headers={
+                    "response-content-disposition": (
+                        f'attachment; filename="{_export_filename(job)}"'
+                    )
+                },
+            )
             expires_at = datetime.now(UTC) + timedelta(seconds=ttl_seconds)
         except ObjectStorageError:
             url = None
@@ -926,6 +934,18 @@ def _export_response(
         created_at=job.created_at,
         updated_at=job.updated_at,
     )
+
+
+def _export_filename(job: ExportJob) -> str:
+    """Return a deterministic, header-safe name for a persisted export."""
+
+    extension = {
+        "JSON": "json",
+        "CSV": "csv",
+        "PDF": "pdf",
+        "PNG": "png",
+    }.get(job.export_format.upper(), "bin")
+    return f"rt-connect-report-export-{job.id}.{extension}"
 
 
 def _export_or_error(session: Session, context: SessionContext, job_id: UUID) -> ExportJob:
@@ -1603,7 +1623,15 @@ def download_report_export(
         )
     ttl_seconds = request.app.state.settings.s3_signed_url_ttl_seconds
     try:
-        url = storage.presigned_get(job.object_key, ttl_seconds)
+        url = storage.presigned_get(
+            job.object_key,
+            ttl_seconds,
+            response_headers={
+                "response-content-disposition": (
+                    f'attachment; filename="{_export_filename(job)}"'
+                )
+            },
+        )
     except ObjectStorageError as exc:
         raise DomainError(
             "DOWNLOAD_LINK_UNAVAILABLE",

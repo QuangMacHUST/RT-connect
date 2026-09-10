@@ -234,6 +234,11 @@ def test_report_exports_are_deterministic_idempotent_and_downloadable() -> None:
             download = client.get(f"/api/v1/report-exports/{job['id']}/download")
             assert download.status_code == 200, download.text
             assert download.json()["sha256"] == job["sha256"]
+            filename = f'rt-connect-report-export-{job["id"]}.{export_format.lower()}'
+            assert (
+                storage.last_presigned_response_headers["response-content-disposition"]
+                == f'attachment; filename="{filename}"'
+            )
 
         conflict = client.post(
             f"/api/v1/reports/{report_key}/revisions/{revision_id}/exports",

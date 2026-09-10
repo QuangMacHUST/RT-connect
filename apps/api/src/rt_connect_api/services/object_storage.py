@@ -12,6 +12,8 @@ from minio import Minio
 
 from rt_connect_api.core.config import Settings
 
+ResponseHeaders = dict[str, str | list[str] | tuple[str]]
+
 
 class ObjectStorageError(RuntimeError):
     """Raised when durable artifact storage is not configured or unavailable."""
@@ -32,7 +34,12 @@ class ObjectStorage(Protocol):
 
     def download_to_path(self, key: str, destination: Path) -> None: ...
 
-    def presigned_get(self, key: str, expires_seconds: int) -> str: ...
+    def presigned_get(
+        self,
+        key: str,
+        expires_seconds: int,
+        response_headers: ResponseHeaders | None = None,
+    ) -> str: ...
 
 
 class MinioObjectStorage:
@@ -104,10 +111,18 @@ class MinioObjectStorage:
                 response.close()
                 response.release_conn()
 
-    def presigned_get(self, key: str, expires_seconds: int) -> str:
+    def presigned_get(
+        self,
+        key: str,
+        expires_seconds: int,
+        response_headers: ResponseHeaders | None = None,
+    ) -> str:
         try:
             return self.client.presigned_get_object(
-                self.bucket, key, expires=timedelta(seconds=expires_seconds)
+                self.bucket,
+                key,
+                expires=timedelta(seconds=expires_seconds),
+                response_headers=response_headers,
             )
         except Exception as exc:
             raise ObjectStorageError("Could not create an artifact download URL") from exc
@@ -118,6 +133,7 @@ class InMemoryObjectStorage:
 
     def __init__(self) -> None:
         self.objects: dict[str, bytes] = {}
+        self.last_presigned_response_headers: ResponseHeaders = {}
 
     def ensure_bucket(self) -> None:
         return None
@@ -138,9 +154,15 @@ class InMemoryObjectStorage:
             raise ObjectStorageError("Stored artifact was not found") from exc
         destination.write_bytes(payload)
 
-    def presigned_get(self, key: str, expires_seconds: int) -> str:
+    def presigned_get(
+        self,
+        key: str,
+        expires_seconds: int,
+        response_headers: ResponseHeaders | None = None,
+    ) -> str:
         if key not in self.objects:
             raise ObjectStorageError("Stored artifact was not found")
+        self.last_presigned_response_headers = dict(response_headers or {})
         return f"memory://artifact/{key}"
 
 
