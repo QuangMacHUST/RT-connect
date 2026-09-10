@@ -3,6 +3,12 @@
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 `technical-specification.md` v1.23 và `plan.md` v4.19.
 
+## P19 — staging exact-SHA public parity after P18 documentation packet — partial verified — 2026-09-10 / `8dffbb9`
+
+- API, web và worker staging đã được yêu cầu deploy cùng source SHA `8dffbb9f48906131e99143f11b14d2abecd9a233`; public verifier kiểm tra exact SHA và schema `20260909_0019` đạt `15/15 PASS`, `failed_check_count=0`.
+- Các assertion PASS gồm health/readiness/version, OpenAPI CT preview và membership/invitation, unauthenticated organization boundary `401`, web index/bundle, CT/membership markers và source SHA marker. Evidence: [p19-staging-public-smoke-20260910-8dffbb9.json](docs/evidence/p19-staging-public-smoke-20260910-8dffbb9.json).
+- Đây là `STAGING_SOURCE_PARITY_AND_PUBLIC_SMOKE`, không nâng P19 thành DONE-v2: authenticated remote E2E, direct PostgreSQL/Redis/object evidence, fault/resource, backup/restore, rollback rehearsal, alert/owner handoff và production promotion vẫn mở.
+
 ## P13 — staging BED/EQD2 calculation, immutable readback and export — partial verified — 2026-09-10 / `b712a383`
 
 - Trên web build `b712a383fb806188c794481720e7051e89168fe4`, browser authenticated đã chọn scenario SAVED `P12_STAGING_BIO_SCENARIO_E21`, revision `3` (`e3bcce19-d769-4873-b0e6-45a82e66ee32`) và validate-only thành công trước khi lưu snapshot.
