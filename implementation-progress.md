@@ -3,6 +3,13 @@
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 `technical-specification.md` v1.24 và `plan.md` v4.20.
 
+## P07 — Machine QA revision/idempotency hardening — local verified — 2026-09-11 / `c6348c3`
+
+- Evaluate hiện nhận `expected_revision` tùy chọn để không phá caller cũ; UI chính gửi revision mà API trả về sau autosave. Revision lệch trên DRAFT trả `MACHINE_QA_REVISION_CONFLICT` và không chạy rule engine.
+- PostgreSQL finalize dùng row-lock để chỉ một transaction chuyển run sang trạng thái terminal. Evaluate lại run `COMPLETED` trả snapshot cũ, không tạo `TrendPoint` thứ hai; seed protocol lặp lại không tạo protocol/rule mới. Snapshot run giữ `p11.protocol-snapshot.v1` với source, capability và đầy đủ rule fields.
+- Local checks: `test_machine_qa.py` + `test_trend.py` **15/15 PASS**, Ruff, mypy, web lint/typecheck và planning verifier **21 phase / 0 lỗi**. Evidence: [p07-machine-qa-revision-20260911-c6348c3.json](docs/evidence/p07-machine-qa-revision-20260911-c6348c3.json).
+- Chỉ đóng local slice P07-W01/W02/W04. Authenticated staging mutation/concurrency, full S/E/C, release handoff và production/clinical gates vẫn mở.
+
 ## P06 — declared type và upload queue — local verified slice — 2026-09-11
 
 - Artifact validator giữ declared `artifact_type` là hợp đồng chính: payload JSON được khai báo DICOM không đi vào measurement validator và trả `ARTIFACT_TYPE_MISMATCH`; test duplicate cùng checksum/type vẫn tái dùng artifact và thêm role thiếu theo organization scope.
