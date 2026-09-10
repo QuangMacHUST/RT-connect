@@ -1,11 +1,13 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
-## P07 explicit N/A contract — local verification in progress — 2026-09-10
+## P07 explicit N/A contract — local + staging candidate — 2026-09-10 / `902b757`
 
 - Đã triển khai P07 explicit N/A end-to-end ở local: measurement có `is_not_applicable` và `na_reason`; N/A bắt buộc có lý do sau trim, không nhận giá trị số, metric có reason nhưng không bật N/A bị từ chối; quality status là `NA`, overall aggregation dùng `FAIL > REVIEW > WARNING > NA > PASS`, và metric N/A không tạo `TrendPoint`.
 - Backend regression `apps/api/tests/test_machine_qa.py`: **6/6 PASS**; frontend lint, typecheck, Vitest và production build: **PASS**. Đây mới là `LOCAL_VERIFIED`; chưa dùng để khẳng định candidate staging mới đã phục vụ contract này.
-- Tài liệu đã đồng bộ: `business-analysis.md` v0.23, `specification.md` v1.22, `technical-specification.md` v1.21 và `plan.md` v4.13. Planning verifier cần chạy lại sau khi chốt commit; không cần migration mới vì các field nằm trong JSON columns.
+- Tài liệu đã đồng bộ: `business-analysis.md` v0.23, `specification.md` v1.22, `technical-specification.md` v1.21 và `plan.md` v4.13. Planning verifier đã PASS với 21 phase và 0 lỗi; không cần migration mới vì các field nằm trong JSON columns.
 - Case staging đã có fixture RTDOSE tổng hợp đúng từ trước và đã ở trạng thái `VALID`; theo xác nhận upload của người dùng, không tạo artifact RTDOSE trùng.
+- Railway read-only deployment metadata xác nhận API `1e9e8ab9-ad4b-438a-b5be-bd068700a1c6`, web `2e49f01d-023c-47ac-bd58-b7866baa2e14` và worker `0c0d1c47-2c86-4924-9396-a53f2729aed5` đều `SUCCESS`, cùng source SHA đầy đủ `902b75729c97b6927465d70b93225d5702bdc83f` trên branch `codex/p4-org-site-machine`. API giữ `/apps/api`, pre-deploy `alembic upgrade head`, healthcheck `/api/v1/health`; worker giữ `/apps/api` và `python -m rt_connect_api.worker`, không dùng HTTP healthcheck; web giữ `/apps/web`.
+- Public exact-SHA verifier đạt **15/15 checks PASS** với schema `20260909_0019`; evidence: `docs/evidence/p19-staging-public-smoke-20260910-902b757.json`. Đây là source/runtime/public-contract evidence; authenticated Machine QA N/A browser mutation, fault injection và production promotion chưa được ghi nhận.
 
 ## Documentation and implementation rebaseline — 2026-09-09
 

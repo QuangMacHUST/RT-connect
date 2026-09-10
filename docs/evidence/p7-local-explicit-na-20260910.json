@@ -3,6 +3,8 @@
   "captured_at_utc": "2026-09-10",
   "environment": "local-testclient-and-frontend-build",
   "source_commit_before_worktree_change": "c8b1b964f797f26c732755b2d2c19ed80d129838",
+  "source_commit_after_verification": "902b75729c97b6927465d70b93225d5702bdc83f",
+  "working_tree_state_after_commit": "clean",
   "working_tree_scope": [
     "apps/api/src/rt_connect_api/api/machine_qa.py",
     "apps/api/tests/test_machine_qa.py",
