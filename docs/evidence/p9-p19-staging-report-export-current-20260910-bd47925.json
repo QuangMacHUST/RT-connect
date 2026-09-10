@@ -1,0 +1,67 @@
+{
+  "evidence_id": "p9-p19-staging-report-export-current-20260910-bd47925",
+  "recorded_at": "2026-09-10T22:32:40+07:00",
+  "environment": "staging",
+  "evidence_level": "STAGING_AUTHENTICATED_REPORT_EXPORT_CONTENT_VERIFIED",
+  "source_commit": "bd4792505acea66113953f1d525e571cbe8ca155",
+  "service_sha_parity": true,
+  "schema_revision": "20260909_0019",
+  "deployments": {
+    "api": {"id": "0ffdee7b-ff82-47a5-966c-304b046a6728", "status": "SUCCESS"},
+    "web": {"id": "02c59a4c-d78c-4cb5-b790-2462566ec715", "status": "SUCCESS"},
+    "worker": {"id": "11124466-d67f-4d6e-975c-a6090a35f112", "status": "SUCCESS"}
+  },
+  "web_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "report": {
+    "title": "P17 staging bound DVH report",
+    "report_key": "3b51b1db-1a6c-437b-8e43-dbaf1e9b73e7",
+    "revision_number": 1,
+    "source_type": "DVH",
+    "source_id": "d8230d1d-badd-4c0c-b044-dcc4434215a6",
+    "renderer_version": "report-renderer-0.1",
+    "content_sha256": "2599b891dbe42eedbc69e8889a368ee8359586076c8833e8e474cf57c195cb5c",
+    "synthetic_only": true,
+    "mutation_scope": "existing report selected; no report revision saved"
+  },
+  "exports": {
+    "JSON": {
+      "export_job_id": "764f8147-3401-4643-a906-e165a1343168",
+      "bytes": 15582,
+      "parse": "PASS",
+      "content_sha256": "307a42ae96c15c9d5a9a868f66210288666f25908c82a77b7e152af3b9cc1353",
+      "source_type": "DVH",
+      "source_id_matches": true,
+      "content_sha_matches": true
+    },
+    "CSV": {
+      "export_job_id": "24374ef6-ff77-4a98-85ac-bd337e5808af",
+      "bytes": 1190,
+      "parse": "PASS",
+      "rows": 27,
+      "content_sha256": "2ad5e4f69d929591128e6a6c61241ffa3ea0c15ff62a723d5eaf850002819e56"
+    },
+    "PDF": {
+      "export_job_id": "b8dbed8c-c1bf-42ae-a5c9-870d2047cc01",
+      "bytes": 1046,
+      "format_signature": "%PDF",
+      "content_sha256": "e2113ca2351441941539ebaf3d950372e5e88d1f73a4f73da9741c8785131cba"
+    },
+    "PNG": {
+      "export_job_id": "d22a8562-8855-4603-a616-5dd2f5133ea2",
+      "bytes": 2243,
+      "format_signature": "89-50-4E-47-0D-0A-1A-0A",
+      "content_sha256": "c97465fd1fa5af6ec84bd32866cf25999fb81ba5f988d3c1284c0f7d89e92551"
+    }
+  },
+  "interpretation": {
+    "pass": [
+      "API, web and worker staging deployments are SUCCESS and share the exact candidate SHA.",
+      "Authenticated Report Builder read an existing immutable revision and created all four export formats.",
+      "JSON and CSV content were parsed; PDF and PNG format signatures were verified from downloaded bytes."
+    ],
+    "not_proven": [
+      "CUA Chromium retains the temporary .crdownload suffix, so an independent final filename rename is not claimed.",
+      "This evidence does not close provider storage fault/retry, visual human review, backup/restore, rollback, or production promotion gates."
+    ]
+  }
+}

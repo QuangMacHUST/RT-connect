@@ -9,6 +9,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - JSON export tải được `24,673` bytes, parse thành công, `run_id` và `result_sha256` khớp provenance UI. CSV export tải được `15,901` bytes, parse thành công với `25` rows và đủ section `input/result/warning`.
 - Edge/CUA giữ hậu tố tạm `.crdownload`; đây là giới hạn quan sát của harness, không phải nội dung export thiếu. Bằng chứng content-level completion được ghi tại [p17-p19-staging-dvh-export-current-20260910-c11fca.json](docs/evidence/p17-p19-staging-dvh-export-current-20260910-c11fca.json). Không tuyên bố filename rename độc lập, production readiness, backup/restore, rollback hoặc full P18/P19.
 
+## P9/P19 — current staging Report Builder export content verification — partial verified — 2026-09-10 / `bd47925`
+
+- API/web/worker staging đã được đồng bộ exact SHA `bd4792505acea66113953f1d525e571cbe8ca155`; public verifier đạt `15/15`, schema `20260909_0019`. Deployment IDs: API `0ffdee7b-ff82-47a5-966c-304b046a6728`, web `02c59a4c-d78c-4cb5-b790-2462566ec715`, worker `11124466-d67f-4d6e-975c-a6090a35f112`.
+- Browser đã chọn revision hiện có `P17 staging bound DVH report`, rev 1, source run `d8230d1d-badd-4c0c-b044-dcc4434215a6`, không lưu revision mới. Bốn export đều được tạo: JSON `15,582` bytes parse PASS; CSV `1,190` bytes parse PASS/27 rows; PDF `1,046` bytes có magic `%PDF`; PNG `2,243` bytes có signature PNG.
+- JSON content giữ `report_key`, `source_id`, `source_type=DVH`, renderer `report-renderer-0.1` và `content_sha256` đúng revision. Evidence: [p9-p19-staging-report-export-current-20260910-bd47925.json](docs/evidence/p9-p19-staging-report-export-current-20260910-bd47925.json). `.crdownload` filename rename, visual human review, provider fault/retry, backup/restore và production gate vẫn mở.
+
 ## P8/P18/P19 — authenticated Gamma staging mutation E2E — partial verified — 2026-09-10 / `1badb66`
 
 - Trên web build `1badb6616d1a68f7178b2aefd10c71adc95a826b`, phiên authenticated đã reuse fixture RTDOSE/VALID `gamma-rtdose-v1-smoke.dcm` trong case tổng hợp `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`; không upload bản sao. Evaluation là `gamma-measurement-3d-v1-smoke.json`; preflight hiển thị `VALID`.
