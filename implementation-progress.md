@@ -3,6 +3,14 @@
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 `technical-specification.md` v1.24 và `plan.md` v4.19.
 
+## P17/P19 — current candidate parity and RTDOSE authenticated recheck — staging partial — 2026-09-10 / `e5197ce`
+
+- Sau khi commit tài liệu `e5197ce4634f93b81267479d9b68382e97f7e4e9` được push, web staging tự nhận candidate mới trong khi API/worker vẫn phục vụ `380012e`; public verifier với expected `380012e` đã bắt đúng drift ở `web.bundle.expected_version` (`1` lỗi). Evidence drift được giữ tại [p19-staging-public-recheck-20260910.json](docs/evidence/p19-staging-public-recheck-20260910.json).
+- Đã yêu cầu redeploy có kiểm soát API, web và worker staging cùng SHA `e5197ce`; deployment mới lần lượt là API `d3e6c135-6602-420e-9609-d4ba9098e5fe`, web `b670b3de-cecc-473c-960b-58a7374fb1da` và worker `675a146e-cace-4c63-bf28-fdf7eca25bef`, đều `SUCCESS`. Không xóa database/object và không tạo lại fixture.
+- Public verifier sau khi đồng bộ đạt `15/15`, `failed_check_count=0`, API version/readiness và web bundle cùng `e5197ce`, schema `20260909_0019`: [p19-staging-public-recheck-20260910-e5197ce.json](docs/evidence/p19-staging-public-recheck-20260910-e5197ce.json).
+- Authenticated browser trên đúng candidate `e5197ce` mở lại case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`: preflight `2 dose · 1 structure`, RTDOSE `gamma-rtdose-v1-smoke.dcm` `VALID` với SHA-256 `ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b`, RTSTRUCT hợp lệ, ROI `#1 · P17_TARGET`, DVH run `d8230d1d-badd-4c0c-b044-dcc4434215a6` và result SHA `cf2799b8afeafa68cf60a330eac9adff123cca5c7ceacfc0eab78132b0c0359c` được đọc lại; không tạo run/artifact mới và không upload trùng. Evidence: [p17-staging-rtdose-authenticated-recheck-20260910-e5197ce.json](docs/evidence/p17-staging-rtdose-authenticated-recheck-20260910-e5197ce.json).
+- Đây là parity và authenticated readback partial gate. P17/P19 vẫn mở full negative/fault/resource/volume, two-identity mutation E2E, provider backup/restore, rollback, alert/owner handoff và production promotion.
+
 ## P9 — PDF Unicode renderer correction — local verified / staging revalidation required — 2026-09-10
 
 - Visual inspection of the previous staging PDF export found corrupted Vietnamese glyphs (`?`) even though the payload had a valid PDF header. This was treated as a release-blocking visual defect, not as a cosmetic warning.
