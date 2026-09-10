@@ -41,6 +41,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Lịch sử tăng lên `10` run và run failed cũ vẫn còn hiển thị; không tạo artifact mới và không upload lại RTDOSE. Đây là staging synthetic E2E happy path, không phải bằng chứng fault/retry/resource/clinical commissioning.
 - Evidence: `docs/evidence/p8-staging-psqa-gamma-3d-20260910-37130ec.json`. P8 vẫn mở các gate âm tính, crash-after-commit/ack, bounded retry/dead-letter, workload lớn, independent oracle, release và production.
 
+## P8 — staging RTDOSE_REQUIRED negative input — partial verified — 2026-09-10 / `37130ec`
+
+- Với profile `PSQA_GAMMA`, chọn JSON `gamma-reference-v1-smoke.json` làm Reference bị chặn trước queue bằng trạng thái `PROFILE INPUT MISSING`, message yêu cầu RTDOSE DICOM `VALID`; nút enqueue bị disable.
+- Khôi phục lại `gamma-rtdose-v1-smoke.dcm` làm Reference đưa preflight về `PREFLIGHT VALID`, nút enqueue hoạt động và history vẫn giữ `10` run; negative test không tạo mutation.
+- Evidence: `docs/evidence/p8-staging-negative-rtdose-required-20260910-37130ec.json`. Đây mới là negative input slice; geometry/frame/dose-scaling, worker fault/retry/resource và release gates vẫn mở.
+
 ## P10 — staging negative/accessibility recheck — partial verified — 2026-09-10 / `a30e365`
 
 - Trên candidate `a30e365`, Trend workspace đã được đọc bằng accessibility tree: lifecycle tables/actions, filter controls, source links và error/empty/retry states đều có semantic text/controls đọc được.

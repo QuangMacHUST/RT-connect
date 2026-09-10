@@ -1,0 +1,36 @@
+{
+  "schema_version": "rt-connect.p8-staging-negative-input.v1",
+  "captured_at_utc": "2026-09-10T11:33:48Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_NEGATIVE_READ_ONLY",
+  "environment": "staging",
+  "candidate_source_sha": "37130ec41e12ebb83e0eff8495e67e4273636d00",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/gamma?release=37130ec",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "data_boundary": "The negative test selected an existing synthetic JSON artifact only; no artifact was uploaded and no analysis run was created.",
+  "test": {
+    "test_id": "TC-P08-E01",
+    "profile": "PSQA_GAMMA",
+    "invalid_reference": "gamma-reference-v1-smoke.json",
+    "invalid_reference_modality": "JSON",
+    "evaluation_kept": "gamma-measurement-3d-v1-smoke.json",
+    "observed_status": "PROFILE_INPUT_MISSING",
+    "observed_message": "PSQA Gamma cần RTDOSE DICOM đã VALID làm Reference và measurement/RTDOSE làm Evaluation.",
+    "queue_button_disabled": true,
+    "result": "REJECTED_BEFORE_QUEUE"
+  },
+  "restoration": {
+    "reference_restored": "gamma-rtdose-v1-smoke.dcm",
+    "reference_sha256_prefix": "ca5c9168eb9b…",
+    "preflight_after_restore": "PREFLIGHT_VALID",
+    "queue_button_enabled": true,
+    "history_count_unchanged": 10,
+    "persisted_mutation_from_negative_test": false
+  },
+  "open_gates": [
+    "Geometry/frame/dose-scaling mismatch negative matrix",
+    "Worker crash-after-commit acknowledgement, bounded retry/dead-letter and resource fault evidence",
+    "Independent oracle convergence, commissioning and P8 release gates"
+  ],
+  "result": "STAGING_NEGATIVE_PASS"
+}
