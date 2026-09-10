@@ -18,6 +18,11 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Kiểm thử optimistic concurrency trên marker `Staging QA maintenance smoke`: tab thắng lưu title `Staging QA maintenance concurrent winner` với revision `2`; tab giữ revision cũ `1` bị từ chối bằng `MAINTENANCE_REVISION_CONFLICT`, và title stale không được ghi. Reload xác nhận title thắng vẫn là nguồn sự thật.
 - Evidence: `docs/evidence/p10-staging-lifecycle-20260910-7343189.json`. Đây là `STAGING_PARTIAL_PASS`: visual/accessibility, complete P10 S/E/C, large-series, effective-time/rebuild, provider fault/resource, release manifest và production/rollback evidence vẫn mở; P10 chưa `DONE`.
 
+## P19 — staging exact-SHA public smoke after P10 evidence — 2026-09-10 / `6df4ed5`
+
+- Sau khi push packet P10, API, web và worker staging đã được yêu cầu deploy cùng source SHA `6df4ed581be91f193fe1a07c0fc3ef23c18d70c0`. Public verifier kiểm tra candidate thực tế: `15/15 PASS`, `failed_check_count=0`, API version và web bundle cùng exact SHA, schema `20260909_0019`, `/health` `ok`, `/ready` `ready`, OpenAPI routes và unauthenticated organization boundary đều đúng.
+- Evidence: `docs/evidence/p19-staging-public-smoke-20260910-6df4ed5.json`. Đây chỉ là public contract/source-parity evidence cho staging; không đóng P19 vì authenticated remote E2E, private dependency, backup/restore, rollback, alert và production promotion vẫn chưa có bằng chứng.
+
 ## P10 Trend — staging export, drill-down và negative recheck — 2026-09-10 / `6426ceb`
 
 - Candidate `6426ceb50665f1ceae01e011f2ee5bf6b8a16d65` đang có API/web cùng source SHA; API `/health`, `/ready`, `/version`, OpenAPI và web bundle đạt **15/15 public checks**, schema `20260909_0019`.
