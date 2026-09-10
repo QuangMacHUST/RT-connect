@@ -3,8 +3,8 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.21 — đồng bộ specification.md v1.22, plan.md v4.13 và business-analysis.md v0.23; bổ sung source-identifiable release metadata từ Railway Git SHA cho API/web, process-RSS/resource-policy/API-responsiveness evidence cho P17 Docker workload đồng thời, export-content evidence và targeted direct PostgreSQL row/checksum/scope evidence; bổ sung Machine QA explicit N/A field/aggregation/trend contract; giữ entity/migration/API membership-invitation P4, unique pending invitation và active-context invariant, cùng reference tới feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate và status/readiness surface P20 (2026-09-10). P17 bổ sung migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`, song song ORM guard và negative mutation test. P8 bổ sung independent Gamma oracle runner/evidence cho synthetic 2D/3D profile coverage, staging RTDOSE + measurement browser smoke và malformed Redis dispatch quarantine trước ACK.
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.23
+- **Phiên bản:** 1.22 — đồng bộ specification.md v1.23, plan.md v4.14 và business-analysis.md v0.24; bổ sung source-identifiable release metadata từ Railway Git SHA cho API/web, process-RSS/resource-policy/API-responsiveness evidence cho P17 Docker workload đồng thời, export-content evidence và targeted direct PostgreSQL row/checksum/scope evidence; bổ sung Machine QA explicit N/A field/aggregation/trend contract và P10 Trend query-budget/count-preflight/bucket-export contract; giữ entity/migration/API membership-invitation P4, unique pending invitation và active-context invariant, cùng reference tới feature-card/handoff, operation/error/evidence record, dependency graph, change-impact gate và status/readiness surface P20 (2026-09-10). P17 bổ sung migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`, song song ORM guard và negative mutation test. P8 bổ sung independent Gamma oracle runner/evidence cho synthetic 2D/3D profile coverage, staging RTDOSE + measurement browser smoke và malformed Redis dispatch quarantine trước ACK.
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.24
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
@@ -102,7 +102,7 @@ Ngày 2026-09-08, P11–P17 đã bổ sung model/API/UI và migrations `20260908
 > dead-letter diagnostic bounded, không sao chép payload value; chỉ ACK sau khi dead-letter thành công.
 > Nếu quarantine hoặc ACK lỗi, để message pending để worker/reconciliation thử lại.
 
-> Revision addendum v1.21: P7 Machine QA lưu `is_not_applicable` và `na_reason` trong JSON
+> Revision addendum v1.22: P7 Machine QA lưu `is_not_applicable` và `na_reason` trong JSON
 > measurement/result snapshot, không cần migration riêng vì `MachineQARun.measurements` và
 > `result_snapshot` là JSON columns. N/A phải có reason, không được có numeric value, không tạo
 > `TrendPoint` và không được làm overall result thành PASS ngầm. Aggregation dùng precedence
@@ -1285,7 +1285,7 @@ evaluated/passing/nonpassing/excluded/no-candidate/censored, pass rate, coverage
 percentile exactness, histogram, warning, configuration, input checksum và engine version.
 Đây là deterministic engineering/golden slice; test local hiện có exhaustive independent node
 oracle và các guard resource/retry, nhưng không thay thế benchmark theo phần cứng hoặc
-commissioning. Gate phát triển, pilot và release theo plan.md v4.13. Coordinate frame mở rộng,
+commissioning. Gate phát triển, pilot và release theo plan.md v4.14. Coordinate frame mở rộng,
 crash/ack/dead-letter injection, large workload benchmark và evidence effective schema/release
 trên staging vẫn là điều kiện đóng P8.
 
@@ -1784,6 +1784,14 @@ Trend key/projection hiện tại gồm:
 Projection lưu `context_snapshot` cùng `organization_id`, `source_run_id`, `qa_case_id`, value, unit, status và measured_at. Unique constraint hiện tại là organization + source run + metric; đây là read model có thể rebuild từ Machine QA result snapshot, không phải source of truth. Nếu unit/context khác nhau, compatibility signature tạo series riêng; không vẽ chung và không tự quy đổi.
 
 API P10 hiện triển khai các surface sau: trend raw/day/week; filter machine/metric/unit/timezone/context; baseline list/create/update có version; maintenance event list/create/update có revision và revision history; rebuild projection; source drill-down; CSV/JSON export. Khoảng thời gian API là `[from, to)`, bucket day/week theo IANA timezone, còn timestamp/source ID canonical theo UTC.
+
+#### 10.3.1. Trend query budget và aggregate lineage
+
+API lấy `Settings.trend_max_raw_points` từ `TREND_MAX_RAW_POINTS` (mặc định `10_000`) và `Settings.trend_max_aggregate_source_points` từ `TREND_MAX_AGGREGATE_SOURCE_POINTS` (mặc định `100_000`). Trước khi materialize các bản ghi ORM, `_count_source_rows()` thực hiện `COUNT` với cùng organization, machine, metric, unit, khoảng thời gian và các filter tương thích. `raw` dùng raw budget; `day/week` dùng aggregate budget. Vượt giới hạn trả HTTP `413/TREND_QUERY_TOO_LARGE`, details gồm `aggregate`, `matched_points`, `max_points`; không trả partial response và không tạo side effect.
+
+Sau count, `_load_source_rows()` vẫn là authority cho context matcher và duplicate-source invariant, rồi kiểm tra lần hai số rows đã match để bảo vệ các row legacy không biểu diễn đầy đủ trong JSON predicate. Aggregate có source count lớn hơn raw budget thêm warning `TREND_AGGREGATED_LARGE_QUERY`; không downsample im lặng, không thay missing bằng zero và không biến bucket thành một point không có lineage.
+
+CSV raw giữ record `POINT` và các cột point hiện có. CSV day/week thêm record `BUCKET` với thời gian bucket, count, mean, minimum, maximum, first/last, status counts và JSON-encoded toàn bộ source point/run IDs. JSON export giữ nguyên `TrendResponse`; `total_points` là số source points trước aggregation, còn `buckets` là read model có thể dùng để drill-down. Mọi giới hạn phải được ghi trong environment inventory/release manifest và được benchmark lại khi thay đổi.
 
 Baseline chọn theo machine/metric/unit/context và effective interval của từng point. `delta = value - baseline`; outlier dùng action level nếu có, nếu không dùng tolerance. Thiếu baseline chỉ tạo warning. Aggregate luôn giữ count, mean, min, max, first/last, status counts, source point IDs và source run IDs để không mất khả năng điều tra.
 

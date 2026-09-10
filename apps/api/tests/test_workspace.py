@@ -24,6 +24,7 @@ from rt_connect_api.security.supabase_jwt import AuthenticatedIdentity, require_
 @contextmanager
 def _workspace_client(
     with_membership: bool = True,
+    settings: Settings | None = None,
 ) -> Generator[tuple[TestClient, Organization]]:
     engine = create_engine(
         "sqlite+pysqlite:///:memory:",
@@ -62,7 +63,8 @@ def _workspace_client(
     # must still require Redis for asynchronous Gamma dispatch; these tests
     # exercise the database-backed route boundary and process the run directly.
     app = create_app(
-        Settings(
+        settings
+        or Settings(
             app_env="test",
             database_url="sqlite+pysqlite:///:memory:",
             redis_url=None,

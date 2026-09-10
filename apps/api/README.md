@@ -76,6 +76,13 @@ evidence commit must rebuild API, worker and web before being called the current
 candidate; the synthetic RTDOSE in the staging case is already present and must
 not be duplicated.
 
+P10 trend budget marker (2026-09-10): raw trend reads are bounded by
+`TREND_MAX_RAW_POINTS`, while day/week aggregation has the separate
+`TREND_MAX_AGGREGATE_SOURCE_POINTS` budget. Count-preflight happens before ORM
+materialization; oversized requests return `TREND_QUERY_TOO_LARGE`, and aggregate
+CSV rows preserve bucket statistics plus source point/run lineage. Rebuild all
+three services from the commit carrying this marker before reusing P10 evidence.
+
 P09 export compensation marker (2026-09-10): export metadata persistence now has
 an exact-key object cleanup/reconciliation contract and regression coverage for
 final-commit failure. The commit carrying this marker must rebuild API, worker and

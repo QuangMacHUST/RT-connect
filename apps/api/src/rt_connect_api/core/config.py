@@ -35,6 +35,13 @@ class Settings(BaseSettings):
     gamma_max_candidate_evaluations: int = Field(default=50_000_000, ge=10_000)
     dvh_max_ct_pixels: int = Field(default=8_000_000, ge=1_024, le=100_000_000)
     dvh_max_ct_preview_pixels: int = Field(default=65_536, ge=256, le=262_144)
+    # Trend reads are bounded before the API materialises source rows.  Raw
+    # reads stay intentionally small for drill-down, while day/week
+    # aggregation may scan a larger but still finite source set.
+    trend_max_raw_points: int = Field(default=10_000, ge=100, le=1_000_000)
+    trend_max_aggregate_source_points: int = Field(
+        default=100_000, ge=1_000, le=5_000_000
+    )
     cors_allowed_origins: Annotated[list[str], NoDecode] = Field(
         default_factory=lambda: ["http://localhost:5173"]
     )

@@ -34,6 +34,8 @@ Only one official Railway CLI auth variable is mapped at a time in the calling p
 | `S3_SIGNED_URL_TTL_SECONDS` | dev/staging/pilot/production | No |
 | `CORS_ALLOWED_ORIGINS` | dev/staging/pilot/production | No |
 | `MAX_UPLOAD_BYTES` | all | No |
+| `TREND_MAX_RAW_POINTS` | P10+ | No |
+| `TREND_MAX_AGGREGATE_SOURCE_POINTS` | P10+ | No |
 | `REQUEST_TIMEOUT_SECONDS` | all | No |
 | `CORRELATION_ID_HEADER` | all | No |
 | `ENGINE_VERSION` | all | No |
@@ -63,4 +65,3 @@ Only one official Railway CLI auth variable is mapped at a time in the calling p
 - Frontend bundle scan rejects database, Railway, service-role and S3 secrets.
 - Structured logs redact token, authorization header, cookie, database URL and object-storage credentials.
 - Deployment documentation records secret names and reference-variable wiring, never plaintext values.
-

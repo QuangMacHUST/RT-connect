@@ -1,10 +1,20 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.23,
+`technical-specification.md` v1.22 và `plan.md` v4.14.
+
+## P10 Trend query budget — local verification pending release candidate — 2026-09-10
+
+- P10 API có `TREND_MAX_RAW_POINTS` mặc định `10.000` và `TREND_MAX_AGGREGATE_SOURCE_POINTS` mặc định `100.000`; count-preflight chạy theo organization/filter trước khi materialize source rows và có kiểm tra lần hai sau context matching.
+- Raw vượt budget trả HTTP 413 `TREND_QUERY_TOO_LARGE` với aggregate/matched_points/max_points; day/week trong aggregate budget được phép chạy nhưng thêm `TREND_AGGREGATED_LARGE_QUERY`; aggregate vượt budget cũng trả 413.
+- CSV export aggregate không còn rỗng: mỗi bucket là `record_type=BUCKET`, giữ count/statistics/statuses và JSON-encoded source point/run IDs. Đây là local implementation slice; large-series workload 100.000 điểm/máy, staging p95, visual/accessibility và complete S/E/C vẫn mở.
+- Regression local đã đạt `test_trend.py` **8/8 PASS** và Ruff cho các file thay đổi; full-suite/mypy/frontend/release parity phải chạy lại sau khi tạo candidate.
+
 ## P07 explicit N/A contract — local + staging candidate — 2026-09-10 / `902b757`
 
 - Đã triển khai P07 explicit N/A end-to-end ở local: measurement có `is_not_applicable` và `na_reason`; N/A bắt buộc có lý do sau trim, không nhận giá trị số, metric có reason nhưng không bật N/A bị từ chối; quality status là `NA`, overall aggregation dùng `FAIL > REVIEW > WARNING > NA > PASS`, và metric N/A không tạo `TrendPoint`.
 - Backend regression `apps/api/tests/test_machine_qa.py`: **6/6 PASS**; frontend lint, typecheck, Vitest và production build: **PASS**. Đây mới là `LOCAL_VERIFIED`; chưa dùng để khẳng định candidate staging mới đã phục vụ contract này.
-- Tài liệu đã đồng bộ: `business-analysis.md` v0.23, `specification.md` v1.22, `technical-specification.md` v1.21 và `plan.md` v4.13. Planning verifier đã PASS với 21 phase và 0 lỗi; không cần migration mới vì các field nằm trong JSON columns.
+- Tài liệu tại checkpoint đó đã đồng bộ: `business-analysis.md` v0.23, `specification.md` v1.22, `technical-specification.md` v1.21 và `plan.md` v4.13. Đây là evidence lịch sử của P07; revision hiện hành nằm ở phần P10 phía trên và sẽ được kiểm lại sau candidate mới.
 - Case staging đã có fixture RTDOSE tổng hợp đúng từ trước và đã ở trạng thái `VALID`; theo xác nhận upload của người dùng, không tạo artifact RTDOSE trùng.
 - Railway read-only deployment metadata xác nhận API `1e9e8ab9-ad4b-438a-b5be-bd068700a1c6`, web `2e49f01d-023c-47ac-bd58-b7866baa2e14` và worker `0c0d1c47-2c86-4924-9396-a53f2729aed5` đều `SUCCESS`, cùng source SHA đầy đủ `902b75729c97b6927465d70b93225d5702bdc83f` trên branch `codex/p4-org-site-machine`. API giữ `/apps/api`, pre-deploy `alembic upgrade head`, healthcheck `/api/v1/health`; worker giữ `/apps/api` và `python -m rt_connect_api.worker`, không dùng HTTP healthcheck; web giữ `/apps/web`.
 - Public exact-SHA verifier đạt **15/15 checks PASS** với schema `20260909_0019`; evidence: `docs/evidence/p19-staging-public-smoke-20260910-902b757.json`. Đây là source/runtime/public-contract evidence; authenticated Machine QA N/A browser mutation, fault injection và production promotion chưa được ghi nhận.

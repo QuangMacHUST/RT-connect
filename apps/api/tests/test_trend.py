@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 from uuid import UUID, uuid4
 
+from rt_connect_api.api import trend as trend_api
+from rt_connect_api.core.config import Settings
 from test_workspace import _workspace_client
 
 
@@ -197,6 +201,119 @@ def test_trend_export_and_source_drilldown_preserve_provenance() -> None:
         assert source.status_code == 200, source.text
         assert source.json()["machine_qa_run"]["id"] == run_id
         assert source.json()["qa_case"]["qa_cycle"] == "DAILY"
+
+        aggregate = client.get(
+            f"/api/v1/organizations/{organization.id}/trend/export",
+            params={
+                "metric_key": "output_factor",
+                "energy": "6X",
+                "aggregate": "day",
+                "timezone": "Asia/Ho_Chi_Minh",
+                "export_format": "CSV",
+            },
+        )
+        assert aggregate.status_code == 200, aggregate.text
+        assert "record_type" in aggregate.text.splitlines()[0]
+        assert "BUCKET" in aggregate.text
+        assert run_id in aggregate.text
+
+
+def _synthetic_trend_rows(count: int) -> list[object]:
+    machine_id = uuid4()
+    machine = SimpleNamespace(
+        id=machine_id,
+        display_name="Synthetic trend machine",
+        is_archived=False,
+    )
+    case = SimpleNamespace(
+        id=uuid4(),
+        organization_id=uuid4(),
+        qa_type="Machine QA",
+        qa_cycle="DAILY",
+        is_archived=False,
+        performed_at=datetime(2026, 1, 1, tzinfo=UTC),
+    )
+    rows: list[object] = []
+    for index in range(count):
+        run_id = uuid4()
+        point = SimpleNamespace(
+            id=uuid4(),
+            organization_id=case.organization_id,
+            machine_id=machine_id,
+            qa_case_id=case.id,
+            source_run_id=run_id,
+            metric_key="output_factor",
+            value=100.0 + index / 100.0,
+            unit="%",
+            status="PASS",
+            measured_at=case.performed_at + timedelta(seconds=index),
+            context_snapshot={"energy": "6X", "detector": "D1", "phantom": "P1"},
+        )
+        run = SimpleNamespace(id=run_id, status="COMPLETED", result_snapshot={})
+        rows.append(trend_api._SourceRow(point, machine, case, run))
+    return rows
+
+
+def test_trend_query_budget_blocks_raw_and_allows_bounded_aggregate(monkeypatch) -> None:
+    rows = _synthetic_trend_rows(1001)
+    settings = Settings(
+        app_env="test",
+        database_url="sqlite+pysqlite:///:memory:",
+        redis_url=None,
+        trend_max_raw_points=1000,
+        trend_max_aggregate_source_points=2000,
+    )
+    with _workspace_client(settings=settings) as (client, organization):
+        matched_count = 1001
+        monkeypatch.setattr(
+            trend_api,
+            "_count_source_rows",
+            lambda *args, **kwargs: matched_count,
+        )
+        loaded = False
+
+        def load_rows(*args, **kwargs):
+            nonlocal loaded
+            loaded = True
+            return rows
+
+        monkeypatch.setattr(trend_api, "_load_source_rows", load_rows)
+        raw = client.get(
+            f"/api/v1/organizations/{organization.id}/trend",
+            params={"metric_key": "output_factor", "aggregate": "raw"},
+        )
+        assert raw.status_code == 413, raw.text
+        assert raw.json()["code"] == "TREND_QUERY_TOO_LARGE"
+        assert {item["field"] for item in raw.json()["details"]} == {
+            "aggregate",
+            "matched_points",
+            "max_points",
+        }
+        assert loaded is False
+
+        aggregate = client.get(
+            f"/api/v1/organizations/{organization.id}/trend",
+            params={"metric_key": "output_factor", "aggregate": "day"},
+        )
+        assert aggregate.status_code == 200, aggregate.text
+        body = aggregate.json()
+        assert body["total_points"] == 1001
+        assert body["series"][0]["points"] == []
+        assert body["series"][0]["buckets"][0]["count"] == 1001
+        assert any(
+            item.startswith("TREND_AGGREGATED_LARGE_QUERY") for item in body["warnings"]
+        )
+
+        matched_count = 2001
+        aggregate_too_large = client.get(
+            f"/api/v1/organizations/{organization.id}/trend",
+            params={"metric_key": "output_factor", "aggregate": "week"},
+        )
+        assert aggregate_too_large.status_code == 413, aggregate_too_large.text
+        assert aggregate_too_large.json()["code"] == "TREND_QUERY_TOO_LARGE"
+        assert {
+            item["field"] for item in aggregate_too_large.json()["details"]
+        } == {"aggregate", "matched_points", "max_points"}
 
 
 def test_trend_rebuild_is_idempotent() -> None:

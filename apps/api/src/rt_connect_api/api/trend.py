@@ -23,12 +23,13 @@ from typing import Literal
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 from pydantic import BaseModel, Field
-from sqlalchemy import and_, select
+from sqlalchemy import and_, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from rt_connect_api.core.config import Settings, get_settings
 from rt_connect_api.core.errors import DomainError
 from rt_connect_api.db.models import (
     BaselineVersion,
@@ -727,6 +728,7 @@ def _trend_payload(
     unit: str | None,
     filters: dict[str, str],
     include_archived: bool,
+    settings: Settings,
 ) -> TrendResponse:
     zone = _validate_timezone(timezone_name)
     if from_at is not None and to_at is not None and _as_utc(from_at) > _as_utc(to_at):
@@ -734,6 +736,45 @@ def _trend_payload(
     for machine_id in machine_ids:
         _machine_or_error(session, organization_id, machine_id)
 
+    source_count = _count_source_rows(
+        session,
+        organization_id,
+        machine_ids,
+        metric_key,
+        from_at,
+        to_at,
+        unit,
+        filters,
+    )
+    max_source_points = (
+        settings.trend_max_raw_points
+        if aggregate == "raw"
+        else settings.trend_max_aggregate_source_points
+    )
+    if source_count > max_source_points:
+        raise DomainError(
+            "TREND_QUERY_TOO_LARGE",
+            "The selected trend source is larger than the configured query budget.",
+            413,
+            details=[
+                {
+                    "field": "aggregate",
+                    "message": (
+                        "Choose day or week aggregation for a larger source set."
+                        if aggregate == "raw"
+                        else "Choose a narrower range or filter before retrying."
+                    ),
+                },
+                {
+                    "field": "matched_points",
+                    "message": f"The query matched {source_count} source points.",
+                },
+                {
+                    "field": "max_points",
+                    "message": f"The selected mode allows at most {max_source_points} points.",
+                },
+            ],
+        )
     rows = _load_source_rows(
         session,
         organization_id,
@@ -744,12 +785,33 @@ def _trend_payload(
         unit,
         filters,
     )
-    if len(rows) > 10_000:
+    # The SQL preflight uses the same organization and JSON compatibility
+    # filters as the source read. Keep a second check after the Python-side
+    # context matcher so a legacy row that cannot be represented by the SQL
+    # JSON predicate can never bypass the budget.
+    if len(rows) > max_source_points:
         raise DomainError(
             "TREND_QUERY_TOO_LARGE",
-            "The selected raw series is too large; choose a narrower range "
-            "or aggregate by day/week.",
+            "The selected trend source is larger than the configured query budget.",
             413,
+            details=[
+                {
+                    "field": "aggregate",
+                    "message": (
+                        "Choose day or week aggregation for a larger source set."
+                        if aggregate == "raw"
+                        else "Choose a narrower range or filter before retrying."
+                    ),
+                },
+                {
+                    "field": "matched_points",
+                    "message": f"The query matched {len(rows)} source points.",
+                },
+                {
+                    "field": "max_points",
+                    "message": f"The selected mode allows at most {max_source_points} points.",
+                },
+            ],
         )
     baselines = _load_baselines(session, organization_id, machine_ids, metric_key, include_archived)
     grouped: dict[tuple[UUID, str, str, str], list[TrendPointResponse]] = defaultdict(list)
@@ -766,6 +828,11 @@ def _trend_payload(
 
     series: list[TrendSeriesResponse] = []
     warnings: list[str] = []
+    if aggregate != "raw" and source_count > settings.trend_max_raw_points:
+        warnings.append(
+            "TREND_AGGREGATED_LARGE_QUERY: source points exceed the raw-read budget; "
+            "bucket lineage remains available for drill-down."
+        )
     for key in sorted(grouped, key=lambda item: (str(item[0]), item[1], item[2], item[3])):
         values = grouped[key]
         baseline = _baseline_for_point(baselines, contexts[key], values[-1].measured_at)
@@ -809,9 +876,67 @@ def _trend_payload(
     )
 
 
+def _count_source_rows(
+    session: Session,
+    organization_id: UUID,
+    machine_ids: list[UUID],
+    metric_key: str | None,
+    from_at: datetime | None,
+    to_at: datetime | None,
+    unit: str | None,
+    filters: dict[str, str],
+) -> int:
+    """Count bounded trend candidates before materialising ORM rows.
+
+    Compatibility values are stored in the immutable point context snapshot.
+    Counting in SQL prevents a large raw read from first allocating the full
+    response in Python.  `_load_source_rows` still performs the authoritative
+    context match and duplicate-source check afterwards.
+    """
+
+    statement = (
+        select(func.count(TrendPoint.id))
+        .join(
+            Machine,
+            and_(Machine.id == TrendPoint.machine_id, Machine.organization_id == organization_id),
+        )
+        .join(
+            QACase,
+            and_(QACase.id == TrendPoint.qa_case_id, QACase.organization_id == organization_id),
+        )
+        .join(
+            MachineQARun,
+            and_(
+                MachineQARun.id == TrendPoint.source_run_id,
+                MachineQARun.organization_id == organization_id,
+            ),
+        )
+        .where(TrendPoint.organization_id == organization_id)
+    )
+    if machine_ids:
+        statement = statement.where(TrendPoint.machine_id.in_(machine_ids))
+    if metric_key:
+        statement = statement.where(TrendPoint.metric_key == metric_key)
+    if unit:
+        statement = statement.where(TrendPoint.unit == unit)
+    if from_at is not None:
+        statement = statement.where(TrendPoint.measured_at >= _as_utc(from_at))
+    if to_at is not None:
+        statement = statement.where(TrendPoint.measured_at < _as_utc(to_at))
+    for key, value in filters.items():
+        statement = statement.where(TrendPoint.context_snapshot[key].as_string() == value)
+    return int(session.scalar(statement) or 0)
+
+
+def _request_settings(request: Request) -> Settings:
+    configured = getattr(request.app.state, "settings", None)
+    return configured if isinstance(configured, Settings) else get_settings()
+
+
 @router.get("/organizations/{organization_id}/trend", response_model=TrendResponse)
 def read_trend(
     organization_id: UUID,
+    request: Request,
     machine_ids: str | None = Query(default=None, max_length=1000),
     metric_key: str | None = Query(default=None, max_length=120),
     from_at: datetime | None = Query(default=None, alias="from"),
@@ -851,12 +976,14 @@ def read_trend(
             qa_cycle,
         ),
         include_archived,
+        _request_settings(request),
     )
 
 
 @router.get("/organizations/{organization_id}/trend/export")
 def export_trend(
     organization_id: UUID,
+    request: Request,
     export_format: ExportFormat = Query(default="CSV"),
     machine_ids: str | None = Query(default=None, max_length=1000),
     metric_key: str | None = Query(default=None, max_length=120),
@@ -897,6 +1024,7 @@ def export_trend(
             qa_cycle,
         ),
         include_archived,
+        _request_settings(request),
     )
     if export_format == "JSON":
         content = json.dumps(
@@ -925,6 +1053,18 @@ def export_trend(
             "baseline_value",
             "baseline_delta",
             "is_outlier",
+            "record_type",
+            "bucket_start_at",
+            "bucket_end_at",
+            "bucket_count",
+            "bucket_mean",
+            "bucket_minimum",
+            "bucket_maximum",
+            "bucket_first_value",
+            "bucket_last_value",
+            "bucket_statuses",
+            "bucket_source_point_ids",
+            "bucket_source_run_ids",
         ]
     )
     for series_item in payload.series:
@@ -945,6 +1085,62 @@ def export_trend(
                     point.baseline_value,
                     point.baseline_delta,
                     point.is_outlier,
+                    "POINT",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                ]
+            )
+        for bucket in series_item.buckets:
+            writer.writerow(
+                [
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "BUCKET",
+                    _iso(bucket.start_at),
+                    _iso(bucket.end_at),
+                    bucket.count,
+                    bucket.mean,
+                    bucket.minimum,
+                    bucket.maximum,
+                    bucket.first_value,
+                    bucket.last_value,
+                    json.dumps(
+                        bucket.statuses,
+                        ensure_ascii=False,
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ),
+                    json.dumps(
+                        [str(item) for item in bucket.source_point_ids],
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    ),
+                    json.dumps(
+                        [str(item) for item in bucket.source_run_ids],
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    ),
                 ]
             )
     return Response(

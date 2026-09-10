@@ -1,10 +1,10 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.22**; ngày 2026-09-10.
-- Nguồn nghiệp vụ: business-analysis.md v0.23.
-- Kế hoạch triển khai: plan.md v4.13, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.21.
-- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.22 giữ toàn bộ contract v1.21, bổ sung contract Machine QA explicit N/A: `is_not_applicable`, `na_reason`, lỗi conflict/thiếu lý do, quality status `NA` không phải PASS và không tạo TrendPoint; đồng thời giữ contract malformed Redis dispatch, peak RSS/resource/API responsiveness P17 và P4 membership/invitation.
+- File: specification.md; version **1.23**; ngày 2026-09-10.
+- Nguồn nghiệp vụ: business-analysis.md v0.24.
+- Kế hoạch triển khai: plan.md v4.14, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.22.
+- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.23 giữ toàn bộ contract v1.22, bổ sung contract Trend query budget: raw/aggregate có giới hạn cấu hình trước khi materialize, aggregate lớn phải có cảnh báo và CSV bucket phải giữ lineage; đồng thời giữ contract Machine QA explicit N/A, malformed Redis dispatch, peak RSS/resource/API responsiveness P17 và P4 membership/invitation.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
 
@@ -444,7 +444,7 @@ Series compatibility signature gồm metric meaning/unit, machine, energy/mode, 
 
 Query trend dùng khoảng thời gian `[from, to)`: `from` được lấy, `to` bị loại. Nếu UI cho phép chọn “đến hết ngày”, UI phải chuyển sang mốc đầu ngày kế tiếp theo timezone đang hiển thị rồi gửi làm `to`; API không tự đoán ý nghĩa ngày. `day` và `week` bucket theo IANA timezone, nhưng timestamp lưu và source ID vẫn giữ UTC/canonical.
 
-Một series chỉ được nhóm khi cùng `machine_id`, metric meaning, unit và compatibility signature. Khi khác context, response trả nhiều series và warning `TREND_SERIES_INCOMPATIBLE`; không tính mean chung. Aggregate phải bảo toàn count, min/max, first/last, status counts, source point IDs và source run IDs. Baseline lookup dùng effective interval của từng point; thiếu baseline chỉ là warning để user xem raw, không thay bằng 0. Event overlap dùng cùng khoảng `[from,to)` và chỉ là annotation, không phải nguyên nhân tự động của outlier.
+Một series chỉ được nhóm khi cùng `machine_id`, metric meaning, unit và compatibility signature. Khi khác context, response trả nhiều series và warning `TREND_SERIES_INCOMPATIBLE`; không tính mean chung. Aggregate phải bảo toàn count, min/max, first/last, status counts, source point IDs và source run IDs. Baseline lookup dùng effective interval của từng point; thiếu baseline chỉ là warning để user xem raw, không thay bằng 0. Event overlap dùng cùng khoảng `[from,to)` và chỉ là annotation, không phải nguyên nhân tự động của outlier. Query raw/aggregate phải áp dụng budget trước khi materialize source rows: `TREND_MAX_RAW_POINTS` cho raw và `TREND_MAX_AGGREGATE_SOURCE_POINTS` cho day/week; aggregate vượt raw budget phải thêm warning nhưng không được làm mất lineage.
 
 Baseline effective date và source snapshot; outlier không bị loại âm thầm. Downsample phải báo method/count/time-buckets, giữ min/max để thấy cực trị; export raw/aggregated chọn rõ. Drill-down source run/report revision, không link report mới nhất không tương ứng.
 
@@ -800,13 +800,13 @@ một code API.
 | Input và dữ liệu hiển thị | Machine/metric/time range/timezone; unit/energy/detector/phantom/beam_quality/acquisition_mode/protocol/QA cycle; baseline source/effective time; tolerance/action; maintenance events; raw/day/week series. |
 | Model/storage | `TrendPoint` là projection immutable theo `organization_id + source_run_id + metric_key`, có `context_snapshot`; `BaselineVersion` versioned theo machine/metric; `MaintenanceEvent` có current revision và `MaintenanceEventRevision` append-only. |
 | Operation/API surface | `GET /organizations/{organization_id}/trend`; `GET /organizations/{organization_id}/trend/export`; `POST /organizations/{organization_id}/trend/rebuild`; `GET/POST /organizations/{organization_id}/trend/baselines`; `PATCH /trend-baselines/{baseline_id}`; `GET/POST /organizations/{organization_id}/trend/events`; `PATCH /trend-events/{event_id}`; `GET /trend-events/{event_id}/revisions`; `GET /trend-points/{point_id}/source`. |
-| Query contract | `machine_ids` là danh sách UUID phân tách bằng dấu phẩy; `metric_key`, `unit`, context và `protocol_key/qa_cycle` là filter exact; `aggregate ∈ {raw, day, week}`; `from` inclusive, `to` exclusive; timezone là IANA ZoneInfo; machine phải thuộc organization trước khi load points. |
+| Query contract | `machine_ids` là danh sách UUID phân tách bằng dấu phẩy; `metric_key`, `unit`, context và `protocol_key/qa_cycle` là filter exact; `aggregate ∈ {raw, day, week}`; `from` inclusive, `to` exclusive; timezone là IANA ZoneInfo; machine phải thuộc organization trước khi load points. Trước khi materialize source rows, API đếm theo organization/filter và áp dụng `TREND_MAX_RAW_POINTS` (mặc định 10.000) cho `raw` hoặc `TREND_MAX_AGGREGATE_SOURCE_POINTS` (mặc định 100.000) cho `day/week`; vượt giới hạn trả HTTP 413 `TREND_QUERY_TOO_LARGE` kèm field details. |
 | Compatibility contract | Mỗi point tạo signature SHA-256 rút gọn từ `unit, qa_type, qa_cycle, protocol_key, protocol_version, energy, detector, phantom, beam_quality, acquisition_mode`. Các signature khác nhau là series khác nhau; không nội suy hoặc quy đổi unit/context ngầm. |
 | Baseline contract | Chọn baseline `ACTIVE` cùng machine/metric/unit/context, `effective_from ≤ measured_at < effective_to` (hoặc không có end), ưu tiên `effective_from` mới nhất rồi `version_number` cao nhất. `delta = value - baseline_value`; `is_outlier = abs(delta) > action_level` nếu có, nếu không dùng tolerance. Thiếu baseline chỉ tạo warning, không thay raw value. |
-| Aggregate contract | `day/week` nhóm theo timezone đã chọn; mỗi bucket giữ `count`, mean, min, max, first/last, status counts, toàn bộ source point IDs và source run IDs. Raw series vẫn là nguồn drill-down; aggregate không được làm mất lineage. |
+| Aggregate contract | `day/week` nhóm theo timezone đã chọn; mỗi bucket giữ `count`, mean, min, max, first/last, status counts, toàn bộ source point IDs và source run IDs. Khi source count vượt raw budget, response thêm warning `TREND_AGGREGATED_LARGE_QUERY`; raw series vẫn là nguồn drill-down và aggregate không được làm mất lineage. |
 | Event contract | Tạo event ở revision 1; PATCH bắt buộc `expected_revision`; sửa thành công tăng revision và ghi snapshot mới; revision conflict trả 409, không overwrite. Event chỉ là marker trên trend, không sửa QA result. |
 | Rebuild contract | Rebuild đọc completed Machine QA result snapshots cùng organization, tạo thiếu point hoặc sửa context projection, không tạo trùng nhờ uniqueness; trả số `scanned_runs/created_points/existing_points/repaired_context_points`. Source run/result là authority. |
-| Export contract | CSV raw có header và source IDs; JSON chứa cùng `TrendResponse` gồm filter/timezone/aggregate/series/warnings; export phải tái hiện đúng query và không xuất điểm ngoài scope. |
+| Export contract | CSV raw có header và source IDs; CSV aggregate có `record_type=BUCKET`, thời gian bucket, count/statistics/statuses và JSON-encoded source point/run IDs; JSON chứa cùng `TrendResponse` gồm filter/timezone/aggregate/series/warnings; export phải tái hiện đúng query và không xuất điểm ngoài scope hoặc trả file rỗng giả. |
 | Output bàn giao | Trend dashboard/filter/drill-down, baseline/event history, raw/day/week aggregate, table fallback và export/large-data checks. |
 | Success oracle | TC-P10-S01 đến TC-P10-S08 trong plan |
 | Error/recovery oracle | TC-P10-E01 đến TC-P10-E12 trong plan |
@@ -814,9 +814,9 @@ một code API.
 
 **Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer cần recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
 
-**Failure contract hiện tại và target:** `TREND_SERIES_INCOMPATIBLE` là warning khi nhiều compatible signature; `DATE_RANGE_INVALID`, `TREND_TIMEZONE_INVALID`, `TREND_FILTER_INVALID`, `TREND_EMPTY`, `TREND_BASELINE_INVALID`, `TREND_BASELINE_NOT_FOUND`, `TREND_BASELINE_VERSION_CONFLICT`, `TREND_SOURCE_ARCHIVED`, `TREND_SOURCE_UNAVAILABLE`, `TREND_DUPLICATE_SOURCE`, `TREND_QUERY_TOO_LARGE`, `MAINTENANCE_INTERVAL_INVALID`, `MAINTENANCE_EVENT_CONFLICT`, `MAINTENANCE_EVENT_NOT_FOUND` và `MAINTENANCE_REVISION_CONFLICT` là các mã cần được kiểm qua response contract. Input invalid không được retry tự động; conflict phải reload/copy; query quá lớn phải chuyển aggregate; source archived vẫn được xem lịch sử với nhãn. Không biến `TREND_EMPTY` thành lỗi 500 và không tạo điểm 0 thay dữ liệu trống.
+**Failure contract hiện tại và target:** `TREND_SERIES_INCOMPATIBLE` là warning khi nhiều compatible signature; `TREND_AGGREGATED_LARGE_QUERY` là warning khi day/week được dùng cho source count vượt raw budget; `DATE_RANGE_INVALID`, `TREND_TIMEZONE_INVALID`, `TREND_FILTER_INVALID`, `TREND_EMPTY`, `TREND_BASELINE_INVALID`, `TREND_BASELINE_NOT_FOUND`, `TREND_BASELINE_VERSION_CONFLICT`, `TREND_SOURCE_ARCHIVED`, `TREND_SOURCE_UNAVAILABLE`, `TREND_DUPLICATE_SOURCE`, `TREND_QUERY_TOO_LARGE`, `MAINTENANCE_INTERVAL_INVALID`, `MAINTENANCE_EVENT_CONFLICT`, `MAINTENANCE_EVENT_NOT_FOUND` và `MAINTENANCE_REVISION_CONFLICT` là các mã cần được kiểm qua response contract. Input invalid không được retry tự động; conflict phải reload/copy; raw query quá lớn phải chuyển aggregate, aggregate vượt budget phải thu hẹp filter; source archived vẫn được xem lịch sử với nhãn. Không biến `TREND_EMPTY` thành lỗi 500, không tạo điểm 0 thay dữ liệu trống và không trả CSV thành công nhưng không có record dữ liệu.
 
-**P10 implementation status 2026-09-08:** schema `20260908_0010`, API và frontend trend slice đã có; Ruff/mypy, full backend `68/68` và P10 focused `7/7` pass local; migration đã chạy trên PostgreSQL local. Staging migration, authenticated browser trend workflow, large-series benchmark, event/baseline persistence và visual/accessibility evidence vẫn là TARGET/OPEN cho đến khi ghi vào progress log.
+**P10 implementation status 2026-09-10:** schema `20260908_0010`, API và frontend trend slice đã có; API đã có preflight count, raw/aggregate budget theo Settings và CSV bucket lineage. Regression `test_trend.py` **8/8 PASS** cho query budget và aggregate export; migration đã chạy trên PostgreSQL local. Staging large-series benchmark, complete S/E/C matrix, event/baseline persistence và visual/accessibility evidence vẫn là TARGET/OPEN cho đến khi ghi vào progress log.
 
 <a id="spec-p11"></a>
 
@@ -1702,7 +1702,7 @@ Không được gọi operation là `COMPLETED` nếu chưa có output bền v�
 4. **Trend:** chỉ aggregate các source có compatibility signature; điểm thiếu không được biến thành zero; drill-down phải quay về source run/case đúng organization.
 5. **Public deployment:** web/API/worker/schema/Auth/queue phải được kiểm theo cùng release manifest; PostgreSQL, Redis, worker và object bucket private theo topology; URL public không chứng minh workflow đã pass.
 
-## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.22
+## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.23
 
 Phần này biến các contract theo phase thành cấu trúc có thể dùng khi viết code, test và bàn giao. Nó không thay thế các field/algorithm contract ở mục 2–8; nó quy định cách chứng minh rằng các contract đó đã được thực thi trên một candidate cụ thể.
 
