@@ -11,6 +11,13 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Evidence: [p13-staging-bed-eqd2-20260910-b712.json](docs/evidence/p13-staging-bed-eqd2-20260910-b712.json). RTDOSE tổng hợp đã được người dùng cho phép nhưng artifact đã tồn tại trong case staging và được reuse; không upload trùng, không gắn biological calculation với QA case.
 - Đây là `STAGING_PARTIAL_PASS`, chưa phải `DONE-v2`: direct PostgreSQL/checksum, cross-organization scope, idempotency replay/conflict, đầy đủ S/E/C/fault, release manifest và production parity vẫn mở. Filename completion của browser download vẫn `UNVERIFIED` do harness giữ đuôi tạm.
 
+## P14 — staging same-context comparison, negative context guard and export — partial verified — 2026-09-10 / `46121fe`
+
+- Trên build `46121fe90d3161253b4ee181b70463f6c738e619`, browser authenticated đã dùng hai P13 snapshot cùng scenario `45550fa4-b635-4d9f-90bb-e0d2cd77c531`, revision `e3bcce19-d769-4873-b0e6-45a82e66ee32`, tissue/model context: `70 Gy/35×2` (`ed85e343-687b-4385-a7da-e909458cece5`) và `60 Gy/30×2` (`12ba1966-e214-414a-a7a2-d6155fc856d8`). Validate-only pass không mutation.
+- Comparison `57c90796-22a4-4c44-80c8-99934a479b1d` lưu `COMPLETED`, model `biological.plan-comparison · p14-comparison-1.0.0`, baseline `option-a`: `BED=84/EQD2=70`; option B: `BED=72/EQD2=60`, delta `-12 Gy/-14,286%` và `-10 Gy/-14,286%`, result checksum `42885d2c53744a93afed582ba364b1a5b02ebe24cc953ea781d48d13d172927d`.
+- Fresh tab đọc lại kết quả và history `4` comparison; JSON/CSV export pass. Negative context mismatch khi chọn snapshot khác scenario/revision/tissue bị chặn bằng `COMPARISON_CONTEXT_MISMATCH`, không tạo snapshot. Evidence: [p14-staging-browser-20260910-46121fe.json](docs/evidence/p14-staging-browser-20260910-46121fe.json).
+- Đây là `STAGING_PARTIAL_PASS`: direct PostgreSQL/scope, idempotency replay/conflict, đầy đủ S/E/C/fault, release manifest và production gates vẫn mở; filename completion download vẫn `UNVERIFIED`.
+
 ## P19 — staging exact-SHA public verifier after P13 evidence — partial verified — 2026-09-10 / `796e078`
 
 - API, web và worker staging đều deploy thành công từ exact source SHA `796e078af7ff66f4a1f8645061183859420bf785`; deployment IDs lần lượt `02c0d58d-c892-4834-a3ac-26364586bdfa`, `e56ac637-d30c-4ef6-8cc7-46c76da5024f` và `ca73840b-56e6-4a47-a415-69cfe9c1af21`.

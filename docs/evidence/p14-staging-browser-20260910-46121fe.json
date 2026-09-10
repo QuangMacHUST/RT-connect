@@ -1,0 +1,85 @@
+{
+  "schema_version": "rt-connect.p14-staging-browser.v1",
+  "recorded_at": "2026-09-10",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_E2E_READBACK",
+  "environment": "staging",
+  "candidate_source_sha_observed": "46121fe90d3161253b4ee181b70463f6c738e619",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "route": "/app/biological/compare",
+  "data_boundary": "Only synthetic Biological scenario/calculation snapshots were used. No patient, QA case, RTDOSE, TPS or PACS linkage was created.",
+  "source_calculations": {
+    "baseline": {
+      "id": "ed85e343-687b-4385-a7da-e909458cece5",
+      "scenario_id": "45550fa4-b635-4d9f-90bb-e0d2cd77c531",
+      "scenario_revision_id": "e3bcce19-d769-4873-b0e6-45a82e66ee32",
+      "total_dose_gy": 70,
+      "fractions": 35,
+      "dose_per_fraction_gy": 2,
+      "alpha_beta_gy": 10,
+      "bed_gy": 84,
+      "eqd2_gy": 70
+    },
+    "option_b": {
+      "id": "12ba1966-e214-414a-a7a2-d6155fc856d8",
+      "scenario_id": "45550fa4-b635-4d9f-90bb-e0d2cd77c531",
+      "scenario_revision_id": "e3bcce19-d769-4873-b0e6-45a82e66ee32",
+      "total_dose_gy": 60,
+      "fractions": 30,
+      "dose_per_fraction_gy": 2,
+      "alpha_beta_gy": 10,
+      "bed_gy": 72,
+      "eqd2_gy": 60
+    }
+  },
+  "validate_only": {
+    "same_context": true,
+    "observed_message": "Comparison hợp lệ; validate-only không ghi snapshot.",
+    "result": "PASS"
+  },
+  "saved_comparison": {
+    "id": "57c90796-22a4-4c44-80c8-99934a479b1d",
+    "status": "COMPLETED",
+    "model_key": "biological.plan-comparison",
+    "model_version": "p14-comparison-1.0.0",
+    "baseline_option_id": "option-a",
+    "option_count": 2,
+    "result_checksum": "42885d2c53744a93afed582ba364b1a5b02ebe24cc953ea781d48d13d172927d",
+    "rows": [
+      { "option_id": "option-a", "bed_gy": 84, "delta_bed_gy": 0, "delta_bed_percent": 0, "eqd2_gy": 70, "delta_eqd2_gy": 0, "delta_eqd2_percent": 0 },
+      { "option_id": "option-b", "bed_gy": 72, "delta_bed_gy": -12, "delta_bed_percent": -14.285714285714286, "eqd2_gy": 60, "delta_eqd2_gy": -10, "delta_eqd2_percent": -14.285714285714286 }
+    ],
+    "result": "PASS"
+  },
+  "readback": {
+    "fresh_browser_tab": true,
+    "build_label_observed": "46121fe90d3161253b4ee181b70463f6c738e619",
+    "comparison_status": "COMPLETED",
+    "history_count_observed": 4,
+    "result_checksum_observed": "42885d2c53744a93afed582ba364b1a5b02ebe24cc953ea781d48d13d172927d",
+    "result": "PASS"
+  },
+  "exports": {
+    "json": "PASS",
+    "csv": "PASS",
+    "filename_completion": "UNVERIFIED_BY_CUA_DOWNLOAD_HARNESS"
+  },
+  "negative_case": {
+    "test_id": "TC-P14-E01",
+    "operation": "VALIDATE_ONLY",
+    "change": "option-b selected from a different scenario/revision/tissue context",
+    "observed_errors": [
+      "options[1].scenario_id: COMPARISON_CONTEXT_MISMATCH",
+      "options[1].scenario_revision_id: COMPARISON_CONTEXT_MISMATCH",
+      "options[1].tissue_context: COMPARISON_CONTEXT_MISMATCH"
+    ],
+    "snapshot_created": false,
+    "result": "PASS"
+  },
+  "open_gates": [
+    "direct PostgreSQL row/checksum and organization-scope negative probe",
+    "same-key replay and different-fingerprint idempotency conflict",
+    "full P14 S/E/C and dependency fault matrix",
+    "release manifest and production parity"
+  ],
+  "status": "STAGING_PARTIAL_PASS"
+}
