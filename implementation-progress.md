@@ -28,6 +28,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 - Phạm vi đã kiểm lại gồm 2D/3D, RTDOSE GY + `DoseGridScaling`, từ chối orientation không hỗ trợ, dose unit không hợp lệ và spacing không dương, coverage, max-gamma censoring, PSQA preflight/resource limit, lease/fencing, terminal replay, bounded retry/ACK recovery và oracle GRID/BILINEAR + GLOBAL/LOCAL + RELATIVE/ABSOLUTE.
 - Evidence: [p08-local-regression-20260911-edf3daa.json](docs/evidence/p08-local-regression-20260911-edf3daa.json). P08 vẫn mở các gate staging fault/ACK/reclaim/dead-letter, large-input/resource budget, geometry/scale negative matrix, oracle promotion và release handoff.
 
+## P08/P19 — current staging parity after DICOM validation hardening — staging verified slice — 2026-09-11 / `6769a85`
+
+- Railway GraphQL readback xác nhận API, web và worker staging đều `SUCCESS`, cùng exact source SHA `6769a852b9c4f1d412e21cf0d9f0b288028e3b7c`; deployment IDs lần lượt `122ec654-970c-4192-8515-d83915f8c5dc`, `26b8a7a5-ea7c-4efc-8df9-4950c6891839` và `44888678-2a03-49a8-aa9f-7c832deb88b9`.
+- Public verifier đạt `15/15`, `failed_check_count=0`, API version/schema `6769a85… / 20260909_0019`, web bundle exact-SHA và Auth boundary public đều PASS. Evidence: [p08-staging-parity-20260911-6769a85.json](docs/evidence/p08-staging-parity-20260911-6769a85.json).
+- Đây là source/runtime parity slice cho hardening DICOM. Không tạo artifact/Gamma run/report mới; P08 vẫn mở authenticated mutation trên candidate này, fault/ACK/retry/dead-letter, large-input/resource, oracle promotion và release handoff.
+
 ## P06 — declared type và upload queue — local verified slice — 2026-09-11
 
 - Artifact validator giữ declared `artifact_type` là hợp đồng chính: payload JSON được khai báo DICOM không đi vào measurement validator và trả `ARTIFACT_TYPE_MISMATCH`; test duplicate cùng checksum/type vẫn tái dùng artifact và thêm role thiếu theo organization scope.

@@ -1,0 +1,70 @@
+{
+  "evidence_id": "P08-STAGING-PARITY-20260911-6769A85",
+  "phase": "P08",
+  "work_packages": ["P08-W01", "P08-W02", "P08-W03", "P08-W04"],
+  "status": "STAGING_SOURCE_PARITY_AND_PUBLIC_SMOKE",
+  "captured_at": "2026-09-11",
+  "environment": "staging",
+  "source_commit": "6769a852b9c4f1d412e21cf0d9f0b288028e3b7c",
+  "branch": "codex/p4-org-site-machine",
+  "schema_revision": "20260909_0019",
+  "services": {
+    "api": {
+      "service_id": "9b35bf0b-0419-4679-8af0-e639e5a84713",
+      "deployment_id": "122ec654-970c-4192-8515-d83915f8c5dc",
+      "status": "SUCCESS",
+      "root_directory": "/apps/api",
+      "dockerfile": "/apps/api/Dockerfile",
+      "commit_hash": "6769a852b9c4f1d412e21cf0d9f0b288028e3b7c",
+      "image_digest": "sha256:abfea2692090943731ba28221404c78fceb77538fc5a756596e70b4ee474110d"
+    },
+    "web": {
+      "service_id": "9f23331c-8d5e-45fb-9f11-5aa5e69f76f6",
+      "deployment_id": "26b8a7a5-ea7c-4efc-8df9-4950c6891839",
+      "status": "SUCCESS",
+      "root_directory": "/apps/web",
+      "dockerfile": "/apps/web/Dockerfile",
+      "commit_hash": "6769a852b9c4f1d412e21cf0d9f0b288028e3b7c",
+      "image_digest": "sha256:defb2d5e83ad04daab950bbca6e6c1ce75e4cf54b41842bb883a90f397a2c756"
+    },
+    "worker": {
+      "service_id": "a1e0c389-e527-4d4c-995e-2a48f4795dda",
+      "deployment_id": "44888678-2a03-49a8-aa9f-7c832deb88b9",
+      "status": "SUCCESS",
+      "root_directory": "/apps/api",
+      "dockerfile": "Dockerfile",
+      "start_command": "python -m rt_connect_api.worker",
+      "commit_hash": "6769a852b9c4f1d412e21cf0d9f0b288028e3b7c",
+      "image_digest": "sha256:e3af28afc92c2551cf82398ede01a51e81564cc5b75d1a5e9aad523d99466cf1"
+    }
+  },
+  "public_verifier": {
+    "api_base_url": "https://gleaming-cooperation-staging.up.railway.app",
+    "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+    "passed": true,
+    "failed_check_count": 0,
+    "check_count": 15,
+    "observed_api_version": "6769a852b9c4f1d412e21cf0d9f0b288028e3b7c",
+    "observed_schema_revision": "20260909_0019",
+    "checks": [
+      "health/readiness/version contract",
+      "schema and exact version parity",
+      "OpenAPI CT preview and organization membership routes",
+      "unauthenticated organization membership/invitation boundaries return 401",
+      "web index and bundle reachable",
+      "CT preview and organization UI markers present",
+      "web bundle exact source SHA marker present"
+    ]
+  },
+  "scope_and_limits": [
+    "This evidence verifies Railway deployment metadata and public API/web source parity for the DICOM validation hardening candidate.",
+    "No new artifact, Gamma run, report or production data was created during this check.",
+    "It does not prove authenticated Gamma mutation on this candidate, staging crash/ACK/retry/dead-letter injection, large-input resource budget, independent-oracle promotion or full P08 exit criteria.",
+    "It does not constitute clinical commissioning or production readiness."
+  ],
+  "redaction": {
+    "contains_secrets": false,
+    "contains_database_urls": false,
+    "contains_patient_data": false
+  }
+}
