@@ -1,0 +1,46 @@
+{
+  "evidence_id": "P06-STAGING-BROWSER-QUEUE-RTDOSE-20260911-2469B01",
+  "phase": "P06",
+  "work_package": "P06-W04",
+  "status": "STAGING_VERIFIED_SLICE",
+  "captured_at": "2026-09-11",
+  "environment": "staging",
+  "source_commit": "2469b01ed25df42da9238329a7f42ac4b954c915",
+  "web_url": "https://rt-connect-web-staging-staging.up.railway.app/app/qa?release=2469b01",
+  "case": {
+    "case_id": "ed7ddbe5-811a-4463-a270-b0386f64644d",
+    "title": "P11 E2E Synthetic QA 20260910 B7C3"
+  },
+  "browser_readback": {
+    "authenticated_session": true,
+    "build_sha_displayed": "2469b01ed25df42da9238329a7f42ac4b954c915",
+    "preflight": "1 RTDOSE · 0 RTSTRUCT · 0 CT VALID",
+    "file_input_count": 1,
+    "file_input_multiple_attribute": true,
+    "queue_empty_state_is_not_shown": true,
+    "artifact_filename": "gamma-rtdose-v1-smoke.dcm",
+    "artifact_bytes": 898,
+    "artifact_type": "DICOM",
+    "artifact_sha256_prefix": "ca5c9168eb9b045e",
+    "validation": "VALID",
+    "download_control_present": true
+  },
+  "mutation_boundary": {
+    "readback_only_after_authorized_upload": true,
+    "additional_upload": false,
+    "qa_run_created": false,
+    "report_created": false,
+    "production_touched": false
+  },
+  "not_verified": [
+    "Staging queue with an intentionally failing item and isolated retry",
+    "Signed-download byte re-hash",
+    "Provider storage fault/reconciliation",
+    "Full P06 S/E/C and release handoff"
+  ],
+  "redaction": {
+    "contains_secrets": false,
+    "contains_patient_data": false,
+    "synthetic_fixture_only": true
+  }
+}
