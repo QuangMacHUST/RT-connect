@@ -1,0 +1,51 @@
+{
+  "evidence_id": "P06-STAGING-RTDOSE-UPLOAD-20260911",
+  "phase": "P06",
+  "work_packages": ["P06-W02", "P06-W03", "P06-W04"],
+  "status": "STAGING_VERIFIED_SLICE",
+  "captured_at": "2026-09-11",
+  "environment": "staging",
+  "source_commit": "0abba6e229208ac75a9657a9ffc962086553d01f",
+  "case": {
+    "case_id": "ed7ddbe5-811a-4463-a270-b0386f64644d",
+    "title": "P11 E2E Synthetic QA 20260910 B7C3"
+  },
+  "authorization": {
+    "actor": "user",
+    "scope": "one synthetic RTDOSE fixture into the selected staging case",
+    "confirmed_in_conversation": true
+  },
+  "fixture": {
+    "path": "docs/fixtures/gamma-rtdose-v1-smoke.dcm",
+    "name": "gamma-rtdose-v1-smoke.dcm",
+    "artifact_type": "DICOM",
+    "logical_role": "REFERENCE",
+    "bytes": 898,
+    "sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b"
+  },
+  "observed_workflow": [
+    "Selected the authorized synthetic RTDOSE fixture in the staging QA Archive.",
+    "Uploaded it to the selected staging case with role REFERENCE and type DICOM.",
+    "The UI reported that the artifact was uploaded and an input manifest was created.",
+    "Validation returned VALID with 0 errors and 0 warnings.",
+    "The case preflight showed 1 RTDOSE, 0 RTSTRUCT and 0 CT in VALID state."
+  ],
+  "mutation_boundary": {
+    "artifact_upload": true,
+    "input_manifest_created": true,
+    "qa_run_created": false,
+    "report_created": false,
+    "production_touched": false
+  },
+  "not_verified": [
+    "Multi-file queue with one intentionally failing item and isolated retry on staging",
+    "Provider object-storage failure and orphan reconciliation",
+    "Signed-download byte re-hash against the artifact checksum",
+    "Full P06 S/E/C and release-manifest/handoff evidence"
+  ],
+  "redaction": {
+    "contains_secrets": false,
+    "contains_patient_data": false,
+    "synthetic_fixture_only": true
+  }
+}

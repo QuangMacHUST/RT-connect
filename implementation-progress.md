@@ -10,6 +10,13 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 - Local checks: backend `test_artifacts.py` `6 passed`; frontend lint, typecheck, Vitest `17/17` và production build PASS. Evidence: [p06-local-upload-queue-20260911.json](docs/evidence/p06-local-upload-queue-20260911.json).
 - Đây là local implementation slice. Chưa đóng P06-W04/P06-VERIFY: staging browser queue với lỗi có chủ ý, storage fault/reconciliation, download byte re-hash và full S/E/C/release evidence còn phải thực hiện.
 
+## P06/P20 — authorized RTDOSE staging upload và current web parity — staging verified slice — 2026-09-11 / `0abba6e`
+
+- Theo xác nhận trực tiếp của người dùng, fixture tổng hợp `docs/fixtures/gamma-rtdose-v1-smoke.dcm` (898 bytes, SHA-256 `ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b`) đã được upload một lần vào case `ed7ddbe5-811a-4463-a270-b0386f64644d` (`P11 E2E Synthetic QA 20260910 B7C3`) trên staging với `REFERENCE/DICOM`.
+- UI xác nhận tạo artifact và input manifest; validate trả `VALID`, `0` lỗi, `0` cảnh báo; preflight hiện `1 RTDOSE · 0 RTSTRUCT · 0 CT VALID`. Không tạo QA run/report mới và không chạm production. Evidence: [p06-staging-rtdose-upload-20260911.json](docs/evidence/p06-staging-rtdose-upload-20260911.json).
+- API `c57d438d-ab28-473f-8d2a-6da3499a3a59`, web `bfb89696-b666-48e3-8a3a-74c2e60cfde2` và worker `4617b9ab-771e-40fc-b351-5ac03c106191` đều `SUCCESS` trên cùng source SHA `0abba6e229208ac75a9657a9ffc962086553d01f`. Public verifier đạt `15/15`, schema `20260909_0019`, và web bundle đã chứa marker upload queue.
+- Đây là `STAGING_VERIFIED_SLICE`, không đóng P06-W04/P06-VERIFY: queue fault/retry có chủ ý, storage fault/reconciliation, signed-download byte re-hash, full S/E/C và release/handoff vẫn mở.
+
 ## P20-W01 — Operational status auto-refresh — local verified — 2026-09-11 / `7df7cb8`
 
 - Trang `/app/system/status` đã bổ sung polling 30 giây cho health, readiness, version và queue metrics khi có session; polling vẫn chạy khi tab ở nền.

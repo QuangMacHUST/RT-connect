@@ -1,5 +1,7 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
+> Cập nhật candidate staging ngày 2026-09-11: API `c57d438d-ab28-473f-8d2a-6da3499a3a59`, web `bfb89696-b666-48e3-8a3a-74c2e60cfde2` và worker `4617b9ab-771e-40fc-b351-5ac03c106191` đều `SUCCESS` trên cùng source SHA `0abba6e229208ac75a9657a9ffc962086553d01f`. Public verifier đạt `15/15`, schema `20260909_0019`; web bundle đã chứa upload queue. Theo xác nhận người dùng, fixture RTDOSE tổng hợp `gamma-rtdose-v1-smoke.dcm` đã được upload một lần vào case staging `ed7ddbe5-811a-4463-a270-b0386f64644d` với `REFERENCE/DICOM`, manifest được tạo và validation `VALID` (0 lỗi, 0 cảnh báo). Đây là `STAGING_VERIFIED_SLICE`, không tự đóng P06-W04/P06-VERIFY hoặc các gate fault/retry, signed-download byte re-hash, storage reconciliation, release và handoff.
+
 - Phiên bản: **4.20**, ngày 2026-09-11.
 - Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.24.
 - Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.25.
