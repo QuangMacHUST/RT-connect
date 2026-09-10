@@ -5,23 +5,11 @@ import { Link } from 'react-router-dom'
 import { ApiClientError, apiClient, type FolderResource } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { dvhArtifactStatusLabel, summarizeDvhArtifacts } from './dvhArtifactSummary'
+import { processUploadQueue, type UploadQueueItem } from './uploadQueue'
 
 const cycles = ['DAILY', 'MONTHLY', 'ANNUAL', 'CUSTOM'] as const
 
-type UploadQueueStatus = 'PENDING' | 'UPLOADING' | 'UPLOADED' | 'FAILED'
-
-type UploadQueueItem = {
-  id: string
-  caseId: string
-  file: File
-  artifactType: string
-  logicalRole: string
-  status: UploadQueueStatus
-  error?: string
-  duplicate?: boolean
-}
-
-function uploadQueueStatusLabel(status: UploadQueueStatus): string {
+function uploadQueueStatusLabel(status: UploadQueueItem['status']): string {
   if (status === 'PENDING') return 'Đang chờ'
   if (status === 'UPLOADING') return 'Đang upload…'
   if (status === 'UPLOADED') return 'Đã upload'
@@ -162,31 +150,36 @@ export function QAArchivePage() {
   const updateUploadQueueItem = (itemId: string, patch: Partial<UploadQueueItem>) => {
     setUploadQueue((current) => current.map((item) => item.id === itemId ? { ...item, ...patch } : item))
   }
-  const uploadQueueItem = async (itemId: string) => {
-    const item = uploadQueue.find((candidate) => candidate.id === itemId)
-    if (!selectedCase || !item || item.caseId !== selectedCase.id || item.status === 'UPLOADING') return
-    updateUploadQueueItem(itemId, { status: 'UPLOADING', error: undefined })
-    try {
-      const artifact = await apiClient.uploadArtifact(accessToken!, item.caseId, item.file, item.artifactType, item.logicalRole)
-      updateUploadQueueItem(itemId, { status: 'UPLOADED', duplicate: artifact.duplicate })
-      void queryClient.invalidateQueries({ queryKey: ['artifacts', selectedCase.id] })
-    } catch (error) {
-      updateUploadQueueItem(itemId, { status: 'FAILED', error: errorMessage(error) })
-    }
-  }
   const uploadPendingQueue = async () => {
     if (!selectedCase || uploadQueueProcessing) return
     const pending = currentUploadQueue.filter((item) => item.status === 'PENDING')
     if (!pending.length) return setMessage('Không có file đang chờ upload.')
     setUploadQueueProcessing(true)
-    for (const item of pending) await uploadQueueItem(item.id)
+    await processUploadQueue({
+      items: pending,
+      caseId: selectedCase.id,
+      upload: (item) => apiClient.uploadArtifact(accessToken!, item.caseId, item.file, item.artifactType, item.logicalRole),
+      update: updateUploadQueueItem,
+      formatError: errorMessage
+    })
+    void queryClient.invalidateQueries({ queryKey: ['artifacts', selectedCase.id] })
     setUploadQueueProcessing(false)
     setMessage(`Đã xử lý ${pending.length} file trong hàng đợi; file lỗi có thể retry riêng.`)
   }
   const retryUploadQueueItem = async (itemId: string) => {
-    if (uploadQueueProcessing) return
+    if (uploadQueueProcessing || !selectedCase) return
+    const item = uploadQueue.find((candidate) => candidate.id === itemId)
+    if (!item || item.caseId !== selectedCase.id || item.status !== 'FAILED') return
     setUploadQueueProcessing(true)
-    await uploadQueueItem(itemId)
+    await processUploadQueue({
+      items: [item],
+      caseId: selectedCase.id,
+      allowedStatuses: ['FAILED'],
+      upload: (candidate) => apiClient.uploadArtifact(accessToken!, candidate.caseId, candidate.file, candidate.artifactType, candidate.logicalRole),
+      update: updateUploadQueueItem,
+      formatError: errorMessage
+    })
+    void queryClient.invalidateQueries({ queryKey: ['artifacts', selectedCase.id] })
     setUploadQueueProcessing(false)
   }
   const downloadArtifact = async (artifactId: string) => {
