@@ -10,6 +10,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 - Local checks: `test_machine_qa.py` + `test_trend.py` **15/15 PASS**, Ruff, mypy, web lint/typecheck và planning verifier **21 phase / 0 lỗi**. Evidence: [p07-machine-qa-revision-20260911-c6348c3.json](docs/evidence/p07-machine-qa-revision-20260911-c6348c3.json).
 - Chỉ đóng local slice P07-W01/W02/W04. Authenticated staging mutation/concurrency, full S/E/C, release handoff và production/clinical gates vẫn mở.
 
+## P07 — staging source parity/public smoke — 2026-09-11 / `093fe98`
+
+- Sau khi push candidate `093fe987ffac835eb04cc98c570d6a659c4a21fe`, public verifier đạt `15/15`, `failed_check_count=0`; API health/readiness/version, schema `20260909_0019`, OpenAPI route và unauthenticated organization boundary đều PASS; web index/bundle và exact-SHA marker cũng PASS.
+- Đây chỉ là bằng chứng API/web public đang phục vụ đúng source candidate. Không suy diễn thành authenticated Machine QA mutation, stale revision conflict, double-submit/concurrent PostgreSQL, worker parity, full P07 S/E/C hoặc clinical readiness.
+- Evidence: [p07-staging-public-parity-20260911-093fe98.json](docs/evidence/p07-staging-public-parity-20260911-093fe98.json).
+
 ## P06 — declared type và upload queue — local verified slice — 2026-09-11
 
 - Artifact validator giữ declared `artifact_type` là hợp đồng chính: payload JSON được khai báo DICOM không đi vào measurement validator và trả `ARTIFACT_TYPE_MISMATCH`; test duplicate cùng checksum/type vẫn tái dùng artifact và thêm role thiếu theo organization scope.

@@ -1,0 +1,46 @@
+{
+  "evidence_id": "P07-STAGING-PUBLIC-PARITY-20260911-093FE98",
+  "phase": "P07",
+  "work_packages": ["P07-W01", "P07-W02", "P07-W04"],
+  "status": "STAGING_SOURCE_PARITY_PUBLIC_SMOKE",
+  "captured_at": "2026-09-11",
+  "environment": "staging",
+  "source_commit": "093fe987ffac835eb04cc98c570d6a659c4a21fe",
+  "schema_revision": "20260909_0019",
+  "public_urls": {
+    "api": "https://gleaming-cooperation-staging.up.railway.app",
+    "web": "https://rt-connect-web-staging-staging.up.railway.app"
+  },
+  "checks": {
+    "passed": true,
+    "failed_check_count": 0,
+    "count": 15,
+    "items": [
+      "api.health.contract: HTTP 200, status=ok",
+      "api.ready.contract: HTTP 200, status=ready, schema=20260909_0019",
+      "api.ready.schema_revision: expected schema observed",
+      "api.version.contract: HTTP 200, environment=staging",
+      "api.version.expected: exact source SHA observed",
+      "api.openapi.ct_preview_route: route present",
+      "api.openapi.organization_membership_routes: member/invitation routes present",
+      "api.organization.members.unauthenticated: HTTP 401",
+      "api.organization.invitations.unauthenticated: HTTP 401",
+      "api.organization.invitation_accept.unauthenticated: HTTP 401",
+      "web.index: HTTP 200, HTML shell reachable",
+      "web.bundle: HTTP 200, bundle downloaded and re-hashed",
+      "web.bundle.ct_preview_controls: marker present",
+      "web.bundle.organization_membership_ui: markers present",
+      "web.bundle.expected_version: exact source SHA marker present"
+    ]
+  },
+  "scope_and_limits": [
+    "This is read-only public API/web source-parity evidence after the P07 push.",
+    "It does not prove authenticated Machine QA mutation on Railway PostgreSQL.",
+    "It does not prove stale expected_revision conflict, double-submit replay or concurrent two-identity behavior remotely.",
+    "It does not close the full P07 S/E/C matrix, release handoff, production promotion or clinical readiness."
+  ],
+  "redaction": {
+    "contains_secrets": false,
+    "contains_patient_data": false
+  }
+}
