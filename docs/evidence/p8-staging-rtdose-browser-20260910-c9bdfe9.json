@@ -1,0 +1,66 @@
+{
+  "schema_version": "rt-connect.p8-staging-rtdose-browser.v2",
+  "captured_at_utc": "2026-09-10T11:28:47Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_READ_ONLY_RECHECK",
+  "environment": "staging",
+  "candidate_source_sha": "c9bdfe9847914bbffd6ccc99746bc650fff3e6aa",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/gamma?release=c9bdfe9",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "data_boundary": "Authenticated browser readback used repository-generated synthetic QA artifacts only; no patient, PACS or treatment dataset was used.",
+  "upload_authorization": {
+    "fixture": "gamma-rtdose-v1-smoke.dcm",
+    "authorized_by_user": true,
+    "action": "NOT_REPEATED_EXISTING_ARTIFACT_REUSED",
+    "reason": "The authorized synthetic RTDOSE already exists in the staging case; this recheck did not upload a duplicate."
+  },
+  "input_preflight": {
+    "workflow_profile": "PSQA_GAMMA",
+    "reference": {
+      "filename": "gamma-rtdose-v1-smoke.dcm",
+      "modality": "RTDOSE",
+      "sha256_prefix": "ca5c9168eb9b…"
+    },
+    "evaluation": {
+      "filename": "gamma-measurement-3d-v1-smoke.json",
+      "modality": "MEASUREMENT",
+      "sha256_prefix": "3ca7a85e438c…"
+    },
+    "status": "PREFLIGHT_VALID"
+  },
+  "selected_existing_run": {
+    "run_id": "5b5711c6-236d-429b-9cd0-8331bc8be918",
+    "profile": "ENGINE_TEST",
+    "status": "COMPLETED",
+    "progress_percent": 100,
+    "attempt": 1,
+    "engine_version": "gamma-nd-p8.2",
+    "overall_result": "PASS",
+    "config_snapshot": {
+      "dimensionality": "2D",
+      "coverage_policy": "FULL_ROI",
+      "max_gamma": 2,
+      "pass_rate_target_percent": 95
+    },
+    "evaluated_points": 4,
+    "passing_points": 4,
+    "non_passing_points": 0,
+    "excluded_points": 0,
+    "coverage_fraction": 1,
+    "gamma_p95": 0.0708333333333318
+  },
+  "history": {
+    "visible_completed_or_failed_runs": 9,
+    "failed_run_visible": true,
+    "new_run_created_during_recheck": false,
+    "artifact_uploaded_during_recheck": false
+  },
+  "open_gates": [
+    "Authenticated PSQA_GAMMA 3D run on the current candidate using the selected RTDOSE/measurement pair",
+    "Geometry, dose scaling, frame/alignment and unsupported-input negative matrix",
+    "Worker crash-after-commit acknowledgement, bounded retry/dead-letter and resource-large-input evidence on staging",
+    "Independent oracle promotion/convergence and DICOM/vendor commissioning evidence",
+    "P8 S/E/C completion, release manifest and production promotion"
+  ],
+  "result": "STAGING_READ_ONLY_PARTIAL_PASS"
+}

@@ -29,6 +29,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Trên cùng candidate, Machine QA case staging `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24` đọc đúng protocol ACTIVE, source/revision/rule count và thông báo đã pin protocol snapshot. Hai run lịch sử vẫn `COMPLETED/PASS`, không tạo run mới, không upload fixture và không thay đổi protocol trong lần kiểm tra.
 - Evidence: `docs/evidence/p11-staging-consumer-browser-20260910-27bf051.json`. Đây là authenticated consumer readback `STAGING_PARTIAL_PASS`; full P11 S/E/C, cross-consumer recheck, direct DB lineage, release and production gates vẫn mở.
 
+## P8 — staging RTDOSE/Gamma read-only recheck — partial verified — 2026-09-10 / `c9bdfe9`
+
+- Trên candidate `c9bdfe9`, Gamma workspace của case staging `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24` đọc đúng workflow `PSQA_GAMMA`, fixture reference `gamma-rtdose-v1-smoke.dcm` với fingerprint `ca5c9168…`, evaluation `gamma-measurement-3d-v1-smoke.json` với fingerprint `3ca7a85e…` và trạng thái `PREFLIGHT VALID`.
+- Existing run đang chọn là `ENGINE_TEST`, không phải run PSQA 3D mới: `COMPLETED`, engine `gamma-nd-p8.2`, `4/4` điểm đạt, coverage `1`, gamma P95 `0.0708333…`, target `95%`; history hiển thị cả một run `FAILED` để truy vết. Lần recheck không tạo run và không upload fixture.
+- Evidence: `docs/evidence/p8-staging-rtdose-browser-20260910-c9bdfe9.json`. Đây là read-only partial evidence; không suy ra từ đó rằng PSQA 3D, worker fault/retry, resource gate, independent oracle hay P8 release đã đóng.
+
 ## P10 — staging negative/accessibility recheck — partial verified — 2026-09-10 / `a30e365`
 
 - Trên candidate `a30e365`, Trend workspace đã được đọc bằng accessibility tree: lifecycle tables/actions, filter controls, source links và error/empty/retry states đều có semantic text/controls đọc được.
