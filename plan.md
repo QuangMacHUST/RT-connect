@@ -2,7 +2,7 @@
 
 - Phiên bản: **4.19**, ngày 2026-09-10.
 - Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.24.
-- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.24.
+- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.25.
 - Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.24.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
@@ -935,6 +935,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 | TC-P09-E06 | Download hết hạn | DOWNLOAD_LINK_EXPIRED | Cấp link mới cho cùng revision sau kiểm scope. |
 | TC-P09-E07 | Object đã ghi nhưng commit metadata `ExportJob` thất bại | REPORT_EXPORT_PERSISTENCE_FAILED | Rollback job update, xóa đúng object key, trả HTTP 503 và cho retry cùng idempotency key; không trả COMPLETED/signed URL. |
 | TC-P09-E08 | Commit metadata thất bại và cleanup object cũng thất bại | REPORT_EXPORT_PERSISTENCE_FAILED + reconciliation | Trả HTTP 503 với signal reconciliation; giữ job chưa hoàn tất, ghi diagnostic an toàn, không tự xóa theo prefix và không báo export thành công. |
+| TC-P09-E09 | Renderer/schema export vừa nâng version nhưng browser giữ idempotency key cũ chỉ theo revision+format | EXPORT_IDEMPOTENCY_NAMESPACE_STALE | Client tạo namespace mới theo phiên renderer/export contract; server vẫn giữ fingerprint authority; không đổi key cũ thành export khác và không tạo artifact trùng. |
 
 ### Bất biến và điều kiện đóng P9
 
@@ -977,6 +978,12 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - `report_renderer.py` đã chuyển sang `report-renderer-0.2`, nhúng `DejaVuSans.ttf` trong package API và tạo PDF Unicode với Type0/CIDFontType2, `Identity-H`, `ToUnicode` và CID-to-GID map. `fonttools==4.63.0` đã được khóa trong metadata và lockfile.
 - Local gate: focused report `7 passed`, Ruff pass, strict mypy pass, wheel build pass; wheel chứa `rt_connect_api/assets/DejaVuSans.ttf`; PDF fixture có title/block tiếng Việt đã được render bằng Poppler và kiểm tra trực quan thành công.
 - Exit impact: candidate staging cũ vẫn giữ nguyên evidence lịch sử nhưng không còn đủ cho visual PDF gate. Cần commit/deploy exact SHA mới cho API/web/worker, tạo lại bốn export của report DVH staging, kiểm tra payload/hash/renderer `0.2`, render PDF staging bằng Poppler và ghi evidence mới. Nếu một bước fail thì giữ P9 mở và không promote release.
+
+### Checkpoint local P9 — renderer-aware export idempotency — 2026-09-10
+
+- Sau khi deploy `report-renderer-0.2`, lần bấm export trên browser cũ tái sử dụng key `report-{revision}-{format}` và bị `EXPORT_IDEMPOTENCY_CONFLICT` với job renderer `0.1`. Đây là lỗi tương thích giữa client key namespace và renderer migration, không phải lỗi của fixture RTDOSE hay database.
+- Frontend đã đổi key thành `report-{page-export-namespace}-{revision}-{format}`; cùng một phiên vẫn replay idempotent, còn lần tải trang sau khi renderer/export contract đổi sẽ tạo namespace mới. Server fingerprint và quy tắc conflict không bị nới lỏng.
+- Local gate: web lint, typecheck, Vitest `17/17` và production build pass. Staging gate còn lại là deploy exact SHA, tạo bốn export mới và xác nhận renderer `0.2`, JSON/CSV parse, PDF visual Unicode, PNG signature, checksum và no-mutation report/DVH.
 
 <a id="phase-10"></a>
 

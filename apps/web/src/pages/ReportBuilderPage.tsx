@@ -55,6 +55,7 @@ export function ReportBuilderPage() {
   const queryClient = useQueryClient()
   const accessToken = session?.access_token
   const [selectedReportKey, setSelectedReportKey] = useState<string>()
+  const [exportKeyNamespace] = useState(() => crypto.randomUUID())
   const [title, setTitle] = useState('Clinical report')
   const [sourceType, setSourceType] = useState<SourceType>('CUSTOM')
   const [sourceId, setSourceId] = useState('')
@@ -160,7 +161,10 @@ export function ReportBuilderPage() {
   const exportMutation = useMutation({
     mutationFn: (format: 'JSON' | 'CSV' | 'PDF' | 'PNG') => apiClient.exportReport(
       accessToken!, selectedReportKey!, currentRevision!.id,
-      { export_format: format, idempotency_key: `report-${currentRevision!.id}-${format.toLowerCase()}` }
+      {
+        export_format: format,
+        idempotency_key: `report-${exportKeyNamespace}-${currentRevision!.id}-${format.toLowerCase()}`
+      }
     ),
     onSuccess: (job) => {
       setMessage(`Đã tạo export ${job.export_format} (${job.byte_size?.toLocaleString('vi-VN') ?? '—'} bytes).`)

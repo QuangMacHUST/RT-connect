@@ -1,6 +1,6 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
-Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
+Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 `technical-specification.md` v1.24 và `plan.md` v4.19.
 
 ## P9 — PDF Unicode renderer correction — local verified / staging revalidation required — 2026-09-10
@@ -9,6 +9,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - The renderer is now `report-renderer-0.2`: it embeds the pinned `DejaVuSans.ttf` asset, emits a Type0/CIDFontType2 Unicode font with `Identity-H` encoding, `ToUnicode` mapping and deterministic CID-to-GID mapping. `fonttools==4.63.0` is pinned in both `pyproject.toml` and `requirements.lock`.
 - Local evidence: focused report suite `7 passed`, Ruff pass, strict mypy pass, wheel build pass, wheel inspection confirms `rt_connect_api/assets/DejaVuSans.ttf` is packaged, and Poppler visual inspection shows Vietnamese title/block text without fallback replacement.
 - This correction is not yet a staging release. The new commit must be deployed to API/web/worker with exact-SHA parity; Report Builder must regenerate PDF/PNG/JSON/CSV from the staging DVH report, and the new PDF must be rendered and visually inspected before P9 can advance beyond partial verification. Existing staging evidence remains historical and is not silently rewritten.
+
+## P9 — renderer-aware export idempotency correction — local verified / staging revalidation required — 2026-09-10
+
+- Sau khi API chạy `report-renderer-0.2`, browser Report Builder cũ dùng lại key `report-{revision}-{format}` và nhận `EXPORT_IDEMPOTENCY_CONFLICT` với export cũ của renderer `0.1`. Đây là lỗi namespace tương thích khi renderer đổi phiên bản.
+- Frontend đã thêm namespace ngẫu nhiên theo phiên trang vào idempotency key; cùng phiên vẫn replay đúng, nhưng lần tải trang sau renderer migration không bị khóa bởi export cũ. Server fingerprint và conflict semantics vẫn giữ nguyên.
+- Local evidence: web lint, typecheck, Vitest `17/17` và production build pass. Commit này phải được deploy exact SHA cho web (và đồng bộ API/worker theo release policy) trước khi tạo lại export. Chưa ghi staging export mới và chưa đóng P9 visual gate.
 
 ## P17/P19 — current staging DVH export content verification — partial verified — 2026-09-10 / `c11fca0`
 
