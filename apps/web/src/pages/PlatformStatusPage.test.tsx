@@ -31,6 +31,7 @@ test('renders an API-backed platform health state', async () => {
   expect(screen.getByText('READY')).toBeInTheDocument()
   expect(screen.getByText(/Schema: test-schema/)).toBeInTheDocument()
   expect(screen.getByText('0.1.0')).toBeInTheDocument()
+  expect(screen.getByText(/Lần kiểm tra gần nhất:/)).toBeInTheDocument()
   expect(screen.getByText(/Không có dữ liệu bệnh nhân/)).toBeInTheDocument()
 })
 

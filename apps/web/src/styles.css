@@ -36,6 +36,7 @@ h2 { font-size: 1.05rem; margin-bottom: .5rem; }
 .eyebrow { color: #087785; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .73rem; font-weight: 700; letter-spacing: .08em; margin-bottom: .55rem; }
 .status-badge { background: #d9f0eb; border: 1px solid #80c7b9; border-radius: 3px; color: #166052; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .74rem; padding: .35rem .5rem; white-space: nowrap; }
 .status-badge--warning { background: #fff0d7; border-color: #e7b85d; color: #835a12; }
+.status-observation { color: #617787; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .69rem; line-height: 1.45; text-align: right; }
 .status-grid { display: grid; gap: 1rem; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 1.5rem; }
 .status-card, .alert, .provenance-panel { background: #fff; border: 1px solid #c8d5de; border-radius: 4px; box-shadow: 0 1px 2px rgb(16 42 67 / 6%); }
 .status-card { display: flex; flex-direction: column; min-height: 150px; padding: 1rem; }
@@ -527,6 +528,7 @@ td code { color: #075e67; font-size: .78rem; }
 @media (max-width: 540px) {
   .workspace { padding: 1rem; }
   .page-header { flex-direction: column; }
+  .status-observation { text-align: left; }
   .status-grid { grid-template-columns: 1fr; }
   .metric-grid, .dashboard-grid { grid-template-columns: 1fr; }
   .inline-form { align-items: stretch; flex-direction: column; }

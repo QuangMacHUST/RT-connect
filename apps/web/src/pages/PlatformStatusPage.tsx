@@ -4,20 +4,42 @@ import { apiClient } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { assessPlatformStatus, endpointValue, schemaParityValue, statusErrorMessage } from './platformStatus'
 
+const OPERATIONAL_REFRESH_INTERVAL_MS = 30_000
+
 function StatusCard({ label, value, detail }: { label: string; value: string; detail: string }) {
   return <section className="status-card"><p>{label}</p><strong>{value}</strong><small>{detail}</small></section>
 }
 
 export function PlatformStatusPage() {
   const { session } = useAuth()
-  const health = useQuery({ queryKey: ['platform', 'health'], queryFn: () => apiClient.health(), retry: 1 })
-  const readiness = useQuery({ queryKey: ['platform', 'readiness'], queryFn: () => apiClient.ready(), retry: 1 })
-  const version = useQuery({ queryKey: ['platform', 'version'], queryFn: () => apiClient.version(), retry: 1 })
+  const health = useQuery({
+    queryKey: ['platform', 'health'],
+    queryFn: () => apiClient.health(),
+    retry: 1,
+    refetchInterval: OPERATIONAL_REFRESH_INTERVAL_MS,
+    refetchIntervalInBackground: true
+  })
+  const readiness = useQuery({
+    queryKey: ['platform', 'readiness'],
+    queryFn: () => apiClient.ready(),
+    retry: 1,
+    refetchInterval: OPERATIONAL_REFRESH_INTERVAL_MS,
+    refetchIntervalInBackground: true
+  })
+  const version = useQuery({
+    queryKey: ['platform', 'version'],
+    queryFn: () => apiClient.version(),
+    retry: 1,
+    refetchInterval: OPERATIONAL_REFRESH_INTERVAL_MS,
+    refetchIntervalInBackground: true
+  })
   const queueMetrics = useQuery({
     queryKey: ['platform', 'gamma-queue', session?.access_token],
     queryFn: () => apiClient.gammaQueueMetrics(session!.access_token),
     enabled: Boolean(session?.access_token),
-    retry: false
+    retry: false,
+    refetchInterval: OPERATIONAL_REFRESH_INTERVAL_MS,
+    refetchIntervalInBackground: true
   })
   const assessment = assessPlatformStatus({
     health: health.data,
@@ -35,13 +57,21 @@ export function PlatformStatusPage() {
   ].filter(([, error]) => Boolean(error)) as Array<[string, unknown]>
   const failure = failures[0]?.[1]
   const platformPending = health.isPending || readiness.isPending || version.isPending
+  const platformRefreshing = health.isFetching || readiness.isFetching || version.isFetching
+  const lastObservedAt = Math.max(health.dataUpdatedAt, readiness.dataUpdatedAt, version.dataUpdatedAt, queueMetrics.dataUpdatedAt)
+  const lastObservedLabel = lastObservedAt > 0
+    ? new Date(lastObservedAt).toLocaleString('vi-VN')
+    : 'Chưa có kết quả kiểm tra'
   const retryPlatform = () => void Promise.all([health.refetch(), readiness.refetch(), version.refetch()])
 
   return (
     <div className="page">
       <header className="page-header">
         <div><p className="eyebrow">P1 · DEVELOPMENT FOUNDATION</p><h1>Trạng thái nền tảng</h1><p>Kiểm tra API thực, schema readiness, version contract và đường đi tới các module tiếp theo.</p></div>
-        <span className={`status-badge ${assessment.badgeClass}`} title={assessment.explanation}>{assessment.label}</span>
+        <div className="page-header__actions">
+          <span className={`status-badge ${assessment.badgeClass}`} title={assessment.explanation}>{assessment.label}</span>
+          <small className="status-observation" aria-live="polite">{platformRefreshing ? 'Đang cập nhật…' : `Lần kiểm tra gần nhất: ${lastObservedLabel}`}</small>
+        </div>
       </header>
       {Boolean(failure) && (
         <section aria-live="polite" className="alert alert--error"><h2>Không thể đọc đầy đủ trạng thái API</h2><p>{failures.map(([name, error]) => `${name}: ${statusErrorMessage(error)}`).join(' · ')}</p><p>Trạng thái tổng hợp: {assessment.explanation}</p><button onClick={retryPlatform}>Thử lại</button></section>
