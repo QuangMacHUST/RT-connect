@@ -32,6 +32,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Override field không được hỗ trợ bị chặn bằng `KNOWLEDGE_CONTENT_INVALID`, không tạo snapshot. Evidence: [p16-staging-browser-20260910-8db01c9.json](docs/evidence/p16-staging-browser-20260910-8db01c9.json).
 - Đây là `STAGING_PARTIAL_PASS`: direct DB/scope, complete lifecycle/import/clone/compare matrix, P17 current-release binding, fault/idempotency, release manifest và production gates vẫn mở; reference `UNVERIFIED` không được diễn giải thành guideline/clinical approval.
 
+## P17 — current staging RTDOSE/DVH readback after P16 — partial verified — 2026-09-10 / `8db01c9`
+
+- Browser read-only recheck trên case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24` đọc được hai RTDOSE, một RTSTRUCT; fixture `gamma-rtdose-v1-smoke.dcm` `RTDOSE/VALID`, SHA-256 đầy đủ `ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b`, đã tồn tại trước readback và không upload/duplicate artifact.
+- Run `d8230d1d-badd-4c0c-b044-dcc4434215a6` được đọc lại `FULL`, ROI `#1 · P17_TARGET`, `D95=5.200 Gy`, limit `MIN 5 Gy`, margin `+0.200 Gy`, `explicit_selection=true`, `auto_applied=false`; trạng thái vẫn `REVIEW_REQUIRED` vì source library chưa `AVAILABLE` và CT không được chọn. Không tạo run mới.
+- Evidence: [p17-staging-current-readback-20260910-8db01c9.json](docs/evidence/p17-staging-current-readback-20260910-8db01c9.json). Đây là `STAGING_PARTIAL_PASS`; direct DB/scope, full error/fault/resource/volume, cloud report/release và clinical source review vẫn mở.
+
 ## P19 — staging exact-SHA public verifier after P13 evidence — partial verified — 2026-09-10 / `796e078`
 
 - API, web và worker staging đều deploy thành công từ exact source SHA `796e078af7ff66f4a1f8645061183859420bf785`; deployment IDs lần lượt `02c0d58d-c892-4834-a3ac-26364586bdfa`, `e56ac637-d30c-4ef6-8cc7-46c76da5024f` và `ca73840b-56e6-4a47-a415-69cfe9c1af21`.

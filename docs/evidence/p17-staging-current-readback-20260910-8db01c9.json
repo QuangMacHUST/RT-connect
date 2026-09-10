@@ -1,0 +1,72 @@
+{
+  "schema_version": "rt-connect.p17-staging-current-readback.v1",
+  "recorded_at": "2026-09-10",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_READ_ONLY_RECHECK",
+  "environment": "staging",
+  "candidate_source_sha_observed": "8db01c982d7169cb250f5bf070c558bab408b7ee",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "synthetic_only": true,
+  "rtdose_authorization": {
+    "authorized_by_user": true,
+    "filename": "gamma-rtdose-v1-smoke.dcm",
+    "modality": "RTDOSE",
+    "status": "VALID",
+    "sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
+    "already_present": true,
+    "uploaded_in_this_readback": false,
+    "duplicate_created": false
+  },
+  "preflight": {
+    "dose_artifacts": 2,
+    "structure_artifacts": 1,
+    "selected_rtdose": "gamma-rtdose-v1-smoke.dcm · ca5c9168eb9b…",
+    "selected_rtstruct": "p17-rtstruct-v1-smoke.dcm · 16a79df31297…",
+    "selected_roi": "#1 · P17_TARGET",
+    "result": "PASS"
+  },
+  "saved_run_readback": {
+    "run_id": "d8230d1d-badd-4c0c-b044-dcc4434215a6",
+    "status": "REVIEW_REQUIRED",
+    "engine_version": "p17-dvh-1.1.0",
+    "result_schema": "visual-dose-dvh.result.v1",
+    "coverage": "FULL",
+    "roi": "#1 · 1 contour",
+    "volume_cc": 0.004,
+    "voxel_count": 4,
+    "dmean_gy": 6.5,
+    "dmin_gy": 5,
+    "dmax_gy": 8,
+    "d95_gy": 5.2,
+    "input_fingerprint": "8f525a5e74545854f0a53a743c0061ffbd8adee17ecc6da88de4486f0c9abf2a",
+    "result_sha256": "cf2799b8afeafa68cf60a330eac9adff123cca5c7ceacfc0eab78132b0c0359c",
+    "ct_selected": false,
+    "dose_mode": "DOSE_NATIVE_GRID",
+    "run_created_in_readback": false
+  },
+  "explicit_limit_binding": {
+    "source_type": "BIOLOGICAL_LIBRARY",
+    "source_id": "f26d0724-712a-4e44-b113-99705621977c",
+    "metric": "D95",
+    "operator": "MIN",
+    "limit_gy": 5,
+    "actual_gy": 5.2,
+    "margin_gy": 0.2,
+    "explicit_selection": true,
+    "auto_applied": false,
+    "evaluation_status": "REVIEW_REQUIRED",
+    "warnings": [
+      "No CT was supplied; DVH is calculated on the dose-native grid and is not an anatomy overlay.",
+      "The selected limit source is not marked AVAILABLE in the library."
+    ]
+  },
+  "history_count": 2,
+  "status": "STAGING_PARTIAL_PASS",
+  "open_gates": [
+    "current-release P16/P17 direct PostgreSQL scope and checksum probe",
+    "complete P17 negative/fault/resource/volume matrix",
+    "cloud report binding and release manifest",
+    "clinical limit source review remains required"
+  ]
+}
