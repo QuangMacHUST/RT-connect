@@ -4,7 +4,7 @@
   "work_packages": ["P06-W02", "P06-W03", "P06-W04"],
   "status": "LOCAL_VERIFIED_SLICE",
   "captured_at": "2026-09-11",
-  "source_commit": "WORKTREE_PENDING_COMMIT",
+  "source_commit": "0d9d4a4958b858419595be14b767d6b9cfc9aa7d",
   "environment": "local",
   "scope": "Declared artifact type validation, manifest idempotency and browser upload queue/retry behavior",
   "implementation": [
