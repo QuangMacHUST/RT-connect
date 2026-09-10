@@ -1,0 +1,113 @@
+{
+  "schema_version": "rt-connect.p11-staging-lifecycle-browser.v1",
+  "captured_at_utc": "2026-09-10T04:43:30Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_SYNTHETIC_MUTATION_AND_RELOAD",
+  "environment": "staging",
+  "source_commit": "b7c3c4a2dfd85d86c1097448ca0deddf6d41147f",
+  "web_build_label_observed": "b7c3c4a2dfd85d86c1097448ca0deddf6d41147f",
+  "organization_boundary": "Authenticated current staging organization; no cross-organization data was requested or changed.",
+  "data_boundary": "Synthetic protocol, synthetic QA case and synthetic Machine QA measurement only; no patient, PACS or treatment data.",
+  "case": {
+    "case_id": "ed7ddbe5-811a-4463-a270-b0386f64644d",
+    "title": "P11 E2E Synthetic QA 20260910 B7C3",
+    "created_for_this_test": true,
+    "fixture_upload_performed": false,
+    "fixture_note": "The separately authorized RTDOSE fixture remained in the existing P6 case; this P11 case did not need an artifact upload."
+  },
+  "protocol_lifecycle": {
+    "protocol_key": "STAGING_P11_E2E_B7C3",
+    "version_1_id": "218c87a5-386c-49e8-976b-19421a1ccdaf",
+    "validate_only": {
+      "valid": true,
+      "database_side_effect": false,
+      "ui_message": "Protocol hợp lệ; chưa ghi vào database."
+    },
+    "version_1": {
+      "created_status": "DRAFT",
+      "created_revision": 1,
+      "saved_revision": 2,
+      "active_revision": 3,
+      "rule_count": 1,
+      "rule": {
+        "metric_key": "output_factor",
+        "unit": "%",
+        "rule_type": "RANGE",
+        "lower_limit": 0,
+        "upper_limit": 100,
+        "required": true
+      },
+      "source_type": "USER_DEFINED",
+      "applicability": {},
+      "archived_after_consumer_run": true
+    },
+    "clone": {
+      "version_number": 2,
+      "status": "DRAFT",
+      "source_protocol_version_id": "218c87a5-386c-49e8-976b-19421a1ccdaf",
+      "child_rule_deep_copy_observed": true,
+      "compare_observed": {
+        "metadata_difference_count": 4,
+        "rule_difference_count": 1,
+        "lineage_difference_observed": true
+      }
+    }
+  },
+  "consumer_run": {
+    "run_id": "bc652ee9-0d25-474e-a414-13d23c04a231",
+    "protocol_key": "STAGING_P11_E2E_B7C3",
+    "protocol_version": 1,
+    "protocol_revision_at_use": 3,
+    "created_status": "DRAFT",
+    "measurement_revision_after_evaluate": 1,
+    "measurement": {
+      "metric_key": "output_factor",
+      "value": 100,
+      "unit": "%"
+    },
+    "final_status": "COMPLETED",
+    "quality_status": "PASS",
+    "result": {
+      "actual": 100,
+      "lower_limit": 0,
+      "upper_limit": 100,
+      "margin": 0,
+      "metric_status": "PASS"
+    }
+  },
+  "archive_and_old_history_recheck": {
+    "protocol_v1_visible_in_new_run_active_list_after_archive": false,
+    "old_run_visible_after_archive": true,
+    "old_run_quality_status_after_archive": "PASS",
+    "old_run_snapshot_marker_visible": true,
+    "old_run_snapshot": {
+      "source_type": "USER_DEFINED",
+      "source_reference": null,
+      "revision": 3,
+      "rule_count": 1,
+      "applicability": "không giới hạn applicability",
+      "archived_protocol_did_not_change_result": true
+    }
+  },
+  "checks": {
+    "validate_only_without_mutation": true,
+    "create_draft": true,
+    "draft_revision_update": true,
+    "activate_draft": true,
+    "clone_active_version": true,
+    "compare_versions_without_mutation": true,
+    "active_protocol_consumer_selection": true,
+    "machine_qa_evaluate_pass": true,
+    "archive_protocol_after_consumer_use": true,
+    "old_history_snapshot_survives_archive": true,
+    "no_seed_action_in_normal_machine_qa_workflow": true,
+    "no_patient_or_treatment_data": true
+  },
+  "passed": true,
+  "scope_note": "This packet proves the staging happy-path lifecycle S01-S10 slice. It does not close the complete P11 S/E/C matrix, fault/persistence-uncertain cases, visual/accessibility review or release-manifest closure.",
+  "open_gates": [
+    "Complete P11 error and recovery matrix E01-E17 with response/database/UI assertions",
+    "Concurrent edit, uncertain mutation and scope-negative staging checks",
+    "P8/P9/P10 consumer rechecks on the same candidate where required",
+    "Release manifest and handoff closure"
+  ]
+}
