@@ -10,6 +10,14 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Frontend regression mới: `TrendPage.test.tsx` kiểm chứng save baseline với version `2` và archive maintenance với revision `3`; toàn bộ web suite **17/17 PASS**, typecheck, ESLint và production build PASS. Vite vẫn còn cảnh báo chunk >500 kB, không phải lỗi release.
 - Đây là `LOCAL_VERIFIED` cho UI/client lifecycle slice. Chưa được coi là staging evidence: cần staging deploy exact-SHA, authenticated edit/archive, stale revision `409`, reload/readback và kiểm tra không rewrite các điểm trend lịch sử.
 
+## P10 Trend — staging baseline/maintenance lifecycle — partial verified — 2026-09-10 / `7343189`
+
+- Candidate `734318947b8ae51c9eebc5275e76e6bdc6478d18` đã được mở trên staging bằng browser đã xác thực tại `/app/trend`. Workspace đọc được `4` baseline versions, `2` maintenance markers trước thao tác, `7` raw points và `4` compatible series.
+- Baseline version `4` được sửa với `expected_version=4`, đổi tên thành `P10 lifecycle baseline 7343189`; UI trả toast thành công. Sau thao tác không tạo, xóa hoặc rewrite trend point nào.
+- Maintenance marker `P10 baseline maintenance smoke` được archive với `expected_revision=1`; sau reload marker có revision `2`, status `ARCHIVED`, active marker count giảm từ `2` xuống `1`.
+- Kiểm thử optimistic concurrency trên marker `Staging QA maintenance smoke`: tab thắng lưu title `Staging QA maintenance concurrent winner` với revision `2`; tab giữ revision cũ `1` bị từ chối bằng `MAINTENANCE_REVISION_CONFLICT`, và title stale không được ghi. Reload xác nhận title thắng vẫn là nguồn sự thật.
+- Evidence: `docs/evidence/p10-staging-lifecycle-20260910-7343189.json`. Đây là `STAGING_PARTIAL_PASS`: visual/accessibility, complete P10 S/E/C, large-series, effective-time/rebuild, provider fault/resource, release manifest và production/rollback evidence vẫn mở; P10 chưa `DONE`.
+
 ## P10 Trend — staging export, drill-down và negative recheck — 2026-09-10 / `6426ceb`
 
 - Candidate `6426ceb50665f1ceae01e011f2ee5bf6b8a16d65` đang có API/web cùng source SHA; API `/health`, `/ready`, `/version`, OpenAPI và web bundle đạt **15/15 public checks**, schema `20260909_0019`.

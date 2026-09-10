@@ -1,0 +1,72 @@
+{
+  "schema_version": "rt-connect.p10-staging-lifecycle.v1",
+  "captured_at_utc": "2026-09-10T08:14:01Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_LIFECYCLE_PARTIAL",
+  "environment": "staging",
+  "candidate_source_sha": "734318947b8ae51c9eebc5275e76e6bdc6478d18",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "route": "/app/trend?release=7343189",
+  "data_boundary": "Authenticated browser checks used synthetic Trend records only; no patient, PACS or treatment dataset was used.",
+  "observed_state_before": {
+    "baseline_count": 4,
+    "maintenance_marker_count": 2,
+    "raw_point_count": 7,
+    "compatible_series_count": 4
+  },
+  "baseline_update": {
+    "action": "UPDATE",
+    "baseline_version": 4,
+    "expected_version": 4,
+    "edited_name": "P10 lifecycle baseline 7343189",
+    "result": "SUCCESS",
+    "ui_confirmation": "Đã cập nhật baseline version.",
+    "history_invariant": "No trend points were created, deleted or rewritten by the baseline edit."
+  },
+  "maintenance_archive": {
+    "action": "ARCHIVE",
+    "event_title": "P10 baseline maintenance smoke",
+    "expected_revision": 1,
+    "result": "SUCCESS",
+    "ui_confirmation": "Đã archive maintenance marker.",
+    "observed_revision_after_reload": 2,
+    "observed_status_after_reload": "ARCHIVED",
+    "active_marker_count_after_action": 1
+  },
+  "optimistic_concurrency": {
+    "target_event": "Staging QA maintenance smoke",
+    "winner": {
+      "edited_title": "Staging QA maintenance concurrent winner",
+      "expected_revision": 1,
+      "result": "SUCCESS",
+      "observed_revision_after_reload": 2,
+      "observed_status_after_reload": "ACTIVE"
+    },
+    "stale_attempt": {
+      "edited_title": "Staging QA maintenance stale loser",
+      "expected_revision": 1,
+      "result": "REJECTED",
+      "error_code": "MAINTENANCE_REVISION_CONFLICT",
+      "user_message": "The maintenance event changed; reload before editing it.",
+      "invariant": "The stale loser title was not persisted; the winner remained authoritative after reload."
+    }
+  },
+  "observed_state_after_reload": {
+    "baseline_count": 4,
+    "active_maintenance_marker_count": 1,
+    "archived_maintenance_marker_count": 1,
+    "raw_point_count": 7,
+    "compatible_series_count": 4,
+    "active_marker_title": "Staging QA maintenance concurrent winner",
+    "active_marker_revision": 2,
+    "archived_marker_title": "P10 baseline maintenance smoke",
+    "archived_marker_revision": 2
+  },
+  "open_gates": [
+    "Visual review and accessibility evidence for the updated lifecycle panels",
+    "Complete current-candidate P10 S/E/C matrix, including large-series workload and full source refresh/export revalidation",
+    "Projection rebuild and effective-time baseline mutation evidence",
+    "Provider/resource fault evidence and release-manifest closure",
+    "Production promotion and rollback evidence"
+  ],
+  "result": "STAGING_PARTIAL_PASS"
+}
