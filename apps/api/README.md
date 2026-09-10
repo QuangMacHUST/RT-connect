@@ -126,3 +126,9 @@ rechecked for exact commit SHA, schema revision and successful deployment.
 P11 parity evidence checkpoint (2026-09-10): the preceding exact-SHA public
 candidate was `907b9d256d221e628a7d5e0b2b578c52b7dd6c14`; the next commit
 carrying this marker is intentionally a fresh three-service rebuild candidate.
+
+P11 browser evidence follow-up marker (2026-09-10): commit `753ba517604feee5b1694518e18abb8ceb6c9584`
+contains the current read-only consumer evidence. This watched-file marker forces
+the API service to rebuild when the evidence is committed at repository root; do
+not call that evidence the current candidate until API, worker and web report the
+same full source SHA.
