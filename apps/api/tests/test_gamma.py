@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
@@ -10,6 +11,8 @@ from fastapi.testclient import TestClient
 
 from rt_connect_api.api.artifacts import _storage as artifact_storage
 from rt_connect_api.api.gamma import _storage as gamma_storage
+from rt_connect_api.api.gamma import _validate_coordinate_frames
+from rt_connect_api.core.errors import DomainError
 from rt_connect_api.services.gamma_engine import (
     GammaConfiguration,
     GammaEngineError,
@@ -148,6 +151,66 @@ def test_gamma_engine_rejects_mismatched_coordinate_frames(tmp_path: Path) -> No
         )
 
     assert error.value.code == "GAMMA_INPUT_INCOMPATIBLE"
+
+
+def test_gamma_api_preflight_rejects_mismatched_transform() -> None:
+    identity = {
+        "basis": "PATIENT_LPS",
+        "frame_id": "frame-1",
+        "axis_order": ["y", "x"],
+        "transform_to_reference": {
+            "direction": "SOURCE_TO_REFERENCE",
+            "units": "mm",
+            "matrix": [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+        },
+    }
+    translated = json.loads(json.dumps(identity))
+    translated["transform_to_reference"]["matrix"][0][3] = 1.0
+    reference = SimpleNamespace(
+        artifact_type="MEASUREMENT",
+        modality=None,
+        frame_of_reference_uid=None,
+        sha256="a" * 64,
+        metadata_snapshot={"coordinate_frame": identity},
+    )
+    evaluation = SimpleNamespace(
+        artifact_type="MEASUREMENT",
+        modality=None,
+        frame_of_reference_uid=None,
+        sha256="b" * 64,
+        metadata_snapshot={"coordinate_frame": translated},
+    )
+
+    with pytest.raises(DomainError) as error:
+        _validate_coordinate_frames(reference, evaluation)
+
+    assert error.value.code == "GAMMA_INPUT_INCOMPATIBLE"
+    assert error.value.details[0]["field"] == "coordinate_frame.transform_to_reference"
+
+
+def test_gamma_api_rejects_missing_measurement_transform() -> None:
+    frame = {
+        "basis": "IEC_PHANTOM",
+        "frame_id": "phantom-1",
+        "axis_order": ["y", "x"],
+    }
+    artifact = SimpleNamespace(
+        artifact_type="MEASUREMENT",
+        modality=None,
+        frame_of_reference_uid=None,
+        sha256="a" * 64,
+        metadata_snapshot={"coordinate_frame": frame},
+    )
+
+    with pytest.raises(DomainError) as error:
+        _validate_coordinate_frames(artifact, artifact)
+
+    assert error.value.code == "GAMMA_COORDINATE_FRAME_INVALID"
 
 
 def test_gamma_engine_does_not_mix_legacy_grid_with_explicit_frame(tmp_path: Path) -> None:

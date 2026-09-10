@@ -3,6 +3,13 @@
 Revision hiện hành: `business-analysis.md` v0.25, `specification.md` v1.26,
 `technical-specification.md` v1.25 và `plan.md` v4.21.
 
+## P08 — API transform/provenance fail-closed regression — local verified — 2026-09-11
+
+- Bổ sung preflight kiểm tra `transform_to_reference` trước khi enqueue: ma trận 4×4 phải finite, đúng hướng/đơn vị, và transform của reference/evaluation phải giống nhau trong sai số `1e-9`. RTDOSE DICOM native được biểu diễn rõ bằng identity transform; transform non-identity vẫn fail-closed vì chưa có adapter đã kiểm thử.
+- Bổ sung kiểm tra provenance SHA-256 ở engine: giá trị phải là chuỗi 64 ký tự hexadecimal, không chấp nhận chuỗi bất kỳ chỉ có độ dài 64.
+- Regression test cho transform mismatch và measurement thiếu transform đều fail đúng mã lỗi. Focused Gamma/DICOM/artifact/worker: **30/30 PASS**; Ruff và strict mypy: **PASS**. Full backend được chạy trong lúc worktree dirty và chỉ còn các test release-manifest cố ý chặn với `WORKING_TREE_DIRTY`; sẽ xác nhận lại release gate sau khi commit trên worktree sạch.
+- Đây vẫn chỉ là local implementation evidence. Không upload thêm fixture RTDOSE, không tạo Gamma run mới và không nâng P08/P20 thành DONE; các gate staging geometry-negative, worker fault/retry/resource, oracle promotion, release và clinical readiness vẫn mở theo `plan.md`.
+
 ## P20-W01/P08 — staging parity after P8 implementation candidate — verified checkpoint — 2026-09-11 / `d64e64b`
 
 - Sau khi push candidate `d64e64ba5ac2f17b91d35c231a70092a81101a9c` lên nhánh `codex/p4-org-site-machine`, API và web staging đã phục vụ đúng candidate đó; API `/api/v1/health`, `/api/v1/ready`, `/api/v1/version` đều trả hợp lệ, schema `20260909_0019` giữ đúng. Đây là checkpoint trước commit docs tiếp theo `20d34ba`.

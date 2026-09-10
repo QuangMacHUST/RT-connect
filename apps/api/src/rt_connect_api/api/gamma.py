@@ -36,6 +36,7 @@ from rt_connect_api.db.session import get_session
 from rt_connect_api.security.supabase_jwt import AuthenticatedIdentity, require_identity
 from rt_connect_api.services.gamma_engine import (
     ENGINE_VERSION,
+    IDENTITY_TRANSFORM,
     GammaEngineError,
     calculate_gamma_from_paths,
 )
@@ -333,8 +334,54 @@ def _coordinate_frame_summary(artifact: Artifact) -> Mapping[str, object] | None
             "basis": "PATIENT_LPS",
             "frame_id": artifact.frame_of_reference_uid.strip(),
             "axis_order": axis_order,
+            # A validated RTDOSE has native patient coordinates.  Make that
+            # identity explicit so it can be compared with a measurement
+            # carrying the same identity transform.
+            "transform_to_reference": {
+                "direction": "SOURCE_TO_REFERENCE",
+                "units": "mm",
+                "matrix": [
+                    list(IDENTITY_TRANSFORM[index : index + 4]) for index in range(0, 16, 4)
+                ],
+                "source": {
+                    "type": "dicom-native",
+                    "version": "DICOM-RTDOSE",
+                    "sha256": artifact.sha256,
+                },
+            },
         }
     return None
+
+
+def _transform_signature(
+    artifact: Artifact, frame: Mapping[str, object]
+) -> tuple[float, ...] | None:
+    """Return a normalized transform, treating only native RTDOSE as identity."""
+
+    raw = frame.get("transform_to_reference")
+    if raw is None:
+        if artifact.artifact_type == "DICOM" and artifact.modality == "RTDOSE":
+            return IDENTITY_TRANSFORM
+        return None
+    if not isinstance(raw, Mapping):
+        return None
+    if raw.get("direction") != "SOURCE_TO_REFERENCE" or raw.get("units") != "mm":
+        return None
+    matrix = raw.get("matrix")
+    if not isinstance(matrix, list) or len(matrix) != 4:
+        return None
+    values: list[float] = []
+    for row in matrix:
+        if not isinstance(row, list) or len(row) != 4:
+            return None
+        for value in row:
+            if isinstance(value, bool) or not isinstance(value, int | float):
+                return None
+            number = float(value)
+            if not math.isfinite(number):
+                return None
+            values.append(number)
+    return tuple(values)
 
 
 def _validate_coordinate_frames(reference: Artifact, evaluation: Artifact) -> None:
@@ -374,6 +421,25 @@ def _validate_coordinate_frames(reference: Artifact, evaluation: Artifact) -> No
     evaluation_id = evaluation_frame.get("frame_id")
     reference_axis = reference_frame.get("axis_order")
     evaluation_axis = evaluation_frame.get("axis_order")
+    reference_transform = _transform_signature(reference, reference_frame)
+    evaluation_transform = _transform_signature(evaluation, evaluation_frame)
+    if reference_transform is None or evaluation_transform is None:
+        raise DomainError(
+            "GAMMA_COORDINATE_FRAME_INVALID",
+            "Both Gamma inputs must provide a valid transform to the comparison frame.",
+            422,
+            details=[
+                {
+                    "field": label,
+                    "message": "transform_to_reference is missing or invalid.",
+                }
+                for label, transform in (
+                    ("reference.coordinate_frame.transform_to_reference", reference_transform),
+                    ("evaluation.coordinate_frame.transform_to_reference", evaluation_transform),
+                )
+                if transform is None
+            ],
+        )
     if (
         reference_basis != evaluation_basis
         or reference_id != evaluation_id
@@ -390,6 +456,21 @@ def _validate_coordinate_frames(reference: Artifact, evaluation: Artifact) -> No
                         "Use the same physical basis, frame identifier and axis order, "
                         "or provide a tested adapter."
                     ),
+                }
+            ],
+        )
+    if len(reference_transform) != len(evaluation_transform) or any(
+        not math.isclose(left, right, rel_tol=0, abs_tol=1e-9)
+        for left, right in zip(reference_transform, evaluation_transform, strict=True)
+    ):
+        raise DomainError(
+            "GAMMA_INPUT_INCOMPATIBLE",
+            "Reference and evaluation transforms to the comparison frame do not match.",
+            422,
+            details=[
+                {
+                    "field": "coordinate_frame.transform_to_reference",
+                    "message": "Use the same tested transform or provide a supported adapter.",
                 }
             ],
         )

@@ -179,7 +179,12 @@ def _parse_transform_to_reference(value: object, field: str) -> tuple[float, ...
                 "GAMMA_COORDINATE_FRAME_INVALID",
                 f"{field}.source.{key} is required for transform provenance.",
             )
-    if len(str(source.get("sha256"))) != 64:
+    source_sha256 = source.get("sha256")
+    if (
+        not isinstance(source_sha256, str)
+        or len(source_sha256) != 64
+        or any(character not in "0123456789abcdefABCDEF" for character in source_sha256)
+    ):
         raise GammaEngineError(
             "GAMMA_COORDINATE_FRAME_INVALID",
             f"{field}.source.sha256 must be a SHA-256 hex string.",
