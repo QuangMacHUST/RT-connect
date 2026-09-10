@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import re
 import tempfile
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -81,6 +82,7 @@ class DownloadResponse(BaseModel):
     artifact_id: UUID
     url: str
     expires_at: datetime
+    filename: str
 
 
 class ValidationRunResponse(BaseModel):
@@ -130,6 +132,24 @@ def _storage(request: Request) -> ObjectStorage:
 
 def _context(identity: AuthenticatedIdentity, session: Session) -> SessionContext:
     return resolve_session_context(session, identity)
+
+
+def _artifact_download_filename(artifact: Artifact) -> str:
+    """Return an original-looking filename that is safe for a response header.
+
+    The original filename is user supplied and must never be copied verbatim
+    into ``Content-Disposition``.  Keep the useful basename/extension while
+    removing path separators, quotes and control characters.  A deterministic
+    UUID fallback makes the response usable even for an empty or malformed
+    legacy filename.
+    """
+
+    raw = str(artifact.original_filename or "")
+    basename = re.split(r"[\\/]", raw)[-1]
+    basename = re.sub(r"[\x00-\x1f\x7f\r\n\"]", "_", basename).strip()
+    if not basename or basename in {".", ".."}:
+        basename = f"rt-connect-artifact-{artifact.id}"
+    return basename[:512]
 
 
 def _identity_id(session: Session, subject: str) -> UUID | None:
@@ -528,9 +548,14 @@ def get_download_url(
 ) -> DownloadResponse:
     context = _context(identity, session)
     artifact = _artifact_or_error(session, context, artifact_id)
+    filename = _artifact_download_filename(artifact)
     try:
         url = storage.presigned_get(
-            artifact.object_key, request.app.state.settings.s3_signed_url_ttl_seconds
+            artifact.object_key,
+            request.app.state.settings.s3_signed_url_ttl_seconds,
+            response_headers={
+                "response-content-disposition": f'attachment; filename="{filename}"'
+            },
         )
     except ObjectStorageError as exc:
         raise DomainError(
@@ -539,7 +564,12 @@ def get_download_url(
     expires_at = datetime.now(UTC) + timedelta(
         seconds=request.app.state.settings.s3_signed_url_ttl_seconds
     )
-    return DownloadResponse(artifact_id=artifact.id, url=url, expires_at=expires_at)
+    return DownloadResponse(
+        artifact_id=artifact.id,
+        url=url,
+        expires_at=expires_at,
+        filename=filename,
+    )
 
 
 @router.post("/artifacts/{artifact_id}/validate", response_model=ValidationRunResponse)

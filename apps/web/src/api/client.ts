@@ -1595,9 +1595,9 @@ export class ApiClient {
     }), accessToken, { method: 'POST' })
   }
 
-  downloadArtifact(accessToken: string, artifactId: string): Promise<{ artifact_id: string; url: string; expires_at: string }> {
+  downloadArtifact(accessToken: string, artifactId: string): Promise<{ artifact_id: string; url: string; expires_at: string; filename: string }> {
     return this.get(`/artifacts/${artifactId}/download`, z.object({
-      artifact_id: z.string().uuid(), url: z.string(), expires_at: z.string()
+      artifact_id: z.string().uuid(), url: z.string(), expires_at: z.string(), filename: z.string()
     }), accessToken)
   }
 

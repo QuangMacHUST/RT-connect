@@ -1,7 +1,14 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
-Revision hiện hành: `business-analysis.md` v0.26, `specification.md` v1.27,
-`technical-specification.md` v1.26 và `plan.md` v4.23.
+Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.28,
+`technical-specification.md` v1.27 và `plan.md` v4.24.
+
+## P06 — signed artifact download filename contract — local verified — 2026-09-11 / current worktree
+
+- API `GET /api/v1/artifacts/{artifact_id}/download` hiện trả thêm `filename` và truyền `response-content-disposition` vào signed URL. Filename được lấy ở basename, loại bỏ path separator, quote, CR/LF và control character; filename rỗng/hỏng dùng fallback xác định từ artifact ID. Object key, bytes và SHA-256 không thay đổi.
+- Regression `apps/api/tests/test_artifacts.py` đạt **7/7 PASS**, gồm filename bình thường, filename multipart có ký tự nguy hiểm và header readback trên in-memory storage. OpenAPI đã được sinh lại để schema `DownloadResponse` yêu cầu `filename`; frontend client đã validate trường này.
+- Ruff, strict mypy, frontend lint, typecheck và Vitest **8 files / 19 tests** đã PASS trong slice này. Full backend suite cần chạy lại sau khi commit để release-manifest test không còn cố ý chặn vì `WORKING_TREE_DIRTY`.
+- Đây là `LOCAL_VERIFIED_SLICE`, chưa đóng P06-W04/P06-VERIFY/P06-HANDOFF. Staging cần deploy đúng commit rồi đọc lại response header, tải fixture RTDOSE đã tồn tại và re-hash byte; không upload thêm fixture, không tạo Gamma run mới và không chạm production trong checkpoint này. Tham chiếu kế hoạch: `plan.md v4.24`.
 
 ## P01 — clean Docker foundation re-verification — local verified — 2026-09-11 / `7d0cd51`
 

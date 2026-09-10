@@ -148,6 +148,11 @@ def test_upload_manifest_validate_and_duplicate_are_organization_scoped() -> Non
         download = client.get(f"/api/v1/artifacts/{artifact['id']}/download")
         assert download.status_code == 200
         assert download.json()["url"].startswith("memory://artifact/")
+        assert download.json()["filename"] == "synthetic-ct.dcm"
+        assert (
+            storage.last_presigned_response_headers["response-content-disposition"]
+            == 'attachment; filename="synthetic-ct.dcm"'
+        )
 
         duplicate = client.post(
             f"/api/v1/qa-cases/{case_id}/artifacts",
@@ -237,6 +242,40 @@ def test_declared_json_rejects_a_real_dicom_payload() -> None:
         body = validation.json()
         assert body["result"] == "INVALID"
         assert any(item["code"] == "ARTIFACT_TYPE_MISMATCH" for item in body["errors"])
+
+
+def test_download_filename_is_basename_and_header_safe() -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+        uploaded = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={
+                "file": (
+                    "..\\secret\"\r\nname.dcm",
+                    _ct_bytes(),
+                    "application/dicom",
+                )
+            },
+            data={"artifact_type": "DICOM", "logical_role": "REFERENCE"},
+        )
+        assert uploaded.status_code == 201, uploaded.text
+
+        download = client.get(f"/api/v1/artifacts/{uploaded.json()['id']}/download")
+        assert download.status_code == 200, download.text
+        filename = download.json()["filename"]
+        # Starlette percent-encodes control characters in the multipart
+        # filename before the application sees them.  The important contract
+        # is that the emitted value remains a single safe basename and never
+        # reintroduces raw header-breaking characters.
+        assert filename == "secret%22%0D%0Aname.dcm"
+        assert "\\" not in filename and '"' not in filename
+        assert "\r" not in filename and "\n" not in filename
+        assert (
+            storage.last_presigned_response_headers["response-content-disposition"]
+            == 'attachment; filename="secret%22%0D%0Aname.dcm"'
+        )
 
 
 def test_upload_commit_failure_compensates_object_storage(monkeypatch) -> None:

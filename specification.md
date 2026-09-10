@@ -1,10 +1,10 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.27**; ngày 2026-09-11.
-- Nguồn nghiệp vụ: business-analysis.md v0.26.
-- Kế hoạch triển khai: plan.md v4.23, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.26.
-- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.26 giữ toàn bộ contract v1.25, bổ sung P8 coordinate-frame/axis-order/explicit-transform contract, compatibility preflight giữa RTDOSE và measurement, identity-transform capability hiện tại và các lỗi fail-closed tương ứng. P11 consumer snapshot `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/capability/rule lineage, archive semantics và fail-closed khi snapshot lệch vẫn được giữ; UI phải hiển thị metadata đã pin và workflow thường không seed synthetic. P9 bổ sung quy tắc namespace idempotency phía client phải thay đổi khi renderer hoặc schema export đổi; server vẫn dùng fingerprint gồm revision, format, render options và renderer version làm authority, để deploy renderer mới không bị replay nhầm export cũ hoặc tạo conflict giả khi người dùng tải lại trang. Các contract Trend query budget, Machine QA explicit N/A, malformed Redis dispatch, peak RSS/resource/API responsiveness P17 và P4 membership/invitation vẫn được giữ nguyên.
+- File: specification.md; version **1.28**; ngày 2026-09-11.
+- Nguồn nghiệp vụ: business-analysis.md v0.27.
+- Kế hoạch triển khai: plan.md v4.24, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.27.
+- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.28 giữ toàn bộ contract v1.27, bổ sung hợp đồng tên file khi tải artifact: API trả filename dạng basename an toàn, signed URL yêu cầu `Content-Disposition` an toàn, và filename không thay thế byte/checksum trong kiểm chứng round-trip. Bản 1.27 giữ P8 coordinate-frame/axis-order/explicit-transform contract, compatibility preflight giữa RTDOSE và measurement, identity-transform capability hiện tại và các lỗi fail-closed tương ứng. P11 consumer snapshot `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/capability/rule lineage, archive semantics và fail-closed khi snapshot lệch vẫn được giữ; UI phải hiển thị metadata đã pin và workflow thường không seed synthetic. P9 bổ sung quy tắc namespace idempotency phía client phải thay đổi khi renderer hoặc schema export đổi; server vẫn dùng fingerprint gồm revision, format, render options và renderer version làm authority, để deploy renderer mới không bị replay nhầm export cũ hoặc tạo conflict giả khi người dùng tải lại trang. Các contract Trend query budget, Machine QA explicit N/A, malformed Redis dispatch, peak RSS/resource/API responsiveness P17 và P4 membership/invitation vẫn được giữ nguyên.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
 
@@ -709,6 +709,8 @@ Local source đã có model/API/migration `20260909_0018`, frontend client, orga
 **Failure contract:** FILE_REQUIRED_OR_EMPTY; UPLOAD_TOO_LARGE; UPLOAD_INTERRUPTED; ARTIFACT_PERSISTENCE_FAILED; ARTIFACT_TYPE_MISMATCH; INPUT_METADATA_INVALID; DOWNLOAD_LINK_EXPIRED. Đây là taxonomy target; mapping sang error codes thực tế phải được ghi trong contract test trước khi triển khai.
 
 **P06-W01 implementation note (2026-09-10):** Khi object đã được ghi nhưng transaction tạo `Artifact` và `InputManifest` không commit, API phải rollback database rồi gọi compensation delete cho đúng object key. Nếu delete thành công, API giữ nguyên lỗi gốc và không để lại artifact metadata; nếu delete thất bại, API trả `ARTIFACT_PERSISTENCE_FAILED` (HTTP 503) để đưa object vào luồng reconciliation, không báo upload thành công. Đây là local implementation evidence; retention/reconciliation provider và staging fault injection vẫn là gate riêng trong plan.
+
+**P06-W04 filename/download addendum (2026-09-11):** `GET /artifacts/{artifact_id}/download` phải trả `artifact_id`, `url`, `expires_at` và `filename`. Adapter signed URL phải truyền `response-content-disposition` với giá trị `attachment; filename="<safe-basename>"`; safe-basename được tách khỏi path, loại bỏ quote/control characters/CR/LF và có fallback xác định khi filename trống hoặc legacy không hợp lệ. Không thay đổi object key, artifact checksum hoặc bytes nguồn để đạt mục tiêu này. Client phải validate trường `filename` theo OpenAPI. Mỗi lần gọi endpoint phải cấp URL mới sau khi kiểm tra organization/case scope; link hết hạn là lỗi download cần renewal, không phải lý do upload lại. Đây là contract đã có local test; staging cần revalidate header và byte/hash round-trip.
 
 <a id="spec-p07"></a>
 
@@ -1776,7 +1778,7 @@ Không được gọi operation là `COMPLETED` nếu chưa có output bền v�
 4. **Trend:** chỉ aggregate các source có compatibility signature; điểm thiếu không được biến thành zero; drill-down phải quay về source run/case đúng organization.
 5. **Public deployment:** web/API/worker/schema/Auth/queue phải được kiểm theo cùng release manifest; PostgreSQL, Redis, worker và object bucket private theo topology; URL public không chứng minh workflow đã pass.
 
-## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.27
+## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.28
 
 Phần này biến các contract theo phase thành cấu trúc có thể dùng khi viết code, test và bàn giao. Nó không thay thế các field/algorithm contract ở mục 2–8; nó quy định cách chứng minh rằng các contract đó đã được thực thi trên một candidate cụ thể.
 

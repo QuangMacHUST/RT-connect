@@ -1955,6 +1955,10 @@
             "title": "Expires At",
             "type": "string"
           },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
           "url": {
             "title": "Url",
             "type": "string"
@@ -1963,7 +1967,8 @@
         "required": [
           "artifact_id",
           "url",
-          "expires_at"
+          "expires_at",
+          "filename"
         ],
         "title": "DownloadResponse",
         "type": "object"
@@ -5682,6 +5687,24 @@
           }
         },
         "title": "MachinePatchRequest",
+        "type": "object"
+      },
+      "MachineQAEvaluateRequest": {
+        "properties": {
+          "expected_revision": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          }
+        },
+        "title": "MachineQAEvaluateRequest",
         "type": "object"
       },
       "MachineQARunCreateRequest": {
@@ -11254,6 +11277,23 @@
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/MachineQAEvaluateRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Payload"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "content": {

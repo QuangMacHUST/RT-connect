@@ -3,8 +3,8 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.26 — đồng bộ specification.md v1.27, plan.md v4.23 và business-analysis.md v0.26; bổ sung P8 coordinate-frame/axis-order/explicit-transform contract, compatibility preflight giữa RTDOSE và measurement, provenance và identity-transform capability hiện tại; bổ sung P11 consumer snapshot `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/revision/lineage/rule reference/capability và fail-closed mismatch sau khi protocol lifecycle thay đổi; bổ sung UI source panel đọc snapshot và loại seed synthetic khỏi workflow thường. Giữ source-identifiable release metadata từ Railway Git SHA cho API/web, process-RSS/resource-policy/API-responsiveness evidence cho P17 Docker workload đồng thời, export-content evidence và targeted direct PostgreSQL row/checksum/scope evidence; giữ Machine QA explicit N/A, P10 Trend query-budget/count-preflight/bucket-export, P4 membership/invitation và status/readiness P20 (2026-09-11). P17 giữ migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`, song song ORM guard và negative mutation test. P8 giữ independent Gamma oracle runner/evidence cho synthetic 2D/3D profile coverage, staging RTDOSE + measurement browser smoke và malformed Redis dispatch quarantine trước ACK. P9 render contract hiện hành là `report-renderer-0.2`, dùng `fonttools==4.63.0` và asset `DejaVuSans.ttf` được đóng gói để PDF Unicode không rơi về glyph thay thế; mọi thay đổi renderer phải lặp lại payload/hash và visual inspection trên staging. Client export phải dùng namespace idempotency tương thích renderer/export contract; server fingerprint là authority và không được nuốt conflict. P12 report integration nhận diện `BIOLOGICAL` source theo organization-scoped scenario/revision và lưu immutable source snapshot trước khi Report Builder hiển thị. P06 ghi nhận content/hash round-trip của fixture RTDOSE và phân biệt filename completion với tính đúng byte nội dung.
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.26
+- **Phiên bản:** 1.27 — đồng bộ specification.md v1.28, plan.md v4.24 và business-analysis.md v0.27; bổ sung P06 signed-download filename contract: basename/header sanitization, response `filename`, response-content-disposition và invariant byte/checksum/object key; giữ P8 coordinate-frame/axis-order/explicit-transform contract, compatibility preflight giữa RTDOSE và measurement, provenance và identity-transform capability hiện tại; bổ sung P11 consumer snapshot `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/revision/lineage/rule reference/capability và fail-closed mismatch sau khi protocol lifecycle thay đổi; bổ sung UI source panel đọc snapshot và loại seed synthetic khỏi workflow thường. Giữ source-identifiable release metadata từ Railway Git SHA cho API/web, process-RSS/resource-policy/API-responsiveness evidence cho P17 Docker workload đồng thời, export-content evidence và targeted direct PostgreSQL row/checksum/scope evidence; giữ Machine QA explicit N/A, P10 Trend query-budget/count-preflight/bucket-export, P4 membership/invitation và status/readiness P20 (2026-09-11). P17 giữ migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`, song song ORM guard và negative mutation test. P8 giữ independent Gamma oracle runner/evidence cho synthetic 2D/3D profile coverage, staging RTDOSE + measurement browser smoke và malformed Redis dispatch quarantine trước ACK. P9 render contract hiện hành là `report-renderer-0.2`, dùng `fonttools==4.63.0` và asset `DejaVuSans.ttf` được đóng gói để PDF Unicode không rơi về glyph thay thế; mọi thay đổi renderer phải lặp lại payload/hash và visual inspection trên staging. Client export phải dùng namespace idempotency tương thích renderer/export contract; server fingerprint là authority và không được nuốt conflict. P12 report integration nhận diện `BIOLOGICAL` source theo organization-scoped scenario/revision và lưu immutable source snapshot trước khi Report Builder hiển thị.
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.27
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
@@ -1204,6 +1204,35 @@ secret hay raw token trong error/log.
 | POST | /artifacts/{id}/validate | Chạy validation |
 | GET | /artifacts/{id}/validations | Xem validation history |
 | GET | /artifacts/{id}/manifest | Xem metadata DICOM/measurement đã chuẩn hóa |
+
+#### 6.4.1. Signed artifact download filename
+
+Endpoint `GET /artifacts/{id}/download` không trả bytes trực tiếp; endpoint kiểm tra
+organization/case scope rồi phát một signed URL có thời hạn. Adapter object storage
+phải nhận thêm response parameters để provider trả header:
+
+```text
+Content-Disposition: attachment; filename="<safe-basename>"
+```
+
+Quy tắc bắt buộc:
+
+1. `filename` trong response API là basename được chuẩn hóa từ
+   `Artifact.original_filename`; không giữ `/`, `\\`, quote, CR/LF hoặc control
+   characters do người dùng cung cấp.
+2. Filename không được dùng để tạo object key, xác định artifact, kiểm tra integrity
+   hoặc thay thế SHA-256. Object key, artifact ID, byte count và bytes tải xuống giữ
+   nguyên như artifact đã commit.
+3. Nếu filename rỗng, chỉ là path, hoặc không còn hợp lệ trong dữ liệu legacy, adapter
+   dùng fallback xác định từ artifact ID để mọi lần renewal cho cùng artifact trả cùng
+   tên logic.
+4. `DownloadResponse` phải có `artifact_id`, `url`, `expires_at` và `filename`; client
+   validate theo OpenAPI nhưng không tự suy diễn thành công chỉ từ HTTP 200.
+5. Mỗi request download tạo URL mới sau khi scope check. Khi URL hết hạn, client gọi
+   lại endpoint để renewal, không upload lại artifact và không thay đổi metadata.
+6. InMemory, MinIO/S3-compatible và adapter production phải cùng nhận/ghi nhận
+   `response_headers`; test contract phải chứng minh header không chứa dữ liệu phá
+   vỡ HTTP và filename không làm thay đổi checksum/bytes.
 
 ### 6.5. QA analysis
 
