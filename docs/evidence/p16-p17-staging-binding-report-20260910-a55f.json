@@ -1,0 +1,107 @@
+{
+  "schema_version": "rt-connect.p16-p17-binding-report-browser.v1",
+  "captured_at_utc": "2026-09-10T05:08:42Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_MUTATION_AND_READBACK",
+  "environment": "staging",
+  "source_commit_observed": "a55f7cc8156bcc2eb5be41414b619c9789240245",
+  "web_build_label_observed": "a55f7cc8156bcc2eb5be41414b619c9789240245",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "data_boundary": "Only repository-generated synthetic data was used. No patient, PACS or treatment dataset was used.",
+  "p16_library_entry": {
+    "entry_key": "STAGING_P16_D95_20260910",
+    "entry_type": "DOSE_LIMIT",
+    "version_number": 1,
+    "revision_after_publish": 2,
+    "status": "PUBLISHED",
+    "reference_status": "UNVERIFIED",
+    "source_type": "USER_DEFINED",
+    "metric_key": "D95",
+    "operator": "MIN",
+    "limit_value": 5.0,
+    "unit": "Gy",
+    "content_sha256": "818d74572b3ca7eb6c1f8ccd43721448a99dfa8488dcaac774ba1b9f9adde85b",
+    "entry_id_observed_in_p17": "f26d0724-712a-4e44-b113-99705621977c",
+    "applicability": {
+      "diseases": ["Synthetic QA context"],
+      "subtypes": ["Synthetic known-answer fixture"],
+      "anatomy_sites": ["P17_TARGET"],
+      "intents": ["Synthetic validation"],
+      "techniques": ["SYNTHETIC"],
+      "tissue_or_oars": ["P17_TARGET"],
+      "metric_keys": ["D95"],
+      "units": ["Gy"],
+      "fractions": [1]
+    },
+    "validation": {
+      "invalid_attempt_correctly_rejected": true,
+      "invalid_attempt_code": "KNOWLEDGE_APPLICABILITY_INVALID",
+      "valid_validate_only": true,
+      "validate_only_mutated_database": false
+    }
+  },
+  "p16_use_snapshot": {
+    "target_tool": "P17_DVH",
+    "override": {},
+    "override_label": "SOURCE_VALUES",
+    "snapshot_sha256_prefix": "a202110cf382901f5dd8",
+    "auto_applied": false
+  },
+  "p17_dvh_run": {
+    "run_id": "d8230d1d-badd-4c0c-b044-dcc4434215a6",
+    "status": "COMPLETED",
+    "engine_version": "p17-dvh-1.1.0",
+    "dose_artifact": "gamma-rtdose-v1-smoke.dcm",
+    "dose_sha256_prefix": "ca5c9168eb9b",
+    "structure_artifact": "p17-rtstruct-v1-smoke.dcm",
+    "structure_sha256_prefix": "16a79df31297",
+    "coverage": "FULL",
+    "roi_number": 1,
+    "roi_name": "P17_TARGET",
+    "d95_actual_gy": 5.2,
+    "limit": "MIN 5 Gy",
+    "margin_gy": 0.2,
+    "rule_status": "REVIEW_REQUIRED",
+    "binding": {
+      "source_kind": "BIOLOGICAL_LIBRARY",
+      "source_id": "f26d0724-712a-4e44-b113-99705621977c",
+      "explicit_selection": true,
+      "auto_applied": false,
+      "reference_status_warning": "DVH_LIMIT_REFERENCE_UNVERIFIED"
+    },
+    "warnings": [
+      "No CT was supplied; DVH is calculated on the dose-native grid and is not an anatomy overlay.",
+      "The selected limit source is not marked AVAILABLE in the library."
+    ],
+    "input_fingerprint": "8f525a5e74545854f0a53a743c0061ffbd8adee17ecc6da88de4486f0c9abf2a",
+    "result_sha256": "cf2799b8afeafa68cf60a330eac9adff123cca5c7ceacfc0eab78132b0c0359c",
+    "history_after_save": 2,
+    "no_qa_run_or_patient_linkage": true
+  },
+  "p9_report": {
+    "title": "P17 staging bound DVH report",
+    "source_type": "DVH",
+    "source_run_id": "d8230d1d-badd-4c0c-b044-dcc4434215a6",
+    "revision": 1,
+    "report_id_prefix": "3b51b1db",
+    "snapshot_sha256": "2599b891dbe42eedbc69e8889a368ee8359586076c8833e8e474cf57c195cb5c",
+    "block_count": 5,
+    "custom_blocks": [
+      "TEXT",
+      "METRICS",
+      "PROVENANCE",
+      "DVH",
+      "WARNING"
+    ],
+    "source_snapshot_is_run_pinned": true,
+    "report_revision_created_without_rerunning_dvh": true
+  },
+  "result": "PASS_WITH_INTENTIONAL_REVIEW_REQUIRED",
+  "open_gates": [
+    "direct PostgreSQL row/checksum/scope probe for this newly created library entry and DVH run",
+    "report export byte/final-filename verification",
+    "full P17 negative/fault/resource/volume matrix",
+    "independent oracle promotion and release manifest",
+    "P18 integrated release and P19 production promotion"
+  ]
+}

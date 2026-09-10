@@ -3,6 +3,14 @@
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 `technical-specification.md` v1.23 và `plan.md` v4.15.
 
+## P16 → P17 → P9 explicit binding/report — staging verified — 2026-09-10 / `a55f7cc`
+
+- Trên staging, đã dùng dữ liệu tổng hợp để tạo P16 `DOSE_LIMIT` entry `STAGING_P16_D95_20260910`, validate-only đúng schema rồi lưu DRAFT và publish revision 2. Entry giữ `D95 MIN 5 Gy`, `USER_DEFINED · UNVERIFIED`, content SHA-256 `818d7457…`; một payload applicability sai đã bị từ chối bằng `KNOWLEDGE_APPLICABILITY_INVALID` trước khi validate thành công.
+- P16 không tự áp dụng vào calculator. Sau khi chọn rõ nguồn `P16 · DOSE_LIMIT đã publish`, P17 đã validate và lưu run `d8230d1d-badd-4c0c-b044-dcc4434215a6` trên case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`: `COMPLETED`, engine `p17-dvh-1.1.0`, ROI `#1 · P17_TARGET`, `D95=5.200 Gy`, limit `MIN 5 Gy`, margin `+0.200 Gy`, `explicit_selection=true`, `auto_applied=false`.
+- Vì source còn `UNVERIFIED` và không chọn CT, trạng thái đúng là `REVIEW_REQUIRED` cùng hai warning tương ứng; không nâng thành PASS và không coi đây là prescription/clinical approval. History tăng từ 1 lên 2, run có input fingerprint `8f525a5e…` và result SHA `cf2799b8…`.
+- P9 Report Builder đã lưu report revision 1 `P17 staging bound DVH report` từ đúng run mới, source type `DVH`, snapshot SHA `2599b891…`, 5 block tùy chỉnh (`TEXT`, `METRICS`, `PROVENANCE`, `DVH`, `WARNING`) và không rerun/mutate DVH. Evidence đầy đủ: `docs/evidence/p16-p17-staging-binding-report-20260910-a55f.json`.
+- Đây là staging authenticated mutation/readback slice PASS. Direct PostgreSQL probe cho entry/run mới, export byte/final filename, full negative/fault/resource matrix, independent oracle promotion, release manifest và production promotion vẫn mở.
+
 ## P11 consumer snapshot — local verified, staging open — 2026-09-10
 
 - Machine QA run mới pin `p11.protocol-snapshot.v1` ngay khi tạo hoặc rerun. Snapshot giữ protocol identity/family/version, `status_at_use`, revision, source type/reference/lineage, applicability, engine capability và toàn bộ rule/limit/action/reference snapshot.
