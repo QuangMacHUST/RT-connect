@@ -213,6 +213,18 @@ def test_gamma_api_rejects_missing_measurement_transform() -> None:
     assert error.value.code == "GAMMA_COORDINATE_FRAME_INVALID"
 
 
+def test_gamma_engine_rejects_non_hex_transform_provenance(tmp_path: Path) -> None:
+    payload = json.loads(_measurement_bytes("invalid-provenance", [1.0, 2.0, 3.0, 4.0]))
+    payload["coordinate_frame"]["transform_to_reference"]["source"]["sha256"] = "g" * 64
+    path = tmp_path / "invalid-provenance.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(GammaEngineError) as error:
+        load_measurement(path)
+
+    assert error.value.code == "GAMMA_COORDINATE_FRAME_INVALID"
+
+
 def test_gamma_engine_does_not_mix_legacy_grid_with_explicit_frame(tmp_path: Path) -> None:
     reference_path = tmp_path / "reference.json"
     evaluation_path = tmp_path / "evaluation.json"
