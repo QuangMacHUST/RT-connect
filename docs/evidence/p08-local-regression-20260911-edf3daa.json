@@ -1,16 +1,16 @@
 {
-  "evidence_id": "P08-LOCAL-REGRESSION-20260911-EDF3DAA",
+  "evidence_id": "P08-LOCAL-REGRESSION-20260911-8EA19F4",
   "phase": "P08",
   "work_packages": ["P08-W01", "P08-W02", "P08-W03", "P08-W04"],
   "status": "LOCAL_REGRESSION_VERIFIED",
   "captured_at": "2026-09-11",
-  "source_commit": "edf3daa",
+  "source_commit": "8ea19f4da5439439099dc4f4cc5f8fa741d672ed",
   "checks": [
     {
       "id": "gamma-focused-suite",
       "command": ".\\apps\\api\\.venv\\Scripts\\python.exe -m pytest apps\\api\\tests\\test_gamma.py apps\\api\\tests\\test_gamma_dicom.py apps\\api\\tests\\test_gamma_worker.py apps\\api\\tests\\test_gamma_independent_oracle.py -q",
       "exit_code": 0,
-      "observed": "20 tests passed"
+      "observed": "23 tests passed"
     },
     {
       "id": "independent-gamma-oracle",
@@ -28,6 +28,7 @@
   "covered": [
     "2D/3D deterministic Gamma golden result",
     "RTDOSE DICOM GY and DoseGridScaling adapter",
+    "RTDOSE non-axial orientation, unsupported dose unit and non-positive spacing rejection",
     "FULL_ROI and OVERLAP_ONLY coverage semantics",
     "max-gamma censoring and percentile warning",
     "PSQA input/profile preflight and resource limit",

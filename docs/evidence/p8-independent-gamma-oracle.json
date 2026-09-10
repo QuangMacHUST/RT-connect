@@ -1,6 +1,6 @@
 {
   "schema_version": "rt-connect.p8-independent-gamma-oracle.v1",
-  "captured_at_utc": "2026-09-10T20:21:09Z",
+  "captured_at_utc": "2026-09-10T20:26:46Z",
   "verification_level": "LOCAL_INDEPENDENT_ORACLE",
   "engine_version_observed": "gamma-nd-p8.2",
   "data_boundary": "Synthetic JSON fixtures and in-memory synthetic arrays only; no patient, PACS or treatment data.",
