@@ -2,7 +2,7 @@
 
 - File: specification.md; version **1.24**; ngày 2026-09-10.
 - Nguồn nghiệp vụ: business-analysis.md v0.24.
-- Kế hoạch triển khai: plan.md v4.15, P0–P20.
+- Kế hoạch triển khai: plan.md v4.19, P0–P20.
 - Kiến trúc nền: technical-specification.md v1.23.
 - Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.24 giữ toàn bộ contract v1.23, bổ sung consumer snapshot P11 `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/capability/rule lineage, archive semantics và fail-closed khi snapshot lệch; UI phải hiển thị metadata đã pin và workflow thường không seed synthetic. Các contract Trend query budget, Machine QA explicit N/A, malformed Redis dispatch, peak RSS/resource/API responsiveness P17 và P4 membership/invitation vẫn được giữ nguyên.
 

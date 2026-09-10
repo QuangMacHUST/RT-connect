@@ -1,7 +1,7 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
-`technical-specification.md` v1.23 và `plan.md` v4.18.
+`technical-specification.md` v1.23 và `plan.md` v4.19.
 
 ## P13 — staging BED/EQD2 calculation, immutable readback and export — partial verified — 2026-09-10 / `b712a383`
 
@@ -51,12 +51,13 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - P12-W04 report integration đã chạy: Report Builder lưu report `P12 Biological renderer staging` rev 1 với `source_type=BIOLOGICAL`, source ID `45550fa4-b635-4d9f-90bb-e0d2cd77c531`, block `BIOLOGICAL` và snapshot SHA-256 `f7867b11e05095c049dedf153f39db958828722b7761b185da223b53ff492ce0`; fresh readback giữ source/revision/block và hiển thị export JSON/CSV/PDF/PNG. Evidence: `docs/evidence/p12-staging-browser-20260910-e21ad4b.json`.
 - Đây là `STAGING_PARTIAL_PASS`, không phải `DONE-v2`: direct PostgreSQL row/checksum, cross-organization negative probe, đầy đủ S/E/C, resource/provider fault, release manifest và production/rollback vẫn mở. Không có patient data hoặc QA run mới.
 
-## P18 — local backup/restore bounded failure — blocked — 2026-09-10
+## P18 — local backup/restore support recheck — verified locally, staging gate open — 2026-09-10
 
 - `scripts/verify-local-backup-restore.py` đã được bổ sung timeout cho từng lệnh Docker Compose và cơ chế dừng process tree trên Windows. Mục đích là khi Docker CLI/daemon không phản hồi, verifier phải trả evidence có giới hạn thay vì treo vô hạn.
 - Lần chạy với `--command-timeout-seconds 10` trả về đúng `passed=false`; lỗi là `Docker Compose command timed out after 10s: ps --services --filter status=running`. `restore_database=null`, `restore_bucket=null`, không tạo restore resource và không có dump/object content được lưu. Evidence: `docs/evidence/p18-local-backup-restore-timeout-20260910.json`.
-- Đây là `LOCAL_BLOCKED`/bounded dependency failure, không phải backup/restore PASS. P18-W03a chỉ được nâng lên `LOCAL_VERIFIED` lại khi Docker Compose healthy và verifier tạo được dump, restore, row/object checksum equality cùng cleanup PASS; provider backup/restore, RPO/RTO staging/production và P18/P20 release gates vẫn mở.
-- Next exact action: khôi phục Docker CLI/daemon, chạy lại verifier với timeout mặc định, sau đó mới thiết lập provider restore drill và đo RPO/RTO trên môi trường được phép.
+- Sau khi Docker Desktop/Linux engine được khôi phục, chạy lại với `--command-timeout-seconds 30` đạt `passed=true`: dump `169,924` bytes, row counts/fingerprints khớp, object inventory nguồn/đích đều `0` và hash khớp, database/bucket tạm được cleanup. Evidence: `docs/evidence/p18-local-backup-restore-20260910.json`.
+- Evidence timeout trước đó vẫn giữ nguyên để chứng minh verifier fail-closed khi daemon không phản hồi: `docs/evidence/p18-local-backup-restore-timeout-20260910.json`.
+- Trạng thái hiện tại là `LOCAL_VERIFIED` cho P18-W03a support path; provider backup/restore, RPO/RTO staging/production, fault injection, pilot/regression, rollback và P18/P20 release gates vẫn mở. Next exact action là kiểm provider restore drill trên candidate được phép, không dùng local PASS để suy ra remote PASS.
 
 ## P10 Trend — baseline/maintenance lifecycle controls — local verified — 2026-09-10
 
