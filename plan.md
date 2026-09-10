@@ -1,6 +1,6 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
-- Phiên bản: **4.15**, ngày 2026-09-10.
+- Phiên bản: **4.16**, ngày 2026-09-10.
 - Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.24.
 - Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.24.
 - Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.23.
@@ -15,6 +15,8 @@
 > Follow-up P10 SQL preflight candidate `f4197d82bd287112d1aafae44088678cd967cecf` áp dụng context predicate ngay trong bounded source read, giữ fallback case/protocol cho projection cũ và vẫn chạy Python matcher cuối; public verifier 15/15, full backend 185/185. Evidence: `docs/evidence/p10-sql-filtered-preflight-20260910-f4197d8.json`.
 
 > Follow-up P11 consumer snapshot ngày 2026-09-10: run mới pin `p11.protocol-snapshot.v1` ngay khi tạo; snapshot giữ source/applicability/revision/lineage/capability và toàn bộ rule reference; evaluate sau archive vẫn đọc snapshot đã chấp nhận, mismatch fail-closed; Trend giữ `protocol_version_id`; Machine QA UI dẫn người dùng tới QA Protocol Library thay vì seed synthetic. Local evidence: `docs/evidence/p11-consumer-snapshot-20260910-local.json`. Candidate public `907b9d256d221e628a7d5e0b2b578c52b7dd6c14` đã được Railway rebuild đồng SHA cho API/web/worker và kiểm read-only qua API/web exact-SHA, schema `20260909_0019`, verifier `15/15`; evidence: `docs/evidence/p11-public-probe-907b9d2.json`, `docs/evidence/p11-railway-parity-20260910-907b9d2.json`. Candidate hiện hành `0e30ff1ba768494649d9ce6105dacac9c703a4d4` đã được public verifier kiểm exact SHA/schema `15/15` và browser read-only đã thấy source panel + consumer snapshot marker; evidence: `docs/evidence/p19-staging-public-smoke-20260910-0e30ff1.json`, `docs/evidence/p11-staging-consumer-browser-20260910.json`. Fresh create→evaluate→archive→old-history, complete S/E/C và release gates vẫn mở.
+
+> Operational update P18 ngày 2026-09-10: verifier local backup/restore đã được làm bounded theo từng lệnh Compose và dừng process tree trên Windows. Lần chạy `--command-timeout-seconds 10` bị chặn tại `ps --services --filter status=running` vì Docker CLI/daemon không trả lời; evidence `docs/evidence/p18-local-backup-restore-timeout-20260910.json` ghi `passed=false`, không có restore database/bucket. Đây là bằng chứng dependency failure có giới hạn, không được tính là restore PASS; phải khôi phục Docker rồi chạy lại trước khi đánh giá P18-W03a.
 
 ## 1. Cách thực hiện kế hoạch
 
@@ -1707,7 +1709,7 @@ JSON/CSV export hiện đã được capture, parse và hash đúng snapshot; tu
 - [x] P18-W01a — Local browser support matrix tại `apps/web/playwright.config.ts` trên commit `4f9028f`: Chromium desktop/mobile với timezone `Asia/Ho_Chi_Minh` và desktop UTC; `npm run test:e2e` đạt **3 passed**. Chỉ đóng phần local responsive/timezone support, không đóng authenticated tenant/dataset, remote browser hay production compatibility.
 - [ ] P18-W02 — Fault injection API/DB/Redis/storage/worker/renderer trên staging có restore plan.
 - [ ] P18-W03 — Backup database+objects+manifest, restore isolated và kiểm lineage/checksum.
-- [x] P18-W03a — Local backup/restore harness tại `scripts/verify-local-backup-restore.py`: PostgreSQL custom dump và MinIO object inventory được restore vào tài nguyên tạm, so sánh row/object SHA rồi dọn database/bucket; chỉ là `LOCAL_VERIFIED` support, chưa thay provider backup/restore staging.
+- [x] P18-W03a — Local backup/restore harness tại `scripts/verify-local-backup-restore.py`: PostgreSQL custom dump và MinIO object inventory được restore vào tài nguyên tạm, so sánh row/object SHA rồi dọn database/bucket; chỉ là `LOCAL_VERIFIED` support khi Docker Compose healthy, chưa thay provider backup/restore staging.
 - [ ] P18-W04 — Bug triage SEV0–3, regression before close, record limitations và candidate evidence.
 - [ ] P18-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P18-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
@@ -1722,7 +1724,7 @@ Chạy từ repository root sau khi local Compose PostgreSQL và MinIO đã heal
   --output docs/evidence/p18-local-backup-restore.json
 ~~~
 
-Verifier chỉ chấp nhận topology local Compose cố định, không nhận Railway/S3/database URL từ tham số. Nó tạo dump PostgreSQL tạm, copy object theo inventory SHA-256, restore vào database/bucket tạm, đối chiếu row counts và object bytes, rồi xóa đúng tài nguyên tạm trong `finally`. Evidence không lưu database dump, object content, secret hay dữ liệu bệnh nhân. Kết quả local ngày 2026-09-09: database row inventory PASS, object inventory `1 → 1` PASS, cleanup database/bucket PASS. Đây chưa phải evidence P18-W03 staging: vẫn cần Railway provider backup, isolated restore, RPO/RTO và lineage/checksum trên candidate thật.
+Verifier chỉ chấp nhận topology local Compose cố định, không nhận Railway/S3/database URL từ tham số. Nó tạo dump PostgreSQL tạm, copy object theo inventory SHA-256, restore vào database/bucket tạm, đối chiếu row counts và object bytes, rồi xóa đúng tài nguyên tạm trong `finally`. Mỗi lệnh Compose có timeout và trên Windows verifier dừng process tree khi timeout; vì vậy Docker dependency failure phải trả evidence `passed=false` thay vì treo. Evidence không lưu database dump, object content, secret hay dữ liệu bệnh nhân. Kết quả PASS lịch sử ngày 2026-09-09 là support evidence; lần recheck ngày 2026-09-10 bị chặn tại `docker compose ps` và được ghi ở `docs/evidence/p18-local-backup-restore-timeout-20260910.json`. Đây chưa phải evidence P18-W03 staging: vẫn cần khôi phục Docker, chạy lại local PASS, rồi kiểm provider backup, isolated restore, RPO/RTO và lineage/checksum trên candidate thật.
 
 ### Trường hợp chạy đúng P18
 

@@ -1,0 +1,59 @@
+{
+  "schema_version": "rt-connect.local-backup-restore.v1",
+  "captured_at_utc": "2026-09-10T11:49:36.153546Z",
+  "environment": "local-compose-only",
+  "compose_file": "docker-compose.yml",
+  "compose_command_timeout_seconds": 10.0,
+  "source_database": "rt_connect",
+  "restore_database": null,
+  "database_dump": {
+    "bytes": 0,
+    "sha256": null
+  },
+  "source_row_counts": {},
+  "restored_row_counts": {},
+  "source_object_count": 0,
+  "restored_object_count": 0,
+  "source_object_inventory_sha256": null,
+  "restored_object_inventory_sha256": null,
+  "passed": false,
+  "checks": [
+    {
+      "name": "database.row_inventory",
+      "ok": false,
+      "details": {
+        "source_counts_sha256": null,
+        "restored_counts_sha256": null,
+        "source_rows_sha256": null,
+        "restored_rows_sha256": null
+      }
+    },
+    {
+      "name": "object.inventory",
+      "ok": false,
+      "details": {
+        "source_count": 0,
+        "restored_count": 0,
+        "source_sha256": null,
+        "restored_sha256": null
+      }
+    },
+    {
+      "name": "disposable-resource-cleanup",
+      "ok": false,
+      "details": {
+        "restore_database": null,
+        "database_dropped": false,
+        "restore_bucket": null,
+        "bucket_removed": false
+      }
+    },
+    {
+      "name": "execution",
+      "ok": false,
+      "details": "Docker Compose command timed out after 10s: ps --services --filter status=running"
+    }
+  ],
+  "contains_patient_data": false,
+  "error": "Docker Compose command timed out after 10s: ps --services --filter status=running"
+}

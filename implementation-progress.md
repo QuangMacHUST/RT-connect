@@ -1,7 +1,14 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
-`technical-specification.md` v1.23 và `plan.md` v4.15.
+`technical-specification.md` v1.23 và `plan.md` v4.16.
+
+## P18 — local backup/restore bounded failure — blocked — 2026-09-10
+
+- `scripts/verify-local-backup-restore.py` đã được bổ sung timeout cho từng lệnh Docker Compose và cơ chế dừng process tree trên Windows. Mục đích là khi Docker CLI/daemon không phản hồi, verifier phải trả evidence có giới hạn thay vì treo vô hạn.
+- Lần chạy với `--command-timeout-seconds 10` trả về đúng `passed=false`; lỗi là `Docker Compose command timed out after 10s: ps --services --filter status=running`. `restore_database=null`, `restore_bucket=null`, không tạo restore resource và không có dump/object content được lưu. Evidence: `docs/evidence/p18-local-backup-restore-timeout-20260910.json`.
+- Đây là `LOCAL_BLOCKED`/bounded dependency failure, không phải backup/restore PASS. P18-W03a chỉ được nâng lên `LOCAL_VERIFIED` lại khi Docker Compose healthy và verifier tạo được dump, restore, row/object checksum equality cùng cleanup PASS; provider backup/restore, RPO/RTO staging/production và P18/P20 release gates vẫn mở.
+- Next exact action: khôi phục Docker CLI/daemon, chạy lại verifier với timeout mặc định, sau đó mới thiết lập provider restore drill và đo RPO/RTO trên môi trường được phép.
 
 ## P10 Trend — baseline/maintenance lifecycle controls — local verified — 2026-09-10
 

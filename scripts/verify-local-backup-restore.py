@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -30,6 +31,8 @@ SOURCE_BUCKET = "rt-connect-artifacts"
 S3_ENDPOINT = "127.0.0.1:9000"
 S3_ACCESS_KEY = "local-development-only"
 S3_SECRET_KEY = "local-development-only"
+DEFAULT_COMPOSE_TIMEOUT_SECONDS = 60.0
+_compose_timeout_seconds = DEFAULT_COMPOSE_TIMEOUT_SECONDS
 TABLES = (
     "organizations",
     "organization_memberships",
@@ -79,16 +82,48 @@ def _run_compose(*arguments: str, input_bytes: bytes | None = None) -> bytes:
     if shutil.which("docker") is None:
         raise RuntimeError("Docker CLI is not available on PATH.")
     command = ["docker", "compose", "-f", str(COMPOSE_FILE), *arguments]
-    completed = subprocess.run(
+    creation_flags = 0
+    if sys.platform == "win32":
+        creation_flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+    process = subprocess.Popen(
         command,
-        input=input_bytes,
-        capture_output=True,
-        check=False,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        creationflags=creation_flags,
+        start_new_session=sys.platform != "win32",
     )
-    if completed.returncode != 0:
-        detail = completed.stderr.decode("utf-8", errors="replace").strip()
+    try:
+        stdout, stderr = process.communicate(
+            input=input_bytes,
+            timeout=_compose_timeout_seconds,
+        )
+    except subprocess.TimeoutExpired as error:
+        if sys.platform == "win32":
+            try:
+                subprocess.run(
+                    ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                    capture_output=True,
+                    check=False,
+                    timeout=5,
+                )
+            except (OSError, subprocess.TimeoutExpired):
+                process.kill()
+        else:
+            os.killpg(process.pid, 15)
+        try:
+            process.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.communicate()
+        raise RuntimeError(
+            "Docker Compose command timed out after "
+            f"{_compose_timeout_seconds:g}s: {' '.join(arguments)}"
+        ) from error
+    if process.returncode != 0:
+        detail = stderr.decode("utf-8", errors="replace").strip()
         raise RuntimeError(f"Docker Compose command failed ({arguments[0]}): {detail}")
-    return completed.stdout
+    return stdout
 
 
 def _psql(database: str, sql: str) -> str:
@@ -260,6 +295,7 @@ def _build_report(
         "captured_at_utc": _utc_now(),
         "environment": "local-compose-only",
         "compose_file": "docker-compose.yml",
+        "compose_command_timeout_seconds": _compose_timeout_seconds,
         "source_database": SOURCE_DATABASE,
         "restore_database": restore_database,
         "database_dump": {"bytes": dump_bytes, "sha256": dump_sha256},
@@ -402,11 +438,25 @@ def _arguments() -> argparse.Namespace:
         type=Path,
         help="Optional JSON evidence path relative to the repository root.",
     )
+    parser.add_argument(
+        "--command-timeout-seconds",
+        type=float,
+        default=DEFAULT_COMPOSE_TIMEOUT_SECONDS,
+        help=(
+            "Timeout for each Docker Compose subprocess. A timeout is reported as a "
+            "failed local verification instead of leaving the verifier hanging."
+        ),
+    )
     return parser.parse_args()
 
 
 def main() -> int:
     arguments = _arguments()
+    global _compose_timeout_seconds
+    if arguments.command_timeout_seconds <= 0:
+        print("--command-timeout-seconds must be greater than zero", file=sys.stderr)
+        return 2
+    _compose_timeout_seconds = arguments.command_timeout_seconds
     try:
         report = verify()
     except Exception as error:
