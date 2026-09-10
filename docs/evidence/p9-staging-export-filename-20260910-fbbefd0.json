@@ -1,0 +1,70 @@
+{
+  "schema_version": "rt-connect.p9-staging-export-filename.v1",
+  "captured_at_utc": "2026-09-10T06:56:00Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_EXPORT_AND_PAYLOAD_READBACK",
+  "environment": "staging",
+  "source_commit_observed": "fbbefd0d744dbb25bc36a0feaff887a853816a57",
+  "schema_revision_observed": "20260909_0019",
+  "api_base_url": "https://gleaming-cooperation-staging.up.railway.app",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "report": {
+    "report_key": "3b51b1db-1a6c-437b-8e43-dbaf1e9b73e7",
+    "revision_number": 1,
+    "source_type": "DVH",
+    "source_id": "d8230d1d-badd-4c0c-b044-dcc4434215a6",
+    "content_sha256": "2599b891dbe42eedbc69e8889a368ee8359586076c8833e8e474cf57c195cb5c"
+  },
+  "exports": {
+    "JSON": {
+      "export_job_id": "764f8147-3401-4643-a906-e165a1343168",
+      "filename_observed": "rt-connect-report-export-764f8147-3401-4643-a906-e165a1343168.json.crdownload",
+      "expected_filename_without_partial_suffix": "rt-connect-report-export-764f8147-3401-4643-a906-e165a1343168.json",
+      "byte_size": 15582,
+      "sha256": "307a42ae96c15c9d5a9a868f66210288666f25908c82a77b7e152af3b9cc1353",
+      "payload_valid": true,
+      "report_key_matches": true,
+      "revision_matches": true
+    },
+    "CSV": {
+      "export_job_id": "24374ef6-ff77-4a98-85ac-bd337e5808af",
+      "filename_observed": "rt-connect-report-export-24374ef6-ff77-4a98-85ac-bd337e5808af.csv.crdownload",
+      "expected_filename_without_partial_suffix": "rt-connect-report-export-24374ef6-ff77-4a98-85ac-bd337e5808af.csv",
+      "byte_size": 1190,
+      "sha256": "2ad5e4f69d929591128e6a6c61241ffa3ea0c15ff62a723d5eaf850002819e56",
+      "payload_valid": true,
+      "csv_header_matches": true
+    },
+    "PDF": {
+      "export_job_id": "b8dbed8c-c1bf-42ae-a5c9-870d2047cc01",
+      "filename_observed": "rt-connect-report-export-b8dbed8c-c1bf-42ae-a5c9-870d2047cc01.pdf.crdownload",
+      "expected_filename_without_partial_suffix": "rt-connect-report-export-b8dbed8c-c1bf-42ae-a5c9-870d2047cc01.pdf",
+      "byte_size": 1046,
+      "sha256": "e2113ca2351441941539ebaf3d950372e5e88d1f73a4f73da9741c8785131cba",
+      "payload_valid": true,
+      "pdf_header_and_eof_present": true
+    },
+    "PNG": {
+      "export_job_id": "d22a8562-8855-4603-a616-5dd2f5133ea2",
+      "filename_observed": "rt-connect-report-export-d22a8562-8855-4603-a616-5dd2f5133ea2.png.crdownload",
+      "expected_filename_without_partial_suffix": "rt-connect-report-export-d22a8562-8855-4603-a616-5dd2f5133ea2.png",
+      "byte_size": 2243,
+      "sha256": "c97465fd1fa5af6ec84bd32866cf25999fb81ba5f988d3c1284c0f7d89e92551",
+      "payload_valid": true,
+      "png_signature_present": true
+    }
+  },
+  "invariants": {
+    "same_report_revision": true,
+    "no_new_report_revision": true,
+    "no_dvh_rerun": true,
+    "synthetic_data_only": true,
+    "public_verifier_15_of_15": true
+  },
+  "status": {
+    "deterministic_filename_header_effective": true,
+    "payload_readback": true,
+    "browser_final_suffix_rename": "UNVERIFIED",
+    "observed_partial_suffix": ".crdownload"
+  },
+  "scope_note": "This closes the staging provider/browser filename-header and four-format payload-readback slice. The browser retained the partial-download suffix during observation, so final rename/completion and visual PDF/PNG review remain open; this evidence does not promote the synthetic DVH result to clinical PASS."
+}

@@ -9,6 +9,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Local regression verifies all four formats and the download endpoint with `rt-connect-report-export-{export_job_id}.{extension}`. Backend full suite: **169 passed**; Ruff and strict mypy pass; frontend lint, typecheck, Vitest **15/15** and production build pass. Evidence: `docs/evidence/p9-export-filename-20260910-211d9f7.json`.
 - This closes the implementation slice only. Staging signed-URL response headers, browser final filename, byte-level PDF/PNG visual review, provider fault/retry and release-manifest evidence remain open.
 
+## P9 deterministic export filename — staging verified partial — 2026-09-10 / `fbbefd0`
+
+- Candidate `fbbefd0d744dbb25bc36a0feaff887a853816a57` is running on staging API/web/worker; public verifier passes **15/15** with schema `20260909_0019`. Authenticated Report Builder loaded Build `fbbefd0…`, reopened report `3b51b1db…` revision 1 and created JSON `15,582`, CSV `1,190`, PDF `1,046` and PNG `2,243` byte exports without changing the report revision or rerunning DVH.
+- Browser Downloads observed deterministic names with the new `rt-connect-report-export-{export_job_id}.{extension}` prefix for all four formats. JSON and CSV payloads were parsed; PDF header/EOF and PNG signature were verified; SHA-256 values and job IDs are recorded in `docs/evidence/p9-staging-export-filename-20260910-fbbefd0.json`.
+- The browser kept the `.crdownload` suffix during observation, therefore final browser rename/completion is still `UNVERIFIED`. Visual PDF/PNG review, provider fault/retry and release-manifest closure remain open.
+
 ## RTDOSE authorization, P17 readback and P9 JSON export — staging verified — 2026-09-10 / `c17fe9a`
 
 - Theo xác nhận của người dùng, fixture RTDOSE tổng hợp được phép dùng trong case staging `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`. Kiểm tra lại trên candidate `c17fe9a1138da4b5b60fe8f070a0367e9e8a07f1` cho thấy `gamma-rtdose-v1-smoke.dcm` đã tồn tại đúng một artifact, checksum đầy đủ `ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b`, `RTDOSE/VALID`, đang được chọn cùng RTSTRUCT hợp lệ; không tạo artifact trùng.

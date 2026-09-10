@@ -937,6 +937,12 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - Regression local bao phủ đủ JSON/CSV/PDF/PNG, idempotent replay, checksum/object bytes và download endpoint. Backend full suite **169 passed**, Ruff và strict mypy pass; frontend lint/typecheck/Vitest **15/15** và build pass. Evidence: `docs/evidence/p9-export-filename-20260910-211d9f7.json`.
 - Đây chỉ là `LOCAL_VERIFIED`; commit `211d9f7` và evidence follow-up `291e88c` chưa được Railway nhận trong lần kiểm tra này vì push GitHub gặp timeout. Chưa nâng staging gate: provider response header, browser final filename, visual PDF/PNG, fault/retry và release manifest vẫn `NOT_RUN` trên candidate này.
 
+### Checkpoint staging P9 — deterministic export filename — 2026-09-10 / `fbbefd0`
+
+- Candidate `fbbefd0d744dbb25bc36a0feaff887a853816a57` đã được Railway deploy đồng bộ API/web/worker; public verifier đạt **15/15**, schema `20260909_0019`. Authenticated Report Builder mở lại report `3b51b1db-1a6c-437b-8e43-dbaf1e9b73e7` revision 1 từ source DVH run `d8230d1d-badd-4c0c-b044-dcc4434215a6`.
+- Bốn export trên cùng revision tạo thành công: JSON `15,582`, CSV `1,190`, PDF `1,046`, PNG `2,243` bytes. Browser quan sát thấy tên `rt-connect-report-export-{export_job_id}.{extension}.crdownload`; payload JSON/CSV đọc được, PDF có header/EOF, PNG có signature. Evidence: `docs/evidence/p9-staging-export-filename-20260910-fbbefd0.json`.
+- Đã đóng partial gate provider/header/payload/format trên staging; chưa đóng P9: browser final rename/completion vẫn `UNVERIFIED` do `.crdownload`, visual PDF/PNG, provider fault/retry và release-manifest evidence.
+
 <a id="phase-10"></a>
 
 ## P10 — Trend, baseline và sự kiện bảo trì
