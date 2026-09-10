@@ -1,0 +1,59 @@
+{
+  "evidence_id": "P20-W01-STAGING-STATUS-REFRESH-PUBLIC-20260911-3d764e4",
+  "phase": "P20",
+  "work_package": "P20-W01",
+  "status": "STAGING_PARTIAL",
+  "captured_at_utc": "2026-09-10T18:15:19.1236159Z",
+  "environment": "staging",
+  "source_commit": "3d764e40bcec98c229eb9992d4af85636c6cf784",
+  "schema_revision": "20260909_0019",
+  "services": {
+    "api": {
+      "service_id": "9b35bf0b-0419-4679-8af0-e639e5a84713",
+      "deployment_id": "3c94f3c7-fab0-464c-abb6-ea61fc0d9494",
+      "status": "SUCCESS"
+    },
+    "web": {
+      "service_id": "9f23331c-8d5e-45fb-9f11-5aa5e69f76f6",
+      "deployment_id": "6cff64bd-54d5-480b-bfc6-05c9e4a4c7d1",
+      "status": "SUCCESS"
+    },
+    "worker": {
+      "service_id": "a1e0c389-e527-4d4c-995e-2a48f4795dda",
+      "deployment_id": "c9a87b51-e060-43ab-b6cb-bee7165dc0b3",
+      "status": "SUCCESS"
+    }
+  },
+  "public_verifier": {
+    "script": "scripts/verify-public-deployment.ps1",
+    "passed": true,
+    "failed_check_count": 0,
+    "check_count": 15,
+    "observed_version": "3d764e40bcec98c229eb9992d4af85636c6cf784",
+    "observed_schema_revision": "20260909_0019",
+    "checks": [
+      "health contract",
+      "readiness contract and schema revision",
+      "version contract and exact SHA",
+      "OpenAPI CT preview and organization membership routes",
+      "unauthenticated organization boundary for members/invitations/accept",
+      "web index and bundle",
+      "web CT/membership markers",
+      "web bundle exact-SHA marker"
+    ]
+  },
+  "verified_behavior": [
+    "The status page build containing 30-second operational polling is deployed to staging.",
+    "API, web and worker source SHA are aligned for this candidate."
+  ],
+  "not_verified": [
+    "Authenticated Gamma queue-metrics probe",
+    "Delivery of a synthetic alert to a real operator channel",
+    "Railway provider backup/restore and RPO/RTO",
+    "Rollback rehearsal and production promotion"
+  ],
+  "redaction": {
+    "contains_secrets": false,
+    "contains_patient_data": false
+  }
+}

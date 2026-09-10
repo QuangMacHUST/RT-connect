@@ -201,7 +201,7 @@ result mới dùng operation/run mới, trừ exact idempotent replay.
 | TC-P20-S02 | Provider backup, isolated restore, counts/checksums và RPO/RTO | LOCAL_SUPPORT_ONLY |
 | TC-P20-S03 | Maintenance candidate, regression, old result/history và release note | NOT_RUN |
 | TC-P20-S04 | Người vận hành khác thực hiện runbook độc lập và ký handoff | NOT_RUN |
-| P20-W01 UI | `/app/system/status` tự refresh 30 giây, giữ last observation và hiển thị thời điểm cập nhật | LOCAL_VERIFIED trên `7df7cb8`; chưa phải staging evidence |
+| P20-W01 UI | `/app/system/status` tự refresh 30 giây, giữ last observation và hiển thị thời điểm cập nhật | LOCAL_VERIFIED trên `7df7cb8`; đã deploy staging candidate `3d764e4` với public parity `15/15`, chưa phải alert evidence |
 | P20-W01 probe | `scripts/verify-operational-probes.ps1` trên staging exact SHA/schema | PASS cho public probes; queue `NOT_RUN` nếu không có session; chưa phải alert delivery |
 | TC-P20-E01 | Backup failure/retention alert và last-good preservation | NOT_RUN |
 | TC-P20-E02 | Alert delivery failure và kênh dự phòng | NOT_RUN |

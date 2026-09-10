@@ -10,6 +10,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 - Local evidence: test `7 files / 17 tests`, lint, typecheck và production build đều PASS. Evidence: [p20-local-status-auto-refresh-20260911-7df7cb8.json](docs/evidence/p20-local-status-auto-refresh-20260911-7df7cb8.json).
 - Đây mới là `LOCAL_VERIFIED`; chưa phải staging deployment, authenticated queue probe hoặc alert delivery đến kênh vận hành thật. P20-W01 và các gate P20 khác vẫn mở.
 
+## P20-W01 — Operational status auto-refresh — staging partial — 2026-09-11 / `3d764e4`
+
+- API, web và worker staging đã được deploy cùng source SHA `3d764e40bcec98c229eb9992d4af85636c6cf784`; deployment tương ứng là API `3c94f3c7-fab0-464c-abb6-ea61fc0d9494`, web `6cff64bd-54d5-480b-bfc6-05c9e4a4c7d1`, worker `c9a87b51-e060-43ab-b6cb-bee7165dc0b3`, cả ba `SUCCESS`.
+- `scripts/verify-public-deployment.ps1` với expected SHA và schema `20260909_0019` đạt `passed=true`, `failed_check_count=0`, `15/15` checks; health/readiness/version, OpenAPI/Auth boundary và web bundle exact-SHA đều PASS. Evidence: [p20-staging-status-refresh-public-20260911-3d764e4.json](docs/evidence/p20-staging-status-refresh-public-20260911-3d764e4.json).
+- Đây là `STAGING_PARTIAL`: chứng minh candidate đã lên đúng source và public contract, không chứng minh authenticated queue metrics, alert delivery, backup/restore, rollback hoặc production readiness. P20-W01 vẫn mở.
+
 ## P20-W01 — Operational probe và schema-parity check — staging partial — 2026-09-11 / `3102119`
 
 - Đã bổ sung `scripts/verify-operational-probes.ps1`, một probe fail-closed có thể chạy lại với đúng `ApiBaseUrl`, `WebBaseUrl`, release SHA và schema revision. Probe đọc riêng `/api/v1/health`, `/api/v1/ready`, `/api/v1/version`, kiểm schema parity, kiểm web `/app` và dò secret marker trong HTML; queue metrics chỉ chạy khi caller chủ động cung cấp access token và token không được ghi vào output.
