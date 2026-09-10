@@ -219,7 +219,14 @@ def _load_rtdose(path: Path) -> MeasurementDataset:
         )
 
     spacing_value = getattr(dataset, "PixelSpacing", None)
-    spacing_xy = _coordinate(spacing_value, "PixelSpacing", 2, positive=True)
+    try:
+        spacing_xy = _coordinate(spacing_value, "PixelSpacing", 2, positive=True)
+    except GammaEngineError as exc:
+        raise GammaEngineError(
+            "GAMMA_DICOM_GRID_INVALID",
+            f"RTDOSE PixelSpacing is invalid: {exc.message}",
+            exc.details,
+        ) from exc
     position = _coordinate(
         getattr(dataset, "ImagePositionPatient", None),
         "ImagePositionPatient",

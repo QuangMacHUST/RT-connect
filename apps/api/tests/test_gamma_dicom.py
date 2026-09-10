@@ -5,11 +5,17 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pydicom
+import pytest
 from pydicom.dataset import Dataset, FileDataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian, RTDoseStorage, RTPlanStorage, generate_uid
 
 from rt_connect_api.services.artifact_validation import validate_dicom
-from rt_connect_api.services.gamma_engine import calculate_gamma_from_paths, load_gamma_dataset
+from rt_connect_api.services.gamma_engine import (
+    GammaEngineError,
+    calculate_gamma_from_paths,
+    load_gamma_dataset,
+)
 
 
 def _configuration(dimensionality: str) -> dict[str, object]:
@@ -128,3 +134,42 @@ def test_rtdose_metadata_validation_is_strict_enough_for_gamma(tmp_path: Path) -
     assert validation.result == "VALID"
     codes = {item["code"] for item in validation.checks}
     assert {"RTDOSE_GRID_VALID", "RTDOSE_GEOMETRY_VALID", "RTDOSE_DOSE_UNITS_VALID"}.issubset(codes)
+
+
+def test_rtdose_rejects_non_axial_orientation_before_gamma(tmp_path: Path) -> None:
+    rtdose = tmp_path / "oblique-reference.dcm"
+    _write_rtdose(rtdose, [100, 200, 300, 400, 500, 600, 700, 800])
+    dataset = pydicom.dcmread(rtdose)
+    dataset.ImageOrientationPatient = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0]
+    dataset.save_as(rtdose, write_like_original=False)
+
+    with pytest.raises(GammaEngineError) as error:
+        load_gamma_dataset(rtdose)
+
+    assert error.value.code == "GAMMA_DICOM_ORIENTATION_UNSUPPORTED"
+
+
+def test_rtdose_rejects_unsupported_dose_units_without_inference(tmp_path: Path) -> None:
+    rtdose = tmp_path / "unknown-unit-reference.dcm"
+    _write_rtdose(rtdose, [100, 200, 300, 400, 500, 600, 700, 800])
+    dataset = pydicom.dcmread(rtdose)
+    dataset.DoseUnits = "UNKNOWN"
+    dataset.save_as(rtdose, write_like_original=False)
+
+    with pytest.raises(GammaEngineError) as error:
+        load_gamma_dataset(rtdose)
+
+    assert error.value.code == "GAMMA_UNITS_UNSUPPORTED"
+
+
+def test_rtdose_rejects_non_positive_spacing(tmp_path: Path) -> None:
+    rtdose = tmp_path / "invalid-spacing-reference.dcm"
+    _write_rtdose(rtdose, [100, 200, 300, 400, 500, 600, 700, 800])
+    dataset = pydicom.dcmread(rtdose)
+    dataset.PixelSpacing = [0.0, 1.0]
+    dataset.save_as(rtdose, write_like_original=False)
+
+    with pytest.raises(GammaEngineError) as error:
+        load_gamma_dataset(rtdose)
+
+    assert error.value.code == "GAMMA_DICOM_GRID_INVALID"
