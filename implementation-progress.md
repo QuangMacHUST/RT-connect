@@ -16,6 +16,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Browser authenticated reload route Gamma trên cùng case giữ API thật, build `135a24f…`, RTDOSE reference, measurement evaluation và `PREFLIGHT VALID`. Evidence: [p18-staging-api-restart-recovery-20260910-135a24f.json](docs/evidence/p18-staging-api-restart-recovery-20260910-135a24f.json).
 - Đây là `STAGING_PARTIAL_API_RESTART_RECOVERY`; chưa phải API in-flight crash/ack test và không đóng DB/Redis/storage/renderer fault injection, restore, rollback hoặc full P18.
 
+## P19-W01 — current staging release manifest — support evidence verified — 2026-09-10 / `9f8378c`
+
+- Manifest redacted `staging-9f8378c` dùng deployment ID thật của API `db38336d-649e-4e05-baa8-2c669d486c2b`, web `d00e2ac1-d16b-41a6-88ae-48f9185a7608` và worker `07068c3e-15af-439f-a837-e565e90b2f84`; source SHA ba service cùng `9f8378c171f8b220f3c5b4159f505479bcd662c0`, schema `20260909_0019`, fixture hash và engine/renderer version đều được ghi.
+- `scripts/create-release-manifest.py --verify-manifest` trả `valid=true`, `error_count=0`, `service_sha_parity=true`: [release-manifest-staging-9f8378c.json](docs/evidence/release-manifest-staging-9f8378c.json).
+- Manifest ghi rõ production promotion bị chặn bởi provider backup/restore/rollback chưa có; `release_gate=ELIGIBLE` chỉ là integrity/source-parity gate của manifest staging, không phải P19 DONE-v2.
+
 ## P19 — staging exact-SHA public parity after P18 documentation packet — partial verified — 2026-09-10 / `8dffbb9`
 
 - API, web và worker staging đã được yêu cầu deploy cùng source SHA `8dffbb9f48906131e99143f11b14d2abecd9a233`; public verifier kiểm tra exact SHA và schema `20260909_0019` đạt `15/15 PASS`, `failed_check_count=0`.
