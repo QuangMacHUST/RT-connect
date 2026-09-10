@@ -1,0 +1,54 @@
+{
+  "evidence_id": "p17-p19-staging-dvh-export-current-20260910-c11fca",
+  "recorded_at": "2026-09-10T21:36:30+07:00",
+  "environment": "staging",
+  "evidence_level": "STAGING_AUTHENTICATED_EXPORT_CONTENT_VERIFIED",
+  "source_commit": "c11fca0451f0a16d3bdf178383d7a8f45889e770",
+  "schema_revision": "20260909_0019",
+  "web_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "dvh_run_id": "d8230d1d-badd-4c0c-b044-dcc4434215a6",
+  "fixture_scope": "synthetic_only_no_patient_data",
+  "fixture": {
+    "rtdose": "gamma-rtdose-v1-smoke.dcm",
+    "rtdose_sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
+    "rtstruct": "p17-rtstruct-v1-smoke.dcm",
+    "roi_number": 1,
+    "roi_name": "P17_TARGET"
+  },
+  "observed": {
+    "ui_route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh",
+    "preflight": "VALID",
+    "run_status": "COMPLETED",
+    "coverage": "FULL",
+    "engine_version": "p17-dvh-1.1.0",
+    "result_sha256": "cf2799b8afeafa68cf60a330eac9adff123cca5c7ceacfc0eab78132b0c0359c",
+    "json": {
+      "browser_download_name": "rt-connect-dvh-d8230d1d-badd-4c0c-b044-dcc4434215a6.json.crdownload",
+      "content_bytes": 24673,
+      "parse": "PASS",
+      "run_id_matches": true,
+      "result_sha_matches_ui": true,
+      "note": "CUA Chromium keeps the temporary .crdownload suffix; content is complete and JSON-parsed."
+    },
+    "csv": {
+      "browser_download_name": "rt-connect-dvh-d8230d1d-badd-4c0c-b044-dcc4434215a6.csv.crdownload",
+      "content_bytes": 15901,
+      "parse": "PASS",
+      "row_count": 25,
+      "sections": ["input", "result", "warning"],
+      "note": "CUA Chromium keeps the temporary .crdownload suffix; content is complete and CSV-parsed."
+    }
+  },
+  "interpretation": {
+    "pass": [
+      "Authenticated staging route rendered the retained DVH snapshot on the current candidate.",
+      "JSON and CSV export endpoints returned complete parseable content for the selected immutable run.",
+      "Exported JSON run identity and result checksum matched the UI provenance fields."
+    ],
+    "not_proven": [
+      "This does not prove production promotion, provider backup/restore, rollback rehearsal, or full P18 fault/resource gates.",
+      "Final filename rename is not independently observable in the CUA harness; content-level completion is the accepted equivalent evidence for this run."
+    ]
+  }
+}

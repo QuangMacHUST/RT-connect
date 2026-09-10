@@ -3,6 +3,12 @@
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 `technical-specification.md` v1.23 và `plan.md` v4.19.
 
+## P17/P19 — current staging DVH export content verification — partial verified — 2026-09-10 / `c11fca0`
+
+- Trên web build `c11fca0451f0a16d3bdf178383d7a8f45889e770`, authenticated browser mở lại case tổng hợp `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`, preflight `VALID`, saved run `d8230d1d-badd-4c0c-b044-dcc4434215a6`, engine `p17-dvh-1.1.0` và result SHA `cf2799b8afeafa68cf60a330eac9adff123cca5c7ceacfc0eab78132b0c0359c`.
+- JSON export tải được `24,673` bytes, parse thành công, `run_id` và `result_sha256` khớp provenance UI. CSV export tải được `15,901` bytes, parse thành công với `25` rows và đủ section `input/result/warning`.
+- Edge/CUA giữ hậu tố tạm `.crdownload`; đây là giới hạn quan sát của harness, không phải nội dung export thiếu. Bằng chứng content-level completion được ghi tại [p17-p19-staging-dvh-export-current-20260910-c11fca.json](docs/evidence/p17-p19-staging-dvh-export-current-20260910-c11fca.json). Không tuyên bố filename rename độc lập, production readiness, backup/restore, rollback hoặc full P18/P19.
+
 ## P8/P18/P19 — authenticated Gamma staging mutation E2E — partial verified — 2026-09-10 / `1badb66`
 
 - Trên web build `1badb6616d1a68f7178b2aefd10c71adc95a826b`, phiên authenticated đã reuse fixture RTDOSE/VALID `gamma-rtdose-v1-smoke.dcm` trong case tổng hợp `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`; không upload bản sao. Evaluation là `gamma-measurement-3d-v1-smoke.json`; preflight hiển thị `VALID`.
