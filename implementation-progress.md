@@ -10,6 +10,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Positive path: đổi dimensionality sang `3D` rồi submit tạo run `86cc4d5e-4a87-4dcb-a6f5-94c125029c60`, `COMPLETED/PASS`, attempt `1`, 8/8 điểm, coverage `1`, Gamma P95 `0`, engine `gamma-nd-p8.2`; kết quả hiển thị lại trên UI sau mutation qua API/worker thật.
 - Evidence: [p8-p19-staging-authenticated-gamma-e2e-20260910-1badb66.json](docs/evidence/p8-p19-staging-authenticated-gamma-e2e-20260910-1badb66.json). Đây là `STAGING_AUTHENTICATED_MUTATION_E2E_GAMMA` cho một identity/case; không đóng two-identity membership/invitation, direct PostgreSQL/Redis/object assertion, full staging fault/resource, provider restore, rollback, alert hoặc production promotion.
 
+## P18 — staging API restart/recovery subtest — partial verified — 2026-09-10 / `135a24f`
+
+- API staging được yêu cầu redeploy có kiểm soát cùng SHA `135a24faf4e2659b8c4fe9a98920efb357b392bc`, không xóa database/object. Probe đầu tiên sau yêu cầu trả `ready`, schema `20260909_0019`, version đúng SHA; public verifier sau propagation đạt `15/15`, `failed_check_count=0`.
+- Browser authenticated reload route Gamma trên cùng case giữ API thật, build `135a24f…`, RTDOSE reference, measurement evaluation và `PREFLIGHT VALID`. Evidence: [p18-staging-api-restart-recovery-20260910-135a24f.json](docs/evidence/p18-staging-api-restart-recovery-20260910-135a24f.json).
+- Đây là `STAGING_PARTIAL_API_RESTART_RECOVERY`; chưa phải API in-flight crash/ack test và không đóng DB/Redis/storage/renderer fault injection, restore, rollback hoặc full P18.
+
 ## P19 — staging exact-SHA public parity after P18 documentation packet — partial verified — 2026-09-10 / `8dffbb9`
 
 - API, web và worker staging đã được yêu cầu deploy cùng source SHA `8dffbb9f48906131e99143f11b14d2abecd9a233`; public verifier kiểm tra exact SHA và schema `20260909_0019` đạt `15/15 PASS`, `failed_check_count=0`.

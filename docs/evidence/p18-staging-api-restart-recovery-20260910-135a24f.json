@@ -1,0 +1,40 @@
+{
+  "schema_version": "rt-connect.p18-staging-api-restart-recovery.v1",
+  "captured_at_local": "2026-09-10T21:15:00+07:00",
+  "verification_level": "STAGING_PARTIAL_API_RESTART_RECOVERY",
+  "synthetic_only": true,
+  "source_commit": "135a24faf4e2659b8c4fe9a98920efb357b392bc",
+  "service": "Railway-API-staging",
+  "environment": "staging",
+  "restart_action": {
+    "requested": true,
+    "same_commit_redeploy": true,
+    "data_delete_requested": false,
+    "database_or_object_storage_mutation": false
+  },
+  "recovery_probe": {
+    "first_probe_after_request": {
+      "ready_status": "ready",
+      "schema_revision": "20260909_0019",
+      "version": "135a24faf4e2659b8c4fe9a98920efb357b392bc"
+    },
+    "public_contract_recheck": {
+      "passed": true,
+      "failed_check_count": 0,
+      "checks": 15
+    }
+  },
+  "authenticated_readback": {
+    "route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/gamma",
+    "browser_reload": true,
+    "build_label": "135a24faf4e2659b8c4fe9a98920efb357b392bc",
+    "reference": "gamma-rtdose-v1-smoke.dcm",
+    "evaluation": "gamma-measurement-3d-v1-smoke.json",
+    "preflight": "VALID"
+  },
+  "limitations": [
+    "controlled restart only; no injected API process crash during an in-flight job",
+    "does not close DB/Redis/object-storage/renderer fault injection",
+    "does not close provider backup/restore, RPO/RTO, rollback or production promotion"
+  ]
+}
