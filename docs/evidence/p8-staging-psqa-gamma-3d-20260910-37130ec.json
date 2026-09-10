@@ -1,0 +1,65 @@
+{
+  "schema_version": "rt-connect.p8-staging-psqa-gamma-3d.v1",
+  "captured_at_utc": "2026-09-10T11:33:48Z",
+  "verification_level": "STAGING_AUTHENTICATED_SYNTHETIC_E2E_PARTIAL",
+  "environment": "staging",
+  "candidate_source_sha": "37130ec41e12ebb83e0eff8495e67e4273636d00",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/gamma?release=37130ec",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "data_boundary": "The run used synthetic RTDOSE and synthetic measurement artifacts only; no patient, PACS or treatment dataset was used.",
+  "authorization": {
+    "synthetic_rtdose_upload_authorized_by_user": true,
+    "duplicate_upload_created": false,
+    "new_artifact_created": false
+  },
+  "inputs": {
+    "workflow_profile": "PSQA_GAMMA",
+    "reference_filename": "gamma-rtdose-v1-smoke.dcm",
+    "reference_modality": "RTDOSE",
+    "reference_sha256_prefix": "ca5c9168eb9b…",
+    "evaluation_filename": "gamma-measurement-3d-v1-smoke.json",
+    "evaluation_modality": "MEASUREMENT",
+    "evaluation_sha256_prefix": "3ca7a85e438c…",
+    "preflight": "PREFLIGHT_VALID"
+  },
+  "configuration": {
+    "dimensionality": "3D",
+    "dose_difference_percent": 3,
+    "distance_to_agreement_mm": 3,
+    "dose_threshold_percent": 10,
+    "pass_rate_target_percent": 95,
+    "dose_difference_mode": "RELATIVE",
+    "normalization": "GLOBAL",
+    "interpolation": "GRID",
+    "coverage_policy": "FULL_ROI",
+    "max_gamma": 2
+  },
+  "run": {
+    "run_id": "1ac9b02b-3b06-4351-9ee7-fc100ba91bd2",
+    "queue_acknowledged": true,
+    "status": "COMPLETED",
+    "progress_percent": 100,
+    "attempt": 1,
+    "engine_version": "gamma-nd-p8.2",
+    "overall_result": "PASS",
+    "evaluated_points": 8,
+    "passing_points": 8,
+    "non_passing_points": 0,
+    "excluded_points": 0,
+    "coverage_fraction": 1,
+    "gamma_p95": 0
+  },
+  "history_after_run": {
+    "visible_run_count": 10,
+    "new_run_is_first_history_entry": true,
+    "previous_failed_run_remains_visible": true
+  },
+  "open_gates": [
+    "Crash-after-durable-commit acknowledgement, bounded retry/dead-letter and resource-large-input fault evidence",
+    "Geometry, dose scaling, frame/alignment and unsupported-input negative matrix",
+    "Independent oracle promotion/convergence and DICOM/vendor commissioning evidence",
+    "P8 complete S/E/C, release manifest and production promotion"
+  ],
+  "result": "STAGING_SYNTHETIC_3D_PASS_PARTIAL"
+}

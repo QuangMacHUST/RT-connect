@@ -35,6 +35,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Existing run đang chọn là `ENGINE_TEST`, không phải run PSQA 3D mới: `COMPLETED`, engine `gamma-nd-p8.2`, `4/4` điểm đạt, coverage `1`, gamma P95 `0.0708333…`, target `95%`; history hiển thị cả một run `FAILED` để truy vết. Lần recheck không tạo run và không upload fixture.
 - Evidence: `docs/evidence/p8-staging-rtdose-browser-20260910-c9bdfe9.json`. Đây là read-only partial evidence; không suy ra từ đó rằng PSQA 3D, worker fault/retry, resource gate, independent oracle hay P8 release đã đóng.
 
+## P8 — staging PSQA Gamma 3D synthetic E2E — partial verified — 2026-09-10 / `37130ec`
+
+- Trên candidate `37130ec`, đã chạy đúng một job `PSQA_GAMMA` 3D bằng RTDOSE `gamma-rtdose-v1-smoke.dcm` và measurement `gamma-measurement-3d-v1-smoke.json` đã có sẵn trong case staging. Queue acknowledgement được hiển thị; run `1ac9b02b-3b06-4351-9ee7-fc100ba91bd2` kết thúc `COMPLETED/PASS`, engine `gamma-nd-p8.2`, `8/8` điểm đạt, coverage `1`, gamma P95 `0`.
+- Lịch sử tăng lên `10` run và run failed cũ vẫn còn hiển thị; không tạo artifact mới và không upload lại RTDOSE. Đây là staging synthetic E2E happy path, không phải bằng chứng fault/retry/resource/clinical commissioning.
+- Evidence: `docs/evidence/p8-staging-psqa-gamma-3d-20260910-37130ec.json`. P8 vẫn mở các gate âm tính, crash-after-commit/ack, bounded retry/dead-letter, workload lớn, independent oracle, release và production.
+
 ## P10 — staging negative/accessibility recheck — partial verified — 2026-09-10 / `a30e365`
 
 - Trên candidate `a30e365`, Trend workspace đã được đọc bằng accessibility tree: lifecycle tables/actions, filter controls, source links và error/empty/retry states đều có semantic text/controls đọc được.
