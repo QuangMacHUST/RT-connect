@@ -1,0 +1,101 @@
+{
+  "schema_version": "rt-connect.public-deployment-verification.v1",
+  "captured_at_utc": "2026-09-10T23:00:36.0913422Z",
+  "api_base_url": "https://gleaming-cooperation-staging.up.railway.app",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "expected_version": "7d0cd51426a0b141a93948c32ed9a324afefb1b1",
+  "expected_schema_revision": "20260909_0019",
+  "observed_version": "7d0cd51426a0b141a93948c32ed9a324afefb1b1",
+  "observed_schema_revision": "20260909_0019",
+  "passed": true,
+  "failed_check_count": 0,
+  "checks": [
+    {
+      "name": "api.health.contract",
+      "status_code": 200,
+      "ok": true,
+      "details": "status=ok"
+    },
+    {
+      "name": "api.ready.contract",
+      "status_code": 200,
+      "ok": true,
+      "details": "status=ready; schema_revision=20260909_0019"
+    },
+    {
+      "name": "api.ready.schema_revision",
+      "ok": true,
+      "details": "expected=20260909_0019; observed=20260909_0019"
+    },
+    {
+      "name": "api.version.contract",
+      "status_code": 200,
+      "ok": true,
+      "details": "version=7d0cd51426a0b141a93948c32ed9a324afefb1b1; environment=staging; schema_revision=20260909_0019"
+    },
+    {
+      "name": "api.version.expected",
+      "ok": true,
+      "details": "expected=7d0cd51426a0b141a93948c32ed9a324afefb1b1; observed=7d0cd51426a0b141a93948c32ed9a324afefb1b1"
+    },
+    {
+      "name": "api.openapi.ct_preview_route",
+      "status_code": 200,
+      "ok": true,
+      "details": "route_present=True"
+    },
+    {
+      "name": "api.openapi.organization_membership_routes",
+      "status_code": 200,
+      "ok": true,
+      "details": "member_invitation_routes_present=True"
+    },
+    {
+      "name": "api.organization.members.unauthenticated",
+      "status_code": 401,
+      "ok": true,
+      "details": "observed_status=401"
+    },
+    {
+      "name": "api.organization.invitations.unauthenticated",
+      "status_code": 401,
+      "ok": true,
+      "details": "observed_status=401"
+    },
+    {
+      "name": "api.organization.invitation_accept.unauthenticated",
+      "status_code": 401,
+      "ok": true,
+      "details": "observed_status=401"
+    },
+    {
+      "name": "web.index",
+      "status_code": 200,
+      "ok": true,
+      "details": "bytes=457"
+    },
+    {
+      "name": "web.bundle",
+      "status_code": 200,
+      "ok": true,
+      "details": "bytes=859293; sha256=1600bf1d8c173e3c69b75b0f155e280de6d7a60d9e5774ac978bc0f31f801bb8"
+    },
+    {
+      "name": "web.bundle.ct_preview_controls",
+      "ok": true,
+      "details": "ct_preview_controls_present=True"
+    },
+    {
+      "name": "web.bundle.organization_membership_ui",
+      "ok": true,
+      "details": "member_invitation_route_markers_present=True"
+    },
+    {
+      "name": "web.bundle.expected_version",
+      "ok": true,
+      "details": "expected=7d0cd51426a0b141a93948c32ed9a324afefb1b1; present=True"
+    }
+  ],
+  "secrets": "not_recorded",
+  "patient_data": "not_used"
+}

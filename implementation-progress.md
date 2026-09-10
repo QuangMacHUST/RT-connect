@@ -3,6 +3,12 @@
 Revision hiện hành: `business-analysis.md` v0.26, `specification.md` v1.27,
 `technical-specification.md` v1.26 và `plan.md` v4.23.
 
+## P01 — clean Docker foundation re-verification — local verified — 2026-09-11 / `7d0cd51`
+
+- `scripts/verify-p1.ps1 -WithContainers` đã chạy trên checkout sạch: backend **199 passed**, Ruff PASS, strict mypy PASS trên 47 source files, Alembic SQL render đến schema `20260909_0019` PASS; frontend lint/typecheck/Vitest **19/19**/8 files và production build PASS.
+- Compose đã build và khởi động PostgreSQL, Redis, MinIO, API, worker và web ở trạng thái healthy; `alembic upgrade head`, seed synthetic, kiểm tra machine persistence qua PostgreSQL, API `/health`, API `/ready` và web `/health` đều PASS. Script đã cleanup container, network và named volumes test.
+- Evidence: [p1-local-docker-verification-20260911-7d0cd51.json](docs/evidence/p1-local-docker-verification-20260911-7d0cd51.json). Đây là local foundation evidence; không đóng các gate authenticated staging, provider fault, backup/restore, rollback, release, pilot hoặc production/clinical readiness.
+
 ## P06 — staging RTDOSE signed-download round-trip — verified content / filename open — 2026-09-11 / `67cc42d`
 
 - Từ case staging `ed7ddbe5-811a-4463-a270-b0386f64644d`, Download đã trả đủ 898 bytes của `gamma-rtdose-v1-smoke.dcm`; SHA-256 của content tải về khớp fixture gốc `ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b`.

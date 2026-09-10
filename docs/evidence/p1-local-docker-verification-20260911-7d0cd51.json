@@ -1,0 +1,40 @@
+{
+  "schema_version": "rt-connect.p1-local-docker-verification.v1",
+  "captured_at_utc": "2026-09-10T23:10:11.4520150Z",
+  "repository_sha": "7d0cd51426a0b141a93948c32ed9a324afefb1b1",
+  "scope": "clean local verification of backend, frontend, PostgreSQL, Redis, MinIO, API, worker and web",
+  "commands": {
+    "verifier": "scripts/verify-p1.ps1 -WithContainers"
+  },
+  "application_checks": {
+    "backend_pytest": "199 passed",
+    "backend_ruff": "PASS",
+    "backend_mypy_strict": "PASS; 47 source files",
+    "alembic_sql_render": "PASS; migration chain renders through 20260909_0019",
+    "frontend_lint": "PASS",
+    "frontend_typecheck": "PASS",
+    "frontend_vitest": "19 passed; 8 test files",
+    "frontend_production_build": "PASS"
+  },
+  "compose_checks": {
+    "postgres": "healthy",
+    "redis": "healthy",
+    "minio": "healthy",
+    "api": "healthy",
+    "worker": "healthy",
+    "web": "healthy",
+    "alembic_upgrade_head": "PASS",
+    "synthetic_seed": "PASS",
+    "machine_persisted_check": "PASS",
+    "api_health": "PASS",
+    "api_readiness": "PASS",
+    "web_health": "PASS",
+    "cleanup": "PASS; test containers, network and named volumes removed"
+  },
+  "limitations": [
+    "Local Docker evidence does not close authenticated staging, provider fault, backup/restore, rollback, release or production gates.",
+    "No staging artifact, Gamma run or report was created by this verification."
+  ],
+  "secrets": "not_recorded",
+  "patient_data": "not_used"
+}
