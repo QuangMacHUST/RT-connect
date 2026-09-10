@@ -1,0 +1,68 @@
+{
+  "schema_version": "rt-connect.p19-authenticated-remote-readback.v1",
+  "captured_at_utc": "2026-09-10T13:33:55.9045522Z",
+  "environment": "staging",
+  "browser": "Edge/Profile 3",
+  "authenticated_session": true,
+  "source_sha_observed_in_ui": "3e79f4886a665a09a1bbba6f94bec6b15a76dbf9",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "synthetic_fixture_only": true,
+  "no_mutation_performed": true,
+  "checks": [
+    {
+      "name": "organization.deep_link",
+      "ok": true,
+      "route": "/app/organization",
+      "details": "Hong ngoc general hospital; 1 active site; 1 active machine; active membership rendered; no error state"
+    },
+    {
+      "name": "qa_archive.deep_link",
+      "ok": true,
+      "route": "/app/qa",
+      "details": "Staging P6 Smoke folder and real API marker rendered; no session/not-found error"
+    },
+    {
+      "name": "dvh.deep_link",
+      "ok": true,
+      "route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh",
+      "details": "2 RTDOSE + 1 RTSTRUCT; RTDOSE gamma-rtdose-v1-smoke.dcm selected; saved run d8230d1d-badd-4c0c-b044-dcc4434215a6; D95 5.200 Gy; dose-native warning is visible because CT is not selected"
+    },
+    {
+      "name": "dvh.reload_readback",
+      "ok": true,
+      "route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh",
+      "details": "After browser reload, the same saved run and D95 5.200 Gy were rendered; no session/not-found error"
+    },
+    {
+      "name": "report_builder.readback",
+      "ok": true,
+      "route": "/app/reports",
+      "details": "4 report revisions listed, including DVH and BIOLOGICAL sources; editor and preview rendered"
+    },
+    {
+      "name": "biological_toolkit.readback",
+      "ok": true,
+      "route": "/app/biological",
+      "details": "3 SAVED scenarios, 6 calculation snapshots and independent toolkit modules rendered; QA namespace separation message visible"
+    },
+    {
+      "name": "platform_status.readback",
+      "ok": true,
+      "route": "/app/system/status",
+      "details": "health OK; readiness READY; schema 20260909_0019; API version 3e79f4886a665a09a1bbba6f94bec6b15a76dbf9; schema parity MATCH; Redis available/configured"
+    }
+  ],
+  "operational_observation": {
+    "gamma_failed_counter_observed": 1,
+    "interpretation": "The status page exposed one historical failed Gamma counter; it was not hidden or reset by this read-only check. Fault/incident triage remains open in P18."
+  },
+  "passed": true,
+  "limitations": [
+    "Read-only authenticated remote browser evidence; no upload, calculation, report save or invitation mutation was performed.",
+    "This does not close two-identity Auth, cross-organization negative tests, export download filename finalization, worker fault injection, backup/restore provider drill or rollback rehearsal.",
+    "No patient data, credential, token, cookie or database URL is stored in this evidence."
+  ],
+  "contains_patient_data": false,
+  "contains_secrets": false
+}

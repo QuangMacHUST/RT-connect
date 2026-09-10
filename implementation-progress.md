@@ -9,6 +9,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Các assertion PASS gồm health/readiness/version, OpenAPI CT preview và membership/invitation, unauthenticated organization boundary `401`, web index/bundle, CT/membership markers và source SHA marker. Evidence: [p19-staging-public-smoke-20260910-8dffbb9.json](docs/evidence/p19-staging-public-smoke-20260910-8dffbb9.json).
 - Đây là `STAGING_SOURCE_PARITY_AND_PUBLIC_SMOKE`, không nâng P19 thành DONE-v2: authenticated remote E2E, direct PostgreSQL/Redis/object evidence, fault/resource, backup/restore, rollback rehearsal, alert/owner handoff và production promotion vẫn mở.
 
+## P19 — effective settings and authenticated remote readback — partial verified — 2026-09-10 / `3e79f48`
+
+- `scripts/verify-railway-effective-settings.ps1` đọc Railway GraphQL bằng token chỉ trong bộ nhớ, kiểm tra API/web/worker cùng environment/service IDs, root/Dockerfile/healthcheck/pre-deploy/start command, required variable names, forbidden secret/browser-database names, private DB/Redis host classification, external S3 endpoint classification, CORS origin, Vite API/Auth values và worker không có public-domain variable. Kết quả `passed=true`, `failed_check_count=0`; report không chứa secret/database URL/patient data: [p19-railway-effective-settings-20260910.json](docs/evidence/p19-railway-effective-settings-20260910.json).
+- Browser Edge với authenticated session đã đọc `/app/organization`, `/app/qa`, case DVH, `/app/reports`, `/app/biological` và `/app/system/status` trên build `3e79f488...`; DVH deep-link/reload giữ run `d8230d1d...`, D95 `5.200 Gy`, input RTDOSE/RTSTRUCT và warning CT dose-native. Evidence: [p19-staging-authenticated-remote-readback-20260910-3e79f48.json](docs/evidence/p19-staging-authenticated-remote-readback-20260910-3e79f48.json).
+- Status page vẫn hiển thị `failed=1` ở Gamma queue counter lịch sử; readback không che giấu hoặc reset counter. Đây là tín hiệu để P18 fault/incident triage tiếp tục, không được diễn giải là toàn bộ queue đã PASS. P19 vẫn thiếu two-identity/mutation E2E, export/download, rollback, alert/restore và production promotion.
+
 ## P13 — staging BED/EQD2 calculation, immutable readback and export — partial verified — 2026-09-10 / `b712a383`
 
 - Trên web build `b712a383fb806188c794481720e7051e89168fe4`, browser authenticated đã chọn scenario SAVED `P12_STAGING_BIO_SCENARIO_E21`, revision `3` (`e3bcce19-d769-4873-b0e6-45a82e66ee32`) và validate-only thành công trước khi lưu snapshot.

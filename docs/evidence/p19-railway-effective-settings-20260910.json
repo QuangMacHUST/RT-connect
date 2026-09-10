@@ -1,0 +1,490 @@
+﻿{
+    "schema_version":  "rt-connect.railway-effective-settings.v1",
+    "captured_at_utc":  "2026-09-10T13:36:05.4343035Z",
+    "project_id":  "339f2c50-ddd7-491f-8c4e-da2a2d169502",
+    "environment_id":  "b0ab34e5-0ff4-479d-8232-659d175e9e2f",
+    "services":  {
+                     "api":  "9b35bf0b-0419-4679-8af0-e639e5a84713",
+                     "web":  "9f23331c-8d5e-45fb-9f11-5aa5e69f76f6",
+                     "worker":  "a1e0c389-e527-4d4c-995e-2a48f4795dda"
+                 },
+    "service_settings":  {
+                             "api":  {
+                                         "id":  "2f2513d5-65cf-4bf6-aaa3-5991f573a042",
+                                         "serviceId":  "9b35bf0b-0419-4679-8af0-e639e5a84713",
+                                         "serviceName":  "Railway-API-staging",
+                                         "environmentId":  "b0ab34e5-0ff4-479d-8232-659d175e9e2f",
+                                         "rootDirectory":  "/apps/api",
+                                         "startCommand":  "",
+                                         "buildCommand":  null,
+                                         "dockerfilePath":  "/apps/api/Dockerfile",
+                                         "healthcheckPath":  "/api/v1/health",
+                                         "healthcheckTimeout":  300,
+                                         "preDeployCommand":  [
+                                                                  "alembic upgrade head"
+                                                              ],
+                                         "preDeployTimeoutSeconds":  null,
+                                         "railwayConfigFile":  null,
+                                         "restartPolicyType":  "ON_FAILURE",
+                                         "restartPolicyMaxRetries":  10,
+                                         "numReplicas":  null
+                                     },
+                             "web":  {
+                                         "id":  "cef842dc-427d-43ad-bab7-234fc03601c1",
+                                         "serviceId":  "9f23331c-8d5e-45fb-9f11-5aa5e69f76f6",
+                                         "serviceName":  "RT-connect-web-staging",
+                                         "environmentId":  "b0ab34e5-0ff4-479d-8232-659d175e9e2f",
+                                         "rootDirectory":  "/apps/web",
+                                         "startCommand":  null,
+                                         "buildCommand":  null,
+                                         "dockerfilePath":  "/apps/web/Dockerfile",
+                                         "healthcheckPath":  null,
+                                         "healthcheckTimeout":  null,
+                                         "preDeployCommand":  null,
+                                         "preDeployTimeoutSeconds":  null,
+                                         "railwayConfigFile":  null,
+                                         "restartPolicyType":  "ON_FAILURE",
+                                         "restartPolicyMaxRetries":  10,
+                                         "numReplicas":  null
+                                     },
+                             "worker":  {
+                                            "id":  "91b0b033-b436-48dc-a7a7-6430580ddc39",
+                                            "serviceId":  "a1e0c389-e527-4d4c-995e-2a48f4795dda",
+                                            "serviceName":  "RT-connect-gamma-worker-staging",
+                                            "environmentId":  "b0ab34e5-0ff4-479d-8232-659d175e9e2f",
+                                            "rootDirectory":  "/apps/api",
+                                            "startCommand":  "python -m rt_connect_api.worker",
+                                            "buildCommand":  null,
+                                            "dockerfilePath":  "Dockerfile",
+                                            "healthcheckPath":  "",
+                                            "healthcheckTimeout":  null,
+                                            "preDeployCommand":  [
+
+                                                                 ],
+                                            "preDeployTimeoutSeconds":  null,
+                                            "railwayConfigFile":  null,
+                                            "restartPolicyType":  "ON_FAILURE",
+                                            "restartPolicyMaxRetries":  10,
+                                            "numReplicas":  null
+                                        }
+                         },
+    "variable_names":  {
+                           "api":  [
+                                       "APP_ENV",
+                                       "APP_VERSION",
+                                       "CORS_ALLOWED_ORIGINS",
+                                       "DATABASE_URL",
+                                       "PORT",
+                                       "RAILWAY_ENVIRONMENT",
+                                       "RAILWAY_ENVIRONMENT_ID",
+                                       "RAILWAY_ENVIRONMENT_NAME",
+                                       "RAILWAY_PRIVATE_DOMAIN",
+                                       "RAILWAY_PROJECT_ID",
+                                       "RAILWAY_PROJECT_NAME",
+                                       "RAILWAY_PUBLIC_DOMAIN",
+                                       "RAILWAY_SERVICE_ID",
+                                       "RAILWAY_SERVICE_NAME",
+                                       "RAILWAY_SERVICE_RAILWAY_API_STAGING_URL",
+                                       "RAILWAY_SERVICE_RT_CONNECT_WEB_STAGING_URL",
+                                       "RAILWAY_STATIC_URL",
+                                       "REDIS_URL",
+                                       "S3_ACCESS_KEY_ID",
+                                       "S3_BUCKET",
+                                       "S3_ENDPOINT",
+                                       "S3_REGION",
+                                       "S3_SECRET_ACCESS_KEY",
+                                       "S3_SIGNED_URL_TTL_SECONDS",
+                                       "SUPABASE_JWKS_URL",
+                                       "SUPABASE_JWT_AUDIENCE",
+                                       "SUPABASE_JWT_ISSUER"
+                                   ],
+                           "web":  [
+                                       "RAILWAY_ENVIRONMENT",
+                                       "RAILWAY_ENVIRONMENT_ID",
+                                       "RAILWAY_ENVIRONMENT_NAME",
+                                       "RAILWAY_PRIVATE_DOMAIN",
+                                       "RAILWAY_PROJECT_ID",
+                                       "RAILWAY_PROJECT_NAME",
+                                       "RAILWAY_PUBLIC_DOMAIN",
+                                       "RAILWAY_SERVICE_ID",
+                                       "RAILWAY_SERVICE_NAME",
+                                       "RAILWAY_SERVICE_RAILWAY_API_STAGING_URL",
+                                       "RAILWAY_SERVICE_RT_CONNECT_WEB_STAGING_URL",
+                                       "RAILWAY_STATIC_URL",
+                                       "SUPABASE_JWT_AUDIENCE",
+                                       "VITE_API_BASE_URL",
+                                       "VITE_APP_VERSION",
+                                       "VITE_SUPABASE_PUBLISHABLE_KEY",
+                                       "VITE_SUPABASE_URL"
+                                   ],
+                           "worker":  [
+                                          "APP_ENV",
+                                          "APP_VERSION",
+                                          "CORS_ALLOWED_ORIGINS",
+                                          "DATABASE_URL",
+                                          "GAMMA_WORKER_POLL_SECONDS",
+                                          "RAILWAY_ENVIRONMENT",
+                                          "RAILWAY_ENVIRONMENT_ID",
+                                          "RAILWAY_ENVIRONMENT_NAME",
+                                          "RAILWAY_PRIVATE_DOMAIN",
+                                          "RAILWAY_PROJECT_ID",
+                                          "RAILWAY_PROJECT_NAME",
+                                          "RAILWAY_SERVICE_ID",
+                                          "RAILWAY_SERVICE_NAME",
+                                          "RAILWAY_SERVICE_RAILWAY_API_STAGING_URL",
+                                          "RAILWAY_SERVICE_RT_CONNECT_WEB_STAGING_URL",
+                                          "REDIS_URL",
+                                          "S3_ACCESS_KEY_ID",
+                                          "S3_BUCKET",
+                                          "S3_ENDPOINT",
+                                          "S3_REGION",
+                                          "S3_SECRET_ACCESS_KEY",
+                                          "S3_SIGNED_URL_TTL_SECONDS",
+                                          "SUPABASE_JWKS_URL",
+                                          "SUPABASE_JWT_AUDIENCE",
+                                          "SUPABASE_JWT_ISSUER"
+                                      ]
+                       },
+    "checks":  [
+                   {
+                       "name":  "api.identity.service_id",
+                       "ok":  true,
+                       "details":  "expected=9b35bf0b-0419-4679-8af0-e639e5a84713; observed=9b35bf0b-0419-4679-8af0-e639e5a84713"
+                   },
+                   {
+                       "name":  "api.identity.environment_id",
+                       "ok":  true,
+                       "details":  "expected=b0ab34e5-0ff4-479d-8232-659d175e9e2f; observed=b0ab34e5-0ff4-479d-8232-659d175e9e2f"
+                   },
+                   {
+                       "name":  "web.identity.service_id",
+                       "ok":  true,
+                       "details":  "expected=9f23331c-8d5e-45fb-9f11-5aa5e69f76f6; observed=9f23331c-8d5e-45fb-9f11-5aa5e69f76f6"
+                   },
+                   {
+                       "name":  "web.identity.environment_id",
+                       "ok":  true,
+                       "details":  "expected=b0ab34e5-0ff4-479d-8232-659d175e9e2f; observed=b0ab34e5-0ff4-479d-8232-659d175e9e2f"
+                   },
+                   {
+                       "name":  "worker.identity.service_id",
+                       "ok":  true,
+                       "details":  "expected=a1e0c389-e527-4d4c-995e-2a48f4795dda; observed=a1e0c389-e527-4d4c-995e-2a48f4795dda"
+                   },
+                   {
+                       "name":  "worker.identity.environment_id",
+                       "ok":  true,
+                       "details":  "expected=b0ab34e5-0ff4-479d-8232-659d175e9e2f; observed=b0ab34e5-0ff4-479d-8232-659d175e9e2f"
+                   },
+                   {
+                       "name":  "api.root_directory",
+                       "ok":  true,
+                       "details":  "observed=/apps/api"
+                   },
+                   {
+                       "name":  "api.dockerfile",
+                       "ok":  true,
+                       "details":  "observed=/apps/api/Dockerfile"
+                   },
+                   {
+                       "name":  "api.healthcheck",
+                       "ok":  true,
+                       "details":  "observed=/api/v1/health"
+                   },
+                   {
+                       "name":  "api.pre_deploy_migration",
+                       "ok":  true,
+                       "details":  "observed=alembic upgrade head"
+                   },
+                   {
+                       "name":  "api.variable.DATABASE_URL",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "api.variable.REDIS_URL",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "api.variable.S3_ENDPOINT",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "api.variable.S3_BUCKET",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "api.variable.SUPABASE_JWT_ISSUER",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "api.variable.SUPABASE_JWT_AUDIENCE",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "api.variable.SUPABASE_JWKS_URL",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "api.variable.CORS_ALLOWED_ORIGINS",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "api.cors.allowed_origin",
+                       "ok":  true,
+                       "details":  "expected_origin_present; wildcard_absent; value_not_recorded"
+                   },
+                   {
+                       "name":  "api.DATABASE_URL.private_host",
+                       "ok":  true,
+                       "details":  "private-host-classified; value_not_recorded"
+                   },
+                   {
+                       "name":  "api.REDIS_URL.private_host",
+                       "ok":  true,
+                       "details":  "private-host-classified; value_not_recorded"
+                   },
+                   {
+                       "name":  "api.S3_ENDPOINT.external_endpoint",
+                       "ok":  true,
+                       "details":  "external-s3-compatible-endpoint; host_not_recorded"
+                   },
+                   {
+                       "name":  "api.forbidden.RAILWAY_ACCOUNT_TOKEN",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "api.forbidden.RAILWAY_PROJECT_TOKEN",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "api.forbidden.SUPABASE_SERVICE_ROLE_KEY",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "api.forbidden.VITE_DATABASE_URL",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "api.forbidden.VITE_SUPABASE_SERVICE_ROLE_KEY",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "api.forbidden.VITE_S3_SECRET_ACCESS_KEY",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "web.root_directory",
+                       "ok":  true,
+                       "details":  "observed=/apps/web"
+                   },
+                   {
+                       "name":  "web.dockerfile",
+                       "ok":  true,
+                       "details":  "observed=/apps/web/Dockerfile"
+                   },
+                   {
+                       "name":  "web.no_healthcheck",
+                       "ok":  true,
+                       "details":  "observed="
+                   },
+                   {
+                       "name":  "web.no_pre_deploy",
+                       "ok":  true,
+                       "details":  "observed="
+                   },
+                   {
+                       "name":  "web.variable.VITE_API_BASE_URL",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "web.variable.VITE_SUPABASE_URL",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "web.variable.VITE_SUPABASE_PUBLISHABLE_KEY",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "web.variable.VITE_APP_VERSION",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "web.vite_api_base_url",
+                       "ok":  true,
+                       "details":  "expected=https://gleaming-cooperation-staging.up.railway.app/api/v1; observed_class=present"
+                   },
+                   {
+                       "name":  "web.VITE_API_BASE_URL.https",
+                       "ok":  true,
+                       "details":  "https-url-classified; value_not_recorded"
+                   },
+                   {
+                       "name":  "web.VITE_SUPABASE_URL.https",
+                       "ok":  true,
+                       "details":  "https-url-classified; value_not_recorded"
+                   },
+                   {
+                       "name":  "web.forbidden.RAILWAY_ACCOUNT_TOKEN",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "web.forbidden.RAILWAY_PROJECT_TOKEN",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "web.forbidden.SUPABASE_SERVICE_ROLE_KEY",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "web.forbidden.VITE_DATABASE_URL",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "web.forbidden.VITE_SUPABASE_SERVICE_ROLE_KEY",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "web.forbidden.VITE_S3_SECRET_ACCESS_KEY",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "worker.root_directory",
+                       "ok":  true,
+                       "details":  "observed=/apps/api"
+                   },
+                   {
+                       "name":  "worker.start_command",
+                       "ok":  true,
+                       "details":  "observed=python -m rt_connect_api.worker"
+                   },
+                   {
+                       "name":  "worker.no_healthcheck",
+                       "ok":  true,
+                       "details":  "observed="
+                   },
+                   {
+                       "name":  "worker.no_pre_deploy",
+                       "ok":  true,
+                       "details":  "observed="
+                   },
+                   {
+                       "name":  "worker.variable.DATABASE_URL",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "worker.variable.REDIS_URL",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "worker.variable.S3_ENDPOINT",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "worker.variable.S3_BUCKET",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "worker.variable.SUPABASE_JWT_ISSUER",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "worker.variable.SUPABASE_JWT_AUDIENCE",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "worker.variable.SUPABASE_JWKS_URL",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "worker.variable.GAMMA_WORKER_POLL_SECONDS",
+                       "ok":  true,
+                       "details":  "name_present; value_not_recorded"
+                   },
+                   {
+                       "name":  "worker.DATABASE_URL.private_host",
+                       "ok":  true,
+                       "details":  "private-host-classified; value_not_recorded"
+                   },
+                   {
+                       "name":  "worker.REDIS_URL.private_host",
+                       "ok":  true,
+                       "details":  "private-host-classified; value_not_recorded"
+                   },
+                   {
+                       "name":  "worker.S3_ENDPOINT.external_endpoint",
+                       "ok":  true,
+                       "details":  "external-s3-compatible-endpoint; host_not_recorded"
+                   },
+                   {
+                       "name":  "worker.forbidden.RAILWAY_ACCOUNT_TOKEN",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "worker.forbidden.RAILWAY_PROJECT_TOKEN",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "worker.forbidden.SUPABASE_SERVICE_ROLE_KEY",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "worker.forbidden.VITE_DATABASE_URL",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "worker.forbidden.VITE_SUPABASE_SERVICE_ROLE_KEY",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "worker.forbidden.VITE_S3_SECRET_ACCESS_KEY",
+                       "ok":  true,
+                       "details":  "forbidden_name_absent"
+                   },
+                   {
+                       "name":  "worker.no_public_domain_variable",
+                       "ok":  true,
+                       "details":  "worker_public_domain_variable_absent"
+                   }
+               ],
+    "passed":  true,
+    "failed_check_count":  0,
+    "contains_secret_values":  false,
+    "contains_database_urls":  false,
+    "contains_patient_data":  false
+}
