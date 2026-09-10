@@ -1,0 +1,47 @@
+{
+  "schema_version": "rt-connect.p10-staging-baseline-lifecycle.v1",
+  "captured_at_utc": "2026-09-10T07:22:30Z",
+  "verification": "STAGING_AUTHENTICATED_BROWSER_MUTATION_AND_RELOAD",
+  "synthetic_only": true,
+  "source_commit": "2a381ba78ade65e5468d730c46adc6856f7713b8",
+  "environment": "staging",
+  "route": "/app/trend",
+  "organization_context": {
+    "machine_id": "STAGING-LINAC-01",
+    "machine_name": "Synthetic QA Linac",
+    "metric_key": "output_factor",
+    "unit": "%"
+  },
+  "mutation": {
+    "operation": "create baseline version",
+    "baseline_value": 100,
+    "tolerance": 2,
+    "action_level": 3,
+    "effective_from_input": "2026-09-10T14:11",
+    "ui_result": "Đã tạo baseline version mới."
+  },
+  "readback_after_reload": {
+    "web_build": "2a381ba78ade65e5468d730c46adc6856f7713b8",
+    "compatible_point_count": 7,
+    "compatible_series_count": 4,
+    "baseline_count": 4,
+    "maintenance_marker_count": 1,
+    "existing_raw_points_preserved": true,
+    "existing_output_factor_values_preserved": [100, 100],
+    "no_retroactive_rewrite_observed": true,
+    "result": "PASS"
+  },
+  "checks": {
+    "mutation_success_message": true,
+    "baseline_persisted_after_reload": true,
+    "historical_points_not_deleted": true,
+    "context_machine_metric_unit_visible": true,
+    "no_patient_or_pacs_data": true
+  },
+  "evidence_level": "STAGING_PARTIAL",
+  "limitations": [
+    "This closes one baseline-create/readback happy path only; baseline conflict, invalid boundary, archive/expiry and concurrent mutation cases remain open.",
+    "Projection rebuild, maintenance-marker mutation, large-series budget, full S/E/C, fault injection, accessibility and release gates remain open.",
+    "This synthetic staging observation is not a clinical readiness claim."
+  ]
+}

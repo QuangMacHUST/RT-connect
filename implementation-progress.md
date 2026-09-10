@@ -11,6 +11,7 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Negative filter `metric_does_not_exist` trả `TREND_EMPTY`, `0` point/series và không zero-fill. Gộp theo ngày với `output_factor` giữ `2` series, `3` compatible points, mean/min/max `100%` và không trộn protocol context. Evidence: `docs/evidence/p10-staging-trend-browser-20260910-6426ceb.json`.
 - Đây là `STAGING_PARTIAL`: browser vẫn quan sát hậu tố `.crdownload`, nên final filename completion, large-series benchmark, projection rebuild/baseline mutation, full S/E/C, fault, accessibility và release/production gates còn mở. Không tạo QA run mới, không upload artifact và không dùng dữ liệu bệnh nhân/PACS.
 - Sau khi checkpoint được commit thành `05ff3d29e24cb15826e8335a5a66d6f4bd32f87b`, API/worker staging đã được redeploy đúng SHA để giữ parity với web; public verifier lại đạt **15/15 PASS**, schema `20260909_0019`. Evidence: `docs/evidence/p19-staging-public-smoke-20260910-05ff3d2.json`.
+- Trên đúng candidate `2a381ba78ade65e5468d730c46adc6856f7713b8`, Trend đã tạo được một baseline version synthetic cho `STAGING-LINAC-01/output_factor/%` (`100`, tolerance `2`, action level `3`); sau reload, baseline count tăng lên `4`, `7` raw points và `4` series vẫn còn nguyên, không có rewrite hồi tố. Evidence: `docs/evidence/p10-staging-baseline-lifecycle-20260910-2a381ba.json`. Đây mới là happy path create/readback; conflict/invalid/archive/concurrency và projection rebuild vẫn mở.
 
 ## P9 deterministic export filename — local verified — 2026-09-10 / `211d9f7`
 
