@@ -931,6 +931,12 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - Chưa đóng P9: storage failure/retry, byte-level visual review và xác nhận build SHA trên staging candidate mới.
 - Chưa đóng P10: complete current-candidate negative matrix, large-series budget, baseline/event update/archive UI, source drill-down/export verification sau refresh và visual/accessibility evidence.
 
+### Checkpoint bổ sung P9 — export filename contract — 2026-09-10 / `211d9f7`
+
+- Implementation slice đã bổ sung `response-content-disposition` vào signed URL của report export qua ObjectStorage/MinIO adapter. Tên file được tạo deterministic theo `rt-connect-report-export-{export_job_id}.{extension}` cho cả lúc tạo/replay export và lúc cấp lại download link; không đọc title tùy ý để tránh header injection.
+- Regression local bao phủ đủ JSON/CSV/PDF/PNG, idempotent replay, checksum/object bytes và download endpoint. Backend full suite **169 passed**, Ruff và strict mypy pass; frontend lint/typecheck/Vitest **15/15** và build pass. Evidence: `docs/evidence/p9-export-filename-20260910-211d9f7.json`.
+- Đây chỉ là `LOCAL_VERIFIED`; commit `211d9f7` và evidence follow-up `291e88c` chưa được Railway nhận trong lần kiểm tra này vì push GitHub gặp timeout. Chưa nâng staging gate: provider response header, browser final filename, visual PDF/PNG, fault/retry và release manifest vẫn `NOT_RUN` trên candidate này.
+
 <a id="phase-10"></a>
 
 ## P10 — Trend, baseline và sự kiện bảo trì
