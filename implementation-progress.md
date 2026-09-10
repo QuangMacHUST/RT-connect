@@ -1,7 +1,15 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
-`technical-specification.md` v1.23 và `plan.md` v4.17.
+`technical-specification.md` v1.23 và `plan.md` v4.18.
+
+## P13 — staging BED/EQD2 calculation, immutable readback and export — partial verified — 2026-09-10 / `b712a383`
+
+- Trên web build `b712a383fb806188c794481720e7051e89168fe4`, browser authenticated đã chọn scenario SAVED `P12_STAGING_BIO_SCENARIO_E21`, revision `3` (`e3bcce19-d769-4873-b0e6-45a82e66ee32`) và validate-only thành công trước khi lưu snapshot.
+- Known-answer fixture `D=60 Gy`, `n=30`, `d=2 Gy/fx`, `alpha/beta=10 Gy` cho snapshot `COMPLETED`: `BED=72 Gy10`, `EQD2=60 Gy`; model `biological.bed-eqd2`, version `p13-lq-1.0.0`, chart dataset `303` points, checksum `0d9dff8f381ca6dd3066d0606ea2a8ad452bcd47c25e5fa300bddf8d866c4c19`. Snapshot ID `12ba1966-e214-414a-a7a2-d6155fc856d8`; idempotency key `p13-a3dfbcd2-d9f9-4d46-affc-3c718df0ca88`.
+- Fresh browser tab đọc lại đúng build, scenario revision, trạng thái `COMPLETED`, BED/EQD2, model và checksum dataset. Export JSON và CSV đều trả toast thành công. Negative `D=61` với `n=30`, `d=2` bị chặn bằng `FRACTIONATION_INCONSISTENT` trên hai field, validate-only không tạo snapshot.
+- Evidence: [p13-staging-bed-eqd2-20260910-b712.json](docs/evidence/p13-staging-bed-eqd2-20260910-b712.json). RTDOSE tổng hợp đã được người dùng cho phép nhưng artifact đã tồn tại trong case staging và được reuse; không upload trùng, không gắn biological calculation với QA case.
+- Đây là `STAGING_PARTIAL_PASS`, chưa phải `DONE-v2`: direct PostgreSQL/checksum, cross-organization scope, idempotency replay/conflict, đầy đủ S/E/C/fault, release manifest và production parity vẫn mở. Filename completion của browser download vẫn `UNVERIFIED` do harness giữ đuôi tạm.
 
 ## P12 — staging Biological scenario lifecycle and report integration — partial verified — 2026-09-10 / `e21ad4b`
 

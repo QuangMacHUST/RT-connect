@@ -1,6 +1,6 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
-- Phiên bản: **4.17**, ngày 2026-09-10.
+- Phiên bản: **4.18**, ngày 2026-09-10.
 - Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.24.
 - Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.24.
 - Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.23.
@@ -19,6 +19,8 @@
 > Operational update P18 ngày 2026-09-10: verifier local backup/restore đã được làm bounded theo từng lệnh Compose và dừng process tree trên Windows. Lần chạy `--command-timeout-seconds 10` bị chặn tại `ps --services --filter status=running` vì Docker CLI/daemon không trả lời; evidence `docs/evidence/p18-local-backup-restore-timeout-20260910.json` ghi `passed=false`, không có restore database/bucket. Đây là bằng chứng dependency failure có giới hạn, không được tính là restore PASS; phải khôi phục Docker rồi chạy lại trước khi đánh giá P18-W03a.
 
 > P12 staging packet ngày 2026-09-10 trên candidate `e21ad4b7f46aa990ae0bf0d7915b4199e66d62b4`: scenario tổng hợp đã chạy validate→DRAFT→revision→SAVED→clone→ARCHIVED→fresh history/filter; negative `REFERENCE` thiếu citation bị chặn bằng `BIOLOGICAL_CONTEXT_INVALID`; Report Builder đã lưu source `BIOLOGICAL` và đọc lại block/snapshot sau fresh navigation. Evidence: `docs/evidence/p12-staging-browser-20260910-e21ad4b.json`. Đây là `STAGING_PARTIAL_PASS`; direct DB/scope, complete S/E/C, fault/resource, manifest và production/rollback chưa đóng.
+
+> P13 staging packet ngày 2026-09-10 trên candidate `b712a383fb806188c794481720e7051e89168fe4`: BED/EQD2 known-answer `60/30/2, alpha-beta=10` đã validate→save→fresh readback với `BED=72 Gy10`, `EQD2=60 Gy`, model/version/checksum và chart `303` points; JSON/CSV export trả thành công; `D=61` mismatch bị chặn bằng `FRACTIONATION_INCONSISTENT` không mutation. Evidence: `docs/evidence/p13-staging-bed-eqd2-20260910-b712.json`. Đây là `STAGING_PARTIAL_PASS`; direct DB/scope/idempotency/fault/manifest/production gates chưa đóng. Fixture RTDOSE tổng hợp được reuse từ case staging hiện có theo xác nhận người dùng, không upload trùng.
 
 ## 1. Cách thực hiện kế hoạch
 

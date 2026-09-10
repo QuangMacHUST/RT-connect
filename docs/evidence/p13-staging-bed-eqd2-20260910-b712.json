@@ -1,0 +1,96 @@
+{
+  "schema_version": "rt-connect.p13-staging-bed-eqd2.v1",
+  "recorded_at": "2026-09-10",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_E2E_READBACK",
+  "environment": "staging",
+  "candidate_source_sha": "b712a383fb806188c794481720e7051e89168fe4",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "route": "/app/biological/bed-eqd2?release=b712a383fb806188c794481720e7051e89168fe4",
+  "data_boundary": "Only repository-generated biological scenario values were used. No patient, QA case, TPS, PACS or clinical treatment data was linked.",
+  "synthetic_fixture_authorization": {
+    "synthetic_rtdose_upload_authorized_by_user": true,
+    "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+    "fixture": "gamma-rtdose-v1-smoke.dcm",
+    "sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
+    "action": "EXISTING_ARTIFACT_REUSED",
+    "upload_repeated": false
+  },
+  "scenario": {
+    "id": "45550fa4-b635-4d9f-90bb-e0d2cd77c531",
+    "scenario_key": "P12_STAGING_BIO_SCENARIO_E21",
+    "status": "SAVED",
+    "revision_number": 3,
+    "revision_id": "e3bcce19-d769-4873-b0e6-45a82e66ee32"
+  },
+  "happy_path": {
+    "input": {
+      "total_dose_gy": 60,
+      "fractions": 30,
+      "dose_per_fraction_gy": 2,
+      "consistency_tolerance_gy": 0.01,
+      "alpha_beta_gy": 10,
+      "alpha_beta_source_type": "USER_DEFINED",
+      "curve_mode": "FIXED_N",
+      "curve_dose_min_gy": 0,
+      "curve_dose_max_gy": 100,
+      "curve_dose_step_gy": 1,
+      "curve_alpha_beta_values_gy": [2, 3, 10],
+      "curve_point_count": 303
+    },
+    "calculation_id": "12ba1966-e214-414a-a7a2-d6155fc856d8",
+    "idempotency_key": "p13-a3dfbcd2-d9f9-4d46-affc-3c718df0ca88",
+    "status": "COMPLETED",
+    "model_key": "biological.bed-eqd2",
+    "model_version": "p13-lq-1.0.0",
+    "known_answer": {
+      "bed_gy10": 72,
+      "eqd2_gy": 60
+    },
+    "observed_result": {
+      "bed_gy10": 72,
+      "eqd2_gy": 60,
+      "chart_dataset_point_count": 303,
+      "chart_dataset_sha256": "0d9dff8f381ca6dd3066d0606ea2a8ad452bcd47c25e5fa300bddf8d866c4c19"
+    },
+    "result": "PASS"
+  },
+  "readback": {
+    "fresh_browser_tab": true,
+    "build_label_observed": "b712a383fb806188c794481720e7051e89168fe4",
+    "calculation_status": "COMPLETED",
+    "bed_gy10": 72,
+    "eqd2_gy": 60,
+    "scenario_revision_id": "e3bcce19-d769-4873-b0e6-45a82e66ee32",
+    "result": "PASS"
+  },
+  "exports": {
+    "json": "PASS",
+    "csv": "PASS",
+    "filename_completion": "UNVERIFIED_BY_CUA_DOWNLOAD_HARNESS"
+  },
+  "negative_case": {
+    "test_id": "TC-P13-E01",
+    "change": "total_dose_gy=61 while fractions=30 and dose_per_fraction_gy=2",
+    "operation": "VALIDATE_ONLY",
+    "observed_errors": [
+      {
+        "field": "total_dose_gy",
+        "code": "FRACTIONATION_INCONSISTENT"
+      },
+      {
+        "field": "dose_per_fraction_gy",
+        "code": "FRACTIONATION_INCONSISTENT"
+      }
+    ],
+    "snapshot_created": false,
+    "result": "PASS"
+  },
+  "open_gates": [
+    "direct PostgreSQL row and immutable checksum query",
+    "cross-organization scope negative probe",
+    "same-key replay and different-fingerprint idempotency conflict",
+    "full P13 S/E/C and dependency fault matrix",
+    "release manifest and production parity"
+  ],
+  "status": "STAGING_PARTIAL_PASS"
+}
