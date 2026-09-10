@@ -1,0 +1,25 @@
+{
+  "schema_version": "rt-connect.p9-export-filename.v1",
+  "captured_at_utc": "2026-09-10T06:35:00Z",
+  "verification_level": "LOCAL_VERIFIED",
+  "source_commit": "211d9f7",
+  "scope": "Report export signed URL response headers",
+  "change": {
+    "object_storage_adapter": "presigned_get accepts provider response headers",
+    "report_export": "adds deterministic Content-Disposition filename for JSON/CSV/PDF/PNG",
+    "filename_pattern": "rt-connect-report-export-{export_job_id}.{extension}"
+  },
+  "assertions": {
+    "four_format_export_jobs": true,
+    "download_endpoint_reuses_same_filename_contract": true,
+    "idempotent_replay_preserved": true,
+    "object_bytes_and_sha256_unchanged": true,
+    "cross_backend_typecheck": true,
+    "backend_full_suite": "169 passed",
+    "frontend_lint": true,
+    "frontend_typecheck": true,
+    "frontend_vitest": "15 passed",
+    "frontend_build": true
+  },
+  "scope_note": "This is local implementation evidence. Railway provider response-header behavior, browser final filename and visual export review remain staging gates."
+}

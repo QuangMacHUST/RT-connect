@@ -3,6 +3,12 @@
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 `technical-specification.md` v1.23 và `plan.md` v4.15.
 
+## P9 deterministic export filename — local verified — 2026-09-10 / `211d9f7`
+
+- Signed report-export URLs now request a deterministic, header-safe `Content-Disposition` filename from the S3-compatible provider. The same contract is applied both when an export is created/replayed and when a download link is renewed; JSON/CSV/PDF/PNG object bytes, checksum, revision snapshot and idempotency behavior are unchanged.
+- Local regression verifies all four formats and the download endpoint with `rt-connect-report-export-{export_job_id}.{extension}`. Backend full suite: **169 passed**; Ruff and strict mypy pass; frontend lint, typecheck, Vitest **15/15** and production build pass. Evidence: `docs/evidence/p9-export-filename-20260910-211d9f7.json`.
+- This closes the implementation slice only. Staging signed-URL response headers, browser final filename, byte-level PDF/PNG visual review, provider fault/retry and release-manifest evidence remain open.
+
 ## RTDOSE authorization, P17 readback and P9 JSON export — staging verified — 2026-09-10 / `c17fe9a`
 
 - Theo xác nhận của người dùng, fixture RTDOSE tổng hợp được phép dùng trong case staging `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`. Kiểm tra lại trên candidate `c17fe9a1138da4b5b60fe8f070a0367e9e8a07f1` cho thấy `gamma-rtdose-v1-smoke.dcm` đã tồn tại đúng một artifact, checksum đầy đủ `ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b`, `RTDOSE/VALID`, đang được chọn cùng RTSTRUCT hợp lệ; không tạo artifact trùng.
