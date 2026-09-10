@@ -11,6 +11,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Evidence: [p13-staging-bed-eqd2-20260910-b712.json](docs/evidence/p13-staging-bed-eqd2-20260910-b712.json). RTDOSE tổng hợp đã được người dùng cho phép nhưng artifact đã tồn tại trong case staging và được reuse; không upload trùng, không gắn biological calculation với QA case.
 - Đây là `STAGING_PARTIAL_PASS`, chưa phải `DONE-v2`: direct PostgreSQL/checksum, cross-organization scope, idempotency replay/conflict, đầy đủ S/E/C/fault, release manifest và production parity vẫn mở. Filename completion của browser download vẫn `UNVERIFIED` do harness giữ đuôi tạm.
 
+## P19 — staging exact-SHA public verifier after P13 evidence — partial verified — 2026-09-10 / `796e078`
+
+- API, web và worker staging đều deploy thành công từ exact source SHA `796e078af7ff66f4a1f8645061183859420bf785`; deployment IDs lần lượt `02c0d58d-c892-4834-a3ac-26364586bdfa`, `e56ac637-d30c-4ef6-8cc7-46c76da5024f` và `ca73840b-56e6-4a47-a415-69cfe9c1af21`.
+- Public verifier đạt `15/15 PASS`, `failed_check_count=0`; `/health`, `/ready`, `/version`, schema `20260909_0019`, OpenAPI, membership boundary, web index/bundle và source marker đều khớp. Evidence: [p19-staging-public-smoke-20260910-796e078.json](docs/evidence/p19-staging-public-smoke-20260910-796e078.json).
+- Đây chỉ là public contract/source-parity sub-gate. Authenticated E2E đầy đủ, private DB/Redis, fault/retry, backup/restore, rollback, alerting và production promotion vẫn mở.
+
 ## P12 — staging Biological scenario lifecycle and report integration — partial verified — 2026-09-10 / `e21ad4b`
 
 - Trên web build `e21ad4b7f46aa990ae0bf0d7915b4199e66d62b4`, browser authenticated đã validate scenario tổng hợp mà không tạo mutation; tạo `P12_STAGING_BIO_SCENARIO_E21` ở `DRAFT rev 1`, sửa thành `DRAFT rev 2`, lưu thành `SAVED rev 3`, rồi fresh navigation đọc lại đủ history `3/2/1` cùng snapshot context.

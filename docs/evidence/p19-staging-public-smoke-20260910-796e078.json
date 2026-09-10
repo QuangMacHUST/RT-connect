@@ -1,0 +1,32 @@
+{
+  "schema_version": "rt-connect.public-deployment-verification.v1",
+  "captured_at_utc": "2026-09-10T12:33:18.4833566Z",
+  "environment": "staging",
+  "candidate_source_sha": "796e078af7ff66f4a1f8645061183859420bf785",
+  "schema_revision": "20260909_0019",
+  "api_base_url": "https://gleaming-cooperation-staging.up.railway.app",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "railway_deployments": {
+    "api": { "deployment_id": "02c0d58d-c892-4834-a3ac-26364586bdfa", "status": "SUCCESS" },
+    "web": { "deployment_id": "e56ac637-d30c-4ef6-8cc7-46c76da5024f", "status": "SUCCESS" },
+    "worker": { "deployment_id": "ca73840b-56e6-4a47-a415-69cfe9c1af21", "status": "SUCCESS" }
+  },
+  "passed": true,
+  "failed_check_count": 0,
+  "checks": {
+    "api_health": "PASS",
+    "api_ready": "PASS",
+    "api_version_exact_sha": "PASS",
+    "api_schema_exact": "PASS",
+    "api_openapi_routes": "PASS",
+    "unauthenticated_membership_boundary": "PASS",
+    "web_index": "PASS",
+    "web_bundle": "PASS",
+    "web_bundle_exact_sha_marker": "PASS"
+  },
+  "web_bundle": {
+    "asset": "assets/index-BVSzKPLO.js",
+    "sha256": "93e879fda170f5a4161fe1ab40ba4e6ac181741c086ed64724a713af69996d37"
+  },
+  "scope": "Public contract/source-parity smoke only; authenticated E2E, private dependency fault, backup/restore, rollback, alerting and production promotion remain open."
+}
