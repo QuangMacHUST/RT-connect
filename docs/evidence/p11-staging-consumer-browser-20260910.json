@@ -1,0 +1,51 @@
+{
+  "schema_version": "rt-connect.p11-staging-consumer-browser.v1",
+  "captured_at_utc": "2026-09-10T04:14:00Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_READ_ONLY_CONSUMER_RECHECK",
+  "environment": "staging",
+  "source_commit": "0e30ff1ba768494649d9ce6105dacac9c703a4d4",
+  "web_build_label_observed": "0e30ff1ba768494649d9ce6105dacac9c703a4d4",
+  "route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/machine-qa",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "data_boundary": "Authenticated read-only browser observation of existing synthetic staging data; no fixture upload, QA run creation, rerun, archive, or protocol mutation was performed.",
+  "observed": {
+    "api_marker": "API THẬT",
+    "active_protocol_count": 2,
+    "selected_protocol": {
+      "protocol_key": "MACHINE_QA_BASELINE",
+      "display_name": "Machine QA baseline",
+      "version_number": 1,
+      "status": "ACTIVE",
+      "revision": 1,
+      "source_type": "USER_DEFINED",
+      "source_reference": null,
+      "rule_count": 3,
+      "applicability": "không giới hạn applicability"
+    },
+    "consumer_snapshot_marker": "Run này đã pin protocol snapshot; archive hoặc version mới không thay đổi kết quả lịch sử.",
+    "selected_existing_run": {
+      "run_id": "5ac1a1c1-a985-4a40-97e4-0c8a8b6864c0",
+      "status": "COMPLETED",
+      "overall_status": "PASS",
+      "supersedes_run_id": "9b18fa2f-7a02-4154-853a-270e890fcabe"
+    },
+    "run_history_count": 2,
+    "synthetic_seed_action_visible": false,
+    "rerun_action_visible": true
+  },
+  "checks": {
+    "authenticated_app_shell": true,
+    "current_build_label_visible": true,
+    "active_protocol_loaded": true,
+    "source_revision_rule_count_visible": true,
+    "consumer_snapshot_marker_visible": true,
+    "existing_result_history_loaded": true,
+    "normal_workflow_has_no_seed_action": true,
+    "no_mutation_performed": true
+  },
+  "passed": true,
+  "open_gates": [
+    "Fresh create→evaluate→archive→old-history consumer lifecycle on the current candidate",
+    "Complete P11 S/E/C matrix and release-manifest closure"
+  ]
+}
