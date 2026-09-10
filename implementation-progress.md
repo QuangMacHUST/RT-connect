@@ -3,6 +3,13 @@
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 `technical-specification.md` v1.24 và `plan.md` v4.20.
 
+## P20-W01 — Operational status auto-refresh — local verified — 2026-09-11 / `7df7cb8`
+
+- Trang `/app/system/status` đã bổ sung polling 30 giây cho health, readiness, version và queue metrics khi có session; polling vẫn chạy khi tab ở nền.
+- Khi đang refresh, UI giữ dữ liệu quan sát gần nhất và hiển thị `Đang cập nhật…`; khi không refresh, UI hiển thị thời điểm `dataUpdatedAt` gần nhất để tránh hiểu nhầm dashboard là dữ liệu realtime liên tục.
+- Local evidence: test `7 files / 17 tests`, lint, typecheck và production build đều PASS. Evidence: [p20-local-status-auto-refresh-20260911-7df7cb8.json](docs/evidence/p20-local-status-auto-refresh-20260911-7df7cb8.json).
+- Đây mới là `LOCAL_VERIFIED`; chưa phải staging deployment, authenticated queue probe hoặc alert delivery đến kênh vận hành thật. P20-W01 và các gate P20 khác vẫn mở.
+
 ## P20-W01 — Operational probe và schema-parity check — staging partial — 2026-09-11 / `3102119`
 
 - Đã bổ sung `scripts/verify-operational-probes.ps1`, một probe fail-closed có thể chạy lại với đúng `ApiBaseUrl`, `WebBaseUrl`, release SHA và schema revision. Probe đọc riêng `/api/v1/health`, `/api/v1/ready`, `/api/v1/version`, kiểm schema parity, kiểm web `/app` và dò secret marker trong HTML; queue metrics chỉ chạy khi caller chủ động cung cấp access token và token không được ghi vào output.

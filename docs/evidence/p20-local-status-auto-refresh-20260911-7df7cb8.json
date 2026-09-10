@@ -1,0 +1,52 @@
+{
+  "evidence_id": "P20-W01-LOCAL-STATUS-AUTO-REFRESH-20260911-7df7cb8",
+  "phase": "P20",
+  "work_package": "P20-W01",
+  "status": "LOCAL_VERIFIED",
+  "captured_at": "2026-09-11",
+  "source_commit": "7df7cb85ee2b82ca54e9729cdce1c0d1c7c278d7",
+  "environment": "local",
+  "scope": "Platform status page operational observation behavior",
+  "changes": [
+    "Health, readiness, version and authenticated Gamma queue metrics refetch every 30 seconds.",
+    "Background refetch remains enabled so returning to the tab does not require a manual reload.",
+    "The page retains the last successful data while a refresh is in progress and announces the refresh state.",
+    "The page displays the most recent dataUpdatedAt timestamp instead of implying that the status is continuously current."
+  ],
+  "checks": [
+    {
+      "id": "web-tests",
+      "command": "npm.cmd run test",
+      "exit_code": 0,
+      "observed": "7 test files passed; 17 tests passed"
+    },
+    {
+      "id": "web-lint",
+      "command": "npm.cmd run lint",
+      "exit_code": 0,
+      "observed": "ESLint passed"
+    },
+    {
+      "id": "web-typecheck",
+      "command": "npm.cmd run typecheck",
+      "exit_code": 0,
+      "observed": "TypeScript project build passed"
+    },
+    {
+      "id": "web-build",
+      "command": "npm.cmd run build",
+      "exit_code": 0,
+      "observed": "Vite production build passed; chunk-size advisory warning retained"
+    }
+  ],
+  "not_verified": [
+    "Railway staging deployment of this commit",
+    "Authenticated queue-metrics probe",
+    "Delivery of a synthetic alert to a real operator channel",
+    "Provider backup/restore and owner handoff"
+  ],
+  "redaction": {
+    "contains_secrets": false,
+    "contains_patient_data": false
+  }
+}
