@@ -88,6 +88,11 @@ P10 bounded-error UX marker (2026-09-10): the structured trend budget details
 error contract. Keep API, worker and web on the same candidate when this contract
 or its user guidance changes.
 
+P10 SQL preflight marker (2026-09-10): trend context filters are applied during
+the bounded SQL source read as well as in the final Python compatibility matcher;
+`qa_cycle` and `protocol_key` retain authoritative case/protocol fallbacks for
+legacy projections. Rebuild all three services when this read path changes.
+
 P09 export compensation marker (2026-09-10): export metadata persistence now has
 an exact-key object cleanup/reconciliation contract and regression coverage for
 final-commit failure. The commit carrying this marker must rebuild API, worker and

@@ -127,6 +127,17 @@ def test_trend_query_keeps_incompatible_context_in_separate_series() -> None:
         assert "TREND_SERIES_INCOMPATIBLE" in " ".join(body["warnings"])
         assert all(series["machine_id"] == machine_id for series in body["series"])
 
+        first_class_filters = client.get(
+            f"/api/v1/organizations/{organization.id}/trend",
+            params={
+                "metric_key": "output_factor",
+                "protocol_key": "MACHINE_QA_BASELINE",
+                "qa_cycle": "DAILY",
+            },
+        )
+        assert first_class_filters.status_code == 200, first_class_filters.text
+        assert first_class_filters.json()["total_points"] == 2
+
 
 def test_trend_baseline_outlier_aggregation_and_context_filter() -> None:
     with _workspace_client() as (client, organization):

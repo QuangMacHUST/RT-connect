@@ -66,6 +66,10 @@ P10 bounded-error UX marker (2026-09-10): Trend displays the structured
 `aggregate`/`matched_points`/`max_points` guidance returned by the API when a
 query exceeds its budget; do not reduce this response to a code-only toast.
 
+P10 SQL preflight marker (2026-09-10): the web relies on the API's bounded
+context-filtered source read and does not implement a client-side large-series
+fallback or silent truncation. Keep this marker aligned with `/apps/api`.
+
 P07 explicit-N/A marker (2026-09-10): the Machine QA UI exposes the N/A checkbox,
 requires a reason, disables the numeric field while selected, and displays the
 reason/status in the result. Keep this marker aligned with the API service root

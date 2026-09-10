@@ -25,9 +25,10 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Depends, Query, Request, Response, status
 from pydantic import BaseModel, Field
-from sqlalchemy import and_, func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.elements import ColumnElement
 
 from rt_connect_api.core.config import Settings, get_settings
 from rt_connect_api.core.errors import DomainError
@@ -638,6 +639,7 @@ def _load_source_rows(
         statement = statement.where(TrendPoint.measured_at >= _as_utc(from_at))
     if to_at is not None:
         statement = statement.where(TrendPoint.measured_at < _as_utc(to_at))
+    statement = statement.where(*_context_filter_conditions(filters))
     rows = [
         _SourceRow(point, machine, case, run)
         for point, machine, case, run in session.execute(statement).all()
@@ -655,6 +657,42 @@ def _load_source_rows(
             )
         keys.add(key)
     return matched
+
+
+def _context_filter_conditions(filters: dict[str, str]) -> list[ColumnElement[bool]]:
+    """Apply the same SQL-safe context narrowing used by the count preflight.
+
+    New Machine QA points persist ``qa_cycle`` and ``protocol_key`` in the
+    immutable context snapshot.  Rebuilt or older points may rely on the
+    authoritative case/protocol snapshot instead, so those two fields use a
+    missing-snapshot fallback.  User-authored compatibility fields remain
+    exact JSON matches.  The Python matcher still runs after this narrowing as
+    the final compatibility authority.
+    """
+
+    conditions: list[ColumnElement[bool]] = []
+    for key, value in filters.items():
+        snapshot_value = TrendPoint.context_snapshot[key].as_string()
+        if key == "qa_cycle":
+            conditions.append(
+                or_(
+                    snapshot_value == value,
+                    and_(snapshot_value.is_(None), QACase.qa_cycle == value),
+                )
+            )
+        elif key == "protocol_key":
+            protocol_value = MachineQARun.result_snapshot["protocol_snapshot"][
+                "protocol_key"
+            ].as_string()
+            conditions.append(
+                or_(
+                    snapshot_value == value,
+                    and_(snapshot_value.is_(None), protocol_value == value),
+                )
+            )
+        else:
+            conditions.append(snapshot_value == value)
+    return conditions
 
 
 def _load_baselines(
@@ -923,8 +961,7 @@ def _count_source_rows(
         statement = statement.where(TrendPoint.measured_at >= _as_utc(from_at))
     if to_at is not None:
         statement = statement.where(TrendPoint.measured_at < _as_utc(to_at))
-    for key, value in filters.items():
-        statement = statement.where(TrendPoint.context_snapshot[key].as_string() == value)
+    statement = statement.where(*_context_filter_conditions(filters))
     return int(session.scalar(statement) or 0)
 
 
