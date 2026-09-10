@@ -6,7 +6,12 @@ import { ApiClientError, apiClient, type TrendResource, type TrendSeriesResource
 import { useAuth } from '../auth/AuthProvider'
 
 function errorMessage(error: unknown): string {
-  if (error instanceof ApiClientError) return `${error.message} (${error.code})`
+  if (error instanceof ApiClientError) {
+    const details = error.details
+      .map((detail) => `${detail.field ? `${detail.field}: ` : ''}${detail.message}`)
+      .join(' · ')
+    return `${error.message} (${error.code})${details ? ` — ${details}` : ''}`
+  }
   return 'Không thể hoàn tất thao tác. Hãy thử lại và kiểm tra kết nối API.'
 }
 

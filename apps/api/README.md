@@ -83,6 +83,11 @@ materialization; oversized requests return `TREND_QUERY_TOO_LARGE`, and aggregat
 CSV rows preserve bucket statistics plus source point/run lineage. Rebuild all
 three services from the commit carrying this marker before reusing P10 evidence.
 
+P10 bounded-error UX marker (2026-09-10): the structured trend budget details
+(`aggregate`, `matched_points`, `max_points`) remain part of the client-visible
+error contract. Keep API, worker and web on the same candidate when this contract
+or its user guidance changes.
+
 P09 export compensation marker (2026-09-10): export metadata persistence now has
 an exact-key object cleanup/reconciliation contract and regression coverage for
 final-commit failure. The commit carrying this marker must rebuild API, worker and

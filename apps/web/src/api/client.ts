@@ -9,15 +9,19 @@ const errorSchema = z.object({
   details: z.array(z.object({ field: z.string().nullable().optional(), message: z.string() })).default([])
 })
 
+export type ApiErrorDetail = { field?: string | null; message: string }
+
 export class ApiClientError extends Error {
   readonly code: string
   readonly correlationId: string | undefined
+  readonly details: ApiErrorDetail[]
 
-  constructor(message: string, code = 'NETWORK_ERROR', correlationId?: string) {
+  constructor(message: string, code = 'NETWORK_ERROR', correlationId?: string, details: ApiErrorDetail[] = []) {
     super(message)
     this.name = 'ApiClientError'
     this.code = code
     this.correlationId = correlationId
+    this.details = details
   }
 }
 
@@ -1307,7 +1311,7 @@ export class ApiClient {
     if (!response.ok) {
       const parsed = errorSchema.safeParse(body)
       if (parsed.success) {
-        throw new ApiClientError(parsed.data.message, parsed.data.code, parsed.data.correlation_id)
+        throw new ApiClientError(parsed.data.message, parsed.data.code, parsed.data.correlation_id, parsed.data.details)
       }
       throw new ApiClientError('API trả về phản hồi không hợp lệ.', 'INVALID_API_RESPONSE', correlationId)
     }

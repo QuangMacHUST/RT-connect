@@ -62,6 +62,10 @@ retains bucket statistics and source point/run lineage. Keep this marker aligned
 with the API service root and recheck the public exact-SHA candidate after all
 three services rebuild.
 
+P10 bounded-error UX marker (2026-09-10): Trend displays the structured
+`aggregate`/`matched_points`/`max_points` guidance returned by the API when a
+query exceeds its budget; do not reduce this response to a code-only toast.
+
 P07 explicit-N/A marker (2026-09-10): the Machine QA UI exposes the N/A checkbox,
 requires a reason, disables the numeric field while selected, and displays the
 reason/status in the result. Keep this marker aligned with the API service root
