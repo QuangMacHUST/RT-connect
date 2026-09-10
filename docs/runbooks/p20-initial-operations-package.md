@@ -2,8 +2,8 @@
 
 - **Trạng thái:** DRAFT / LOCAL_SUPPORT_ONLY
 - **Phạm vi:** vận hành staging, pilot và production theo đúng release manifest
-- **Nguồn:** `business-analysis.md` v0.22, `specification.md` v1.19,
-  `technical-specification.md` v1.18, `plan.md` v4.5
+- **Nguồn:** `business-analysis.md` v0.24, `specification.md` v1.25,
+  `technical-specification.md` v1.24, `plan.md` v4.20
 - **Không phải:** bằng chứng đã cấu hình alert thật, provider backup/restore thật,
   RPO/RTO đã đạt hoặc tuyên bố production clinical readiness
 
@@ -74,6 +74,14 @@ synthetic được gửi tới kênh thật và có người nhận được.
 4. Kiểm tra frontend build label và `VITE_API_BASE_URL` đã trỏ đúng environment.
 5. Kiểm tra worker là đúng release và không có public domain.
 6. Ghi kết quả vào evidence; nếu lệch version/schema, dừng release hoặc mở incident.
+
+Có thể chạy probe lặp lại bằng `scripts/verify-operational-probes.ps1` với
+`-ExpectedVersion` là SHA đã khóa trong release manifest và
+`-ExpectedSchemaRevision` là schema đã migrate. Probe trả exit code khác 0 khi
+health/readiness/version/schema parity hoặc web shell không đạt; nếu không truyền
+`-AccessToken`, kiểm tra queue được ghi rõ `NOT_RUN` chứ không được suy diễn là queue
+đang khỏe. Khi cần kiểm tra queue, truyền access token tạm thời qua tham số tại máy
+vận hành và chỉ lưu output đã redacted; không đưa token vào evidence hoặc command log.
 
 ### 4.2. Queue và job
 
@@ -193,6 +201,7 @@ result mới dùng operation/run mới, trừ exact idempotent replay.
 | TC-P20-S02 | Provider backup, isolated restore, counts/checksums và RPO/RTO | LOCAL_SUPPORT_ONLY |
 | TC-P20-S03 | Maintenance candidate, regression, old result/history và release note | NOT_RUN |
 | TC-P20-S04 | Người vận hành khác thực hiện runbook độc lập và ký handoff | NOT_RUN |
+| P20-W01 probe | `scripts/verify-operational-probes.ps1` trên staging exact SHA/schema | PASS cho public probes; queue `NOT_RUN` nếu không có session; chưa phải alert delivery |
 | TC-P20-E01 | Backup failure/retention alert và last-good preservation | NOT_RUN |
 | TC-P20-E02 | Alert delivery failure và kênh dự phòng | NOT_RUN |
 | TC-P20-E03 | Capacity threshold, usage snapshot và remediation | NOT_RUN |

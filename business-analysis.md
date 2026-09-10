@@ -1180,12 +1180,12 @@ Clinical MVP tập trung vào Machine QA, PSQA Gamma, report, trend, input valid
 
 ## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.24
 
-Bổ sung ngày 2026-09-09 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu; mục 22 chuẩn hóa hành vi ở cấp tính năng; mục 23 chuẩn hóa gói bàn giao nghiệp vụ và cách quyết định dừng/tiếp tục để không bỏ sót tiền điều kiện, side effect và bằng chứng; mục 24 chốt workflow membership/invitation P4 đã được hiện thực ở local. Ngày 2026-09-10 bổ sung P7 explicit N/A reason, status aggregation và loại trừ trend projection; bổ sung P10 query budget và bucket export lineage; bổ sung P11 consumer snapshot cho Machine QA, source/applicability/capability/rule lineage và workflow thường không seed synthetic. `specification.md` v1.24 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v4.19 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md` v1.23.
+Bổ sung ngày 2026-09-09 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu; mục 22 chuẩn hóa hành vi ở cấp tính năng; mục 23 chuẩn hóa gói bàn giao nghiệp vụ và cách quyết định dừng/tiếp tục để không bỏ sót tiền điều kiện, side effect và bằng chứng; mục 24 chốt workflow membership/invitation P4 đã được hiện thực ở local. Ngày 2026-09-10 bổ sung P7 explicit N/A reason, status aggregation và loại trừ trend projection; bổ sung P10 query budget và bucket export lineage; bổ sung P11 consumer snapshot cho Machine QA, source/applicability/capability/rule lineage và workflow thường không seed synthetic. Ngày 2026-09-11 bổ sung boundary nghiệp vụ cho operational probe P20-W01: health, readiness, version, schema parity và queue metric là các quan sát tách biệt; thiếu session thì queue là NOT_RUN, không suy diễn PASS. `specification.md` v1.24 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v4.20 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md` v1.23.
 
 > Ghi chú đồng bộ: v0.23 là revision trước của catalogue. Revision v0.24 bổ sung hành vi
 > Machine QA explicit N/A: cờ `is_not_applicable`, `na_reason` bắt buộc khi N/A, loại trừ giá trị
 > N/A khỏi trend và không coi aggregation có N/A là PASS ngầm. Revision hiện hành dùng
-> `specification.md` v1.24, `technical-specification.md` v1.23 và `plan.md` v4.19; các nguyên tắc
+> `specification.md` v1.24, `technical-specification.md` v1.23 và `plan.md` v4.20; các nguyên tắc
 > thành viên ngang quyền, report toàn quyền và Biological Toolkit độc lập không thay đổi.
 
 ### 21.1. Các quyết định sản phẩm giữ nguyên

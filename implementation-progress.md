@@ -1,7 +1,13 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
-`technical-specification.md` v1.24 và `plan.md` v4.19.
+`technical-specification.md` v1.24 và `plan.md` v4.20.
+
+## P20-W01 — Operational probe và schema-parity check — staging partial — 2026-09-11 / `3102119`
+
+- Đã bổ sung `scripts/verify-operational-probes.ps1`, một probe fail-closed có thể chạy lại với đúng `ApiBaseUrl`, `WebBaseUrl`, release SHA và schema revision. Probe đọc riêng `/api/v1/health`, `/api/v1/ready`, `/api/v1/version`, kiểm schema parity, kiểm web `/app` và dò secret marker trong HTML; queue metrics chỉ chạy khi caller chủ động cung cấp access token và token không được ghi vào output.
+- Chạy trên staging candidate `31021192c5dd4b726d8da2183d7e01d26d4e0df2` với schema `20260909_0019`: `passed=true`, `failed_check_count=0`, health/readiness/version/web và secret-marker checks đều PASS. Queue probe ghi `NOT_RUN` có chủ đích vì lần chạy public không cung cấp session token. Evidence: [p20-staging-operational-probes-20260911-3102119.json](docs/evidence/p20-staging-operational-probes-20260911-3102119.json).
+- Negative control với expected version cố ý sai trả exit code `1`, `passed=false` và chỉ fail `api.version.expected`; chứng minh probe không biến source drift thành PASS. Alert tới kênh thật, authenticated queue probe, backup/restore provider, owner handoff và các gate P20 còn lại vẫn chưa đóng.
 
 ## P17/P19 — RTDOSE authorization + CT overlay recheck — staging partial — 2026-09-11 / `3e46479`
 

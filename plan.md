@@ -1,6 +1,6 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
-- Phiên bản: **4.19**, ngày 2026-09-10.
+- Phiên bản: **4.20**, ngày 2026-09-11.
 - Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.24.
 - Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.25.
 - Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.24.
@@ -1945,7 +1945,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 ### Work packages P20
 
 - [x] P20-W00 — Tạo support artifact ban đầu tại `docs/runbooks/p20-initial-operations-package.md` và `deployment/railway/production-runbook.md`: topology, thresholds target, backup/restore, incident, maintenance, promotion/rollback và handoff record. Đây là `LOCAL_SUPPORT_ONLY`; chưa có alert channel/restore provider/owner evidence nên không đóng P20.
-- [ ] P20-W01 — Tạo operational dashboard và alert test bằng sự kiện synthetic. Dashboard phải đọc riêng `/api/v1/health`, `/api/v1/ready`, `/api/v1/version` và, khi có session hợp lệ, `/api/v1/gamma/queue-metrics`; nếu `/ready` lỗi hoặc schema lệch thì trạng thái là degraded/needs review dù `/health` vẫn `ok`. **Local UI slice verified 2026-09-09:** `PlatformStatusPage` hiển thị từng probe, schema parity và trạng thái tổng hợp `SẴN SÀNG/CẦN XEM XÉT/API KHÔNG KHẢ DỤNG`; frontend 4 files/11 tests, lint, typecheck và build pass. Alert tới kênh thật vẫn `NOT_RUN`.
+- [ ] P20-W01 — Tạo operational dashboard và alert test bằng sự kiện synthetic. Dashboard phải đọc riêng `/api/v1/health`, `/api/v1/ready`, `/api/v1/version` và, khi có session hợp lệ, `/api/v1/gamma/queue-metrics`; nếu `/ready` lỗi hoặc schema lệch thì trạng thái là degraded/needs review dù `/health` vẫn `ok`. **Local UI slice verified 2026-09-09:** `PlatformStatusPage` hiển thị từng probe, schema parity và trạng thái tổng hợp `SẴN SÀNG/CẦN XEM XÉT/API KHÔNG KHẢ DỤNG`; frontend 4 files/11 tests, lint, typecheck và build pass. **Operational probe verified 2026-09-11:** `scripts/verify-operational-probes.ps1` trên staging candidate `31021192c5dd4b726d8da2183d7e01d26d4e0df2` với schema `20260909_0019` đạt public checks PASS; negative expected-version control trả exit code `1` và fail đúng `api.version.expected`. Queue probe không chạy khi không có session token; alert tới kênh thật vẫn `NOT_RUN`. Evidence: `docs/evidence/p20-staging-operational-probes-20260911-3102119.json`.
 - [ ] P20-W02 — Thiết lập backup retention/runbook; restore schedule và evidence template.
 - [ ] P20-W03 — User guides theo task, incident taxonomy và support correlation without secrets.
 - [ ] P20-W04 — Dependency/engine updates có impact set, staging tests và compatibility rollback.
