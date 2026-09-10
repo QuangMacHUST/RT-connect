@@ -1,0 +1,57 @@
+{
+  "evidence_id": "P20-STAGING-PUBLIC-PARITY-20260911-7EE71C8",
+  "phase": "P20",
+  "work_package": "P20-W01",
+  "status": "STAGING_VERIFIED_SLICE",
+  "captured_at": "2026-09-11",
+  "environment": "staging",
+  "source_commit": "7ee71c8a46cba67fde14516d2d566598f3313fc2",
+  "schema_revision": "20260909_0019",
+  "services": {
+    "api": {
+      "service_id": "9b35bf0b-0419-4679-8af0-e639e5a84713",
+      "deployment_id": "6265b273-2f52-4bc1-a4c1-2803f4164a4b",
+      "status": "SUCCESS"
+    },
+    "web": {
+      "service_id": "9f23331c-8d5e-45fb-9f11-5aa5e69f76f6",
+      "deployment_id": "90b74c9d-e655-4024-9238-64d900c496d2",
+      "status": "SUCCESS"
+    },
+    "worker": {
+      "service_id": "a1e0c389-e527-4d4c-995e-2a48f4795dda",
+      "deployment_id": "eb4f6c5e-034b-4775-8898-f63a7ef8ebc7",
+      "status": "SUCCESS"
+    }
+  },
+  "public_verifier": {
+    "script": "scripts/verify-public-deployment.ps1",
+    "passed": true,
+    "failed_check_count": 0,
+    "check_count": 15,
+    "api_base_url": "https://gleaming-cooperation-staging.up.railway.app",
+    "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+    "checks": [
+      "health and readiness contracts",
+      "schema revision parity",
+      "exact API source SHA",
+      "OpenAPI CT preview and organization membership routes",
+      "unauthenticated organization boundary",
+      "web index and bundle",
+      "web source markers and exact-SHA marker"
+    ]
+  },
+  "verified_behavior": [
+    "Upload queue code is present in the web candidate delivered from the branch.",
+    "API, web and worker are aligned to one source SHA before further staging checks."
+  ],
+  "not_verified": [
+    "Authenticated staging queue failure and isolated retry",
+    "Provider backup/restore, rollback rehearsal and alert delivery",
+    "Full P20 operations and production promotion gates"
+  ],
+  "redaction": {
+    "contains_secrets": false,
+    "contains_patient_data": false
+  }
+}

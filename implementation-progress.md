@@ -23,6 +23,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 - API `c57d438d-ab28-473f-8d2a-6da3499a3a59`, web `bfb89696-b666-48e3-8a3a-74c2e60cfde2` và worker `4617b9ab-771e-40fc-b351-5ac03c106191` đều `SUCCESS` trên cùng source SHA `0abba6e229208ac75a9657a9ffc962086553d01f`. Public verifier đạt `15/15`, schema `20260909_0019`, và web bundle đã chứa marker upload queue.
 - Đây là `STAGING_VERIFIED_SLICE`, không đóng P06-W04/P06-VERIFY: queue fault/retry có chủ ý, storage fault/reconciliation, signed-download byte re-hash, full S/E/C và release/handoff vẫn mở.
 
+## P06/P20 — queue hardening deployed and exact-SHA parity — staging verified slice — 2026-09-11 / `7ee71c8`
+
+- Sau khi queue orchestration được harden local, API `6265b273-2f52-4bc1-a4c1-2803f4164a4b`, web `90b74c9d-e655-4024-9238-64d900c496d2` và worker `eb4f6c5e-034b-4775-8898-f63a7ef8ebc7` đều `SUCCESS` trên source SHA `7ee71c8a46cba67fde14516d2d566598f3313fc2`.
+- Public verifier đạt `15/15`, `failed_check_count=0`, API version exact SHA, schema `20260909_0019`, OpenAPI/Auth boundary và web exact-SHA marker đều PASS. Evidence: [p20-staging-public-parity-20260911-7ee71c8.json](docs/evidence/p20-staging-public-parity-20260911-7ee71c8.json).
+- Đây là parity/runtime evidence cho candidate mới; không thay thế staging queue fault/retry, signed-download byte re-hash, storage reconciliation hoặc full P06/P20 S/E/C.
+
 ## P20-W01 — Operational status auto-refresh — local verified — 2026-09-11 / `7df7cb8`
 
 - Trang `/app/system/status` đã bổ sung polling 30 giây cho health, readiness, version và queue metrics khi có session; polling vẫn chạy khi tab ở nền.
