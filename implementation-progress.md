@@ -10,6 +10,7 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Export theo bộ lọc hiện tại đã được tải và parse: CSV `2,018` bytes, `7` records, có header và bucket lineage; JSON `15,064` bytes, parse được với `4` series, `aggregate=raw`, timezone `Asia/Ho_Chi_Minh`. SHA lần lượt `dfe34e256a0d58f0f790d7d4f04a2916f03402a151aa49cd05e39842d9814f75` và `e5ba525cc37696974fe384526472284adb4478aa4c1b988c79b01c3601d174a4`.
 - Negative filter `metric_does_not_exist` trả `TREND_EMPTY`, `0` point/series và không zero-fill. Gộp theo ngày với `output_factor` giữ `2` series, `3` compatible points, mean/min/max `100%` và không trộn protocol context. Evidence: `docs/evidence/p10-staging-trend-browser-20260910-6426ceb.json`.
 - Đây là `STAGING_PARTIAL`: browser vẫn quan sát hậu tố `.crdownload`, nên final filename completion, large-series benchmark, projection rebuild/baseline mutation, full S/E/C, fault, accessibility và release/production gates còn mở. Không tạo QA run mới, không upload artifact và không dùng dữ liệu bệnh nhân/PACS.
+- Sau khi checkpoint được commit thành `05ff3d29e24cb15826e8335a5a66d6f4bd32f87b`, API/worker staging đã được redeploy đúng SHA để giữ parity với web; public verifier lại đạt **15/15 PASS**, schema `20260909_0019`. Evidence: `docs/evidence/p19-staging-public-smoke-20260910-05ff3d2.json`.
 
 ## P9 deterministic export filename — local verified — 2026-09-10 / `211d9f7`
 
