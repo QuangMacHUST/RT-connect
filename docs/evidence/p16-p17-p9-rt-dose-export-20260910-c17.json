@@ -1,0 +1,75 @@
+{
+  "schema_version": "rt-connect.p16-p17-p9-rtdose-export.v1",
+  "captured_at_utc": "2026-09-10T05:27:33Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_READBACK_AND_PUBLIC_PARITY",
+  "environment": "staging",
+  "source_commit_observed": "c17fe9a1138da4b5b60fe8f070a0367e9e8a07f1",
+  "schema_revision_observed": "20260909_0019",
+  "api_base_url": "https://gleaming-cooperation-staging.up.railway.app",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "data_boundary": "Only repository-generated synthetic DICOM was used. No patient, PACS or treatment dataset was used.",
+  "rtdose_authorization_and_readback": {
+    "user_authorized_synthetic_fixture_upload": true,
+    "fixture_path": "docs/fixtures/gamma-rtdose-v1-smoke.dcm",
+    "filename": "gamma-rtdose-v1-smoke.dcm",
+    "sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
+    "modality": "RTDOSE",
+    "validation_result": "VALID",
+    "selected_in_p17": true,
+    "duplicate_created": false,
+    "paired_rtstruct": {
+      "filename": "p17-rtstruct-v1-smoke.dcm",
+      "sha256_prefix": "16a79df31297",
+      "validation_result": "VALID"
+    },
+    "optional_ct_available": {
+      "filename": "p17-ct-v1-smoke.dcm",
+      "sha256_prefix": "0b1d3bfd6adf"
+    }
+  },
+  "p17_dvh_run": {
+    "run_id": "d8230d1d-badd-4c0c-b044-dcc4434215a6",
+    "engine_version": "p17-dvh-1.1.0",
+    "status": "COMPLETED",
+    "coverage": "FULL",
+    "roi": "P17_TARGET",
+    "d95_actual_gy": 5.2,
+    "limit": "MIN 5 Gy",
+    "margin_gy": 0.2,
+    "rule_status": "REVIEW_REQUIRED",
+    "warnings": [
+      "DVH_DOSE_ONLY_MODE",
+      "DVH_LIMIT_REFERENCE_UNVERIFIED"
+    ],
+    "input_fingerprint": "8f525a5e74545854f0a53a743c0061ffbd8adee17ecc6da88de4486f0c9abf2a",
+    "result_sha256": "cf2799b8afeafa68cf60a330eac9adff123cca5c7ceacfc0eab78132b0c0359c"
+  },
+  "p9_report": {
+    "report_key": "3b51b1db-1a6c-437b-8e43-dbaf1e9b73e7",
+    "title": "P17 staging bound DVH report",
+    "source_type": "DVH",
+    "source_id": "d8230d1d-badd-4c0c-b044-dcc4434215a6",
+    "revision_number": 1,
+    "content_sha256": "2599b891dbe42eedbc69e8889a368ee8359586076c8833e8e474cf57c195cb5c",
+    "block_types": ["TEXT", "METRICS", "PROVENANCE", "DVH", "WARNING"],
+    "renderer_version": "report-renderer-0.1",
+    "saved_revision_reloaded_in_editor": true,
+    "json_export": {
+      "export_id": "764f8147-3401-4643-a906-e165a1343168",
+      "content_sha256_matches_report_revision": true,
+      "source_snapshot_present": true,
+      "rtdose_checksum_present": true,
+      "limit_binding_snapshot_present": true
+    }
+  },
+  "public_verifier": {
+    "passed": true,
+    "failed_check_count": 0,
+    "check_count": 15,
+    "health_ready_version_and_openapi": true,
+    "web_index_bundle_and_source_marker": true,
+    "organization_boundary_unauthenticated_401": true
+  },
+  "scope_note": "This evidence closes a staging authenticated readback/export slice only. It does not promote the synthetic data or REVIEW_REQUIRED DVH result to clinical PASS, and does not close P17 full negative/fault/resource/oracle/release gates."
+}

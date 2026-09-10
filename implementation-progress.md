@@ -3,6 +3,14 @@
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 `technical-specification.md` v1.23 và `plan.md` v4.15.
 
+## RTDOSE authorization, P17 readback and P9 JSON export — staging verified — 2026-09-10 / `c17fe9a`
+
+- Theo xác nhận của người dùng, fixture RTDOSE tổng hợp được phép dùng trong case staging `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`. Kiểm tra lại trên candidate `c17fe9a1138da4b5b60fe8f070a0367e9e8a07f1` cho thấy `gamma-rtdose-v1-smoke.dcm` đã tồn tại đúng một artifact, checksum đầy đủ `ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b`, `RTDOSE/VALID`, đang được chọn cùng RTSTRUCT hợp lệ; không tạo artifact trùng.
+- P17 giữ run `d8230d1d-badd-4c0c-b044-dcc4434215a6`, `COMPLETED`, `FULL`, `P17_TARGET`, `D95=5.200 Gy`, `MIN 5 Gy`, margin `+0.200 Gy`, nhưng status đánh giá vẫn là `REVIEW_REQUIRED` vì không chọn CT và nguồn giới hạn tổng hợp còn `UNVERIFIED`. Đây là kết quả đúng theo boundary staging, không phải clinical PASS.
+- Report `P17 staging bound DVH report` (`3b51b1db-1a6c-437b-8e43-dbaf1e9b73e7`, revision 1) được mở lại từ danh sách, editor hydrate đúng `DVH`, source run và 5 block. JSON export `764f8147-3401-4643-a906-e165a1343168` đọc được source snapshot, RTDOSE checksum, limit-binding snapshot và content SHA trùng revision (`2599b891…`).
+- Public verifier của candidate c17 đạt `15/15 PASS`, `failed_check_count=0`, schema `20260909_0019`; evidence chi tiết: `docs/evidence/p16-p17-p9-rt-dose-export-20260910-c17.json`.
+- Slice này chỉ đóng thêm authenticated readback/export evidence. P17 full negative/fault/resource/oracle/release, P9 các định dạng export còn lại và các release/production gate vẫn mở.
+
 ## P16 → P17 → P9 explicit binding/report — staging verified — 2026-09-10 / `a55f7cc`
 
 - Trên staging, đã dùng dữ liệu tổng hợp để tạo P16 `DOSE_LIMIT` entry `STAGING_P16_D95_20260910`, validate-only đúng schema rồi lưu DRAFT và publish revision 2. Entry giữ `D95 MIN 5 Gy`, `USER_DEFINED · UNVERIFIED`, content SHA-256 `818d7457…`; một payload applicability sai đã bị từ chối bằng `KNOWLEDGE_APPLICABILITY_INVALID` trước khi validate thành công.
