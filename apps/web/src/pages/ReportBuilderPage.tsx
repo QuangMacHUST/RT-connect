@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 
 import {
   ApiClientError,
@@ -54,7 +54,8 @@ export function ReportBuilderPage() {
   const { session } = useAuth()
   const queryClient = useQueryClient()
   const accessToken = session?.access_token
-  const [selectedReportKey, setSelectedReportKey] = useState<string>()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [selectedReportKey, setSelectedReportKey] = useState<string | undefined>(() => searchParams.get('reportKey') ?? undefined)
   const [exportKeyNamespace] = useState(() => crypto.randomUUID())
   const [title, setTitle] = useState('Clinical report')
   const [sourceType, setSourceType] = useState<SourceType>('CUSTOM')
@@ -209,6 +210,7 @@ export function ReportBuilderPage() {
   }
   const newReport = () => {
     setSelectedReportKey(undefined)
+    setSearchParams({})
     setTitle('Clinical report')
     setSourceType('CUSTOM')
     setSourceId('')

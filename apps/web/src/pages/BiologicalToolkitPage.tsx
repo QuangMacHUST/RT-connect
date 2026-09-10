@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import {
   ApiClientError,
@@ -70,6 +70,7 @@ function toolClass(tool: BiologicalToolResource): string {
 export function BiologicalToolkitPage() {
   const { session } = useAuth()
   const accessToken = session?.access_token
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const bootstrap = useQuery({
     queryKey: ['session', accessToken],
@@ -210,7 +211,39 @@ export function BiologicalToolkitPage() {
     onSuccess: (scenario) => { setForm(formFromScenario(scenario)); setMessage(`Đã archive ${scenario.scenario_key}; lịch sử vẫn đọc được.`); refresh() },
     onError: (error) => setMessage(errorMessage(error))
   })
-  const busy = createMutation.isPending || updateMutation.isPending || validateMutation.isPending || saveMutation.isPending || cloneMutation.isPending || archiveMutation.isPending
+  const reportMutation = useMutation({
+    mutationFn: (scenario: BiologicalScenarioResource) => apiClient.createReport(accessToken!, organizationId!, {
+      source_type: 'BIOLOGICAL',
+      source_id: scenario.id,
+      title: `${scenario.name} · Biological report`,
+      blocks: [
+        {
+          stable_block_id: 'scenario-summary',
+          block_type: 'BIOLOGICAL',
+          label: 'Biological scenario và assumptions',
+          sort_order: 0,
+          is_visible: true,
+          config: {},
+          source_binding: { path: 'source_snapshot.payload.scenario_snapshot' }
+        },
+        {
+          stable_block_id: 'provenance',
+          block_type: 'PROVENANCE',
+          label: 'Nguồn và provenance',
+          sort_order: 1,
+          is_visible: true,
+          config: {},
+          source_binding: { path: 'source_snapshot.payload' }
+        }
+      ]
+    }),
+    onSuccess: (revision) => {
+      setMessage(`Đã tạo report độc lập từ scenario (revision ${revision.revision_number}).`)
+      navigate(`/app/reports?reportKey=${revision.report_key}`)
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const busy = createMutation.isPending || updateMutation.isPending || validateMutation.isPending || saveMutation.isPending || cloneMutation.isPending || archiveMutation.isPending || reportMutation.isPending
 
   if (bootstrap.isPending) return <main className="auth-state">Đang tải Biological Toolkit…</main>
   if (bootstrap.error || !organizationId) return <div className="page"><section className="alert alert--error"><h1>Không thể mở Biological Toolkit</h1><p>{errorMessage(bootstrap.error)}</p><button onClick={() => void bootstrap.refetch()}>Thử lại</button></section></div>
@@ -240,7 +273,7 @@ export function BiologicalToolkitPage() {
     <section className="panel biological-tools-panel"><div className="panel-heading"><div><p className="eyebrow">MODULE EXPLORER</p><h2>Công cụ Biological</h2></div><span className="status-badge">SCENARIO ONLY</span></div><div className="biological-tool-grid">{toolItems.map((tool) => <article className={toolClass(tool)} key={tool.tool_key}><div className="biological-tool-card__top"><span className="biological-tool-icon" aria-hidden="true">◇</span><span className={tool.available ? 'status-badge' : 'status-badge status-badge--warning'}>{tool.available ? 'AVAILABLE' : `${tool.phase} · PLANNED`}</span></div><h3>{tool.label}</h3><p>{tool.description}</p>{tool.available ? <Link className="button-link" to={tool.route}>Mở công cụ</Link> : <button className="button-secondary" disabled title={`Tính năng sẽ được triển khai ở ${tool.phase}`}>Sắp triển khai</button>}</article>)}</div></section>
 
     <div className="biological-workspace-grid">
-      <section className="panel biological-scenarios-panel"><div className="panel-heading"><div><p className="eyebrow">SCENARIO LIBRARY</p><h2>Scenarios gần đây</h2></div><strong>{scenarios.data?.total ?? '—'}</strong></div><div className="biological-filter-row"><label>Tìm kiếm<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="key, tên, loại, mô" /></label><label>Trạng thái<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}><option value="ALL">Tất cả</option><option value="DRAFT">DRAFT</option><option value="SAVED">SAVED</option><option value="ARCHIVED">ARCHIVED</option></select></label><label className="checkbox-row"><input type="checkbox" checked={includeArchived} onChange={(event) => setIncludeArchived(event.target.checked)} /> Hiện archived</label></div>{scenarios.isPending ? <p>Đang tải scenarios…</p> : <div className="table-wrap"><table className="biological-scenario-table"><thead><tr><th>Tên kịch bản</th><th>Loại</th><th>Mô / context</th><th>Revision</th><th>Trạng thái</th><th>Cập nhật</th><th>Thao tác</th></tr></thead><tbody>{scenarios.data?.items.map((scenario) => <tr key={scenario.id}><td><strong>{scenario.name}</strong><span className="table-subtitle">{scenario.scenario_key}</span></td><td>{scenario.scenario_type}</td><td>{scenario.tissue_context}</td><td>{scenario.revision}</td><td><span className={statusClass(scenario.status)}>{scenario.status}</span></td><td>{dateLabel(scenario.updated_at)}</td><td><div className="table-actions"><button className="button-secondary" onClick={() => choose(scenario)}>Mở</button><button className="button-secondary" disabled={busy} onClick={() => { choose(scenario); cloneMutation.mutate(scenario.id) }}>Clone</button><button className="button-secondary" disabled title="Export sẽ mở sau khi calculation/report module sẵn sàng">Export</button></div></td></tr>)}</tbody></table></div>}{!scenarios.isPending && !scenarios.data?.items.length && <div className="empty-state biological-empty-state"><strong>Chưa có scenario</strong><p>Tạo scenario đầu tiên để lưu context và giả định độc lập. Không cần tạo QA case.</p><button onClick={() => { setSelectedId(undefined); setShowForm(true); setForm(emptyForm()) }}>+ Tạo scenario đầu tiên</button></div>}</section>
+      <section className="panel biological-scenarios-panel"><div className="panel-heading"><div><p className="eyebrow">SCENARIO LIBRARY</p><h2>Scenarios gần đây</h2></div><strong>{scenarios.data?.total ?? '—'}</strong></div><div className="biological-filter-row"><label>Tìm kiếm<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="key, tên, loại, mô" /></label><label>Trạng thái<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}><option value="ALL">Tất cả</option><option value="DRAFT">DRAFT</option><option value="SAVED">SAVED</option><option value="ARCHIVED">ARCHIVED</option></select></label><label className="checkbox-row"><input type="checkbox" checked={includeArchived} onChange={(event) => setIncludeArchived(event.target.checked)} /> Hiện archived</label></div>{scenarios.isPending ? <p>Đang tải scenarios…</p> : <div className="table-wrap"><table className="biological-scenario-table"><thead><tr><th>Tên kịch bản</th><th>Loại</th><th>Mô / context</th><th>Revision</th><th>Trạng thái</th><th>Cập nhật</th><th>Thao tác</th></tr></thead><tbody>{scenarios.data?.items.map((scenario) => <tr key={scenario.id}><td><strong>{scenario.name}</strong><span className="table-subtitle">{scenario.scenario_key}</span></td><td>{scenario.scenario_type}</td><td>{scenario.tissue_context}</td><td>{scenario.revision}</td><td><span className={statusClass(scenario.status)}>{scenario.status}</span></td><td>{dateLabel(scenario.updated_at)}</td><td><div className="table-actions"><button className="button-secondary" onClick={() => choose(scenario)}>Mở</button><button className="button-secondary" disabled={busy} onClick={() => { choose(scenario); cloneMutation.mutate(scenario.id) }}>Clone</button><button className="button-secondary" disabled={busy} onClick={() => reportMutation.mutate(scenario)}>Tạo report</button></div></td></tr>)}</tbody></table></div>}{!scenarios.isPending && !scenarios.data?.items.length && <div className="empty-state biological-empty-state"><strong>Chưa có scenario</strong><p>Tạo scenario đầu tiên để lưu context và giả định độc lập. Không cần tạo QA case.</p><button onClick={() => { setSelectedId(undefined); setShowForm(true); setForm(emptyForm()) }}>+ Tạo scenario đầu tiên</button></div>}</section>
 
       <aside className="biological-side-column"><section className="panel biological-provenance-panel"><div className="panel-heading"><div><p className="eyebrow">PROVENANCE</p><h2>Mỗi kết quả phải truy lại được</h2></div></div><ul><li><strong>Model</strong><span>engine key và version</span></li><li><strong>Source</strong><span>citation hoặc user-defined note</span></li><li><strong>Assumptions</strong><span>JSON context snapshot</span></li><li><strong>Revision</strong><span>input revision + timestamp</span></li></ul><p className="form-hint">Scenario là namespace riêng. QA case, patient record và treatment plan không được tự động kéo vào đây.</p></section><section className="panel biological-workflow-panel"><div className="panel-heading"><div><p className="eyebrow">WORKFLOW</p><h2>Quy trình làm việc</h2></div></div><ol><li>Chọn công cụ</li><li>Nhập scenario/context</li><li>Lưu revision</li><li>Tính toán</li><li>Kiểm tra giả định</li><li>Xuất báo cáo độc lập</li></ol><p className="form-hint">Scenario ≠ QA Case. Mỗi module chỉ mở khi capability và test tương ứng đã sẵn sàng.</p></section></aside>
     </div>

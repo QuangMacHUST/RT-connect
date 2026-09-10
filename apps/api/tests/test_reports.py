@@ -139,6 +139,62 @@ def test_report_revision_snapshots_source_and_supports_full_block_customization(
         assert updated.json()["source_snapshot"]["payload"]["title"] == "Changed after report"
 
 
+def test_biological_report_snapshots_scoped_scenario_revision() -> None:
+    with _workspace_client() as (client, organization):
+        base_url = f"/api/v1/organizations/{organization.id}/biological"
+        created = client.post(
+            f"{base_url}/scenarios",
+            json={
+                "scenario_key": "REPORT_BIOLOGICAL_01",
+                "name": "Report biological scenario",
+                "scenario_type": "BED_EQD2",
+                "tissue_context": "Synthetic tissue",
+                "clinical_context": "No patient data.",
+                "source_type": "USER_DEFINED",
+                "source_reference": "Synthetic test reference",
+                "assumptions": {"alpha_beta_gy": 10.0, "recovery": "none"},
+            },
+        )
+        assert created.status_code == 201, created.text
+        scenario = created.json()
+        patched = client.patch(
+            f"{base_url}/scenarios/{scenario['id']}",
+            json={
+                "expected_revision": 1,
+                "assumptions": {"alpha_beta_gy": 2.0, "recovery": "user_defined"},
+            },
+        )
+        assert patched.status_code == 200, patched.text
+        assert patched.json()["revision"] == 2
+
+        report = client.post(
+            f"/api/v1/organizations/{organization.id}/reports",
+            json={
+                "source_type": "BIOLOGICAL",
+                "source_id": scenario["id"],
+                "title": "Biological scenario report",
+            },
+        )
+        assert report.status_code == 201, report.text
+        payload = report.json()["source_snapshot"]["payload"]
+        assert payload["namespace"] == "BIOLOGICAL_TOOLKIT"
+        assert payload["scenario_id"] == scenario["id"]
+        assert payload["scenario_revision_number"] == 2
+        assert payload["scenario_snapshot"]["assumptions"]["alpha_beta_gy"] == 2.0
+        assert payload["status"] == "DRAFT"
+
+        outside = client.post(
+            f"/api/v1/organizations/{uuid4()}/reports",
+            json={
+                "source_type": "BIOLOGICAL",
+                "source_id": scenario["id"],
+                "title": "Out-of-scope biological report",
+            },
+        )
+        assert outside.status_code == 403, outside.text
+        assert outside.json()["code"] == "ORGANIZATION_SCOPE_MISMATCH"
+
+
 def test_report_templates_versioning_and_revision_conflict_are_scoped() -> None:
     with _workspace_client() as (client, organization):
         template = client.post(

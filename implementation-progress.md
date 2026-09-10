@@ -1,7 +1,15 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
-Revision hiện hành: `business-analysis.md` v0.25, `specification.md` v1.26,
-`technical-specification.md` v1.25 và `plan.md` v4.21.
+Revision hiện hành: `business-analysis.md` v0.26, `specification.md` v1.27,
+`technical-specification.md` v1.26 và `plan.md` v4.22.
+
+## P12/P09 — Biological scenario to report integration — local verified — 2026-09-11
+
+- API `POST /api/v1/organizations/{org}/reports` now resolves a `BIOLOGICAL` source by `scenario_id` inside the requested organization, reads the current `BiologicalScenarioRevision`, and pins scenario metadata plus the full scenario snapshot into `ReportRevision.source_snapshot`. Missing scenario/revision fails closed with `REPORT_SOURCE_UNAVAILABLE`; the initial lookup carries organization scope.
+- Added regression coverage for current-revision snapshotting and an out-of-scope organization probe: focused report tests **8/8 PASS**. Existing generic biological report behavior remains covered.
+- Biological Hub now has `Tạo report` for each scenario. The authenticated mutation opens `/app/reports?reportKey=...`; Report Builder selects the requested report from query state and clears that state when starting a new report.
+- Frontend gates after this slice: lint, typecheck, Vitest **19/19**, and production build **PASS**. Build emits the existing Vite chunk-size advisory only.
+- This is `LOCAL_VERIFIED_SLICE`, not P12/P09 staging completion. Staging report creation, PostgreSQL row/snapshot readback, refresh after source revision change, export/render evidence, complete negative matrix, and release manifest remain open. No additional RTDOSE was uploaded and no Gamma run/report was created on staging in this checkpoint.
 
 ## P08 — API transform/provenance fail-closed regression — local verified — 2026-09-11
 

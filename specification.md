@@ -1,9 +1,9 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.26**; ngày 2026-09-11.
-- Nguồn nghiệp vụ: business-analysis.md v0.25.
-- Kế hoạch triển khai: plan.md v4.21, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.25.
+- File: specification.md; version **1.27**; ngày 2026-09-11.
+- Nguồn nghiệp vụ: business-analysis.md v0.26.
+- Kế hoạch triển khai: plan.md v4.22, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.26.
 - Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.26 giữ toàn bộ contract v1.25, bổ sung P8 coordinate-frame/axis-order/explicit-transform contract, compatibility preflight giữa RTDOSE và measurement, identity-transform capability hiện tại và các lỗi fail-closed tương ứng. P11 consumer snapshot `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/capability/rule lineage, archive semantics và fail-closed khi snapshot lệch vẫn được giữ; UI phải hiển thị metadata đã pin và workflow thường không seed synthetic. P9 bổ sung quy tắc namespace idempotency phía client phải thay đổi khi renderer hoặc schema export đổi; server vẫn dùng fingerprint gồm revision, format, render options và renderer version làm authority, để deploy renderer mới không bị replay nhầm export cũ hoặc tạo conflict giả khi người dùng tải lại trang. Các contract Trend query budget, Machine QA explicit N/A, malformed Redis dispatch, peak RSS/resource/API responsiveness P17 và P4 membership/invitation vẫn được giữ nguyên.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
@@ -1015,13 +1015,26 @@ Mọi input được đưa vào Gamma phải mang metadata vật lý đủ để
 | Client loses response after mutation | `409/503` `MUTATION_RESULT_UNKNOWN` target | Query by returned/request idempotency context before retry; do not assume “not created”. |
 | Tool is not implemented | Capability response `PLANNED`/`available=false`; calculation command is not exposed | Show disabled CTA and preserve scenario; no fake RUNNING/COMPLETED calculation. |
 
-Current P12 implementation provides the route/resource/lifecycle contract above. P13 creates BED/EQD2 calculation runs under SPEC-P13, P14 creates comparison snapshots and P15 creates separate re-irradiation/fraction-compensation run snapshots under SPEC-P15. Biological report integration remains a separate P9/P12 work package. A capability is not described as available until its own tests and evidence pass.
+Current P12 implementation provides the route/resource/lifecycle contract above. P13 creates BED/EQD2 calculation runs under SPEC-P13, P14 creates comparison snapshots and P15 creates separate re-irradiation/fraction-compensation run snapshots under SPEC-P15. Biological report integration now has an implemented local slice: `POST /organizations/{org}/reports` accepts `source_type=BIOLOGICAL` with a scenario `source_id`, resolves the current scenario revision inside the requested organization, and stores that scenario snapshot in `ReportRevision.source_snapshot`; the Biological Hub exposes a `Tạo report` entry point that opens the created report in Report Builder. A capability is not described as available until its own tests and evidence pass.
+
+#### SPEC-P12.4 — Biological report source resolution
+
+| Condition | Required behavior |
+| :--- | :--- |
+| Valid scenario source in the current organization | Resolve the scenario and its current `BiologicalScenarioRevision` with `organization_id` on the initial lookup; create a report revision whose payload includes `namespace=BIOLOGICAL_TOOLKIT`, scenario ID, revision ID/number, scenario metadata, assumptions snapshot, status and provenance note. |
+| Scenario is edited after report creation | Existing report revision remains unchanged because it owns an immutable source snapshot; a new report revision must be created to capture a later scenario revision. |
+| Scenario does not exist in the organization | Return `404 REPORT_SOURCE_UNAVAILABLE`; do not create a report revision and do not reveal an out-of-scope source. |
+| Scenario exists in another organization | Resolve the organization membership/scope before source lookup and return the shared `403 ORGANIZATION_SCOPE_MISMATCH` boundary; do not reveal source metadata. |
+| Current scenario revision is missing | Return `404 REPORT_SOURCE_UNAVAILABLE`; do not create a partial report. |
+| Biological report opened from the Hub | Client sends the authenticated create-report request, then navigates to `/app/reports?reportKey=...`; Report Builder selects that report key from the query string and can start a new custom report by clearing the query state. |
+
+This integration keeps Biological calculations independent from QA cases and patient records. It does not imply that a report is a clinical approval, a treatment prescription, or a Gamma QA result.
 
 **Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer cần recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
 
 **Failure contract:** SPEC-P12.3 là mapping chi tiết. Những mã target chưa xuất hiện trong route lifecycle hiện tại (`MODEL_VERSION_UNAVAILABLE`, `MODULE_UNAVAILABLE`, `MUTATION_RESULT_UNKNOWN`) phải được dùng khi module/operation tương ứng được mở; không giả vờ đã kiểm chứng chúng ở local chỉ vì tài liệu đã liệt kê.
 
-**P12 implementation status 2026-09-08:** migration `20260908_0012` đã upgrade tới head trên PostgreSQL local; route/API/UI và `test_biological.py` focused pass. Browser staging đã chạy create/validate/edit/save/clone/archive/history bằng dữ liệu tổng hợp; PostgreSQL-state, refresh/reconnect, P9 Biological renderer integration, complete negative matrix và release manifest vẫn mở.
+**P12 implementation status 2026-09-11:** migration `20260908_0012` đã upgrade tới head trên PostgreSQL local; route/API/UI và `test_biological.py` focused pass. Local report integration đã được kiểm bằng test scope/snapshot và frontend lint/typecheck/Vitest/build; browser staging đã chạy create/validate/edit/save/clone/archive/history bằng dữ liệu tổng hợp. PostgreSQL-state, refresh/reconnect, staging verification của report integration, complete negative matrix và release manifest vẫn mở.
 
 <a id="spec-p13"></a>
 
@@ -1763,7 +1776,7 @@ Không được gọi operation là `COMPLETED` nếu chưa có output bền v�
 4. **Trend:** chỉ aggregate các source có compatibility signature; điểm thiếu không được biến thành zero; drill-down phải quay về source run/case đúng organization.
 5. **Public deployment:** web/API/worker/schema/Auth/queue phải được kiểm theo cùng release manifest; PostgreSQL, Redis, worker và object bucket private theo topology; URL public không chứng minh workflow đã pass.
 
-## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.26
+## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.27
 
 Phần này biến các contract theo phase thành cấu trúc có thể dùng khi viết code, test và bàn giao. Nó không thay thế các field/algorithm contract ở mục 2–8; nó quy định cách chứng minh rằng các contract đó đã được thực thi trên một candidate cụ thể.
 

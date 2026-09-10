@@ -5,10 +5,10 @@
 - **Tên sản phẩm:** RT-CONNECT
 - **Phạm vi:** Website quản lý QA xạ trị, thư viện QA protocol, Biological Toolkit và thư viện kiến thức điều trị
 - **Đối tượng sử dụng:** Bác sĩ xạ trị, kỹ sư vật lý xạ trị và các thành viên chuyên môn trong bệnh viện/tổ chức
-- **Phiên bản tài liệu:** 0.25 — catalogue tính năng, workflow, ngoại lệ, phục hồi, từ điển trạng thái và tiêu chí nghiệm thu theo P0–P20; bổ sung hợp đồng Machine QA cho N/A có lý do, aggregation không ngầm PASS và trend không nhận điểm N/A; chuẩn hóa budget truy vấn Trend raw/aggregate và export bucket có lineage; bổ sung hợp đồng coordinate frame/axis order/transform cho P8; giữ chi tiết membership/invitation P4, snapshot P17 và đồng bộ triển khai với migration `20260909_0018` + guard `20260909_0019` (2026-09-11)
+- **Phiên bản tài liệu:** 0.26 — catalogue tính năng, workflow, ngoại lệ, phục hồi, từ điển trạng thái và tiêu chí nghiệm thu theo P0–P20; bổ sung hợp đồng Machine QA cho N/A có lý do, aggregation không ngầm PASS và trend không nhận điểm N/A; chuẩn hóa budget truy vấn Trend raw/aggregate và export bucket có lineage; bổ sung hợp đồng coordinate frame/axis order/transform cho P8; giữ chi tiết membership/invitation P4, snapshot P17; bổ sung workflow tạo Biological report từ scenario revision có scope và snapshot provenance; đồng bộ triển khai với migration `20260909_0018` + guard `20260909_0019` (2026-09-11)
 - **Trạng thái sản phẩm:** Chưa phải hệ thống được thẩm định để sử dụng lâm sàng
 
-Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.25 tại mục 21–24 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
+Tài liệu này mô tả nghiệp vụ, nhu cầu người dùng, quy trình, quy tắc và tiêu chí nghiệm thu. Kiến trúc nằm trong `technical-specification.md`; hợp đồng hành vi, dữ liệu, lỗi và thuật toán chi tiết nằm trong `specification.md`; trình tự, testcase và tiêu chí đóng từng phase nằm trong `plan.md`. Catalogue yêu cầu chi tiết v0.26 tại mục 21–24 phân biệt target cần triển khai với evidence đã có. Ma trận nghiệp vụ không phải là tuyên bố hệ thống đã sẵn sàng lâm sàng; trạng thái thực thi phải đọc từ `implementation-progress.md` và gate tương ứng trong `plan.md`.
 
 ---
 
@@ -1178,9 +1178,9 @@ Clinical MVP tập trung vào Machine QA, PSQA Gamma, report, trend, input valid
 `specification.md`, `technical-specification.md` và `plan.md` được xây dựng từ các yêu cầu, quy tắc và tiêu chí nghiệm thu trong tài liệu này. Google Stitch cung cấp thiết kế trực quan; Railway và Supabase cung cấp hạ tầng đã chọn; không nguồn nào trong số đó được tự thay thế hoặc làm mất requirement nghiệp vụ.
 
 
-## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.25
+## 21. Catalogue tính năng chi tiết và hợp đồng nghiệp vụ v0.26
 
-Bổ sung ngày 2026-09-09 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu; mục 22 chuẩn hóa hành vi ở cấp tính năng; mục 23 chuẩn hóa gói bàn giao nghiệp vụ và cách quyết định dừng/tiếp tục để không bỏ sót tiền điều kiện, side effect và bằng chứng; mục 24 chốt workflow membership/invitation P4 đã được hiện thực ở local. Ngày 2026-09-10 bổ sung P7 explicit N/A reason, status aggregation và loại trừ trend projection; bổ sung P10 query budget và bucket export lineage; bổ sung P11 consumer snapshot cho Machine QA, source/applicability/capability/rule lineage và workflow thường không seed synthetic. Ngày 2026-09-11 bổ sung boundary nghiệp vụ cho operational probe P20-W01: health, readiness, version, schema parity và queue metric là các quan sát tách biệt; bổ sung P8 coordinate frame/axis order/transform compatibility và negative capability contract; thiếu session thì queue là NOT_RUN, không suy diễn PASS. `specification.md` v1.26 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v4.21 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md` v1.25.
+Bổ sung ngày 2026-09-09 theo yêu cầu chi tiết hóa toàn bộ dự án. Các mục 1–20 giữ bối cảnh; mục 21 làm rõ hành vi, ngoại lệ, phục hồi, trạng thái và phạm vi nghiệm thu; mục 22 chuẩn hóa hành vi ở cấp tính năng; mục 23 chuẩn hóa gói bàn giao nghiệp vụ và cách quyết định dừng/tiếp tục để không bỏ sót tiền điều kiện, side effect và bằng chứng; mục 24 chốt workflow membership/invitation P4 đã được hiện thực ở local. Ngày 2026-09-10 bổ sung P7 explicit N/A reason, status aggregation và loại trừ trend projection; bổ sung P10 query budget và bucket export lineage; bổ sung P11 consumer snapshot cho Machine QA, source/applicability/capability/rule lineage và workflow thường không seed synthetic. Ngày 2026-09-11 bổ sung boundary nghiệp vụ cho operational probe P20-W01: health, readiness, version, schema parity và queue metric là các quan sát tách biệt; bổ sung P8 coordinate frame/axis order/transform compatibility và negative capability contract; thiếu session thì queue là NOT_RUN, không suy diễn PASS; bổ sung P12 tạo report từ biological scenario revision với source snapshot độc lập. `specification.md` v1.27 quy định hợp đồng hành vi/dữ liệu chi tiết; `plan.md` v4.22 quy định task, workflow, test, evidence và exit gate theo P0–P20. Kiến trúc nền tiếp tục tham chiếu `technical-specification.md` v1.26.
 
 > Ghi chú đồng bộ: v0.24 là revision trước của catalogue. Revision v0.25 bổ sung hành vi
 > Machine QA explicit N/A: cờ `is_not_applicable`, `na_reason` bắt buộc khi N/A, loại trừ giá trị
@@ -1446,11 +1446,11 @@ Metric N/A không tạo `TrendPoint`, không làm tăng mẫu số trend và kh�
 | FR-P12-01 | Hub điều hướng BED/EQD2, comparison, tái xạ, bù fraction và library. |
 | FR-P12-02 | Scenario/history tìm theo tên, công cụ, mô và thời gian. |
 | FR-P12-03 | Clone scenario để thử giả định khác mà giữ kết quả cũ. |
-| FR-P12-04 | Report độc lập và nguồn/assumption luôn tra lại được. |
+| FR-P12-04 | Tạo report độc lập từ scenario revision; nguồn, assumption và provenance luôn tra lại được. |
 
 **Thông tin tối thiểu:** Scenario name/type/tissue/context/source/assumptions; scenario revision; calculation model/version/input/result; search/history/bookmark.
 
-**Luồng chính:** Vào tab Biological Toolkit. → Chọn công cụ hoặc mở scenario cũ. → Nhập dữ liệu thủ công hoặc dataset riêng do user chọn. → Lưu scenario và calculation revision. → Mở lại, clone hoặc export calculation report độc lập.
+**Luồng chính:** Vào tab Biological Toolkit. → Chọn công cụ hoặc mở scenario cũ. → Nhập dữ liệu thủ công hoặc dataset riêng do user chọn. → Lưu scenario và calculation revision. → Chọn `Tạo report` từ scenario đang mở. → Hệ thống tạo report revision với source snapshot của đúng organization và scenario revision hiện tại. → Mở Report Builder để toàn quyền sắp xếp/chỉnh sửa layout theo chính sách sản phẩm. → Mở lại, clone hoặc export calculation report độc lập.
 
 **Nghiệm thu nhóm:** Không automatic QA linkage; scenario save/reopen/clone/history/export và scoped errors pass.
 
@@ -2080,7 +2080,7 @@ Bảng này là bản đồ ngắn gọn để không bỏ sót phase. `S` là w
 
 Không được dùng cột `S` để bỏ qua cột `E`; một workflow chỉ được gọi là “hoàn thiện” khi cả hai đã có expected/observed/evidence. Khi implementation chưa tồn tại, các mã này vẫn là target và phải giữ `NOT_RUN`, không tạo screenshot hoặc dữ liệu giả để lấp checklist.
 
-## 22. Ma trận hành vi ở cấp tính năng v0.25
+## 22. Ma trận hành vi ở cấp tính năng v0.26
 
 Mục này chuyển catalogue phase ở mục 21 thành một hợp đồng dễ dùng khi thiết kế màn hình, viết API và lập testcase. Mỗi `FR-Pxx-yy` là một nhóm tính năng có thể truy vết; không được coi một nhóm là hoàn thiện chỉ vì một nút trên giao diện đã xuất hiện. Các mô tả dưới đây là yêu cầu nghiệp vụ; field/API/transaction cụ thể được chuẩn hóa tiếp trong `specification.md`.
 
@@ -2165,7 +2165,7 @@ Không thể dự đoán mọi lỗi vendor, dataset hoặc hành vi người d�
 
 Một lỗi thực tế có thể được phát hiện ở production nhưng không được sửa trực tiếp bằng cách sửa DB hoặc xóa history. Phải tái hiện ở môi trường an toàn, phát hành bản sửa qua staging, kiểm chứng rollback/backup và sau đó mới promote. Điều này không tạo phân quyền; đó là quy trình bảo toàn dữ liệu và khả năng tái hiện của sản phẩm.
 
-## 23. Hợp đồng bàn giao nghiệp vụ v0.25
+## 23. Hợp đồng bàn giao nghiệp vụ v0.26
 
 Mục này là lớp điều hành cuối của tài liệu nghiệp vụ. Mục tiêu không phải tạo thêm vai trò hoặc thủ tục phê duyệt, mà là buộc mỗi tính năng phải có một đường đi hoàn chỉnh từ ý định của người dùng đến kết quả có thể kiểm chứng. Một màn hình có đủ nút, một API trả HTTP 200 hoặc một deployment báo `Online` chưa được coi là hoàn thành nghiệp vụ.
 
@@ -2270,7 +2270,7 @@ Dù các màn hình đã dựng xong hoặc website đã truy cập được, d�
 
 Đây là điều kiện kiểm soát phạm vi và chất lượng của dự án, không phải một hệ thống phân quyền giữa bác sĩ và kỹ sư. Mọi thành viên active trong cùng organization vẫn sử dụng các nghiệp vụ ngang nhau; lịch sử, snapshot và error/recovery chỉ bảo đảm sản phẩm có thể giải thích và tiếp tục an toàn.
 
-## 24. Đặc tả nghiệp vụ bổ sung P4 — membership và invitation v0.25
+## 24. Đặc tả nghiệp vụ bổ sung P4 — membership và invitation v0.26
 
 Phần này chốt hành vi cụ thể cho việc đưa đồng nghiệp vào cùng organization. Đây là nghiệp vụ cộng tác và xác định phạm vi dữ liệu, không phải hệ thống phân quyền. Tất cả thành viên active trong cùng organization có cùng khả năng nghiệp vụ; `is_active` chỉ biểu thị membership còn được dùng để xác định context hay đã tạm ngưng.
 

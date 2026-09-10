@@ -22,6 +22,11 @@ from sqlalchemy.orm import Session
 from rt_connect_api.core.errors import DomainError
 from rt_connect_api.db.models import (
     AuditEvent,
+    BiologicalCalculationRun,
+    BiologicalComparisonRun,
+    BiologicalReirradiationRun,
+    BiologicalScenario,
+    BiologicalScenarioRevision,
     DVHAnalysisRun,
     ExportJob,
     GammaAnalysisRun,
@@ -639,6 +644,140 @@ def _case_payload(case: QACase) -> dict[str, object]:
     }
 
 
+def _biological_scenario_payload(
+    session: Session, context: SessionContext, scenario_id: UUID
+) -> dict[str, object]:
+    """Return the exact current scenario revision for a biological report.
+
+    Biological reports are independent of QA cases, but a report created from a
+    scenario still needs a real, organization-scoped source snapshot.  Keeping
+    the selected revision in the report payload prevents later scenario edits
+    from changing an existing report revision.
+    """
+
+    scenario = session.scalar(
+        select(BiologicalScenario).where(
+            BiologicalScenario.id == scenario_id,
+            BiologicalScenario.organization_id == context.organization_id,
+        )
+    )
+    if scenario is None:
+        comparison = session.scalar(
+            select(BiologicalComparisonRun).where(
+                BiologicalComparisonRun.id == scenario_id,
+                BiologicalComparisonRun.organization_id == context.organization_id,
+            )
+        )
+        if comparison is not None:
+            return {
+                "namespace": "BIOLOGICAL_TOOLKIT",
+                "source_id": str(comparison.id),
+                "source_kind": "COMPARISON",
+                "organization_id": str(comparison.organization_id),
+                "scenario_id": str(comparison.scenario_id),
+                "scenario_revision_id": str(comparison.scenario_revision_id),
+                "status": comparison.status,
+                "model_key": comparison.model_key,
+                "model_version": comparison.model_version,
+                "input_snapshot": comparison.input_snapshot,
+                "result_snapshot": comparison.result_snapshot,
+                "warning_snapshot": comparison.warning_snapshot,
+                "error_snapshot": comparison.error_snapshot,
+                "created_at": comparison.created_at,
+                "updated_at": comparison.updated_at,
+                "note": "Biological comparison is an independent scenario result.",
+            }
+        reirradiation = session.scalar(
+            select(BiologicalReirradiationRun).where(
+                BiologicalReirradiationRun.id == scenario_id,
+                BiologicalReirradiationRun.organization_id == context.organization_id,
+            )
+        )
+        if reirradiation is not None:
+            return {
+                "namespace": "BIOLOGICAL_TOOLKIT",
+                "source_id": str(reirradiation.id),
+                "source_kind": "REIRRADIATION",
+                "organization_id": str(reirradiation.organization_id),
+                "scenario_id": str(reirradiation.scenario_id),
+                "scenario_revision_id": str(reirradiation.scenario_revision_id),
+                "operation_type": reirradiation.operation_type,
+                "status": reirradiation.status,
+                "model_key": reirradiation.model_key,
+                "model_version": reirradiation.model_version,
+                "input_snapshot": reirradiation.input_snapshot,
+                "result_snapshot": reirradiation.result_snapshot,
+                "warning_snapshot": reirradiation.warning_snapshot,
+                "error_snapshot": reirradiation.error_snapshot,
+                "created_at": reirradiation.created_at,
+                "updated_at": reirradiation.updated_at,
+                "note": "Biological re-irradiation is an independent scenario result.",
+            }
+        calculation = session.scalar(
+            select(BiologicalCalculationRun).where(
+                BiologicalCalculationRun.id == scenario_id,
+                BiologicalCalculationRun.organization_id == context.organization_id,
+            )
+        )
+        if calculation is not None:
+            return {
+                "namespace": "BIOLOGICAL_TOOLKIT",
+                "source_id": str(calculation.id),
+                "source_kind": "CALCULATION",
+                "organization_id": str(calculation.organization_id),
+                "scenario_id": str(calculation.scenario_id),
+                "scenario_revision_id": str(calculation.scenario_revision_id),
+                "calculation_type": calculation.calculation_type,
+                "status": calculation.status,
+                "model_key": calculation.model_key,
+                "model_version": calculation.model_version,
+                "input_snapshot": calculation.input_snapshot,
+                "result_snapshot": calculation.result_snapshot,
+                "warning_snapshot": calculation.warning_snapshot,
+                "error_snapshot": calculation.error_snapshot,
+                "created_at": calculation.created_at,
+                "updated_at": calculation.updated_at,
+                "note": "Biological calculation is an independent scenario result.",
+            }
+        raise DomainError(
+            "REPORT_SOURCE_UNAVAILABLE",
+            "The biological scenario or result source was not found.",
+            404,
+        )
+    scenario_revision = session.scalar(
+        select(BiologicalScenarioRevision).where(
+            BiologicalScenarioRevision.organization_id == context.organization_id,
+            BiologicalScenarioRevision.scenario_id == scenario.id,
+            BiologicalScenarioRevision.revision_number == scenario.revision,
+        )
+    )
+    if scenario_revision is None:
+        raise DomainError(
+            "REPORT_SOURCE_UNAVAILABLE",
+            "The current biological scenario revision was not found.",
+            404,
+        )
+    return {
+        "namespace": "BIOLOGICAL_TOOLKIT",
+        "scenario_id": str(scenario.id),
+        "scenario_revision_id": str(scenario_revision.id),
+        "scenario_revision_number": scenario_revision.revision_number,
+        "scenario_key": scenario.scenario_key,
+        "name": scenario.name,
+        "scenario_type": scenario.scenario_type,
+        "tissue_context": scenario.tissue_context,
+        "clinical_context": scenario.clinical_context,
+        "source_type": scenario.source_type,
+        "source_reference": scenario.source_reference,
+        "status": scenario.status,
+        "revision": scenario.revision,
+        "scenario_snapshot": scenario_revision.snapshot,
+        "created_at": scenario.created_at,
+        "updated_at": scenario.updated_at,
+        "note": "Biological calculation is an independent scenario source.",
+    }
+
+
 def _source_snapshot(
     session: Session,
     context: SessionContext,
@@ -754,11 +893,15 @@ def _source_snapshot(
             "updated_at": dvh_run.updated_at.isoformat(),
         }
     elif source_type == "BIOLOGICAL":
-        payload = {
-            "namespace": "BIOLOGICAL_TOOLKIT",
-            "source_id": str(source_id) if source_id else None,
-            "note": "Biological calculation is an independent scenario source.",
-        }
+        payload = (
+            _biological_scenario_payload(session, context, source_id)
+            if source_id is not None
+            else {
+                "namespace": "BIOLOGICAL_TOOLKIT",
+                "source_id": None,
+                "note": "Biological calculation is an independent scenario source.",
+            }
+        )
     else:
         payload = {
             "namespace": "CUSTOM_REPORT",

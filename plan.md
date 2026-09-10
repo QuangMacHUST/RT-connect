@@ -2,10 +2,10 @@
 
 > Cập nhật candidate staging ngày 2026-09-11: sau khi queue orchestration được harden và cập nhật evidence, API `07f847c0-7e05-470a-a161-3758ca174302`, web `0bab32af-56cb-450d-9754-39c4f5b3847f` và worker `a37687b6-b192-44ab-9a47-7acb5f919d85` đều `SUCCESS` trên source SHA `06b818fc6edc0ebe4353c1fd018c519ccfc6f25f`. Public verifier đạt `15/15`, schema `20260909_0019`; web bundle đã chứa upload queue. Fixture RTDOSE tổng hợp `gamma-rtdose-v1-smoke.dcm` đã được upload một lần trước đó vào case staging `ed7ddbe5-811a-4463-a270-b0386f64644d` với `REFERENCE/DICOM`, manifest được tạo và validation `VALID` (0 lỗi, 0 cảnh báo). Đây là `STAGING_VERIFIED_SLICE`, không tự đóng P06-W04/P06-VERIFY hoặc các gate fault/retry, signed-download byte re-hash, storage reconciliation, release và handoff. Evidence parity: `docs/evidence/p20-staging-public-parity-20260911-06b818f.json`; upload: `docs/evidence/p06-staging-rtdose-upload-20260911.json`.
 
-- Phiên bản: **4.21**, ngày 2026-09-11.
-- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.25.
-- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.26.
-- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.25.
+- Phiên bản: **4.22**, ngày 2026-09-11.
+- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.26.
+- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.27.
+- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.26.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
 - Phạm vi lần cập nhật này: giữ toàn bộ contract v4.14, bổ sung P7 evaluate optimistic revision tùy chọn, PostgreSQL row-lock khi finalize, tương thích caller không body, exact replay không nhân đôi TrendPoint, cùng local evidence cho seed/snapshot/stale-evaluate/replay. Tiếp tục giữ P11 consumer snapshot đầy đủ (source/applicability/revision/lineage/rule reference/capability), fail-closed khi protocol/rule lệch snapshot, trend protocol-version lineage và loại bỏ seed synthetic khỏi workflow Machine QA thông thường; đồng thời giữ contract P7 explicit N/A, P10 query count-preflight/raw-aggregate budget/CSV bucket lineage, bằng chứng P8 browser staging và oracle Gamma độc lập. Bổ sung P8 contract cho coordinate frame, axis order, transform provenance, compatibility preflight và negative capability; fixture RTDOSE tổng hợp đã được người dùng cho phép và đã tồn tại hợp lệ trong case staging nên không upload bản sao; workflow Gamma authenticated mới chỉ reuse fixture đó để kiểm tra negative/positive path. Các gate staging P8/P9/P10/P11/P12–P20 chưa được tự nâng chỉ vì local test pass hoặc Railway báo Online.
@@ -1214,7 +1214,7 @@ Mã ở cột “Phân loại” là contract code. Mọi lỗi phải có HTTP 
 - [x] P12-W01 — Tạo lại Stitch Biological Hub từ bốn màn hình chuẩn; không dùng screen hidden cũ. Screen hiện hành: `b32ef9de691f48449ec23e491a6b634d`; asset screenshot `50e2c49b3ec743a59f9d99e8b13e694f`.
 - [x] P12-W02 — Namespace `/app/biological` và scoped scenario/calculation data không FK QACase bắt buộc; migration `20260908_0012`.
 - [x] P12-W03 — Scenario DRAFT/SAVED/ARCHIVED, revision snapshot, history, search, clone và archive API/UI.
-- [ ] P12-W04 — Tái dùng renderer P9 bằng source_type BIOLOGICAL; placeholder module có availability rõ.
+- [x] P12-W04 — Tái dùng renderer P9 bằng `source_type=BIOLOGICAL`; API resolve scenario revision theo organization scope, pin `scenario_snapshot` vào report source snapshot, và Biological Hub mở được Report Builder từ report revision vừa tạo. Staging verification của slice này còn mở.
 - [x] P12-LOCAL-VERIFY — focused `apps/api/tests/test_biological.py`, full backend, Ruff/mypy, frontend lint/typecheck/Vitest/build và local PostgreSQL migration head đều pass trên candidate hiện tại.
 - [ ] P12-STAGING-VERIFY — deploy đúng SHA; browser create→validate→save→edit/clone/archive/filter/history; kiểm response/DB state và không có QA linkage. Candidate `e21ad4b` đã đạt browser lifecycle/report-integration partial; direct PostgreSQL row/checksum/scope, complete S/E/C, fault/resource và release evidence vẫn mở.
 - [ ] P12-VERIFY — chạy đủ TC-P12-S01..S09, TC-P12-E01..E12 và C/B áp dụng; kiểm namespace độc lập, persistence, scope, refresh/reconnect, export và capability states trên candidate được manifest pin.
@@ -1247,7 +1247,7 @@ Mã ở cột “Phân loại” là contract code. Mọi lỗi phải có HTTP 
 | `POST .../comparisons/{id}/clone` | Clone thành comparison mới, giữ source lineage và snapshot | P14 implemented; staging gate open |
 | `GET .../comparisons/{id}/export` | JSON/CSV từ result snapshot, có checksum và provenance | P14 implemented; staging gate open |
 
-P12 không được coi là hoàn tất chỉ vì hub mở được. Trước khi chuyển sang `STAGING_VERIFIED`, phải chứng minh đồng thời: route thật tải dữ liệu thật, mutation và revision state đúng trong PostgreSQL, scope không lộ organization khác, refresh/reconnect giữ snapshot, tool chưa mở không dẫn tới route chết và P9 report integration được ghi rõ là đã làm hoặc còn target.
+P12 không được coi là hoàn tất chỉ vì hub mở được. Trước khi chuyển sang `STAGING_VERIFIED`, phải chứng minh đồng thời: route thật tải dữ liệu thật, mutation và revision state đúng trong PostgreSQL, scope không lộ organization khác, refresh/reconnect giữ snapshot, tool chưa mở không dẫn tới route chết, P9 report integration tạo được report từ scenario revision và giữ nguyên source snapshot sau khi scenario thay đổi, đồng thời report builder/export evidence được ghi rõ là đã làm hoặc còn target.
 
 ### Trường hợp chạy đúng P12
 
@@ -2268,10 +2268,10 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 **Runtime addendum cùng ngày:** sau source-parity recovery, candidate `b0263c932c740d4f36f19867241d5c1e07014765` đạt **15/15 checks PASS** trên public staging với schema `20260909_0019`; evidence `docs/evidence/p19-staging-public-smoke-20260909-b0263c9.json`. Browser DVH/report evidence vẫn dùng đúng case synthetic đã upload trước đó; không upload lại RTDOSE/RTSTRUCT/CT. Payload JSON/CSV export parse/hash khớp saved snapshot, còn việc browser đổi `.crdownload` thành filename cuối vẫn `UNVERIFIED` và tiếp tục là gate mở. Evidence browser: `docs/evidence/p17-staging-dvh-ct-browser-20260909.json`.
 
-### 7.3. Revision hiện hành v4.21
+### 7.3. Revision hiện hành v4.22
 
-Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.25, `specification.md` v1.26,
-`technical-specification.md` v1.25 và `plan.md` v4.21. Các revision trước đã bổ sung consumer snapshot
+Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.26, `specification.md` v1.27,
+`technical-specification.md` v1.26 và `plan.md` v4.22. Các revision trước đã bổ sung consumer snapshot
 P11 đầy đủ cho Machine QA, trend và report, cùng UI source panel đọc snapshot; revision v4.14 giữ status/readiness
  surface P20, bổ sung P4 member/invitation execution contract và P7 Machine QA explicit-N/A execution contract:
  workflow `/invite`, token

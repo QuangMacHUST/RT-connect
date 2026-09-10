@@ -3,8 +3,8 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.25 — đồng bộ specification.md v1.26, plan.md v4.21 và business-analysis.md v0.25; bổ sung P8 coordinate-frame/axis-order/explicit-transform contract, compatibility preflight giữa RTDOSE và measurement, provenance và identity-transform capability hiện tại; bổ sung P11 consumer snapshot `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/revision/lineage/rule reference/capability và fail-closed mismatch sau khi protocol lifecycle thay đổi; bổ sung UI source panel đọc snapshot và loại seed synthetic khỏi workflow thường. Giữ source-identifiable release metadata từ Railway Git SHA cho API/web, process-RSS/resource-policy/API-responsiveness evidence cho P17 Docker workload đồng thời, export-content evidence và targeted direct PostgreSQL row/checksum/scope evidence; giữ Machine QA explicit N/A, P10 Trend query-budget/count-preflight/bucket-export, P4 membership/invitation và status/readiness P20 (2026-09-11). P17 giữ migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`, song song ORM guard và negative mutation test. P8 giữ independent Gamma oracle runner/evidence cho synthetic 2D/3D profile coverage, staging RTDOSE + measurement browser smoke và malformed Redis dispatch quarantine trước ACK. P9 render contract hiện hành là `report-renderer-0.2`, dùng `fonttools==4.63.0` và asset `DejaVuSans.ttf` được đóng gói để PDF Unicode không rơi về glyph thay thế; mọi thay đổi renderer phải lặp lại payload/hash và visual inspection trên staging. Client export phải dùng namespace idempotency tương thích renderer/export contract; server fingerprint là authority và không được nuốt conflict.
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.25
+- **Phiên bản:** 1.26 — đồng bộ specification.md v1.27, plan.md v4.22 và business-analysis.md v0.26; bổ sung P8 coordinate-frame/axis-order/explicit-transform contract, compatibility preflight giữa RTDOSE và measurement, provenance và identity-transform capability hiện tại; bổ sung P11 consumer snapshot `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/revision/lineage/rule reference/capability và fail-closed mismatch sau khi protocol lifecycle thay đổi; bổ sung UI source panel đọc snapshot và loại seed synthetic khỏi workflow thường. Giữ source-identifiable release metadata từ Railway Git SHA cho API/web, process-RSS/resource-policy/API-responsiveness evidence cho P17 Docker workload đồng thời, export-content evidence và targeted direct PostgreSQL row/checksum/scope evidence; giữ Machine QA explicit N/A, P10 Trend query-budget/count-preflight/bucket-export, P4 membership/invitation và status/readiness P20 (2026-09-11). P17 giữ migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`, song song ORM guard và negative mutation test. P8 giữ independent Gamma oracle runner/evidence cho synthetic 2D/3D profile coverage, staging RTDOSE + measurement browser smoke và malformed Redis dispatch quarantine trước ACK. P9 render contract hiện hành là `report-renderer-0.2`, dùng `fonttools==4.63.0` và asset `DejaVuSans.ttf` được đóng gói để PDF Unicode không rơi về glyph thay thế; mọi thay đổi renderer phải lặp lại payload/hash và visual inspection trên staging. Client export phải dùng namespace idempotency tương thích renderer/export contract; server fingerprint là authority và không được nuốt conflict. P12 report integration nhận diện `BIOLOGICAL` source theo organization-scoped scenario/revision và lưu immutable source snapshot trước khi Report Builder hiển thị.
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.26
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
@@ -851,6 +851,12 @@ Các entity này không có qa_case_id mặc định. Nếu user xuất kết qu
 
 ### 4.17.1. P12 implementation contract
 
+#### Biological report integration
+
+Report Builder dùng chung renderer P9 nhưng phải phân biệt source namespace. Khi client tạo report với `source_type=BIOLOGICAL` và `source_id`, API lookup `BiologicalScenario` và revision hiện tại bằng cặp `id + organization_id`, sau đó ghi metadata cùng `scenario_snapshot` vào `ReportRevision.source_snapshot`. Mọi lỗi thiếu nguồn hoặc thiếu revision trả `REPORT_SOURCE_UNAVAILABLE` trước khi commit, còn organization mismatch bị chặn ở lớp session/scope. Vì source snapshot đã được pin, thay đổi scenario về sau không làm thay đổi report revision cũ; người dùng muốn phản ánh revision mới phải tạo report revision mới.
+
+Biological Hub cung cấp nút `Tạo report` cho scenario trong phạm vi organization. Sau khi API trả report revision, client điều hướng tới `/app/reports?reportKey=...`; Report Builder chọn report đó từ query state và cho phép tạo report mới bằng cách xóa query. Integration này không tạo QA linkage và không biến biological calculation thành QA PASS/FAIL, treatment order hoặc prescription.
+
 Slice P12 hiện thực ba bảng nền tảng trong namespace nghiệp vụ riêng:
 
 - `biological_scenarios`: organization-scoped stable key, tên/loại/context, source/reference, finite assumptions, trạng thái `DRAFT|SAVED|ARCHIVED`, revision và lineage tới source scenario revision khi clone.
@@ -1298,7 +1304,7 @@ evaluated/passing/nonpassing/excluded/no-candidate/censored, pass rate, coverage
 percentile exactness, histogram, warning, configuration, input checksum và engine version.
 Đây là deterministic engineering/golden slice; test local hiện có exhaustive independent node
 oracle và các guard resource/retry, nhưng không thay thế benchmark theo phần cứng hoặc
-commissioning. Gate phát triển, pilot và release theo plan.md v4.21. Coordinate frame/axis order/transform compatibility
+commissioning. Gate phát triển, pilot và release theo plan.md v4.22. Coordinate frame/axis order/transform compatibility
 đã được hiện thực ở validator/engine/API trên candidate local,
 crash/ack/dead-letter injection, large workload benchmark và evidence effective schema/release
 trên staging vẫn là điều kiện đóng P8.

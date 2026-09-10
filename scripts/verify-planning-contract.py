@@ -54,10 +54,10 @@ def verify(root: Path) -> dict[str, object]:
             texts[name] = path.read_text(encoding="utf-8")
 
     expected_versions = {
-        "business": (r"\*\*Phiên bản tài liệu:\*\*\s*([0-9]+\.[0-9]+)", "0.25"),
-        "specification": (r"version \*\*([0-9]+\.[0-9]+)\*\*", "1.26"),
-        "technical": (r"\*\*Phiên bản:\*\*\s*([0-9]+\.[0-9]+)", "1.25"),
-        "plan": (r"Phiên bản:\s*\*\*([0-9]+\.[0-9]+)\*\*", "4.21"),
+        "business": (r"\*\*Phiên bản tài liệu:\*\*\s*([0-9]+\.[0-9]+)", "0.26"),
+        "specification": (r"version \*\*([0-9]+\.[0-9]+)\*\*", "1.27"),
+        "technical": (r"\*\*Phiên bản:\*\*\s*([0-9]+\.[0-9]+)", "1.26"),
+        "plan": (r"Phiên bản:\s*\*\*([0-9]+\.[0-9]+)\*\*", "4.22"),
     }
     for name, (pattern, expected) in expected_versions.items():
         observed = _version(pattern, texts.get(name, ""))
@@ -69,10 +69,10 @@ def verify(root: Path) -> dict[str, object]:
         )
 
     references = {
-        "business": "plan.md v4.21",
-        "specification": "plan.md v4.21",
-        "technical": "plan.md v4.21",
-        "progress": "plan.md v4.21",
+        "business": "plan.md v4.22",
+        "specification": "plan.md v4.22",
+        "technical": "plan.md v4.22",
+        "progress": "plan.md v4.22",
     }
     for name, reference in references.items():
         code_span_reference = f"`{reference.split()[0]}` {reference.split()[1]}"
@@ -88,7 +88,7 @@ def verify(root: Path) -> dict[str, object]:
     specification = texts.get("specification", "")
 
     required_markers = {
-        "business.feature_card": (business, "## 23. Hợp đồng bàn giao nghiệp vụ v0.25"),
+        "business.feature_card": (business, "## 23. Hợp đồng bàn giao nghiệp vụ v0.26"),
         "business.p4_addendum": (business, "## 24. Đặc tả nghiệp vụ bổ sung P4"),
         "business.change_propagation": (business, "### 23.5. Quy tắc lan truyền thay đổi"),
         "specification.operation_contract": (specification, "### 14.1. Hợp đồng operation tối thiểu"),
