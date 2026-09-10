@@ -1,0 +1,48 @@
+{
+  "schema_version": "rt-connect.p17-staging-rtdose-authenticated-recheck.v1",
+  "captured_at_utc": "2026-09-10T16:50:22.7880813Z",
+  "environment": "staging",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "api_base_url": "https://gleaming-cooperation-staging.up.railway.app",
+  "candidate_sha": "19857bd8515bfbc86835527aadc145278b837dc3",
+  "schema_revision": "20260909_0019",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "fixture_authorization": "user_confirmed_synthetic_rtdose_use_in_staging",
+  "fixture_reuse": {
+    "artifact_name": "gamma-rtdose-v1-smoke.dcm",
+    "artifact_type": "RTDOSE",
+    "sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
+    "data_status": "VALID",
+    "duplicate_upload_created": false
+  },
+  "authenticated_browser_observations": {
+    "route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh",
+    "build_label": "19857bd8515bfbc86835527aadc145278b837dc3",
+    "input_summary": "2 dose · 1 structure",
+    "selected_rtdose": "gamma-rtdose-v1-smoke.dcm · ca5c9168eb9b…",
+    "selected_rtstruct": "p17-rtstruct-v1-smoke.dcm · 16a79df31297…",
+    "selected_roi": "#1 · P17_TARGET · 1 contour",
+    "ct_mode": "Không chọn CT · dose-native",
+    "existing_run_id": "d8230d1d-badd-4c0c-b044-dcc4434215a6",
+    "existing_run_status": "COMPLETED",
+    "existing_run_result_sha256": "cf2799b8afeafa68cf60a330eac9adff123cca5c7ceacfc0eab78132b0c0359c",
+    "existing_run_input_fingerprint": "8f525a5e74545854f0a53a743c0061ffbd8adee17ecc6da88de4486f0c9abf2a",
+    "history_count_observed": 2,
+    "new_run_created": false,
+    "new_artifact_created": false,
+    "mutation_performed": false
+  },
+  "deployment_ids": {
+    "api": "60c4bcde-2ddc-4b6a-b586-d51385926c1c",
+    "web": "7cd043f4-854d-4399-bdb3-dd2ff0639003",
+    "worker": "74c69765-7440-4953-9e30-21338b31fe2d"
+  },
+  "public_parity_evidence": "docs/evidence/p19-staging-public-recheck-20260910-19857bd.json",
+  "planning_contract_evidence": "docs/evidence/p0-planning-contract-20260910-e5197ce.json",
+  "scope": "authenticated_readback_of_existing_synthetic_fixture_and_saved_dvh_on_current_candidate",
+  "limitations": [
+    "This is not a full P17 staging closure.",
+    "It does not prove provider fault injection, resource/large-volume gate, independent-oracle promotion, backup/restore, rollback, or production readiness.",
+    "The CT overlay path was not exercised in this read-only recheck; the current selection remained dose-native."
+  ]
+}

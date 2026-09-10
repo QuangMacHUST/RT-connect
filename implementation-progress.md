@@ -3,6 +3,14 @@
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 `technical-specification.md` v1.24 và `plan.md` v4.19.
 
+## P17/P19 — final current-candidate parity and RTDOSE readback — staging partial — 2026-09-10 / `19857bd`
+
+- Commit `19857bd8515bfbc86835527aadc145278b837dc3` đã được deploy thành công đồng thời cho API, web và worker staging. Deployment IDs là API `60c4bcde-2ddc-4b6a-b586-d51385926c1c`, web `7cd043f4-854d-4399-bdb3-dd2ff0639003` và worker `74c69765-7440-4953-9e30-21338b31fe2d`; cả ba `SUCCESS` và cùng source SHA.
+- Public verifier theo exact SHA đạt `15/15`, `failed_check_count=0`, API health/ready/version, schema `20260909_0019`, OpenAPI, Auth boundary và web bundle marker đều PASS: [p19-staging-public-recheck-20260910-19857bd.json](docs/evidence/p19-staging-public-recheck-20260910-19857bd.json).
+- Browser authenticated sau reload đọc đúng build `19857bd`, case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`, preflight `2 dose · 1 structure`, RTDOSE `gamma-rtdose-v1-smoke.dcm` `VALID` với SHA-256 `ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b`, RTSTRUCT/ROI `#1 · P17_TARGET`, saved DVH run `d8230d1d-badd-4c0c-b044-dcc4434215a6` và result SHA `cf2799b8afeafa68cf60a330eac9adff123cca5c7ceacfc0eab78132b0c0359c` giữ nguyên. Không tạo run/artifact mới và không upload trùng: [p17-staging-rtdose-authenticated-recheck-20260910-19857bd.json](docs/evidence/p17-staging-rtdose-authenticated-recheck-20260910-19857bd.json).
+- Planning contract sau khi sửa expected versions của verifier đạt `passed=true`, `failed_check_count=0`, đủ 21 phase; evidence được giữ tại [p0-planning-contract-20260910-e5197ce.json](docs/evidence/p0-planning-contract-20260910-e5197ce.json).
+- Đây vẫn là current-candidate parity/readback partial. P17/P19/P20 còn mở các gate full negative/fault/resource/volume, two-identity mutation E2E, provider backup/restore, rollback, alert/owner handoff, pilot và production promotion.
+
 ## P17/P19 — current candidate parity and RTDOSE authenticated recheck — staging partial — 2026-09-10 / `e5197ce`
 
 - Sau khi commit tài liệu `e5197ce4634f93b81267479d9b68382e97f7e4e9` được push, web staging tự nhận candidate mới trong khi API/worker vẫn phục vụ `380012e`; public verifier với expected `380012e` đã bắt đúng drift ở `web.bundle.expected_version` (`1` lỗi). Evidence drift được giữ tại [p19-staging-public-recheck-20260910.json](docs/evidence/p19-staging-public-recheck-20260910.json).
