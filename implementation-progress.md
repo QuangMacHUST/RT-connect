@@ -3,6 +3,14 @@
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 `technical-specification.md` v1.24 và `plan.md` v4.19.
 
+## P17/P19 — RTDOSE authorization + CT overlay recheck — staging partial — 2026-09-11 / `3e46479`
+
+- Người dùng đã xác nhận cho phép sử dụng/upload fixture RTDOSE tổng hợp trong case staging `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`. Fixture `gamma-rtdose-v1-smoke.dcm` đã tồn tại, `RTDOSE/VALID`, checksum local và prefix trên UI khớp (`ca5c9168eb9b...`); hệ thống không tạo artifact trùng.
+- Commit `3e46479c8784cebdc5fd4c41e865645b3da9ac63` đã được deploy exact SHA cho API, web và worker; ba deployment đều `SUCCESS`. Public verifier đạt `15/15`, `failed_check_count=0`, schema `20260909_0019`, health/ready/version/OpenAPI/Auth boundary và web source marker đều khớp: [p19-staging-public-recheck-20260911-3e46479.json](docs/evidence/p19-staging-public-recheck-20260911-3e46479.json).
+- Browser authenticated sau reload đọc đúng build `3e46479`, preflight `2 dose · 1 structure`, RTDOSE fixture đang được chọn, RTSTRUCT/ROI `#1 · P17_TARGET` và saved DVH run `d8230d1d-badd-4c0c-b044-dcc4434215a6` vẫn `COMPLETED`; không tạo run/artifact mới.
+- CT preview trên candidate mới hiển thị lát cắt `#1` ở trạng thái `LPS LINKED`, overlay `NEAREST_NEIGHBOR_IN_PATIENT_LPS`, ROI và crosshair dose-grid center. Kiểm tra lát cắt `#3` cho `NO DOSE OVERLAP` với cảnh báo rõ ràng và overlay rỗng, sau đó đưa lại về lát cắt hợp lệ. Evidence: [p17-staging-rtdose-ct-browser-recheck-20260911-3e46479.json](docs/evidence/p17-staging-rtdose-ct-browser-recheck-20260911-3e46479.json).
+- Đây là staging authenticated readback/compatibility evidence, chưa đóng toàn bộ P17/P19. Full negative/fault/resource/volume, independent-oracle promotion, two-identity mutation E2E, provider restore, rollback, alert/owner handoff, browser filename finalization và production promotion vẫn mở.
+
 ## P17/P19 — final current-candidate parity and RTDOSE readback — staging partial — 2026-09-10 / `19857bd`
 
 - Commit `19857bd8515bfbc86835527aadc145278b837dc3` đã được deploy thành công đồng thời cho API, web và worker staging. Deployment IDs là API `60c4bcde-2ddc-4b6a-b586-d51385926c1c`, web `7cd043f4-854d-4399-bdb3-dd2ff0639003` và worker `74c69765-7440-4953-9e30-21338b31fe2d`; cả ba `SUCCESS` và cùng source SHA.

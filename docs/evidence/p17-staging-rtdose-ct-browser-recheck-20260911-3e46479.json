@@ -1,0 +1,87 @@
+{
+  "schema_version": "rt-connect.p17-staging-rtdose-ct-browser-recheck.v1",
+  "captured_at_utc": "2026-09-10T17:18:00Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_E2E_READBACK",
+  "environment": "staging",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "api_base_url": "https://gleaming-cooperation-staging.up.railway.app",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "candidate_sha": "3e46479c8784cebdc5fd4c41e865645b3da9ac63",
+  "schema_revision": "20260909_0019",
+  "fixture_authorization": "user_confirmed_synthetic_rtdose_use_in_staging",
+  "data_boundary": "Only repository-generated synthetic DICOM fixtures were used; no patient, PACS, or treatment dataset was transmitted.",
+  "fixture_reuse": {
+    "artifact_name": "gamma-rtdose-v1-smoke.dcm",
+    "artifact_type": "RTDOSE",
+    "local_sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
+    "staging_ui_sha256_prefix": "ca5c9168eb9b…",
+    "data_status": "VALID",
+    "duplicate_upload_created": false
+  },
+  "authenticated_browser_observations": {
+    "route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/dvh",
+    "web_build_label": "3e46479c8784cebdc5fd4c41e865645b3da9ac63",
+    "input_summary": "2 dose · 1 structure",
+    "selected_rtdose": "gamma-rtdose-v1-smoke.dcm · ca5c9168eb9b…",
+    "selected_rtstruct": "p17-rtstruct-v1-smoke.dcm · 16a79df31297…",
+    "selected_roi": "#1 · P17_TARGET · 1 contour",
+    "selected_ct": "p17-ct-v1-smoke.dcm · 0b1d3bfd6adf…",
+    "ct_overlay_status": "LPS LINKED",
+    "ct_overlay_method": "NEAREST_NEIGHBOR_IN_PATIENT_LPS",
+    "ct_visible_slice": "#1",
+    "ct_crosshair": "dose grid center",
+    "frame_of_reference_present": true,
+    "saved_run_id": "d8230d1d-badd-4c0c-b044-dcc4434215a6",
+    "saved_run_status": "COMPLETED",
+    "history_count": 2,
+    "mutation_performed": false,
+    "new_artifact_created": false,
+    "new_run_created": false
+  },
+  "prior_same_candidate_code_checks": {
+    "no_overlap_slice": {
+      "visible_slice": "#3",
+      "status": "NO DOSE OVERLAP",
+      "warning": "The selected CT slice does not intersect the RTDOSE grid; dose overlay is empty.",
+      "overlay_empty_without_zero_fill": true,
+      "result": "EXPECTED_WARNING"
+    },
+    "returned_to_positive_slice": true
+  },
+  "deployments": {
+    "api": {
+      "deployment_id": "6ab68844-e3d1-46d9-ad62-6d1397a26362",
+      "status": "SUCCESS"
+    },
+    "web": {
+      "deployment_id": "5c8c4f60-7a38-40c6-815a-43f4cf2f68fd",
+      "status": "SUCCESS"
+    },
+    "worker": {
+      "deployment_id": "3323d36e-043a-4f8c-9d9c-04cf2dc7998b",
+      "status": "SUCCESS"
+    }
+  },
+  "public_parity": {
+    "evidence": "docs/evidence/p19-staging-public-recheck-20260911-3e46479.json",
+    "passed": true,
+    "failed_check_count": 0,
+    "check_count": 15
+  },
+  "assertions": {
+    "authorized_synthetic_rtdose_is_present": true,
+    "rtdose_is_valid_and_selected": true,
+    "rtstruct_and_roi_are_resolved": true,
+    "ct_positive_overlay_is_visible": true,
+    "ct_no_overlap_warning_is_explicit": true,
+    "no_unintended_database_mutation": true,
+    "result": "PASS_WITH_P17_GATES_OPEN"
+  },
+  "open_gates": [
+    "full P17 negative matrix E24-E30",
+    "staging fault/resource/large-volume evidence",
+    "independent-oracle promotion",
+    "binding/report/release evidence",
+    "browser download final filename rename remains unverified"
+  ]
+}
