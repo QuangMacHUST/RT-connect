@@ -21,6 +21,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 - Trước/sau trên `/app/system/status`, health `OK`, readiness `READY`, schema `20260909_0019`, schema parity `MATCH`, Redis `available/configured`, stream `9`, pending `0`; không upload, calculation, report hoặc database/object deletion. Evidence: [p18-staging-worker-restart-recovery-20260910-1c0210c.json](docs/evidence/p18-staging-worker-restart-recovery-20260910-1c0210c.json).
 - Đây chỉ là `STAGING_PARTIAL_RESTART_RECOVERY`; API/DB/Redis/storage/renderer fault injection, retry/dead-letter, restore plan execution, volume/failure budget và full P18 regression/pilot vẫn mở.
 
+## P8/P18 — local Redis worker reliability recheck — verified locally — 2026-09-10 / `3fe1db2`
+
+- Sau khi service Redis trong `docker-compose.yml` được khởi động lại, `scripts/verify-local-gamma-queue.py` chạy trên commit `3fe1db2ab3139dec97090d0660278e419c8c6177` đạt `passed=true`; evidence: [p8-local-redis-worker-smoke-20260910.json](docs/evidence/p8-local-redis-worker-smoke-20260910.json).
+- Happy path, duplicate dispatch/terminal replay, ACK failure recovery (`pending 1 → 0`, durable result giữ nguyên, không tạo attempt thứ hai), bounded retry/dead-letter sau 3 output và malformed-message quarantine đều PASS; stream/key/bucket/database tạm được cleanup.
+- Đây là `LOCAL_COMPOSE_REDIS_WORKER`, không thay cho staging fault injection, resource/large-input, Railway provider backup/restore, pilot hoặc production release gate.
+
 ## P13 — staging BED/EQD2 calculation, immutable readback and export — partial verified — 2026-09-10 / `b712a383`
 
 - Trên web build `b712a383fb806188c794481720e7051e89168fe4`, browser authenticated đã chọn scenario SAVED `P12_STAGING_BIO_SCENARIO_E21`, revision `3` (`e3bcce19-d769-4873-b0e6-45a82e66ee32`) và validate-only thành công trước khi lưu snapshot.

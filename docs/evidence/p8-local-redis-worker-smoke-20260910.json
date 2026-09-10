@@ -1,9 +1,9 @@
 {
-  "schema_version": "rt-connect.p8-local-redis-worker-smoke.v1",
-  "captured_at_utc": "2026-09-09T19:47:07.784342+00:00",
+  "schema_version": "rt-connect.p8-local-redis-worker-smoke.v2",
+  "captured_at_utc": "2026-09-10T13:53:13.761113+00:00",
   "verification_level": "LOCAL_COMPOSE_REDIS_WORKER",
   "synthetic_only": true,
-  "source_commit": "d8277263b9241066c2a8972a7553c659501b82f2",
+  "source_commit": "3fe1db2ab3139dec97090d0660278e419c8c6177",
   "topology": {
     "database": "temporary SQLite file",
     "queue": "local Redis 7 service",
@@ -16,11 +16,11 @@
       2,
       2
     ],
-    "organization_id": "cd954dff-ed8e-4f7c-8e75-b7c85968f2e6",
-    "case_id": "7e643487-908d-40f8-8f0f-bbc89534eac8"
+    "organization_id": "a64c4177-accf-4aac-970d-c529ea677227",
+    "case_id": "6feab0ee-0420-4835-9e6e-50d2183676d9"
   },
   "happy_path": {
-    "run_id": "02c4a56c-3236-4079-ae67-62f8ccffedff",
+    "run_id": "bf1a327b-774a-4e14-97c2-13a97a9d8fb3",
     "checks": {
       "status": true,
       "overall_status": true,
@@ -31,8 +31,22 @@
       "duplicate_dispatch_deduplicated": true
     }
   },
+  "ack_failure_recovery": {
+    "run_id": "bf1a327b-774a-4e14-97c2-13a97a9d8fb3",
+    "message_id": "1789048385009-0",
+    "checks": {
+      "ack_failure_injected": true,
+      "ack_error_surface": true,
+      "message_remained_pending": true,
+      "eventual_ack_cleared_pending": true,
+      "durable_result_unchanged": true,
+      "no_second_attempt": true
+    },
+    "pending_after_injected_failure": 1,
+    "pending_after_recovery_ack": 0
+  },
   "bounded_retry_dead_letter": {
-    "run_id": "a438b9f0-218c-4f50-977c-ca2efd354e4c",
+    "run_id": "d668562b-4328-4dbd-aceb-b1dcb9cc19ae",
     "checks": {
       "status": true,
       "bounded_attempts": true,
@@ -43,11 +57,28 @@
     },
     "worker_attempt_output_count": 3
   },
+  "malformed_message_quarantine": {
+    "source_message_id": "1789048391798-0",
+    "checks": {
+      "worker_completed": true,
+      "dead_letter_written": true,
+      "error_code": true,
+      "source_message_recorded": true,
+      "payload_value_not_copied": true,
+      "queue_acknowledged": true
+    },
+    "queue_metrics_after_ack": {
+      "backend": "redis_stream",
+      "stream_length": 6,
+      "pending_count": 0,
+      "consumer_count": 2
+    }
+  },
   "queue_metrics_after_ack": {
     "backend": "redis_stream",
-    "stream_length": 4,
+    "stream_length": 6,
     "pending_count": 0,
-    "consumer_count": 1
+    "consumer_count": 2
   },
   "cleanup": "temporary database, stream, keys and MinIO bucket removed in finally",
   "passed": true
