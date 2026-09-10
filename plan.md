@@ -985,6 +985,13 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 - Frontend đã đổi key thành `report-{page-export-namespace}-{revision}-{format}`; cùng một phiên vẫn replay idempotent, còn lần tải trang sau khi renderer/export contract đổi sẽ tạo namespace mới. Server fingerprint và quy tắc conflict không bị nới lỏng.
 - Local gate: web lint, typecheck, Vitest `17/17` và production build pass. Staging gate còn lại là deploy exact SHA, tạo bốn export mới và xác nhận renderer `0.2`, JSON/CSV parse, PDF visual Unicode, PNG signature, checksum và no-mutation report/DVH.
 
+### Checkpoint staging P9/P19 — renderer 0.2 và idempotency namespace — 2026-09-10 / `380012e`
+
+- API/web/worker staging đã đồng bộ exact SHA `380012ed3f2140efd4f1560c2f627176831e495f`, schema `20260909_0019`; public verifier `15/15`, `failed_check_count=0`. Evidence: [p9-staging-unicode-public-smoke-20260910-380012e.json](docs/evidence/p9-staging-unicode-public-smoke-20260910-380012e.json).
+- Browser reload đã nhận bundle mới, mở report `P17 staging bound DVH report` revision 1 từ đúng DVH run `d8230d1d-badd-4c0c-b044-dcc4434215a6`, sau đó tạo bốn export mới với renderer `report-renderer-0.2`: JSON `15,582` bytes parse pass; CSV `1,190` bytes/27 rows parse pass; PDF `382,747` bytes có header/EOF, font Unicode/ToUnicode và nội dung UTF-16 đúng; PNG `2,243` bytes có signature.
+- PDF staging được render bằng Poppler và review trực quan pass cho title cùng các block tiếng Việt `DVH và đánh giá giới hạn explicit` và `Cảnh báo và trạng thái review`. Không tạo revision hoặc DVH run mới, không upload lại RTDOSE fixture. Evidence chi tiết: [p9-staging-unicode-export-20260910-380012e.json](docs/evidence/p9-staging-unicode-export-20260910-380012e.json).
+- Sub-gate đã đóng: renderer Unicode + client idempotency namespace + export content/visual trên staging. P9 `DONE-v2` vẫn chưa đóng vì browser final rename, provider storage fault/retry, backup/restore, rollback và full release gates còn mở.
+
 <a id="phase-10"></a>
 
 ## P10 — Trend, baseline và sự kiện bảo trì

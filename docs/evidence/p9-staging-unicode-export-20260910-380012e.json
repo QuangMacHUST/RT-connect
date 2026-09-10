@@ -1,0 +1,108 @@
+{
+  "schema_version": "rt-connect.p9-staging-unicode-export.v1",
+  "captured_at_utc": "2026-09-10T16:22:45Z",
+  "environment": "staging",
+  "source_sha": "380012ed3f2140efd4f1560c2f627176831e495f",
+  "schema_revision": "20260909_0019",
+  "service_deployments": {
+    "api": {
+      "service_id": "9b35bf0b-0419-4679-8af0-e639e5a84713",
+      "deployment_id": "a3d68476-d635-4c6d-9b6a-8ee6f338096f",
+      "status": "SUCCESS",
+      "root_directory": "/apps/api"
+    },
+    "web": {
+      "service_id": "9f23331c-8d5e-45fb-9f11-5aa5e69f76f6",
+      "deployment_id": "29f2ce35-2e49-415c-911e-e5184bcd074b",
+      "status": "SUCCESS",
+      "root_directory": "/apps/web"
+    },
+    "worker": {
+      "service_id": "a1e0c389-e527-4d4c-995e-2a48f4795dda",
+      "deployment_id": "00aaaca7-1ba4-4089-a920-b56448e2dbfe",
+      "status": "SUCCESS",
+      "root_directory": "/apps/api"
+    }
+  },
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "fixture_policy": {
+    "synthetic_only": true,
+    "rtdose_file": "gamma-rtdose-v1-smoke.dcm",
+    "rtdose_sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
+    "upload_action": "REUSED_EXISTING_FIXTURE",
+    "duplicate_upload": false
+  },
+  "report": {
+    "report_key": "3b51b1db-1a6c-437b-8e43-dbaf1e9b73e7",
+    "revision_number": 1,
+    "revision_content_sha256": "2599b891dbe42eedbc69e8889a368ee8359586076c8833e8e474cf57c195cb5c",
+    "source_type": "DVH",
+    "source_id": "d8230d1d-badd-4c0c-b044-dcc4434215a6",
+    "mutation": "NO_NEW_REVISION_OR_DVH_RUN"
+  },
+  "exports": [
+    {
+      "format": "JSON",
+      "job_id": "b341d057-86f7-44db-af15-a02ec41c7d94",
+      "download_name_observed": "rt-connect-report-export-b341d057-86f7-44db-af15-a02ec41c7d94.json.crdownload",
+      "bytes": 15582,
+      "sha256": "247395700d78e1d4c71d4a8c356e95095f9aa35f2fd475a847c178694e8148db",
+      "renderer_version": "report-renderer-0.2",
+      "json_parse": "PASS",
+      "provenance_assertion": "report_key/source_type/source_id/content_sha256 match selected revision"
+    },
+    {
+      "format": "CSV",
+      "job_id": "ed35c34e-3155-4efa-93af-e24a7c91d1f2",
+      "download_name_observed": "rt-connect-report-export-ed35c34e-3155-4efa-93af-e24a7c91d1f2.csv.crdownload",
+      "bytes": 1190,
+      "sha256": "a3032f6e046b935c172d0026f9ed32efc4240db61d5bb101f23055ea66d74c42",
+      "renderer_version": "report-renderer-0.2",
+      "csv_parse": "PASS",
+      "row_count": 27,
+      "sections": ["block", "report"]
+    },
+    {
+      "format": "PDF",
+      "job_id": "61eb0fe4-92b4-4868-993d-b3b57f5273ba",
+      "download_name_observed": "rt-connect-report-export-61eb0fe4-92b4-4868-993d-b3b57f5273ba.pdf.crdownload",
+      "bytes": 382747,
+      "sha256": "595dfab358061c2cab1e70e92cb760f627f9f51361d095ca81e2aa0ec8dc3211",
+      "renderer_version": "report-renderer-0.2",
+      "pdf_header": "PASS",
+      "pdf_eof": "PASS",
+      "embedded_unicode_font": "PASS",
+      "tounicode_mapping": "PASS",
+      "unicode_stream_check": "PASS",
+      "visual_inspection": "PASS"
+    },
+    {
+      "format": "PNG",
+      "job_id": "83b3d9e6-0877-427e-ba78-87817903c6d5",
+      "download_name_observed": "rt-connect-report-export-83b3d9e6-0877-427e-ba78-87817903c6d5.png.crdownload",
+      "bytes": 2243,
+      "sha256": "c97465fd1fa5af6ec84bd32866cf25999fb81ba5f988d3c1284c0f7d89e92551",
+      "renderer_version": "report-renderer-0.2",
+      "png_signature": "PASS"
+    }
+  ],
+  "idempotency": {
+    "old_key_behavior": "Observed EXPORT_IDEMPOTENCY_CONFLICT when stale browser key met renderer 0.2 after renderer 0.1 export",
+    "fix": "Frontend page-session namespace added to report export idempotency key",
+    "new_exports_created": true,
+    "same_page_replay_contract_preserved": true
+  },
+  "public_verifier": {
+    "script": "scripts/verify-public-deployment.ps1",
+    "passed": true,
+    "failed_check_count": 0,
+    "checks": 15,
+    "api_version": "380012ed3f2140efd4f1560c2f627176831e495f",
+    "web_bundle_marker": "380012ed3f2140efd4f1560c2f627176831e495f",
+    "schema_revision": "20260909_0019"
+  },
+  "limitations": [
+    "Browser harness retained the temporary .crdownload suffix during observation; payload bytes were complete and parsed/inspected.",
+    "This closes only the P9 Unicode/export content sub-gate on staging; storage fault/retry, provider restore, rollback, full P18/P19 and production promotion remain open."
+  ]
+}

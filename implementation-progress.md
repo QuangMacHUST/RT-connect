@@ -9,12 +9,20 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 - The renderer is now `report-renderer-0.2`: it embeds the pinned `DejaVuSans.ttf` asset, emits a Type0/CIDFontType2 Unicode font with `Identity-H` encoding, `ToUnicode` mapping and deterministic CID-to-GID mapping. `fonttools==4.63.0` is pinned in both `pyproject.toml` and `requirements.lock`.
 - Local evidence: focused report suite `7 passed`, Ruff pass, strict mypy pass, wheel build pass, wheel inspection confirms `rt_connect_api/assets/DejaVuSans.ttf` is packaged, and Poppler visual inspection shows Vietnamese title/block text without fallback replacement.
 - This correction is not yet a staging release. The new commit must be deployed to API/web/worker with exact-SHA parity; Report Builder must regenerate PDF/PNG/JSON/CSV from the staging DVH report, and the new PDF must be rendered and visually inspected before P9 can advance beyond partial verification. Existing staging evidence remains historical and is not silently rewritten.
+- Local checkpoint evidence was followed by staging revalidation below; the public exact-SHA record is [p9-staging-unicode-public-smoke-20260910-380012e.json](docs/evidence/p9-staging-unicode-public-smoke-20260910-380012e.json).
 
 ## P9 — renderer-aware export idempotency correction — local verified / staging revalidation required — 2026-09-10
 
 - Sau khi API chạy `report-renderer-0.2`, browser Report Builder cũ dùng lại key `report-{revision}-{format}` và nhận `EXPORT_IDEMPOTENCY_CONFLICT` với export cũ của renderer `0.1`. Đây là lỗi namespace tương thích khi renderer đổi phiên bản.
 - Frontend đã thêm namespace ngẫu nhiên theo phiên trang vào idempotency key; cùng phiên vẫn replay đúng, nhưng lần tải trang sau renderer migration không bị khóa bởi export cũ. Server fingerprint và conflict semantics vẫn giữ nguyên.
 - Local evidence: web lint, typecheck, Vitest `17/17` và production build pass. Commit này phải được deploy exact SHA cho web (và đồng bộ API/worker theo release policy) trước khi tạo lại export. Chưa ghi staging export mới và chưa đóng P9 visual gate.
+
+## P9/P19 — renderer 0.2 + idempotency namespace — staging verified partial — 2026-09-10 / `380012e`
+
+- API, web và worker staging đã chạy đồng bộ exact SHA `380012ed3f2140efd4f1560c2f627176831e495f`, schema `20260909_0019`; public verifier đạt `15/15`, `failed_check_count=0`. Deployment IDs lần lượt là API `a3d68476-d635-4c6d-9b6a-8ee6f338096f`, web `29f2ce35-2e49-415c-911e-e5184bcd074b`, worker `00aaaca7-1ba4-4089-a920-b56448e2dbfe`.
+- Browser reload nhận build mới, mở report `P17 staging bound DVH report` rev 1 từ DVH run `d8230d1d-badd-4c0c-b044-dcc4434215a6` và tạo bốn export mới: JSON `15,582` bytes, CSV `1,190`, PDF `382,747`, PNG `2,243`. JSON/CSV parse pass và ghi renderer `report-renderer-0.2`; PDF header/EOF, embedded Unicode font, ToUnicode, UTF-16 stream check và visual inspection pass; PNG signature pass.
+- PDF staging đã được render thành PNG bằng Poppler và kiểm tra trực quan: `P17 staging bound DVH report`, `DVH và đánh giá giới hạn explicit`, `Cảnh báo và trạng thái review` đều hiển thị đúng tiếng Việt, không còn `?`. Report revision và DVH run không bị mutation; RTDOSE `gamma-rtdose-v1-smoke.dcm` chỉ được reuse, không upload trùng.
+- Evidence chi tiết: [p9-staging-unicode-export-20260910-380012e.json](docs/evidence/p9-staging-unicode-export-20260910-380012e.json). Đây là `STAGING_UNICODE_EXPORT_CONTENT_AND_VISUAL_PARTIAL`; `.crdownload` là giới hạn quan sát filename của CUA harness, còn storage fault/retry, provider restore, rollback, full P18/P19 và production promotion vẫn mở.
 
 ## P17/P19 — current staging DVH export content verification — partial verified — 2026-09-10 / `c11fca0`
 
