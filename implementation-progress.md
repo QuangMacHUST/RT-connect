@@ -3,13 +3,14 @@
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.23,
 `technical-specification.md` v1.22 và `plan.md` v4.14.
 
-## P10 Trend query budget — candidate staging parity/public smoke verified — 2026-09-10 / `a089d2a`
+## P10 Trend query budget — candidate staging parity/public smoke verified — 2026-09-10 / `f4197d8`
 
 - P10 API có `TREND_MAX_RAW_POINTS` mặc định `10.000` và `TREND_MAX_AGGREGATE_SOURCE_POINTS` mặc định `100.000`; count-preflight chạy theo organization/filter trước khi materialize source rows và có kiểm tra lần hai sau context matching.
 - Raw vượt budget trả HTTP 413 `TREND_QUERY_TOO_LARGE` với aggregate/matched_points/max_points; day/week trong aggregate budget được phép chạy nhưng thêm `TREND_AGGREGATED_LARGE_QUERY`; aggregate vượt budget cũng trả 413.
 - CSV export aggregate không còn rỗng: mỗi bucket là `record_type=BUCKET`, giữ count/statistics/statuses và JSON-encoded source point/run IDs. Đây là local implementation slice; large-series workload 100.000 điểm/máy, staging p95, visual/accessibility và complete S/E/C vẫn mở.
 - Regression local đã đạt `test_trend.py` **8/8 PASS**, full backend **185/185 PASS**, Ruff, strict mypy, web lint/typecheck, Vitest **14/14 PASS** và production build (chỉ còn cảnh báo bundle >500 kB).
 - Candidate backend `a089d2adb103b106bce7d6c96112e3c426d7e8bb` đã deploy thành công với source parity; public verifier đạt **15/15 PASS**, schema `20260909_0019`. Evidence: `docs/evidence/p10-trend-query-budget-20260910-a089d2a.json`. Follow-up web bounded-error UX candidate `a7c1ad4622bbb57599127b96d9ef27451a715ca0` cũng đã rebuild API/web/worker cùng SHA và đạt **15/15 PASS**; evidence: `docs/evidence/p10-bounded-error-ux-20260910-a7c1ad4.json`.
+- Candidate `f4197d82bd287112d1aafae44088678cd967cecf` tiếp tục rebuild API/web/worker cùng SHA sau khi sửa SQL context filtering để không materialize rộng trước khi lọc; public verifier đạt **15/15 PASS** và backend full suite **185/185 PASS**. Evidence: `docs/evidence/p10-sql-filtered-preflight-20260910-f4197d8.json`.
 - Đây mới là source/runtime/public-contract evidence. Chưa có authenticated large-series benchmark, complete P10 S/E/C current-candidate, export/source revalidation sau refresh hoặc visual/accessibility evidence; P10 chưa đóng.
 - Quyền upload RTDOSE đã được xác nhận, nhưng fixture tổng hợp đã tồn tại và `VALID` trong case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`; không tạo artifact trùng và không tạo QA run mới.
 

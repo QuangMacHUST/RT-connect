@@ -11,6 +11,8 @@
 > Cập nhật candidate P10 ngày 2026-09-10: `a089d2adb103b106bce7d6c96112e3c426d7e8bb` đã được Railway staging deploy đồng thời cho API, web và worker; public verifier đạt 15/15. Evidence runtime/source-parity: `docs/evidence/p10-trend-query-budget-20260910-a089d2a.json`. Các gate large-series authenticated, complete S/E/C, export/source revalidation và visual/accessibility vẫn mở.
 >
 > Follow-up P10 bounded-error UX candidate `a7c1ad4622bbb57599127b96d9ef27451a715ca0` giữ source parity API/web/worker và public verifier 15/15; structured `aggregate`/`matched_points`/`max_points` đã được hiển thị ở web client. Evidence: `docs/evidence/p10-bounded-error-ux-20260910-a7c1ad4.json`.
+>
+> Follow-up P10 SQL preflight candidate `f4197d82bd287112d1aafae44088678cd967cecf` áp dụng context predicate ngay trong bounded source read, giữ fallback case/protocol cho projection cũ và vẫn chạy Python matcher cuối; public verifier 15/15, full backend 185/185. Evidence: `docs/evidence/p10-sql-filtered-preflight-20260910-f4197d8.json`.
 
 ## 1. Cách thực hiện kế hoạch
 

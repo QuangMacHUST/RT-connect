@@ -1,0 +1,59 @@
+{
+  "schema_version": "rt-connect.p10-sql-filtered-preflight.v1",
+  "captured_at_utc": "2026-09-10T02:42:14.5245225Z",
+  "environment": "staging",
+  "candidate": {
+    "source_sha": "f4197d82bd287112d1aafae44088678cd967cecf",
+    "branch": "codex/p4-org-site-machine",
+    "schema_revision": "20260909_0019"
+  },
+  "railway_services": {
+    "api": {
+      "service": "Railway-API-staging",
+      "deployment_id": "b9c6490c-48b6-41c7-8198-6e840540e948",
+      "status": "SUCCESS",
+      "source_sha": "f4197d82bd287112d1aafae44088678cd967cecf"
+    },
+    "web": {
+      "service": "RT-connect-web-staging",
+      "deployment_id": "7e197bf8-c38f-44aa-ada3-ce0faf561aff",
+      "status": "SUCCESS",
+      "source_sha": "f4197d82bd287112d1aafae44088678cd967cecf"
+    },
+    "worker": {
+      "service": "RT-connect-gamma-worker-staging",
+      "deployment_id": "04a7241e-73dc-4d95-b234-25d88075eef4",
+      "status": "SUCCESS",
+      "source_sha": "f4197d82bd287112d1aafae44088678cd967cecf"
+    },
+    "source_parity": true
+  },
+  "public_verifier": {
+    "passed": true,
+    "checks": 15,
+    "failed_checks": 0,
+    "observed_version": "f4197d82bd287112d1aafae44088678cd967cecf",
+    "observed_schema_revision": "20260909_0019",
+    "scope": "read_only_public_health_readiness_version_openapi_and_web_bundle"
+  },
+  "local_verification": {
+    "p10_focused_tests": "8/8 PASS",
+    "first_class_context_filter_regression": "PASS",
+    "backend_full_suite": "185/185 PASS",
+    "backend_ruff": "PASS",
+    "backend_mypy": "PASS"
+  },
+  "implementation": {
+    "preflight": "COUNT applies organization, machine, metric, unit, time and context-compatible SQL predicates before ORM materialization.",
+    "source_read": "The same context predicates narrow _load_source_rows before it creates ORM source rows.",
+    "legacy_projection_fallbacks": ["QACase.qa_cycle", "MachineQARun.result_snapshot.protocol_snapshot.protocol_key"],
+    "final_authority": "Python compatibility matcher and duplicate-source invariant remain enforced after SQL narrowing.",
+    "no_silent_truncation": true
+  },
+  "limitations": [
+    "Public verifier is read-only and does not establish authenticated Trend interaction.",
+    "Authenticated large-series staging benchmark, p95, complete P10 S/E/C and visual/accessibility evidence remain open."
+  ],
+  "no_secrets_or_phi": true,
+  "not_a_clinical_readiness_claim": true
+}
