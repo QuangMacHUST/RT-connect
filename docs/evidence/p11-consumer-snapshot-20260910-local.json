@@ -3,7 +3,7 @@
   "captured_at_utc": "2026-09-10T00:00:00Z",
   "environment": "local",
   "candidate": {
-    "source_sha": "pending-commit",
+    "source_sha": "35c2535eaa565d9b5aebcb986250e95f173e20be",
     "branch": "codex/p4-org-site-machine",
     "schema_revision": "20260909_0019"
   },
