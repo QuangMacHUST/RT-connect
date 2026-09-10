@@ -14,7 +14,7 @@
 >
 > Follow-up P10 SQL preflight candidate `f4197d82bd287112d1aafae44088678cd967cecf` áp dụng context predicate ngay trong bounded source read, giữ fallback case/protocol cho projection cũ và vẫn chạy Python matcher cuối; public verifier 15/15, full backend 185/185. Evidence: `docs/evidence/p10-sql-filtered-preflight-20260910-f4197d8.json`.
 
-> Follow-up P11 consumer snapshot local trên working tree ngày 2026-09-10: run mới pin `p11.protocol-snapshot.v1` ngay khi tạo; snapshot giữ source/applicability/revision/lineage/capability và toàn bộ rule reference; evaluate sau archive vẫn đọc snapshot đã chấp nhận, mismatch fail-closed; Trend giữ `protocol_version_id`; Machine QA UI dẫn người dùng tới QA Protocol Library thay vì seed synthetic. Evidence local: `docs/evidence/p11-consumer-snapshot-20260910-local.json`. Chưa deploy candidate này lên staging và chưa đóng P11 browser/S-E-C/release gates.
+> Follow-up P11 consumer snapshot ngày 2026-09-10: run mới pin `p11.protocol-snapshot.v1` ngay khi tạo; snapshot giữ source/applicability/revision/lineage/capability và toàn bộ rule reference; evaluate sau archive vẫn đọc snapshot đã chấp nhận, mismatch fail-closed; Trend giữ `protocol_version_id`; Machine QA UI dẫn người dùng tới QA Protocol Library thay vì seed synthetic. Local evidence: `docs/evidence/p11-consumer-snapshot-20260910-local.json`. Candidate public `ec67a8b8d7a8ad0d3c44a0eb27c2c272769b5b95` đã được kiểm read-only qua API/web exact-SHA, schema `20260909_0019`, verifier `15/15`; evidence: `docs/evidence/p11-public-probe-ec67a8b.json`. Authenticated P11 browser consumer, complete S/E/C và release gates vẫn mở.
 
 ## 1. Cách thực hiện kế hoạch
 
