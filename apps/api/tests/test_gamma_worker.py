@@ -28,6 +28,8 @@ from rt_connect_api.services.object_storage import InMemoryObjectStorage, Object
 from rt_connect_api.services.redis_queue import GammaQueueMessage
 from rt_connect_api.worker import process_gamma_queue_message, recover_stale_runs
 
+FRAME_UID = "1.2.826.0.1.3680043.8.498.999.4"
+
 
 def _dataset(dataset_id: str, values: list[float]) -> bytes:
     return json.dumps(
@@ -37,6 +39,27 @@ def _dataset(dataset_id: str, values: list[float]) -> bytes:
             "data_type": "dose",
             "units": {"dose": "GY", "position": "mm"},
             "grid": {"shape": [2, 2], "spacing_mm": [1.0, 1.0]},
+            "coordinate_frame": {
+                "basis": "PATIENT_LPS",
+                "frame_id": FRAME_UID,
+                "frame_of_reference_uid": FRAME_UID,
+                "axis_order": ["y", "x"],
+                "transform_to_reference": {
+                    "direction": "SOURCE_TO_REFERENCE",
+                    "units": "mm",
+                    "matrix": [
+                        [1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.0, 0.0, 0.0, 1.0],
+                    ],
+                    "source": {
+                        "type": "synthetic-shared-frame",
+                        "version": "fixture-v1",
+                        "sha256": "d" * 64,
+                    },
+                },
+            },
             "values": {"encoding": "inline-float32", "inline": values},
         }
     ).encode("utf-8")
@@ -88,7 +111,15 @@ def _run_fixture() -> tuple[Session, InMemoryObjectStorage, GammaAnalysisRun]:
         media_type="application/json",
         sha256=hashlib.sha256(reference_payload).hexdigest(),
         data_status="VALID",
-        metadata_snapshot={"grid": {"shape": [2, 2]}},
+        metadata_snapshot={
+            "grid": {"shape": [2, 2]},
+            "coordinate_frame": {
+                "basis": "PATIENT_LPS",
+                "frame_id": FRAME_UID,
+                "frame_of_reference_uid": FRAME_UID,
+                "axis_order": ["y", "x"],
+            },
+        },
     )
     evaluation = Artifact(
         organization_id=organization.id,
@@ -100,7 +131,15 @@ def _run_fixture() -> tuple[Session, InMemoryObjectStorage, GammaAnalysisRun]:
         media_type="application/json",
         sha256=hashlib.sha256(evaluation_payload).hexdigest(),
         data_status="VALID",
-        metadata_snapshot={"grid": {"shape": [2, 2]}},
+        metadata_snapshot={
+            "grid": {"shape": [2, 2]},
+            "coordinate_frame": {
+                "basis": "PATIENT_LPS",
+                "frame_id": FRAME_UID,
+                "frame_of_reference_uid": FRAME_UID,
+                "axis_order": ["y", "x"],
+            },
+        },
     )
     session.add_all([reference, evaluation])
     session.flush()

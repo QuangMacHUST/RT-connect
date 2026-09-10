@@ -28,6 +28,25 @@ from numpy.typing import NDArray
 ENGINE_VERSION = "gamma-nd-p8.2"
 FloatArray = NDArray[np.float64]
 Coordinate = tuple[float, ...]
+AxisOrder = tuple[str, ...]
+IDENTITY_TRANSFORM: tuple[float, ...] = (
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+)
 
 
 class GammaEngineError(ValueError):
@@ -67,6 +86,10 @@ class MeasurementDataset:
     origin_mm: Coordinate
     units: dict[str, str]
     source_format: str = "measurement_json"
+    coordinate_frame: str = "LEGACY_GRID"
+    frame_id: str | None = None
+    axis_order: AxisOrder = ()
+    transform_to_reference: tuple[float, ...] | None = None
 
 
 def _mapping(value: object, field: str) -> Mapping[str, object]:
@@ -115,6 +138,108 @@ def _dose_unit_scale(value: object, field: str) -> tuple[str, float]:
     )
 
 
+def _canonical_axis_order(dimension: int) -> AxisOrder:
+    return ("y", "x") if dimension == 2 else ("z", "y", "x")
+
+
+def _parse_transform_to_reference(value: object, field: str) -> tuple[float, ...]:
+    transform = _mapping(value, field)
+    if transform.get("direction") != "SOURCE_TO_REFERENCE":
+        raise GammaEngineError(
+            "GAMMA_COORDINATE_FRAME_INVALID",
+            f"{field}.direction must be SOURCE_TO_REFERENCE.",
+        )
+    if transform.get("units") != "mm":
+        raise GammaEngineError(
+            "GAMMA_UNITS_UNSUPPORTED",
+            f"{field}.units must be mm; units are never inferred.",
+        )
+    matrix_value = transform.get("matrix")
+    if not isinstance(matrix_value, list) or len(matrix_value) != 4:
+        raise GammaEngineError(
+            "GAMMA_COORDINATE_FRAME_INVALID",
+            f"{field}.matrix must be a 4x4 finite matrix.",
+        )
+    matrix: list[float] = []
+    for row_index, row in enumerate(matrix_value):
+        if not isinstance(row, list) or len(row) != 4:
+            raise GammaEngineError(
+                "GAMMA_COORDINATE_FRAME_INVALID",
+                f"{field}.matrix[{row_index}] must contain four values.",
+            )
+        matrix.extend(
+            _finite_float(item, f"{field}.matrix[{row_index}][{column_index}]")
+            for column_index, item in enumerate(row)
+        )
+    source = _mapping(transform.get("source"), f"{field}.source")
+    for key in ("type", "version", "sha256"):
+        source_value = source.get(key)
+        if not isinstance(source_value, str) or not source_value.strip():
+            raise GammaEngineError(
+                "GAMMA_COORDINATE_FRAME_INVALID",
+                f"{field}.source.{key} is required for transform provenance.",
+            )
+    if len(str(source.get("sha256"))) != 64:
+        raise GammaEngineError(
+            "GAMMA_COORDINATE_FRAME_INVALID",
+            f"{field}.source.sha256 must be a SHA-256 hex string.",
+        )
+    parsed = tuple(matrix)
+    if not np.allclose(parsed, IDENTITY_TRANSFORM, rtol=0, atol=1e-9):
+        raise GammaEngineError(
+            "GAMMA_TRANSFORM_UNSUPPORTED",
+            "P8 currently supports only an explicitly declared identity transform; "
+            "a non-identity transform needs a tested adapter.",
+        )
+    return parsed
+
+
+def _parse_json_coordinate_frame(root: Mapping[str, object], dimension: int) -> tuple[
+    str, str, AxisOrder, tuple[float, ...]
+]:
+    raw_frame = root.get("coordinate_frame")
+    if raw_frame is None:
+        raise GammaEngineError(
+            "GAMMA_COORDINATE_FRAME_MISSING",
+            "Measurement JSON must declare coordinate_frame before Gamma use.",
+        )
+    frame = _mapping(raw_frame, "coordinate_frame")
+    basis = frame.get("basis")
+    if basis not in {"PATIENT_LPS", "IEC_PHANTOM"}:
+        raise GammaEngineError(
+            "GAMMA_COORDINATE_FRAME_INVALID",
+            "coordinate_frame.basis must be PATIENT_LPS or IEC_PHANTOM.",
+        )
+    frame_id = frame.get("frame_id")
+    if not isinstance(frame_id, str) or not frame_id.strip():
+        raise GammaEngineError(
+            "GAMMA_COORDINATE_FRAME_INVALID",
+            "coordinate_frame.frame_id is required.",
+        )
+    axis_value = frame.get("axis_order")
+    expected_axis = _canonical_axis_order(dimension)
+    if (
+        not isinstance(axis_value, list)
+        or any(not isinstance(item, str) for item in axis_value)
+        or tuple(axis_value) != expected_axis
+    ):
+        raise GammaEngineError(
+            "GAMMA_AXIS_ORDER_UNSUPPORTED",
+            f"coordinate_frame.axis_order must be {list(expected_axis)} for P8.",
+        )
+    transform = _parse_transform_to_reference(
+        frame.get("transform_to_reference"), "coordinate_frame.transform_to_reference"
+    )
+    if basis == "PATIENT_LPS":
+        frame_uid = frame.get("frame_of_reference_uid")
+        if not isinstance(frame_uid, str) or not frame_uid.strip() or frame_uid != frame_id:
+            raise GammaEngineError(
+                "GAMMA_COORDINATE_FRAME_INVALID",
+                "PATIENT_LPS requires frame_id equal to frame_of_reference_uid.",
+            )
+    return str(basis), frame_id.strip(), expected_axis, transform
+
+
 def _load_inline_measurement(path: Path) -> MeasurementDataset:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
@@ -145,6 +270,9 @@ def _load_inline_measurement(path: Path) -> MeasurementDataset:
     grid = _mapping(root.get("grid"), "grid")
     shape = _shape(grid.get("shape"), "grid.shape")
     dimension = len(shape)
+    coordinate_frame, frame_id, axis_order, transform = _parse_json_coordinate_frame(
+        root, dimension
+    )
     spacing = _coordinate(grid.get("spacing_mm"), "grid.spacing_mm", dimension, positive=True)
     origin = _coordinate(
         grid.get("origin_mm", [0.0] * dimension), "grid.origin_mm", dimension, positive=False
@@ -175,6 +303,10 @@ def _load_inline_measurement(path: Path) -> MeasurementDataset:
         spacing_mm=spacing,
         origin_mm=origin,
         units={"dose": dose_unit, "position": "mm"},
+        coordinate_frame=coordinate_frame,
+        frame_id=frame_id,
+        axis_order=axis_order,
+        transform_to_reference=transform,
     )
 
 
@@ -244,6 +376,12 @@ def _load_rtdose(path: Path) -> MeasurementDataset:
             "GAMMA_DICOM_ORIENTATION_UNSUPPORTED",
             "P8 RTDOSE adapter currently supports an axial IEC-aligned orientation only.",
         )
+    frame_id = getattr(dataset, "FrameOfReferenceUID", None)
+    if not isinstance(frame_id, str) or not frame_id.strip():
+        raise GammaEngineError(
+            "GAMMA_COORDINATE_FRAME_MISSING",
+            "RTDOSE FrameOfReferenceUID is required for Gamma alignment.",
+        )
     frames = int(getattr(dataset, "NumberOfFrames", 1))
     origin: Coordinate
     spacing: Coordinate
@@ -278,6 +416,10 @@ def _load_rtdose(path: Path) -> MeasurementDataset:
         origin_mm=origin,
         units={"dose": dose_units, "position": "mm"},
         source_format="dicom_rtdose",
+        coordinate_frame="PATIENT_LPS",
+        frame_id=frame_id.strip(),
+        axis_order=_canonical_axis_order(array.ndim),
+        transform_to_reference=IDENTITY_TRANSFORM,
     )
 
 
@@ -518,6 +660,67 @@ def _dose_scale(
     return scale
 
 
+def _validate_coordinate_compatibility(
+    reference: MeasurementDataset, evaluation: MeasurementDataset
+) -> None:
+    """Fail closed unless both datasets describe the same physical basis.
+
+    The old JSON-only test contract had no physical frame metadata.  It remains
+    usable when both inputs are explicitly legacy grids, but it must never be
+    mixed with a DICOM RTDOSE or an explicitly framed measurement.  This keeps
+    ENGINE_TEST compatibility without allowing PSQA to silently compare unlike
+    coordinate systems.
+    """
+
+    legacy_reference = reference.coordinate_frame == "LEGACY_GRID"
+    legacy_evaluation = evaluation.coordinate_frame == "LEGACY_GRID"
+    if legacy_reference or legacy_evaluation:
+        if legacy_reference and legacy_evaluation:
+            return
+        raise GammaEngineError(
+            "GAMMA_INPUT_INCOMPATIBLE",
+            "Reference and evaluation inputs must both declare a compatible coordinate frame.",
+        )
+    if reference.coordinate_frame != evaluation.coordinate_frame:
+        raise GammaEngineError(
+            "GAMMA_INPUT_INCOMPATIBLE",
+            "Reference and evaluation coordinate-frame bases do not match.",
+        )
+    if reference.frame_id is None or evaluation.frame_id is None:
+        raise GammaEngineError(
+            "GAMMA_COORDINATE_FRAME_MISSING",
+            "Both Gamma inputs require a non-empty coordinate-frame identifier.",
+        )
+    if reference.frame_id != evaluation.frame_id:
+        raise GammaEngineError(
+            "GAMMA_INPUT_INCOMPATIBLE",
+            "Reference and evaluation coordinate-frame identifiers do not match.",
+            details=[
+                {
+                    "field": "frame_id",
+                    "message": (
+                        "The two inputs must use the same Frame of Reference or declared "
+                        "phantom frame."
+                    ),
+                }
+            ],
+        )
+    if reference.axis_order != evaluation.axis_order:
+        raise GammaEngineError(
+            "GAMMA_INPUT_INCOMPATIBLE",
+            "Reference and evaluation axis orders do not match.",
+        )
+    if (
+        reference.transform_to_reference != evaluation.transform_to_reference
+        or reference.transform_to_reference is None
+        or evaluation.transform_to_reference is None
+    ):
+        raise GammaEngineError(
+            "GAMMA_INPUT_INCOMPATIBLE",
+            "Reference and evaluation transforms to the comparison frame do not match.",
+        )
+
+
 def calculate_gamma(
     reference: MeasurementDataset,
     evaluation: MeasurementDataset,
@@ -536,6 +739,7 @@ def calculate_gamma(
             "GAMMA_DIMENSIONALITY_MISMATCH",
             f"Configuration {configuration.dimensionality} requires a {expected_dimension}D grid.",
         )
+    _validate_coordinate_compatibility(reference, evaluation)
     if (
         len(reference.spacing_mm) != reference.values.ndim
         or len(evaluation.spacing_mm) != evaluation.values.ndim
@@ -691,12 +895,24 @@ def calculate_gamma(
             "spacing_mm": list(reference.spacing_mm),
             "origin_mm": list(reference.origin_mm),
             "source_format": reference.source_format,
+            "coordinate_frame": reference.coordinate_frame,
+            "frame_id": reference.frame_id,
+            "axis_order": list(reference.axis_order),
+            "transform_to_reference": list(reference.transform_to_reference)
+            if reference.transform_to_reference is not None
+            else None,
         },
         "evaluation_grid": {
             "shape": list(evaluation.values.shape),
             "spacing_mm": list(evaluation.spacing_mm),
             "origin_mm": list(evaluation.origin_mm),
             "source_format": evaluation.source_format,
+            "coordinate_frame": evaluation.coordinate_frame,
+            "frame_id": evaluation.frame_id,
+            "axis_order": list(evaluation.axis_order),
+            "transform_to_reference": list(evaluation.transform_to_reference)
+            if evaluation.transform_to_reference is not None
+            else None,
         },
         "metrics": {
             "evaluated_points": len(gamma_values),

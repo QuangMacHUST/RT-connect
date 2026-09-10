@@ -46,6 +46,10 @@ class OracleDataset:
     values: np.ndarray
     spacing_mm: tuple[float, ...]
     origin_mm: tuple[float, ...]
+    coordinate_frame: str
+    frame_id: str
+    axis_order: tuple[str, ...]
+    transform_to_reference: tuple[float, ...]
 
 
 def _mapping(value: object, field: str) -> dict[str, object]:
@@ -97,6 +101,56 @@ def _independent_load(path: Path) -> OracleDataset:
     if any(item <= 0 for item in spacing):
         raise ValueError("grid spacing must be positive")
 
+    frame = _mapping(root.get("coordinate_frame"), "coordinate_frame")
+    basis = frame.get("basis")
+    if basis not in {"PATIENT_LPS", "IEC_PHANTOM"}:
+        raise ValueError("coordinate_frame.basis must be PATIENT_LPS or IEC_PHANTOM")
+    frame_id = frame.get("frame_id")
+    if not isinstance(frame_id, str) or not frame_id.strip():
+        raise ValueError("coordinate_frame.frame_id is required")
+    expected_axis = ("y", "x") if len(shape) == 2 else ("z", "y", "x")
+    axis_order = frame.get("axis_order")
+    if axis_order != list(expected_axis):
+        raise ValueError("coordinate_frame.axis_order is not canonical for this grid")
+    if basis == "PATIENT_LPS" and frame.get("frame_of_reference_uid") != frame_id:
+        raise ValueError("PATIENT_LPS frame_id must equal frame_of_reference_uid")
+    transform = _mapping(frame.get("transform_to_reference"), "transform_to_reference")
+    if transform.get("direction") != "SOURCE_TO_REFERENCE" or transform.get("units") != "mm":
+        raise ValueError("transform direction/units are invalid")
+    matrix = transform.get("matrix")
+    if (
+        not isinstance(matrix, list)
+        or len(matrix) != 4
+        or any(not isinstance(row, list) or len(row) != 4 for row in matrix)
+    ):
+        raise ValueError("transform matrix must be 4x4")
+    transform_values = tuple(_finite(item, "transform matrix") for row in matrix for item in row)
+    identity = (
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+    )
+    if any(abs(actual - expected) > 1e-9 for actual, expected in zip(transform_values, identity)):
+        raise ValueError("independent oracle only supports identity transforms")
+    source = _mapping(transform.get("source"), "transform.source")
+    if any(not isinstance(source.get(key), str) or not source.get(key, "").strip() for key in ("type", "version", "sha256")):
+        raise ValueError("transform source provenance is required")
+    if len(str(source.get("sha256"))) != 64:
+        raise ValueError("transform source sha256 must be 64 characters")
+
     values = _mapping(root.get("values"), "values")
     inline = values.get("inline")
     expected = math.prod(shape)
@@ -109,7 +163,16 @@ def _independent_load(path: Path) -> OracleDataset:
     numeric *= dose_scale
     if np.any(numeric < 0):
         raise ValueError("dose values must be non-negative")
-    return OracleDataset(dataset_id, numeric, spacing, origin)
+    return OracleDataset(
+        dataset_id,
+        numeric,
+        spacing,
+        origin,
+        str(basis),
+        frame_id.strip(),
+        expected_axis,
+        transform_values,
+    )
 
 
 def _to_engine(dataset: OracleDataset) -> MeasurementDataset:
@@ -119,6 +182,10 @@ def _to_engine(dataset: OracleDataset) -> MeasurementDataset:
         spacing_mm=dataset.spacing_mm,
         origin_mm=dataset.origin_mm,
         units={"dose": "GY", "position": "mm"},
+        coordinate_frame=dataset.coordinate_frame,
+        frame_id=dataset.frame_id,
+        axis_order=dataset.axis_order,
+        transform_to_reference=dataset.transform_to_reference,
     )
 
 
@@ -422,17 +489,45 @@ def _in_memory_case(
     evaluation_origin: tuple[float, ...] | None = None,
     evaluation_shape: tuple[int, ...] | None = None,
 ) -> tuple[str, OracleDataset, OracleDataset, GammaConfiguration, str, str]:
+    axis_order = ("y", "x") if len(shape) == 2 else ("z", "y", "x")
+    frame_id = "synthetic-p8-shared-frame"
+    identity = (
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.0,
+    )
     reference = OracleDataset(
         f"{case_id}-reference",
         np.asarray(reference_values, dtype=np.float64).reshape(shape),
         (1.0,) * len(shape),
         (0.0,) * len(shape),
+        "IEC_PHANTOM",
+        frame_id,
+        axis_order,
+        identity,
     )
     evaluation = OracleDataset(
         f"{case_id}-evaluation",
         np.asarray(evaluation_values, dtype=np.float64).reshape(evaluation_shape or shape),
         (1.0,) * len(evaluation_shape or shape),
         evaluation_origin or (0.0,) * len(evaluation_shape or shape),
+        "IEC_PHANTOM",
+        frame_id,
+        axis_order,
+        identity,
     )
     return case_id, reference, evaluation, configuration, "synthetic:inline", "synthetic:inline"
 

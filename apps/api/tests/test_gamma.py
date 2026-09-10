@@ -5,27 +5,56 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pytest
 from fastapi.testclient import TestClient
 
 from rt_connect_api.api.artifacts import _storage as artifact_storage
 from rt_connect_api.api.gamma import _storage as gamma_storage
 from rt_connect_api.services.gamma_engine import (
     GammaConfiguration,
+    GammaEngineError,
     MeasurementDataset,
     calculate_gamma,
+    calculate_gamma_from_paths,
     load_measurement,
 )
 from rt_connect_api.services.object_storage import InMemoryObjectStorage
 from test_workspace import _workspace_client
 
 
-def _measurement_bytes(dataset_id: str, values: list[float]) -> bytes:
+def _measurement_bytes(
+    dataset_id: str,
+    values: list[float],
+    *,
+    frame_id: str = "1.2.826.0.1.3680043.8.498.999.4",
+) -> bytes:
     payload: dict[str, Any] = {
         "schema_version": "gamma.measurement.v1",
         "dataset_id": dataset_id,
         "data_type": "dose",
         "units": {"dose": "GY", "position": "mm"},
         "grid": {"shape": [2, 2], "spacing_mm": [1.0, 1.0]},
+        "coordinate_frame": {
+            "basis": "PATIENT_LPS",
+            "frame_id": frame_id,
+            "frame_of_reference_uid": frame_id,
+            "axis_order": ["y", "x"],
+            "transform_to_reference": {
+                "direction": "SOURCE_TO_REFERENCE",
+                "units": "mm",
+                "matrix": [
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ],
+                "source": {
+                    "type": "synthetic-shared-frame",
+                    "version": "fixture-v1",
+                    "sha256": "d" * 64,
+                },
+            },
+        },
         "values": {"encoding": "inline-float32", "inline": values},
         "acquisition": {"detector": "synthetic", "measured_at": "2026-09-07T00:00:00Z"},
         "source": {"filename": f"{dataset_id}.json", "sha256": "a" * 64},
@@ -89,6 +118,73 @@ def test_gamma_engine_identical_grid_is_golden_pass(tmp_path: Path) -> None:
     assert metrics["percentiles"]["max"] == 0.0
 
 
+def test_gamma_engine_rejects_mismatched_coordinate_frames(tmp_path: Path) -> None:
+    reference_path = tmp_path / "reference.json"
+    evaluation_path = tmp_path / "evaluation.json"
+    reference_path.write_bytes(_measurement_bytes("reference", [1.0, 2.0, 3.0, 4.0]))
+    evaluation_path.write_bytes(
+        _measurement_bytes(
+            "evaluation",
+            [1.0, 2.0, 3.0, 4.0],
+            frame_id="1.2.826.0.1.3680043.8.498.999.5",
+        )
+    )
+
+    with pytest.raises(GammaEngineError) as error:
+        calculate_gamma_from_paths(
+            reference_path,
+            evaluation_path,
+            {
+                "dimensionality": "2D",
+                "dose_difference_percent": 3.0,
+                "dose_difference_mode": "RELATIVE",
+                "distance_to_agreement_mm": 3.0,
+                "dose_threshold_percent": 0.0,
+                "normalization": "GLOBAL",
+                "interpolation": "GRID",
+                "pass_rate_threshold_percent": 95.0,
+                "histogram_bins": 10,
+            },
+        )
+
+    assert error.value.code == "GAMMA_INPUT_INCOMPATIBLE"
+
+
+def test_gamma_engine_does_not_mix_legacy_grid_with_explicit_frame(tmp_path: Path) -> None:
+    reference_path = tmp_path / "reference.json"
+    evaluation_path = tmp_path / "evaluation.json"
+    reference_path.write_bytes(_measurement_bytes("reference", [1.0, 2.0, 3.0, 4.0]))
+    evaluation_path.write_bytes(_measurement_bytes("evaluation", [1.0, 2.0, 3.0, 4.0]))
+    explicit = load_measurement(reference_path)
+    legacy = type(explicit)(
+        dataset_id=explicit.dataset_id,
+        values=explicit.values,
+        spacing_mm=explicit.spacing_mm,
+        origin_mm=explicit.origin_mm,
+        units=explicit.units,
+    )
+
+    with pytest.raises(GammaEngineError) as error:
+        calculate_gamma(
+            explicit,
+            legacy,
+            GammaConfiguration(
+                dimensionality="2D",
+                dose_difference_percent=3.0,
+                dose_difference_mode="RELATIVE",
+                absolute_dose_difference_gy=None,
+                distance_to_agreement_mm=3.0,
+                dose_threshold_percent=0.0,
+                normalization="GLOBAL",
+                interpolation="GRID",
+                pass_rate_threshold_percent=95.0,
+                histogram_bins=10,
+            ),
+        )
+
+    assert error.value.code == "GAMMA_INPUT_INCOMPATIBLE"
+
+
 def test_gamma_engine_known_dose_shift_stays_within_dta(tmp_path: Path) -> None:
     reference_path = tmp_path / "reference.json"
     evaluation_path = tmp_path / "evaluation.json"
@@ -102,6 +198,10 @@ def test_gamma_engine_known_dose_shift_stays_within_dta(tmp_path: Path) -> None:
         spacing_mm=evaluation.spacing_mm,
         origin_mm=(1.0, 0.0),
         units=evaluation.units,
+        coordinate_frame=evaluation.coordinate_frame,
+        frame_id=evaluation.frame_id,
+        axis_order=evaluation.axis_order,
+        transform_to_reference=evaluation.transform_to_reference,
     )
     configuration = GammaConfiguration(
         dimensionality="2D",

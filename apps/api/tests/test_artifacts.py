@@ -66,6 +66,27 @@ def _measurement_bytes(*, complete: bool) -> bytes:
             {
                 "units": {"dose": "GY", "position": "mm"},
                 "grid": {"shape": [2, 2], "spacing_mm": [1.0, 1.0]},
+                "coordinate_frame": {
+                    "basis": "PATIENT_LPS",
+                    "frame_id": "1.2.826.0.1.3680043.8.498.999.4",
+                    "frame_of_reference_uid": "1.2.826.0.1.3680043.8.498.999.4",
+                    "axis_order": ["y", "x"],
+                    "transform_to_reference": {
+                        "direction": "SOURCE_TO_REFERENCE",
+                        "units": "mm",
+                        "matrix": [
+                            [1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.0, 0.0, 0.0, 1.0],
+                        ],
+                        "source": {
+                            "type": "synthetic-shared-frame",
+                            "version": "fixture-v1",
+                            "sha256": "d" * 64,
+                        },
+                    },
+                },
                 "acquisition": {"detector": "synthetic", "measured_at": "2026-09-07T00:00:00Z"},
                 "source": {"filename": "measurement.json", "sha256": "a" * 64},
             }
@@ -157,7 +178,11 @@ def test_measurement_validation_explains_missing_units_and_grid() -> None:
         body = validation.json()
         assert body["result"] == "INVALID"
         codes = {item["code"] for item in body["errors"]}
-        assert {"MEASUREMENT_UNITS_MISSING", "MEASUREMENT_GRID_INVALID"}.issubset(codes)
+        assert {
+            "MEASUREMENT_UNITS_MISSING",
+            "MEASUREMENT_GRID_INVALID",
+            "MEASUREMENT_COORDINATE_FRAME_MISSING",
+        }.issubset(codes)
         assert client.get(f"/api/v1/artifacts/{artifact_id}").json()["data_status"] == "INVALID"
 
 

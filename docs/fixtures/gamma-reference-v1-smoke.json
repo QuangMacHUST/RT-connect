@@ -10,6 +10,27 @@
     "shape": [2, 2],
     "spacing_mm": [1.0, 1.0]
   },
+  "coordinate_frame": {
+    "basis": "PATIENT_LPS",
+    "frame_id": "1.2.826.0.1.3680043.8.498.999.4",
+    "frame_of_reference_uid": "1.2.826.0.1.3680043.8.498.999.4",
+    "axis_order": ["y", "x"],
+    "transform_to_reference": {
+      "direction": "SOURCE_TO_REFERENCE",
+      "units": "mm",
+      "matrix": [
+        [1.0, 0.0, 0.0, 0.0],
+        [0.0, 1.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0]
+      ],
+      "source": {
+        "type": "synthetic-shared-frame",
+        "version": "fixture-v1",
+        "sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b"
+      }
+    }
+  },
   "values": {
     "encoding": "inline-float32",
     "inline": [1.0, 2.0, 3.0, 4.0]

@@ -361,6 +361,30 @@ def _validate_rtdose(
             "No referenced RTPLAN was found in this upload.",
             "ReferencedRTPlanSequence",
         )
+    frame_uid = metadata.get("frame_of_reference_uid")
+    if not isinstance(frame_uid, str) or not frame_uid.strip():
+        _check(
+            checks,
+            "RTDOSE_FRAME_OF_REFERENCE_MISSING",
+            "ERROR",
+            "RTDOSE FrameOfReferenceUID is required for Gamma/DVH alignment.",
+            "FrameOfReferenceUID",
+        )
+    else:
+        dimension = 3 if isinstance(frames, int) and frames > 1 else 2
+        metadata["coordinate_frame"] = {
+            "basis": "PATIENT_LPS",
+            "frame_id": frame_uid.strip(),
+            "frame_of_reference_uid": frame_uid.strip(),
+            "axis_order": ["z", "y", "x"] if dimension == 3 else ["y", "x"],
+        }
+        _check(
+            checks,
+            "RTDOSE_COORDINATE_FRAME_VALID",
+            "PASS",
+            "RTDOSE patient coordinate frame is identified by FrameOfReferenceUID.",
+            "FrameOfReferenceUID",
+        )
 
 
 def _validate_rtstruct(
@@ -514,6 +538,224 @@ def _mapping(value: Any) -> Mapping[str, Any] | None:
     return value if isinstance(value, Mapping) else None
 
 
+def _validate_measurement_coordinate_frame(
+    payload: Mapping[str, Any], shape: list[int] | None, checks: list[dict[str, object]]
+) -> dict[str, object] | None:
+    """Validate the physical frame required before a measurement enters Gamma.
+
+    ``gamma.measurement.v1`` remains the file schema for compatibility, but a
+    measurement without this block is not a usable PSQA comparison input.  It
+    is deliberately reported as an ERROR so a new upload cannot be marked
+    VALID while the engine would have to guess its physical basis.
+    """
+
+    raw_frame = payload.get("coordinate_frame")
+    frame = _mapping(raw_frame)
+    if frame is None:
+        _check(
+            checks,
+            "MEASUREMENT_COORDINATE_FRAME_MISSING",
+            "ERROR",
+            "coordinate_frame is required before a measurement can enter Gamma.",
+            "coordinate_frame",
+        )
+        return None
+
+    basis = frame.get("basis")
+    frame_id = frame.get("frame_id")
+    valid = True
+    if basis not in {"PATIENT_LPS", "IEC_PHANTOM"}:
+        _check(
+            checks,
+            "MEASUREMENT_COORDINATE_FRAME_INVALID",
+            "ERROR",
+            "coordinate_frame.basis must be PATIENT_LPS or IEC_PHANTOM.",
+            "coordinate_frame.basis",
+        )
+        valid = False
+    if not isinstance(frame_id, str) or not frame_id.strip():
+        _check(
+            checks,
+            "MEASUREMENT_COORDINATE_FRAME_INVALID",
+            "ERROR",
+            "coordinate_frame.frame_id is required.",
+            "coordinate_frame.frame_id",
+        )
+        valid = False
+
+    expected_axis: list[str] = (
+        ["y", "x"] if shape is not None and len(shape) == 2 else ["z", "y", "x"]
+    )
+    axis_order = frame.get("axis_order")
+    if axis_order != expected_axis:
+        _check(
+            checks,
+            "MEASUREMENT_AXIS_ORDER_UNSUPPORTED",
+            "ERROR",
+            f"coordinate_frame.axis_order must be {expected_axis} for this grid.",
+            "coordinate_frame.axis_order",
+        )
+        valid = False
+
+    if basis == "PATIENT_LPS":
+        frame_uid = frame.get("frame_of_reference_uid")
+        if (
+            not isinstance(frame_uid, str)
+            or not frame_uid.strip()
+            or not isinstance(frame_id, str)
+            or frame_uid.strip() != frame_id.strip()
+        ):
+            _check(
+                checks,
+                "MEASUREMENT_FRAME_OF_REFERENCE_INVALID",
+                "ERROR",
+                "PATIENT_LPS requires frame_id equal to frame_of_reference_uid.",
+                "coordinate_frame.frame_of_reference_uid",
+            )
+            valid = False
+
+    transform = _mapping(frame.get("transform_to_reference"))
+    if transform is None:
+        _check(
+            checks,
+            "MEASUREMENT_TRANSFORM_MISSING",
+            "ERROR",
+            "transform_to_reference is required and must be explicit.",
+            "coordinate_frame.transform_to_reference",
+        )
+        valid = False
+    else:
+        if transform.get("direction") != "SOURCE_TO_REFERENCE":
+            _check(
+                checks,
+                "MEASUREMENT_TRANSFORM_INVALID",
+                "ERROR",
+                "transform_to_reference.direction must be SOURCE_TO_REFERENCE.",
+                "coordinate_frame.transform_to_reference.direction",
+            )
+            valid = False
+        if transform.get("units") != "mm":
+            _check(
+                checks,
+                "MEASUREMENT_TRANSFORM_UNITS_INVALID",
+                "ERROR",
+                "transform_to_reference.units must be mm.",
+                "coordinate_frame.transform_to_reference.units",
+            )
+            valid = False
+        matrix = transform.get("matrix")
+        flattened: list[float] = []
+        if not isinstance(matrix, list) or len(matrix) != 4:
+            valid = False
+        else:
+            for row in matrix:
+                if not isinstance(row, list) or len(row) != 4:
+                    valid = False
+                    break
+                numeric_row = [_number(item) for item in row]
+                if any(item is None for item in numeric_row):
+                    valid = False
+                    break
+                flattened.extend(item for item in numeric_row if item is not None)
+        identity = [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+        ]
+        if len(flattened) != 16:
+            _check(
+                checks,
+                "MEASUREMENT_TRANSFORM_INVALID",
+                "ERROR",
+                "transform_to_reference.matrix must be a finite 4x4 matrix.",
+                "coordinate_frame.transform_to_reference.matrix",
+            )
+            valid = False
+        elif any(
+            abs(actual - expected) > 1e-9
+            for actual, expected in zip(flattened, identity, strict=True)
+        ):
+            _check(
+                checks,
+                "MEASUREMENT_TRANSFORM_UNSUPPORTED",
+                "ERROR",
+                "Only an explicitly declared identity transform is supported by P8.",
+                "coordinate_frame.transform_to_reference.matrix",
+            )
+            valid = False
+        source = _mapping(transform.get("source"))
+        if source is None or any(
+            not isinstance(source.get(key), str) or not source.get(key, "").strip()
+            for key in ("type", "version", "sha256")
+        ):
+            _check(
+                checks,
+                "MEASUREMENT_TRANSFORM_SOURCE_INVALID",
+                "ERROR",
+                "Transform source type, version and SHA-256 are required.",
+                "coordinate_frame.transform_to_reference.source",
+            )
+            valid = False
+        elif len(str(source.get("sha256"))) != 64 or any(
+            character not in "0123456789abcdefABCDEF" for character in str(source.get("sha256"))
+        ):
+            _check(
+                checks,
+                "MEASUREMENT_TRANSFORM_SOURCE_INVALID",
+                "ERROR",
+                "Transform source.sha256 must be a hexadecimal SHA-256 string.",
+                "coordinate_frame.transform_to_reference.source.sha256",
+            )
+            valid = False
+
+    if not valid:
+        return None
+    source_metadata: dict[str, object] = {}
+    if transform is not None:
+        raw_source = transform.get("source")
+        if isinstance(raw_source, Mapping):
+            source_metadata = {str(key): value for key, value in raw_source.items()}
+    sanitized: dict[str, object] = {
+        "basis": str(basis),
+        "frame_id": str(frame_id).strip(),
+        "axis_order": expected_axis,
+        "transform_to_reference": {
+            "direction": "SOURCE_TO_REFERENCE",
+            "units": "mm",
+            "matrix": [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
+            "source": source_metadata,
+        },
+    }
+    if basis == "PATIENT_LPS":
+        sanitized["frame_of_reference_uid"] = str(frame.get("frame_of_reference_uid")).strip()
+    _check(
+        checks,
+        "MEASUREMENT_COORDINATE_FRAME_VALID",
+        "PASS",
+        "Measurement coordinate basis, axis order and explicit transform are valid.",
+        "coordinate_frame",
+    )
+    return sanitized
+
+
 def validate_measurement(path: Path) -> ValidationResult:
     checks: list[dict[str, object]] = []
     try:
@@ -660,6 +902,7 @@ def validate_measurement(path: Path) -> ValidationResult:
             "source.sha256 is recommended for byte-level provenance.",
             "source.sha256",
         )
+    coordinate_frame = _validate_measurement_coordinate_frame(payload, shape, checks)
     metadata = {
         "schema_version": payload.get("schema_version"),
         "dataset_id": dataset_id,
@@ -667,6 +910,8 @@ def validate_measurement(path: Path) -> ValidationResult:
         "grid": dict(grid) if grid else {},
         "units": dict(units) if units else {},
     }
+    if coordinate_frame is not None:
+        metadata["coordinate_frame"] = coordinate_frame
     return _result(checks, metadata)
 
 

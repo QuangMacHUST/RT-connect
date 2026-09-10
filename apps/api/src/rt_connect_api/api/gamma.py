@@ -10,6 +10,7 @@ import json
 import math
 import tempfile
 import time
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
@@ -306,10 +307,100 @@ def _input_snapshot(artifact: Artifact, manifest: InputManifest) -> dict[str, ob
     }
 
 
+def _coordinate_frame_summary(artifact: Artifact) -> Mapping[str, object] | None:
+    """Return the validated frame summary used for dataset-level preflight."""
+
+    raw = artifact.metadata_snapshot.get("coordinate_frame")
+    if isinstance(raw, Mapping):
+        return raw
+    # Artifacts validated before the frame metadata addendum can still expose
+    # the DICOM FrameOfReferenceUID on the Artifact row.  Reconstruct only this
+    # unambiguous DICOM identity; never invent a frame for a JSON measurement.
+    if (
+        artifact.artifact_type == "DICOM"
+        and artifact.modality == "RTDOSE"
+        and isinstance(artifact.frame_of_reference_uid, str)
+        and artifact.frame_of_reference_uid.strip()
+    ):
+        raw_grid = artifact.metadata_snapshot.get("grid")
+        frame_count = raw_grid.get("frames") if isinstance(raw_grid, Mapping) else None
+        axis_order = (
+            ["z", "y", "x"]
+            if isinstance(frame_count, int) and frame_count > 1
+            else ["y", "x"]
+        )
+        return {
+            "basis": "PATIENT_LPS",
+            "frame_id": artifact.frame_of_reference_uid.strip(),
+            "axis_order": axis_order,
+        }
+    return None
+
+
+def _validate_coordinate_frames(reference: Artifact, evaluation: Artifact) -> None:
+    """Reject mixed or mismatched frames before creating an async run."""
+
+    reference_frame = _coordinate_frame_summary(reference)
+    evaluation_frame = _coordinate_frame_summary(evaluation)
+    if (
+        reference_frame is None
+        and evaluation_frame is None
+        and reference.artifact_type != "DICOM"
+        and evaluation.artifact_type != "DICOM"
+    ):
+        # Preserve old JSON-only ENGINE_TEST rows. Newly uploaded measurement
+        # artifacts are required to contain the explicit block by P6 validation.
+        return
+    if reference_frame is None or evaluation_frame is None:
+        raise DomainError(
+            "GAMMA_INPUT_INCOMPATIBLE",
+            "Both Gamma inputs must declare a compatible coordinate frame before enqueue.",
+            422,
+            details=[
+                {
+                    "field": label,
+                    "message": "coordinate_frame is missing or was not captured by validation.",
+                }
+                for label, frame in (
+                    ("reference.coordinate_frame", reference_frame),
+                    ("evaluation.coordinate_frame", evaluation_frame),
+                )
+                if frame is None
+            ],
+        )
+    reference_basis = reference_frame.get("basis")
+    evaluation_basis = evaluation_frame.get("basis")
+    reference_id = reference_frame.get("frame_id")
+    evaluation_id = evaluation_frame.get("frame_id")
+    reference_axis = reference_frame.get("axis_order")
+    evaluation_axis = evaluation_frame.get("axis_order")
+    if (
+        reference_basis != evaluation_basis
+        or reference_id != evaluation_id
+        or reference_axis != evaluation_axis
+    ):
+        raise DomainError(
+            "GAMMA_INPUT_INCOMPATIBLE",
+            "Reference and evaluation coordinate frames do not match.",
+            422,
+            details=[
+                {
+                    "field": "coordinate_frame",
+                    "message": (
+                        "Use the same physical basis, frame identifier and axis order, "
+                        "or provide a tested adapter."
+                    ),
+                }
+            ],
+        )
+
+
 def _validate_workflow_profile(
     workflow_profile: str, reference: Artifact, evaluation: Artifact
 ) -> None:
     """Apply semantic input rules that are stronger than file validation."""
+
+    _validate_coordinate_frames(reference, evaluation)
 
     if workflow_profile == "PSQA_GAMMA":
         if reference.artifact_type != "DICOM" or reference.modality != "RTDOSE":

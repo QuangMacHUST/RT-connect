@@ -17,6 +17,8 @@ from rt_connect_api.services.gamma_engine import (
     load_gamma_dataset,
 )
 
+FRAME_UID = "1.2.826.0.1.3680043.8.498.999.4"
+
 
 def _configuration(dimensionality: str) -> dict[str, object]:
     return {
@@ -44,12 +46,33 @@ def _measurement_bytes(dataset_id: str, values: list[float]) -> bytes:
             "spacing_mm": [1.0, 1.0, 1.0],
             "origin_mm": [0.0, 0.0, 0.0],
         },
+        "coordinate_frame": {
+            "basis": "PATIENT_LPS",
+            "frame_id": FRAME_UID,
+            "frame_of_reference_uid": FRAME_UID,
+            "axis_order": ["z", "y", "x"],
+            "transform_to_reference": {
+                "direction": "SOURCE_TO_REFERENCE",
+                "units": "mm",
+                "matrix": [
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ],
+                "source": {
+                    "type": "synthetic-shared-frame",
+                    "version": "fixture-v1",
+                    "sha256": "d" * 64,
+                },
+            },
+        },
         "values": {"encoding": "inline-float32", "inline": values},
     }
     return json.dumps(payload).encode("utf-8")
 
 
-def _write_rtdose(path: Path, values: list[int]) -> None:
+def _write_rtdose(path: Path, values: list[int], frame_uid: str = FRAME_UID) -> None:
     sop_instance_uid = generate_uid()
     file_meta = FileMetaDataset()
     file_meta.MediaStorageSOPClassUID = RTDoseStorage
@@ -61,7 +84,7 @@ def _write_rtdose(path: Path, values: list[int]) -> None:
     dataset.SOPInstanceUID = sop_instance_uid
     dataset.StudyInstanceUID = generate_uid()
     dataset.SeriesInstanceUID = generate_uid()
-    dataset.FrameOfReferenceUID = generate_uid()
+    dataset.FrameOfReferenceUID = frame_uid
     dataset.Modality = "RTDOSE"
     dataset.Rows = 2
     dataset.Columns = 2
@@ -173,3 +196,28 @@ def test_rtdose_rejects_non_positive_spacing(tmp_path: Path) -> None:
         load_gamma_dataset(rtdose)
 
     assert error.value.code == "GAMMA_DICOM_GRID_INVALID"
+
+
+def test_rtdose_rejects_missing_frame_of_reference(tmp_path: Path) -> None:
+    rtdose = tmp_path / "missing-frame-reference.dcm"
+    _write_rtdose(rtdose, [100, 200, 300, 400, 500, 600, 700, 800])
+    dataset = pydicom.dcmread(rtdose)
+    del dataset.FrameOfReferenceUID
+    dataset.save_as(rtdose, write_like_original=False)
+
+    with pytest.raises(GammaEngineError) as error:
+        load_gamma_dataset(rtdose)
+
+    assert error.value.code == "GAMMA_COORDINATE_FRAME_MISSING"
+
+
+def test_measurement_rejects_non_identity_transform_until_adapter_exists(tmp_path: Path) -> None:
+    measurement = tmp_path / "translated.json"
+    payload = json.loads(_measurement_bytes("translated", [1.0] * 8).decode("utf-8"))
+    payload["coordinate_frame"]["transform_to_reference"]["matrix"][0][3] = 1.0
+    measurement.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(GammaEngineError) as error:
+        load_gamma_dataset(measurement)
+
+    assert error.value.code == "GAMMA_TRANSFORM_UNSUPPORTED"
