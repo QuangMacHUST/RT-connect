@@ -1,0 +1,85 @@
+{
+  "schema_version": "rt-connect.p8-local-redis-worker-smoke.v2",
+  "captured_at_utc": "2026-09-10T21:18:17.593249+00:00",
+  "verification_level": "LOCAL_COMPOSE_REDIS_WORKER",
+  "synthetic_only": true,
+  "source_commit": "23b88d068aa7a56538ba0e01b723ceae7d784314",
+  "topology": {
+    "database": "temporary SQLite file",
+    "queue": "local Redis 7 service",
+    "object_storage": "local MinIO disposable bucket",
+    "worker": "separate rt_connect_api.worker process"
+  },
+  "fixture": {
+    "payload_sha256": "3f01e3976cf57e785fbc8192be4d4c61ee026429a18a74ea8b9f15ac4f683e98",
+    "grid_shape": [
+      2,
+      2
+    ],
+    "organization_id": "aba5f349-0c63-4d92-a2a1-6cc16a5b51bb",
+    "case_id": "d51f54eb-0988-48bd-9d2e-2845d13e560c"
+  },
+  "happy_path": {
+    "run_id": "9ccc6fda-8cb5-481d-85c8-5b9175f65f23",
+    "checks": {
+      "status": true,
+      "overall_status": true,
+      "evaluated_points": true,
+      "attempt_count": true,
+      "attempt_terminal": true,
+      "replay_guard": true,
+      "duplicate_dispatch_deduplicated": true
+    }
+  },
+  "ack_failure_recovery": {
+    "run_id": "9ccc6fda-8cb5-481d-85c8-5b9175f65f23",
+    "message_id": "1789075089240-0",
+    "checks": {
+      "ack_failure_injected": true,
+      "ack_error_surface": true,
+      "message_remained_pending": true,
+      "eventual_ack_cleared_pending": true,
+      "durable_result_unchanged": true,
+      "no_second_attempt": true
+    },
+    "pending_after_injected_failure": 1,
+    "pending_after_recovery_ack": 0
+  },
+  "bounded_retry_dead_letter": {
+    "run_id": "d5b7e235-e310-494e-8322-b079b55d6913",
+    "checks": {
+      "status": true,
+      "bounded_attempts": true,
+      "attempts_terminal": true,
+      "dead_letter_written": true,
+      "dead_letter_source": true,
+      "queue_acknowledged": true
+    },
+    "worker_attempt_output_count": 3
+  },
+  "malformed_message_quarantine": {
+    "source_message_id": "1789075095608-0",
+    "checks": {
+      "worker_completed": true,
+      "dead_letter_written": true,
+      "error_code": true,
+      "source_message_recorded": true,
+      "payload_value_not_copied": true,
+      "queue_acknowledged": true
+    },
+    "queue_metrics_after_ack": {
+      "backend": "redis_stream",
+      "stream_length": 6,
+      "pending_count": 0,
+      "consumer_count": 2
+    }
+  },
+  "queue_metrics_after_ack": {
+    "backend": "redis_stream",
+    "stream_length": 6,
+    "pending_count": 0,
+    "consumer_count": 2
+  },
+  "cleanup": "temporary database, stream, keys and MinIO bucket removed in finally",
+  "passed": true
+}

@@ -2,13 +2,13 @@
 
 > Cập nhật candidate staging ngày 2026-09-11: sau khi queue orchestration được harden và cập nhật evidence, API `07f847c0-7e05-470a-a161-3758ca174302`, web `0bab32af-56cb-450d-9754-39c4f5b3847f` và worker `a37687b6-b192-44ab-9a47-7acb5f919d85` đều `SUCCESS` trên source SHA `06b818fc6edc0ebe4353c1fd018c519ccfc6f25f`. Public verifier đạt `15/15`, schema `20260909_0019`; web bundle đã chứa upload queue. Fixture RTDOSE tổng hợp `gamma-rtdose-v1-smoke.dcm` đã được upload một lần trước đó vào case staging `ed7ddbe5-811a-4463-a270-b0386f64644d` với `REFERENCE/DICOM`, manifest được tạo và validation `VALID` (0 lỗi, 0 cảnh báo). Đây là `STAGING_VERIFIED_SLICE`, không tự đóng P06-W04/P06-VERIFY hoặc các gate fault/retry, signed-download byte re-hash, storage reconciliation, release và handoff. Evidence parity: `docs/evidence/p20-staging-public-parity-20260911-06b818f.json`; upload: `docs/evidence/p06-staging-rtdose-upload-20260911.json`.
 
-- Phiên bản: **4.20**, ngày 2026-09-11.
-- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.24.
-- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.25.
-- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.24.
+- Phiên bản: **4.21**, ngày 2026-09-11.
+- Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.25.
+- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.26.
+- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.25.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
-- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.14, bổ sung P7 evaluate optimistic revision tùy chọn, PostgreSQL row-lock khi finalize, tương thích caller không body, exact replay không nhân đôi TrendPoint, cùng local evidence cho seed/snapshot/stale-evaluate/replay. Tiếp tục giữ P11 consumer snapshot đầy đủ (source/applicability/revision/lineage/rule reference/capability), fail-closed khi protocol/rule lệch snapshot, trend protocol-version lineage và loại bỏ seed synthetic khỏi workflow Machine QA thông thường; đồng thời giữ contract P7 explicit N/A, P10 query count-preflight/raw-aggregate budget/CSV bucket lineage, bằng chứng P8 browser staging và oracle Gamma độc lập. Fixture RTDOSE tổng hợp đã được người dùng cho phép và đã tồn tại hợp lệ trong case staging nên không upload bản sao; workflow Gamma authenticated mới chỉ reuse fixture đó để kiểm tra negative/positive path. Các gate staging P8/P9/P10/P11/P12–P20 chưa được tự nâng chỉ vì local test pass hoặc Railway báo Online.
+- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.14, bổ sung P7 evaluate optimistic revision tùy chọn, PostgreSQL row-lock khi finalize, tương thích caller không body, exact replay không nhân đôi TrendPoint, cùng local evidence cho seed/snapshot/stale-evaluate/replay. Tiếp tục giữ P11 consumer snapshot đầy đủ (source/applicability/revision/lineage/rule reference/capability), fail-closed khi protocol/rule lệch snapshot, trend protocol-version lineage và loại bỏ seed synthetic khỏi workflow Machine QA thông thường; đồng thời giữ contract P7 explicit N/A, P10 query count-preflight/raw-aggregate budget/CSV bucket lineage, bằng chứng P8 browser staging và oracle Gamma độc lập. Bổ sung P8 contract cho coordinate frame, axis order, transform provenance, compatibility preflight và negative capability; fixture RTDOSE tổng hợp đã được người dùng cho phép và đã tồn tại hợp lệ trong case staging nên không upload bản sao; workflow Gamma authenticated mới chỉ reuse fixture đó để kiểm tra negative/positive path. Các gate staging P8/P9/P10/P11/P12–P20 chưa được tự nâng chỉ vì local test pass hoặc Railway báo Online.
 
 > Operational update P8/P18/P19 authenticated Gamma staging E2E ngày 2026-09-10: trên web build `1badb6616d1a68f7178b2aefd10c71adc95a826b`, phiên authenticated đã reuse `gamma-rtdose-v1-smoke.dcm` (RTDOSE/VALID) và `gamma-measurement-3d-v1-smoke.json` trong case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`, không upload bản sao. Chạy cấu hình 2D với measurement 3D tạo run `d902d9c0-3b15-4367-8df9-ca0a6274c3f3` `FAILED` đúng `GAMMA_DIMENSIONALITY_MISMATCH`; đổi sang 3D rồi submit tạo run `86cc4d5e-4a87-4dcb-a6f5-94c125029c60` `COMPLETED/PASS`, 8/8, coverage `1`, Gamma P95 `0`, engine `gamma-nd-p8.2`. Evidence: `docs/evidence/p8-p19-staging-authenticated-gamma-e2e-20260910-1badb66.json`. Đây là `STAGING_AUTHENTICATED_MUTATION_E2E_GAMMA` cho một identity/case; chưa đóng two-identity, direct dependency evidence, full fault/resource matrix, provider restore, rollback hoặc production promotion.
 
@@ -821,10 +821,10 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 
 ### Work packages P8
 
-- [ ] P08-W01 — Đóng gap BR-007; explicit workflow profile, unit/frame/transform contracts và supported capabilities. `STAGING_SMOKE`: browser case trên `ec50990` cho thấy profile `PSQA_GAMMA`, RTDOSE reference + measurement 3D và `PREFLIGHT VALID`; local adapter đã có negative contract cho orientation/unit/spacing, nhưng geometry/scale negative trên staging còn mở.
-- [ ] P08-W02 — Khóa thuật toán search/interpolation/global/local/threshold theo specification §5; thêm oracle độc lập. `LOCAL_VERIFIED`: `scripts/verify-p8-independent-gamma-oracle.py` đối chiếu 6 case GRID/BILINEAR, 2D/3D, GLOBAL/LOCAL, RELATIVE/ABSOLUTE, OVERLAP_ONLY và max-gamma censor; promotion/convergence trên staging còn mở.
+- [ ] P08-W01 — Đóng gap BR-007; explicit workflow profile, unit/frame/transform contracts và supported capabilities. Local candidate `23b88d0` đã enforce `PATIENT_LPS`/`IEC_PHANTOM`, canonical axis order, `FrameOfReferenceUID`, transform direction/units, finite 4×4 matrix và provenance source/version/SHA-256; API preflight từ chối cặp frame/basis/axis không tương thích, còn legacy JSON chỉ giữ cho cặp ENGINE_TEST nội bộ. `STAGING_SMOKE`: browser case trên `ec50990` cho thấy profile `PSQA_GAMMA`, RTDOSE reference + measurement 3D và `PREFLIGHT VALID`; geometry/scale/transform-negative trên staging và promotion của contract mới còn mở.
+- [ ] P08-W02 — Khóa thuật toán search/interpolation/global/local/threshold theo specification §5; thêm oracle độc lập. `LOCAL_VERIFIED`: `scripts/verify-p8-independent-gamma-oracle.py` đối chiếu 6 case GRID/BILINEAR, 2D/3D, GLOBAL/LOCAL, RELATIVE/ABSOLUTE, OVERLAP_ONLY và max-gamma censor trên source `23b88d0`; promotion/convergence trên staging còn mở.
 - [ ] P08-W03 — Bổ sung atomic lease/fencing, attempt history, outbox/reconciliation và giới hạn tài nguyên/retry. `LOCAL_COMPOSE_VERIFIED`: lease/attempt/outbox, terminal replay guard, bounded storage retry 3 attempts, dead-letter và zero pending Redis message đã được chạy bằng `scripts/verify-local-gamma-queue.py` trên Compose có worker riêng. Redis message malformed hiện được phân loại thành `GAMMA_QUEUE_MESSAGE_INVALID`, quarantine bằng dead-letter diagnostic bounded rồi mới ACK; payload values không được sao chép vào quarantine. Staging crash/ack, bounded retry/dead-letter và resource/failure injection còn mở.
-- [ ] P08-W04 — Hoàn thiện Gamma UI configuration/unsupported states, maps/profiles; E2E RTDOSE/3D và workload lớn. `STAGING_PARTIAL`: trên candidate `37130ec`, run PSQA_GAMMA 3D `1ac9b02b…` hoàn tất `8/8 PASS`; large workload, unsupported-input/geometry negative matrix và fault matrix còn mở.
+- [ ] P08-W04 — Hoàn thiện Gamma UI configuration/unsupported states, maps/profiles; E2E RTDOSE/3D và workload lớn. `STAGING_PARTIAL`: trên candidate `37130ec`, run PSQA_GAMMA 3D `1ac9b02b…` hoàn tất `8/8 PASS`; large workload, unsupported-input/geometry/transform negative matrix và fault matrix còn mở.
 - [ ] P08-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P08-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
 
@@ -881,6 +881,14 @@ Các dòng trên là evidence implementation, không thay cho `P08-VERIFY` và `
 - Các tài nguyên disposable được dọn trong `finally`; evidence chỉ ghi metadata tổng hợp, hash fixture và trạng thái, không ghi credential hay payload bệnh nhân. Đây là `LOCAL_COMPOSE_REDIS_WORKER`, không phải staging fault injection, Railway capacity, provider restore hoặc clinical release evidence.
 - Test queue cũng bao phủ malformed-message quarantine: parser trả về `GAMMA_QUEUE_MESSAGE_INVALID`, dead-letter chỉ giữ reason và tối đa 20 payload key, không copy giá trị payload; worker chỉ ACK sau khi quarantine thành công. Terminal `FAILED` redelivery cũng thử dead-letter lại trước ACK, tránh mất quarantine nếu lần ACK trước đó bị lỗi.
 - **Gate còn mở:** staging phải chạy failure injection có kiểm soát cho crash sau durable commit trước ACK, reclaim/lease, retry/dead-letter và large-input/resource budget; sau đó mới đối chiếu oracle promotion/convergence và release manifest.
+
+### Checkpoint hợp đồng hình học P8 — 2026-09-11 / source `23b88d0`
+
+- **Đã hiện thực:** validator measurement không còn coi `schema_version`, shape và spacing là đủ. Upload mới phải khai `coordinate_frame` với `basis`, `frame_id`, canonical `axis_order`, patient `frame_of_reference_uid` nếu dùng `PATIENT_LPS`, cùng `transform_to_reference` có hướng `SOURCE_TO_REFERENCE`, đơn vị `mm`, ma trận finite 4×4 và provenance `type/version/sha256`. RTDOSE thiếu `FrameOfReferenceUID` bị `INVALID`; RTDOSE hợp lệ được chuẩn hóa thành patient-LPS frame.
+- **Đã hiện thực:** engine snapshot physical frame trong `reference_grid`/`evaluation_grid`; API kiểm compatibility trước enqueue. Cặp explicit chỉ chạy khi basis, frame ID, axis order và transform tương thích. Cặp legacy JSON-only chỉ được giữ cho dữ liệu ENGINE_TEST cũ và không được trộn với DICOM/explicit measurement trong PSQA.
+- **Capability hiện hành:** chỉ transform identity có khai báo provenance được thực thi. Translation/rigid/oblique/non-uniform/registration ngoài chưa có adapter nên phải trả `GAMMA_TRANSFORM_UNSUPPORTED` hoặc `GAMMA_INPUT_INCOMPATIBLE`; không auto-align, transpose, resample hoặc suy luận từ filename.
+- **Bằng chứng local:** focused Gamma/DICOM/artifact/worker `30/30 PASS`, full backend `195 passed`, strict mypy và Ruff PASS; independent oracle `6/6` PASS; Compose Redis/worker verifier `passed=true`, source SHA trong evidence `23b88d068aa7a56538ba0e01b723ceae7d784314`. Evidence: `docs/evidence/p8-independent-gamma-oracle-20260911.json`, `docs/evidence/p8-local-redis-worker-smoke-20260911.json`.
+- **Không được suy diễn:** evidence trên chỉ chứng minh contract và regression local. Cần deploy đúng source lên API/web/worker staging, revalidate artifact đã upload, chạy negative matrix bằng fixture được cho phép, kiểm worker/queue/resource và cập nhật public parity trước khi nâng W01/W04 hoặc đóng P8. Không upload thêm RTDOSE trong checkpoint này.
 
 ### Bất biến và điều kiện đóng P8
 
@@ -2132,7 +2140,7 @@ Bảng này là chỉ mục điều hành ngắn gọn; mỗi phase vẫn phải
 | P5 | `S01–S04` | `E01–E06` | B01, B02, B04, B05, B06, B08 | D, A, DB, UI, R, P |
 | P6 | `S01–S04` | `E01–E07` | B01, B02, B04, B05, B06, B09, B10, B11, B12 | D, A, DB, UI, R, P |
 | P7 | `S01–S04` | `E01–E07` | B01, B03, B04, B05, B07, B08, B11, B12 | D, A, DB, UI, R, P |
-| P8 | `S01–S05` | `E01–E10` | B01, B02, B04, B05, B06, B07, B09, B10, B11, B12 | D, A, DB, UI, R, V, P |
+| P8 | `S01–S05` | `E01–E11` | B01, B02, B04, B05, B06, B07, B09, B10, B11, B12 | D, A, DB, UI, R, V, P |
 | P9 | `S01–S04` | `E01–E06` | B01, B02, B04, B06, B07, B08, B09, B10, B11, B12 | D, A, DB, UI, R, V, P |
 | P10 | `S01–S08` | `E01–E12` | B01, B02, B03, B04, B05, B06, B08, B11, B12 | D, A, DB, UI, R, V, P |
 | P11 | `S01–S09` | `E01–E16` | B01, B02, B04, B05, B06, B07, B08, B10, B11, B12 | D, A, DB, UI, R, P |
@@ -2260,10 +2268,10 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 **Runtime addendum cùng ngày:** sau source-parity recovery, candidate `b0263c932c740d4f36f19867241d5c1e07014765` đạt **15/15 checks PASS** trên public staging với schema `20260909_0019`; evidence `docs/evidence/p19-staging-public-smoke-20260909-b0263c9.json`. Browser DVH/report evidence vẫn dùng đúng case synthetic đã upload trước đó; không upload lại RTDOSE/RTSTRUCT/CT. Payload JSON/CSV export parse/hash khớp saved snapshot, còn việc browser đổi `.crdownload` thành filename cuối vẫn `UNVERIFIED` và tiếp tục là gate mở. Evidence browser: `docs/evidence/p17-staging-dvh-ct-browser-20260909.json`.
 
-### 7.3. Revision hiện hành v4.15
+### 7.3. Revision hiện hành v4.21
 
-Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.24, `specification.md` v1.24,
-`technical-specification.md` v1.23 và `plan.md` v4.15. Revision v4.15 bổ sung consumer snapshot
+Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.25, `specification.md` v1.26,
+`technical-specification.md` v1.25 và `plan.md` v4.21. Các revision trước đã bổ sung consumer snapshot
 P11 đầy đủ cho Machine QA, trend và report, cùng UI source panel đọc snapshot; revision v4.14 giữ status/readiness
  surface P20, bổ sung P4 member/invitation execution contract và P7 Machine QA explicit-N/A execution contract:
  workflow `/invite`, token
@@ -2286,8 +2294,15 @@ P8 RTDOSE + measurement 3D smoke `8/8 PASS` và local independent Gamma oracle `
 evidence này không đóng crash/ack, retry/dead-letter, resource/large-input, commissioning hoặc
  production promotion. P8-W03 local queue contract cũng đã ghi nhận quarantine malformed Redis
  message và terminal-failure redelivery; staging failure-injection vẫn là gate riêng. P7-W03 local
-  regression hiện đạt 6/6, gồm N/A có lý do, ba trường hợp N/A mâu thuẫn bị HTTP 422, aggregation
+ regression hiện đạt 6/6, gồm N/A có lý do, ba trường hợp N/A mâu thuẫn bị HTTP 422, aggregation
  không hạ overall xuống PASS và loại metric N/A khỏi trend; frontend đã lint/typecheck/Vitest/build PASS.
+
+Revision v4.21 bổ sung P8 coordinate frame/axis order/transform provenance và compatibility preflight:
+measurement mới phải khai báo physical basis; RTDOSE phải có FrameOfReferenceUID; transform ngoài
+identity capability hiện hành bị chặn; cặp legacy JSON chỉ được giữ trong ENGINE_TEST nội bộ. Candidate
+`23b88d0` đã có focused `30/30`, full backend `195 passed`, independent oracle `6/6` và local Redis/worker
+verifier `passed=true`; các evidence này là local synthetic evidence, không đóng staging negative matrix,
+resource/fault injection, oracle promotion hoặc release handoff.
 
 ## 8. Ma trận FR → contract → testcase ban đầu
 
@@ -2327,10 +2342,10 @@ Mỗi FR có testcase cụ thể dưới đây; Cxx là ma trận chung §3, Gxx
 | FR-P07-02 | SPEC-P07 | TC-P07-S03, TC-P07-E04, C05 |
 | FR-P07-03 | SPEC-P07 | TC-P07-S01, TC-P07-S02, TC-P07-S03, TC-P07-E03 |
 | FR-P07-04 | SPEC-P07 | TC-P07-S04, TC-P07-E05, C09 |
-| FR-P08-01 | SPEC-P08 | TC-P08-S01, TC-P08-S02, TC-P08-E01, TC-P08-E02, TC-P08-E08 |
+| FR-P08-01 | SPEC-P08 | TC-P08-S01, TC-P08-S02, TC-P08-E01, TC-P08-E02, TC-P08-E08, TC-P08-E11 |
 | FR-P08-02 | SPEC-P08 | TC-P08-S01, TC-P08-S03, TC-P08-E03, TC-P08-E04, TC-P08-E05, G11, G12, G13, G14, G15, G16, G17, G18, G19, G20 |
 | FR-P08-03 | SPEC-P08 | TC-P08-S04, TC-P08-S05, TC-P08-E06, TC-P08-E07, TC-P08-E09, TC-P08-E10 |
-| FR-P08-04 | SPEC-P08 | TC-P08-S01, TC-P08-S03, C13, G01, G02, G03, G04, G05, G06, G07, G08, G09, G10 |
+| FR-P08-04 | SPEC-P08 | TC-P08-S01, TC-P08-S03, TC-P08-E11, C13, G01, G02, G03, G04, G05, G06, G07, G08, G09, G10 |
 | FR-P09-01 | SPEC-P09 | TC-P09-S01, TC-P09-E03, C10 |
 | FR-P09-02 | SPEC-P09 | TC-P09-S02, TC-P09-E01, C09 |
 | FR-P09-03 | SPEC-P09 | TC-P09-S03, TC-P09-E04, TC-P09-E05, TC-P09-E06, TC-P09-E07, TC-P09-E08 |
@@ -2418,7 +2433,7 @@ Mỗi dòng dưới đây là danh sách hành động tối thiểu, không ph�
 | **P5** | Tạo root/subtree → case metadata → search/filter/page/deep-link → move/rename → archive/restore. | `S01–S04`, filter URL, empty case, history. | `E01–E06`, C03/C05/C06/C09/C11: cycle/name/parent/hierarchy/page/restore. | Tree snapshot before/after, case ID, query/filter, atomic transaction evidence. | Không mở P6 nếu move không atomic hoặc archived history mất. |
 | **P6** | Chọn artifact role/type → upload stream/batch → object/checksum → manifest → file/dataset validation → signed download. | `S01–S04`, byte round-trip, duplicate role, batch independent success. | `E01–E07`, C01–C04/C06/C08/C12–C15: empty/large/interrupted/object-DB mismatch/type/metadata/link expiry. | Fixture/hash, object inventory, manifest/findings, upload operation state và download hash. | Dừng engine input nếu file chưa VALID; mở P7 khi file/role/manifest/negative upload evidence đủ. |
 | **P7** | Chọn protocol/version → tạo run → draft measurements/N-A → evaluate → rule drill-down → rerun/compare/trend projection. | `S01–S04`, known-answer boundary, quality vs technical status. | `E01–E06`, C02/C05/C07/C09/C12/C13: required/unit/baseline/autosave/double submit/archived protocol. | Protocol/rule/measurement/result snapshots, projection uniqueness, UI history. | Không mở P8 nếu result dùng live rule hoặc N/A/FAIL bị nhập nhằng. |
-| **P8** | Resolve validated RTDOSE/comparison → preflight → accepted/outbox → Redis/lease/worker → Gamma → persist → map/stats/profile → retry/compare. | `S01–S05`, G01–G20 và independent oracle theo profile. | `E01–E10`, C03/C04/C06/C08/C12/C14/C16: missing input, geometry/config, no candidate, zero normalization, queue/worker/lease/OOM/source drift. | Run/attempt/lease/outbox, counts/coverage/censoring, result hash/config/engine, worker logs. | Không đóng chỉ vì run COMPLETED; phải có oracle, retry/fencing/resource/staging evidence và không có duplicate. |
+| **P8** | Resolve validated RTDOSE/comparison → preflight → accepted/outbox → Redis/lease/worker → Gamma → persist → map/stats/profile → retry/compare. | `S01–S05`, G01–G20 và independent oracle theo profile. | `E01–E11`, C03/C04/C06/C08/C12/C14/C16: missing input, frame/axis/transform, geometry/config, no candidate, zero normalization, queue/worker/lease/OOM/source drift. | Run/attempt/lease/outbox, counts/coverage/censoring, result hash/config/engine, worker logs. | Không đóng chỉ vì run COMPLETED; phải có oracle, retry/fencing/resource/staging evidence và không có duplicate. |
 | **P9** | Chọn QA/Biological source → template → block edit → preview → revision → renderer/export/download → history/compare. | `S01–S04`, full customization, four formats, long/Unicode, deterministic replay. | `E01–E06`, C05/C08/C09/C10/C13/C15: source/revision/content/format/renderer/storage/download/idempotency. | Revision/source snapshot, output byte/hash, renderer version, signed URL, visual review. | Không mở P10 nếu report mở lại từ live source hoặc export/hash không ổn định. |
 | **P10** | Resolve compatible trend source → filter/timezone → raw/aggregate → baseline/events → outlier/drill-down/export → rebuild. | `S01–S08`, raw/aggregate equality, source drill-down, rebuild idempotent. | `E01–E12`, C03/C05/C06/C08/C09/C11/C13/C14: context/date/empty/baseline/duplicate/archive/large query/event conflict. | Series signature, source IDs, aggregate counts/extrema, baseline/event revisions, export. | Dừng nếu trộn unit/machine hoặc bịa 0; mở P11 khi protocol consumer context ổn định. |
 | **P11** | Search/detail → create/clone → validate-only → DRAFT/version → activate/archive → consumer snapshot → compare. | `S01–S09`, clone deep-copy, active consumer, old snapshot. | `E01–E16`, C03–C13/C16: rule/source/version/applicability/persistence/conflict/unsupported. | Migration `20260908_0011`, protocol/rule/source snapshots, consumer IDs, compare/export. | P7/P8/P9/P10 phải prove dùng snapshot; nếu không chỉ `LOCAL_VERIFIED`. |

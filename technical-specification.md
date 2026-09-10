@@ -3,15 +3,15 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.24 — đồng bộ specification.md v1.25, plan.md v4.20 và business-analysis.md v0.24; bổ sung P11 consumer snapshot `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/revision/lineage/rule reference/capability và fail-closed mismatch sau khi protocol lifecycle thay đổi; bổ sung UI source panel đọc snapshot và loại seed synthetic khỏi workflow thường. Giữ source-identifiable release metadata từ Railway Git SHA cho API/web, process-RSS/resource-policy/API-responsiveness evidence cho P17 Docker workload đồng thời, export-content evidence và targeted direct PostgreSQL row/checksum/scope evidence; giữ Machine QA explicit N/A, P10 Trend query-budget/count-preflight/bucket-export, P4 membership/invitation và status/readiness P20 (2026-09-11). P17 giữ migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`, song song ORM guard và negative mutation test. P8 giữ independent Gamma oracle runner/evidence cho synthetic 2D/3D profile coverage, staging RTDOSE + measurement browser smoke và malformed Redis dispatch quarantine trước ACK. P9 render contract hiện hành là `report-renderer-0.2`, dùng `fonttools==4.63.0` và asset `DejaVuSans.ttf` được đóng gói để PDF Unicode không rơi về glyph thay thế; mọi thay đổi renderer phải lặp lại payload/hash và visual inspection trên staging. Client export phải dùng namespace idempotency tương thích renderer/export contract; server fingerprint là authority và không được nuốt conflict.
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.24
+- **Phiên bản:** 1.25 — đồng bộ specification.md v1.26, plan.md v4.21 và business-analysis.md v0.25; bổ sung P8 coordinate-frame/axis-order/explicit-transform contract, compatibility preflight giữa RTDOSE và measurement, provenance và identity-transform capability hiện tại; bổ sung P11 consumer snapshot `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/revision/lineage/rule reference/capability và fail-closed mismatch sau khi protocol lifecycle thay đổi; bổ sung UI source panel đọc snapshot và loại seed synthetic khỏi workflow thường. Giữ source-identifiable release metadata từ Railway Git SHA cho API/web, process-RSS/resource-policy/API-responsiveness evidence cho P17 Docker workload đồng thời, export-content evidence và targeted direct PostgreSQL row/checksum/scope evidence; giữ Machine QA explicit N/A, P10 Trend query-budget/count-preflight/bucket-export, P4 membership/invitation và status/readiness P20 (2026-09-11). P17 giữ migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`, song song ORM guard và negative mutation test. P8 giữ independent Gamma oracle runner/evidence cho synthetic 2D/3D profile coverage, staging RTDOSE + measurement browser smoke và malformed Redis dispatch quarantine trước ACK. P9 render contract hiện hành là `report-renderer-0.2`, dùng `fonttools==4.63.0` và asset `DejaVuSans.ttf` được đóng gói để PDF Unicode không rơi về glyph thay thế; mọi thay đổi renderer phải lặp lại payload/hash và visual inspection trên staging. Client export phải dùng namespace idempotency tương thích renderer/export contract; server fingerprint là authority và không được nuốt conflict.
+- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.25
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
 - **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
 
 Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
-> Đồng bộ v1.19: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§14 là authority cho hành vi/validation/error/thuật toán/phase handoff. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; P4 đã bổ sung local membership/invitation slice trên migration `20260909_0018` và public staging đã migrate/deploy/readiness/version-parity pass, nhưng Auth browser và persistence vẫn phải revalidate trước khi gọi available. P17 có CT pixel preview local, explicit P11/P16 binding, DVH report source và Docker workload verifier local; verifier đo process peak RSS trong benchmark process, kiểm policy `1 CPU/768 MiB` và polling API responsiveness, còn cgroup peak/current và `docker stats` vẫn chỉ là quan sát bổ trợ, không phải peak RSS. CT/staging evidence vẫn phải kiểm theo candidate. Railway Git-triggered Docker builds phải truyền `RAILWAY_GIT_COMMIT_SHA` vào frontend build và API runtime phải ưu tiên SHA này cho release label; `APP_VERSION`/`VITE_APP_VERSION` chỉ là fallback khi chạy local hoặc không có Git trigger. P18 có local route-to-persistence và local backup/restore support nhưng chưa thay fault/restore/pilot staging gate. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+> Đồng bộ v1.20: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§14 là authority cho hành vi/validation/error/thuật toán/phase handoff. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; P4 đã bổ sung local membership/invitation slice trên migration `20260909_0018` và public staging đã migrate/deploy/readiness/version-parity pass, nhưng Auth browser và persistence vẫn phải revalidate trước khi gọi available. P17 có CT pixel preview local, explicit P11/P16 binding, DVH report source và Docker workload verifier local; verifier đo process peak RSS trong benchmark process, kiểm policy `1 CPU/768 MiB` và polling API responsiveness, còn cgroup peak/current và `docker stats` vẫn chỉ là quan sát bổ trợ, không phải peak RSS. CT/staging evidence vẫn phải kiểm theo candidate. P8 hiện đã có validator/engine/API contract cho frame, axis order và transform identity; staging geometry/transform negative matrix và promotion vẫn là gate riêng. Railway Git-triggered Docker builds phải truyền `RAILWAY_GIT_COMMIT_SHA` vào frontend build và API runtime phải ưu tiên SHA này cho release label; `APP_VERSION`/`VITE_APP_VERSION` chỉ là fallback khi chạy local hoặc không có Git trigger. P18 có local route-to-persistence và local backup/restore support nhưng chưa thay fault/restore/pilot staging gate. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -1298,7 +1298,8 @@ evaluated/passing/nonpassing/excluded/no-candidate/censored, pass rate, coverage
 percentile exactness, histogram, warning, configuration, input checksum và engine version.
 Đây là deterministic engineering/golden slice; test local hiện có exhaustive independent node
 oracle và các guard resource/retry, nhưng không thay thế benchmark theo phần cứng hoặc
-commissioning. Gate phát triển, pilot và release theo plan.md v4.20. Coordinate frame mở rộng,
+commissioning. Gate phát triển, pilot và release theo plan.md v4.21. Coordinate frame/axis order/transform compatibility
+đã được hiện thực ở validator/engine/API trên candidate local,
 crash/ack/dead-letter injection, large workload benchmark và evidence effective schema/release
 trên staging vẫn là điều kiện đóng P8.
 
@@ -1537,6 +1538,26 @@ Ví dụ contract kỹ thuật:
     "orientation": "IEC_XY",
     "values_order": "row-major"
   },
+  "coordinate_frame": {
+    "basis": "IEC_PHANTOM",
+    "frame_id": "example-phantom-2026-01",
+    "axis_order": ["y", "x"],
+    "transform_to_reference": {
+      "direction": "SOURCE_TO_REFERENCE",
+      "units": "mm",
+      "matrix": [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1]
+      ],
+      "source": {
+        "type": "phantom-setup",
+        "version": "setup-v1",
+        "sha256": "<64-char-hex>"
+      }
+    }
+  },
   "values": {
     "encoding": "float32",
     "object_key": "measurements/measurement-001.npy"
@@ -1555,7 +1576,7 @@ Ví dụ contract kỹ thuật:
 
 Ví dụ object_key phía trên là thiết kế mục tiêu, không phải profile được adapter hiện tại hỗ trợ. Values lớn chỉ được trỏ tới managed artifact đã kiểm organization/checksum; không đọc arbitrary object_key từ input. Contract phải có schema validator và fixture.
 
-Adapter 2D ban đầu là snapshot lịch sử. Code `gamma-nd-p8.2` đã mở rộng inline 2D/3D và RTDOSE như mô tả §6.5, nhưng chưa chứng minh toàn bộ contract target. Profile production, DICOM chuẩn, coordinate frame, denominator/search và oracle được khóa ở specification.md §3.4/§5; các gap P8 vẫn phải được kiểm thử trước đóng phase.
+Adapter 2D ban đầu là snapshot lịch sử. Code `gamma-nd-p8.2` đã mở rộng inline 2D/3D và RTDOSE như mô tả §6.5. Profile measurement hiện hành yêu cầu `coordinate_frame` explicit: `PATIENT_LPS` dùng `frame_id`/`frame_of_reference_uid` và axis order canonical; `IEC_PHANTOM` dùng frame ID của phantom/setup; cả hai đều cần transform `SOURCE_TO_REFERENCE` bằng ma trận finite 4×4 và provenance type/version/SHA-256. RTDOSE DICOM lấy patient frame từ `FrameOfReferenceUID` và native axial geometry đã validated. API preflight so sánh basis, frame ID, axis order và transform compatibility trước enqueue; DICOM native identity tương thích với measurement identity explicit cùng frame. Capability hiện tại chỉ thực thi identity transform; translation/rigid/oblique/non-uniform adapter phải được version hóa và test riêng, nếu chưa có thì trả lỗi thay vì tự căn chỉnh. Cặp JSON legacy chỉ còn compatibility cho ENGINE_TEST nội bộ, không dùng để trộn với DICOM hoặc input explicit trong PSQA. Profile production, DICOM chuẩn, denominator/search và oracle được khóa ở specification.md §3.4/§5; các gap P8 vẫn phải được kiểm thử trước đóng phase.
 
 ### 8.3. Pipeline
 

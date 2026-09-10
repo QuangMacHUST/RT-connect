@@ -1,7 +1,14 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
-Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
-`technical-specification.md` v1.24 và `plan.md` v4.20.
+Revision hiện hành: `business-analysis.md` v0.25, `specification.md` v1.26,
+`technical-specification.md` v1.25 và `plan.md` v4.21.
+
+## P08 — coordinate-frame/axis-order/transform contract — local verified — 2026-09-11 / `23b88d0`
+
+- Gamma measurement mới phải khai `PATIENT_LPS` hoặc `IEC_PHANTOM`, frame ID, canonical axis order, transform `SOURCE_TO_REFERENCE` bằng ma trận finite 4×4 và provenance type/version/SHA-256. RTDOSE thiếu `FrameOfReferenceUID` bị từ chối; DICOM native identity được phân biệt với legacy grid.
+- API preflight kiểm basis/frame ID/axis order/transform compatibility trước enqueue; engine snapshot physical frame trong kết quả. Transform non-identity hiện chưa có adapter nên fail-closed; không auto-align, đổi trục hoặc suy luận từ tên file. JSON legacy chỉ giữ cho cặp ENGINE_TEST cũ và không được trộn vào PSQA với DICOM/explicit measurement.
+- Evidence: focused Gamma/DICOM/artifact/worker **30/30 PASS**, full backend **195 passed**, strict mypy/Ruff PASS, independent oracle **6/6 PASS**, local Compose Redis/worker verifier `passed=true`. Files: `docs/evidence/p8-independent-gamma-oracle-20260911.json`, `docs/evidence/p8-local-redis-worker-smoke-20260911.json`.
+- Đây là local implementation evidence trên synthetic fixture. Staging vẫn phải deploy đúng candidate, revalidate input đã tồn tại, kiểm negative geometry/axis/transform/scale, queue/resource và public parity; chưa upload thêm RTDOSE, chưa tạo Gamma run mới và chưa nâng P08 thành DONE.
 
 ## P07 — Machine QA revision/idempotency hardening — local verified — 2026-09-11 / `c6348c3`
 

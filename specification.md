@@ -1,10 +1,10 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.25**; ngày 2026-09-10.
-- Nguồn nghiệp vụ: business-analysis.md v0.24.
-- Kế hoạch triển khai: plan.md v4.20, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.24.
-- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.25 giữ toàn bộ contract v1.24, bổ sung consumer snapshot P11 `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/capability/rule lineage, archive semantics và fail-closed khi snapshot lệch; UI phải hiển thị metadata đã pin và workflow thường không seed synthetic. P9 bổ sung quy tắc namespace idempotency phía client phải thay đổi khi renderer hoặc schema export đổi; server vẫn dùng fingerprint gồm revision, format, render options và renderer version làm authority, để deploy renderer mới không bị replay nhầm export cũ hoặc tạo conflict giả khi người dùng tải lại trang. Các contract Trend query budget, Machine QA explicit N/A, malformed Redis dispatch, peak RSS/resource/API responsiveness P17 và P4 membership/invitation vẫn được giữ nguyên.
+- File: specification.md; version **1.26**; ngày 2026-09-11.
+- Nguồn nghiệp vụ: business-analysis.md v0.25.
+- Kế hoạch triển khai: plan.md v4.21, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.25.
+- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.26 giữ toàn bộ contract v1.25, bổ sung P8 coordinate-frame/axis-order/explicit-transform contract, compatibility preflight giữa RTDOSE và measurement, identity-transform capability hiện tại và các lỗi fail-closed tương ứng. P11 consumer snapshot `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/capability/rule lineage, archive semantics và fail-closed khi snapshot lệch vẫn được giữ; UI phải hiển thị metadata đã pin và workflow thường không seed synthetic. P9 bổ sung quy tắc namespace idempotency phía client phải thay đổi khi renderer hoặc schema export đổi; server vẫn dùng fingerprint gồm revision, format, render options và renderer version làm authority, để deploy renderer mới không bị replay nhầm export cũ hoặc tạo conflict giả khi người dùng tải lại trang. Các contract Trend query budget, Machine QA explicit N/A, malformed Redis dispatch, peak RSS/resource/API responsiveness P17 và P4 membership/invitation vẫn được giữ nguyên.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
 
@@ -775,12 +775,57 @@ snapshot, và trend query sau replay vẫn chỉ có một point cho mỗi metri
 | Transaction/invariant | At-least-once dispatch + unique run operation + conditional lease commit; ack chỉ sau durable terminal state; stale worker không được ghi đè. |
 | Output bàn giao | RTDOSE/measurement fixtures, independent oracle, maps, job diagnostics, benchmark và staged E2E. |
 | Success oracle | TC-P08-S01 đến TC-P08-S05 trong plan |
-| Error/recovery oracle | TC-P08-E01 đến TC-P08-E10 trong plan |
+| Error/recovery oracle | TC-P08-E01 đến TC-P08-E11 trong plan |
 | Exit | Tất cả profile được công bố có golden/error tests; RTDOSE+measurement 3D staging, worker crash/retry/concurrency và large workload đạt budget. |
 
 **Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Engine/renderer cần recheck snapshot/source và chỉ commit output hợp lệ; UI không tự suy PASS từ HTTP 200.
 
-**Failure contract:** `RTDOSE_REQUIRED`; `COMPARISON_REQUIRED`; `GAMMA_INPUT_NOT_VALIDATED`; `GAMMA_ARTIFACT_SCOPE_MISMATCH`; `GAMMA_GRID_METADATA_MISSING`; `GAMMA_WORKFLOW_PROFILE_INVALID`; `GAMMA_ENGINE_TEST_INPUT_INVALID`; `GAMMA_QUEUE_UNAVAILABLE`; engine result warnings `GAMMA_NO_CANDIDATE_WITHIN_DTA` và `GAMMA_SEARCH_CENSORED`; cùng các taxonomy target `GAMMA_INPUT_INCOMPATIBLE`, `GAMMA_RESOURCE_LIMIT` và `GAMMA_SOURCE_CHANGED` khi capability tương ứng được hoàn thiện. Không dùng chuỗi OR làm một code API; mapping phải được giữ trong contract test.
+**Failure contract:** `RTDOSE_REQUIRED`; `COMPARISON_REQUIRED`; `GAMMA_INPUT_NOT_VALIDATED`; `GAMMA_ARTIFACT_SCOPE_MISMATCH`; `GAMMA_GRID_METADATA_MISSING`; `GAMMA_WORKFLOW_PROFILE_INVALID`; `GAMMA_ENGINE_TEST_INPUT_INVALID`; `GAMMA_QUEUE_UNAVAILABLE`; `GAMMA_COORDINATE_FRAME_MISSING`; `GAMMA_COORDINATE_FRAME_INVALID`; `GAMMA_AXIS_ORDER_UNSUPPORTED`; `GAMMA_TRANSFORM_UNSUPPORTED`; `GAMMA_INPUT_INCOMPATIBLE`; `GAMMA_RESOURCE_LIMIT`; `GAMMA_SOURCE_CHANGED`; engine result warnings `GAMMA_NO_CANDIDATE_WITHIN_DTA` và `GAMMA_SEARCH_CENSORED`. Không dùng chuỗi OR làm một code API; mapping phải được giữ trong contract test.
+
+#### SPEC-P08.1 — Coordinate frame và transform compatibility
+
+Mọi input được đưa vào Gamma phải mang metadata vật lý đủ để phân biệt storage order với physical coordinate system. Đây là điều kiện dataset/workflow-level, không được suy luận từ filename, MIME, `modality`, kích thước mảng hoặc việc hai file có cùng `FrameOfReferenceUID`.
+
+```json
+{
+  "coordinate_frame": {
+    "basis": "PATIENT_LPS",
+    "frame_id": "1.2.826.0.1.3680043.8.498.999.4",
+    "frame_of_reference_uid": "1.2.826.0.1.3680043.8.498.999.4",
+    "axis_order": ["z", "y", "x"],
+    "transform_to_reference": {
+      "direction": "SOURCE_TO_REFERENCE",
+      "units": "mm",
+      "matrix": [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1]
+      ],
+      "source": {
+        "type": "dicom-native",
+        "version": "DICOM-RTDOSE",
+        "sha256": "<64-char-hex>"
+      }
+    }
+  }
+}
+```
+
+- `basis` chỉ nhận `PATIENT_LPS` hoặc `IEC_PHANTOM`. `PATIENT_LPS` bắt buộc `frame_of_reference_uid` và `frame_id` trùng nhau; `IEC_PHANTOM` vẫn phải có `frame_id` ổn định của phantom/setup.
+- Grid 2D phải khai `axis_order=["y","x"]`; grid 3D phải khai `axis_order=["z","y","x"]`. Axis order là storage convention và không thay thế origin, spacing, orientation hoặc Frame of Reference.
+- DICOM RTDOSE lấy identity từ `FrameOfReferenceUID` và native patient coordinate metadata. Measurement JSON phải khai đầy đủ block trên, gồm transform direction, đơn vị, ma trận finite 4×4 và provenance `type/version/sha256`.
+- Reference và evaluation chỉ compatible khi `basis`, `frame_id`, `axis_order` và ma trận transform sau chuẩn hóa giống nhau. DICOM native identity có thể so sánh với measurement có transform identity explicit cùng frame; không được xem một input thiếu frame là identity.
+- Capability P8 hiện tại chỉ thực thi identity transform. Translation, rigid transform, oblique orientation, non-uniform grid, registration ngoài hoặc đổi trục cần adapter riêng có test và version; hiện tại phải bị chặn với `GAMMA_TRANSFORM_UNSUPPORTED` hoặc `GAMMA_INPUT_INCOMPATIBLE`.
+- Measurement mới không được dùng legacy mặc định `LEGACY_GRID`. Tương thích legacy chỉ giữ cho các dòng ENGINE_TEST nội bộ đã tồn tại, khi cả hai input đều là JSON non-DICOM cũ; không cho trộn legacy với input explicit hoặc DICOM trong PSQA.
+
+| Condition | Expected contract |
+| :--- | :--- |
+| Thiếu `coordinate_frame`/FoR | Không enqueue hoặc không tính; trả lỗi frame missing/invalid. |
+| Basis/frame ID/axis order khác | `GAMMA_INPUT_INCOMPATIBLE`, HTTP 422 ở workflow preflight; không auto-align. |
+| Transform direction/units/matrix/provenance sai | `GAMMA_COORDINATE_FRAME_INVALID` hoặc lỗi units/provenance cụ thể; không lưu kết quả. |
+| Transform non-identity ngoài capability | `GAMMA_TRANSFORM_UNSUPPORTED`; giữ input nguyên vẹn, yêu cầu adapter hỗ trợ. |
+| Cặp JSON legacy cũ cùng loại | Chỉ cho ENGINE_TEST compatibility; result phải giữ nhãn ENGINE_TEST và không được dùng làm PSQA clinical. |
 
 <a id="spec-p09"></a>
 
@@ -1718,7 +1763,7 @@ Không được gọi operation là `COMPLETED` nếu chưa có output bền v�
 4. **Trend:** chỉ aggregate các source có compatibility signature; điểm thiếu không được biến thành zero; drill-down phải quay về source run/case đúng organization.
 5. **Public deployment:** web/API/worker/schema/Auth/queue phải được kiểm theo cùng release manifest; PostgreSQL, Redis, worker và object bucket private theo topology; URL public không chứng minh workflow đã pass.
 
-## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.24
+## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.26
 
 Phần này biến các contract theo phase thành cấu trúc có thể dùng khi viết code, test và bàn giao. Nó không thay thế các field/algorithm contract ở mục 2–8; nó quy định cách chứng minh rằng các contract đó đã được thực thi trên một candidate cụ thể.
 
