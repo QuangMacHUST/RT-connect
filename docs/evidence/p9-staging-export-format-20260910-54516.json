@@ -1,0 +1,54 @@
+{
+  "schema_version": "rt-connect.p9-staging-export-format.v1",
+  "captured_at_utc": "2026-09-10T05:43:00Z",
+  "verification_level": "STAGING_AUTHENTICATED_BROWSER_EXPORT_AND_PARTIAL_PAYLOAD_READBACK",
+  "environment": "staging",
+  "source_commit_observed": "54516edfc930352b4cdaaf7b5f56f0765e011620",
+  "schema_revision_observed": "20260909_0019",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "report": {
+    "report_key": "3b51b1db-1a6c-437b-8e43-dbaf1e9b73e7",
+    "revision_number": 1,
+    "title": "P17 staging bound DVH report",
+    "source_type": "DVH",
+    "source_id": "d8230d1d-badd-4c0c-b044-dcc4434215a6",
+    "content_sha256": "2599b891dbe42eedbc69e8889a368ee8359586076c8833e8e474cf57c195cb5c",
+    "renderer_version": "report-renderer-0.1"
+  },
+  "exports_created_from_same_revision": {
+    "JSON": {
+      "ui_byte_size": 15582,
+      "positive_size": true,
+      "source_snapshot_present": true,
+      "content_sha256_matches_report": true
+    },
+    "CSV": {
+      "ui_byte_size": 1190,
+      "positive_size": true,
+      "payload_readback": true,
+      "payload_assertions": {
+        "report_key": "3b51b1db-1a6c-437b-8e43-dbaf1e9b73e7",
+        "revision_number": "1",
+        "source_id": "d8230d1d-badd-4c0c-b044-dcc4434215a6",
+        "content_sha256": "2599b891dbe42eedbc69e8889a368ee8359586076c8833e8e474cf57c195cb5c"
+      },
+      "observed_download_sha256": "2AD5E4F69D929591128E6A6C61241FFA3EA0C15FF62A723D5EAF850002819E56",
+      "observed_local_state": "browser download remained .crdownload; final filename not yet verified"
+    },
+    "PDF": {
+      "ui_byte_size": 1046,
+      "positive_size": true
+    },
+    "PNG": {
+      "ui_byte_size": 2243,
+      "positive_size": true
+    }
+  },
+  "invariants": {
+    "same_report_revision_for_all_formats": true,
+    "no_new_report_revision_created": true,
+    "no_dvh_rerun_or_mutation": true,
+    "synthetic_data_only": true
+  },
+  "scope_note": "This closes format-job creation and CSV payload readback for a staging report revision. PDF/PNG payload parsing, final browser filename/download completion, visual review, export idempotency/replay and provider fault injection remain open."
+}
