@@ -1,0 +1,102 @@
+{
+  "schema_version": "rt-connect.p10-trend-query-budget.v1",
+  "captured_at_utc": "2026-09-10T02:16:36.6521643Z",
+  "environment": "staging",
+  "candidate": {
+    "source_sha": "a089d2adb103b106bce7d6c96112e3c426d7e8bb",
+    "branch": "codex/p4-org-site-machine",
+    "schema_revision": "20260909_0019"
+  },
+  "railway_services": {
+    "api": {
+      "service": "Railway-API-staging",
+      "deployment_id": "a2307afc-70a6-41f2-b3f4-a78c507baf06",
+      "status": "SUCCESS",
+      "root_directory": "/apps/api",
+      "pre_deploy_command": "alembic upgrade head",
+      "healthcheck_path": "/api/v1/health",
+      "source_sha": "a089d2adb103b106bce7d6c96112e3c426d7e8bb"
+    },
+    "web": {
+      "service": "RT-connect-web-staging",
+      "deployment_id": "787bb002-293c-4039-b854-0aaae86a5f41",
+      "status": "SUCCESS",
+      "root_directory": "/apps/web",
+      "source_sha": "a089d2adb103b106bce7d6c96112e3c426d7e8bb"
+    },
+    "worker": {
+      "service": "RT-connect-gamma-worker-staging",
+      "deployment_id": "3a10cd01-5b48-4d48-8dbd-065b96fcc4c7",
+      "status": "SUCCESS",
+      "root_directory": "/apps/api",
+      "start_command": "python -m rt_connect_api.worker",
+      "source_sha": "a089d2adb103b106bce7d6c96112e3c426d7e8bb"
+    },
+    "source_parity": true
+  },
+  "public_verifier": {
+    "passed": true,
+    "checks": 15,
+    "failed_checks": 0,
+    "api_base_url": "https://gleaming-cooperation-staging.up.railway.app",
+    "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+    "observed_version": "a089d2adb103b106bce7d6c96112e3c426d7e8bb",
+    "observed_schema_revision": "20260909_0019",
+    "scope": "read_only_public_health_readiness_version_openapi_and_web_bundle"
+  },
+  "local_verification": {
+    "p10_focused_tests": "8/8 PASS",
+    "backend_full_suite": "185/185 PASS",
+    "backend_ruff": "PASS",
+    "backend_mypy": "PASS",
+    "frontend_lint": "PASS",
+    "frontend_typecheck": "PASS",
+    "frontend_tests": "14/14 PASS",
+    "frontend_build": "PASS_WITH_BUNDLE_SIZE_WARNING"
+  },
+  "query_budget_contract": {
+    "TREND_MAX_RAW_POINTS": 10000,
+    "TREND_MAX_AGGREGATE_SOURCE_POINTS": 100000,
+    "synthetic_test_cases": [
+      {
+        "mode": "raw",
+        "matched_points": 1001,
+        "configured_limit": 1000,
+        "http_status": 413,
+        "code": "TREND_QUERY_TOO_LARGE",
+        "materialized_source_rows": false
+      },
+      {
+        "mode": "day",
+        "matched_points": 1001,
+        "configured_limit": 2000,
+        "http_status": 200,
+        "warning": "TREND_AGGREGATED_LARGE_QUERY",
+        "bucket_record": true,
+        "lineage_preserved": true
+      },
+      {
+        "mode": "week",
+        "matched_points": 2001,
+        "configured_limit": 2000,
+        "http_status": 413,
+        "code": "TREND_QUERY_TOO_LARGE",
+        "materialized_source_rows": false
+      }
+    ]
+  },
+  "authorized_staging_fixture_scope": {
+    "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+    "fixture_type": "synthetic RTDOSE",
+    "upload_action": "NOT_PERFORMED_DUPLICATE_AVOIDED",
+    "reason": "The authorized synthetic RTDOSE fixture was already present and VALID in the staging case; no duplicate upload or QA-run mutation was performed."
+  },
+  "remaining_p10_gates": [
+    "authenticated staging large-series benchmark and p95 evidence",
+    "complete P10 S01-S08 and E01-E12 current-candidate recheck",
+    "source drill-down and export-content/hash revalidation after refresh",
+    "visual and accessibility review"
+  ],
+  "no_secrets_or_phi": true,
+  "not_a_clinical_readiness_claim": true
+}
