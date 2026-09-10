@@ -93,10 +93,11 @@ export function PlatformStatusPage() {
       )}
       {session?.access_token && queueMetrics.data && (
         <section className="provenance-panel" aria-live="polite">
-          <h2>Gamma queue</h2>
+          <h2>Gamma queue &amp; run counters</h2>
           <p>{queueMetrics.data.backend} · {queueMetrics.data.available ? 'available' : 'unavailable'} · {queueMetrics.data.configured ? 'configured' : 'database fallback'}</p>
           <p>Stream: {queueMetrics.data.stream_length ?? '—'} · Pending: {queueMetrics.data.pending_count ?? '—'} · Consumers: {queueMetrics.data.consumer_count ?? '—'}</p>
-          <p>Organization runs — queued: {queueMetrics.data.queued_runs}, running: {queueMetrics.data.running_runs}, retrying: {queueMetrics.data.retrying_runs}, failed: {queueMetrics.data.failed_runs}</p>
+          <p>Organization runs — queued: {queueMetrics.data.queued_runs}, running: {queueMetrics.data.running_runs}, retrying: {queueMetrics.data.retrying_runs}, failed (terminal history): {queueMetrics.data.failed_runs}</p>
+          {queueMetrics.data.failed_runs > 0 && <p className="status-note--warning">Có run FAILED trong lịch sử organization. Hãy mở run và đọc error snapshot để triage; bộ đếm lịch sử này không tự chứng minh worker đang outage.</p>}
         </section>
       )}
       {session?.access_token && queueMetrics.isError && (

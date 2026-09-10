@@ -16,6 +16,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 - `scripts/verify-public-deployment.ps1` với expected SHA và schema `20260909_0019` đạt `passed=true`, `failed_check_count=0`, `15/15` checks; health/readiness/version, OpenAPI/Auth boundary và web bundle exact-SHA đều PASS. Evidence: [p20-staging-status-refresh-public-20260911-3d764e4.json](docs/evidence/p20-staging-status-refresh-public-20260911-3d764e4.json).
 - Đây là `STAGING_PARTIAL`: chứng minh candidate đã lên đúng source và public contract, không chứng minh authenticated queue metrics, alert delivery, backup/restore, rollback hoặc production readiness. P20-W01 vẫn mở.
 
+## P18/P20 — Phân biệt terminal failure counter với active outage — staging readback — 2026-09-11 / `1e97663`
+
+- Status page staging đọc được Redis `available/configured`, stream `11`, pending `0`, cùng `failed=2`. Đối chiếu Gamma history cho thấy hai run FAILED là các negative validation path đã lưu: `d902d9c0-3b15-4367-8df9-ca0a6274c3f3` (`2D` với evaluation grid `3D`) và `e33968e2-1ac3-4db7-953f-4e97f78b2d0e` (reference/evaluation khác dimensionality); cả hai trả `GAMMA_DIMENSIONALITY_MISMATCH` đúng expected contract.
+- UI và runbook đã đổi cách diễn đạt thành `failed (terminal history)` và yêu cầu mở error snapshot/attempt trước khi triage. Không retry, xóa hoặc reset hai run này; chúng là evidence negative test, không phải sự cố worker mới.
+- Đây là readback/semantics evidence, chưa phải alert delivery, fault injection hoặc full P18 recovery gate.
+
 ## P20-W01 — Operational probe và schema-parity check — staging partial — 2026-09-11 / `3102119`
 
 - Đã bổ sung `scripts/verify-operational-probes.ps1`, một probe fail-closed có thể chạy lại với đúng `ApiBaseUrl`, `WebBaseUrl`, release SHA và schema revision. Probe đọc riêng `/api/v1/health`, `/api/v1/ready`, `/api/v1/version`, kiểm schema parity, kiểm web `/app` và dò secret marker trong HTML; queue metrics chỉ chạy khi caller chủ động cung cấp access token và token không được ghi vào output.

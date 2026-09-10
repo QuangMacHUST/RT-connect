@@ -43,6 +43,7 @@ h2 { font-size: 1.05rem; margin-bottom: .5rem; }
 .status-card p { color: #597182; font-size: .78rem; margin-bottom: 1rem; text-transform: uppercase; }
 .status-card strong { color: #123b5c; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 1rem; overflow-wrap: anywhere; }
 .status-card small { color: #617787; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .69rem; line-height: 1.45; margin-top: auto; padding-top: 1rem; }
+.provenance-panel .status-note--warning { color: #835a12; font-weight: 600; }
 .alert, .provenance-panel { margin-top: 1.5rem; padding: 1.1rem 1.2rem; }
 .alert--error { border-left: 4px solid #bd3a3a; }
 .alert p, .provenance-panel p { color: #496373; line-height: 1.55; margin-bottom: 1rem; }

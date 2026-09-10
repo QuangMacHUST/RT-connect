@@ -60,6 +60,12 @@ workload thực tế. Giá trị cuối cùng phải được chốt cùng cấu
 | Backup overdue | không có backup point trong retention window | trước hạn | giữ last-good, chạy backup/reconcile | provider backup ID |
 | Resource/cost | CPU/RAM/disk/egress vượt budget | cần chốt theo plan | giảm workload có kiểm soát hoặc scale; không mất data | usage snapshot |
 
+`failed_runs` trong `/api/v1/gamma/queue-metrics` là bộ đếm các run `FAILED` đã kết thúc
+trong phạm vi organization, đọc từ PostgreSQL; nó không phải số lỗi mới trong một cửa sổ
+thời gian và không tự chứng minh worker đang outage. Khi bộ đếm khác 0, phải mở run và
+đọc `error_snapshot`, `attempt` và thời điểm để phân biệt negative validation test, lỗi
+dependency, retry exhausted hoặc incident mới. Không xóa/reset bộ đếm bằng SQL trực tiếp.
+
 Kênh cảnh báo thật chưa được điền trong bản này: `<on-call channel>`, `<email/group>`,
 `<Railway alert destination>`. Không đánh dấu `TC-P20-S01` PASS cho đến khi một cảnh báo
 synthetic được gửi tới kênh thật và có người nhận được.
