@@ -1,0 +1,56 @@
+{
+  "schema_version": "rt-connect.p8-p19-staging-authenticated-gamma-e2e.v1",
+  "captured_at_local": "2026-09-10T21:09:55+07:00",
+  "verification_level": "STAGING_AUTHENTICATED_MUTATION_E2E_GAMMA",
+  "synthetic_only": true,
+  "source_commit": "1badb6616d1a68f7178b2aefd10c71adc95a826b",
+  "environment": "staging",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+  "fixture": {
+    "reference_name": "gamma-rtdose-v1-smoke.dcm",
+    "reference_sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
+    "evaluation_name": "gamma-measurement-3d-v1-smoke.json",
+    "evaluation_sha256_prefix": "3ca7a85e438c",
+    "action": "reused_existing_valid_artifact",
+    "duplicate_upload": false
+  },
+  "negative_path": {
+    "run_id": "d902d9c0-3b15-4367-8df9-ca0a6274c3f3",
+    "configuration": "2D / FULL_ROI / max_gamma=2",
+    "evaluation_grid": "3D",
+    "status": "FAILED",
+    "error_code": "GAMMA_DIMENSIONALITY_MISMATCH",
+    "error_message": "Configuration 2D requires a 2D grid.",
+    "expected_behavior": "reject_incompatible_configuration_without_pass_result",
+    "observed_behavior": "matched"
+  },
+  "positive_path": {
+    "run_id": "86cc4d5e-4a87-4dcb-a6f5-94c125029c60",
+    "configuration": "3D / FULL_ROI / max_gamma=2",
+    "status": "COMPLETED",
+    "result": "PASS",
+    "attempt": 1,
+    "evaluated_points": 8,
+    "passing_points": 8,
+    "non_passing_points": 0,
+    "excluded_points": 0,
+    "coverage": 1,
+    "gamma_p95": 0,
+    "engine": "gamma-nd-p8.2"
+  },
+  "assertions": {
+    "authenticated_browser_session": true,
+    "real_api_and_worker_boundary": true,
+    "preflight_valid": true,
+    "negative_incompatible_grid_guard": true,
+    "positive_3d_worker_result": true,
+    "result_visible_after_mutation": true
+  },
+  "limitations": [
+    "single authenticated identity and one organization context",
+    "does not close two-identity membership/invitation E2E",
+    "does not close direct PostgreSQL/Redis/object-storage row evidence",
+    "does not close staging fault injection, provider backup/restore, rollback or production promotion"
+  ]
+}

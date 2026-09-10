@@ -3,6 +3,13 @@
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 `technical-specification.md` v1.23 và `plan.md` v4.19.
 
+## P8/P18/P19 — authenticated Gamma staging mutation E2E — partial verified — 2026-09-10 / `1badb66`
+
+- Trên web build `1badb6616d1a68f7178b2aefd10c71adc95a826b`, phiên authenticated đã reuse fixture RTDOSE/VALID `gamma-rtdose-v1-smoke.dcm` trong case tổng hợp `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`; không upload bản sao. Evaluation là `gamma-measurement-3d-v1-smoke.json`; preflight hiển thị `VALID`.
+- Negative path: cấu hình `2D / FULL_ROI / max_gamma=2` với evaluation grid 3D tạo run `d902d9c0-3b15-4367-8df9-ca0a6274c3f3`, `FAILED`, mã `GAMMA_DIMENSIONALITY_MISMATCH`; không phát sinh PASS giả.
+- Positive path: đổi dimensionality sang `3D` rồi submit tạo run `86cc4d5e-4a87-4dcb-a6f5-94c125029c60`, `COMPLETED/PASS`, attempt `1`, 8/8 điểm, coverage `1`, Gamma P95 `0`, engine `gamma-nd-p8.2`; kết quả hiển thị lại trên UI sau mutation qua API/worker thật.
+- Evidence: [p8-p19-staging-authenticated-gamma-e2e-20260910-1badb66.json](docs/evidence/p8-p19-staging-authenticated-gamma-e2e-20260910-1badb66.json). Đây là `STAGING_AUTHENTICATED_MUTATION_E2E_GAMMA` cho một identity/case; không đóng two-identity membership/invitation, direct PostgreSQL/Redis/object assertion, full staging fault/resource, provider restore, rollback, alert hoặc production promotion.
+
 ## P19 — staging exact-SHA public parity after P18 documentation packet — partial verified — 2026-09-10 / `8dffbb9`
 
 - API, web và worker staging đã được yêu cầu deploy cùng source SHA `8dffbb9f48906131e99143f11b14d2abecd9a233`; public verifier kiểm tra exact SHA và schema `20260909_0019` đạt `15/15 PASS`, `failed_check_count=0`.
