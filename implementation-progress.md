@@ -16,6 +16,12 @@ Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.25,
 - Đây chỉ là bằng chứng API/web public đang phục vụ đúng source candidate. Không suy diễn thành authenticated Machine QA mutation, stale revision conflict, double-submit/concurrent PostgreSQL, worker parity, full P07 S/E/C hoặc clinical readiness.
 - Evidence: [p07-staging-public-parity-20260911-093fe98.json](docs/evidence/p07-staging-public-parity-20260911-093fe98.json).
 
+## P19 — effective-settings verifier URL normalization — local verified — 2026-09-11
+
+- `scripts/verify-railway-effective-settings.ps1` hiện chuẩn hóa `ExpectedApiBaseUrl` từ API origin hoặc origin đã có `/api/v1` thành contract base URL của web client; không còn false negative khi người vận hành truyền origin thuần.
+- Chạy read-only trên staging bằng origin thuần sau sửa: `passed=True`, `failed_check_count=0`; không ghi secret hoặc giá trị database URL vào output.
+- Quy tắc vận hành: `VITE_API_BASE_URL` phải là public API HTTPS origin kèm `/api/v1`, còn `CORS_ALLOWED_ORIGINS` chỉ là web origin; hai giá trị không được hoán đổi.
+
 ## P06 — declared type và upload queue — local verified slice — 2026-09-11
 
 - Artifact validator giữ declared `artifact_type` là hợp đồng chính: payload JSON được khai báo DICOM không đi vào measurement validator và trả `ARTIFACT_TYPE_MISMATCH`; test duplicate cùng checksum/type vẫn tái dùng artifact và thêm role thiếu theo organization scope.

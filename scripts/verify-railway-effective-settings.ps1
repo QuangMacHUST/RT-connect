@@ -197,6 +197,30 @@ function Test-PublicHttps {
     -Ok $ok -Details $details
 }
 
+function Normalize-PublicApiBaseUrl {
+  param([string]$Value)
+
+  $trimmed = $Value.Trim().TrimEnd('/')
+  try {
+    $uri = [Uri]$trimmed
+  }
+  catch {
+    throw 'ExpectedApiBaseUrl must be an absolute HTTP(S) URL.'
+  }
+  if ($uri.Scheme -notin @('http', 'https') -or [string]::IsNullOrWhiteSpace($uri.Host)) {
+    throw 'ExpectedApiBaseUrl must be an absolute HTTP(S) URL.'
+  }
+
+  $path = $uri.AbsolutePath.TrimEnd('/')
+  if ($path -eq '') {
+    return "$trimmed/api/v1"
+  }
+  if ($path -eq '/api/v1') {
+    return $trimmed
+  }
+  throw 'ExpectedApiBaseUrl must be the public API origin or the /api/v1 base prefix.'
+}
+
 function Test-ExactValue {
   param(
     [System.Collections.Generic.List[object]]$Checks,
@@ -236,6 +260,7 @@ if ([string]::IsNullOrWhiteSpace($ProjectId) -or
 }
 
 $token = Get-AccountToken
+$normalizedExpectedApiBaseUrl = Normalize-PublicApiBaseUrl -Value $ExpectedApiBaseUrl
 $checks = [System.Collections.Generic.List[object]]::new()
 $services = [ordered]@{
   api = $ApiServiceId
@@ -272,7 +297,7 @@ Add-Check -Checks $checks -Name 'web.dockerfile' -Ok ($web.dockerfilePath -eq '/
 Add-Check -Checks $checks -Name 'web.no_healthcheck' -Ok ([string]::IsNullOrWhiteSpace([string]$web.healthcheckPath)) -Details "observed=$($web.healthcheckPath)"
 Add-Check -Checks $checks -Name 'web.no_pre_deploy' -Ok ((Get-ArrayCount -Value $web.preDeployCommand) -eq 0) -Details "observed=$(@($web.preDeployCommand) -join ',')"
 Test-RequiredNames -Checks $checks -Service 'web' -Map $variables.web -Names @('VITE_API_BASE_URL','VITE_SUPABASE_URL','VITE_SUPABASE_PUBLISHABLE_KEY','VITE_APP_VERSION')
-Test-ExactValue -Checks $checks -Name 'web.vite_api_base_url' -Map $variables.web -VariableName 'VITE_API_BASE_URL' -Expected $ExpectedApiBaseUrl
+Test-ExactValue -Checks $checks -Name 'web.vite_api_base_url' -Map $variables.web -VariableName 'VITE_API_BASE_URL' -Expected $normalizedExpectedApiBaseUrl
 Test-PublicHttps -Checks $checks -Name 'web' -Map $variables.web -VariableName 'VITE_API_BASE_URL'
 Test-PublicHttps -Checks $checks -Name 'web' -Map $variables.web -VariableName 'VITE_SUPABASE_URL'
 Test-ForbiddenNames -Checks $checks -Service 'web' -Map $variables.web

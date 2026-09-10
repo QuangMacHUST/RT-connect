@@ -77,13 +77,15 @@ synthetic được gửi tới kênh thật và có người nhận được.
 1. Mở đúng URL của environment.
 2. Gọi `GET /api/v1/health`, `GET /api/v1/ready`, `GET /api/v1/version`.
 3. Đối chiếu `environment`, `version`, `schema_revision` với manifest.
-4. Kiểm tra frontend build label và `VITE_API_BASE_URL` đã trỏ đúng environment.
+4. Kiểm tra frontend build label và `VITE_API_BASE_URL` đã trỏ đúng environment với base prefix `/api/v1` (ví dụ `https://<api-origin>/api/v1`).
 5. Kiểm tra worker là đúng release và không có public domain.
 6. Ghi kết quả vào evidence; nếu lệch version/schema, dừng release hoặc mở incident.
 
 Có thể chạy probe lặp lại bằng `scripts/verify-operational-probes.ps1` với
 `-ExpectedVersion` là SHA đã khóa trong release manifest và
-`-ExpectedSchemaRevision` là schema đã migrate. Probe trả exit code khác 0 khi
+  `-ExpectedSchemaRevision` là schema đã migrate. Với `verify-railway-effective-settings.ps1`,
+  `-ExpectedApiBaseUrl` có thể truyền origin API hoặc origin đã kèm `/api/v1`; verifier
+  chuẩn hóa cả hai thành cùng một web client base URL. Probe trả exit code khác 0 khi
 health/readiness/version/schema parity hoặc web shell không đạt; nếu không truyền
 `-AccessToken`, kiểm tra queue được ghi rõ `NOT_RUN` chứ không được suy diễn là queue
 đang khỏe. Khi cần kiểm tra queue, truyền access token tạm thời qua tham số tại máy
