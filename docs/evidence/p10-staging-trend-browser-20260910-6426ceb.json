@@ -1,0 +1,127 @@
+{
+  "schema_version": "rt-connect.p10-staging-trend-browser.v2",
+  "captured_at_utc": "2026-09-10T07:13:43.0094263Z",
+  "verification": "STAGING_AUTHENTICATED_BROWSER_READ_ONLY_WITH_EXPORT_AND_DRILLDOWN",
+  "synthetic_only": true,
+  "source_commit": "6426ceb50665f1ceae01e011f2ee5bf6b8a16d65",
+  "environment": "staging",
+  "web_url": "https://rt-connect-web-staging-staging.up.railway.app/app/trend",
+  "api_base_url": "https://gleaming-cooperation-staging.up.railway.app",
+  "schema_revision": "20260909_0019",
+  "organization_context": {
+    "machine_id": "STAGING-LINAC-01",
+    "machine_name": "Synthetic QA Linac",
+    "timezone": "Asia/Ho_Chi_Minh"
+  },
+  "source_parity": {
+    "public_verifier": "15/15 PASS",
+    "api_version": "6426ceb50665f1ceae01e011f2ee5bf6b8a16d65",
+    "web_build": "6426ceb50665f1ceae01e011f2ee5bf6b8a16d65"
+  },
+  "happy_path_raw": {
+    "metric_key": "all metrics",
+    "aggregation": "raw",
+    "compatible_point_count": 7,
+    "compatible_series_count": 4,
+    "baseline_count": 3,
+    "maintenance_marker_count": 1,
+    "context_separation_visible": true,
+    "source_links_visible": true,
+    "outlier_marker_visible": true,
+    "drilldown": {
+      "route": "/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/machine-qa",
+      "case_name": "P6 Staging Upload Smoke",
+      "selected_run_status": "COMPLETED",
+      "selected_run_quality": "PASS",
+      "protocol_snapshot_visible": true,
+      "source_run_readback": true
+    }
+  },
+  "export": {
+    "csv": {
+      "browser_download_name_observed": "rt-connect-trend.csv.crdownload",
+      "bytes": 2018,
+      "sha256": "dfe34e256a0d58f0f790d7d4f04a2916f03402a151aa49cd05e39842d9814f75",
+      "header_present": true,
+      "record_count": 7,
+      "bucket_record_present": true
+    },
+    "json": {
+      "browser_download_name_observed": "rt-connect-trend.json.crdownload",
+      "bytes": 15064,
+      "sha256": "e5ba525cc37696974fe384526472284adb4478aa4c1b988c79b01c3601d174a4",
+      "top_level_keys": [
+        "aggregate",
+        "baselines",
+        "from_at",
+        "maintenance_events",
+        "organization_id",
+        "series",
+        "timezone",
+        "to_at",
+        "total_points",
+        "warnings"
+      ],
+      "aggregate": "raw",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "series_count": 4,
+      "payload_parse": "PASS"
+    },
+    "content_revalidated_after_download": true,
+    "final_browser_suffix_rename": "UNVERIFIED"
+  },
+  "negative_cases": [
+    {
+      "case": "metric key does not exist",
+      "input": "metric_does_not_exist",
+      "observed_code": "TREND_EMPTY",
+      "observed_message": "no compatible trend points match the selected filters",
+      "point_count": 0,
+      "series_count": 0,
+      "no_zero_fill": true,
+      "result": "PASS"
+    }
+  ],
+  "aggregate_case": {
+    "aggregation": "day",
+    "metric_key": "output_factor",
+    "compatible_point_count": 3,
+    "compatible_series_count": 2,
+    "observations": [
+      {
+        "protocol_key": "MACHINE_QA_BASELINE",
+        "bucket_count": 2,
+        "mean_percent": 100.0,
+        "min_percent": 100.0,
+        "max_percent": 100.0
+      },
+      {
+        "protocol_key": "STAGING_P11_E2E_B7C3",
+        "bucket_count": 1,
+        "mean_percent": 100.0,
+        "min_percent": 100.0,
+        "max_percent": 100.0
+      }
+    ],
+    "context_not_merged": true,
+    "result": "PASS"
+  },
+  "checks": {
+    "fresh_navigation_loaded": true,
+    "refresh_or_new_tab_reloaded_data": true,
+    "real_api_label_visible": true,
+    "source_drilldown_round_trip": true,
+    "raw_export_parseable": true,
+    "aggregate_export_lineage_available": true,
+    "empty_filter_is_explicit": true,
+    "no_mutation_performed": true,
+    "no_qa_run_created": true,
+    "no_patient_or_pacs_data": true
+  },
+  "evidence_level": "STAGING_PARTIAL",
+  "limitations": [
+    "The browser automation retains the .crdownload suffix, so final browser filename finalization remains unverified.",
+    "This does not close large-series performance, full P10 S/E/C, projection rebuild mutation, baseline lifecycle mutation, fault injection, accessibility or production release gates.",
+    "This is synthetic staging evidence and is not a clinical readiness claim."
+  ]
+}

@@ -3,6 +3,14 @@
 Revision hiện hành: `business-analysis.md` v0.24, `specification.md` v1.24,
 `technical-specification.md` v1.23 và `plan.md` v4.15.
 
+## P10 Trend — staging export, drill-down và negative recheck — 2026-09-10 / `6426ceb`
+
+- Candidate `6426ceb50665f1ceae01e011f2ee5bf6b8a16d65` đang có API/web cùng source SHA; API `/health`, `/ready`, `/version`, OpenAPI và web bundle đạt **15/15 public checks**, schema `20260909_0019`.
+- Fresh authenticated browser mở `/app/trend`, đọc được `7` raw points, `4` compatible series, `3` baseline và `1` maintenance marker. Drill-down từ Trend về case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24` mở đúng Machine QA source, run `COMPLETED/PASS`, protocol snapshot và source run đều đọc lại được.
+- Export theo bộ lọc hiện tại đã được tải và parse: CSV `2,018` bytes, `7` records, có header và bucket lineage; JSON `15,064` bytes, parse được với `4` series, `aggregate=raw`, timezone `Asia/Ho_Chi_Minh`. SHA lần lượt `dfe34e256a0d58f0f790d7d4f04a2916f03402a151aa49cd05e39842d9814f75` và `e5ba525cc37696974fe384526472284adb4478aa4c1b988c79b01c3601d174a4`.
+- Negative filter `metric_does_not_exist` trả `TREND_EMPTY`, `0` point/series và không zero-fill. Gộp theo ngày với `output_factor` giữ `2` series, `3` compatible points, mean/min/max `100%` và không trộn protocol context. Evidence: `docs/evidence/p10-staging-trend-browser-20260910-6426ceb.json`.
+- Đây là `STAGING_PARTIAL`: browser vẫn quan sát hậu tố `.crdownload`, nên final filename completion, large-series benchmark, projection rebuild/baseline mutation, full S/E/C, fault, accessibility và release/production gates còn mở. Không tạo QA run mới, không upload artifact và không dùng dữ liệu bệnh nhân/PACS.
+
 ## P9 deterministic export filename — local verified — 2026-09-10 / `211d9f7`
 
 - Signed report-export URLs now request a deterministic, header-safe `Content-Disposition` filename from the S3-compatible provider. The same contract is applied both when an export is created/replayed and when a download link is renewed; JSON/CSV/PDF/PNG object bytes, checksum, revision snapshot and idempotency behavior are unchanged.
