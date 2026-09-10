@@ -55,3 +55,8 @@ production verification.
 
 Final staging parity marker (2026-09-10): API, worker and web must be rebuilt
 from the commit carrying this marker before a public exact-SHA check is recorded.
+
+P07 explicit-N/A marker (2026-09-10): the Machine QA UI exposes the N/A checkbox,
+requires a reason, disables the numeric field while selected, and displays the
+reason/status in the result. Keep this marker aligned with the API service root
+so all three services are rebuilt from the same source commit.

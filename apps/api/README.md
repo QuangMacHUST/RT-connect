@@ -87,3 +87,9 @@ Current staging evidence marker (2026-09-10): release manifest
 candidate `4c9bc1bb4838e2864e605ab4fa69c698ecd0759e` and the existing synthetic
 RTDOSE/RTSTRUCT/CT fixture hashes. This marker intentionally lives under
 `/apps/api` so API, worker and web are rebuilt before the evidence is reused.
+
+P07 explicit-N/A marker (2026-09-10): Machine QA now carries an explicit
+`is_not_applicable` flag and trimmed `na_reason`; the N/A metric is excluded from
+trend projection and cannot turn an overall failed run into PASS. Rebuild all
+three services from the commit carrying this marker before reusing the P07
+staging candidate.
