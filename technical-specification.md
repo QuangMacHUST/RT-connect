@@ -3,7 +3,7 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.28 — đồng bộ specification.md v1.29, plan.md v4.25 và business-analysis.md v0.27; bổ sung P4 optimistic revision cho Organization/Site/Machine: field `revision`, PATCH `expected_revision`, PostgreSQL row lock, increment atomically và `REVISION_CONFLICT`; bổ sung P06 signed-download filename contract: basename/header sanitization, response `filename`, response-content-disposition và invariant byte/checksum/object key; giữ P8 coordinate-frame/axis-order/explicit-transform contract, P11 consumer snapshot, P10 query-budget, P17 resource evidence và P20 status/readiness (2026-09-11). P17 giữ migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`; P4 migration mới là `20260911_0020` nối sau migration đó. Các renderer, export, Gamma, Biological và release boundaries hiện hành vẫn giữ nguyên.
+- **Phiên bản:** 1.29 — đồng bộ specification.md v1.29, plan.md v4.25 và business-analysis.md v0.27; bổ sung P4 active-parent/archive/restore guard cho Organization/Site/Machine và frontend management controls trên nền optimistic revision; giữ P4 PostgreSQL row lock/`REVISION_CONFLICT`, P06 signed-download filename contract, P8 coordinate-frame/axis-order/explicit-transform contract, P11 consumer snapshot, P10 query-budget, P17 resource evidence và P20 status/readiness (2026-09-11). P17 giữ migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`; P4 migration mới là `20260911_0020` nối sau migration đó. Các renderer, export, Gamma, Biological và release boundaries hiện hành vẫn giữ nguyên.
 - **Nguồn yêu cầu:** business-analysis.md phiên bản 0.27
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
@@ -11,7 +11,7 @@
 
 Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
-> Đồng bộ v1.20: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§14 là authority cho hành vi/validation/error/thuật toán/phase handoff. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; P4 đã có local membership/invitation slice trên migration `20260909_0018` và local optimistic revision slice trên migration `20260911_0020`; staging/Auth browser/persistence/concurrency vẫn phải revalidate trước khi gọi available. P17 có CT pixel preview local, explicit P11/P16 binding, DVH report source và Docker workload verifier local; verifier đo process peak RSS trong benchmark process, kiểm policy `1 CPU/768 MiB` và polling API responsiveness, còn cgroup peak/current và `docker stats` vẫn chỉ là quan sát bổ trợ, không phải peak RSS. CT/staging evidence vẫn phải kiểm theo candidate. P8 hiện đã có validator/engine/API contract cho frame, axis order và transform identity; staging geometry/transform negative matrix và promotion vẫn là gate riêng. Railway Git-triggered Docker builds phải truyền `RAILWAY_GIT_COMMIT_SHA` vào frontend build và API runtime phải ưu tiên SHA này cho release label; `APP_VERSION`/`VITE_APP_VERSION` chỉ là fallback khi chạy local hoặc không có Git trigger. P18 có local route-to-persistence và local backup/restore support nhưng chưa thay fault/restore/pilot staging gate. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+> Đồng bộ v1.20: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§14 là authority cho hành vi/validation/error/thuật toán/phase handoff. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; P4 đã có local membership/invitation slice trên migration `20260909_0018`, optimistic revision trên migration `20260911_0020`, active-parent guard và archive/restore UI; staging/Auth browser/persistence/concurrency vẫn phải revalidate trước khi gọi available. P17 có CT pixel preview local, explicit P11/P16 binding, DVH report source và Docker workload verifier local; verifier đo process peak RSS trong benchmark process, kiểm policy `1 CPU/768 MiB` và polling API responsiveness, còn cgroup peak/current và `docker stats` vẫn chỉ là quan sát bổ trợ, không phải peak RSS. CT/staging evidence vẫn phải kiểm theo candidate. P8 hiện đã có validator/engine/API contract cho frame, axis order và transform identity; staging geometry/transform negative matrix và promotion vẫn là gate riêng. Railway Git-triggered Docker builds phải truyền `RAILWAY_GIT_COMMIT_SHA` vào frontend build và API runtime phải ưu tiên SHA này cho release label; `APP_VERSION`/`VITE_APP_VERSION` chỉ là fallback khi chạy local hoặc không có Git trigger. P18 có local route-to-persistence và local backup/restore support nhưng chưa thay fault/restore/pilot staging gate. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -467,6 +467,7 @@ Các trường chính:
 - code.
 - description.
 - status.
+- is_archived, soft-delete lifecycle flag; archive không xóa row hoặc history.
 - revision, bắt đầu từ 1 và tăng một lần sau mỗi PATCH thành công.
 - created_at.
 - updated_at.
@@ -476,6 +477,19 @@ Quan hệ:
 - Một organization có nhiều site.
 - Một organization có nhiều member.
 - Một organization có folder, QA protocol, report template và knowledge content.
+
+#### 4.2.1. Organization lifecycle và active-parent guard
+
+`PATCH /organizations/{organization_id}` là mutation lifecycle duy nhất được
+phép resolve một active membership tới organization đã archived, để member còn
+đúng scope có thể restore bằng `expected_revision`. Các endpoint nghiệp vụ
+khác tiếp tục yêu cầu organization active.
+
+Child mutation phải lấy organization bằng `SELECT ... FOR UPDATE` trên
+PostgreSQL trước khi kiểm tra/trước khi insert. Organization archived trả
+`PARENT_NOT_AVAILABLE` và transaction không được tạo site, machine,
+invitation hoặc audit một phần. Đây là invariant transaction, không phải chỉ là
+kiểm tra UI.
 
 ### 4.3. Site
 
@@ -488,11 +502,17 @@ Các trường chính:
 - address_label.
 - timezone.
 - status.
+- is_archived; site archived vẫn đọc được trong history/include-archived nhưng
+  không nhận child mutation.
 - revision, bắt đầu từ 1 và tăng một lần sau mỗi PATCH thành công.
 - created_at.
 - updated_at.
 
 Một site thuộc đúng một organization và có nhiều machine.
+
+Tạo hoặc sửa machine phải khóa/kiểm organization và site theo thứ tự parent →
+child. Site archived trả `PARENT_NOT_AVAILABLE`; site restore yêu cầu
+`expected_revision` hiện tại và organization active.
 
 ### 4.4. Machine
 
@@ -511,6 +531,8 @@ Các trường chính:
 - modalities.
 - energy_modes.
 - lifecycle_note.
+- is_archived; machine archived chỉ được PATCH `is_archived=false` để restore,
+  không được sửa display/status trong cùng trạng thái archived.
 - status.
 - created_at.
 - updated_at.

@@ -262,6 +262,61 @@ def _context_for_organization(
     return context
 
 
+def _lifecycle_context_for_organization(
+    organization_id: UUID, identity: AuthenticatedIdentity, session: Session
+) -> SessionContext:
+    """Resolve an active member's organization even while it is archived."""
+
+    row = session.execute(
+        select(UserIdentity, OrganizationMembership, Organization)
+        .join(OrganizationMembership, OrganizationMembership.user_identity_id == UserIdentity.id)
+        .join(Organization, Organization.id == OrganizationMembership.organization_id)
+        .where(
+            UserIdentity.supabase_user_id == identity.subject,
+            UserIdentity.is_active.is_(True),
+            OrganizationMembership.is_active.is_(True),
+            Organization.id == organization_id,
+        )
+    ).first()
+    if row is not None:
+        user_identity, _, organization = row
+        return SessionContext(
+            subject=user_identity.supabase_user_id,
+            email=user_identity.email or identity.email,
+            organization_id=organization.id,
+            organization_name=organization.name,
+        )
+
+    # Preserve the established error semantics for a non-member or a request
+    # aimed at a different active organization.
+    return _context_for_organization(organization_id, identity, session)
+
+
+def _organization_for_mutation(organization_id: UUID, session: Session) -> Organization:
+    """Lock and validate the organization parent for child mutations."""
+
+    organization = session.scalar(
+        select(Organization).where(Organization.id == organization_id).with_for_update()
+    )
+    if organization is None:
+        raise DomainError("ORGANIZATION_NOT_FOUND", "Organization was not found.", 404)
+    if organization.is_archived:
+        raise DomainError(
+            "PARENT_NOT_AVAILABLE",
+            "The organization is archived and cannot accept child mutations.",
+            409,
+        )
+    return organization
+
+
+def _raise_archived_resource(resource: str) -> None:
+    raise DomainError(
+        "RESOURCE_ARCHIVED",
+        f"The {resource} is archived; restore it before editing it.",
+        409,
+    )
+
+
 def _audit(
     session: Session,
     context: SessionContext,
@@ -552,7 +607,7 @@ def get_organization(
     identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
     session: Session = Depends(get_session),  # noqa: B008
 ) -> OrganizationResponse:
-    _context_for_organization(organization_id, identity, session)
+    _lifecycle_context_for_organization(organization_id, identity, session)
     organization = session.get(Organization, organization_id)
     if organization is None:
         raise DomainError("ORGANIZATION_NOT_FOUND", "Organization was not found.", 404)
@@ -659,7 +714,8 @@ def create_organization_invitation(
     identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
     session: Session = Depends(get_session),  # noqa: B008
 ) -> OrganizationInvitationCreateResponse:
-    context = _context_for_organization(organization_id, identity, session)
+    context = _lifecycle_context_for_organization(organization_id, identity, session)
+    _organization_for_mutation(organization_id, session)
     email = request.email
     active_member = session.scalar(
         select(OrganizationMembership)
@@ -774,7 +830,8 @@ def revoke_organization_invitation(
     identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
     session: Session = Depends(get_session),  # noqa: B008
 ) -> OrganizationInvitationResponse:
-    context = _context_for_organization(organization_id, identity, session)
+    context = _lifecycle_context_for_organization(organization_id, identity, session)
+    _organization_for_mutation(organization_id, session)
     invitation = session.scalar(
         select(OrganizationInvitation).where(
             OrganizationInvitation.id == invitation_id,
@@ -810,7 +867,7 @@ def update_organization(
     identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
     session: Session = Depends(get_session),  # noqa: B008
 ) -> OrganizationResponse:
-    context = _context_for_organization(organization_id, identity, session)
+    context = _lifecycle_context_for_organization(organization_id, identity, session)
     organization = session.scalar(
         select(Organization).where(Organization.id == organization_id).with_for_update()
     )
@@ -876,7 +933,8 @@ def create_site(
     identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
     session: Session = Depends(get_session),  # noqa: B008
 ) -> SiteResponse:
-    context = _context_for_organization(organization_id, identity, session)
+    context = _lifecycle_context_for_organization(organization_id, identity, session)
+    _organization_for_mutation(organization_id, session)
     existing = session.scalar(
         select(Site).where(
             Site.organization_id == organization_id,
@@ -906,7 +964,8 @@ def update_site(
     identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
     session: Session = Depends(get_session),  # noqa: B008
 ) -> SiteResponse:
-    context = _context_for_organization(organization_id, identity, session)
+    context = _lifecycle_context_for_organization(organization_id, identity, session)
+    _organization_for_mutation(organization_id, session)
     site = session.scalar(
         select(Site)
         .where(Site.id == site_id, Site.organization_id == organization_id)
@@ -916,6 +975,8 @@ def update_site(
         raise DomainError("SITE_NOT_FOUND", "Site was not found in this organization.", 404)
     if site.revision != request.expected_revision:
         _raise_revision_conflict("site", request.expected_revision, site.revision)
+    if site.is_archived and request.is_archived is not False:
+        _raise_archived_resource("site")
     if request.name is None and request.is_archived is None:
         raise DomainError("NO_CHANGES", "At least one site field is required.", 400)
     if request.name is not None:
@@ -1004,14 +1065,21 @@ def create_machine(
     identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
     session: Session = Depends(get_session),  # noqa: B008
 ) -> MachineResponse:
-    context = _context_for_organization(organization_id, identity, session)
-    if (
-        session.scalar(
-            select(Site.id).where(Site.id == site_id, Site.organization_id == organization_id)
-        )
-        is None
-    ):
+    context = _lifecycle_context_for_organization(organization_id, identity, session)
+    _organization_for_mutation(organization_id, session)
+    site = session.scalar(
+        select(Site)
+        .where(Site.id == site_id, Site.organization_id == organization_id)
+        .with_for_update()
+    )
+    if site is None:
         raise DomainError("SITE_NOT_FOUND", "Site was not found in this organization.", 404)
+    if site.is_archived:
+        raise DomainError(
+            "PARENT_NOT_AVAILABLE",
+            "The site is archived and cannot accept machine mutations.",
+            409,
+        )
     if (
         session.scalar(
             select(Machine).where(Machine.stable_machine_id == request.stable_machine_id)
@@ -1038,7 +1106,21 @@ def update_machine(
     identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
     session: Session = Depends(get_session),  # noqa: B008
 ) -> MachineResponse:
-    context = _context_for_organization(organization_id, identity, session)
+    context = _lifecycle_context_for_organization(organization_id, identity, session)
+    _organization_for_mutation(organization_id, session)
+    site = session.scalar(
+        select(Site)
+        .where(Site.id == site_id, Site.organization_id == organization_id)
+        .with_for_update()
+    )
+    if site is None:
+        raise DomainError("SITE_NOT_FOUND", "Site was not found in this organization.", 404)
+    if site.is_archived:
+        raise DomainError(
+            "PARENT_NOT_AVAILABLE",
+            "The site is archived and cannot accept machine mutations.",
+            409,
+        )
     machine = session.scalar(
         select(Machine)
         .where(
@@ -1058,6 +1140,8 @@ def update_machine(
     changes.pop("expected_revision", None)
     if not changes:
         raise DomainError("NO_CHANGES", "At least one machine field is required.", 400)
+    if machine.is_archived and request.is_archived is not False:
+        _raise_archived_resource("machine")
     for field, value in changes.items():
         setattr(machine, field, value)
     machine.revision += 1

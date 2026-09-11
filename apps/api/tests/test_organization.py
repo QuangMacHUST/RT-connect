@@ -140,6 +140,121 @@ def test_organization_site_and_machine_updates_reject_stale_revisions() -> None:
         assert current_machine["revision"] == machine["revision"] + 1
 
 
+def test_archived_organization_can_only_be_restored_by_an_active_member() -> None:
+    with _workspace_client() as (client, organization):
+        organization_url = f"/api/v1/organizations/{organization.id}"
+        site = client.get(f"{organization_url}/sites").json()["items"][0]
+        current = client.get(organization_url)
+        archived = client.patch(
+            organization_url,
+            json={"expected_revision": current.json()["revision"], "is_archived": True},
+        )
+        assert archived.status_code == 200, archived.text
+        assert archived.json()["is_archived"] is True
+
+        fetched_archived = client.get(organization_url)
+        assert fetched_archived.status_code == 200
+        assert fetched_archived.json()["is_archived"] is True
+
+        blocked_site = client.post(
+            f"{organization_url}/sites", json={"name": "Blocked Archived Site"}
+        )
+        assert blocked_site.status_code == 409
+        assert blocked_site.json()["code"] == "PARENT_NOT_AVAILABLE"
+
+        blocked_machine = client.post(
+            f"{organization_url}/sites/{site['id']}/machines",
+            json={
+                "stable_machine_id": "SYN-ARCHIVED-01",
+                "display_name": "Blocked Archived Machine",
+            },
+        )
+        assert blocked_machine.status_code == 409
+        assert blocked_machine.json()["code"] == "PARENT_NOT_AVAILABLE"
+
+        blocked_invitation = client.post(
+            f"{organization_url}/invitations",
+            json={"email": "blocked@example.invalid"},
+        )
+        assert blocked_invitation.status_code == 409
+        assert blocked_invitation.json()["code"] == "PARENT_NOT_AVAILABLE"
+
+        restored = client.patch(
+            organization_url,
+            json={"expected_revision": archived.json()["revision"], "is_archived": False},
+        )
+        assert restored.status_code == 200, restored.text
+        assert restored.json()["is_archived"] is False
+
+        created_site = client.post(
+            f"{organization_url}/sites", json={"name": "Restored Organization Site"}
+        )
+        assert created_site.status_code == 201, created_site.text
+
+
+def test_archived_site_blocks_machine_mutation_and_restore_is_explicit() -> None:
+    with _workspace_client() as (client, organization):
+        organization_url = f"/api/v1/organizations/{organization.id}"
+        site = client.get(f"{organization_url}/sites").json()["items"][0]
+        machine = client.get(f"{organization_url}/sites/{site['id']}/machines").json()["items"][0]
+        site_url = f"{organization_url}/sites/{site['id']}"
+        machine_url = f"{site_url}/machines/{machine['id']}"
+
+        archived_site = client.patch(
+            site_url,
+            json={"expected_revision": site["revision"], "is_archived": True},
+        )
+        assert archived_site.status_code == 200, archived_site.text
+
+        blocked_create = client.post(
+            f"{site_url}/machines",
+            json={
+                "stable_machine_id": "SYN-ARCHIVED-SITE-01",
+                "display_name": "Blocked Archived Site Machine",
+            },
+        )
+        assert blocked_create.status_code == 409
+        assert blocked_create.json()["code"] == "PARENT_NOT_AVAILABLE"
+
+        blocked_update = client.patch(
+            machine_url,
+            json={"expected_revision": machine["revision"], "display_name": "Must Stay"},
+        )
+        assert blocked_update.status_code == 409
+        assert blocked_update.json()["code"] == "PARENT_NOT_AVAILABLE"
+
+        restored_site = client.patch(
+            site_url,
+            json={"expected_revision": archived_site.json()["revision"], "is_archived": False},
+        )
+        assert restored_site.status_code == 200, restored_site.text
+
+        archived_machine = client.patch(
+            machine_url,
+            json={"expected_revision": machine["revision"], "is_archived": True},
+        )
+        assert archived_machine.status_code == 200, archived_machine.text
+        blocked_archived_edit = client.patch(
+            machine_url,
+            json={
+                "expected_revision": archived_machine.json()["revision"],
+                "display_name": "Must Restore First",
+            },
+        )
+        assert blocked_archived_edit.status_code == 409
+        assert blocked_archived_edit.json()["code"] == "RESOURCE_ARCHIVED"
+
+        restored_machine = client.patch(
+            machine_url,
+            json={
+                "expected_revision": archived_machine.json()["revision"],
+                "is_archived": False,
+            },
+        )
+        assert restored_machine.status_code == 200, restored_machine.text
+        assert restored_machine.json()["is_archived"] is False
+
+
 def test_organization_routes_reject_scope_mismatch_before_resource_lookup() -> None:
     with _workspace_client() as (client, organization):
         response = client.get(f"/api/v1/organizations/{uuid4()}/sites")

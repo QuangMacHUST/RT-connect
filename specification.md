@@ -572,7 +572,7 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 | Input và dữ liệu hiển thị | Organization name/timezone; site name/code; machine stable ID/name/code/manufacturer/model/energy/mode/status; membership identity/status; invitation email/status/expiry; revision. |
 | Model/storage | Organization/Site/Machine + revision; `OrganizationMembership`; `OrganizationInvitation` với token hash, expiry, status và accepted identity; không lưu token thô/password. |
 | Operation/API surface | CRUD organization/site/machine; `GET /organizations/{organization_id}/members`; `PATCH /organizations/{organization_id}/members/{membership_id}`; `POST/GET /organizations/{organization_id}/invitations`; `POST /organizations/{organization_id}/invitations/{invitation_id}/revoke`; `POST /organizations/invitations/accept`. |
-| Transaction/invariant | Resolve active membership trước mọi organization query; accept tạo/reactivate membership và đánh dấu invitation ACCEPTED cùng transaction; unique pending invitation theo organization/email; một identity không có active context ở organization khác; archive không hard-delete; luôn giữ ít nhất một active member. PATCH Organization/Site/Machine bắt `expected_revision`, khóa row trên PostgreSQL, kiểm tra revision ngay trong transaction, tăng đúng một lần khi có thay đổi và không overwrite stale edit. |
+| Transaction/invariant | Resolve active membership trước mọi organization query; accept tạo/reactivate membership và đánh dấu invitation ACCEPTED cùng transaction; unique pending invitation theo organization/email; một identity không có active context ở organization khác; archive không hard-delete; luôn giữ ít nhất một active member. PATCH Organization/Site/Machine bắt `expected_revision`, khóa row trên PostgreSQL, kiểm tra revision ngay trong transaction, tăng đúng một lần khi có thay đổi và không overwrite stale edit. Child mutation phải khóa/kiểm organization active; machine mutation phải khóa/kiểm site active; restore được phép qua revision hiện tại, nhưng archived resource không được sửa field khác trước khi restore. |
 | Output bàn giao | Management screens, `/invite` onboarding, member/invitation lifecycle, audit/history, migrations `20260909_0018` và `20260911_0020`, OpenAPI và contract tests. |
 | Success oracle | `TC-P04-S01` đến `TC-P04-S08` trong plan |
 | Error/recovery oracle | `TC-P04-E01` đến `TC-P04-E12` trong plan |
@@ -611,7 +611,7 @@ Tất cả response lỗi dùng error envelope chung §2.2 với `code`, `messag
 
 | Method/path | Request | Success | Side effect/notes |
 | :--- | :--- | :--- | :--- |
-| `PATCH /organizations/{organization_id}` | `{expected_revision, name?, is_archived?}`; ít nhất một field thay đổi | 200 organization snapshot có revision mới | Scope + row lock + compare-and-increment; stale trả `REVISION_CONFLICT` 409. |
+| `PATCH /organizations/{organization_id}` | `{expected_revision, name?, is_archived?}`; ít nhất một field thay đổi | 200 organization snapshot có revision mới | Active member có lifecycle scope để archive/restore; row lock + compare-and-increment; stale trả `REVISION_CONFLICT` 409. |
 | `PATCH /organizations/{organization_id}/sites/{site_id}` | `{expected_revision, name?, is_archived?}`; ít nhất một field thay đổi | 200 site snapshot có revision mới | Kiểm site thuộc organization; stale không mutation. |
 | `PATCH /organizations/{organization_id}/sites/{site_id}/machines/{machine_id}` | `{expected_revision, display_name?, manufacturer?, model?, status?, is_archived?}` | 200 machine snapshot có revision mới | `stable_machine_id` không đổi; stale không overwrite và trả chi tiết expected/current revision. |
 | `GET /organizations/{organization_id}/members` | `include_inactive` (default false), `offset ≥0`, `limit 1..100` | 200 `{items,total,offset,limit}`; mỗi member có id/org/email/display_name/is_active | Scope lookup trước; mặc định chỉ active, không có token. |
@@ -624,6 +624,13 @@ Tất cả response lỗi dùng error envelope chung §2.2 với `code`, `messag
 Validation request trước transaction:
 
 Đối với PATCH Organization/Site/Machine, `expected_revision` là integer ≥1 và bắt buộc ngay cả khi chỉ archive/restore. Backend đọc record theo organization scope với row lock trên PostgreSQL, so sánh revision trước khi áp dụng patch; sai revision trả `REVISION_CONFLICT` HTTP 409 với `expected_revision` và revision hiện tại trong `details[]`. Không tăng revision nếu request không có field thay đổi hoặc bị từ chối; các response thành công luôn trả revision mới để client dùng cho lần lưu kế tiếp.
+
+Lifecycle parent rules:
+
+- `PATCH /organizations/{id}` là route lifecycle đặc biệt. Active member của chính organization vẫn có thể đọc và restore organization đã archived; endpoint không mở quyền đọc resource con trong trạng thái archived.
+- `POST site`, `POST invitation` và mọi child mutation kiểm organization bằng row lock trong cùng transaction. Organization archived trả `PARENT_NOT_AVAILABLE` và không tạo row/audit một phần.
+- `POST/PATCH machine` kiểm site thuộc đúng organization và còn active. Site archived trả `PARENT_NOT_AVAILABLE`; không được tạo machine, đổi machine hoặc restore machine khi parent archived.
+- Site hoặc machine archived vẫn giữ ID, revision và history. Site chỉ restore bằng PATCH có `expected_revision` hiện tại; machine archived chỉ restore bằng PATCH `is_archived=false`. Sửa tên/trạng thái machine hoặc site khi bản thân resource đã archived trả `RESOURCE_ARCHIVED`.
 
 - Email được trim/case-fold và phải phù hợp format tối thiểu `local@domain`; không chấp nhận chuỗi chỉ có domain, whitespace hoặc vượt 320 ký tự.
 - `expires_in_days` là integer 1–30; không làm tròn, clamp hoặc nhận số âm/float/string mơ hồ.
@@ -639,6 +646,8 @@ Validation request trước transaction:
 **Revoke/expire:** resolve context → lookup scoped invitation → chỉ PENDING mới revoke; expiry tự chuyển EXPIRED khi được phát hiện an toàn. Sau terminal status, token không được accept và không được cấp lại bằng cách sửa status; phải tạo invitation mới.
 
 **Member toggle:** resolve context → lookup membership cùng organization → khi deactivate đếm active member → nếu count ≤1 trả conflict không side effect; nếu hợp lệ update + audit transaction → list sau refresh phản ánh status mới.
+
+**Hierarchy lifecycle:** load organization/site/machine snapshot → archive bằng PATCH revision hiện tại → list mặc định ẩn archived nhưng management UI có thể bật `include_archived` → khi restore, kiểm parent active, gửi lại revision hiện tại → commit tăng revision đúng một lần → refresh list/detail. Nếu parent đã archived hoặc revision stale, giữ nguyên resource và hiển thị lỗi có mã; không retry mù.
 
 #### SPEC-P04.5 — Error/recovery mapping
 
@@ -657,10 +666,13 @@ Validation request trước transaction:
 | Timeout sau server commit | UI `OUTCOME_UNKNOWN` | Không submit lại mù, không duplicate. | Query ID/list/replay token theo contract. |
 | Database/audit commit failure | 409/5xx mapped persistence error | Không báo success hoặc để invitation/membership một phần. | Rollback/reconcile rồi retry bounded. |
 | PATCH dùng revision cũ | 409 `REVISION_CONFLICT` | Không overwrite bản ghi hiện tại, không tăng revision, không ghi audit mutation. | Reload resource, hiển thị thay đổi mới và gửi lại có chủ đích bằng revision mới. |
+| Organization archived khi tạo child/invitation | 409 `PARENT_NOT_AVAILABLE` | Không tạo site/machine/invitation, không ghi audit một phần. | Mở organization lifecycle và restore bằng revision hiện tại. |
+| Site archived khi tạo/sửa/restore machine | 409 `PARENT_NOT_AVAILABLE` | Không đổi machine hoặc tạo machine mới. | Restore site trước, refresh machine snapshot, rồi retry có chủ đích. |
+| Site/machine archived nhưng gửi field edit ngoài restore | 409 `RESOURCE_ARCHIVED` | Không đổi tên/trạng thái và không tăng revision. | Gửi PATCH restore trước hoặc giữ archived. |
 
 #### SPEC-P04.6 — UI, security và evidence contract
 
-- `/app/organization` có các vùng organization/site/machine, Members và Invitations; mỗi vùng có loading, empty, ready, validation, conflict, offline và error state.
+- `/app/organization` có các vùng organization/site/machine, Members và Invitations; mỗi vùng có loading, empty, ready, validation, conflict, offline và error state. Management view tải site/machine với `include_archived=true`, hiển thị trạng thái ARCHIVED và nút Archive/Khôi phục; form machine bị khóa khi site archived.
 - `/invite?token=...` là route public để đọc token từ URL; nếu chưa login, chuyển tới `/auth/login?returnTo=/invite?...` bằng return path nội bộ. Sau login, gọi accept một lần; không lưu raw token vào localStorage, analytics, audit hoặc log.
 - Sau create, UI cho copy token/link và nói rõ token chỉ xuất hiện trong phiên tạo. Sau refresh hoặc list, token biến mất khỏi response/list.
 - UI phải phân biệt `INVITATION_INVALID`, `ORGANIZATION_CONTEXT_ALREADY_ASSIGNED`, `LAST_MEMBERSHIP_CONFLICT` và outage; không gom tất cả thành “không có organization”.
@@ -668,11 +680,11 @@ Validation request trước transaction:
 
 #### SPEC-P04.7 — Current implementation boundary
 
-Local source đã có model/API/migration `20260909_0018`, migration `20260911_0020` cho optimistic revision, frontend client, organization management member/invitation panels và public `/invite` route. P4-W03 local slice đã đạt focused API/migration/health/workspace **36/36**, Ruff, frontend lint/typecheck và Vitest **20/20** trên commit `be84887`. Đây chưa phải `STAGING_VERIFIED`: staging phải chạy migration head `20260911_0020`, deploy cùng candidate, kiểm Auth thực, browser accept/replay/revoke/expiry, PostgreSQL rows, stale concurrency và scope/timeout evidence trước khi mở P5.
+Local source đã có model/API/migration `20260909_0018`, migration `20260911_0020` cho optimistic revision, active-parent lifecycle guard, frontend archive/restore controls, organization management member/invitation panels và public `/invite` route. Focused P4 organization suite hiện bao phủ create/archive/restore parent, archived-resource guard và stale revision; frontend lint/typecheck/build/Vitest vẫn phải chạy trên candidate cùng source SHA. Đây chưa phải `STAGING_VERIFIED`: staging phải chạy migration head `20260911_0020`, deploy cùng candidate, kiểm Auth thực, browser accept/replay/revoke/expiry, PostgreSQL rows, stale concurrency và scope/timeout evidence trước khi mở P5.
 
 **Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Không dùng response thành công của một bước để suy các dependency đã sẵn sàng.
 
-**Failure contract:** `MACHINE_CODE_CONFLICT`; `PARENT_NOT_AVAILABLE`; `REVISION_CONFLICT`; `INVITATION_INVALID`; `INVITATION_ALREADY_MEMBER`; `INVITATION_ALREADY_PENDING`; `INVITATION_CONFLICT`; `ORGANIZATION_CONTEXT_ALREADY_ASSIGNED`; `LAST_MEMBERSHIP_CONFLICT`; `MEMBERSHIP_NOT_FOUND`; `INVITATION_NOT_FOUND`; `MUTATION_RESULT_UNKNOWN`. Các mã đã có trong source là mapping hiện tại; mã chưa có route tương ứng vẫn là target và phải được ghi trong contract test trước khi tuyên bố phase hoàn tất.
+**Failure contract:** `MACHINE_CODE_CONFLICT`; `PARENT_NOT_AVAILABLE`; `RESOURCE_ARCHIVED`; `REVISION_CONFLICT`; `INVITATION_INVALID`; `INVITATION_ALREADY_MEMBER`; `INVITATION_ALREADY_PENDING`; `INVITATION_CONFLICT`; `ORGANIZATION_CONTEXT_ALREADY_ASSIGNED`; `LAST_MEMBERSHIP_CONFLICT`; `MEMBERSHIP_NOT_FOUND`; `INVITATION_NOT_FOUND`; `MUTATION_RESULT_UNKNOWN`. Các mã đã có trong source là mapping hiện tại; mã chưa có route tương ứng vẫn là target và phải được ghi trong contract test trước khi tuyên bố phase hoàn tất.
 
 <a id="spec-p05"></a>
 

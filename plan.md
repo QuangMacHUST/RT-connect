@@ -574,8 +574,8 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 
 - [ ] P04-W01 — Hoàn thiện CRUD/search/pagination và uniqueness scoped organization.
 - [ ] P04-W02 — Tạo invitation một lần, expiry, accept đúng verified identity; không tự join bằng domain email. **Local slice:** model/API/UI đã có; thêm regression Home Dashboard → `/auth/session-error` khi bootstrap trả `ORGANIZATION_MEMBERSHIP_REQUIRED`, kèm form tạo organization đầu tiên và test frontend. Staging migration/readiness pass, browser/Auth, first-organization creation và persistence evidence còn mở.
-- [ ] P04-W03 — Bổ sung optimistic revision cho sửa đồng thời và kiểm tra active parent. **Local slice:** migration `20260911_0020` thêm `revision` cho Organization/Site/Machine; mọi PATCH hierarchy bắt `expected_revision`, khóa row trên PostgreSQL, tăng revision atomically và trả `REVISION_CONFLICT` khi stale; API test bao phủ org/site/machine stale edit, frontend gửi revision. Active-parent/archive/restore và staging concurrency còn mở.
-- [ ] P04-W04 — Hoàn thiện archive/restore, membership lifecycle và audit; không xây action roles. **Local slice:** member toggle/last-active/audit đã có; archive/restore, browser lifecycle, direct DB và staging version evidence còn mở.
+- [ ] P04-W03 — Bổ sung optimistic revision cho sửa đồng thời và kiểm tra active parent. **Local slice:** migration `20260911_0020` thêm `revision` cho Organization/Site/Machine; mọi PATCH hierarchy bắt `expected_revision`, khóa row trên PostgreSQL, tăng revision atomically và trả `REVISION_CONFLICT` khi stale; API test bao phủ org/site/machine stale edit và archived-parent guard; frontend gửi revision. Staging two-identity concurrency/direct PostgreSQL evidence còn mở.
+- [ ] P04-W04 — Hoàn thiện archive/restore, membership lifecycle và audit; không xây action roles. **Local slice:** member toggle/last-active/audit đã có; organization lifecycle restore, site/machine Archive/Khôi phục UI, archived-resource guard và local regression đã có. Browser invitation/archive lifecycle, direct DB và staging version evidence còn mở.
 - [ ] P04-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P04-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
 
@@ -586,7 +586,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 | TC-P04-S01 | Tạo hierarchy | Site/machine thuộc đúng organization; list/search/detail nhất quán. |
 | TC-P04-S02 | Đổi tên máy | stable_machine_id và mọi QA/trend/report source không đổi. |
 | TC-P04-S03 | Đồng nghiệp nhận lời mời | Verified identity đúng nhận một membership, có cùng chức năng với thành viên khác. |
-| TC-P04-S04 | Archive và restore | Lịch sử vẫn truy cập; tạo case mới chỉ khi parent đang active. |
+| TC-P04-S04 | Archive và restore | Lịch sử vẫn truy cập; site/machine archived có thể restore bằng revision hiện tại; tạo hoặc sửa child mới chỉ khi mọi parent đang active. |
 | TC-P04-S05 | Tạo invitation với email hoa/khoảng trắng | Email lưu case-fold; invitation ID/status/expiry có; raw token chỉ có ở response tạo và không có trong list. |
 | TC-P04-S06 | Accept đúng verified email | Membership ACTIVE và invitation ACCEPTED; `accepted_by_user_identity_id`, thời gian và audit khớp; commit là nguyên tử. |
 | TC-P04-S07 | Replay token sau accept | Cùng identity nhận cùng membership ID; tổng membership không tăng; không tạo audit accept trùng ngoài quy ước. |
@@ -599,7 +599,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 | Test ID | Trigger — điều kiện lỗi | Phân loại | Expected và đường phục hồi |
 | :--- | :--- | :--- | :--- |
 | TC-P04-E01 | Machine code trùng | MACHINE_CODE_CONFLICT | 409; chỉ rõ field, giữ dữ liệu form để sửa. |
-| TC-P04-E02 | Site khác tổ chức hoặc inactive | PARENT_NOT_AVAILABLE | Không tạo/move record; query scoped trả 404/409 phù hợp. |
+| TC-P04-E02 | Site khác tổ chức hoặc inactive | PARENT_NOT_AVAILABLE | Không tạo/move record; query scoped trả 404/409 phù hợp. Organization/site parent archived không tạo child; machine mutation không vượt qua site archived. |
 | TC-P04-E03 | Hai người sửa cùng revision | REVISION_CONFLICT | 409; hiển thị bản mới và phần đang sửa, không silently overwrite. |
 | TC-P04-E04 | Invitation hết hạn/sai identity | INVITATION_INVALID | Không tạo membership; cấp lời mời mới qua luồng thành viên. |
 | TC-P04-E05 | Xóa thành viên active cuối cùng | LAST_MEMBERSHIP_CONFLICT | Giữ ít nhất một thành viên active hoặc xử lý archive organization rõ ràng. |
