@@ -1,0 +1,22 @@
+{
+  "evidence_type": "STAGING_PUBLIC_SOURCE_PARITY",
+  "captured_at_utc": "2026-09-11T05:03:30Z",
+  "environment": "staging",
+  "project_id": "339f2c50-ddd7-491f-8c4e-da2a2d169502",
+  "environment_id": "b0ab34e5-0ff4-479d-8232-659d175e9e2f",
+  "source_sha": "c0a8b82edeb4bdbc3461e6df6182a894f7c90208",
+  "schema_revision": "20260909_0019",
+  "deployments": {
+    "api": {"service_id": "9b35bf0b-0419-4679-8af0-e639e5a84713", "deployment_id": "0c1af92e-852d-4abf-a847-7a08fa6a4a4f", "status": "SUCCESS"},
+    "web": {"service_id": "9f23331c-8d5e-45fb-9f11-5aa5e69f76f6", "deployment_id": "6ef433a8-5c77-47a4-9239-c09a4bc8d5db", "status": "SUCCESS"},
+    "worker": {"service_id": "a1e0c389-e527-4d4c-995e-2a48f4795dda", "deployment_id": "c0c938aa-7250-4caa-9a03-9e466eeb6b23", "status": "SUCCESS"}
+  },
+  "public_verifier": {
+    "passed": true,
+    "failed_check_count": 0,
+    "check_count": 15,
+    "api_base_url": "https://gleaming-cooperation-staging.up.railway.app",
+    "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app"
+  },
+  "note": "Docs-only commit was automatically deployed by web/worker watch behavior; API was deployed explicitly to restore source parity. No production service was changed."
+}

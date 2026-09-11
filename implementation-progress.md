@@ -9,6 +9,12 @@ Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.28,
 - Không có application screen live cho Organization/Site/Machine hoặc Biological Toolkit. Bốn Biological resource cũ vẫn được coi là hidden/legacy, không được tự gán vào route và không được khôi phục chỉ để làm đủ số lượng màn hình.
 - Registry có ID/title/device/dimension và cờ HTML/screenshot trong [stitch-screen-registry-20260911.json](docs/evidence/stitch-screen-registry-20260911.json). Đây là evidence của design inventory; mapping component/API/FR, tạo screen còn thiếu và visual/accessibility acceptance vẫn là việc mở của P0/P3/P4/P12–P15.
 
+## P20-W01 — staging source parity after Stitch registry documentation — verified — 2026-09-11 / `c0a8b82`
+
+- Railway staging đã được đồng bộ sau khi web/worker tự deploy commit tài liệu nhưng API chưa tự chạy theo watch pattern. API được deploy bổ sung có kiểm soát; API deployment `0c1af92e-852d-4abf-a847-7a08fa6a4a4f`, web `6ef433a8-5c77-47a4-9239-c09a4bc8d5db`, worker `c0c938aa-7250-4caa-9a03-9e466eeb6b23` đều `SUCCESS` và cùng source SHA `c0a8b82edeb4bdbc3461e6df6182a894f7c90208`.
+- Public verifier đạt **15/15 PASS**, gồm health/readiness, schema `20260909_0019`, exact API version, OpenAPI CT preview + member/invitation routes, unauthenticated 401 boundary, web index/bundle, UI markers và exact source marker. Evidence: [p20-staging-public-parity-20260911-c0a8b82.json](docs/evidence/p20-staging-public-parity-20260911-c0a8b82.json).
+- Đây là source/runtime parity evidence trên staging; không đóng P20 hay các gate authenticated workflow, worker fault/resource, backup/restore, rollback, pilot hoặc clinical readiness.
+
 ## P06 — signed artifact download filename contract — local verified — 2026-09-11 / current worktree
 
 - API `GET /api/v1/artifacts/{artifact_id}/download` hiện trả thêm `filename` và truyền `response-content-disposition` vào signed URL. Filename được lấy ở basename, loại bỏ path separator, quote, CR/LF và control character; filename rỗng/hỏng dùng fallback xác định từ artifact ID. Object key, bytes và SHA-256 không thay đổi.
