@@ -3,6 +3,13 @@
 Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.29,
 `technical-specification.md` v1.30 và `plan.md` v4.25.
 
+## P18/P19/P20 — Railway provider backup inspection — gate open — 2026-09-11
+
+- Railway GraphQL read-only introspection thành công và hiển thị các surface `volumeInstanceBackupList`, `volumeInstanceBackupScheduleList`, `volumeInstancePitrRestoreEstimate` và `deploymentSnapshot`.
+- PostgreSQL staging volume instance `a3380835-08d5-409a-8d46-cd15931445b4` và production volume instance `56d3e3cf-8540-44f1-b2eb-8fc53fbd590f` đều `READY`, nhưng cả hai trả `backup_count=0` và `backup_schedule_count=0`.
+- Không gọi mutation, không tạo backup/schedule/restore. Trạng thái là `PROVIDER_BACKUP_NOT_CONFIGURED`; volume `READY` không được hiểu là có backup.
+- Evidence: [p18-p20-railway-backup-capability-20260911.json](docs/evidence/p18-p20-railway-backup-capability-20260911.json). Next exact action là chọn retention/schedule có chủ đích, cấu hình provider rồi đọc lại schedule + backup ID trước restore drill.
+
 ## P20-W01 — current staging operational probes — public verified slice — 2026-09-11 / `f938fd7`
 
 - `scripts/verify-operational-probes.ps1` đã đọc đúng staging API `https://gleaming-cooperation-staging.up.railway.app` và web `https://rt-connect-web-staging-staging.up.railway.app` trên candidate source SHA `f938fd7541fbe5c8086f12e2e0cfe3cd74dd6418`.

@@ -1,0 +1,60 @@
+{
+  "schema_version": "rt-connect.railway-backup-capability.v1",
+  "captured_at_utc": "2026-09-11T08:27:00Z",
+  "verification_level": "RAILWAY_GRAPHQL_READ_ONLY",
+  "project": {
+    "id": "339f2c50-ddd7-491f-8c4e-da2a2d169502",
+    "name": "prolific-learning"
+  },
+  "provider_schema": {
+    "introspection_succeeded": true,
+    "backup_capability_symbols": [
+      "volumeInstanceBackupList",
+      "volumeInstanceBackupScheduleList",
+      "volumeInstancePitrRestoreEstimate",
+      "deploymentSnapshot"
+    ],
+    "mutation_called": false
+  },
+  "environments": {
+    "staging": {
+      "environment_id": "b0ab34e5-0ff4-479d-8232-659d175e9e2f",
+      "postgres_service_id": "8fc8201e-417d-4fd7-9a6d-17ad51b72dcf",
+      "postgres_service_name": "Postgres-Q1Hc",
+      "volume_id": "4f26334b-df35-4d10-8cd0-1fbb84a02487",
+      "volume_instance_id": "a3380835-08d5-409a-8d46-cd15931445b4",
+      "mount_path": "/var/lib/postgresql/data",
+      "state": "READY",
+      "size_mb": 5000,
+      "current_size_mb": 183.681024,
+      "backup_count": 0,
+      "backup_schedule_count": 0
+    },
+    "production": {
+      "environment_id": "910dff25-75b6-42b2-bf6b-e2601ba9d7d2",
+      "postgres_service_id": "5709f18d-c92d-461a-9f73-478dd7748d80",
+      "postgres_service_name": "Postgres",
+      "volume_id": "06b5acfa-bf44-42cf-b50d-5bedef60b3bb",
+      "volume_instance_id": "56d3e3cf-8540-44f1-b2eb-8fc53fbd590f",
+      "mount_path": "/var/lib/postgresql/data",
+      "state": "READY",
+      "size_mb": 5000,
+      "current_size_mb": 153.116672,
+      "backup_count": 0,
+      "backup_schedule_count": 0
+    }
+  },
+  "result": "PROVIDER_BACKUP_NOT_CONFIGURED",
+  "release_impact": {
+    "p18_backup_restore_gate": "OPEN",
+    "p19_production_promotion": "BLOCKED",
+    "p20_backup_restore_drill": "NOT_RUN",
+    "last_good_backup_id": null
+  },
+  "next_exact_action": "Choose and explicitly configure a Railway PostgreSQL backup schedule/retention for the intended environment, then query the resulting schedule and backup ID read-only before any release or restore drill.",
+  "redaction": {
+    "contains_secrets": false,
+    "contains_database_url": false,
+    "contains_patient_data": false
+  }
+}

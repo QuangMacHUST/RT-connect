@@ -1,0 +1,161 @@
+{
+  "schema_version": "rt-connect.railway-provider-capabilities.v1",
+  "captured_at_utc": "2026-09-11T08:32:35.0862393Z",
+  "endpoint": "https://backboard.railway.com/graphql/v2",
+  "read_only": true,
+  "introspection_succeeded": true,
+  "query_root_exposed": true,
+  "provider_capability_detected": true,
+  "matching_query_fields": [
+    "adminVolumeInstancesForVolume",
+    "deploymentSnapshot",
+    "volumeInstance",
+    "volumeInstanceBackupList",
+    "volumeInstanceBackupScheduleList",
+    "volumeInstancePitrRestoreEstimate"
+  ],
+  "matching_types": [
+    {
+      "name": "CloudAgentSnapshot",
+      "kind": "OBJECT",
+      "matching_fields": null
+    },
+    {
+      "name": "CloudAgentSnapshotInput",
+      "kind": "INPUT_OBJECT",
+      "matching_fields": null
+    },
+    {
+      "name": "DeploymentSnapshot",
+      "kind": "OBJECT",
+      "matching_fields": null
+    },
+    {
+      "name": "EnvironmentVolumeInstancesConnection",
+      "kind": "OBJECT",
+      "matching_fields": null
+    },
+    {
+      "name": "EnvironmentVolumeInstancesConnectionEdge",
+      "kind": "OBJECT",
+      "matching_fields": null
+    },
+    {
+      "name": "PitrRestoreScratchEstimate",
+      "kind": "OBJECT",
+      "matching_fields": "baseBackupLabel"
+    },
+    {
+      "name": "ProjectVolumesConnection",
+      "kind": "OBJECT",
+      "matching_fields": null
+    },
+    {
+      "name": "ProjectVolumesConnectionEdge",
+      "kind": "OBJECT",
+      "matching_fields": null
+    },
+    {
+      "name": "ReplicateVolumeInstanceSnapshotStatus",
+      "kind": "ENUM",
+      "matching_fields": null
+    },
+    {
+      "name": "ReplicateVolumeInstanceStatus",
+      "kind": "ENUM",
+      "matching_fields": null
+    },
+    {
+      "name": "ServiceBackupInfo",
+      "kind": "OBJECT",
+      "matching_fields": null
+    },
+    {
+      "name": "TemplateVolume",
+      "kind": "SCALAR",
+      "matching_fields": null
+    },
+    {
+      "name": "Volume",
+      "kind": "OBJECT",
+      "matching_fields": null
+    },
+    {
+      "name": "VolumeCreateInput",
+      "kind": "INPUT_OBJECT",
+      "matching_fields": null
+    },
+    {
+      "name": "VolumeInstance",
+      "kind": "OBJECT",
+      "matching_fields": [
+        "volume",
+        "volumeId"
+      ]
+    },
+    {
+      "name": "VolumeInstanceBackup",
+      "kind": "OBJECT",
+      "matching_fields": "volumeInstanceSizeMB"
+    },
+    {
+      "name": "VolumeInstanceBackupSchedule",
+      "kind": "OBJECT",
+      "matching_fields": null
+    },
+    {
+      "name": "VolumeInstanceBackupScheduleKind",
+      "kind": "ENUM",
+      "matching_fields": null
+    },
+    {
+      "name": "VolumeInstanceReplicationProgress",
+      "kind": "OBJECT",
+      "matching_fields": null
+    },
+    {
+      "name": "VolumeInstanceUpdateInput",
+      "kind": "INPUT_OBJECT",
+      "matching_fields": null
+    },
+    {
+      "name": "VolumeReplicationProgressUpdate",
+      "kind": "OBJECT",
+      "matching_fields": [
+        "currentSnapshot",
+        "nbSnapshots",
+        "snapshotsSizes"
+      ]
+    },
+    {
+      "name": "VolumeSnapshotReplicationProgressUpdate",
+      "kind": "OBJECT",
+      "matching_fields": null
+    },
+    {
+      "name": "VolumeState",
+      "kind": "ENUM",
+      "matching_fields": null
+    },
+    {
+      "name": "VolumeUpdateInput",
+      "kind": "INPUT_OBJECT",
+      "matching_fields": null
+    },
+    {
+      "name": "VolumeVolumeInstancesConnection",
+      "kind": "OBJECT",
+      "matching_fields": null
+    },
+    {
+      "name": "VolumeVolumeInstancesConnectionEdge",
+      "kind": "OBJECT",
+      "matching_fields": null
+    }
+  ],
+  "interpretation": "Potential provider backup/snapshot/restore/volume symbols were exposed by Railway introspection; inspect the named fields read-only before using any mutation.",
+  "secret_scan": {
+    "token_recorded": false,
+    "database_url_recorded": false
+  }
+}

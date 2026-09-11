@@ -115,6 +115,15 @@ vận hành và chỉ lưu output đã redacted; không đưa token vào evidenc
 
 ### 5.1. Backup point bắt buộc trước release
 
+Read-only Railway provider inspection ngày 2026-09-11 được ghi tại
+`docs/evidence/p18-p20-railway-backup-capability-20260911.json`. Schema Railway có
+surface cho backup/schedule/PITR estimate, nhưng cả PostgreSQL staging và production
+hiện trả `backup_count=0` và `backup_schedule_count=0`. Vì vậy trạng thái là
+`PROVIDER_BACKUP_NOT_CONFIGURED`: không được điền backup ID giả, không coi volume
+`READY` là đã backup, và không đóng P18/P19/P20. Script tái lập read-only là
+`scripts/inspect-railway-provider-capabilities.ps1`; nó chỉ introspect schema, không
+gọi mutation.
+
 Trước migration hoặc thay đổi không dễ đảo ngược, lưu các thông tin sau trong release
 evidence:
 

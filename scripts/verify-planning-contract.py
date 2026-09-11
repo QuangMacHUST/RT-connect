@@ -172,6 +172,7 @@ def verify(root: Path) -> dict[str, object]:
         root / "scripts" / "verify-local-backup-restore.py",
         root / "scripts" / "create-release-manifest.py",
         root / "scripts" / "release_manifest.py",
+        root / "scripts" / "inspect-railway-provider-capabilities.ps1",
     )
     for path in required_artifacts:
         _check(
