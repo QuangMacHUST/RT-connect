@@ -10,6 +10,12 @@ Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.29,
 - Không gọi mutation, không tạo backup/schedule/restore. Trạng thái là `PROVIDER_BACKUP_NOT_CONFIGURED`; volume `READY` không được hiểu là có backup.
 - Evidence: [p18-p20-railway-backup-capability-20260911.json](docs/evidence/p18-p20-railway-backup-capability-20260911.json). Next exact action là chọn retention/schedule có chủ đích, cấu hình provider rồi đọc lại schedule + backup ID trước restore drill.
 
+## P20-W02 — backup schedule authority check — external permission required — 2026-09-11
+
+- Đã thử mutation `volumeInstanceBackupScheduleUpdate` với `DAILY` trên PostgreSQL staging, nhưng Railway trả `Not Authorized` cho cả `RAILWAY_ACCOUNT_TOKEN` và `RAILWAY_PROJECT_TOKEN`.
+- Read-back ngay sau đó xác nhận không có side effect: `backup_schedule_count=0`, `backup_count=0`, volume vẫn giữ nguyên. Không retry mutation thêm.
+- Evidence: [p20-railway-backup-schedule-authority-20260911.json](docs/evidence/p20-railway-backup-schedule-authority-20260911.json). Next exact action: cấp quyền volume-backup hoặc thao tác schedule trong Railway dashboard; sau đó chạy verifier read-only và tiếp tục restore drill.
+
 ## P20-W01 — current staging operational probes — public verified slice — 2026-09-11 / `f938fd7`
 
 - `scripts/verify-operational-probes.ps1` đã đọc đúng staging API `https://gleaming-cooperation-staging.up.railway.app` và web `https://rt-connect-web-staging-staging.up.railway.app` trên candidate source SHA `f938fd7541fbe5c8086f12e2e0cfe3cd74dd6418`.

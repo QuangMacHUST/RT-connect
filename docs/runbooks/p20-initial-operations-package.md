@@ -124,6 +124,13 @@ hiện trả `backup_count=0` và `backup_schedule_count=0`. Vì vậy trạng t
 `scripts/inspect-railway-provider-capabilities.ps1`; nó chỉ introspect schema, không
 gọi mutation.
 
+Lần thử cấu hình `DAILY` cho staging ngày 2026-09-11 bị Railway trả `Not Authorized`
+với cả account-scoped và project-scoped token; đọc lại sau đó vẫn là `0` schedule và
+`0` backup. Evidence: `docs/evidence/p20-railway-backup-schedule-authority-20260911.json`.
+Không được retry mutation vô hạn hoặc coi lỗi quyền là backup failure; cần cấp đúng
+quyền volume-backup hoặc thao tác trong Railway dashboard, sau đó đọc lại bằng script
+read-only trước khi chạy restore drill.
+
 Trước migration hoặc thay đổi không dễ đảo ngược, lưu các thông tin sau trong release
 evidence:
 

@@ -1,0 +1,34 @@
+{
+  "schema_version": "rt-connect.railway-backup-schedule-authority.v1",
+  "captured_at_utc": "2026-09-11T08:40:00Z",
+  "environment": "staging",
+  "volume_instance_id": "a3380835-08d5-409a-8d46-cd15931445b4",
+  "requested_operation": {
+    "mutation": "volumeInstanceBackupScheduleUpdate",
+    "kinds": ["DAILY"],
+    "scope": "staging PostgreSQL only"
+  },
+  "authorization_attempts": [
+    {
+      "credential_scope": "RAILWAY_ACCOUNT_TOKEN",
+      "result": "NOT_AUTHORIZED"
+    },
+    {
+      "credential_scope": "RAILWAY_PROJECT_TOKEN",
+      "result": "NOT_AUTHORIZED"
+    }
+  ],
+  "post_attempt_readback": {
+    "backup_schedule_count": 0,
+    "backup_count": 0,
+    "state_unchanged": true
+  },
+  "mutation_called_successfully": false,
+  "result": "EXTERNAL_PERMISSION_REQUIRED",
+  "next_exact_action": "Grant a Railway role/token scope allowed to manage PostgreSQL volume backups, or configure the DAILY schedule in the Railway dashboard, then rerun read-only schedule and backup queries.",
+  "redaction": {
+    "contains_secrets": false,
+    "contains_database_url": false,
+    "contains_patient_data": false
+  }
+}
