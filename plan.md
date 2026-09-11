@@ -2,13 +2,15 @@
 
 > Checkpoint parity staging ngày 2026-09-11: API deployment `f6b8a385-86c5-4b0f-84bc-0364eb5a32e1`, web `8770486b-7ffb-43c4-9538-4066ce7a11c9` và worker `329b7fe2-3d1a-44d4-89c8-0b6f81dd3198` đều `SUCCESS` trên cùng source SHA `67f189c242882c711b0ccf13f7b104672322bbcf`. Public verifier đạt `15/15`, schema `20260909_0019`; web bundle chứa contract `DownloadResponse.filename` và source marker. Fixture RTDOSE tổng hợp `gamma-rtdose-v1-smoke.dcm` đã được upload một lần trước đó vào case staging `ed7ddbe5-811a-4463-a270-b0386f64644d` với `REFERENCE/DICOM`, manifest được tạo và validation `VALID` (0 lỗi, 0 cảnh báo). Read-only download giữ đủ 898 bytes và SHA-256 khớp fixture; Edge vẫn giữ hậu tố `.crdownload`, nên final filename/header readback qua browser vẫn là `UNVERIFIED`. Đây là `STAGING_VERIFIED_SLICE`, không tự đóng P06-W04/P06-VERIFY hoặc các gate fault/retry, storage reconciliation, release và handoff. Evidence rollout: `docs/evidence/p20-staging-public-parity-20260911-67f189c.json`; download: `docs/evidence/p06-staging-rtdose-download-20260911-1984c04.json`; upload cũ giữ nguyên: `docs/evidence/p06-staging-rtdose-upload-20260911.json`.
 
-- Phiên bản: **4.24**, ngày 2026-09-11.
+> Local update P4-W03 ngày 2026-09-11: commit `be84887` thêm migration `20260911_0020_organization_revisions`, field `revision` cho Organization/Site/Machine, `expected_revision` bắt buộc ở PATCH, PostgreSQL row lock và `409 REVISION_CONFLICT`; client Organization Management gửi revision hiện tại. API P4/migration/health/workspace **36/36**, Ruff, frontend typecheck/lint và Vitest **20/20** đạt. Đây là `LOCAL_VERIFIED_SLICE`; staging migration, hai identity, PostgreSQL concurrency readback và P4 full exit gate vẫn mở. Evidence: `docs/evidence/p4-local-optimistic-revision-20260911-be84887.json`.
+
+- Phiên bản: **4.25**, ngày 2026-09-11.
 - Nghiệp vụ: [business-analysis.md](business-analysis.md) v0.27.
-- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.28.
-- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.27.
+- Hợp đồng hành vi chi tiết: [specification.md](specification.md) v1.29.
+- Kiến trúc tham chiếu: [technical-specification.md](technical-specification.md) v1.28.
 - Evidence trước đợt cập nhật: [implementation-progress.md](implementation-progress.md).
 - Bản kế hoạch trước: [plan v1.5 — lịch sử](docs/history/plan-v1.5.md).
-- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.14, bổ sung P7 evaluate optimistic revision tùy chọn, PostgreSQL row-lock khi finalize, tương thích caller không body, exact replay không nhân đôi TrendPoint, cùng local evidence cho seed/snapshot/stale-evaluate/replay. Tiếp tục giữ P11 consumer snapshot đầy đủ (source/applicability/revision/lineage/rule reference/capability), fail-closed khi protocol/rule lệch snapshot, trend protocol-version lineage và loại bỏ seed synthetic khỏi workflow Machine QA thông thường; đồng thời giữ contract P7 explicit N/A, P10 query count-preflight/raw-aggregate budget/CSV bucket lineage, bằng chứng P8 browser staging và oracle Gamma độc lập. Bổ sung P8 contract cho coordinate frame, axis order, transform provenance, compatibility preflight và negative capability; bổ sung P06 contract cho basename/header-safe signed download filename, API/OpenAPI `filename` và byte/hash invariant; fixture RTDOSE tổng hợp đã được người dùng cho phép và đã tồn tại hợp lệ trong case staging nên không upload bản sao; workflow Gamma authenticated mới chỉ reuse fixture đó để kiểm tra negative/positive path. Các gate staging P8/P9/P10/P11/P12–P20 chưa được tự nâng chỉ vì local test pass hoặc Railway báo Online.
+- Phạm vi lần cập nhật này: giữ toàn bộ contract v4.14, bổ sung P4 optimistic revision cho Organization/Site/Machine, P7 evaluate optimistic revision tùy chọn, PostgreSQL row-lock khi finalize, tương thích caller không body, exact replay không nhân đôi TrendPoint, cùng local evidence cho seed/snapshot/stale-evaluate/replay. Tiếp tục giữ P11 consumer snapshot đầy đủ (source/applicability/revision/lineage/rule reference/capability), fail-closed khi protocol/rule lệch snapshot, trend protocol-version lineage và loại bỏ seed synthetic khỏi workflow Machine QA thông thường; đồng thời giữ contract P7 explicit N/A, P10 query count-preflight/raw-aggregate budget/CSV bucket lineage, bằng chứng P8 browser staging và oracle Gamma độc lập. Bổ sung P8 contract cho coordinate frame, axis order, transform provenance, compatibility preflight và negative capability; bổ sung P06 contract cho basename/header-safe signed download filename, API/OpenAPI `filename` và byte/hash invariant; fixture RTDOSE tổng hợp đã được người dùng cho phép và đã tồn tại hợp lệ trong case staging nên không upload bản sao; workflow Gamma authenticated mới chỉ reuse fixture đó để kiểm tra negative/positive path. Các gate staging P4/P8/P9/P10/P11/P12–P20 chưa được tự nâng chỉ vì local test pass hoặc Railway báo Online.
 
 > Operational update P8/P18/P19 authenticated Gamma staging E2E ngày 2026-09-10: trên web build `1badb6616d1a68f7178b2aefd10c71adc95a826b`, phiên authenticated đã reuse `gamma-rtdose-v1-smoke.dcm` (RTDOSE/VALID) và `gamma-measurement-3d-v1-smoke.json` trong case `8bc86303-c7e9-4e1a-b012-cfbe2a07ba24`, không upload bản sao. Chạy cấu hình 2D với measurement 3D tạo run `d902d9c0-3b15-4367-8df9-ca0a6274c3f3` `FAILED` đúng `GAMMA_DIMENSIONALITY_MISMATCH`; đổi sang 3D rồi submit tạo run `86cc4d5e-4a87-4dcb-a6f5-94c125029c60` `COMPLETED/PASS`, 8/8, coverage `1`, Gamma P95 `0`, engine `gamma-nd-p8.2`. Evidence: `docs/evidence/p8-p19-staging-authenticated-gamma-e2e-20260910-1badb66.json`. Đây là `STAGING_AUTHENTICATED_MUTATION_E2E_GAMMA` cho một identity/case; chưa đóng two-identity, direct dependency evidence, full fault/resource matrix, provider restore, rollback hoặc production promotion.
 
@@ -572,7 +574,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 
 - [ ] P04-W01 — Hoàn thiện CRUD/search/pagination và uniqueness scoped organization.
 - [ ] P04-W02 — Tạo invitation một lần, expiry, accept đúng verified identity; không tự join bằng domain email. **Local slice:** model/API/UI đã có; thêm regression Home Dashboard → `/auth/session-error` khi bootstrap trả `ORGANIZATION_MEMBERSHIP_REQUIRED`, kèm form tạo organization đầu tiên và test frontend. Staging migration/readiness pass, browser/Auth, first-organization creation và persistence evidence còn mở.
-- [ ] P04-W03 — Bổ sung optimistic revision cho sửa đồng thời và kiểm tra active parent.
+- [ ] P04-W03 — Bổ sung optimistic revision cho sửa đồng thời và kiểm tra active parent. **Local slice:** migration `20260911_0020` thêm `revision` cho Organization/Site/Machine; mọi PATCH hierarchy bắt `expected_revision`, khóa row trên PostgreSQL, tăng revision atomically và trả `REVISION_CONFLICT` khi stale; API test bao phủ org/site/machine stale edit, frontend gửi revision. Active-parent/archive/restore và staging concurrency còn mở.
 - [ ] P04-W04 — Hoàn thiện archive/restore, membership lifecycle và audit; không xây action roles. **Local slice:** member toggle/last-active/audit đã có; archive/restore, browser lifecycle, direct DB và staging version evidence còn mở.
 - [ ] P04-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.
 - [ ] P04-HANDOFF — cập nhật contract/OpenAPI khi có thay đổi, migration/release notes, checkpoint và backlog còn lại.
@@ -614,7 +616,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 ### Bất biến và điều kiện đóng P4
 
 - **Dữ liệu phải giữ/transaction:** Accept invitation và membership commit cùng transaction; unique pending invitation theo organization/email; token raw không lưu; active-context/last-active invariant; archive không hard-delete; lịch sử nguồn giữ nguyên.
-- **Bàn giao:** Management screens, `/invite` membership onboarding, member/invitation API, migration `20260909_0018`, OpenAPI, audit/history và contract tests.
+- **Bàn giao:** Management screens, `/invite` membership onboarding, member/invitation API, migrations `20260909_0018` + `20260911_0020`, OpenAPI, audit/history và contract tests.
 - **Exit gate:** Hai identity cùng organization dùng được nghiệp vụ ngang nhau; invitation create/accept/replay/revoke/expiry và negative matrix pass; isolate organization khác; rename/archive/restore/concurrent edit/timeout evidence pass.
 - **Kiểm tra chéo:** C03–C09 về scope, retry, đồng thời, mất mạng, session và version phải có evidence hoặc lý do không áp dụng; thêm C10–C16 theo module.
 - **Nếu gate fail:** mở issue với testcase thất bại, giữ evidence/bản dữ liệu trước đó và sửa package liên quan; không thay expected để hợp thức hóa output. Có thể làm task độc lập tiếp theo, nhưng phase vẫn mở.
@@ -2279,10 +2281,12 @@ Issue gồm: FR/MOD/P/W, triệu chứng, input fixture/hash, expected/observed,
 
 **Runtime addendum cùng ngày:** sau source-parity recovery, candidate `b0263c932c740d4f36f19867241d5c1e07014765` đạt **15/15 checks PASS** trên public staging với schema `20260909_0019`; evidence `docs/evidence/p19-staging-public-smoke-20260909-b0263c9.json`. Browser DVH/report evidence vẫn dùng đúng case synthetic đã upload trước đó; không upload lại RTDOSE/RTSTRUCT/CT. Payload JSON/CSV export parse/hash khớp saved snapshot, còn việc browser đổi `.crdownload` thành filename cuối vẫn `UNVERIFIED` và tiếp tục là gate mở. Evidence browser: `docs/evidence/p17-staging-dvh-ct-browser-20260909.json`.
 
-### 7.3. Revision hiện hành v4.24
+### 7.3. Revision hiện hành v4.25
 
-Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.27, `specification.md` v1.28,
-`technical-specification.md` v1.27 và `plan.md` v4.24. Revision này bổ sung contract filename/header-safe
+Revision hiện hành của bộ tài liệu là `business-analysis.md` v0.27, `specification.md` v1.29,
+`technical-specification.md` v1.28 và `plan.md` v4.25. Revision này bổ sung contract P4 optimistic
+revision cho Organization/Site/Machine: PATCH bắt `expected_revision`, PostgreSQL row lock,
+`REVISION_CONFLICT` và không overwrite stale edit; đồng thời giữ contract filename/header-safe
 cho signed artifact download, đồng thời giữ consumer snapshot
 P11 đầy đủ cho Machine QA, trend và report, cùng UI source panel đọc snapshot; revision v4.14 giữ status/readiness
  surface P20, bổ sung P4 member/invitation execution contract và P7 Machine QA explicit-N/A execution contract:

@@ -1,10 +1,10 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
-- File: specification.md; version **1.28**; ngày 2026-09-11.
+- File: specification.md; version **1.29**; ngày 2026-09-11.
 - Nguồn nghiệp vụ: business-analysis.md v0.27.
-- Kế hoạch triển khai: plan.md v4.24, P0–P20.
-- Kiến trúc nền: technical-specification.md v1.27.
-- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.28 giữ toàn bộ contract v1.27, bổ sung hợp đồng tên file khi tải artifact: API trả filename dạng basename an toàn, signed URL yêu cầu `Content-Disposition` an toàn, và filename không thay thế byte/checksum trong kiểm chứng round-trip. Bản 1.27 giữ P8 coordinate-frame/axis-order/explicit-transform contract, compatibility preflight giữa RTDOSE và measurement, identity-transform capability hiện tại và các lỗi fail-closed tương ứng. P11 consumer snapshot `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/capability/rule lineage, archive semantics và fail-closed khi snapshot lệch vẫn được giữ; UI phải hiển thị metadata đã pin và workflow thường không seed synthetic. P9 bổ sung quy tắc namespace idempotency phía client phải thay đổi khi renderer hoặc schema export đổi; server vẫn dùng fingerprint gồm revision, format, render options và renderer version làm authority, để deploy renderer mới không bị replay nhầm export cũ hoặc tạo conflict giả khi người dùng tải lại trang. Các contract Trend query budget, Machine QA explicit N/A, malformed Redis dispatch, peak RSS/resource/API responsiveness P17 và P4 membership/invitation vẫn được giữ nguyên.
+- Kế hoạch triển khai: plan.md v4.25, P0–P20.
+- Kiến trúc nền: technical-specification.md v1.28.
+- Đây là hợp đồng mục tiêu. Những nội dung chưa có code được ghi TARGET; kiểm source không thay bằng bằng chứng runtime. Bản 1.29 giữ toàn bộ contract v1.28, bổ sung contract optimistic revision cho Organization/Site/Machine: PATCH bắt `expected_revision`, update khóa row khi có PostgreSQL, stale update trả `409 REVISION_CONFLICT` và không overwrite. Bản 1.28 giữ hợp đồng tên file khi tải artifact: API trả filename dạng basename an toàn, signed URL yêu cầu `Content-Disposition` an toàn, và filename không thay thế byte/checksum trong kiểm chứng round-trip. P11 consumer snapshot `p11.protocol-snapshot.v1`, P9 export idempotency namespace, Trend query budget, Machine QA explicit N/A, malformed Redis dispatch và P17 resource contract vẫn được giữ nguyên.
 
 ## 1. Quyền sở hữu tài liệu và phạm vi
 
@@ -572,8 +572,8 @@ Các operation dưới đây nói rõ “target” khi chưa có. Mỗi phase k�
 | Input và dữ liệu hiển thị | Organization name/timezone; site name/code; machine stable ID/name/code/manufacturer/model/energy/mode/status; membership identity/status; invitation email/status/expiry; revision. |
 | Model/storage | Organization/Site/Machine + revision; `OrganizationMembership`; `OrganizationInvitation` với token hash, expiry, status và accepted identity; không lưu token thô/password. |
 | Operation/API surface | CRUD organization/site/machine; `GET /organizations/{organization_id}/members`; `PATCH /organizations/{organization_id}/members/{membership_id}`; `POST/GET /organizations/{organization_id}/invitations`; `POST /organizations/{organization_id}/invitations/{invitation_id}/revoke`; `POST /organizations/invitations/accept`. |
-| Transaction/invariant | Resolve active membership trước mọi organization query; accept tạo/reactivate membership và đánh dấu invitation ACCEPTED cùng transaction; unique pending invitation theo organization/email; một identity không có active context ở organization khác; archive không hard-delete; luôn giữ ít nhất một active member. |
-| Output bàn giao | Management screens, `/invite` onboarding, member/invitation lifecycle, audit/history, migration `20260909_0018`, OpenAPI và contract tests. |
+| Transaction/invariant | Resolve active membership trước mọi organization query; accept tạo/reactivate membership và đánh dấu invitation ACCEPTED cùng transaction; unique pending invitation theo organization/email; một identity không có active context ở organization khác; archive không hard-delete; luôn giữ ít nhất một active member. PATCH Organization/Site/Machine bắt `expected_revision`, khóa row trên PostgreSQL, kiểm tra revision ngay trong transaction, tăng đúng một lần khi có thay đổi và không overwrite stale edit. |
+| Output bàn giao | Management screens, `/invite` onboarding, member/invitation lifecycle, audit/history, migrations `20260909_0018` và `20260911_0020`, OpenAPI và contract tests. |
 | Success oracle | `TC-P04-S01` đến `TC-P04-S08` trong plan |
 | Error/recovery oracle | `TC-P04-E01` đến `TC-P04-E12` trong plan |
 | Exit | Hai identity cùng organization dùng được nghiệp vụ ngang nhau; invitation email-bound/one-time/expiry/revoke/replay pass; isolate organization khác; rename/archive/restore/concurrent/timeout pass. |
@@ -611,6 +611,9 @@ Tất cả response lỗi dùng error envelope chung §2.2 với `code`, `messag
 
 | Method/path | Request | Success | Side effect/notes |
 | :--- | :--- | :--- | :--- |
+| `PATCH /organizations/{organization_id}` | `{expected_revision, name?, is_archived?}`; ít nhất một field thay đổi | 200 organization snapshot có revision mới | Scope + row lock + compare-and-increment; stale trả `REVISION_CONFLICT` 409. |
+| `PATCH /organizations/{organization_id}/sites/{site_id}` | `{expected_revision, name?, is_archived?}`; ít nhất một field thay đổi | 200 site snapshot có revision mới | Kiểm site thuộc organization; stale không mutation. |
+| `PATCH /organizations/{organization_id}/sites/{site_id}/machines/{machine_id}` | `{expected_revision, display_name?, manufacturer?, model?, status?, is_archived?}` | 200 machine snapshot có revision mới | `stable_machine_id` không đổi; stale không overwrite và trả chi tiết expected/current revision. |
 | `GET /organizations/{organization_id}/members` | `include_inactive` (default false), `offset ≥0`, `limit 1..100` | 200 `{items,total,offset,limit}`; mỗi member có id/org/email/display_name/is_active | Scope lookup trước; mặc định chỉ active, không có token. |
 | `PATCH /organizations/{organization_id}/members/{membership_id}` | `{is_active: boolean}` | 200 member snapshot | Audit + update transaction; chặn last active; mọi active member gọi được. |
 | `POST /organizations/{organization_id}/invitations` | `{email, expires_in_days?: 1..30}` | 201 invitation metadata + `token` raw | Raw token chỉ trả response này; hash/row/audit commit cùng transaction. |
@@ -619,6 +622,8 @@ Tất cả response lỗi dùng error envelope chung §2.2 với `code`, `messag
 | `POST /organizations/invitations/accept` | `{token}`; Bearer identity phải có verified email | 200 membership `{id,organization_id,email,display_name,is_active}` | Hash token; kiểm status/expiry/org/email/context; membership + ACCEPTED + audit cùng transaction. Cùng token/cùng identity trả cùng member ID. |
 
 Validation request trước transaction:
+
+Đối với PATCH Organization/Site/Machine, `expected_revision` là integer ≥1 và bắt buộc ngay cả khi chỉ archive/restore. Backend đọc record theo organization scope với row lock trên PostgreSQL, so sánh revision trước khi áp dụng patch; sai revision trả `REVISION_CONFLICT` HTTP 409 với `expected_revision` và revision hiện tại trong `details[]`. Không tăng revision nếu request không có field thay đổi hoặc bị từ chối; các response thành công luôn trả revision mới để client dùng cho lần lưu kế tiếp.
 
 - Email được trim/case-fold và phải phù hợp format tối thiểu `local@domain`; không chấp nhận chuỗi chỉ có domain, whitespace hoặc vượt 320 ký tự.
 - `expires_in_days` là integer 1–30; không làm tròn, clamp hoặc nhận số âm/float/string mơ hồ.
@@ -651,6 +656,7 @@ Validation request trước transaction:
 | Concurrent pending create/update | 409 `INVITATION_CONFLICT`/`MEMBERSHIP_CONFLICT` | Không commit một phần hoặc silent overwrite. | Query current state rồi retry safe. |
 | Timeout sau server commit | UI `OUTCOME_UNKNOWN` | Không submit lại mù, không duplicate. | Query ID/list/replay token theo contract. |
 | Database/audit commit failure | 409/5xx mapped persistence error | Không báo success hoặc để invitation/membership một phần. | Rollback/reconcile rồi retry bounded. |
+| PATCH dùng revision cũ | 409 `REVISION_CONFLICT` | Không overwrite bản ghi hiện tại, không tăng revision, không ghi audit mutation. | Reload resource, hiển thị thay đổi mới và gửi lại có chủ đích bằng revision mới. |
 
 #### SPEC-P04.6 — UI, security và evidence contract
 
@@ -662,7 +668,7 @@ Validation request trước transaction:
 
 #### SPEC-P04.7 — Current implementation boundary
 
-Local source đã có model/API/migration `20260909_0018`, frontend client, organization management member/invitation panels và public `/invite` route. Focused API, migration contract, Ruff/mypy và frontend checks phải được ghi trong progress packet. Đây chưa phải `STAGING_VERIFIED`: staging phải chạy migration head `20260909_0018`, deploy cùng candidate, kiểm Auth thực, browser accept/replay/revoke/expiry, PostgreSQL rows và scope/timeout evidence trước khi mở P5.
+Local source đã có model/API/migration `20260909_0018`, migration `20260911_0020` cho optimistic revision, frontend client, organization management member/invitation panels và public `/invite` route. P4-W03 local slice đã đạt focused API/migration/health/workspace **36/36**, Ruff, frontend lint/typecheck và Vitest **20/20** trên commit `be84887`. Đây chưa phải `STAGING_VERIFIED`: staging phải chạy migration head `20260911_0020`, deploy cùng candidate, kiểm Auth thực, browser accept/replay/revoke/expiry, PostgreSQL rows, stale concurrency và scope/timeout evidence trước khi mở P5.
 
 **Validation thực thi:** backend là authority cho schema/scope/consistency; frontend kiểm sớm để giữ input và hiển thị field errors. Không dùng response thành công của một bước để suy các dependency đã sẵn sàng.
 
@@ -1778,7 +1784,7 @@ Không được gọi operation là `COMPLETED` nếu chưa có output bền v�
 4. **Trend:** chỉ aggregate các source có compatibility signature; điểm thiếu không được biến thành zero; drill-down phải quay về source run/case đúng organization.
 5. **Public deployment:** web/API/worker/schema/Auth/queue phải được kiểm theo cùng release manifest; PostgreSQL, Redis, worker và object bucket private theo topology; URL public không chứng minh workflow đã pass.
 
-## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.28
+## 14. Hợp đồng thực thi, bàn giao và kiểm soát thay đổi v1.29
 
 Phần này biến các contract theo phase thành cấu trúc có thể dùng khi viết code, test và bàn giao. Nó không thay thế các field/algorithm contract ở mục 2–8; nó quy định cách chứng minh rằng các contract đó đã được thực thi trên một candidate cụ thể.
 

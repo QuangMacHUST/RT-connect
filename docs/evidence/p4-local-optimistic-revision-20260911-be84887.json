@@ -1,0 +1,54 @@
+{
+  "evidence_type": "LOCAL_VERIFIED_SLICE",
+  "phase": "P4",
+  "work_package": "P04-W03",
+  "observed_at": "2026-09-11",
+  "repository_sha": "be84887",
+  "scope": "Organization/Site/Machine optimistic concurrency contract",
+  "migration": {
+    "revision": "20260911_0020",
+    "down_revision": "20260909_0019",
+    "tables": ["organizations", "sites", "machines"],
+    "column": "revision",
+    "initial_value": 1
+  },
+  "implementation": {
+    "patch_requires_expected_revision": true,
+    "postgres_row_lock": true,
+    "stale_code": "REVISION_CONFLICT",
+    "stale_http_status": 409,
+    "successful_patch_increments_once": true,
+    "frontend_sends_current_revision": true,
+    "active_member_action_roles_added": false
+  },
+  "tests": {
+    "api_p4_migration_health_workspace": {
+      "passed": 36,
+      "failed": 0
+    },
+    "ruff": "PASS",
+    "frontend_typecheck": "PASS",
+    "frontend_lint": "PASS",
+    "frontend_vitest": {
+      "files": 9,
+      "tests": 20,
+      "failed": 0
+    }
+  },
+  "covered_scenarios": [
+    "organization update increments revision",
+    "site update increments revision",
+    "machine update increments revision",
+    "stale organization/site/machine update returns REVISION_CONFLICT",
+    "stale update does not overwrite current machine value",
+    "machine archive uses expected_revision",
+    "organization membership remains equal-action and role-free"
+  ],
+  "not_proven": [
+    "staging migration and readiness on 20260911_0020",
+    "two-identity browser concurrency",
+    "direct Railway PostgreSQL row and audit readback",
+    "active-parent/archive/restore behavior",
+    "P4 full exit gate"
+  ]
+}

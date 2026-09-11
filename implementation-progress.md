@@ -1,7 +1,14 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
-Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.28,
-`technical-specification.md` v1.27 và `plan.md` v4.24.
+Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.29,
+`technical-specification.md` v1.28 và `plan.md` v4.25.
+
+## P4-W03 — organization hierarchy optimistic revision — local verified slice — 2026-09-11 / `be84887`
+
+- Migration `20260911_0020` thêm `revision` bắt đầu từ `1` cho `organizations`, `sites` và `machines`; schema/config/Compose/OpenAPI đã đồng bộ sang schema head mới. Mọi PATCH hierarchy bắt `expected_revision`; PostgreSQL dùng row lock, stale edit trả `409 REVISION_CONFLICT`, không overwrite và không tăng revision.
+- Organization Management client gửi revision hiện tại khi đổi tên organization, sửa machine hoặc archive machine. Không thêm role/action permission; các thành viên vẫn ngang quyền trong cùng organization.
+- API P4/migration/health/workspace đạt **36/36**, Ruff PASS; frontend typecheck/lint PASS và Vitest **20/20** (9 files). Evidence: [p4-local-optimistic-revision-20260911-be84887.json](docs/evidence/p4-local-optimistic-revision-20260911-be84887.json).
+- Đây chỉ là `LOCAL_VERIFIED_SLICE`; staging migration/readiness, direct PostgreSQL row/audit readback, two-identity browser concurrency, active-parent/archive/restore và P4 full exit gate vẫn mở.
 
 ## P17-W06 — root-run DVH volume benchmark — local verified slice — 2026-09-11 / `183a4d2`
 
@@ -38,7 +45,7 @@ Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.28,
 - API `GET /api/v1/artifacts/{artifact_id}/download` hiện trả thêm `filename` và truyền `response-content-disposition` vào signed URL. Filename được lấy ở basename, loại bỏ path separator, quote, CR/LF và control character; filename rỗng/hỏng dùng fallback xác định từ artifact ID. Object key, bytes và SHA-256 không thay đổi.
 - Regression `apps/api/tests/test_artifacts.py` đạt **7/7 PASS**, gồm filename bình thường, filename multipart có ký tự nguy hiểm và header readback trên in-memory storage. OpenAPI đã được sinh lại để schema `DownloadResponse` yêu cầu `filename`; frontend client đã validate trường này.
 - Ruff, strict mypy, frontend lint, typecheck và Vitest **8 files / 19 tests** đã PASS trong slice này. Full backend suite cần chạy lại sau khi commit để release-manifest test không còn cố ý chặn vì `WORKING_TREE_DIRTY`.
-- Đây là `LOCAL_VERIFIED_SLICE`, chưa đóng P06-W04/P06-VERIFY/P06-HANDOFF. Staging cần deploy đúng commit rồi đọc lại response header, tải fixture RTDOSE đã tồn tại và re-hash byte; không upload thêm fixture, không tạo Gamma run mới và không chạm production trong checkpoint này. Tham chiếu kế hoạch: `plan.md v4.24`.
+- Đây là `LOCAL_VERIFIED_SLICE`, chưa đóng P06-W04/P06-VERIFY/P06-HANDOFF. Staging cần deploy đúng commit rồi đọc lại response header, tải fixture RTDOSE đã tồn tại và re-hash byte; không upload thêm fixture, không tạo Gamma run mới và không chạm production trong checkpoint này. Tham chiếu kế hoạch: `plan.md v4.25`.
 
 ## P06/P20 — signed filename contract deployed and RTDOSE readback — staging verified slice — 2026-09-11 / `1984c04`
 

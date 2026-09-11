@@ -3,7 +3,7 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.27 — đồng bộ specification.md v1.28, plan.md v4.24 và business-analysis.md v0.27; bổ sung P06 signed-download filename contract: basename/header sanitization, response `filename`, response-content-disposition và invariant byte/checksum/object key; giữ P8 coordinate-frame/axis-order/explicit-transform contract, compatibility preflight giữa RTDOSE và measurement, provenance và identity-transform capability hiện tại; bổ sung P11 consumer snapshot `p11.protocol-snapshot.v1` cho Machine QA run/report/trend, source/applicability/revision/lineage/rule reference/capability và fail-closed mismatch sau khi protocol lifecycle thay đổi; bổ sung UI source panel đọc snapshot và loại seed synthetic khỏi workflow thường. Giữ source-identifiable release metadata từ Railway Git SHA cho API/web, process-RSS/resource-policy/API-responsiveness evidence cho P17 Docker workload đồng thời, export-content evidence và targeted direct PostgreSQL row/checksum/scope evidence; giữ Machine QA explicit N/A, P10 Trend query-budget/count-preflight/bucket-export, P4 membership/invitation và status/readiness P20 (2026-09-11). P17 giữ migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`, song song ORM guard và negative mutation test. P8 giữ independent Gamma oracle runner/evidence cho synthetic 2D/3D profile coverage, staging RTDOSE + measurement browser smoke và malformed Redis dispatch quarantine trước ACK. P9 render contract hiện hành là `report-renderer-0.2`, dùng `fonttools==4.63.0` và asset `DejaVuSans.ttf` được đóng gói để PDF Unicode không rơi về glyph thay thế; mọi thay đổi renderer phải lặp lại payload/hash và visual inspection trên staging. Client export phải dùng namespace idempotency tương thích renderer/export contract; server fingerprint là authority và không được nuốt conflict. P12 report integration nhận diện `BIOLOGICAL` source theo organization-scoped scenario/revision và lưu immutable source snapshot trước khi Report Builder hiển thị.
+- **Phiên bản:** 1.28 — đồng bộ specification.md v1.29, plan.md v4.25 và business-analysis.md v0.27; bổ sung P4 optimistic revision cho Organization/Site/Machine: field `revision`, PATCH `expected_revision`, PostgreSQL row lock, increment atomically và `REVISION_CONFLICT`; bổ sung P06 signed-download filename contract: basename/header sanitization, response `filename`, response-content-disposition và invariant byte/checksum/object key; giữ P8 coordinate-frame/axis-order/explicit-transform contract, P11 consumer snapshot, P10 query-budget, P17 resource evidence và P20 status/readiness (2026-09-11). P17 giữ migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`; P4 migration mới là `20260911_0020` nối sau migration đó. Các renderer, export, Gamma, Biological và release boundaries hiện hành vẫn giữ nguyên.
 - **Nguồn yêu cầu:** business-analysis.md phiên bản 0.27
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
@@ -11,7 +11,7 @@
 
 Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
 
-> Đồng bộ v1.20: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§14 là authority cho hành vi/validation/error/thuật toán/phase handoff. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; P4 đã bổ sung local membership/invitation slice trên migration `20260909_0018` và public staging đã migrate/deploy/readiness/version-parity pass, nhưng Auth browser và persistence vẫn phải revalidate trước khi gọi available. P17 có CT pixel preview local, explicit P11/P16 binding, DVH report source và Docker workload verifier local; verifier đo process peak RSS trong benchmark process, kiểm policy `1 CPU/768 MiB` và polling API responsiveness, còn cgroup peak/current và `docker stats` vẫn chỉ là quan sát bổ trợ, không phải peak RSS. CT/staging evidence vẫn phải kiểm theo candidate. P8 hiện đã có validator/engine/API contract cho frame, axis order và transform identity; staging geometry/transform negative matrix và promotion vẫn là gate riêng. Railway Git-triggered Docker builds phải truyền `RAILWAY_GIT_COMMIT_SHA` vào frontend build và API runtime phải ưu tiên SHA này cho release label; `APP_VERSION`/`VITE_APP_VERSION` chỉ là fallback khi chạy local hoặc không có Git trigger. P18 có local route-to-persistence và local backup/restore support nhưng chưa thay fault/restore/pilot staging gate. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+> Đồng bộ v1.20: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§14 là authority cho hành vi/validation/error/thuật toán/phase handoff. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; P4 đã có local membership/invitation slice trên migration `20260909_0018` và local optimistic revision slice trên migration `20260911_0020`; staging/Auth browser/persistence/concurrency vẫn phải revalidate trước khi gọi available. P17 có CT pixel preview local, explicit P11/P16 binding, DVH report source và Docker workload verifier local; verifier đo process peak RSS trong benchmark process, kiểm policy `1 CPU/768 MiB` và polling API responsiveness, còn cgroup peak/current và `docker stats` vẫn chỉ là quan sát bổ trợ, không phải peak RSS. CT/staging evidence vẫn phải kiểm theo candidate. P8 hiện đã có validator/engine/API contract cho frame, axis order và transform identity; staging geometry/transform negative matrix và promotion vẫn là gate riêng. Railway Git-triggered Docker builds phải truyền `RAILWAY_GIT_COMMIT_SHA` vào frontend build và API runtime phải ưu tiên SHA này cho release label; `APP_VERSION`/`VITE_APP_VERSION` chỉ là fallback khi chạy local hoặc không có Git trigger. P18 có local route-to-persistence và local backup/restore support nhưng chưa thay fault/restore/pilot staging gate. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
 
 ---
 
@@ -106,8 +106,9 @@ Phần 0.1–0.3 là baseline lịch sử ngày 2026-09-04 và không được �
 | P16 | Organization-scoped Biological Knowledge Library: dose limits, treatment-protocol references, knowledge/alpha-beta entries, validation, import, versioning, explicit-use snapshots and export | `20260908_0016` |
 | P17 | RTDOSE/RTSTRUCT physical-dose DVH engine, bounded CT HU/slice/dose/ROI overlay in patient LPS, coverage/metrics, immutable run snapshots, API/UI and JSON/CSV export | `20260908_0017` |
 | P4 addendum | Organization member list/toggle and email-bound one-time invitation lifecycle | `20260909_0018` |
+| P4 concurrency addendum | Organization/Site/Machine revision, stale PATCH conflict and PostgreSQL row lock | `20260911_0020` |
 
-Ngày 2026-09-08, P11–P17 đã bổ sung model/API/UI và migrations `20260908_0011`/`20260908_0012`/`20260908_0013`/`20260908_0014`/`20260908_0015`/`20260908_0016`/`20260908_0017`; ngày 2026-09-09 bổ sung P4 membership/invitation và migration `20260909_0018`. P12–P16 giữ Biological như bounded context độc lập, không có FK bắt buộc tới QACase/patient; P17 thuộc QA case và giữ raw DICOM immutable; P4 invitation chỉ lưu token hash và không tạo role hierarchy. Checkpoint local phải ghi đủ full suite, focused phase tests, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head trên cùng SHA; build warning không được coi là lỗi chức năng nhưng phải theo dõi bundle budget. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
+Ngày 2026-09-08, P11–P17 đã bổ sung model/API/UI và migrations `20260908_0011`/`20260908_0012`/`20260908_0013`/`20260908_0014`/`20260908_0015`/`20260908_0016`/`20260908_0017`; ngày 2026-09-09 bổ sung P4 membership/invitation và migration `20260909_0018`; ngày 2026-09-11 bổ sung P4 concurrency migration `20260911_0020`. P12–P16 giữ Biological như bounded context độc lập, không có FK bắt buộc tới QACase/patient; P17 thuộc QA case và giữ raw DICOM immutable; P4 invitation chỉ lưu token hash và không tạo role hierarchy. Checkpoint local phải ghi đủ full suite, focused phase tests, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head trên cùng SHA; build warning không được coi là lỗi chức năng nhưng phải theo dõi bundle budget. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
 
 > Revision addendum v1.20: P8 Redis Streams phải đưa malformed dispatch vào quarantine bằng một
 > dead-letter diagnostic bounded, không sao chép payload value; chỉ ACK sau khi dead-letter thành công.
@@ -466,6 +467,7 @@ Các trường chính:
 - code.
 - description.
 - status.
+- revision, bắt đầu từ 1 và tăng một lần sau mỗi PATCH thành công.
 - created_at.
 - updated_at.
 
@@ -486,6 +488,7 @@ Các trường chính:
 - address_label.
 - timezone.
 - status.
+- revision, bắt đầu từ 1 và tăng một lần sau mỗi PATCH thành công.
 - created_at.
 - updated_at.
 
@@ -503,6 +506,7 @@ Các trường chính:
 - model.
 - serial_number nếu có.
 - treatment_device_uid nếu có.
+- revision, bắt đầu từ 1 và tăng một lần sau mỗi PATCH thành công.
 - room_name.
 - modalities.
 - energy_modes.
@@ -1165,11 +1169,19 @@ Dashboard endpoint là read model tổng hợp; không chạy analysis khi rende
 | GET | /organizations | Liệt kê organization của user |
 | POST | /organizations | Tạo organization |
 | GET | /organizations/{id} | Xem organization |
+| PATCH | /organizations/{id} | Đổi tên/archive organization với `expected_revision` |
 | GET | /organizations/{id}/sites | Liệt kê site |
 | POST | /organizations/{id}/sites | Tạo site |
-| GET | /sites/{id}/machines | Liệt kê machine |
-| POST | /sites/{id}/machines | Tạo machine |
-| PATCH | /machines/{id} | Cập nhật thông tin hiển thị machine |
+| PATCH | /organizations/{id}/sites/{site_id} | Đổi tên/archive site với `expected_revision` |
+| GET | /organizations/{id}/sites/{site_id}/machines | Liệt kê machine |
+| POST | /organizations/{id}/sites/{site_id}/machines | Tạo machine |
+| PATCH | /organizations/{id}/sites/{site_id}/machines/{machine_id} | Cập nhật machine với `expected_revision` |
+
+Các PATCH hierarchy đều resolve membership trước lookup, đọc bản ghi bằng row lock trên PostgreSQL,
+so sánh `expected_revision` với `revision` hiện tại rồi tăng revision atomically. Revision bắt đầu
+từ `1`; stale request trả `409 REVISION_CONFLICT` và không đổi dữ liệu/audit. Migration
+`20260911_0020_organization_revisions.py` thêm field cho cả ba bảng và nối sau
+`20260909_0019_dvh_immutability.py`.
 
 P4 membership/invitation routes dùng prefix thực tế `/api/v1/organizations` và không có
 action-level role. Các route organization-scoped resolve context trước khi lookup `id`:
@@ -1183,7 +1195,8 @@ action-level role. Các route organization-scoped resolve context trước khi l
 | POST | `/organizations/{organization_id}/invitations/{invitation_id}/revoke` | Chuyển PENDING → REVOKED; token cũ không thể accept. |
 | POST | `/organizations/invitations/accept` | Hash token, kiểm verified email/context/expiry và tạo hoặc reactivate membership trong một transaction. |
 
-Error mapping tối thiểu: request schema → `REQUEST_VALIDATION_FAILED`/422; scope →
+Error mapping tối thiểu: request schema → `REQUEST_VALIDATION_FAILED`/422; stale hierarchy edit →
+`REVISION_CONFLICT`/409; scope →
 `ORGANIZATION_SCOPE_MISMATCH`/403; chưa có membership → `ORGANIZATION_MEMBERSHIP_REQUIRED`/403;
 duplicate member/pending → `INVITATION_ALREADY_MEMBER` hoặc `INVITATION_ALREADY_PENDING`/409;
 invalid token → `INVITATION_INVALID`/403 hoặc 409 theo nhánh; active context khác →
