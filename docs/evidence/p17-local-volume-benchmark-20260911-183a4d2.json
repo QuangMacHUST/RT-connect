@@ -1,0 +1,65 @@
+{
+  "schema_version": "rt-connect.p17-volume-benchmark.v1",
+  "captured_at_utc": "2026-09-11T05:19:40.969238+00:00",
+  "repository_sha": "183a4d2a6a5d5263532ae4c08c9edbc0ac48ec60",
+  "runtime": {
+    "python": "3.14.5",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "workload": {
+    "shape_frames_rows_columns": [
+      64,
+      128,
+      128
+    ],
+    "voxel_count": 1048576,
+    "roi": "full grid, one closed contour per frame",
+    "dose_levels_gy": [
+      1.0,
+      2.0,
+      3.0,
+      4.0
+    ],
+    "patient_data": false
+  },
+  "engine_key": "visual-dose.dvh",
+  "engine_version": "p17-dvh-1.1.0",
+  "result_oracle": {
+    "selected_voxel_count": 1048576,
+    "volume_cc": 12582.912000000002,
+    "dmean_gy": 2.5,
+    "dmin_gy": 1.0,
+    "dmax_gy": 4.0
+  },
+  "observations": [
+    {
+      "iteration": 1,
+      "elapsed_seconds": 1.0823654999840073,
+      "peak_traced_bytes": 69235550,
+      "peak_rss_bytes": null
+    },
+    {
+      "iteration": 2,
+      "elapsed_seconds": 1.098335600021528,
+      "peak_traced_bytes": 69232277,
+      "peak_rss_bytes": null
+    },
+    {
+      "iteration": 3,
+      "elapsed_seconds": 1.0765329000132624,
+      "peak_traced_bytes": 69229613,
+      "peak_rss_bytes": null
+    }
+  ],
+  "summary": {
+    "repeats": 3,
+    "elapsed_seconds_min": 1.0765329000132624,
+    "elapsed_seconds_median": 1.0823654999840073,
+    "elapsed_seconds_max": 1.098335600021528,
+    "peak_traced_bytes_max": 69235550,
+    "peak_rss_bytes_max": null,
+    "rss_measured": false,
+    "rss_measurement_source": "unavailable",
+    "performance_gate": "NOT_ASSESSED"
+  }
+}

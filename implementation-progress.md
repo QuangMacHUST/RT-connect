@@ -3,6 +3,12 @@
 Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.28,
 `technical-specification.md` v1.27 và `plan.md` v4.24.
 
+## P17-W06 — root-run DVH volume benchmark — local verified slice — 2026-09-11 / `183a4d2`
+
+- Đã sửa runner `scripts/benchmark-p17-dvh.py` để tự thêm `apps/api/src` vào import path; benchmark chạy được từ repository root, không phụ thuộc working directory hay `PYTHONPATH` bên ngoài.
+- Synthetic workload `64×128×128` (`1,048,576` voxel, không có dữ liệu bệnh nhân), engine `p17-dvh-1.1.0`, 3 lần lặp: elapsed median `1.0823655 s`, min `1.0765329 s`, max `1.0983356 s`, peak Python-traced allocation `69,235,550 bytes`. Oracle giữ `Dmin=1 Gy`, `Dmean=2.5 Gy`, `Dmax=4 Gy`, volume `12,582.912 cc` và selected voxel count đầy đủ.
+- Regression liên quan đạt **33/33 PASS**, Ruff PASS. RSS process không đo được trên host Windows nên `performance_gate=NOT_ASSESSED`; đây là bằng chứng runner/oracle và local volume measurement, chưa phải staging capacity/resource gate. Evidence: [p17-local-volume-benchmark-20260911-183a4d2.json](docs/evidence/p17-local-volume-benchmark-20260911-183a4d2.json).
+
 ## P0-W03 — live Stitch screen registry — verified snapshot — 2026-09-11
 
 - Stitch project `RT-connect` (`14242591911141046021`) được query live qua MCP và trả **10 resource**: 8 application screen gồm Auth (4), Home, QA Archive, Gamma Workspace, Report Builder; cùng 2 image asset là logo và avatar.
