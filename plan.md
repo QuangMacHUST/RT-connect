@@ -571,7 +571,7 @@ Mã ở cột “Phân loại” là tên contract mục tiêu cho tình huống
 ### Work packages P4
 
 - [ ] P04-W01 — Hoàn thiện CRUD/search/pagination và uniqueness scoped organization.
-- [ ] P04-W02 — Tạo invitation một lần, expiry, accept đúng verified identity; không tự join bằng domain email. **Local slice:** model/API/UI đã có; staging migration/readiness pass, browser/Auth và persistence evidence còn mở.
+- [ ] P04-W02 — Tạo invitation một lần, expiry, accept đúng verified identity; không tự join bằng domain email. **Local slice:** model/API/UI đã có; thêm regression Home Dashboard → `/auth/session-error` khi bootstrap trả `ORGANIZATION_MEMBERSHIP_REQUIRED`, kèm form tạo organization đầu tiên và test frontend. Staging migration/readiness pass, browser/Auth, first-organization creation và persistence evidence còn mở.
 - [ ] P04-W03 — Bổ sung optimistic revision cho sửa đồng thời và kiểm tra active parent.
 - [ ] P04-W04 — Hoàn thiện archive/restore, membership lifecycle và audit; không xây action roles. **Local slice:** member toggle/last-active/audit đã có; archive/restore, browser lifecycle, direct DB và staging version evidence còn mở.
 - [ ] P04-VERIFY — chạy ma trận S/E và C áp dụng, ghi result/evidence và linked FR; đối chiếu design/data/API.

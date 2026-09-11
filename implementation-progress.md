@@ -9,6 +9,12 @@ Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.28,
 - Synthetic workload `64×128×128` (`1,048,576` voxel, không có dữ liệu bệnh nhân), engine `p17-dvh-1.1.0`, 3 lần lặp: elapsed median `1.0823655 s`, min `1.0765329 s`, max `1.0983356 s`, peak Python-traced allocation `69,235,550 bytes`. Oracle giữ `Dmin=1 Gy`, `Dmean=2.5 Gy`, `Dmax=4 Gy`, volume `12,582.912 cc` và selected voxel count đầy đủ.
 - Regression liên quan đạt **33/33 PASS**, Ruff PASS. RSS process không đo được trên host Windows nên `performance_gate=NOT_ASSESSED`; đây là bằng chứng runner/oracle và local volume measurement, chưa phải staging capacity/resource gate. Evidence: [p17-local-volume-benchmark-20260911-183a4d2.json](docs/evidence/p17-local-volume-benchmark-20260911-183a4d2.json).
 
+## P4-W02 — no-membership onboarding route regression — local verified slice — 2026-09-11
+
+- Home Dashboard now has a regression test for the real staging failure boundary: when `/session/bootstrap` returns `ORGANIZATION_MEMBERSHIP_REQUIRED`, the user is redirected to `/auth/session-error`, where the existing first-organization onboarding form can create the initial organization and return to `/app`.
+- The test also asserts that Dashboard is not requested before an organization context exists. Frontend full checks passed: lint, typecheck and Vitest **20/20** across **9 files**.
+- This closes only the local routing regression. It does not prove a real Supabase identity can create an organization in staging, invitation acceptance, two-identity parity, or direct PostgreSQL/audit evidence; those P4 staging gates remain open.
+
 ## P0-W03 — live Stitch screen registry — verified snapshot — 2026-09-11
 
 - Stitch project `RT-connect` (`14242591911141046021`) được query live qua MCP và trả **10 resource**: 8 application screen gồm Auth (4), Home, QA Archive, Gamma Workspace, Report Builder; cùng 2 image asset là logo và avatar.
