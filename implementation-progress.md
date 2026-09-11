@@ -15,6 +15,12 @@ Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.28,
 - Public verifier đạt **15/15 PASS**, gồm health/readiness, schema `20260909_0019`, exact API version, OpenAPI CT preview + member/invitation routes, unauthenticated 401 boundary, web index/bundle, UI markers và exact source marker. Evidence: [p20-staging-public-parity-20260911-c0a8b82.json](docs/evidence/p20-staging-public-parity-20260911-c0a8b82.json).
 - Đây là source/runtime parity evidence trên staging; không đóng P20 hay các gate authenticated workflow, worker fault/resource, backup/restore, rollback, pilot hoặc clinical readiness.
 
+## P20-W01 — final public parity checkpoint before continued implementation — verified — 2026-09-11 / `67f189c`
+
+- Sau khi đồng bộ API với web/worker, cả ba service staging đều `SUCCESS` trên source SHA `67f189c242882c711b0ccf13f7b104672322bbcf`: API `f6b8a385-86c5-4b0f-84bc-0364eb5a32e1`, web `8770486b-7ffb-43c4-9538-4066ce7a11c9`, worker `329b7fe2-3d1a-44d4-89c8-0b6f81dd3198`.
+- Public verifier đạt **15/15 PASS** và schema `20260909_0019`; bằng chứng đầy đủ được lưu tại [p20-staging-public-parity-20260911-67f189c.json](docs/evidence/p20-staging-public-parity-20260911-67f189c.json).
+- Quy tắc đã xác nhận: docs-only commit có thể làm web/worker tự deploy trong khi API giữ source cũ vì watch pattern; trước mỗi checkpoint phải đọc exact SHA từng service và deploy API cùng commit nếu cần. Đây là parity gate, không phải bằng chứng P20 DONE hoặc clinical readiness.
+
 ## P06 — signed artifact download filename contract — local verified — 2026-09-11 / current worktree
 
 - API `GET /api/v1/artifacts/{artifact_id}/download` hiện trả thêm `filename` và truyền `response-content-disposition` vào signed URL. Filename được lấy ở basename, loại bỏ path separator, quote, CR/LF và control character; filename rỗng/hỏng dùng fallback xác định từ artifact ID. Object key, bytes và SHA-256 không thay đổi.
