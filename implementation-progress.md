@@ -1,7 +1,15 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
 Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.29,
-`technical-specification.md` v1.28 và `plan.md` v4.25.
+`technical-specification.md` v1.29 và `plan.md` v4.25.
+
+## P4-W03/P4-W04 — active-parent lifecycle — staging partial / local verified — 2026-09-11 / `42d1011`
+
+- API P4 đã khóa quy tắc lifecycle theo parent đang active: organization archived không nhận site, machine hoặc invitation mới; site archived không nhận machine mới hoặc machine mutation; resource archived chỉ được khôi phục bằng mutation explicit `is_archived=false`. Restore organization là ngoại lệ có chủ đích cho active member để có đường phục hồi.
+- Optimistic revision vẫn bắt buộc trên mọi hierarchy PATCH; parent và child được row-lock trong cùng transaction, stale update trả `409 REVISION_CONFLICT` mà không ghi đè. Local P4 suite **15/15**, full backend suite, Ruff, frontend typecheck/lint, Vitest **20/20** và production build đều PASS.
+- API, web và worker staging deploy thành công cùng source SHA đầy đủ `42d10116762827a7cd703a87ce26e676037aeeb5`; `/api/v1/version` và `/api/v1/ready` trả đúng SHA/schema `20260911_0020`, web root trả HTTP 200. Evidence: [p4-active-parent-lifecycle-staging-20260911-42d1011.json](docs/evidence/p4-active-parent-lifecycle-staging-20260911-42d1011.json).
+- RTDOSE tổng hợp đã được upload trước đó vào case `ed7ddbe5-811a-4463-a270-b0386f64644d`, manifest `VALID`, 898 bytes và SHA-256 khớp. Checkpoint này không upload lại fixture và không tạo Gamma/DVH run mới.
+- Đây là `STAGING_PARTIAL`, không phải P4 DONE: authenticated two-identity concurrency, direct PostgreSQL/audit readback, browser lifecycle evidence và public verifier ổn định vẫn mở.
 
 ## P4-W03 — organization hierarchy optimistic revision — local verified slice — 2026-09-11 / `be84887`
 

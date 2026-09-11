@@ -1,0 +1,96 @@
+{
+  "evidence_id": "P04-ACTIVE-PARENT-LIFECYCLE-STAGING-20260911-42D1011",
+  "phase": "P04",
+  "work_packages": ["P04-W03", "P04-W04"],
+  "status": "STAGING_PARTIAL",
+  "verified_at": "2026-09-11",
+  "source_commit": "42d10116762827a7cd703a87ce26e676037aeeb5",
+  "branch": "codex/p4-org-site-machine",
+  "deployment": {
+    "environment": "staging",
+    "api": {
+      "deployment_id": "aaef7194-57bd-406a-a557-aaa58ed27fad",
+      "service_id": "9b35bf0b-0419-4679-8af0-e639e5a84713",
+      "status": "SUCCESS"
+    },
+    "web": {
+      "deployment_id": "54f02441-149c-46ac-9d3c-dc4d123f9a56",
+      "service_id": "9f23331c-8d5e-45fb-9f11-5aa5e69f76f6",
+      "status": "SUCCESS"
+    },
+    "worker": {
+      "deployment_id": "bbbfcb30-14aa-4ba9-96b3-610fafb0160a",
+      "service_id": "a1e0c389-e527-4d4c-995e-2a48f4795dda",
+      "status": "SUCCESS"
+    }
+  },
+  "checks": [
+    {
+      "name": "backend_full_suite",
+      "passed": true,
+      "details": "Full backend pytest suite passed with the repository virtual environment."
+    },
+    {
+      "name": "p4_organization_suite",
+      "passed": true,
+      "details": "15/15 tests passed, including archived organization/site/machine lifecycle and stale revision guards."
+    },
+    {
+      "name": "backend_ruff",
+      "passed": true,
+      "details": "Ruff passed for the modified organization API and tests."
+    },
+    {
+      "name": "frontend_checks",
+      "passed": true,
+      "details": "Typecheck, lint and Vitest passed; Vitest result was 20/20 across 9 files."
+    },
+    {
+      "name": "frontend_build",
+      "passed": true,
+      "details": "Production Vite build passed; only the existing large JavaScript chunk advisory remains."
+    },
+    {
+      "name": "staging_api_version",
+      "passed": true,
+      "url": "https://gleaming-cooperation-staging.up.railway.app/api/v1/version",
+      "details": "HTTP 200; version equals 42d10116762827a7cd703a87ce26e676037aeeb5; environment=staging; schema_revision=20260911_0020."
+    },
+    {
+      "name": "staging_api_ready",
+      "passed": true,
+      "url": "https://gleaming-cooperation-staging.up.railway.app/api/v1/ready",
+      "details": "HTTP 200; status=ready; schema_revision=20260911_0020."
+    },
+    {
+      "name": "staging_web_shell",
+      "passed": true,
+      "url": "https://rt-connect-web-staging-staging.up.railway.app/",
+      "details": "HTTP 200; public HTML shell returned successfully."
+    }
+  ],
+  "implemented_behaviors": [
+    "An active member can read and explicitly restore an archived organization through the lifecycle exception endpoint.",
+    "Creating a site, machine or invitation under an archived organization returns PARENT_NOT_AVAILABLE.",
+    "Creating or mutating a machine under an archived site returns PARENT_NOT_AVAILABLE.",
+    "An archived site or machine cannot be edited as active data; restore is an explicit is_archived=false mutation.",
+    "Hierarchy PATCH mutations retain expected_revision and stale updates return REVISION_CONFLICT without overwriting data.",
+    "The Organization/Site/Machine UI lists archived children and exposes explicit site/machine archive and restore actions."
+  ],
+  "staging_fixture_boundary": {
+    "case_id": "ed7ddbe5-811a-4463-a270-b0386f64644d",
+    "fixture_name": "gamma-rtdose-v1-smoke.dcm",
+    "fixture_sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
+    "fixture_bytes": 898,
+    "manifest_status": "VALID",
+    "preflight": "1 RTDOSE; 0 RTSTRUCT; 0 CT",
+    "action": "Existing authorized synthetic RTDOSE fixture was preserved; no re-upload and no new Gamma/DVH run were created in this checkpoint."
+  },
+  "open_gates": [
+    "Authenticated two-identity stale PATCH/concurrency readback on staging.",
+    "Direct PostgreSQL row and audit-event readback on staging.",
+    "Authenticated browser lifecycle evidence for invitation, site and machine archive/restore.",
+    "Stable bounded public verifier across the large OpenAPI and web bundle responses.",
+    "P4 full exit gate and later P5-P20 gates."
+  ]
+}
