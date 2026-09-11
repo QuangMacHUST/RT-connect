@@ -29,7 +29,15 @@ import numpy as np
 from pydicom.dataset import Dataset, FileDataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian, RTDoseStorage, RTStructureSetStorage
 
-from rt_connect_api.services.dose_dvh_engine import DVH_ENGINE_VERSION, analyze_dvh
+# Keep the benchmark runnable from a clean repository checkout without asking
+# the operator to export a PYTHONPATH first.  The production package is under
+# apps/api/src and this script intentionally imports the same engine used by
+# the API; it does not install or mutate the application environment.
+REPO_ROOT = Path(__file__).resolve().parents[1]
+API_SOURCE = REPO_ROOT / "apps" / "api" / "src"
+sys.path.insert(0, str(API_SOURCE))
+
+from rt_connect_api.services.dose_dvh_engine import DVH_ENGINE_VERSION, analyze_dvh  # noqa: E402
 
 try:
     import resource as _resource
@@ -37,7 +45,6 @@ except ImportError:  # pragma: no cover - Windows does not expose resource.
     _resource = None
 
 FIXTURE_UID_ROOT = "1.2.826.0.1.3680043.8.498.999.20"
-REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _repository_sha() -> str | None:
