@@ -3,7 +3,7 @@
 ## Dự án RT-CONNECT
 
 - **Tên file:** technical-specification.md
-- **Phiên bản:** 1.29 — đồng bộ specification.md v1.29, plan.md v4.25 và business-analysis.md v0.27; bổ sung P4 active-parent/archive/restore guard cho Organization/Site/Machine và frontend management controls trên nền optimistic revision; giữ P4 PostgreSQL row lock/`REVISION_CONFLICT`, P06 signed-download filename contract, P8 coordinate-frame/axis-order/explicit-transform contract, P11 consumer snapshot, P10 query-budget, P17 resource evidence và P20 status/readiness (2026-09-11). P17 giữ migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`; P4 migration mới là `20260911_0020` nối sau migration đó. Các renderer, export, Gamma, Biological và release boundaries hiện hành vẫn giữ nguyên.
+- **Phiên bản:** 1.30 — đồng bộ specification.md v1.29, plan.md v4.25 và business-analysis.md v0.27; bổ sung P4 active-parent/archive/restore guard cho Organization/Site/Machine và frontend management controls trên nền optimistic revision; giữ P4 PostgreSQL row lock/`REVISION_CONFLICT`, P06 signed-download filename contract, P8 coordinate-frame/axis-order/explicit-transform contract, P8 local deterministic workload benchmark, P11 consumer snapshot, P10 query-budget, P17 resource evidence và P20 status/readiness (2026-09-11). P17 giữ migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`; P4 migration mới là `20260911_0020` nối sau migration đó. Các renderer, export, Gamma, Biological và release boundaries hiện hành vẫn giữ nguyên.
 - **Nguồn yêu cầu:** business-analysis.md phiên bản 0.27
 - **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
 - **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh

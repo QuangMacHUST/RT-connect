@@ -1,0 +1,52 @@
+{
+  "shape": [
+    8,
+    16,
+    16
+  ],
+  "voxel_count": 2048,
+  "iterations": 2,
+  "engine_version": "gamma-nd-p8.2",
+  "configuration": {
+    "dimensionality": "3D",
+    "interpolation": "GRID",
+    "distance_to_agreement_mm": 3.0,
+    "max_gamma": 2.0,
+    "max_candidate_evaluations": 50000
+  },
+  "timing_seconds": {
+    "min": 3.0599306999938563,
+    "median": 3.1836370000091847,
+    "max": 3.307343300024513,
+    "samples": [
+      3.307343300024513,
+      3.0599306999938563
+    ]
+  },
+  "python_traced_peak_bytes": {
+    "max": 2023628,
+    "samples": [
+      2023628,
+      962468
+    ]
+  },
+  "oracle": {
+    "passed": true,
+    "overall_status": "PASS",
+    "evaluated_points": 2048,
+    "passing_points": 2048,
+    "pass_rate_percent": 100.0,
+    "max_gamma": 0.0
+  },
+  "data_boundary": "Synthetic identical grids only; no patient, PACS or treatment data.",
+  "evidence_id": "P08-LOCAL-GAMMA-WORKLOAD-20260911",
+  "phase": "P08",
+  "status": "LOCAL_PERFORMANCE_AND_ORACLE",
+  "verified_at": "2026-09-11T07:52:17.389974+00:00",
+  "source_commit": "4cf016480ed8127b8939eee773a79c4960c7b632",
+  "script_sha256": "75c2bad87f53045c4bc207c8c0de4f7ca4921854251441c06f6e9dc1c1b2381d",
+  "platform": {
+    "os": "nt",
+    "python": "3.14.5"
+  }
+}

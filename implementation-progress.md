@@ -1,7 +1,14 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
 Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.29,
-`technical-specification.md` v1.29 và `plan.md` v4.25.
+`technical-specification.md` v1.30 và `plan.md` v4.25.
+
+## P8-W03 — deterministic Gamma workload benchmark — local verified slice — 2026-09-11 / `4cf0164`
+
+- `scripts/benchmark-p8-gamma.py` chạy engine `gamma-nd-p8.2` trên hai grid 3D tổng hợp giống nhau `8×16×16` (2,048 voxel), 2 lần lặp, GRID/3D, DTA `3 mm`, max γ `2` và candidate budget `50,000`.
+- Kết quả: median `3.183637 s`, min `3.059931 s`, max `3.307343 s`; Python-traced peak allocation tối đa `2,023,628 bytes`. Oracle giữ `PASS`, `2,048/2,048` evaluated/passing, pass rate `100%`, max gamma `0`, `0` censored và `0` no-candidate.
+- Evidence: [p8-local-gamma-workload-20260911-4cf0164.json](docs/evidence/p8-local-gamma-workload-20260911-4cf0164.json). Đây là local deterministic workload/oracle evidence; Windows host không cung cấp process-RSS/cgroup gate trong script này, nên không được coi là staging capacity hoặc clinical commissioning.
+- P8 vẫn mở staging crash-after-durable-commit-before-ACK, bounded retry/dead-letter/failure injection, large-input/resource budget trên Railway, oracle promotion/convergence và release-manifest evidence.
 
 ## P4-W03/P4-W04 — active-parent lifecycle — staging partial / local verified — 2026-09-11 / `42d1011`
 
