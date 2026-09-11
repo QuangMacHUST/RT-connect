@@ -40,6 +40,7 @@ class Organization(TimestampedIdMixin, Base):
 
     name: Mapped[str] = mapped_column(String(200), unique=True, nullable=False)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
     sites: Mapped[list[Site]] = relationship(back_populates="organization")
     memberships: Mapped[list[OrganizationMembership]] = relationship(back_populates="organization")
 
@@ -129,6 +130,7 @@ class Site(TimestampedIdMixin, Base):
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
     organization: Mapped[Organization] = relationship(back_populates="sites")
     machines: Mapped[list[Machine]] = relationship(back_populates="site")
 
@@ -146,6 +148,7 @@ class Machine(TimestampedIdMixin, Base):
     model: Mapped[str | None] = mapped_column(String(200), nullable=True)
     status: Mapped[str] = mapped_column(String(40), nullable=False, server_default="ACTIVE")
     is_archived: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=false())
+    revision: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
     site: Mapped[Site] = relationship(back_populates="machines")
 
 

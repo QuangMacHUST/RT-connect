@@ -5633,6 +5633,11 @@
             ],
             "title": "Display Name"
           },
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
           "is_archived": {
             "anyOf": [
               {
@@ -5686,6 +5691,9 @@
             "title": "Status"
           }
         },
+        "required": [
+          "expected_revision"
+        ],
         "title": "MachinePatchRequest",
         "type": "object"
       },
@@ -5913,6 +5921,10 @@
             "title": "Organization Id",
             "type": "string"
           },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
           "site_id": {
             "format": "uuid",
             "title": "Site Id",
@@ -5936,7 +5948,8 @@
           "manufacturer",
           "model",
           "status",
-          "is_archived"
+          "is_archived",
+          "revision"
         ],
         "title": "MachineResponse",
         "type": "object"
@@ -6715,6 +6728,11 @@
       },
       "OrganizationPatchRequest": {
         "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
           "is_archived": {
             "anyOf": [
               {
@@ -6740,6 +6758,9 @@
             "title": "Name"
           }
         },
+        "required": [
+          "expected_revision"
+        ],
         "title": "OrganizationPatchRequest",
         "type": "object"
       },
@@ -6757,12 +6778,17 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
           }
         },
         "required": [
           "id",
           "name",
-          "is_archived"
+          "is_archived",
+          "revision"
         ],
         "title": "OrganizationResponse",
         "type": "object"
@@ -9559,6 +9585,11 @@
       },
       "SitePatchRequest": {
         "properties": {
+          "expected_revision": {
+            "minimum": 1.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
           "is_archived": {
             "anyOf": [
               {
@@ -9584,6 +9615,9 @@
             "title": "Name"
           }
         },
+        "required": [
+          "expected_revision"
+        ],
         "title": "SitePatchRequest",
         "type": "object"
       },
@@ -9606,13 +9640,18 @@
             "format": "uuid",
             "title": "Organization Id",
             "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
           }
         },
         "required": [
           "id",
           "organization_id",
           "name",
-          "is_archived"
+          "is_archived",
+          "revision"
         ],
         "title": "SiteResponse",
         "type": "object"

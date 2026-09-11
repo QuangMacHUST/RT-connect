@@ -41,7 +41,7 @@ def test_compose_keeps_schema_revision_as_the_exact_string() -> None:
     configuration = yaml.safe_load(compose.read_text(encoding="utf-8"))
 
     revision = configuration["services"]["api"]["environment"]["SCHEMA_REVISION"]
-    assert revision == "20260909_0019"
+    assert revision == "20260911_0020"
     assert isinstance(revision, str)
 
 
@@ -156,4 +156,22 @@ def test_dvh_immutability_migration_declares_database_guard() -> None:
     assert "BEFORE UPDATE OR DELETE" in source
     assert "DVH_RUN_IMMUTABLE" in source
     assert "DROP TRIGGER" in source
+    assert "def downgrade()" in source
+
+
+def test_organization_revision_migration_declares_optimistic_concurrency_fields() -> None:
+    migration = (
+        Path(__file__).parents[1]
+        / "alembic"
+        / "versions"
+        / "20260911_0020_organization_revisions.py"
+    )
+    source = migration.read_text(encoding="utf-8")
+
+    assert 'revision: str = "20260911_0020"' in source
+    assert 'down_revision: str | Sequence[str] | None = "20260909_0019"' in source
+    assert '"organizations"' in source
+    assert '"sites"' in source
+    assert '"machines"' in source
+    assert 'sa.Column("revision", sa.Integer()' in source
     assert "def downgrade()" in source

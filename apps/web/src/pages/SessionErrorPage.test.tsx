@@ -66,7 +66,8 @@ test('creates the first organization and navigates to the workspace', async () =
   vi.mocked(apiClient.createOrganization).mockResolvedValue({
     id: '11111111-1111-4111-8111-111111111111',
     name: 'Bệnh viện thử nghiệm',
-    is_archived: false
+    is_archived: false,
+    revision: 1
   })
 
   renderPage()

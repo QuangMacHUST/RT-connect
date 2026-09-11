@@ -51,7 +51,7 @@ export type DashboardSummary = {
   active_job_count: number
   warnings: string[]
 }
-export type OrganizationResource = { id: string; name: string; is_archived: boolean }
+export type OrganizationResource = { id: string; name: string; is_archived: boolean; revision: number }
 export type OrganizationMemberResource = {
   id: string
   organization_id: string
@@ -69,7 +69,7 @@ export type OrganizationInvitationResource = {
   revoked_at: string | null
 }
 export type OrganizationInvitationCreatedResource = OrganizationInvitationResource & { token: string }
-export type SiteResource = { id: string; organization_id: string; name: string; is_archived: boolean }
+export type SiteResource = { id: string; organization_id: string; name: string; is_archived: boolean; revision: number }
 export type MachineResource = {
   id: string
   organization_id: string
@@ -80,6 +80,7 @@ export type MachineResource = {
   model: string | null
   status: string
   is_archived: boolean
+  revision: number
 }
 export type Collection<T> = { items: T[]; total: number; offset: number; limit: number }
 export type FolderResource = {
@@ -1362,7 +1363,7 @@ export class ApiClient {
 
   createOrganization(accessToken: string, name: string): Promise<OrganizationResource> {
     return this.request('/organizations', z.object({
-      id: z.string().uuid(), name: z.string(), is_archived: z.boolean()
+      id: z.string().uuid(), name: z.string(), is_archived: z.boolean(), revision: z.number().int().positive()
     }), accessToken, { method: 'POST', body: JSON.stringify({ name }) })
   }
 
@@ -1379,32 +1380,32 @@ export class ApiClient {
 
   organization(accessToken: string, organizationId: string): Promise<OrganizationResource> {
     return this.get(`/organizations/${organizationId}`, z.object({
-      id: z.string().uuid(), name: z.string(), is_archived: z.boolean()
+      id: z.string().uuid(), name: z.string(), is_archived: z.boolean(), revision: z.number().int().positive()
     }), accessToken)
   }
 
-  updateOrganization(accessToken: string, organizationId: string, body: { name?: string; is_archived?: boolean }): Promise<OrganizationResource> {
+  updateOrganization(accessToken: string, organizationId: string, body: { expected_revision: number; name?: string; is_archived?: boolean }): Promise<OrganizationResource> {
     return this.request(`/organizations/${organizationId}`, z.object({
-      id: z.string().uuid(), name: z.string(), is_archived: z.boolean()
+      id: z.string().uuid(), name: z.string(), is_archived: z.boolean(), revision: z.number().int().positive()
     }), accessToken, { method: 'PATCH', body: JSON.stringify(body) })
   }
 
   sites(accessToken: string, organizationId: string, includeArchived = false): Promise<Collection<SiteResource>> {
     return this.get(`/organizations/${organizationId}/sites?include_archived=${includeArchived}`, z.object({
-      items: z.array(z.object({ id: z.string().uuid(), organization_id: z.string().uuid(), name: z.string(), is_archived: z.boolean() })),
+      items: z.array(z.object({ id: z.string().uuid(), organization_id: z.string().uuid(), name: z.string(), is_archived: z.boolean(), revision: z.number().int().positive() })),
       total: z.number().int(), offset: z.number().int(), limit: z.number().int()
     }), accessToken)
   }
 
   createSite(accessToken: string, organizationId: string, name: string): Promise<SiteResource> {
     return this.request(`/organizations/${organizationId}/sites`, z.object({
-      id: z.string().uuid(), organization_id: z.string().uuid(), name: z.string(), is_archived: z.boolean()
+      id: z.string().uuid(), organization_id: z.string().uuid(), name: z.string(), is_archived: z.boolean(), revision: z.number().int().positive()
     }), accessToken, { method: 'POST', body: JSON.stringify({ name }) })
   }
 
-  updateSite(accessToken: string, organizationId: string, siteId: string, body: { name?: string; is_archived?: boolean }): Promise<SiteResource> {
+  updateSite(accessToken: string, organizationId: string, siteId: string, body: { expected_revision: number; name?: string; is_archived?: boolean }): Promise<SiteResource> {
     return this.request(`/organizations/${organizationId}/sites/${siteId}`, z.object({
-      id: z.string().uuid(), organization_id: z.string().uuid(), name: z.string(), is_archived: z.boolean()
+      id: z.string().uuid(), organization_id: z.string().uuid(), name: z.string(), is_archived: z.boolean(), revision: z.number().int().positive()
     }), accessToken, { method: 'PATCH', body: JSON.stringify(body) })
   }
 
@@ -1413,7 +1414,7 @@ export class ApiClient {
       items: z.array(z.object({
         id: z.string().uuid(), organization_id: z.string().uuid(), site_id: z.string().uuid(),
         stable_machine_id: z.string(), display_name: z.string(), manufacturer: z.string().nullable(),
-        model: z.string().nullable(), status: z.string(), is_archived: z.boolean()
+        model: z.string().nullable(), status: z.string(), is_archived: z.boolean(), revision: z.number().int().positive()
       })),
       total: z.number().int(), offset: z.number().int(), limit: z.number().int()
     }), accessToken)
@@ -1425,15 +1426,15 @@ export class ApiClient {
     return this.request(`/organizations/${organizationId}/sites/${siteId}/machines`, z.object({
       id: z.string().uuid(), organization_id: z.string().uuid(), site_id: z.string().uuid(),
       stable_machine_id: z.string(), display_name: z.string(), manufacturer: z.string().nullable(),
-      model: z.string().nullable(), status: z.string(), is_archived: z.boolean()
+      model: z.string().nullable(), status: z.string(), is_archived: z.boolean(), revision: z.number().int().positive()
     }), accessToken, { method: 'POST', body: JSON.stringify({ status: 'ACTIVE', ...body }) })
   }
 
-  updateMachine(accessToken: string, organizationId: string, siteId: string, machineId: string, body: Partial<Pick<MachineResource, 'display_name' | 'manufacturer' | 'model' | 'status' | 'is_archived'>>): Promise<MachineResource> {
+  updateMachine(accessToken: string, organizationId: string, siteId: string, machineId: string, body: Partial<Pick<MachineResource, 'display_name' | 'manufacturer' | 'model' | 'status' | 'is_archived'>> & { expected_revision: number }): Promise<MachineResource> {
     return this.request(`/organizations/${organizationId}/sites/${siteId}/machines/${machineId}`, z.object({
       id: z.string().uuid(), organization_id: z.string().uuid(), site_id: z.string().uuid(),
       stable_machine_id: z.string(), display_name: z.string(), manufacturer: z.string().nullable(),
-      model: z.string().nullable(), status: z.string(), is_archived: z.boolean()
+      model: z.string().nullable(), status: z.string(), is_archived: z.boolean(), revision: z.number().int().positive()
     }), accessToken, { method: 'PATCH', body: JSON.stringify(body) })
   }
 

@@ -5,6 +5,7 @@ import { ApiClientError, apiClient, type MachineResource } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 
 const machineStatuses = ['ACTIVE', 'OFFLINE', 'MAINTENANCE', 'RETIRED'] as const
+type MachinePatchFields = Partial<Pick<MachineResource, 'display_name' | 'manufacturer' | 'model' | 'status' | 'is_archived'>>
 
 function errorMessage(error: unknown): string {
   if (error instanceof ApiClientError) return `${error.message} (${error.code})`
@@ -18,7 +19,7 @@ function MachineRow({
 }: {
   machine: MachineResource
   onArchive: (machine: MachineResource) => void
-  onSave: (machine: MachineResource, body: Parameters<typeof apiClient.updateMachine>[4]) => void
+  onSave: (machine: MachineResource, body: MachinePatchFields) => void
 }) {
   const [displayName, setDisplayName] = useState(machine.display_name)
   const [status, setStatus] = useState(machine.status)
@@ -115,7 +116,7 @@ export function OrganizationManagementPage() {
   const submitOrganization = () => {
     const name = (organizationName ?? organization.data.name).trim()
     if (!name) return setMessage('Tên organization không được để trống.')
-    mutation.mutate(() => apiClient.updateOrganization(accessToken!, organizationId, { name }))
+    mutation.mutate(() => apiClient.updateOrganization(accessToken!, organizationId, { name, expected_revision: organization.data.revision }))
   }
   const submitSite = () => {
     const name = newSiteName.trim()
@@ -147,7 +148,7 @@ export function OrganizationManagementPage() {
       <section className="panel management-panel"><div className="panel-heading"><div><p className="eyebrow">ORGANIZATION</p><h2>{organization.data.name}</h2></div><span className={organization.data.is_archived ? 'status-badge status-badge--warning' : 'status-badge'}>{organization.data.is_archived ? 'ARCHIVED' : 'ACTIVE'}</span></div><div className="inline-form"><label>Tên organization<input value={organizationName ?? organization.data.name} onChange={(event) => setOrganizationName(event.target.value)} /></label><button disabled={mutation.isPending} onClick={submitOrganization}>Lưu tên</button></div></section>
       <div className="management-grid">
         <section className="panel"><div className="panel-heading"><div><p className="eyebrow">SITES</p><h2>Cơ sở vận hành</h2></div><strong>{sites.data.total}</strong></div><div className="stack-form"><label>Thêm site<input placeholder="Ví dụ: Cơ sở trung tâm" value={newSiteName} onChange={(event) => setNewSiteName(event.target.value)} /></label><button disabled={mutation.isPending} onClick={submitSite}>Thêm site</button></div><div className="site-list" role="list">{sites.data.items.map((site) => <button className={site.id === selectedSite?.id ? 'site-item site-item--selected' : 'site-item'} key={site.id} onClick={() => setSelectedSiteId(site.id)}><span>{site.name}</span><small>{site.is_archived ? 'ARCHIVED' : 'ACTIVE'}</small></button>)}</div></section>
-        <section className="panel"><div className="panel-heading"><div><p className="eyebrow">MACHINES</p><h2>{selectedSite?.name ?? 'Chọn site'}</h2></div><strong>{machines.data?.total ?? '—'}</strong></div>{machines.isPending ? <p>Đang tải machine…</p> : machines.error ? <div className="alert alert--error"><p>{errorMessage(machines.error)}</p></div> : selectedSite && machines.data ? <><div className="stack-form"><label>Mã máy ổn định<input placeholder="Ví dụ: LINAC-01" value={newMachineId} onChange={(event) => setNewMachineId(event.target.value)} /></label><label>Tên hiển thị<input placeholder="Ví dụ: TrueBeam 01" value={newMachineName} onChange={(event) => setNewMachineName(event.target.value)} /></label><button disabled={mutation.isPending} onClick={submitMachine}>Thêm máy</button></div><div className="table-wrap"><table><thead><tr><th>Mã ổn định</th><th>Tên hiển thị</th><th>Hãng / model</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{machines.data.items.map((machine) => <MachineRow key={machine.id} machine={machine} onArchive={(item) => mutation.mutate(() => apiClient.updateMachine(accessToken!, organizationId, selectedSite.id, item.id, { is_archived: true }))} onSave={(item, body) => mutation.mutate(() => apiClient.updateMachine(accessToken!, organizationId, selectedSite.id, item.id, body))} />)}</tbody></table></div></> : <p>Chưa có site để quản lý machine.</p>}</section>
+        <section className="panel"><div className="panel-heading"><div><p className="eyebrow">MACHINES</p><h2>{selectedSite?.name ?? 'Chọn site'}</h2></div><strong>{machines.data?.total ?? '—'}</strong></div>{machines.isPending ? <p>Đang tải machine…</p> : machines.error ? <div className="alert alert--error"><p>{errorMessage(machines.error)}</p></div> : selectedSite && machines.data ? <><div className="stack-form"><label>Mã máy ổn định<input placeholder="Ví dụ: LINAC-01" value={newMachineId} onChange={(event) => setNewMachineId(event.target.value)} /></label><label>Tên hiển thị<input placeholder="Ví dụ: TrueBeam 01" value={newMachineName} onChange={(event) => setNewMachineName(event.target.value)} /></label><button disabled={mutation.isPending} onClick={submitMachine}>Thêm máy</button></div><div className="table-wrap"><table><thead><tr><th>Mã ổn định</th><th>Tên hiển thị</th><th>Hãng / model</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{machines.data.items.map((machine) => <MachineRow key={machine.id} machine={machine} onArchive={(item) => mutation.mutate(() => apiClient.updateMachine(accessToken!, organizationId, selectedSite.id, item.id, { is_archived: true, expected_revision: item.revision }))} onSave={(item, body) => mutation.mutate(() => apiClient.updateMachine(accessToken!, organizationId, selectedSite.id, item.id, { ...body, expected_revision: item.revision }))} />)}</tbody></table></div></> : <p>Chưa có site để quản lý machine.</p>}</section>
       </div>
       <div className="management-grid">
         <section className="panel">

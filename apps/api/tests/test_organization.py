@@ -41,22 +41,29 @@ def test_site_and_machine_lifecycle_is_scoped_and_archivable() -> None:
         machine = created_machine.json()
         assert machine["status"] == "ACTIVE"
         assert machine["is_archived"] is False
+        assert machine["revision"] == 1
 
         updated_machine = client.patch(
             f"/api/v1/organizations/{organization.id}/sites/{site_id}/machines/{machine['id']}",
-            json={"status": "MAINTENANCE", "display_name": "Synthetic Linac 02A"},
+            json={
+                "expected_revision": machine["revision"],
+                "status": "MAINTENANCE",
+                "display_name": "Synthetic Linac 02A",
+            },
         )
         assert updated_machine.status_code == 200
         assert updated_machine.json()["id"] == machine["id"]
         assert updated_machine.json()["stable_machine_id"] == "SYN-LINAC-02"
         assert updated_machine.json()["status"] == "MAINTENANCE"
+        assert updated_machine.json()["revision"] == 2
 
         archived_machine = client.patch(
             f"/api/v1/organizations/{organization.id}/sites/{site_id}/machines/{machine['id']}",
-            json={"is_archived": True},
+            json={"expected_revision": updated_machine.json()["revision"], "is_archived": True},
         )
         assert archived_machine.status_code == 200
         assert archived_machine.json()["is_archived"] is True
+        assert archived_machine.json()["revision"] == 3
 
         active_machines = client.get(
             f"/api/v1/organizations/{organization.id}/sites/{site_id}/machines"
@@ -67,6 +74,70 @@ def test_site_and_machine_lifecycle_is_scoped_and_archivable() -> None:
         )
         assert active_machines.json()["total"] == 0
         assert archived_machines.json()["total"] == 1
+
+
+def test_organization_site_and_machine_updates_reject_stale_revisions() -> None:
+    with _workspace_client() as (client, organization):
+        organization_url = f"/api/v1/organizations/{organization.id}"
+        current_organization = client.get(organization_url)
+        assert current_organization.status_code == 200
+        organization_revision = current_organization.json()["revision"]
+
+        renamed_organization = client.patch(
+            organization_url,
+            json={
+                "expected_revision": organization_revision,
+                "name": "Synthetic Oncology Center Revised",
+            },
+        )
+        assert renamed_organization.status_code == 200, renamed_organization.text
+        assert renamed_organization.json()["revision"] == organization_revision + 1
+
+        stale_organization = client.patch(
+            organization_url,
+            json={"expected_revision": organization_revision, "name": "Stale Organization Edit"},
+        )
+        assert stale_organization.status_code == 409
+        assert stale_organization.json()["code"] == "REVISION_CONFLICT"
+
+        site = client.get(f"{organization_url}/sites").json()["items"][0]
+        site_url = f"{organization_url}/sites/{site['id']}"
+        renamed_site = client.patch(
+            site_url,
+            json={"expected_revision": site["revision"], "name": "Synthetic Main Site Revised"},
+        )
+        assert renamed_site.status_code == 200, renamed_site.text
+        assert renamed_site.json()["revision"] == site["revision"] + 1
+
+        stale_site = client.patch(
+            site_url,
+            json={"expected_revision": site["revision"], "name": "Stale Site Edit"},
+        )
+        assert stale_site.status_code == 409
+        assert stale_site.json()["code"] == "REVISION_CONFLICT"
+
+        machine = client.get(f"{site_url}/machines").json()["items"][0]
+        machine_url = f"{site_url}/machines/{machine['id']}"
+        renamed_machine = client.patch(
+            machine_url,
+            json={
+                "expected_revision": machine["revision"],
+                "display_name": "Synthetic Linac Revised",
+            },
+        )
+        assert renamed_machine.status_code == 200, renamed_machine.text
+        assert renamed_machine.json()["revision"] == machine["revision"] + 1
+
+        stale_machine = client.patch(
+            machine_url,
+            json={"expected_revision": machine["revision"], "display_name": "Stale Machine Edit"},
+        )
+        assert stale_machine.status_code == 409
+        assert stale_machine.json()["code"] == "REVISION_CONFLICT"
+
+        current_machine = client.get(f"{site_url}/machines").json()["items"][0]
+        assert current_machine["display_name"] == "Synthetic Linac Revised"
+        assert current_machine["revision"] == machine["revision"] + 1
 
 
 def test_organization_routes_reject_scope_mismatch_before_resource_lookup() -> None:
@@ -408,7 +479,10 @@ def test_invited_peer_identity_has_the_same_organization_actions() -> None:
 
         updated_machine = client.patch(
             f"/api/v1/organizations/{organization.id}/sites/{site_id}/machines/{machine['id']}",
-            json={"display_name": "Peer-updated Synthetic Linac"},
+            json={
+                "expected_revision": machine["revision"],
+                "display_name": "Peer-updated Synthetic Linac",
+            },
         )
         assert updated_machine.status_code == 200, updated_machine.text
         assert updated_machine.json()["display_name"] == "Peer-updated Synthetic Linac"

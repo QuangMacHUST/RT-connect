@@ -44,6 +44,7 @@ class OrganizationCreateRequest(BaseModel):
 
 
 class OrganizationPatchRequest(BaseModel):
+    expected_revision: int = Field(ge=1)
     name: str | None = Field(default=None, min_length=1, max_length=200)
     is_archived: bool | None = None
 
@@ -53,6 +54,7 @@ class SiteCreateRequest(BaseModel):
 
 
 class SitePatchRequest(BaseModel):
+    expected_revision: int = Field(ge=1)
     name: str | None = Field(default=None, min_length=1, max_length=200)
     is_archived: bool | None = None
 
@@ -66,6 +68,7 @@ class MachineCreateRequest(BaseModel):
 
 
 class MachinePatchRequest(BaseModel):
+    expected_revision: int = Field(ge=1)
     display_name: str | None = Field(default=None, min_length=1, max_length=200)
     manufacturer: str | None = Field(default=None, max_length=200)
     model: str | None = Field(default=None, max_length=200)
@@ -139,6 +142,7 @@ class OrganizationResponse(BaseModel):
     id: UUID
     name: str
     is_archived: bool
+    revision: int
 
 
 class SiteResponse(BaseModel):
@@ -146,6 +150,7 @@ class SiteResponse(BaseModel):
     organization_id: UUID
     name: str
     is_archived: bool
+    revision: int
 
 
 class MachineResponse(BaseModel):
@@ -158,6 +163,7 @@ class MachineResponse(BaseModel):
     model: str | None
     status: str
     is_archived: bool
+    revision: int
 
 
 class SiteCollectionResponse(BaseModel):
@@ -289,7 +295,10 @@ def _commit_or_raise(session: Session, code: str, message: str) -> None:
 
 def _organization_response(organization: Organization) -> OrganizationResponse:
     return OrganizationResponse(
-        id=organization.id, name=organization.name, is_archived=organization.is_archived
+        id=organization.id,
+        name=organization.name,
+        is_archived=organization.is_archived,
+        revision=organization.revision,
     )
 
 
@@ -299,6 +308,7 @@ def _site_response(site: Site) -> SiteResponse:
         organization_id=site.organization_id,
         name=site.name,
         is_archived=site.is_archived,
+        revision=site.revision,
     )
 
 
@@ -313,6 +323,26 @@ def _machine_response(machine: Machine) -> MachineResponse:
         model=machine.model,
         status=machine.status,
         is_archived=machine.is_archived,
+        revision=machine.revision,
+    )
+
+
+def _raise_revision_conflict(
+    entity: str, expected_revision: int, current_revision: int
+) -> None:
+    raise DomainError(
+        "REVISION_CONFLICT",
+        f"The {entity} changed since it was loaded.",
+        409,
+        details=[
+            {
+                "field": "expected_revision",
+                "message": (
+                    f"Expected revision {expected_revision}, but the current revision is "
+                    f"{current_revision}. Reload before saving."
+                ),
+            }
+        ],
     )
 
 
@@ -781,15 +811,22 @@ def update_organization(
     session: Session = Depends(get_session),  # noqa: B008
 ) -> OrganizationResponse:
     context = _context_for_organization(organization_id, identity, session)
-    organization = session.get(Organization, organization_id)
+    organization = session.scalar(
+        select(Organization).where(Organization.id == organization_id).with_for_update()
+    )
     if organization is None:
         raise DomainError("ORGANIZATION_NOT_FOUND", "Organization was not found.", 404)
+    if organization.revision != request.expected_revision:
+        _raise_revision_conflict(
+            "organization", request.expected_revision, organization.revision
+        )
     if request.name is None and request.is_archived is None:
         raise DomainError("NO_CHANGES", "At least one organization field is required.", 400)
     if request.name is not None:
         organization.name = request.name
     if request.is_archived is not None:
         organization.is_archived = request.is_archived
+    organization.revision += 1
     _audit(
         session,
         context,
@@ -871,10 +908,14 @@ def update_site(
 ) -> SiteResponse:
     context = _context_for_organization(organization_id, identity, session)
     site = session.scalar(
-        select(Site).where(Site.id == site_id, Site.organization_id == organization_id)
+        select(Site)
+        .where(Site.id == site_id, Site.organization_id == organization_id)
+        .with_for_update()
     )
     if site is None:
         raise DomainError("SITE_NOT_FOUND", "Site was not found in this organization.", 404)
+    if site.revision != request.expected_revision:
+        _raise_revision_conflict("site", request.expected_revision, site.revision)
     if request.name is None and request.is_archived is None:
         raise DomainError("NO_CHANGES", "At least one site field is required.", 400)
     if request.name is not None:
@@ -893,6 +934,7 @@ def update_site(
         site.name = request.name
     if request.is_archived is not None:
         site.is_archived = request.is_archived
+    site.revision += 1
     _audit(session, context, "SITE_UPDATED", "Site", site.id, request.model_dump(exclude_none=True))
     _commit_or_raise(
         session, "SITE_NAME_CONFLICT", "Site name already exists in this organization."
@@ -998,21 +1040,27 @@ def update_machine(
 ) -> MachineResponse:
     context = _context_for_organization(organization_id, identity, session)
     machine = session.scalar(
-        select(Machine).where(
+        select(Machine)
+        .where(
             Machine.id == machine_id,
             Machine.organization_id == organization_id,
             Machine.site_id == site_id,
         )
+        .with_for_update()
     )
     if machine is None:
         raise DomainError(
             "MACHINE_NOT_FOUND", "Machine was not found in this organization/site.", 404
         )
+    if machine.revision != request.expected_revision:
+        _raise_revision_conflict("machine", request.expected_revision, machine.revision)
     changes = request.model_dump(exclude_none=True)
+    changes.pop("expected_revision", None)
     if not changes:
         raise DomainError("NO_CHANGES", "At least one machine field is required.", 400)
     for field, value in changes.items():
         setattr(machine, field, value)
+    machine.revision += 1
     _audit(session, context, "MACHINE_UPDATED", "Machine", machine.id, changes)
     _commit_or_raise(session, "MACHINE_ID_CONFLICT", "Stable machine ID already exists.")
     return _machine_response(machine)
