@@ -3,6 +3,13 @@
 Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.29,
 `technical-specification.md` v1.30 và `plan.md` v4.25.
 
+## P18-W00 — local integrated release-candidate journeys — PASS, remote gates open — 2026-09-11 / `4ecfae8`
+
+- Chạy lại `apps/api/.venv/Scripts/python.exe -m pytest -q --no-cov tests/test_p18_integration.py` trên working tree sạch, kết quả **2/2 PASS**.
+- `TC-P18-S01` đi qua session bootstrap → organization/folder/case → Machine QA seed/evaluate → hai measurement artifact upload/validate → Gamma queue/idempotent replay/worker completion → report snapshot/export/download hash → trend/rebuild idempotency.
+- `TC-P18-S02` đi qua Biological library publish/use → scenario → hai BED/EQD2 calculation → comparison → re-irradiation → Biological report; assertion trực tiếp rằng report thuộc namespace `BIOLOGICAL_TOOLKIT` và không có `qa_case_id`.
+- Evidence: [p18-local-integrated-20260911-4ecfae8.json](docs/evidence/p18-local-integrated-20260911-4ecfae8.json). Đây là `LOCAL_VERIFIED` support evidence; không thay staging authenticated E2E, browser/device matrix, fault/resource, provider backup/restore, pilot hoặc production/clinical-readiness gate.
+
 ## P18-W03a — local PostgreSQL/MinIO backup-restore recheck — PASS, remote gate open — 2026-09-11
 
 - Sau khi khởi động Compose `postgres`/`minio`, rebuild API image để chứa migration `20260911_0020`, chạy migration head và seed foundation synthetic, harness `scripts/verify-local-backup-restore.py` đạt `passed=true`.

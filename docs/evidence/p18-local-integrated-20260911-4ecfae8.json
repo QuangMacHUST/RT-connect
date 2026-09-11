@@ -1,0 +1,68 @@
+{
+  "evidence_id": "P18-W00-LOCAL-INTEGRATED-20260911-4ECFAE8",
+  "captured_at_utc": "2026-09-11T09:18:54.6935744Z",
+  "status": "LOCAL_VERIFIED",
+  "environment": "local-testclient",
+  "repository_sha": "4ecfae863991cf32138e7c47c38558b2950e9bf6",
+  "command": "apps/api/.venv/Scripts/python.exe -m pytest -q --no-cov tests/test_p18_integration.py",
+  "result": {
+    "tests_collected": 2,
+    "tests_passed": 2,
+    "tests_failed": 0,
+    "warnings_only": true
+  },
+  "journeys": [
+    {
+      "test_id": "TC-P18-S01",
+      "name": "QA route-to-persistence journey",
+      "covered": [
+        "session bootstrap and organization context",
+        "nested folder and QA case creation",
+        "Machine QA protocol seed and evaluation",
+        "reference/evaluation measurement artifact upload and validation",
+        "Gamma queue idempotency and worker processing",
+        "completed Gamma result persistence",
+        "custom report snapshot and JSON export/download hash equality",
+        "trend read and idempotent rebuild"
+      ],
+      "assertions": [
+        "Machine QA overall status is PASS",
+        "artifact validation result is VALID",
+        "Gamma replay returns the original run ID",
+        "Gamma completes with overall status PASS",
+        "report source snapshot is COMPLETED",
+        "report export download SHA-256 equals the export record",
+        "trend rebuild creates no duplicate points"
+      ],
+      "status": "PASS"
+    },
+    {
+      "test_id": "TC-P18-S02",
+      "name": "Independent Biological Toolkit journey",
+      "covered": [
+        "knowledge library create/publish/use",
+        "saved biological scenario",
+        "two BED/EQD2 calculations",
+        "treatment-plan comparison",
+        "re-irradiation operation",
+        "independent Biological report",
+        "biological summary"
+      ],
+      "assertions": [
+        "published library source snapshot is retained",
+        "comparison delta EQD2 matches the deterministic fixture expectation",
+        "re-irradiation operation type is REIRRADIATION",
+        "Biological report namespace is BIOLOGICAL_TOOLKIT",
+        "Biological report contains no qa_case_id linkage",
+        "completed calculation count is 2"
+      ],
+      "status": "PASS"
+    }
+  ],
+  "limitations": [
+    "This is a deterministic local integration pack using TestClient, an isolated test database and in-memory object storage.",
+    "It is not staging authenticated E2E, a Railway provider backup/restore drill, a pilot dataset, a browser/device matrix, or production/clinical readiness evidence.",
+    "Warnings are dependency deprecations only; no test failure was observed."
+  ],
+  "cleanup": "Test fixtures are isolated by the test workspace context and no staging or production resource was mutated."
+}
