@@ -1,0 +1,30 @@
+{
+  "schema_version": "rt-connect.p06-rtdose-download-verification.v1",
+  "captured_at_utc": "2026-09-10T23:55:15Z",
+  "environment": "staging",
+  "deployment_sha": "1984c04ccce438cf1eaed9008a247eea517ca103",
+  "case_id": "ed7ddbe5-811a-4463-a270-b0386f64644d",
+  "artifact": {
+    "file_name": "gamma-rtdose-v1-smoke.dcm",
+    "logical_role": "REFERENCE",
+    "artifact_type": "DICOM",
+    "length_bytes": 898,
+    "sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
+    "validation_status": "VALID"
+  },
+  "download": {
+    "browser_filename_observed": "Unconfirmed 485528.crdownload",
+    "content_length_bytes": 898,
+    "content_sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
+    "content_hash_match": true,
+    "final_filename_rename_observed": false,
+    "response_header_readback": "UNVERIFIED"
+  },
+  "checks": [
+    {"name": "content_length_matches_server_artifact", "passed": true},
+    {"name": "content_sha256_matches_server_artifact", "passed": true},
+    {"name": "browser_final_filename_rename", "passed": false, "status": "UNVERIFIED", "note": "Edge retained the completed 898-byte content as a .crdownload file during the observation window; this does not invalidate the byte/hash result."},
+    {"name": "provider_response_content_disposition_readback", "passed": false, "status": "UNVERIFIED", "note": "The browser harness did not expose the signed response headers for independent readback; the application contract is covered by local adapter tests and the deployed API schema."}
+  ],
+  "scope_note": "Read-only download/readback of the already-authorized synthetic RTDOSE fixture; no artifact was uploaded, replaced, deleted, or used to create a Gamma run."
+}

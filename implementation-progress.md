@@ -10,6 +10,12 @@ Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.28,
 - Ruff, strict mypy, frontend lint, typecheck và Vitest **8 files / 19 tests** đã PASS trong slice này. Full backend suite cần chạy lại sau khi commit để release-manifest test không còn cố ý chặn vì `WORKING_TREE_DIRTY`.
 - Đây là `LOCAL_VERIFIED_SLICE`, chưa đóng P06-W04/P06-VERIFY/P06-HANDOFF. Staging cần deploy đúng commit rồi đọc lại response header, tải fixture RTDOSE đã tồn tại và re-hash byte; không upload thêm fixture, không tạo Gamma run mới và không chạm production trong checkpoint này. Tham chiếu kế hoạch: `plan.md v4.24`.
 
+## P06/P20 — signed filename contract deployed and RTDOSE readback — staging verified slice — 2026-09-11 / `1984c04`
+
+- API `4dd93fe1-7103-4f53-8f67-9b508328e33f`, web `c394f01e-43ad-4844-9333-aebb16e880c0` và worker `fb58047b-e511-43bf-9754-4fc33f5e3be6` đều `SUCCESS`, cùng source SHA đầy đủ `1984c04ccce438cf1eaed9008a247eea517ca103`. Public verifier đạt **15/15 PASS**, health/readiness/version, schema `20260909_0019`, OpenAPI/Auth boundary và web exact-SHA marker đều PASS. Evidence: [p20-staging-public-parity-20260911-1984c04.json](docs/evidence/p20-staging-public-parity-20260911-1984c04.json).
+- Browser đã tải read-only artifact `gamma-rtdose-v1-smoke.dcm` đã tồn tại trong case `ed7ddbe5-811a-4463-a270-b0386f64644d`; file quan sát `Unconfirmed 485528.crdownload` có 898 bytes và SHA-256 `ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b`, khớp fixture và artifact server. Edge vẫn giữ hậu tố `.crdownload`, vì vậy final filename/header readback độc lập qua browser chưa được đánh dấu PASS. Evidence: [p06-staging-rtdose-download-20260911-1984c04.json](docs/evidence/p06-staging-rtdose-download-20260911-1984c04.json).
+- Đây là `STAGING_VERIFIED_SLICE`: không upload lại fixture, không tạo Gamma run/report mới và không chạm production. P06-W04/P06-VERIFY/P06-HANDOFF vẫn mở cho queue fault/retry có chủ ý, storage reconciliation, header readback ở provider và release/handoff evidence.
+
 ## P01 — clean Docker foundation re-verification — local verified — 2026-09-11 / `7d0cd51`
 
 - `scripts/verify-p1.ps1 -WithContainers` đã chạy trên checkout sạch: backend **199 passed**, Ruff PASS, strict mypy PASS trên 47 source files, Alembic SQL render đến schema `20260909_0019` PASS; frontend lint/typecheck/Vitest **19/19**/8 files và production build PASS.
