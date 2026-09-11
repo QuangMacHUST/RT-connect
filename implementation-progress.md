@@ -1116,3 +1116,9 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Kết quả public **15/15 PASS**; evidence `docs/evidence/p19-staging-public-smoke-20260909-b0263c9.json`. API `/health`, `/ready`, `/version`, OpenAPI và unauthenticated membership boundary PASS; web index/bundle, CT/membership marker và exact source marker PASS.
 - Evidence drift trước sửa được giữ tại `docs/evidence/p19-staging-public-smoke-20260909-drift-0098cf1.json` để truy vết. Quy tắc kế hoạch mới: commit docs/root hoặc chỉ một service phải kèm parity marker/watch-path change hoặc deploy thủ công service còn lại, sau đó exact-SHA verifier mới được phép ghi `source parity PASS`.
 - Fixture RTDOSE tổng hợp được upload theo xác nhận của người dùng từ trước và không upload lại trong lần recovery này; case vẫn giữ `2 RTDOSE · 1 RTSTRUCT · 1 CT`, saved run và report snapshot hiện có.
+## P17 — local negative/resource regression checkpoint — 2026-09-11 / `f05508e`
+
+- Chạy lại đúng source hiện tại `f05508ecb8ce7213eceaf4ac8bf9a0a71833a7e6`: `34/34` test trong `test_dvh.py`, `test_dvh_engine.py` và `test_migration_contract.py` PASS; các cảnh báo chỉ là deprecation/resource warnings, không có failure.
+- Các nhánh đã được chạy gồm manifest/checksum/source drift, storage outage không tạo run, archived case, CT frame mismatch, CT no-overlap, CT resource limit, unsupported geometry và ORM immutability. Migration contract cũng xác nhận guard PostgreSQL được khai báo.
+- Independent known-answer oracle chạy `13/13` comparison PASS với fixture RTDOSE/RTSTRUCT tổng hợp và engine `p17-dvh-1.1.0`.
+- Evidence: [p17-local-negative-resource-20260911-f05508e.json](docs/evidence/p17-local-negative-resource-20260911-f05508e.json). Đây chỉ là `LOCAL_VERIFIED_SLICE`; chưa đóng staging PostgreSQL trigger probe, staging fault/resource/large-volume, provider restore, release hoặc production gate.

@@ -1,0 +1,62 @@
+{
+  "schema_version": "rt-connect.p17-local-negative-resource.v1",
+  "captured_at_utc": "2026-09-11T09:03:18.870575Z",
+  "environment": "local",
+  "repository_sha": "f05508ecb8ce7213eceaf4ac8bf9a0a71833a7e6",
+  "status": "LOCAL_VERIFIED_SLICE",
+  "scope": "P17 DVH/CT negative, recovery, resource and migration-contract regression",
+  "commands": [
+    "apps/api/.venv/Scripts/python.exe -m pytest -q --no-cov tests/test_dvh.py tests/test_dvh_engine.py tests/test_migration_contract.py",
+    "apps/api/.venv/Scripts/python.exe scripts/verify-p17-independent-dvh-oracle.py"
+  ],
+  "regression": {
+    "collected": 34,
+    "passed": 34,
+    "failed": 0,
+    "warnings_only": true,
+    "covered_files": [
+      "apps/api/tests/test_dvh.py",
+      "apps/api/tests/test_dvh_engine.py",
+      "apps/api/tests/test_migration_contract.py"
+    ],
+    "covered_contracts": [
+      "manifest VALID/checksum mismatch",
+      "source byte drift",
+      "storage outage without run creation",
+      "archived case rejection",
+      "CT FrameOfReference mismatch",
+      "CT dose-grid no-overlap warning",
+      "CT resource limit",
+      "unsupported dose/structure geometry",
+      "ORM DVH run immutability",
+      "PostgreSQL immutability migration declaration"
+    ]
+  },
+  "independent_oracle": {
+    "script": "scripts/verify-p17-independent-dvh-oracle.py",
+    "passed": true,
+    "comparison_count": 13,
+    "engine_version": "p17-dvh-1.1.0",
+    "fixture_sha256": {
+      "dose": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b",
+      "structure": "16a79df3129757d9df8b48bd095f0b4b70b24713ea5255e24719d46e6808d401"
+    },
+    "known_answer": {
+      "selected_voxel_count": 4,
+      "volume_cc": 0.004,
+      "Dmin_gy": 5.0,
+      "Dmean_gy": 6.5,
+      "Dmax_gy": 8.0,
+      "D95_gy": 5.2,
+      "D50_gy": 7.0,
+      "V8_gy_percent": 25.0
+    }
+  },
+  "limitations": [
+    "This packet proves a local deterministic slice only; it does not prove staging worker/resource/fault behavior.",
+    "The migration test checks the PostgreSQL guard declaration; a disposable live PostgreSQL UPDATE/DELETE probe remains open.",
+    "The independent oracle is a synthetic known-answer oracle, not a vendor/reference implementation for arbitrary clinical data.",
+    "No production data, patient data, QA run mutation or deployment was performed."
+  ],
+  "next_exact_action": "Run the disposable PostgreSQL trigger mutation probe on staging or an explicitly isolated PostgreSQL fixture, then preserve the row/hash invariants."
+}
