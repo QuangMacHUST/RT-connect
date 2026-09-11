@@ -1,5 +1,7 @@
 # RT-CONNECT — Kế hoạch triển khai và nghiệm thu P0–P20
 
+> P18-W03a local backup/restore recheck ngày 2026-09-11: sau khi Compose healthy và image API được rebuild theo schema head `20260911_0020`, harness đã restore PostgreSQL custom dump `170081` bytes cùng 1 object fixture RTDOSE vào tài nguyên tạm; row counts/fingerprints và object inventory SHA-256 khớp, database/bucket tạm cleanup PASS. Evidence: `docs/evidence/p18-local-backup-restore-20260911.json`. Đây chỉ là `LOCAL_VERIFIED` support evidence; Railway provider backup/restore, staging RPO/RTO, rollback, pilot và production promotion vẫn mở.
+
 > P17 local regression checkpoint ngày 2026-09-11: trên source `f05508ecb8ce7213eceaf4ac8bf9a0a71833a7e6`, 34/34 test DVH/engine/migration contract và independent known-answer oracle 13/13 đều PASS. Evidence: `docs/evidence/p17-local-negative-resource-20260911-f05508e.json`. Đây chỉ là `LOCAL_VERIFIED_SLICE`; PostgreSQL trigger runtime probe, staging fault/resource/large-volume, backup/restore, release và production gates vẫn mở.
 
 > P20-W01 operational probe mới nhất ngày 2026-09-11: candidate staging `f938fd7541fbe5c8086f12e2e0cfe3cd74dd6418` trả health `200/ok`, readiness `200/ready`, schema `20260911_0020`, version exact-match và web `/app` `200`; public probe `passed=true`, `failed_check_count=0`. Queue metrics là `NOT_RUN` vì không có session access token. Evidence: `docs/evidence/p20-staging-operational-probes-20260911-f938fd7.json`. Đây là public endpoint/readiness evidence; không đóng alert delivery, authenticated queue, provider backup/restore, rollback, pilot hoặc P20 exit gate.
@@ -1795,10 +1797,10 @@ Chạy từ repository root sau khi local Compose PostgreSQL và MinIO đã heal
 ~~~powershell
 & .\\apps\\api\\.venv\\Scripts\\python.exe `
   .\\scripts\\verify-local-backup-restore.py `
-  --output docs/evidence/p18-local-backup-restore.json
+  --output docs/evidence/p18-local-backup-restore-20260911.json
 ~~~
 
-Verifier chỉ chấp nhận topology local Compose cố định, không nhận Railway/S3/database URL từ tham số. Nó tạo dump PostgreSQL tạm, copy object theo inventory SHA-256, restore vào database/bucket tạm, đối chiếu row counts và object bytes, rồi xóa đúng tài nguyên tạm trong `finally`. Mỗi lệnh Compose có timeout và trên Windows verifier dừng process tree khi timeout; vì vậy Docker dependency failure phải trả evidence `passed=false` thay vì treo. Evidence không lưu database dump, object content, secret hay dữ liệu bệnh nhân. Lần chạy timeout trước được giữ tại `docs/evidence/p18-local-backup-restore-timeout-20260910.json`; sau khi Docker healthy, lần chạy mới tại `docs/evidence/p18-local-backup-restore-20260910.json` đạt `passed=true` và cleanup PASS. Đây vẫn chưa phải evidence P18-W03 staging: còn cần kiểm provider backup, isolated restore, RPO/RTO và lineage/checksum trên candidate thật.
+Verifier chỉ chấp nhận topology local Compose cố định, không nhận Railway/S3/database URL từ tham số. Nó tạo dump PostgreSQL tạm, copy object theo inventory SHA-256, restore vào database/bucket tạm, đối chiếu row counts và object bytes, rồi xóa đúng tài nguyên tạm trong `finally`. Mỗi lệnh Compose có timeout và trên Windows verifier dừng process tree khi timeout; vì vậy Docker dependency failure phải trả evidence `passed=false` thay vì treo. Evidence không lưu database dump, object content, secret hay dữ liệu bệnh nhân. Evidence mới nhất `docs/evidence/p18-local-backup-restore-20260911.json` có 1 object fixture và cleanup PASS; evidence timeout/các lần chạy trước vẫn được giữ để truy nguyên. Đây vẫn chưa phải evidence P18-W03 staging: còn cần kiểm provider backup, isolated restore, RPO/RTO và lineage/checksum trên candidate thật.
 
 ### Trường hợp chạy đúng P18
 

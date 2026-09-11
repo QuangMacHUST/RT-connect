@@ -154,8 +154,10 @@ Không xóa backup cũ cho đến khi backup mới đã hoàn tất và có th�
 6. Đo `restore_started_at`, `restore_completed_at`, dữ liệu mất tối đa và tính RPO/RTO.
 7. Dọn tài nguyên tạm sau khi evidence được ghi; xác nhận cleanup.
 
-Harness local hiện có tại `scripts/verify-local-backup-restore.py` và evidence
-`docs/evidence/p18-local-backup-restore-20260909.json`. Đây là support evidence trên
+Harness local hiện có tại `scripts/verify-local-backup-restore.py`. Evidence mới nhất
+`docs/evidence/p18-local-backup-restore-20260911.json` đã restore PostgreSQL và một
+fixture object tổng hợp vào tài nguyên tạm, đối chiếu row/object inventory và cleanup
+thành công. Evidence cũ vẫn được giữ để truy nguyên. Đây là support evidence trên
 Docker Compose local; nó không thay provider restore, staging RPO/RTO hoặc production
 backup drill.
 

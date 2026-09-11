@@ -3,6 +3,12 @@
 Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.29,
 `technical-specification.md` v1.30 và `plan.md` v4.25.
 
+## P18-W03a — local PostgreSQL/MinIO backup-restore recheck — PASS, remote gate open — 2026-09-11
+
+- Sau khi khởi động Compose `postgres`/`minio`, rebuild API image để chứa migration `20260911_0020`, chạy migration head và seed foundation synthetic, harness `scripts/verify-local-backup-restore.py` đạt `passed=true`.
+- PostgreSQL custom dump `170,081` bytes; source/restored row counts và canonical row fingerprints khớp. Object inventory có `1` fixture RTDOSE tổng hợp, source/restored inventory hash cùng `47907db468eda5722eb292cb55cd6be4f10a1e6e70568315ba63daedcdabfc2f`; database/bucket tạm đã cleanup thành công.
+- Evidence mới: [p18-local-backup-restore-20260911.json](docs/evidence/p18-local-backup-restore-20260911.json). Đây là `LOCAL_VERIFIED` support path; không thay Railway provider backup/restore, staging RPO/RTO, rollback hoặc production gate. Lần chạy trước khi Compose sẵn sàng được giữ trong evidence riêng và không tính PASS.
+
 ## P18/P19/P20 — Railway provider backup inspection — gate open — 2026-09-11
 
 - Railway GraphQL read-only introspection thành công và hiển thị các surface `volumeInstanceBackupList`, `volumeInstanceBackupScheduleList`, `volumeInstancePitrRestoreEstimate` và `deploymentSnapshot`.
