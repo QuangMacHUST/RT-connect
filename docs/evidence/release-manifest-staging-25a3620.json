@@ -1,0 +1,66 @@
+{
+  "schema_version": "rt-connect.release-manifest.v1",
+  "release_id": "staging-25a3620",
+  "environment": "staging",
+  "source_sha": "25a36208f8abcbc05598bd263723ec15060a43b5",
+  "source_state": {
+    "branch": "codex/p4-org-site-machine",
+    "working_tree_clean": true
+  },
+  "services": {
+    "api": {
+      "deployment_id": "0de6cae1-111b-4568-98c5-25d90d610ad1",
+      "sha": "25a36208f8abcbc05598bd263723ec15060a43b5"
+    },
+    "web": {
+      "deployment_id": "785258f1-09e5-4ac1-bc83-32cf57cf983f",
+      "sha": "25a36208f8abcbc05598bd263723ec15060a43b5"
+    },
+    "worker": {
+      "deployment_id": "d1bc9ea7-7044-487b-bcba-20146c87b880",
+      "sha": "25a36208f8abcbc05598bd263723ec15060a43b5"
+    },
+    "renderer": {
+      "version": "report-renderer-0.1"
+    }
+  },
+  "schema_revision": "20260911_0020",
+  "engine_versions": {
+    "gamma": "gamma-nd-p8.2",
+    "dvh": "p17-dvh-1.1.0",
+    "biological": "unavailable-in-p1"
+  },
+  "auth_environment": "staging",
+  "database_environment": "staging",
+  "fixture_hashes": [
+    {
+      "path": "docs/fixtures/gamma-measurement-3d-v1-smoke.json",
+      "bytes": 1416,
+      "sha256": "99c9ac1ca38e3d3e83be72b8851f73bcd9af0b0c3d7a31a6ff8e6a3e2d2fe8a4"
+    },
+    {
+      "path": "docs/fixtures/gamma-rtdose-v1-smoke.dcm",
+      "bytes": 898,
+      "sha256": "ca5c9168eb9b045e30a375edc6b76118efd754a35815c2860b17ca8944c4480b"
+    }
+  ],
+  "tests": {
+    "local": [
+      "p8-gamma-workload-oracle-pass",
+      "planning-contract-21-phases-pass"
+    ],
+    "staging": [
+      "api-version-ready-web-shell-pass",
+      "service-source-sha-parity-pass"
+    ],
+    "production": [
+      "promotion-blocked-until-provider-backup-restore-rollback"
+    ]
+  },
+  "backup_before_change": "staging-provider-backup-not-verified",
+  "rollback_target": "staging-current-25a3620",
+  "service_sha_parity": true,
+  "release_gate": "ELIGIBLE",
+  "gate_reasons": [],
+  "manifest_sha256": "bc240e4bf4109b3fd4f09d106e2b2b2b5c0000feb7309f28246528f5a148843a"
+}
