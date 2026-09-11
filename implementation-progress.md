@@ -10,6 +10,12 @@ Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.29,
 - Evidence: [p8-local-gamma-workload-20260911-4cf0164.json](docs/evidence/p8-local-gamma-workload-20260911-4cf0164.json). Đây là local deterministic workload/oracle evidence; Windows host không cung cấp process-RSS/cgroup gate trong script này, nên không được coi là staging capacity hoặc clinical commissioning.
 - P8 vẫn mở staging crash-after-durable-commit-before-ACK, bounded retry/dead-letter/failure injection, large-input/resource budget trên Railway, oracle promotion/convergence và release-manifest evidence.
 
+## P0/P19/P20 — planning contract and staging parity — verified slice — 2026-09-11 / `65268c7`
+
+- `scripts/verify-planning-contract.py` đã được đồng bộ với revision hiện hành: business `0.27`, specification `1.29`, technical `1.30`, plan `4.25`. Verifier đạt `passed=true`, `failed_check_count=0`, đủ `21` phase, FR mapping, S/E sections, work packages, B01–B12, G0–G7 và support artifacts. Evidence: [p0-planning-contract-20260911-65268c7.json](docs/evidence/p0-planning-contract-20260911-65268c7.json).
+- Railway staging API, web và worker đều `SUCCESS` trên cùng source SHA đầy đủ `65268c7026609e711a57d5abd9e0ee22835f1e98`. Deployment IDs lần lượt là `e047284a-c130-4caf-b53c-8552f14e535d`, `db98ad77-ad6a-43c4-b7d5-9399c93f5416` và `cb620b5d-af67-4753-893f-994d4600393d`; `/api/v1/version` và `/api/v1/ready` trả đúng SHA/schema `20260911_0020`, web root trả HTTP 200.
+- Đây là planning/source/runtime parity evidence; không đóng các authenticated mutation, worker fault/resource, provider backup/restore, rollback, pilot hoặc clinical readiness gates. Browser connector hiện không trả inventory hợp lệ nên không dùng browser smoke để suy ra các gate đó.
+
 ## P4-W03/P4-W04 — active-parent lifecycle — staging partial / local verified — 2026-09-11 / `42d1011`
 
 - API P4 đã khóa quy tắc lifecycle theo parent đang active: organization archived không nhận site, machine hoặc invitation mới; site archived không nhận machine mới hoặc machine mutation; resource archived chỉ được khôi phục bằng mutation explicit `is_archived=false`. Restore organization là ngoại lệ có chủ đích cho active member để có đường phục hồi.
