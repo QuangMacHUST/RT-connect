@@ -17,6 +17,13 @@ Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.29,
 - Public verifier bounded retry chưa PASS: các kiểm tra còn lỗi là `api.openapi` và `web.public` do timeout/connection reset khi truyền response; readiness đạt 4/5 lần probe, một lần timeout. Vì vậy rollout này là `STAGING_PARTIAL`, không phải `STAGING_VERIFIED`.
 - Evidence: [p4-staging-optimistic-revision-rollout-20260911-a1b3e58.json](docs/evidence/p4-staging-optimistic-revision-rollout-20260911-a1b3e58.json). Còn mở: authenticated stale PATCH với hai identity, direct PostgreSQL readback, machine route, ổn định public verifier và P4 full exit gate.
 
+## P19/P20 — staging public delivery improvement — 2026-09-11 / `8a36435`
+
+- Sau khi ghi nhận partial rollout, Nginx web đã bật gzip cho JS/CSS/JSON/SVG và cache bất biến cho asset có hash. Web build và `nginx -t` đều PASS; header public quan sát được `Content-Encoding: gzip`, `Cache-Control: public, max-age=31536000, immutable`, `Vary: Accept-Encoding`.
+- API, web và worker staging đều `SUCCESS` trên cùng SHA `8a364359eb6e5be789f547d73efb469cfb76a093`; `/api/v1/version` và `/api/v1/ready` trả đúng SHA cùng schema `20260911_0020`. OpenAPI có lần đã đọc được đầy đủ các route CT preview và organization membership, nhưng việc truyền response lớn và web bundle vẫn dao động theo public edge.
+- Verifier mới nhất chưa PASS trọn bộ; các check lỗi trong lần đó là `api.health`, `api.openapi`, `web.public` do timeout/connection reset. Vì vậy vẫn giữ trạng thái `STAGING_PARTIAL`, không tuyên bố public parity ổn định.
+- Không upload lại RTDOSE tổng hợp, không tạo Gamma/DVH run mới và không chạm production. Evidence: [p20-staging-public-parity-20260911-8a36435.json](docs/evidence/p20-staging-public-parity-20260911-8a36435.json).
+
 ## P17-W06 — root-run DVH volume benchmark — local verified slice — 2026-09-11 / `183a4d2`
 
 - Đã sửa runner `scripts/benchmark-p17-dvh.py` để tự thêm `apps/api/src` vào import path; benchmark chạy được từ repository root, không phụ thuộc working directory hay `PYTHONPATH` bên ngoài.

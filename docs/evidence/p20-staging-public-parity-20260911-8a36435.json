@@ -1,0 +1,73 @@
+{
+  "evidence_type": "STAGING_PARTIAL",
+  "phase": "P20",
+  "work_package": "P20-W02/P19-W00",
+  "observed_at": "2026-09-11",
+  "repository_sha": "8a364359eb6e5be789f547d73efb469cfb76a093",
+  "environment": "staging",
+  "deployments": {
+    "api": {
+      "deployment_id": "2cdc2aff-e836-4301-a753-b3280578444b",
+      "status": "SUCCESS"
+    },
+    "web": {
+      "deployment_id": "4d17db13-5b78-4b30-858e-e8142895c3fe",
+      "status": "SUCCESS"
+    },
+    "worker": {
+      "deployment_id": "a171acd9-bf86-4a6e-b16e-acbcd9ae3b1d",
+      "status": "SUCCESS"
+    }
+  },
+  "runtime_readback": {
+    "api_version": {
+      "status": "PASS",
+      "version": "8a364359eb6e5be789f547d73efb469cfb76a093",
+      "schema_revision": "20260911_0020"
+    },
+    "api_ready": {
+      "status": "PASS",
+      "schema_revision": "20260911_0020"
+    },
+    "api_openapi": {
+      "status": "PASS_PARTIAL",
+      "details": "A verifier attempt parsed the OpenAPI document and found the CT-preview and organization-membership routes, but other attempts timed out while streaming the large public response."
+    },
+    "web_index": {
+      "status": "PASS",
+      "details": "HTTP 200 and JavaScript asset discovery succeeded."
+    },
+    "web_asset_headers": {
+      "status": "PASS",
+      "content_encoding": "gzip",
+      "cache_control": "public, max-age=31536000, immutable",
+      "vary": "Accept-Encoding"
+    },
+    "web_bundle_transfer": {
+      "status": "NOT_STABLE",
+      "details": "The bounded verifier still observed intermittent connection timeouts while reading the large bundle; this is not recorded as a full public-parity pass."
+    },
+    "unauthenticated_membership_boundary": "PASS"
+  },
+  "local_checks": {
+    "web_build": "PASS",
+    "nginx_config_test": "PASS",
+    "change": "gzip and immutable cache headers for textual/hash-named static assets"
+  },
+  "fixture_and_data_safety": {
+    "synthetic_rtdose_reuploaded": false,
+    "new_gamma_or_dvh_run_created": false,
+    "production_mutated": false
+  },
+  "public_verifier": {
+    "status": "NOT_PASS",
+    "latest_failed_checks": ["api.health", "api.openapi", "web.public"],
+    "details": "Readiness/version/schema and route checks passed in the latest attempt, but the complete bounded verifier did not pass."
+  },
+  "open_gates": [
+    "Stable public API/OpenAPI/web transfer across repeated probes",
+    "Authenticated P4 stale PATCH with two identities and direct PostgreSQL readback",
+    "Machine endpoint/browser readback",
+    "P4 full exit gate and P20 operational handoff"
+  ]
+}

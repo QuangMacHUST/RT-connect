@@ -3,7 +3,10 @@ param(
   [string]$WebBaseUrl = 'https://rt-connect-web-staging-staging.up.railway.app',
   [string]$ExpectedVersion = '',
   [string]$ExpectedSchemaRevision = '',
-  [int]$RequestTimeoutSec = 20,
+  # OpenAPI and the hashed web bundle are large public responses.  Railway's
+  # public edge can stream them slowly even when the service is healthy, so
+  # the default must be bounded but longer than the small health probes.
+  [int]$RequestTimeoutSec = 45,
   [string]$OutputPath = ''
 )
 
@@ -42,6 +45,7 @@ function Invoke-PublicRequest {
     '--silent',
     '--show-error',
     '--location',
+    '--compressed',
     '--max-time',
     [string]$RequestTimeoutSec,
     '--request',
