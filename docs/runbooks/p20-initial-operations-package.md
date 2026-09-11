@@ -1,9 +1,10 @@
 # RT-CONNECT — Gói vận hành ban đầu P20
 
 - **Trạng thái:** DRAFT / LOCAL_SUPPORT_ONLY
+- **Cập nhật checkpoint:** 2026-09-11, candidate staging `f938fd7541fbe5c8086f12e2e0cfe3cd74dd6418`, schema `20260911_0020`
 - **Phạm vi:** vận hành staging, pilot và production theo đúng release manifest
-- **Nguồn:** `business-analysis.md` v0.24, `specification.md` v1.25,
-  `technical-specification.md` v1.24, `plan.md` v4.20
+- **Nguồn:** `business-analysis.md` v0.27, `specification.md` v1.29,
+  `technical-specification.md` v1.30, `plan.md` v4.25
 - **Không phải:** bằng chứng đã cấu hình alert thật, provider backup/restore thật,
   RPO/RTO đã đạt hoặc tuyên bố production clinical readiness
 
@@ -209,8 +210,8 @@ result mới dùng operation/run mới, trừ exact idempotent replay.
 | TC-P20-S02 | Provider backup, isolated restore, counts/checksums và RPO/RTO | LOCAL_SUPPORT_ONLY |
 | TC-P20-S03 | Maintenance candidate, regression, old result/history và release note | NOT_RUN |
 | TC-P20-S04 | Người vận hành khác thực hiện runbook độc lập và ký handoff | NOT_RUN |
-| P20-W01 UI | `/app/system/status` tự refresh 30 giây, giữ last observation và hiển thị thời điểm cập nhật | LOCAL_VERIFIED trên `7df7cb8`; đã deploy staging candidate `3d764e4` với public parity `15/15`, chưa phải alert evidence |
-| P20-W01 probe | `scripts/verify-operational-probes.ps1` trên staging exact SHA/schema | PASS cho public probes; queue `NOT_RUN` nếu không có session; chưa phải alert delivery |
+| P20-W01 UI | `/app/system/status` tự refresh 30 giây, giữ last observation và hiển thị thời điểm cập nhật | LOCAL_VERIFIED trên `7df7cb8`; staging source-parity/readiness evidence là các packet tương ứng, chưa phải alert evidence |
+| P20-W01 probe | `scripts/verify-operational-probes.ps1` trên staging exact SHA/schema | PASS tại candidate `f938fd7541fbe5c8086f12e2e0cfe3cd74dd6418`, schema `20260911_0020`, evidence `docs/evidence/p20-staging-operational-probes-20260911-f938fd7.json`; queue `NOT_RUN` vì không có session token, chưa phải alert delivery |
 | TC-P20-E01 | Backup failure/retention alert và last-good preservation | NOT_RUN |
 | TC-P20-E02 | Alert delivery failure và kênh dự phòng | NOT_RUN |
 | TC-P20-E03 | Capacity threshold, usage snapshot và remediation | NOT_RUN |

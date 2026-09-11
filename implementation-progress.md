@@ -3,6 +3,13 @@
 Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.29,
 `technical-specification.md` v1.30 và `plan.md` v4.25.
 
+## P20-W01 — current staging operational probes — public verified slice — 2026-09-11 / `f938fd7`
+
+- `scripts/verify-operational-probes.ps1` đã đọc đúng staging API `https://gleaming-cooperation-staging.up.railway.app` và web `https://rt-connect-web-staging-staging.up.railway.app` trên candidate source SHA `f938fd7541fbe5c8086f12e2e0cfe3cd74dd6418`.
+- Health, readiness, schema parity, exact version và web `/app` đều PASS; API/web trả HTTP 200, schema `20260911_0020`, `failed_check_count=0`.
+- Queue metrics được ghi `NOT_RUN` vì không truyền session access token; không được suy diễn thành worker PASS. Alert delivery, provider backup/restore, authenticated E2E và rollback vẫn mở.
+- Evidence: [p20-staging-operational-probes-20260911-f938fd7.json](docs/evidence/p20-staging-operational-probes-20260911-f938fd7.json). Đây là public operational probe evidence, không phải P20 DONE hoặc clinical-readiness evidence.
+
 ## P8-W03 — deterministic Gamma workload benchmark — local verified slice — 2026-09-11 / `4cf0164`
 
 - `scripts/benchmark-p8-gamma.py` chạy engine `gamma-nd-p8.2` trên hai grid 3D tổng hợp giống nhau `8×16×16` (2,048 voxel), 2 lần lặp, GRID/3D, DTA `3 mm`, max γ `2` và candidate budget `50,000`.

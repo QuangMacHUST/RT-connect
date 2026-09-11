@@ -1,0 +1,1931 @@
+{
+  "schema_version": "rt-connect.planning-contract-verification.v1",
+  "captured_at_utc": "2026-09-11T08:21:20.135788+00:00",
+  "repository": "E:\\hoctap\\2026\\RT-connect",
+  "document_versions": {
+    "business": "0.27",
+    "specification": "1.29",
+    "technical": "1.30",
+    "plan": "4.25"
+  },
+  "phase_count": 21,
+  "passed": true,
+  "failed_check_count": 0,
+  "checks": [
+    {
+      "name": "file.business",
+      "ok": true,
+      "details": "business-analysis.md"
+    },
+    {
+      "name": "file.specification",
+      "ok": true,
+      "details": "specification.md"
+    },
+    {
+      "name": "file.technical",
+      "ok": true,
+      "details": "technical-specification.md"
+    },
+    {
+      "name": "file.plan",
+      "ok": true,
+      "details": "plan.md"
+    },
+    {
+      "name": "file.progress",
+      "ok": true,
+      "details": "implementation-progress.md"
+    },
+    {
+      "name": "version.business",
+      "ok": true,
+      "details": "expected=0.27; observed=0.27"
+    },
+    {
+      "name": "version.specification",
+      "ok": true,
+      "details": "expected=1.29; observed=1.29"
+    },
+    {
+      "name": "version.technical",
+      "ok": true,
+      "details": "expected=1.30; observed=1.30"
+    },
+    {
+      "name": "version.plan",
+      "ok": true,
+      "details": "expected=4.25; observed=4.25"
+    },
+    {
+      "name": "reference.business.plan",
+      "ok": true,
+      "details": "required=plan.md v4.25 or `plan.md` v4.25"
+    },
+    {
+      "name": "reference.specification.plan",
+      "ok": true,
+      "details": "required=plan.md v4.25 or `plan.md` v4.25"
+    },
+    {
+      "name": "reference.technical.plan",
+      "ok": true,
+      "details": "required=plan.md v4.25 or `plan.md` v4.25"
+    },
+    {
+      "name": "reference.progress.plan",
+      "ok": true,
+      "details": "required=plan.md v4.25 or `plan.md` v4.25"
+    },
+    {
+      "name": "marker.business.feature_card",
+      "ok": true,
+      "details": "required=## 23. Hợp đồng bàn giao nghiệp vụ v0.27"
+    },
+    {
+      "name": "marker.business.p4_addendum",
+      "ok": true,
+      "details": "required=## 24. Đặc tả nghiệp vụ bổ sung P4"
+    },
+    {
+      "name": "marker.business.change_propagation",
+      "ok": true,
+      "details": "required=### 23.5. Quy tắc lan truyền thay đổi"
+    },
+    {
+      "name": "marker.specification.operation_contract",
+      "ok": true,
+      "details": "required=### 14.1. Hợp đồng operation tối thiểu"
+    },
+    {
+      "name": "marker.specification.error_record",
+      "ok": true,
+      "details": "required=### 14.2. Error/recovery record chuẩn"
+    },
+    {
+      "name": "marker.specification.release_manifest",
+      "ok": true,
+      "details": "required=### 14.5. Quy tắc phát hành dựa trên manifest"
+    },
+    {
+      "name": "marker.plan.dependency_graph",
+      "ok": true,
+      "details": "required=### 2.1. Đồ thị phụ thuộc bắt buộc và các lane có thể chạy song song"
+    },
+    {
+      "name": "marker.plan.package_states",
+      "ok": true,
+      "details": "required=### 2.2. Quy tắc phân rã và trạng thái work package"
+    },
+    {
+      "name": "phase.0.plan_heading",
+      "ok": true,
+      "details": "heading=## P0 —"
+    },
+    {
+      "name": "phase.0.business_heading",
+      "ok": true,
+      "details": "heading=#### P0 —"
+    },
+    {
+      "name": "phase.0.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P00 —"
+    },
+    {
+      "name": "phase.0.section.workflow_p0",
+      "ok": true,
+      "details": "required=### Workflow P0"
+    },
+    {
+      "name": "phase.0.section.trường_hợp_chạy_đúng_p0",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P0"
+    },
+    {
+      "name": "phase.0.section.trường_hợp_lỗi_và_phục_hồi_p0",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P0"
+    },
+    {
+      "name": "phase.0.section.bất_biến_và_điều_kiện_đóng_p0",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P0"
+    },
+    {
+      "name": "phase.0.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P00-Sxx"
+    },
+    {
+      "name": "phase.0.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P00-Exx"
+    },
+    {
+      "name": "phase.0.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P00-01..04"
+    },
+    {
+      "name": "phase.0.package.w01",
+      "ok": true,
+      "details": "package=P00-W01"
+    },
+    {
+      "name": "phase.0.package.w02",
+      "ok": true,
+      "details": "package=P00-W02"
+    },
+    {
+      "name": "phase.0.package.w03",
+      "ok": true,
+      "details": "package=P00-W03"
+    },
+    {
+      "name": "phase.0.package.w04",
+      "ok": true,
+      "details": "package=P00-W04"
+    },
+    {
+      "name": "phase.0.package.verify",
+      "ok": true,
+      "details": "package=P00-VERIFY"
+    },
+    {
+      "name": "phase.0.package.handoff",
+      "ok": true,
+      "details": "package=P00-HANDOFF"
+    },
+    {
+      "name": "phase.1.plan_heading",
+      "ok": true,
+      "details": "heading=## P1 —"
+    },
+    {
+      "name": "phase.1.business_heading",
+      "ok": true,
+      "details": "heading=#### P1 —"
+    },
+    {
+      "name": "phase.1.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P01 —"
+    },
+    {
+      "name": "phase.1.section.workflow_p1",
+      "ok": true,
+      "details": "required=### Workflow P1"
+    },
+    {
+      "name": "phase.1.section.trường_hợp_chạy_đúng_p1",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P1"
+    },
+    {
+      "name": "phase.1.section.trường_hợp_lỗi_và_phục_hồi_p1",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P1"
+    },
+    {
+      "name": "phase.1.section.bất_biến_và_điều_kiện_đóng_p1",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P1"
+    },
+    {
+      "name": "phase.1.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P01-Sxx"
+    },
+    {
+      "name": "phase.1.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P01-Exx"
+    },
+    {
+      "name": "phase.1.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P01-01..04"
+    },
+    {
+      "name": "phase.1.package.w01",
+      "ok": true,
+      "details": "package=P01-W01"
+    },
+    {
+      "name": "phase.1.package.w02",
+      "ok": true,
+      "details": "package=P01-W02"
+    },
+    {
+      "name": "phase.1.package.w03",
+      "ok": true,
+      "details": "package=P01-W03"
+    },
+    {
+      "name": "phase.1.package.w04",
+      "ok": true,
+      "details": "package=P01-W04"
+    },
+    {
+      "name": "phase.1.package.verify",
+      "ok": true,
+      "details": "package=P01-VERIFY"
+    },
+    {
+      "name": "phase.1.package.handoff",
+      "ok": true,
+      "details": "package=P01-HANDOFF"
+    },
+    {
+      "name": "phase.2.plan_heading",
+      "ok": true,
+      "details": "heading=## P2 —"
+    },
+    {
+      "name": "phase.2.business_heading",
+      "ok": true,
+      "details": "heading=#### P2 —"
+    },
+    {
+      "name": "phase.2.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P02 —"
+    },
+    {
+      "name": "phase.2.section.workflow_p2",
+      "ok": true,
+      "details": "required=### Workflow P2"
+    },
+    {
+      "name": "phase.2.section.trường_hợp_chạy_đúng_p2",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P2"
+    },
+    {
+      "name": "phase.2.section.trường_hợp_lỗi_và_phục_hồi_p2",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P2"
+    },
+    {
+      "name": "phase.2.section.bất_biến_và_điều_kiện_đóng_p2",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P2"
+    },
+    {
+      "name": "phase.2.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P02-Sxx"
+    },
+    {
+      "name": "phase.2.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P02-Exx"
+    },
+    {
+      "name": "phase.2.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P02-01..04"
+    },
+    {
+      "name": "phase.2.package.w01",
+      "ok": true,
+      "details": "package=P02-W01"
+    },
+    {
+      "name": "phase.2.package.w02",
+      "ok": true,
+      "details": "package=P02-W02"
+    },
+    {
+      "name": "phase.2.package.w03",
+      "ok": true,
+      "details": "package=P02-W03"
+    },
+    {
+      "name": "phase.2.package.w04",
+      "ok": true,
+      "details": "package=P02-W04"
+    },
+    {
+      "name": "phase.2.package.verify",
+      "ok": true,
+      "details": "package=P02-VERIFY"
+    },
+    {
+      "name": "phase.2.package.handoff",
+      "ok": true,
+      "details": "package=P02-HANDOFF"
+    },
+    {
+      "name": "phase.3.plan_heading",
+      "ok": true,
+      "details": "heading=## P3 —"
+    },
+    {
+      "name": "phase.3.business_heading",
+      "ok": true,
+      "details": "heading=#### P3 —"
+    },
+    {
+      "name": "phase.3.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P03 —"
+    },
+    {
+      "name": "phase.3.section.workflow_p3",
+      "ok": true,
+      "details": "required=### Workflow P3"
+    },
+    {
+      "name": "phase.3.section.trường_hợp_chạy_đúng_p3",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P3"
+    },
+    {
+      "name": "phase.3.section.trường_hợp_lỗi_và_phục_hồi_p3",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P3"
+    },
+    {
+      "name": "phase.3.section.bất_biến_và_điều_kiện_đóng_p3",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P3"
+    },
+    {
+      "name": "phase.3.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P03-Sxx"
+    },
+    {
+      "name": "phase.3.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P03-Exx"
+    },
+    {
+      "name": "phase.3.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P03-01..04"
+    },
+    {
+      "name": "phase.3.package.w01",
+      "ok": true,
+      "details": "package=P03-W01"
+    },
+    {
+      "name": "phase.3.package.w02",
+      "ok": true,
+      "details": "package=P03-W02"
+    },
+    {
+      "name": "phase.3.package.w03",
+      "ok": true,
+      "details": "package=P03-W03"
+    },
+    {
+      "name": "phase.3.package.w04",
+      "ok": true,
+      "details": "package=P03-W04"
+    },
+    {
+      "name": "phase.3.package.verify",
+      "ok": true,
+      "details": "package=P03-VERIFY"
+    },
+    {
+      "name": "phase.3.package.handoff",
+      "ok": true,
+      "details": "package=P03-HANDOFF"
+    },
+    {
+      "name": "phase.4.plan_heading",
+      "ok": true,
+      "details": "heading=## P4 —"
+    },
+    {
+      "name": "phase.4.business_heading",
+      "ok": true,
+      "details": "heading=#### P4 —"
+    },
+    {
+      "name": "phase.4.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P04 —"
+    },
+    {
+      "name": "phase.4.section.workflow_p4",
+      "ok": true,
+      "details": "required=### Workflow P4"
+    },
+    {
+      "name": "phase.4.section.trường_hợp_chạy_đúng_p4",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P4"
+    },
+    {
+      "name": "phase.4.section.trường_hợp_lỗi_và_phục_hồi_p4",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P4"
+    },
+    {
+      "name": "phase.4.section.bất_biến_và_điều_kiện_đóng_p4",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P4"
+    },
+    {
+      "name": "phase.4.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P04-Sxx"
+    },
+    {
+      "name": "phase.4.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P04-Exx"
+    },
+    {
+      "name": "phase.4.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P04-01..04"
+    },
+    {
+      "name": "phase.4.package.w01",
+      "ok": true,
+      "details": "package=P04-W01"
+    },
+    {
+      "name": "phase.4.package.w02",
+      "ok": true,
+      "details": "package=P04-W02"
+    },
+    {
+      "name": "phase.4.package.w03",
+      "ok": true,
+      "details": "package=P04-W03"
+    },
+    {
+      "name": "phase.4.package.w04",
+      "ok": true,
+      "details": "package=P04-W04"
+    },
+    {
+      "name": "phase.4.package.verify",
+      "ok": true,
+      "details": "package=P04-VERIFY"
+    },
+    {
+      "name": "phase.4.package.handoff",
+      "ok": true,
+      "details": "package=P04-HANDOFF"
+    },
+    {
+      "name": "phase.5.plan_heading",
+      "ok": true,
+      "details": "heading=## P5 —"
+    },
+    {
+      "name": "phase.5.business_heading",
+      "ok": true,
+      "details": "heading=#### P5 —"
+    },
+    {
+      "name": "phase.5.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P05 —"
+    },
+    {
+      "name": "phase.5.section.workflow_p5",
+      "ok": true,
+      "details": "required=### Workflow P5"
+    },
+    {
+      "name": "phase.5.section.trường_hợp_chạy_đúng_p5",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P5"
+    },
+    {
+      "name": "phase.5.section.trường_hợp_lỗi_và_phục_hồi_p5",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P5"
+    },
+    {
+      "name": "phase.5.section.bất_biến_và_điều_kiện_đóng_p5",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P5"
+    },
+    {
+      "name": "phase.5.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P05-Sxx"
+    },
+    {
+      "name": "phase.5.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P05-Exx"
+    },
+    {
+      "name": "phase.5.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P05-01..04"
+    },
+    {
+      "name": "phase.5.package.w01",
+      "ok": true,
+      "details": "package=P05-W01"
+    },
+    {
+      "name": "phase.5.package.w02",
+      "ok": true,
+      "details": "package=P05-W02"
+    },
+    {
+      "name": "phase.5.package.w03",
+      "ok": true,
+      "details": "package=P05-W03"
+    },
+    {
+      "name": "phase.5.package.w04",
+      "ok": true,
+      "details": "package=P05-W04"
+    },
+    {
+      "name": "phase.5.package.verify",
+      "ok": true,
+      "details": "package=P05-VERIFY"
+    },
+    {
+      "name": "phase.5.package.handoff",
+      "ok": true,
+      "details": "package=P05-HANDOFF"
+    },
+    {
+      "name": "phase.6.plan_heading",
+      "ok": true,
+      "details": "heading=## P6 —"
+    },
+    {
+      "name": "phase.6.business_heading",
+      "ok": true,
+      "details": "heading=#### P6 —"
+    },
+    {
+      "name": "phase.6.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P06 —"
+    },
+    {
+      "name": "phase.6.section.workflow_p6",
+      "ok": true,
+      "details": "required=### Workflow P6"
+    },
+    {
+      "name": "phase.6.section.trường_hợp_chạy_đúng_p6",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P6"
+    },
+    {
+      "name": "phase.6.section.trường_hợp_lỗi_và_phục_hồi_p6",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P6"
+    },
+    {
+      "name": "phase.6.section.bất_biến_và_điều_kiện_đóng_p6",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P6"
+    },
+    {
+      "name": "phase.6.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P06-Sxx"
+    },
+    {
+      "name": "phase.6.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P06-Exx"
+    },
+    {
+      "name": "phase.6.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P06-01..04"
+    },
+    {
+      "name": "phase.6.package.w01",
+      "ok": true,
+      "details": "package=P06-W01"
+    },
+    {
+      "name": "phase.6.package.w02",
+      "ok": true,
+      "details": "package=P06-W02"
+    },
+    {
+      "name": "phase.6.package.w03",
+      "ok": true,
+      "details": "package=P06-W03"
+    },
+    {
+      "name": "phase.6.package.w04",
+      "ok": true,
+      "details": "package=P06-W04"
+    },
+    {
+      "name": "phase.6.package.verify",
+      "ok": true,
+      "details": "package=P06-VERIFY"
+    },
+    {
+      "name": "phase.6.package.handoff",
+      "ok": true,
+      "details": "package=P06-HANDOFF"
+    },
+    {
+      "name": "phase.7.plan_heading",
+      "ok": true,
+      "details": "heading=## P7 —"
+    },
+    {
+      "name": "phase.7.business_heading",
+      "ok": true,
+      "details": "heading=#### P7 —"
+    },
+    {
+      "name": "phase.7.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P07 —"
+    },
+    {
+      "name": "phase.7.section.workflow_p7",
+      "ok": true,
+      "details": "required=### Workflow P7"
+    },
+    {
+      "name": "phase.7.section.trường_hợp_chạy_đúng_p7",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P7"
+    },
+    {
+      "name": "phase.7.section.trường_hợp_lỗi_và_phục_hồi_p7",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P7"
+    },
+    {
+      "name": "phase.7.section.bất_biến_và_điều_kiện_đóng_p7",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P7"
+    },
+    {
+      "name": "phase.7.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P07-Sxx"
+    },
+    {
+      "name": "phase.7.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P07-Exx"
+    },
+    {
+      "name": "phase.7.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P07-01..04"
+    },
+    {
+      "name": "phase.7.package.w01",
+      "ok": true,
+      "details": "package=P07-W01"
+    },
+    {
+      "name": "phase.7.package.w02",
+      "ok": true,
+      "details": "package=P07-W02"
+    },
+    {
+      "name": "phase.7.package.w03",
+      "ok": true,
+      "details": "package=P07-W03"
+    },
+    {
+      "name": "phase.7.package.w04",
+      "ok": true,
+      "details": "package=P07-W04"
+    },
+    {
+      "name": "phase.7.package.verify",
+      "ok": true,
+      "details": "package=P07-VERIFY"
+    },
+    {
+      "name": "phase.7.package.handoff",
+      "ok": true,
+      "details": "package=P07-HANDOFF"
+    },
+    {
+      "name": "phase.8.plan_heading",
+      "ok": true,
+      "details": "heading=## P8 —"
+    },
+    {
+      "name": "phase.8.business_heading",
+      "ok": true,
+      "details": "heading=#### P8 —"
+    },
+    {
+      "name": "phase.8.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P08 —"
+    },
+    {
+      "name": "phase.8.section.workflow_p8",
+      "ok": true,
+      "details": "required=### Workflow P8"
+    },
+    {
+      "name": "phase.8.section.trường_hợp_chạy_đúng_p8",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P8"
+    },
+    {
+      "name": "phase.8.section.trường_hợp_lỗi_và_phục_hồi_p8",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P8"
+    },
+    {
+      "name": "phase.8.section.bất_biến_và_điều_kiện_đóng_p8",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P8"
+    },
+    {
+      "name": "phase.8.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P08-Sxx"
+    },
+    {
+      "name": "phase.8.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P08-Exx"
+    },
+    {
+      "name": "phase.8.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P08-01..04"
+    },
+    {
+      "name": "phase.8.package.w01",
+      "ok": true,
+      "details": "package=P08-W01"
+    },
+    {
+      "name": "phase.8.package.w02",
+      "ok": true,
+      "details": "package=P08-W02"
+    },
+    {
+      "name": "phase.8.package.w03",
+      "ok": true,
+      "details": "package=P08-W03"
+    },
+    {
+      "name": "phase.8.package.w04",
+      "ok": true,
+      "details": "package=P08-W04"
+    },
+    {
+      "name": "phase.8.package.verify",
+      "ok": true,
+      "details": "package=P08-VERIFY"
+    },
+    {
+      "name": "phase.8.package.handoff",
+      "ok": true,
+      "details": "package=P08-HANDOFF"
+    },
+    {
+      "name": "phase.9.plan_heading",
+      "ok": true,
+      "details": "heading=## P9 —"
+    },
+    {
+      "name": "phase.9.business_heading",
+      "ok": true,
+      "details": "heading=#### P9 —"
+    },
+    {
+      "name": "phase.9.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P09 —"
+    },
+    {
+      "name": "phase.9.section.workflow_p9",
+      "ok": true,
+      "details": "required=### Workflow P9"
+    },
+    {
+      "name": "phase.9.section.trường_hợp_chạy_đúng_p9",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P9"
+    },
+    {
+      "name": "phase.9.section.trường_hợp_lỗi_và_phục_hồi_p9",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P9"
+    },
+    {
+      "name": "phase.9.section.bất_biến_và_điều_kiện_đóng_p9",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P9"
+    },
+    {
+      "name": "phase.9.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P09-Sxx"
+    },
+    {
+      "name": "phase.9.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P09-Exx"
+    },
+    {
+      "name": "phase.9.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P09-01..04"
+    },
+    {
+      "name": "phase.9.package.w01",
+      "ok": true,
+      "details": "package=P09-W01"
+    },
+    {
+      "name": "phase.9.package.w02",
+      "ok": true,
+      "details": "package=P09-W02"
+    },
+    {
+      "name": "phase.9.package.w03",
+      "ok": true,
+      "details": "package=P09-W03"
+    },
+    {
+      "name": "phase.9.package.w04",
+      "ok": true,
+      "details": "package=P09-W04"
+    },
+    {
+      "name": "phase.9.package.verify",
+      "ok": true,
+      "details": "package=P09-VERIFY"
+    },
+    {
+      "name": "phase.9.package.handoff",
+      "ok": true,
+      "details": "package=P09-HANDOFF"
+    },
+    {
+      "name": "phase.10.plan_heading",
+      "ok": true,
+      "details": "heading=## P10 —"
+    },
+    {
+      "name": "phase.10.business_heading",
+      "ok": true,
+      "details": "heading=#### P10 —"
+    },
+    {
+      "name": "phase.10.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P10 —"
+    },
+    {
+      "name": "phase.10.section.workflow_p10",
+      "ok": true,
+      "details": "required=### Workflow P10"
+    },
+    {
+      "name": "phase.10.section.trường_hợp_chạy_đúng_p10",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P10"
+    },
+    {
+      "name": "phase.10.section.trường_hợp_lỗi_và_phục_hồi_p10",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P10"
+    },
+    {
+      "name": "phase.10.section.bất_biến_và_điều_kiện_đóng_p10",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P10"
+    },
+    {
+      "name": "phase.10.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P10-Sxx"
+    },
+    {
+      "name": "phase.10.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P10-Exx"
+    },
+    {
+      "name": "phase.10.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P10-01..04"
+    },
+    {
+      "name": "phase.10.package.w01",
+      "ok": true,
+      "details": "package=P10-W01"
+    },
+    {
+      "name": "phase.10.package.w02",
+      "ok": true,
+      "details": "package=P10-W02"
+    },
+    {
+      "name": "phase.10.package.w03",
+      "ok": true,
+      "details": "package=P10-W03"
+    },
+    {
+      "name": "phase.10.package.w04",
+      "ok": true,
+      "details": "package=P10-W04"
+    },
+    {
+      "name": "phase.10.package.verify",
+      "ok": true,
+      "details": "package=P10-VERIFY"
+    },
+    {
+      "name": "phase.10.package.handoff",
+      "ok": true,
+      "details": "package=P10-HANDOFF"
+    },
+    {
+      "name": "phase.11.plan_heading",
+      "ok": true,
+      "details": "heading=## P11 —"
+    },
+    {
+      "name": "phase.11.business_heading",
+      "ok": true,
+      "details": "heading=#### P11 —"
+    },
+    {
+      "name": "phase.11.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P11 —"
+    },
+    {
+      "name": "phase.11.section.workflow_p11",
+      "ok": true,
+      "details": "required=### Workflow P11"
+    },
+    {
+      "name": "phase.11.section.trường_hợp_chạy_đúng_p11",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P11"
+    },
+    {
+      "name": "phase.11.section.trường_hợp_lỗi_và_phục_hồi_p11",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P11"
+    },
+    {
+      "name": "phase.11.section.bất_biến_và_điều_kiện_đóng_p11",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P11"
+    },
+    {
+      "name": "phase.11.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P11-Sxx"
+    },
+    {
+      "name": "phase.11.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P11-Exx"
+    },
+    {
+      "name": "phase.11.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P11-01..04"
+    },
+    {
+      "name": "phase.11.package.w01",
+      "ok": true,
+      "details": "package=P11-W01"
+    },
+    {
+      "name": "phase.11.package.w02",
+      "ok": true,
+      "details": "package=P11-W02"
+    },
+    {
+      "name": "phase.11.package.w03",
+      "ok": true,
+      "details": "package=P11-W03"
+    },
+    {
+      "name": "phase.11.package.w04",
+      "ok": true,
+      "details": "package=P11-W04"
+    },
+    {
+      "name": "phase.11.package.verify",
+      "ok": true,
+      "details": "package=P11-VERIFY"
+    },
+    {
+      "name": "phase.11.package.handoff",
+      "ok": true,
+      "details": "package=P11-HANDOFF"
+    },
+    {
+      "name": "phase.12.plan_heading",
+      "ok": true,
+      "details": "heading=## P12 —"
+    },
+    {
+      "name": "phase.12.business_heading",
+      "ok": true,
+      "details": "heading=#### P12 —"
+    },
+    {
+      "name": "phase.12.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P12 —"
+    },
+    {
+      "name": "phase.12.section.workflow_p12",
+      "ok": true,
+      "details": "required=### Workflow P12"
+    },
+    {
+      "name": "phase.12.section.trường_hợp_chạy_đúng_p12",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P12"
+    },
+    {
+      "name": "phase.12.section.trường_hợp_lỗi_và_phục_hồi_p12",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P12"
+    },
+    {
+      "name": "phase.12.section.bất_biến_và_điều_kiện_đóng_p12",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P12"
+    },
+    {
+      "name": "phase.12.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P12-Sxx"
+    },
+    {
+      "name": "phase.12.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P12-Exx"
+    },
+    {
+      "name": "phase.12.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P12-01..04"
+    },
+    {
+      "name": "phase.12.package.w01",
+      "ok": true,
+      "details": "package=P12-W01"
+    },
+    {
+      "name": "phase.12.package.w02",
+      "ok": true,
+      "details": "package=P12-W02"
+    },
+    {
+      "name": "phase.12.package.w03",
+      "ok": true,
+      "details": "package=P12-W03"
+    },
+    {
+      "name": "phase.12.package.w04",
+      "ok": true,
+      "details": "package=P12-W04"
+    },
+    {
+      "name": "phase.12.package.verify",
+      "ok": true,
+      "details": "package=P12-VERIFY"
+    },
+    {
+      "name": "phase.12.package.handoff",
+      "ok": true,
+      "details": "package=P12-HANDOFF"
+    },
+    {
+      "name": "phase.13.plan_heading",
+      "ok": true,
+      "details": "heading=## P13 —"
+    },
+    {
+      "name": "phase.13.business_heading",
+      "ok": true,
+      "details": "heading=#### P13 —"
+    },
+    {
+      "name": "phase.13.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P13 —"
+    },
+    {
+      "name": "phase.13.section.workflow_p13",
+      "ok": true,
+      "details": "required=### Workflow P13"
+    },
+    {
+      "name": "phase.13.section.trường_hợp_chạy_đúng_p13",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P13"
+    },
+    {
+      "name": "phase.13.section.trường_hợp_lỗi_và_phục_hồi_p13",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P13"
+    },
+    {
+      "name": "phase.13.section.bất_biến_và_điều_kiện_đóng_p13",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P13"
+    },
+    {
+      "name": "phase.13.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P13-Sxx"
+    },
+    {
+      "name": "phase.13.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P13-Exx"
+    },
+    {
+      "name": "phase.13.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P13-01..04"
+    },
+    {
+      "name": "phase.13.package.w01",
+      "ok": true,
+      "details": "package=P13-W01"
+    },
+    {
+      "name": "phase.13.package.w02",
+      "ok": true,
+      "details": "package=P13-W02"
+    },
+    {
+      "name": "phase.13.package.w03",
+      "ok": true,
+      "details": "package=P13-W03"
+    },
+    {
+      "name": "phase.13.package.w04",
+      "ok": true,
+      "details": "package=P13-W04"
+    },
+    {
+      "name": "phase.13.package.verify",
+      "ok": true,
+      "details": "package=P13-VERIFY"
+    },
+    {
+      "name": "phase.13.package.handoff",
+      "ok": true,
+      "details": "package=P13-HANDOFF"
+    },
+    {
+      "name": "phase.14.plan_heading",
+      "ok": true,
+      "details": "heading=## P14 —"
+    },
+    {
+      "name": "phase.14.business_heading",
+      "ok": true,
+      "details": "heading=#### P14 —"
+    },
+    {
+      "name": "phase.14.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P14 —"
+    },
+    {
+      "name": "phase.14.section.workflow_p14",
+      "ok": true,
+      "details": "required=### Workflow P14"
+    },
+    {
+      "name": "phase.14.section.trường_hợp_chạy_đúng_p14",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P14"
+    },
+    {
+      "name": "phase.14.section.trường_hợp_lỗi_và_phục_hồi_p14",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P14"
+    },
+    {
+      "name": "phase.14.section.bất_biến_và_điều_kiện_đóng_p14",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P14"
+    },
+    {
+      "name": "phase.14.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P14-Sxx"
+    },
+    {
+      "name": "phase.14.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P14-Exx"
+    },
+    {
+      "name": "phase.14.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P14-01..04"
+    },
+    {
+      "name": "phase.14.package.w01",
+      "ok": true,
+      "details": "package=P14-W01"
+    },
+    {
+      "name": "phase.14.package.w02",
+      "ok": true,
+      "details": "package=P14-W02"
+    },
+    {
+      "name": "phase.14.package.w03",
+      "ok": true,
+      "details": "package=P14-W03"
+    },
+    {
+      "name": "phase.14.package.w04",
+      "ok": true,
+      "details": "package=P14-W04"
+    },
+    {
+      "name": "phase.14.package.verify",
+      "ok": true,
+      "details": "package=P14-VERIFY"
+    },
+    {
+      "name": "phase.14.package.handoff",
+      "ok": true,
+      "details": "package=P14-HANDOFF"
+    },
+    {
+      "name": "phase.15.plan_heading",
+      "ok": true,
+      "details": "heading=## P15 —"
+    },
+    {
+      "name": "phase.15.business_heading",
+      "ok": true,
+      "details": "heading=#### P15 —"
+    },
+    {
+      "name": "phase.15.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P15 —"
+    },
+    {
+      "name": "phase.15.section.workflow_p15",
+      "ok": true,
+      "details": "required=### Workflow P15"
+    },
+    {
+      "name": "phase.15.section.trường_hợp_chạy_đúng_p15",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P15"
+    },
+    {
+      "name": "phase.15.section.trường_hợp_lỗi_và_phục_hồi_p15",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P15"
+    },
+    {
+      "name": "phase.15.section.bất_biến_và_điều_kiện_đóng_p15",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P15"
+    },
+    {
+      "name": "phase.15.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P15-Sxx"
+    },
+    {
+      "name": "phase.15.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P15-Exx"
+    },
+    {
+      "name": "phase.15.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P15-01..04"
+    },
+    {
+      "name": "phase.15.package.w01",
+      "ok": true,
+      "details": "package=P15-W01"
+    },
+    {
+      "name": "phase.15.package.w02",
+      "ok": true,
+      "details": "package=P15-W02"
+    },
+    {
+      "name": "phase.15.package.w03",
+      "ok": true,
+      "details": "package=P15-W03"
+    },
+    {
+      "name": "phase.15.package.w04",
+      "ok": true,
+      "details": "package=P15-W04"
+    },
+    {
+      "name": "phase.15.package.verify",
+      "ok": true,
+      "details": "package=P15-VERIFY"
+    },
+    {
+      "name": "phase.15.package.handoff",
+      "ok": true,
+      "details": "package=P15-HANDOFF"
+    },
+    {
+      "name": "phase.16.plan_heading",
+      "ok": true,
+      "details": "heading=## P16 —"
+    },
+    {
+      "name": "phase.16.business_heading",
+      "ok": true,
+      "details": "heading=#### P16 —"
+    },
+    {
+      "name": "phase.16.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P16 —"
+    },
+    {
+      "name": "phase.16.section.workflow_p16",
+      "ok": true,
+      "details": "required=### Workflow P16"
+    },
+    {
+      "name": "phase.16.section.trường_hợp_chạy_đúng_p16",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P16"
+    },
+    {
+      "name": "phase.16.section.trường_hợp_lỗi_và_phục_hồi_p16",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P16"
+    },
+    {
+      "name": "phase.16.section.bất_biến_và_điều_kiện_đóng_p16",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P16"
+    },
+    {
+      "name": "phase.16.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P16-Sxx"
+    },
+    {
+      "name": "phase.16.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P16-Exx"
+    },
+    {
+      "name": "phase.16.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P16-01..04"
+    },
+    {
+      "name": "phase.16.package.w01",
+      "ok": true,
+      "details": "package=P16-W01"
+    },
+    {
+      "name": "phase.16.package.w02",
+      "ok": true,
+      "details": "package=P16-W02"
+    },
+    {
+      "name": "phase.16.package.w03",
+      "ok": true,
+      "details": "package=P16-W03"
+    },
+    {
+      "name": "phase.16.package.w04",
+      "ok": true,
+      "details": "package=P16-W04"
+    },
+    {
+      "name": "phase.16.package.verify",
+      "ok": true,
+      "details": "package=P16-VERIFY"
+    },
+    {
+      "name": "phase.16.package.handoff",
+      "ok": true,
+      "details": "package=P16-HANDOFF"
+    },
+    {
+      "name": "phase.17.plan_heading",
+      "ok": true,
+      "details": "heading=## P17 —"
+    },
+    {
+      "name": "phase.17.business_heading",
+      "ok": true,
+      "details": "heading=#### P17 —"
+    },
+    {
+      "name": "phase.17.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P17 —"
+    },
+    {
+      "name": "phase.17.section.workflow_p17",
+      "ok": true,
+      "details": "required=### Workflow P17"
+    },
+    {
+      "name": "phase.17.section.trường_hợp_chạy_đúng_p17",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P17"
+    },
+    {
+      "name": "phase.17.section.trường_hợp_lỗi_và_phục_hồi_p17",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P17"
+    },
+    {
+      "name": "phase.17.section.bất_biến_và_điều_kiện_đóng_p17",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P17"
+    },
+    {
+      "name": "phase.17.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P17-Sxx"
+    },
+    {
+      "name": "phase.17.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P17-Exx"
+    },
+    {
+      "name": "phase.17.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P17-01..04"
+    },
+    {
+      "name": "phase.17.package.w01",
+      "ok": true,
+      "details": "package=P17-W01"
+    },
+    {
+      "name": "phase.17.package.w02",
+      "ok": true,
+      "details": "package=P17-W02"
+    },
+    {
+      "name": "phase.17.package.w03",
+      "ok": true,
+      "details": "package=P17-W03"
+    },
+    {
+      "name": "phase.17.package.w04",
+      "ok": true,
+      "details": "package=P17-W04"
+    },
+    {
+      "name": "phase.17.package.verify",
+      "ok": true,
+      "details": "package=P17-VERIFY"
+    },
+    {
+      "name": "phase.17.package.handoff",
+      "ok": true,
+      "details": "package=P17-HANDOFF"
+    },
+    {
+      "name": "phase.18.plan_heading",
+      "ok": true,
+      "details": "heading=## P18 —"
+    },
+    {
+      "name": "phase.18.business_heading",
+      "ok": true,
+      "details": "heading=#### P18 —"
+    },
+    {
+      "name": "phase.18.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P18 —"
+    },
+    {
+      "name": "phase.18.section.workflow_p18",
+      "ok": true,
+      "details": "required=### Workflow P18"
+    },
+    {
+      "name": "phase.18.section.trường_hợp_chạy_đúng_p18",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P18"
+    },
+    {
+      "name": "phase.18.section.trường_hợp_lỗi_và_phục_hồi_p18",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P18"
+    },
+    {
+      "name": "phase.18.section.bất_biến_và_điều_kiện_đóng_p18",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P18"
+    },
+    {
+      "name": "phase.18.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P18-Sxx"
+    },
+    {
+      "name": "phase.18.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P18-Exx"
+    },
+    {
+      "name": "phase.18.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P18-01..04"
+    },
+    {
+      "name": "phase.18.package.w01",
+      "ok": true,
+      "details": "package=P18-W01"
+    },
+    {
+      "name": "phase.18.package.w02",
+      "ok": true,
+      "details": "package=P18-W02"
+    },
+    {
+      "name": "phase.18.package.w03",
+      "ok": true,
+      "details": "package=P18-W03"
+    },
+    {
+      "name": "phase.18.package.w04",
+      "ok": true,
+      "details": "package=P18-W04"
+    },
+    {
+      "name": "phase.18.package.verify",
+      "ok": true,
+      "details": "package=P18-VERIFY"
+    },
+    {
+      "name": "phase.18.package.handoff",
+      "ok": true,
+      "details": "package=P18-HANDOFF"
+    },
+    {
+      "name": "phase.19.plan_heading",
+      "ok": true,
+      "details": "heading=## P19 —"
+    },
+    {
+      "name": "phase.19.business_heading",
+      "ok": true,
+      "details": "heading=#### P19 —"
+    },
+    {
+      "name": "phase.19.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P19 —"
+    },
+    {
+      "name": "phase.19.section.workflow_p19",
+      "ok": true,
+      "details": "required=### Workflow P19"
+    },
+    {
+      "name": "phase.19.section.trường_hợp_chạy_đúng_p19",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P19"
+    },
+    {
+      "name": "phase.19.section.trường_hợp_lỗi_và_phục_hồi_p19",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P19"
+    },
+    {
+      "name": "phase.19.section.bất_biến_và_điều_kiện_đóng_p19",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P19"
+    },
+    {
+      "name": "phase.19.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P19-Sxx"
+    },
+    {
+      "name": "phase.19.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P19-Exx"
+    },
+    {
+      "name": "phase.19.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P19-01..04"
+    },
+    {
+      "name": "phase.19.package.w01",
+      "ok": true,
+      "details": "package=P19-W01"
+    },
+    {
+      "name": "phase.19.package.w02",
+      "ok": true,
+      "details": "package=P19-W02"
+    },
+    {
+      "name": "phase.19.package.w03",
+      "ok": true,
+      "details": "package=P19-W03"
+    },
+    {
+      "name": "phase.19.package.w04",
+      "ok": true,
+      "details": "package=P19-W04"
+    },
+    {
+      "name": "phase.19.package.verify",
+      "ok": true,
+      "details": "package=P19-VERIFY"
+    },
+    {
+      "name": "phase.19.package.handoff",
+      "ok": true,
+      "details": "package=P19-HANDOFF"
+    },
+    {
+      "name": "phase.20.plan_heading",
+      "ok": true,
+      "details": "heading=## P20 —"
+    },
+    {
+      "name": "phase.20.business_heading",
+      "ok": true,
+      "details": "heading=#### P20 —"
+    },
+    {
+      "name": "phase.20.spec_heading",
+      "ok": true,
+      "details": "heading=### SPEC-P20 —"
+    },
+    {
+      "name": "phase.20.section.workflow_p20",
+      "ok": true,
+      "details": "required=### Workflow P20"
+    },
+    {
+      "name": "phase.20.section.trường_hợp_chạy_đúng_p20",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P20"
+    },
+    {
+      "name": "phase.20.section.trường_hợp_lỗi_và_phục_hồi_p20",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P20"
+    },
+    {
+      "name": "phase.20.section.bất_biến_và_điều_kiện_đóng_p20",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P20"
+    },
+    {
+      "name": "phase.20.success_tests",
+      "ok": true,
+      "details": "pattern=TC-P20-Sxx"
+    },
+    {
+      "name": "phase.20.error_tests",
+      "ok": true,
+      "details": "pattern=TC-P20-Exx"
+    },
+    {
+      "name": "phase.20.fr_mapping",
+      "ok": true,
+      "details": "pattern=FR-P20-01..04"
+    },
+    {
+      "name": "phase.20.package.w01",
+      "ok": true,
+      "details": "package=P20-W01"
+    },
+    {
+      "name": "phase.20.package.w02",
+      "ok": true,
+      "details": "package=P20-W02"
+    },
+    {
+      "name": "phase.20.package.w03",
+      "ok": true,
+      "details": "package=P20-W03"
+    },
+    {
+      "name": "phase.20.package.w04",
+      "ok": true,
+      "details": "package=P20-W04"
+    },
+    {
+      "name": "phase.20.package.verify",
+      "ok": true,
+      "details": "package=P20-VERIFY"
+    },
+    {
+      "name": "phase.20.package.handoff",
+      "ok": true,
+      "details": "package=P20-HANDOFF"
+    },
+    {
+      "name": "coverage.B01",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B02",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B03",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B04",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B05",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B06",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B07",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B08",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B09",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B10",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B11",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B12",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "execution_gate.G0",
+      "ok": true,
+      "details": "present in plan execution gates"
+    },
+    {
+      "name": "execution_gate.G1",
+      "ok": true,
+      "details": "present in plan execution gates"
+    },
+    {
+      "name": "execution_gate.G2",
+      "ok": true,
+      "details": "present in plan execution gates"
+    },
+    {
+      "name": "execution_gate.G3",
+      "ok": true,
+      "details": "present in plan execution gates"
+    },
+    {
+      "name": "execution_gate.G4",
+      "ok": true,
+      "details": "present in plan execution gates"
+    },
+    {
+      "name": "execution_gate.G5",
+      "ok": true,
+      "details": "present in plan execution gates"
+    },
+    {
+      "name": "execution_gate.G6",
+      "ok": true,
+      "details": "present in plan execution gates"
+    },
+    {
+      "name": "execution_gate.G7",
+      "ok": true,
+      "details": "present in plan execution gates"
+    },
+    {
+      "name": "artifact.docs/runbooks/p20-initial-operations-package.md",
+      "ok": true,
+      "details": "required support artifact"
+    },
+    {
+      "name": "artifact.deployment/railway/production-runbook.md",
+      "ok": true,
+      "details": "required support artifact"
+    },
+    {
+      "name": "artifact.scripts/verify-public-deployment.ps1",
+      "ok": true,
+      "details": "required support artifact"
+    },
+    {
+      "name": "artifact.scripts/verify-local-backup-restore.py",
+      "ok": true,
+      "details": "required support artifact"
+    },
+    {
+      "name": "artifact.scripts/create-release-manifest.py",
+      "ok": true,
+      "details": "required support artifact"
+    },
+    {
+      "name": "artifact.scripts/release_manifest.py",
+      "ok": true,
+      "details": "required support artifact"
+    }
+  ]
+}

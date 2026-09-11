@@ -1,0 +1,84 @@
+{
+  "schema_version": "rt-connect.p20-operational-probes.v1",
+  "captured_at_utc": "2026-09-11T08:18:05.3230694Z",
+  "api_base_url": "https://gleaming-cooperation-staging.up.railway.app",
+  "web_base_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "expected_version": "f938fd7541fbe5c8086f12e2e0cfe3cd74dd6418",
+  "expected_schema_revision": "20260911_0020",
+  "access_token_supplied": false,
+  "passed": true,
+  "failed_check_count": 0,
+  "checks": [
+    {
+      "name": "api.health.contract",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_ms": 5380,
+      "details": "status=ok"
+    },
+    {
+      "name": "api.ready.contract",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_ms": 1127,
+      "details": "status=ready; schema_revision=20260911_0020"
+    },
+    {
+      "name": "api.ready.schema_revision",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_ms": 1127,
+      "details": "expected=20260911_0020; observed=20260911_0020"
+    },
+    {
+      "name": "api.version.contract",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_ms": 2553,
+      "details": "version=f938fd7541fbe5c8086f12e2e0cfe3cd74dd6418; environment=staging; schema_revision=20260911_0020"
+    },
+    {
+      "name": "api.version.expected",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_ms": 2553,
+      "details": "expected=f938fd7541fbe5c8086f12e2e0cfe3cd74dd6418; observed=f938fd7541fbe5c8086f12e2e0cfe3cd74dd6418"
+    },
+    {
+      "name": "api.version.schema_revision",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_ms": 2553,
+      "details": "expected=20260911_0020; observed=20260911_0020"
+    },
+    {
+      "name": "platform.schema_parity",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_ms": 0,
+      "details": "health=ok; ready=ready; ready_schema=20260911_0020; version_schema=20260911_0020"
+    },
+    {
+      "name": "web.app.reachable",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_ms": 2107,
+      "details": "html_shell=True"
+    },
+    {
+      "name": "web.app.no_secret_markers",
+      "ok": true,
+      "status_code": 200,
+      "elapsed_ms": 2107,
+      "details": "secret_markers=False"
+    },
+    {
+      "name": "api.gamma.queue_metrics",
+      "ok": null,
+      "status_code": 0,
+      "elapsed_ms": 0,
+      "details": "not run: no session access token supplied"
+    }
+  ],
+  "scope": "Operational endpoint and public web probe; no alert delivery, provider backup/restore, authenticated browser E2E, or clinical readiness claim."
+}
