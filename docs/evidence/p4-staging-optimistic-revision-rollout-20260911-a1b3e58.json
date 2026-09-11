@@ -1,0 +1,68 @@
+{
+  "evidence_type": "STAGING_PARTIAL",
+  "phase": "P4",
+  "work_package": "P04-W03",
+  "observed_at": "2026-09-11",
+  "repository_sha": "a1b3e588a352115d974e64d8b3b6daabaa596724",
+  "schema_revision": "20260911_0020",
+  "environment": "staging",
+  "deployments": {
+    "api": {
+      "deployment_id": "c7a279e4-1b3a-45c0-b191-79a607c5f19f",
+      "status": "SUCCESS"
+    },
+    "web": {
+      "deployment_id": "508e2acc-033c-4ab5-b319-449b18e5c7c9",
+      "status": "SUCCESS"
+    },
+    "worker": {
+      "deployment_id": "605a06e6-bb16-4456-a029-64ea5dbaabdb",
+      "status": "SUCCESS"
+    }
+  },
+  "readback": {
+    "api_version": {
+      "status": "PASS",
+      "details": "Observed source SHA exactly matched the candidate; schema_revision was 20260911_0020."
+    },
+    "api_ready_samples": {
+      "successful": 4,
+      "timeouts": 1,
+      "status": "PARTIAL",
+      "details": "Four bounded public probes returned ready; one probe timed out, showing intermittent public routing latency."
+    },
+    "api_openapi": {
+      "status": "NOT_VERIFIED",
+      "details": "Public transfer timed out or was reset before a complete response could be captured."
+    },
+    "web_browser": {
+      "status": "PASS_PARTIAL",
+      "details": "Browser loaded the exact candidate build; /app/qa showed the existing validated synthetic RTDOSE fixture and /app/organization showed organization/site/member context."
+    },
+    "organization_route": {
+      "status": "PASS_PARTIAL",
+      "details": "Organization, site and one active member were visible; no role/action-permission branch was introduced."
+    },
+    "machine_route": {
+      "status": "NOT_VERIFIED",
+      "details": "The machine list remained in a loading state at capture time."
+    },
+    "rtdose_fixture": {
+      "status": "READ_ONLY_PRESENT",
+      "details": "The existing synthetic RTDOSE artifact was not uploaded again and no new Gamma/DVH run was created."
+    }
+  },
+  "public_verifier": {
+    "status": "FAILED_BOUNDED_RETRY",
+    "failed_checks": ["api.openapi", "web.public"],
+    "details": "The bounded retry observed the API ready/version/schema checks but did not pass the complete public verifier."
+  },
+  "mutations_after_deploy": [],
+  "open_gates": [
+    "Authenticated stale PATCH and direct Railway PostgreSQL readback",
+    "Stable public OpenAPI and web verifier",
+    "Machine endpoint/browser readback",
+    "Active-parent/archive/restore behavior",
+    "P4 full exit gate and two-identity concurrency evidence"
+  ]
+}

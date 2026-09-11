@@ -10,6 +10,13 @@ Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.29,
 - API P4/migration/health/workspace đạt **36/36**, Ruff PASS; frontend typecheck/lint PASS và Vitest **20/20** (9 files). Evidence: [p4-local-optimistic-revision-20260911-be84887.json](docs/evidence/p4-local-optimistic-revision-20260911-be84887.json).
 - Đây chỉ là `LOCAL_VERIFIED_SLICE`; staging migration/readiness, direct PostgreSQL row/audit readback, two-identity browser concurrency, active-parent/archive/restore và P4 full exit gate vẫn mở.
 
+## P4-W03/P20 — staging rollout partial — 2026-09-11 / `a1b3e58`
+
+- API, web và worker staging đều báo `SUCCESS` trên candidate `a1b3e588a352115d974e64d8b3b6daabaa596724`; API đã quan sát `schema_revision=20260911_0020` qua version/readiness probes.
+- Browser đã tải đúng candidate build: `/app/qa` vẫn thấy fixture RTDOSE tổng hợp đã upload trước đó và `/app/organization` hiển thị organization, site và member context. Không upload lại fixture, không tạo Gamma/DVH run mới. Danh sách machine vẫn ở trạng thái loading tại thời điểm chụp nên chưa được ghi nhận PASS.
+- Public verifier bounded retry chưa PASS: các kiểm tra còn lỗi là `api.openapi` và `web.public` do timeout/connection reset khi truyền response; readiness đạt 4/5 lần probe, một lần timeout. Vì vậy rollout này là `STAGING_PARTIAL`, không phải `STAGING_VERIFIED`.
+- Evidence: [p4-staging-optimistic-revision-rollout-20260911-a1b3e58.json](docs/evidence/p4-staging-optimistic-revision-rollout-20260911-a1b3e58.json). Còn mở: authenticated stale PATCH với hai identity, direct PostgreSQL readback, machine route, ổn định public verifier và P4 full exit gate.
+
 ## P17-W06 — root-run DVH volume benchmark — local verified slice — 2026-09-11 / `183a4d2`
 
 - Đã sửa runner `scripts/benchmark-p17-dvh.py` để tự thêm `apps/api/src` vào import path; benchmark chạy được từ repository root, không phụ thuộc working directory hay `PYTHONPATH` bên ngoài.
