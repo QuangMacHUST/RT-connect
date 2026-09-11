@@ -1,0 +1,45 @@
+{
+  "evidence_id": "P0-P18-BACKEND-REGRESSION-20260911-249A8BA",
+  "captured_at_utc": "2026-09-11T09:27:36.9193297Z",
+  "status": "LOCAL_VERIFIED",
+  "environment": "local-testclient",
+  "repository_sha": "249a8badb042eb903c8cb5169f1f80fa35dcf172",
+  "collection": {
+    "tests_collected": 204,
+    "test_files": 31
+  },
+  "partitioned_runs": [
+    {
+      "group": "core-artifact-biological-dvh",
+      "tests": 44,
+      "exit_code": 0,
+      "command": "pytest -q --no-cov --disable-warnings tests/test_artifacts.py tests/test_auth.py tests/test_bed_eqd2.py tests/test_bed_eqd2_engine.py tests/test_biological.py tests/test_biological_library.py tests/test_dvh.py tests/test_dvh_engine.py",
+      "status": "PASS"
+    },
+    {
+      "group": "gamma-worker-health-machine-migration",
+      "tests": 59,
+      "exit_code": 0,
+      "command": "pytest -q --no-cov --disable-warnings tests/test_error_contract.py tests/test_gamma.py tests/test_gamma_dicom.py tests/test_gamma_independent_oracle.py tests/test_gamma_worker.py tests/test_health.py tests/test_machine_qa.py tests/test_migration_contract.py",
+      "status": "PASS"
+    },
+    {
+      "group": "organization-integrated-biological-reporting-auth",
+      "tests": 101,
+      "exit_code": 0,
+      "command": "pytest -q --no-cov --disable-warnings tests/test_organization.py tests/test_p18_integration.py tests/test_plan_comparison.py tests/test_plan_comparison_engine.py tests/test_protocol_library.py tests/test_qa_archive.py tests/test_re_irradiation.py tests/test_re_irradiation_engine.py tests/test_redaction.py tests/test_redis_queue.py tests/test_release_manifest.py tests/test_reports.py tests/test_supabase_jwt.py tests/test_trend.py tests/test_workspace.py",
+      "status": "PASS"
+    }
+  ],
+  "summary": {
+    "tests_passed": 204,
+    "tests_failed": 0,
+    "partitioned_exit_codes": [0, 0, 0]
+  },
+  "runner_note": "A monolithic pytest invocation stopped around the 35 percent progress marker without a summary or exit code. It is not counted as PASS; all 204 collected tests were rerun in deterministic file partitions and each partition returned exit code 0.",
+  "limitations": [
+    "This is local backend regression evidence, not staging or production evidence.",
+    "It does not close remote fault injection, provider backup/restore, rollback, alert delivery, pilot or clinical-readiness gates."
+  ],
+  "cleanup": "No staging or production resource was mutated."
+}

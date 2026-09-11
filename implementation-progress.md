@@ -3,6 +3,12 @@
 Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.29,
 `technical-specification.md` v1.30 và `plan.md` v4.25.
 
+## P0/P18 — partitioned backend regression — PASS, monolithic runner anomaly documented — 2026-09-11 / `249a8ba`
+
+- Collection hiện tại có **204 test trong 31 file**. Ba nhóm chạy độc lập đều trả `EXIT_CODE=0`: core/artifact/biological/DVH `44`, Gamma/worker/health/machine/migration `59`, organization/integration/biological/report/Auth `101`; tổng **204/204 PASS**.
+- Lệnh monolithic trước đó dừng ở marker khoảng 35% mà không có summary hoặc exit code, nên không được tính PASS; đã ghi anomaly này trong evidence và rerun toàn bộ collection theo partition.
+- Evidence: [p0-p18-backend-regression-20260911-249a8ba.json](docs/evidence/p0-p18-backend-regression-20260911-249a8ba.json). Đây là `LOCAL_VERIFIED`; không thay staging/production fault, provider backup/restore, rollback, alert, pilot hoặc clinical-readiness evidence.
+
 ## P18-W00 — local integrated release-candidate journeys — PASS, remote gates open — 2026-09-11 / `4ecfae8`
 
 - Chạy lại `apps/api/.venv/Scripts/python.exe -m pytest -q --no-cov tests/test_p18_integration.py` trên working tree sạch, kết quả **2/2 PASS**.
