@@ -17,7 +17,7 @@ Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specif
 
 ## 0. Baseline tích hợp đang có
 
-Baseline dưới đây được kiểm tra trực tiếp ngày 2026-09-04. ID hạ tầng được ghi để tránh nối nhầm project; trạng thái deployment/service phải được truy vấn lại trước mỗi lần triển khai.
+Baseline ban đầu dưới đây được kiểm tra trực tiếp ngày 2026-09-04. ID hạ tầng được ghi để tránh nối nhầm project; trạng thái deployment/service và danh sách design resource phải được truy vấn lại trước mỗi lần triển khai hoặc handoff.
 
 ### 0.1. Google Stitch
 
@@ -29,16 +29,27 @@ Baseline dưới đây được kiểm tra trực tiếp ngày 2026-09-04. ID h�
 | Device baseline | `DESKTOP` |
 | Nguồn truy cập | Google Stitch MCP |
 
-`list_screens` hiện trả sáu screen resource đang hoạt động: bốn application screen và hai image asset (logo, avatar). Chỉ bốn application screen dưới đây được map thành route sản phẩm:
+Snapshot live qua Stitch MCP ngày 2026-09-11 được ghi trong `docs/evidence/stitch-screen-registry-20260911.json`. `list_screens` hiện trả **10 resource**: tám application screen và hai image asset. Đây là registry design hiện hành tại thời điểm snapshot; không suy ra rằng mọi resource đã có route production hoặc đã đạt visual acceptance.
 
 | Screen ID | Title | Module |
 | :--- | :--- | :--- |
-| `70b9f1d256884221ae20e63b5244db11` | Trang chủ - Home Dashboard | MOD-01 |
+| `3b857ee77e7a434d8cfdcda32fd62cdb` | Đăng nhập RT-CONNECT | MOD-00 |
 | `4c9ec57310fd404cbae3b53b0bab2368` | Kho lưu trữ QA & Thư mục | MOD-03 |
+| `70b9f1d256884221ae20e63b5244db11` | Trang chủ - Home Dashboard | MOD-01 |
 | `ffb87901b3194bd3aff8760c54c2f9f4` | Phân tích PSQA Gamma Workspace | MOD-04, MOD-06 |
+| `accb55e3ab3e4d718ba3a4407e3f9368` | Xác thực phiên RT-CONNECT | MOD-00 |
+| `b4fb9071a0614f3a9272d2a8a8b7337c` | Khôi phục truy cập RT-CONNECT | MOD-00 |
+| `3ee1eb026899432392f40ff945649ac9` | Lỗi phiên RT-CONNECT | MOD-00 |
 | `a1478466ace843c5aaf9a15dfc58273e` | Trình biên soạn Báo cáo - Report Builder Studio | MOD-07 |
 
-Logo và avatar không phải route. `get_project` vẫn có thể trả bốn instance Biological cũ ở trạng thái `hidden`; chúng là legacy/deprecated sau khi user loại khỏi canvas hoạt động, không phải nguồn thiết kế hiện hành và không được tự khôi phục. MOD-10 đến MOD-13 phải dùng các screen implementation hiện hành theo thứ tự Biological Hub → BED/EQD2 → Plan Comparison → Re-irradiation/Fraction Compensation, kế thừa Design System `Clinical Precision Interface` và AppShell của bốn screen đang hoạt động. Một screen Stitch riêng chỉ là nguồn tham khảo tùy chọn, không phải điều kiện để route có code.
+Hai image asset hiện hành không phải route:
+
+| Resource ID | Nội dung | Cách sử dụng |
+| :--- | :--- | :--- |
+| `8f54172061464e6eb4be3a5d15c6dee3` | RT-CONNECT Logo | Asset branding, không phải route |
+| `3077690a9dfc451390b59a7205268dfa` | Professional avatar headshot... | Asset minh họa/avatar, không phải route |
+
+Snapshot này **không có screen Stitch đang hoạt động cho MOD-02 Organization/Site/Machine hoặc MOD-10–MOD-13 Biological Toolkit**. `get_project` vẫn có thể trả bốn instance Biological cũ ở trạng thái `hidden`; chúng là legacy/deprecated sau khi user loại khỏi canvas hoạt động, không phải nguồn thiết kế hiện hành và không được tự khôi phục. Đây là design gap P0-W03 cần ghi nhận, không phải lý do để chặn backend hoặc route implementation. MOD-02 và MOD-10 đến MOD-13 phải dùng các screen implementation hiện hành theo thứ tự Organization/Site/Machine → Biological Hub → BED/EQD2 → Plan Comparison → Re-irradiation/Fraction Compensation, kế thừa Design System `Clinical Precision Interface` và AppShell. Khi cần visual acceptance cho các route còn thiếu, phải tạo hoặc chỉnh screen trong đúng project Stitch rồi cập nhật registry; không gán nhầm ID legacy/hidden vào route mới.
 
 Các resource tài liệu cũ trên Stitch không phải bản canonical trong repository. `UI-UX.md` không còn được duy trì; việc thiết kế mới hoặc sửa thiết kế được thực hiện trực tiếp trong project Stitch qua MCP.
 

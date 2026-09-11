@@ -2210,7 +2210,18 @@ Nếu dùng Service Settings: kiểm metadata effective của deployment; nếu 
 
 ## 6. Design-to-code theo Google Stitch
 
-Project RT-connect: 14242591911141046021. Các ID trong registry/progress là evidence cũ phải re-query trước chỉnh design. Không gọi MCP hoặc regenerate thiết kế chỉ để hoàn thành việc sửa tài liệu này.
+Project RT-connect: 14242591911141046021. Snapshot live `list_screens` qua Stitch MCP ngày 2026-09-11 được ghi tại `docs/evidence/stitch-screen-registry-20260911.json`: 10 resource gồm 8 application screen và 2 image asset. Các ID dưới đây là snapshot có thời điểm, không phải cam kết mọi route đã đạt visual acceptance. Không dùng bốn Biological instance legacy/hidden làm design source.
+
+### 6.1. Registry Stitch live và design gap hiện tại
+
+| Nhóm | Resource hiện hành | Trạng thái mapping |
+| :--- | :--- | :--- |
+| Auth | `3b857ee77e7a434d8cfdcda32fd62cdb` Đăng nhập; `accb55e3ab3e4d718ba3a4407e3f9368` Xác thực phiên; `b4fb9071a0614f3a9272d2a8a8b7337c` Khôi phục; `3ee1eb026899432392f40ff945649ac9` Lỗi phiên | MOD-00; map vào `/auth/*`, `/auth/session-error`, `/auth/recovery` |
+| QA application | `70b9f1d256884221ae20e63b5244db11` Home; `4c9ec57310fd404cbae3b53b0bab2368` QA Archive; `ffb87901b3194bd3aff8760c54c2f9f4` Gamma; `a1478466ace843c5aaf9a15dfc58273e` Report Builder | MOD-01, MOD-03, MOD-04/MOD-06, MOD-07; route mapping phải được ghi trong issue/module evidence |
+| Asset | `8f54172061464e6eb4be3a5d15c6dee3` Logo; `3077690a9dfc451390b59a7205268dfa` avatar | Không phải route; chỉ dùng làm branding/asset |
+| Design gap | Không có live Stitch screen cho MOD-02 và MOD-10–MOD-13 | P0-W03 OPEN; dùng AppShell/design tokens hiện hành cho code, tạo screen riêng trước visual acceptance |
+
+P0-W03 chỉ được đóng khi registry này được đối chiếu với route/component/API/FR và mọi design gap có owner, nguồn Stitch hoặc quyết định chấp nhận implementation hiện hành. Việc list được resource không tự đóng P3/P4/P12–P15 và không chứng minh visual/accessibility acceptance.
 
 | Phase | Thiết kế cần đọc/tạo | Variant tối thiểu |
 | :--- | :--- | :--- |

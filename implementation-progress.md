@@ -3,6 +3,12 @@
 Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.28,
 `technical-specification.md` v1.27 và `plan.md` v4.24.
 
+## P0-W03 — live Stitch screen registry — verified snapshot — 2026-09-11
+
+- Stitch project `RT-connect` (`14242591911141046021`) được query live qua MCP và trả **10 resource**: 8 application screen gồm Auth (4), Home, QA Archive, Gamma Workspace, Report Builder; cùng 2 image asset là logo và avatar.
+- Không có application screen live cho Organization/Site/Machine hoặc Biological Toolkit. Bốn Biological resource cũ vẫn được coi là hidden/legacy, không được tự gán vào route và không được khôi phục chỉ để làm đủ số lượng màn hình.
+- Registry có ID/title/device/dimension và cờ HTML/screenshot trong [stitch-screen-registry-20260911.json](docs/evidence/stitch-screen-registry-20260911.json). Đây là evidence của design inventory; mapping component/API/FR, tạo screen còn thiếu và visual/accessibility acceptance vẫn là việc mở của P0/P3/P4/P12–P15.
+
 ## P06 — signed artifact download filename contract — local verified — 2026-09-11 / current worktree
 
 - API `GET /api/v1/artifacts/{artifact_id}/download` hiện trả thêm `filename` và truyền `response-content-disposition` vào signed URL. Filename được lấy ở basename, loại bỏ path separator, quote, CR/LF và control character; filename rỗng/hỏng dùng fallback xác định từ artifact ID. Object key, bytes và SHA-256 không thay đổi.

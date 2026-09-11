@@ -1,0 +1,29 @@
+{
+  "evidence_type": "STITCH_SCREEN_REGISTRY",
+  "verified_at": "2026-09-11",
+  "project_id": "14242591911141046021",
+  "project_title": "RT-connect",
+  "source": "Google Stitch MCP list_screens",
+  "resource_count": 10,
+  "application_screen_count": 8,
+  "image_asset_count": 2,
+  "application_screens": [
+    {"id": "3b857ee77e7a434d8cfdcda32fd62cdb", "title": "Đăng nhập RT-CONNECT", "module": "MOD-00", "device": "DESKTOP", "width": 2560, "height": 2048, "has_html": true, "has_screenshot": true},
+    {"id": "4c9ec57310fd404cbae3b53b0bab2368", "title": "Kho lưu trữ QA & Thư mục", "module": "MOD-03", "device": "DESKTOP", "width": 2560, "height": 2048, "has_html": true, "has_screenshot": true},
+    {"id": "70b9f1d256884221ae20e63b5244db11", "title": "Trang chủ - Home Dashboard", "module": "MOD-01", "device": "DESKTOP", "width": 2560, "height": 2102, "has_html": true, "has_screenshot": true},
+    {"id": "ffb87901b3194bd3aff8760c54c2f9f4", "title": "Phân tích PSQA Gamma Workspace", "module": "MOD-04/MOD-06", "device": "DESKTOP", "width": 2560, "height": 3764, "has_html": true, "has_screenshot": true},
+    {"id": "accb55e3ab3e4d718ba3a4407e3f9368", "title": "Xác thực phiên RT-CONNECT", "module": "MOD-00", "device": "DESKTOP", "width": 2560, "height": 2048, "has_html": true, "has_screenshot": true},
+    {"id": "b4fb9071a0614f3a9272d2a8a8b7337c", "title": "Khôi phục truy cập RT-CONNECT", "module": "MOD-00", "device": "DESKTOP", "width": 2560, "height": 2048, "has_html": true, "has_screenshot": true},
+    {"id": "3ee1eb026899432392f40ff945649ac9", "title": "Lỗi phiên RT-CONNECT", "module": "MOD-00", "device": "DESKTOP", "width": 2560, "height": 2048, "has_html": true, "has_screenshot": true},
+    {"id": "a1478466ace843c5aaf9a15dfc58273e", "title": "Trình biên soạn Báo cáo - Report Builder Studio", "module": "MOD-07", "device": "DESKTOP", "width": 2560, "height": 4234, "has_html": true, "has_screenshot": true}
+  ],
+  "image_assets": [
+    {"id": "8f54172061464e6eb4be3a5d15c6dee3", "title": "RT-CONNECT Logo", "width": 1376, "height": 768, "has_html": false, "has_screenshot": true},
+    {"id": "3077690a9dfc451390b59a7205268dfa", "title": "Professional avatar headshot of a clinical medical physicist wearing a lab coat with stethoscope or ID badge, friendly and focused expression, high resolution clinical lighting, neutral hospital background", "width": 1024, "height": 1024, "has_html": false, "has_screenshot": true}
+  ],
+  "design_gaps": [
+    {"module": "MOD-02", "description": "No live Stitch application screen for Organization/Site/Machine"},
+    {"module": "MOD-10/MOD-11/MOD-12/MOD-13", "description": "No live Stitch application screen for Biological Toolkit; old resources are hidden/legacy"}
+  ],
+  "interpretation": "Inventory evidence only. It does not prove route mapping, frontend visual acceptance, accessibility acceptance, or clinical readiness."
+}
