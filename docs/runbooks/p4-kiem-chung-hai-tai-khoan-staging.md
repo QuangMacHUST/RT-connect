@@ -76,7 +76,7 @@ Không dùng thao tác này trên cơ sở thật đang chứa dữ liệu vận
 
 | Mã kiểm | Nội dung | Kết quả mong đợi | Kết quả thực tế | Bằng chứng |
 | :--- | :--- | :--- | :--- | :--- |
-| P4-S01 | Tài khoản A mở đơn vị, cơ sở, máy và lịch sử | Đúng dữ liệu, không phải cuộn qua biểu mẫu dài |  |  |
+| P4-S01 | Tài khoản A mở đơn vị, cơ sở, máy và lịch sử | Đúng dữ liệu, không phải cuộn qua biểu mẫu dài | Lát cắt người nhận sau khi tham gia đã mở được cơ sở, máy và hai bài QA lịch sử; phần kiểm đầy đủ theo tài khoản A và bộ chọn bài mới còn mở | `docs/evidence/p4-staging-invite-qa-readback-20260913-246d1e5.json` |
 | P4-S02 | Tài khoản B tham gia cùng đơn vị | Cùng thao tác, không có phân cấp vai trò | Đã readback 2 thành viên sau khi B tham gia; phần kiểm hai phiên cùng thao tác còn mở | `docs/evidence/p4-staging-invite-inbox-20260913-246d1e5.json` |
 | P4-S03 | Tài khoản B chưa có đơn vị | Thấy lời mời theo email và có nút tham gia; không bị đưa thẳng vào tạo đơn vị | Đạt: lời mời Hong ngoc general hospital hiển thị theo email, bấm Tham gia vào đúng đơn vị, không tạo đơn vị mới | `docs/evidence/p4-staging-invite-inbox-20260913-246d1e5.json` |
 | P4-S04 | Dán mã mời dự phòng | Mã đúng đưa vào đơn vị; mã sai không tạo đơn vị |  |  |

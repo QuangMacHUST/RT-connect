@@ -1,0 +1,32 @@
+{
+  "evidence_type": "staging_authenticated_invitee_qa_readback",
+  "phase": "P4",
+  "status": "PASS_FOR_INVITEE_READBACK_SLICE",
+  "checked_at": "2026-09-13T19:24:00+07:00",
+  "environment": "staging",
+  "source_commit": "246d1e5260f7c5d48bef6aeb7a75b60c09a7150e",
+  "web_url": "https://rt-connect-web-staging-staging.up.railway.app/app/qa",
+  "browser": "Microsoft Edge",
+  "checks": [
+    {
+      "id": "P4-INVITEE-ORG-READBACK",
+      "status": "PASS",
+      "observed": "Tài khoản vừa nhận lời mời mở được cơ sở Staging Synthetic Site và máy Synthetic QA Linac trong đơn vị đã tham gia."
+    },
+    {
+      "id": "P4-INVITEE-QA-HISTORY-READBACK",
+      "status": "PASS",
+      "observed": "Trang Kiểm tra chất lượng máy hiển thị thư mục Staging P6 Smoke và hai bài QA lịch sử; có thể mở bài kiểm tra máy và phân tích Gamma."
+    },
+    {
+      "id": "P4-INVITEE-ARTIFACT-READBACK",
+      "status": "PASS",
+      "observed": "Bài QA lịch sử hiển thị một tệp RTDOSE ở trạng thái hợp lệ và liên kết phân tích liều."
+    }
+  ],
+  "not_proven": [
+    "Two independent browser sessions editing the same resource",
+    "Archive/restore effect on new-case selector and old history",
+    "Fallback invitation code with valid and invalid values"
+  ]
+}
