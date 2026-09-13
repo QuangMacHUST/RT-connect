@@ -1,0 +1,26 @@
+{
+  "schema_version": "rt-connect.p4-local-qa-history.v1",
+  "captured_at_utc": "2026-09-13T09:29:13.1848626Z",
+  "phase": "P4",
+  "verification_level": "LOCAL_VERIFIED_SLICE",
+  "source_sha": "886f1261169fb053f3d678ad5b049ab02ef20d04",
+  "command": ".venv\\Scripts\\python.exe -m pytest -q tests/test_organization.py tests/test_qa_archive.py",
+  "tests": {
+    "organization": 17,
+    "qa_archive": 3,
+    "passed": 20,
+    "failed": 0
+  },
+  "assertions": [
+    "Máy đã lưu trữ bị loại khỏi danh sách máy đang hoạt động.",
+    "Bài QA được tạo trước khi lưu trữ máy vẫn còn trong danh sách lịch sử.",
+    "Có thể mở lại bài QA cũ sau khi máy nguồn đã lưu trữ.",
+    "Không thể tạo bài QA mới bằng máy đã lưu trữ.",
+    "Khôi phục máy yêu cầu trạng thái revision hiện tại và cho phép dùng lại máy."
+  ],
+  "limitations": [
+    "Đây là kiểm thử cục bộ với danh tính giả lập, chưa thay cho hai danh tính Supabase thật trên staging.",
+    "Chưa có bằng chứng trình duyệt staging cho thao tác bộ chọn máy và lịch sử QA."
+  ],
+  "passed": true
+}
