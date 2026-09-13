@@ -18,6 +18,7 @@ from rt_connect_api.api.organization import router as organization_router
 from rt_connect_api.api.plan_comparison import router as plan_comparison_router
 from rt_connect_api.api.protocols import router as protocols_router
 from rt_connect_api.api.qa_archive import router as qa_archive_router
+from rt_connect_api.api.qa_catalog import router as qa_catalog_router
 from rt_connect_api.api.re_irradiation import router as re_irradiation_router
 from rt_connect_api.api.reports import router as reports_router
 from rt_connect_api.api.trend import router as trend_router
@@ -70,6 +71,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(plan_comparison_router, prefix="/api/v1")
     app.include_router(re_irradiation_router, prefix="/api/v1")
     app.include_router(protocols_router, prefix="/api/v1")
+    app.include_router(qa_catalog_router, prefix="/api/v1")
     app.include_router(qa_archive_router, prefix="/api/v1")
     app.include_router(artifacts_router, prefix="/api/v1")
     app.include_router(machine_qa_router, prefix="/api/v1")
