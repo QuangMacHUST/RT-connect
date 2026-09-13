@@ -1,0 +1,49 @@
+{
+  "evidence_type": "phase_verification",
+  "phase": "P3",
+  "phase_status": "LOCAL_VERIFIED_SLICE",
+  "checked_at": "2026-09-13T07:44:02.0468825Z",
+  "environment": "local-development",
+  "source_sha": "7a7e4ec8698f348e6921c69c4b4e212aab425977",
+  "working_tree_dirty": true,
+  "scope": [
+    "compact design tokens and responsive layout",
+    "five primary navigation areas",
+    "Vietnamese authentication, onboarding and service-status copy",
+    "legacy knowledge route redirect",
+    "real API-backed home and platform status states"
+  ],
+  "checks": {
+    "lint": "PASS",
+    "typecheck": "PASS",
+    "unit_tests": {
+      "status": "PASS",
+      "test_files": 11,
+      "tests": 22
+    },
+    "browser_tests": {
+      "status": "PASS",
+      "tests": 3,
+      "viewports": [
+        "chromium-desktop-vn",
+        "chromium-desktop-utc",
+        "chromium-mobile-vn"
+      ]
+    },
+    "production_build": "PASS",
+    "login_visual_ax_check": "PASS",
+    "five_primary_navigation_check": "PASS",
+    "legacy_knowledge_redirect_test": "PASS"
+  },
+  "observations": [
+    "Màn hình đăng nhập thử nghiệm hiển thị đầy đủ nội dung chính trong một khung nhìn máy tính thông thường.",
+    "Thanh điều hướng chỉ hiển thị Trang chủ, QA máy, Công cụ sinh học, Thư viện kiến thức và Đơn vị và thiết bị.",
+    "Mã mô-đun không còn được hiển thị trong thanh điều hướng; các trang nghiệp vụ chuyên sâu sẽ được chuẩn hóa ở phase tương ứng.",
+    "Bản local chưa được phát hành lên Railway trong bằng chứng này; không suy ra trạng thái staging hoặc production."
+  ],
+  "remaining_for_phase_close": [
+    "Kiểm lại toàn bộ giao diện P3 trên hai kích thước chuẩn sau khi các thay đổi được commit.",
+    "Đồng bộ source candidate lên staging và chạy lại kiểm tra giao diện công khai trước khi đóng P3."
+  ],
+  "passed": true
+}

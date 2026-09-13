@@ -3,6 +3,13 @@
 This runbook is intentionally scoped to staging. It must not be applied to the existing
 production environment.
 
+> **Cập nhật 2026-09-13:** Railway staging hiện dùng các cài đặt hiệu lực trực tiếp trên
+> từng dịch vụ. `railwayConfigFile` đang là `null`; đường dẫn `/apps/api/railway.toml`
+> không phải điều kiện bắt buộc và không cần nhập lại sau mỗi lần triển khai. Tệp
+> `apps/api/railway.toml` vẫn được giữ trong mã nguồn làm tài liệu cấu hình chuẩn, nhưng
+> khi có khác biệt thì cài đặt hiệu lực trong Railway và kết quả triển khai là nguồn đối
+> chiếu. Bằng chứng hiện hành: `docs/evidence/p2-railway-effective-settings-20260913.json`.
+
 ## Prerequisites
 
 - A Railway account credential with write access to project `prolific-learning`.
@@ -25,12 +32,14 @@ For the API service, set these Railway build settings:
 | Setting | Value |
 | :--- | :--- |
 | Root Directory | `/apps/api` |
-| Config-as-code path | `/apps/api/railway.toml` |
+| Config-as-code path | Không bắt buộc; để trống nếu Railway không áp dụng được đường dẫn này |
 | Watch paths | `/apps/api/**` |
 | Dockerfile | `Dockerfile` relative to `/apps/api` |
 
-Railway's monorepo behavior requires a service root directory. Its config file path is specified
-as an absolute repository path when the file is outside the default root configuration lookup.
+Railway's monorepo behavior requires a service root directory. Cấu hình hiệu lực hiện tại
+đã xác nhận `Root Directory=/apps/api`, Dockerfile `/apps/api/Dockerfile`, healthcheck
+`/api/v1/health` và pre-deploy `alembic upgrade head`. Không coi việc ô cấu hình đường dẫn
+config-as-code tự biến mất là lỗi nếu các cài đặt hiệu lực và kết quả triển khai vẫn đúng.
 
 ## Railway steps
 
@@ -38,8 +47,9 @@ as an absolute repository path when the file is outside the default root configu
 2. Create a staging PostgreSQL service named `Postgres`. Record its resource limits and the
    usage snapshot before and after provisioning.
 3. Create or configure a staging API service from the existing repository. Set source root to
-   `apps/api`, use its `railway.toml`, and configure the required variables from
-   `deployment/railway/env.example` in Railway's secret store.
+   `apps/api`, apply the effective build/deploy settings above, and configure the required
+   variables from `deployment/railway/env.example` in Railway's secret store. Do not repeatedly
+   re-enter `/apps/api/railway.toml` after deployment; verify the effective settings instead.
 4. Use the private variable reference `${{Postgres.DATABASE_URL}}` for `DATABASE_URL`.
 5. Generate a Railway public domain for the API. Configure the web staging origin in
    `CORS_ALLOWED_ORIGINS` only after its exact HTTPS URL is known.

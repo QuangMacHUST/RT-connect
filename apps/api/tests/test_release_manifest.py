@@ -12,6 +12,18 @@ FIXTURE = REPO_ROOT / "docs" / "fixtures" / "p17-ct-v1-smoke.dcm"
 SOURCE_SHA = "a" * 40
 
 
+def _working_tree_clean() -> bool:
+    result = subprocess.run(
+        ["git", "status", "--porcelain"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    return not result.stdout.strip()
+
+
 def _run_manifest(output: Path, fixture: Path, *extra: str) -> subprocess.CompletedProcess[str]:
     arguments = [
         sys.executable,
@@ -70,10 +82,12 @@ def test_release_manifest_is_deterministic_and_valid(tmp_path: Path) -> None:
 
     result = _run_manifest(output, FIXTURE)
 
-    assert result.returncode == 0, result.stderr
+    clean = _working_tree_clean()
+    assert result.returncode == (0 if clean else 2), result.stderr
     manifest = json.loads(output.read_text(encoding="utf-8"))
-    assert manifest["release_gate"] == "ELIGIBLE"
+    assert manifest["release_gate"] == ("ELIGIBLE" if clean else "RELEASE_BLOCKED")
     assert manifest["service_sha_parity"] is True
+    assert manifest["gate_reasons"] == ([] if clean else ["WORKING_TREE_DIRTY"])
     assert manifest["fixture_hashes"][0]["path"] == "docs/fixtures/p17-ct-v1-smoke.dcm"
     assert manifest["fixture_hashes"][0]["bytes"] > 0
 
@@ -96,7 +110,10 @@ def test_mixed_service_sha_is_written_but_blocks_promotion(tmp_path: Path) -> No
     assert result.returncode == 2
     manifest = json.loads(output.read_text(encoding="utf-8"))
     assert manifest["release_gate"] == "RELEASE_BLOCKED"
-    assert manifest["gate_reasons"] == ["SERVICE_SOURCE_SHA_MISMATCH"]
+    expected_reasons = ["SERVICE_SOURCE_SHA_MISMATCH"]
+    if not _working_tree_clean():
+        expected_reasons.insert(0, "WORKING_TREE_DIRTY")
+    assert manifest["gate_reasons"] == expected_reasons
 
 
 def test_secret_like_backup_reference_is_rejected(tmp_path: Path) -> None:
@@ -112,7 +129,7 @@ def test_secret_like_backup_reference_is_rejected(tmp_path: Path) -> None:
 def test_manifest_verifier_recomputes_the_promotion_gate(tmp_path: Path) -> None:
     output = tmp_path / "manifest.json"
     result = _run_manifest(output, FIXTURE)
-    assert result.returncode == 0, result.stderr
+    assert result.returncode == (0 if _working_tree_clean() else 2), result.stderr
 
     manifest = json.loads(output.read_text(encoding="utf-8"))
     manifest["services"]["web"]["sha"] = "b" * 40

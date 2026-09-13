@@ -1,5 +1,7 @@
 # RT-CONNECT — Gói vận hành ban đầu P20
 
+> Bản vận hành kế thừa. Nguồn triển khai hiện hành là [plan.md](../../plan.md) v5.3 và [đặc tả kỹ thuật](../../technical-specification.md) v2.3. Các mốc bên dưới giữ nguyên để tra lịch sử; `specification.md` cũ đã chuyển vào [thư mục lịch sử](../history/pre-ux-20260912/specification.md).
+
 - **Trạng thái:** DRAFT / LOCAL_SUPPORT_ONLY
 - **Cập nhật checkpoint:** 2026-09-11, candidate staging `f938fd7541fbe5c8086f12e2e0cfe3cd74dd6418`, schema `20260911_0020`
 - **Phạm vi:** vận hành staging, pilot và production theo đúng release manifest

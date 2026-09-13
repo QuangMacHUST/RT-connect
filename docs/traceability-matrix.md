@@ -2,7 +2,7 @@
 
 This P0 matrix defines the minimum traceability spine. Detailed endpoint and test case IDs are extended in each implementation phase without changing the business requirement identity.
 
-Documentation rebaseline 2026-09-08: this module-level table retains historical design/implementation labels. Current feature catalogue is [business-analysis §21](../business-analysis.md), behavior contracts are [specification](../specification.md), and the FR-to-test mapping is [plan](../plan.md). Revalidate old status labels against plan v2 before closing phases; a missing screen label here is not a live Stitch query.
+Đối chiếu UX1.3 ngày 2026-09-13: bảng bên dưới giữ nhãn lịch sử. Nguồn hiện hành là [nghiệp vụ mục 12–13](../business-analysis.md), [đặc tả kỹ thuật](../technical-specification.md) và [kế hoạch](../plan.md) v5.3. [Đặc tả cũ](history/pre-ux-20260912/specification.md) chỉ để tra cứu. Không dùng trạng thái cũ tự đóng giai đoạn mới hoặc coi nhãn màn bị thiếu là kết quả kiểm Stitch trực tiếp.
 
 | Module | Business rules | Active screen or design gap | Route family | API boundary | Required evidence |
 | :--- | :--- | :--- | :--- | :--- | :--- |

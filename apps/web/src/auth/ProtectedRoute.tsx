@@ -7,7 +7,7 @@ export function ProtectedRoute({ children }: PropsWithChildren) {
   const { configured, loading, session } = useAuth()
   const location = useLocation()
   if (!configured) {
-    return <main className="auth-state"><h1>Chưa thể mở không gian làm việc</h1><p>Supabase Auth chưa được cấu hình cho môi trường này.</p></main>
+    return <main className="auth-state"><h1>Chưa thể mở nơi làm việc</h1><p>Dịch vụ đăng nhập chưa được cấu hình cho môi trường này.</p></main>
   }
   if (loading) return <main className="auth-state" aria-live="polite">Đang phục hồi phiên đăng nhập…</main>
   if (!session) {

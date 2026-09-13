@@ -1,5 +1,7 @@
 # RT-CONNECT — Đặc tả hành vi, dữ liệu và nghiệm thu
 
+> **TÀI LIỆU KẾ THỪA — chuyển vào lịch sử 2026-09-13.** Nguồn hiện hành là [business-analysis.md](../../../business-analysis.md) v1.3, [technical-specification.md](../../../technical-specification.md) v2.3, plan.md v5.3 và [danh mục pylinac](../../pylinac-qa-catalog.md) v1.1 (UX1.3). Phần bên dưới giữ nguyên hợp đồng cũ để tra cứu; không dùng menu, luồng, vai trò, trình nhập JSON hoặc trạng thái hoàn thành cũ để ghi đè yêu cầu hiện hành. Các đường dẫn bên dưới giữ ngữ cảnh thư mục gốc lúc tài liệu được viết. Gamma 3D cũ chỉ đọc, không đóng P8 mới.
+
 - File: specification.md; version **1.29**; ngày 2026-09-11.
 - Nguồn nghiệp vụ: business-analysis.md v0.27.
 - Kế hoạch triển khai: plan.md v4.25, P0–P20.

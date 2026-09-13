@@ -1,5 +1,19 @@
 # P1 FOUNDATION EVIDENCE
 
+## Recheck hiện hành — 2026-09-13
+
+Bản kiểm hiện hành trên HEAD `7a7e4ec8698f348e6921c69c4b4e212aab425977` đã đạt **P1 LOCAL_VERIFIED**:
+
+- API: **204/204** phép thử; Ruff, mypy và sinh SQL migration đạt.
+- Web: lint, kiểm kiểu, **9 tệp/20 phép thử** và bản dựng production đạt.
+- Compose: API, worker, web, PostgreSQL, Redis và MinIO healthy; migration head, seed tổng hợp, đếm máy, health/readiness và web health đạt; tài nguyên kiểm thử được dọn sau khi chạy.
+- Kiểm thử manifest phát hành: **4/4** đạt sau khi sửa test để phản ánh đúng `WORKING_TREE_DIRTY`.
+- CI đã có job kiểm tra hợp đồng tài liệu UX1 và bộ kiểm verifier.
+
+Evidence đầy đủ: [p1-foundation-recheck-20260913-7a7e4ec.json](evidence/p1-foundation-recheck-20260913-7a7e4ec.json).
+
+Working tree hiện còn thay đổi tài liệu UX1.3; vì vậy bằng chứng này xác nhận nền local, không phải release candidate và không đóng P2 hoặc các kiểm thử môi trường từ xa.
+
 ## Scope delivered
 
 - `apps/api`: FastAPI application factory, typed configuration, health/readiness/version

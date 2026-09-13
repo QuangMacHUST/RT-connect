@@ -1,5 +1,7 @@
 # MODULE REGISTRY
 
+> **KẾ THỪA — đối chiếu UX1.3, 2026-09-13.** Bảng bên dưới giữ ranh giới cũ, không phải menu đích. Nguồn hiện hành: [nghiệp vụ](../business-analysis.md) v1.3, [kỹ thuật](../technical-specification.md) v2.3, [kế hoạch](../plan.md) v5.3. P7 bắt buộc đủ danh mục pylinac qua bộ tích hợp; báo cáo/xu hướng thuộc kiểm tra chất lượng máy. P11 xây thư viện nội bộ/cộng đồng với bài/PDF/tìm kiếm; P16 mở rộng phác đồ. Chỉ cập nhật trạng thái đã triển khai khi có bằng chứng mới. Không hiển thị MOD/Pxx cho người dùng.
+
 | Module | Name | Frontend boundary | Backend/domain boundary | Engine/worker | Primary phase |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | MOD-00 | Identity and organization context | Auth routes, session bootstrap, organization selector | Token verifier, UserIdentity, OrganizationMembership | None | P2–P3 |

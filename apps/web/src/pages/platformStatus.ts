@@ -24,9 +24,9 @@ export function assessPlatformStatus(input: PlatformStatusInput): PlatformStatus
   if (hasHealthError && !input.health) {
     return {
       key: 'UNAVAILABLE',
-      label: 'API KHÔNG KHẢ DỤNG',
+      label: 'DỊCH VỤ KHÔNG KHẢ DỤNG',
       badgeClass: 'machine-status--fail',
-      explanation: 'Không đọc được health endpoint; không thể coi nền tảng là sẵn sàng.'
+      explanation: 'Không đọc được kiểm tra kết nối; chưa thể coi dịch vụ là sẵn sàng.'
     }
   }
 
@@ -35,7 +35,7 @@ export function assessPlatformStatus(input: PlatformStatusInput): PlatformStatus
       key: 'NEEDS_REVIEW',
       label: 'CẦN XEM XÉT',
       badgeClass: 'status-badge--warning',
-      explanation: 'Một hoặc nhiều endpoint vận hành lỗi; /health OK không đủ để xác nhận readiness.'
+      explanation: 'Một hoặc nhiều phép kiểm tra vận hành bị lỗi; kết nối bình thường chưa đủ để xác nhận dịch vụ sẵn sàng.'
     }
   }
 
@@ -44,7 +44,7 @@ export function assessPlatformStatus(input: PlatformStatusInput): PlatformStatus
       key: 'CHECKING',
       label: 'ĐANG KIỂM TRA',
       badgeClass: '',
-      explanation: 'Đang đọc health, readiness và release metadata từ API thật.'
+      explanation: 'Đang đọc kết nối, mức sẵn sàng và thông tin phiên bản từ dịch vụ thật.'
     }
   }
 
@@ -58,7 +58,7 @@ export function assessPlatformStatus(input: PlatformStatusInput): PlatformStatus
       key: 'NEEDS_REVIEW',
       label: 'CẦN XEM XÉT',
       badgeClass: 'status-badge--warning',
-      explanation: 'Health, readiness và schema parity phải cùng đạt trước khi coi release sẵn sàng.'
+      explanation: 'Kết nối, mức sẵn sàng và tính nhất quán dữ liệu phải cùng đạt trước khi coi bản phát hành sẵn sàng.'
     }
   }
 
@@ -66,21 +66,23 @@ export function assessPlatformStatus(input: PlatformStatusInput): PlatformStatus
     key: 'OPERATIONAL',
     label: 'SẴN SÀNG',
     badgeClass: '',
-    explanation: 'Health, readiness và schema parity đang phù hợp trong lần quan sát này.'
+    explanation: 'Kết nối, mức sẵn sàng và tính nhất quán dữ liệu đang phù hợp trong lần quan sát này.'
   }
 }
 
 export function endpointValue(data: { status: string } | undefined, error: unknown, pending: boolean): string {
-  if (error) return 'ERROR'
-  if (pending || !data) return 'PENDING'
-  return data.status.toUpperCase()
+  if (error) return 'LỖI'
+  if (pending || !data) return 'ĐANG KIỂM TRA'
+  if (data.status === 'ok') return 'BÌNH THƯỜNG'
+  if (data.status === 'ready') return 'SẴN SÀNG'
+  return data.status
 }
 
 export function schemaParityValue(readiness?: Readiness, version?: Version, error?: unknown): string {
-  if (error) return 'ERROR'
-  if (!readiness || !version) return 'PENDING'
-  if (!readiness.schema_revision || !version.schema_revision) return 'UNKNOWN'
-  return readiness.schema_revision === version.schema_revision ? 'MATCH' : 'MISMATCH'
+  if (error) return 'LỖI'
+  if (!readiness || !version) return 'ĐANG KIỂM TRA'
+  if (!readiness.schema_revision || !version.schema_revision) return 'CHƯA RÕ'
+  return readiness.schema_revision === version.schema_revision ? 'PHÙ HỢP' : 'KHÔNG KHỚP'
 }
 
 export function statusErrorMessage(error: unknown): string {

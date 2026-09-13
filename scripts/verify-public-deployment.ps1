@@ -37,7 +37,8 @@ function Invoke-PublicRequest {
     [string]$Url,
     [ValidateSet('GET', 'POST')]
     [string]$Method = 'GET',
-    [string]$Body = ''
+    [string]$Body = '',
+    [string[]]$ExtraHeaders = @()
   )
 
   $statusMarker = '__RT_CONNECT_HTTP_STATUS__'
@@ -57,6 +58,9 @@ function Invoke-PublicRequest {
   )
   if ($Body) {
     $curlArguments += @('--header', 'Content-Type: application/json', '--data-raw', $Body)
+  }
+  foreach ($header in $ExtraHeaders) {
+    $curlArguments += @('--header', $header)
   }
   $curlArguments += $Url
 
@@ -105,13 +109,14 @@ function Get-ExpectedUnauthorizedEndpoint {
     [string]$Url,
     [ValidateSet('GET', 'POST')]
     [string]$Method = 'GET',
-    [string]$Body = ''
+    [string]$Body = '',
+    [string[]]$ExtraHeaders = @()
   )
 
   $statusCode = 0
   $details = ''
   try {
-    $response = Invoke-PublicRequest -Url $Url -Method $Method -Body $Body
+    $response = Invoke-PublicRequest -Url $Url -Method $Method -Body $Body -ExtraHeaders $ExtraHeaders
     $statusCode = $response.StatusCode
     $details = "observed_status=$statusCode"
   }
@@ -182,6 +187,9 @@ Get-ExpectedUnauthorizedEndpoint -Name 'api.organization.invitations.unauthentic
   -Url "$ApiBaseUrl/api/v1/organizations/$smokeOrganizationId/invitations"
 Get-ExpectedUnauthorizedEndpoint -Name 'api.organization.invitation_accept.unauthenticated' `
   -Url "$ApiBaseUrl/api/v1/organizations/invitations/accept" -Method 'POST'
+Get-ExpectedUnauthorizedEndpoint -Name 'api.organization.members.invalid_token' `
+  -Url "$ApiBaseUrl/api/v1/organizations/$smokeOrganizationId/members" `
+  -ExtraHeaders @('Authorization: Bearer rt-connect-invalid-token')
 
 try {
   $webResponse = Invoke-PublicRequest -Url $WebBaseUrl

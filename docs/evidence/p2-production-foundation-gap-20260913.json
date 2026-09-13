@@ -1,0 +1,52 @@
+{
+  "schema_version": "rt-connect.phase-evidence.v1",
+  "evidence_id": "P2-PRODUCTION-FOUNDATION-GAP-20260913",
+  "phase": "P2",
+  "work_package": "P02-VERIFY",
+  "verification_level": "PRODUCTION_PUBLIC_READ_ONLY",
+  "captured_at_utc": "2026-09-13T06:00:00Z",
+  "environment": "production",
+  "project": {
+    "name": "prolific-learning",
+    "production_environment_present": true
+  },
+  "effective_services": [
+    {
+      "name": "RT-connect",
+      "kind": "legacy_api",
+      "root_directory": "apps/api",
+      "dockerfile": "/apps/api/Dockerfile",
+      "healthcheck": "/api/v1/health",
+      "pre_deploy": "alembic upgrade head"
+    },
+    {
+      "name": "Postgres",
+      "kind": "postgresql"
+    }
+  ],
+  "missing_for_current_p2_contract": [
+    "Production web service with the current frontend build",
+    "Production gamma worker service",
+    "Production Supabase issuer and JWKS variables on the current API",
+    "Production source-identifiable release metadata and schema revision"
+  ],
+  "public_observations": {
+    "api_url": "https://rt-connect-production.up.railway.app",
+    "health_http_status": 200,
+    "health_status": "ok",
+    "ready_http_status": 200,
+    "ready_status": "ready",
+    "ready_schema_revision_present": false,
+    "version": "0.1.0-dev",
+    "version_environment": "development",
+    "openapi_route_count": 4,
+    "organization_routes_present": false
+  },
+  "result": "PRODUCTION_P2_GATE_OPEN",
+  "next_exact_action": "Prepare a production service packet matching staging, configure Supabase Auth and source-identifiable release variables, then deploy one exact candidate before rerunning the two-environment verifier.",
+  "redaction": {
+    "contains_secrets": false,
+    "contains_database_urls": false,
+    "contains_patient_data": false
+  }
+}

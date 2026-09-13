@@ -1,0 +1,63 @@
+{
+  "schema_version": "rt-connect.phase-evidence.v1",
+  "phase": "P1",
+  "status": "LOCAL_VERIFIED",
+  "captured_at_utc": "2026-09-13T05:37:22.5294024Z",
+  "repository": "E:\\hoctap\\2026\\RT-connect",
+  "source": {
+    "branch": "codex/p4-org-site-machine",
+    "head_sha": "7a7e4ec8698f348e6921c69c4b4e212aab425977",
+    "working_tree_clean": false,
+    "dirty_reason": "Tài liệu UX1.3 và bằng chứng P1 đang được hoàn thiện; không dùng trạng thái này làm release candidate."
+  },
+  "runtime": {
+    "python": "3.14.5",
+    "node": "v24.20.0",
+    "npm": "11.14.1",
+    "api_test_files": 32
+  },
+  "commands": [
+    {
+      "name": "verify-p1",
+      "command": "scripts/verify-p1.ps1",
+      "exit_code": 0,
+      "actual": "204/204 API tests; Ruff; mypy; Alembic SQL render; web lint; typecheck; 9 test files/20 tests; production build"
+    },
+    {
+      "name": "verify-p1-with-containers",
+      "command": "scripts/verify-p1.ps1 -WithContainers",
+      "exit_code": 0,
+      "actual": "Timeout 900 giây cho từng tiến trình; API, worker, web, PostgreSQL, Redis và MinIO healthy; migration head; synthetic seed; machine count; API health/readiness; web health; cleanup thành công"
+    },
+    {
+      "name": "release-manifest-regression",
+      "command": "apps/api/.venv/Scripts/python.exe -m pytest apps/api/tests/test_release_manifest.py -q",
+      "exit_code": 0,
+      "actual": "4/4 tests; dirty working tree được ghi nhận là gate WORKING_TREE_DIRTY thay vì làm sai kết quả kiểm thử"
+    },
+    {
+      "name": "planning-verifier",
+      "command": "apps/api/.venv/Scripts/python.exe scripts/verify-planning-contract.py --output docs/evidence/ux1-3-planning-contract-20260913.json",
+      "exit_code": 0,
+      "actual": "516/516 checks; 21 phases; 260 acceptance scenarios"
+    }
+  ],
+  "fixes": [
+    {
+      "path": "apps/api/tests/test_release_manifest.py",
+      "reason": "Kiểm thử phản ánh đúng gate phát hành khi working tree có thay đổi, vẫn giữ nguyên quy tắc fail-closed."
+    },
+    {
+      "path": "scripts/verify-p1.ps1",
+      "reason": "Mọi lệnh Python/npm/Docker đều được kiểm exit code; không còn in thành công sau khi một bước trước thất bại."
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "reason": "CI kiểm tra planning contract UX1 và bộ kiểm verifier trước các job API/web."
+    }
+  ],
+  "limitations": [
+    "Đây là bằng chứng local; không đóng P2 Railway/Supabase, staging authenticated E2E, production, backup provider, rollback hoặc clinical readiness.",
+    "Không ghi secret, token, mật khẩu, PatientID hoặc dữ liệu bệnh nhân vào evidence."
+  ]
+}

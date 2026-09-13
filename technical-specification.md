@@ -1,2845 +1,593 @@
-# ĐẶC TẢ KỸ THUẬT
+# RT-CONNECT — Đặc tả kỹ thuật
 
-## Dự án RT-CONNECT
+**Phiên bản:** 2.3
+**Ngày:** 2026-09-13
+**Mốc yêu cầu:** UX1.3.
+**Nguồn:** business-analysis.md v1.3; **kế hoạch:** plan.md v5.3; **danh mục bộ tính:** [docs/pylinac-qa-catalog.md](docs/pylinac-qa-catalog.md) v1.1.
 
-- **Tên file:** technical-specification.md
-- **Phiên bản:** 1.30 — đồng bộ specification.md v1.29, plan.md v4.25 và business-analysis.md v0.27; bổ sung P4 active-parent/archive/restore guard cho Organization/Site/Machine và frontend management controls trên nền optimistic revision; giữ P4 PostgreSQL row lock/`REVISION_CONFLICT`, P06 signed-download filename contract, P8 coordinate-frame/axis-order/explicit-transform contract, P8 local deterministic workload benchmark, P11 consumer snapshot, P10 query-budget, P17 resource evidence và P20 status/readiness (2026-09-11). P17 giữ migration `20260909_0019` với database trigger append-only cho `dvh_analysis_runs`; P4 migration mới là `20260911_0020` nối sau migration đó. Các renderer, export, Gamma, Biological và release boundaries hiện hành vẫn giữ nguyên.
-- **Nguồn yêu cầu:** business-analysis.md phiên bản 0.27
-- **Trạng thái:** Bản đặc tả kỹ thuật cơ sở để triển khai
-- **Ngôn ngữ giao diện ưu tiên:** Tiếng Việt, có thể mở rộng tiếng Anh
-- **Mô hình triển khai mặc định:** Web truy cập từ xa qua HTTPS; Supabase Auth quản lý identity/session; Railway triển khai backend API, PostgreSQL, worker, renderer và queue. Frontend là static web riêng hoặc được API phục vụ tùy phương án phát hành
+## 1. Hiệu lực, hiện trạng và phạm vi thay đổi
 
-Tài liệu này giữ kiến trúc và thiết kế kỹ thuật nền. [specification.md](specification.md) là hợp đồng hành vi/validation/error/transaction/thuật toán chi tiết mới; [plan.md](plan.md) là kế hoạch P0–P20 và testcase/exit gate; [business-analysis.md](business-analysis.md) sở hữu nghiệp vụ. Tài liệu không đưa thêm phân cấp bác sĩ–kỹ sư hoặc phân quyền theo từng hành động.
+Bản này thay thế đặc tả 1.30, lưu tại [bản trước](docs/history/pre-ux-20260912/technical-specification.md). Mọi thiết kế bên dưới là đích triển khai UX1, trừ đoạn ghi rõ là đã quan sát trong mã. Không đồng nhất tài liệu mục tiêu với chức năng đã phát hành.
 
-> Đồng bộ v1.20: các bảng API/entity trong tài liệu này không đồng nghĩa mọi endpoint đã có code. Baseline cloud ngày 2026-09-04 và adapter cũ là snapshot lịch sử; trạng thái source mới nhất nằm trong implementation-progress.md và plan.md §1.3. Contract chi tiết ở specification.md §2–§14 là authority cho hành vi/validation/error/thuật toán/phase handoff. P6–P17 hiện đã có các slice code được ghi rõ trong mục 0.4; P4 đã có local membership/invitation slice trên migration `20260909_0018`, optimistic revision trên migration `20260911_0020`, active-parent guard và archive/restore UI; staging/Auth browser/persistence/concurrency vẫn phải revalidate trước khi gọi available. P17 có CT pixel preview local, explicit P11/P16 binding, DVH report source và Docker workload verifier local; verifier đo process peak RSS trong benchmark process, kiểm policy `1 CPU/768 MiB` và polling API responsiveness, còn cgroup peak/current và `docker stats` vẫn chỉ là quan sát bổ trợ, không phải peak RSS. CT/staging evidence vẫn phải kiểm theo candidate. P8 hiện đã có validator/engine/API contract cho frame, axis order và transform identity; staging geometry/transform negative matrix và promotion vẫn là gate riêng. Railway Git-triggered Docker builds phải truyền `RAILWAY_GIT_COMMIT_SHA` vào frontend build và API runtime phải ưu tiên SHA này cho release label; `APP_VERSION`/`VITE_APP_VERSION` chỉ là fallback khi chạy local hoặc không có Git trigger. P18 có local route-to-persistence và local backup/restore support nhưng chưa thay fault/restore/pilot staging gate. Phần còn lại vẫn là TARGET cho đến khi có evidence. Không thêm commissioning approval gate ngoài test/reference dataset ở phase phát triển và pilot P18 đã thống nhất.
+Đã quan sát trong mã ngày 2026-09-12:
 
----
+- Ứng dụng web có nhiều tuyến riêng cho kho QA, báo cáo, xu hướng, hướng dẫn QA và các trang sinh học. Đây là cấu trúc cần chuyển đổi.
+- Backend có mô hình đơn vị/cơ sở/máy, hồ sơ QA, tệp, lần phân tích Gamma/DVH/QA nhập số liệu, báo cáo, xu hướng và công cụ sinh học.
+- Bộ dựng báo cáo hiện có kết xuất từ dữ liệu chụp tại lúc tạo báo cáo; tái sử dụng nguyên tắc này.
+- Chưa thấy bộ tích hợp toàn bộ danh mục pylinac trong các dịch vụ phân tích hiện có. Không được đóng P7 mới bằng bài nhập tay, ba bài ảnh ví dụ hoặc chỉ một phần danh mục.
+- Nền sử dụng React/TypeScript/Vite, FastAPI, SQLAlchemy/Alembic, psycopg 3, PostgreSQL, hàng đợi Redis và lưu trữ đối tượng tương thích S3. Supabase phục vụ xác thực.
+- requirements.lock của API hiện dùng Python 3.14 và chưa có pylinac. Quyết định UX1.2 chọn pylinac làm engine chính thức cho mọi capability pylinac cung cấp; phiên bản phát hành phải được khóa cùng hash và có worker runtime tương thích.
 
-## 0. Baseline tích hợp đang có
+Không thay đổi nhà cung cấp nền tảng: Railway chạy backend và PostgreSQL; Supabase chỉ làm xác thực. Không chuyển dữ liệu nghiệp vụ sang Supabase. Đợt viết tài liệu không xác nhận cấu hình Railway đang chạy hoặc tự triển khai thay đổi.
 
-Baseline ban đầu dưới đây được kiểm tra trực tiếp ngày 2026-09-04. ID hạ tầng được ghi để tránh nối nhầm project; trạng thái deployment/service và danh sách design resource phải được truy vấn lại trước mỗi lần triển khai hoặc handoff.
+## 2. Kiến trúc mục tiêu
 
-### 0.1. Google Stitch
+### 2.1. Ranh giới thành phần
 
-| Thuộc tính | Giá trị |
+| Thành phần | Trách nhiệm |
 | :--- | :--- |
-| Project title | `RT-connect` |
-| Project ID | `14242591911141046021` |
-| Visibility hiện tại | `PUBLIC` |
-| Device baseline | `DESKTOP` |
-| Nguồn truy cập | Google Stitch MCP |
+| Web | Biểu mẫu tiếng Việt, điều hướng gọn, hiển thị ảnh/kết quả, xem trước PDF, tra cứu |
+| API | Kiểm tra phiên/đơn vị, giao dịch nghiệp vụ, hợp đồng dữ liệu, kiểm tra đầu vào |
+| Bộ tính QA nhập tay/sinh học | Hàm xác định, kiểm tra đơn vị và miền giá trị, không tự truy cập hồ sơ bệnh nhân |
+| Pylinac QA worker | Toàn bộ 16 họ mô-đun chính/biến thể, QA `contrib/One-Offs` của bản pylinac đã khóa và Gamma 1D/2D |
+| Bộ xử lý liều kế thừa RT-CONNECT | Chỉ đọc kết quả Gamma 3D cũ và chạy DVH nếu hợp đồng còn hiệu lực; không tạo Gamma mới mang nhãn pylinac |
+| Bộ xuất báo cáo | Kết xuất PDF từ bản chụp nội dung + tài nguyên cố định |
+| PostgreSQL trên Railway | Dữ liệu nghiệp vụ, phiên bản, kết quả, nhật ký, trạng thái tác vụ |
+| Redis | Điều phối công việc dài; không phải nơi duy nhất giữ trạng thái nghiệp vụ |
+| Kho S3 riêng tư | Tệp gốc, ảnh phân tích và PDF; truy cập qua kiểm tra phạm vi và liên kết giới hạn thời gian |
+| Supabase Auth | Đăng nhập, phiên và định danh; không lưu bảng QA/phác đồ của sản phẩm |
 
-Snapshot live qua Stitch MCP ngày 2026-09-11 được ghi trong `docs/evidence/stitch-screen-registry-20260911.json`. `list_screens` hiện trả **10 resource**: tám application screen và hai image asset. Đây là registry design hiện hành tại thời điểm snapshot; không suy ra rằng mọi resource đã có route production hoặc đã đạt visual acceptance.
+Các bộ tính không dựa vào LLM để tạo giá trị số. Nội dung tri thức là bản ghi có nguồn; không tự sinh ngưỡng từ mô hình ngôn ngữ.
 
-| Screen ID | Title | Module |
+### 2.2. Đơn vị và thành viên ngang quyền
+
+Mọi truy vấn dữ liệu riêng bắt đầu với phạm vi organization_id xác định từ phiên hợp lệ và tư cách thành viên đang hoạt động. Không lấy tài nguyên toàn cục theo ID rồi mới xét phạm vi ở cuối. Tác vụ nền nhận phạm vi và kiểm tra lại khi ghi kết quả. Nhánh thư viện cộng đồng có hàm đọc riêng: yêu cầu định danh Supabase hợp lệ và chỉ truy vấn bản chia sẻ đang hiệu lực; không bắt tư cách thành viên đơn vị nguồn hoặc đơn vị đang chọn. Không mở rộng truy vấn riêng thành phép OR đọc mọi hàng public trong bảng nguồn.
+
+Không thêm ma trận vai trò/action permission. Mọi thành viên hoạt động trong một đơn vị dùng cùng chức năng. Quyền truy cập dữ liệu đơn vị khác, phiên hết hạn và giới hạn kỹ thuật của dịch vụ vẫn được kiểm soát.
+
+Cơ chế optimistic concurrency dùng revision/ETag để chống ghi đè đồng thời; đây là bảo toàn dữ liệu, không phải phê duyệt.
+
+## 3. Hợp đồng giao diện
+
+### 3.1. Thành phần bố cục
+
+- AppShell: sidebar 200–216 px, thanh trên 48–56 px, nội dung dùng chiều cao khả dụng của 100dvh.
+- Văn bản 14 px; bảng 13–14 px; tiêu đề 22–24 px; nhịp khoảng cách 8/12/16 px.
+- Nút trên máy tính cao 32–36 px; vùng chạm thiết bị cảm ứng khoảng 44 px. Nhãn có thể xuống dòng khi cần.
+- CompactPage: tiêu đề ngắn + thanh tác vụ + vùng dữ liệu. Bỏ thẻ mô tả phát triển, khẩu hiệu dài và min-height lớn không có nội dung.
+- SplitPane: biểu mẫu và kết quả, danh sách và chi tiết, hoặc xem trước và lựa chọn báo cáo.
+- AdvancedDisclosure: tùy chọn nâng cao đóng mặc định, giữ giá trị khi đóng.
+- DataTable: tiêu đề cố định, phân trang, lọc; không tải toàn bộ lịch sử vào bộ nhớ.
+- Không khóa chiều cao khiến lỗi xác thực hoặc trợ giúp bị cắt; ở zoom 200% chuyển sang bố cục một cột có cuộn.
+
+Mỗi màn cần trạng thái đang tải, chưa có dữ liệu, có dữ liệu, nhập sai, mất kết nối và hoàn tất. Không dùng màn trắng làm trạng thái chờ.
+
+### 3.2. Tuyến đích và chuyển hướng tương thích
+
+Các đường dẫn là nội bộ kỹ thuật, không phải nhãn người dùng. Tên QA/cơ quan/máy luôn dùng thuộc tính hiển thị.
+
+| Tuyến đích | Nội dung | Tuyến cũ cần xử lý |
 | :--- | :--- | :--- |
-| `3b857ee77e7a434d8cfdcda32fd62cdb` | Đăng nhập RT-CONNECT | MOD-00 |
-| `4c9ec57310fd404cbae3b53b0bab2368` | Kho lưu trữ QA & Thư mục | MOD-03 |
-| `70b9f1d256884221ae20e63b5244db11` | Trang chủ - Home Dashboard | MOD-01 |
-| `ffb87901b3194bd3aff8760c54c2f9f4` | Phân tích PSQA Gamma Workspace | MOD-04, MOD-06 |
-| `accb55e3ab3e4d718ba3a4407e3f9368` | Xác thực phiên RT-CONNECT | MOD-00 |
-| `b4fb9071a0614f3a9272d2a8a8b7337c` | Khôi phục truy cập RT-CONNECT | MOD-00 |
-| `3ee1eb026899432392f40ff945649ac9` | Lỗi phiên RT-CONNECT | MOD-00 |
-| `a1478466ace843c5aaf9a15dfc58273e` | Trình biên soạn Báo cáo - Report Builder Studio | MOD-07 |
+| /app | Trang chủ gọn | Giữ đường dẫn |
+| /app/organization | Đơn vị và thiết bị với thẻ nội bộ | Giữ liên kết cũ tới cơ sở/máy |
+| /app/qa | Danh mục, lịch sử, xu hướng | Kho QA chuyển thành thẻ Lịch sử |
+| /app/qa/results/:resultId | Kết quả và các lần tính | /app/qa/cases/:caseId/* phải tra quan hệ cũ, không đổi ID bằng chuỗi |
+| /app/qa/results/:resultId/report | Xem trước/chỉnh PDF của kết quả | /app/reports dẫn tới đúng báo cáo/bài nếu có ngữ cảnh, không có thì vào Lịch sử |
+| /app/qa?tab=trends | Xu hướng, lọc theo máy/bài/chỉ số | /app/trend giữ bộ lọc còn hợp lệ |
+| /app/biological?tool=... | Một trong sáu công cụ | Các đường dẫn BED/compare/re-irradiation/fraction-compensation chuyển đúng công cụ |
+| /app/knowledge?section=qa | Thư viện QA máy | /app/qa-protocols vào phần tham khảo, không vào trình tạo bài |
+| /app/knowledge?section=treatment | Thư viện phác đồ | /app/biological/knowledge chuyển vào nhánh này |
+| /app/knowledge?scope=organization&section=qa | Thư viện nội bộ, cần đơn vị đang chọn | Mặc định dữ liệu nội bộ khi chuyển tuyến cũ |
+| /app/knowledge?scope=community&section=treatment | Thư viện cộng đồng, chỉ yêu cầu đăng nhập | Định danh chưa có đơn vị vẫn truy cập được |
+| /app/knowledge/articles/:articleId | Bài của đơn vị, mục lục và các phiên bản nội bộ | Tra chủ sở hữu từ phiên; không dùng tham số làm quyền |
+| /app/knowledge/community/:publicationId | Bản chia sẻ có hiệu lực, chỉ nội dung được chọn | Không mở trực tiếp bản nguồn nội bộ |
+| /app/knowledge/write; /app/knowledge/articles/:articleId/edit | Viết bài, tải PDF, sửa bản nháp | Biểu mẫu tiếng Việt, cần đơn vị sở hữu |
+| /app/knowledge/manage?view=drafts\|archived\|trash | Bản nháp, lưu trữ, thùng rác của đơn vị | Dấu trang cá nhân ở view=saved, không đổi quyền đọc |
+| /app/system/status | Trạng thái hỗ trợ | Giữ tuyến nhưng đưa vào menu tài khoản |
 
-Hai image asset hiện hành không phải route:
+Tuyến mới là hợp đồng đề xuất; phải cập nhật route registry khi triển khai P3. Bảo toàn lịch sử trình duyệt, nút quay lại, bộ lọc và liên kết sâu. Tài nguyên đã xóa trả trang “Bài đã được chuyển vào thùng rác” khi người truy cập đúng đơn vị; tài nguyên không thuộc phạm vi không tiết lộ sự tồn tại.
 
-| Resource ID | Nội dung | Cách sử dụng |
+### 3.3. Ngôn ngữ và nội dung không kỹ thuật
+
+Dùng khóa thông điệp tập trung và duy nhất ngôn ngữ vi cho giao diện đợt này: trình đơn, kiểm tra trường nhập, trạng thái, lỗi, trình đọc PDF, soạn bài và báo cáo. Không có lựa chọn tiếng Anh trong giao diện. Mã lỗi chưa biết nhận thông báo chung tiếng Việt; không đưa thông báo gốc của thư viện ra ngoài. Tệp nguồn tiếng nước ngoài và tên tài liệu giữ nguyên nội dung; các nút quanh tệp vẫn tiếng Việt.
+
+Mã lỗi, UUID, checksum, storage key, engine version vẫn nằm trong hợp đồng máy và log. UI bình thường chỉ nhận/hiển thị mô tả thân thiện, trường cần sửa, khả năng thử lại. Không có ô JSON, nút tải JSON hoặc ID hồ sơ trong bảng/PDF. Trợ giúp chẩn đoán cho vận hành là đường riêng, không trở thành bảng “chi tiết” của kết quả thường dùng.
+
+Tên khoa học, viết tắt và tên nguồn nguyên bản là ngoại lệ có kiểm soát. Ảnh chụp màn hình kiểm thử phải kiểm cả trạng thái lỗi và bảng trống, không chỉ trang đẹp.
+
+## 4. Mô hình nghiệp vụ đích và chuyển đổi dữ liệu
+
+Tên ở cột kỹ thuật không xuất hiện trên giao diện. Bổ sung dần qua migration, không xóa bảng cũ ngay.
+
+| Thực thể đích | Trường/cấu trúc chính | Quan hệ với hiện trạng |
 | :--- | :--- | :--- |
-| `8f54172061464e6eb4be3a5d15c6dee3` | RT-CONNECT Logo | Asset branding, không phải route |
-| `3077690a9dfc451390b59a7205268dfa` | Professional avatar headshot... | Asset minh họa/avatar, không phải route |
+| QATestDefinition | key nội bộ, nhãn dịch, nhóm, input_modes, chỉ số, hướng dẫn, khả năng engine | Danh mục mới, tách khỏi tài liệu QA |
+| QATestConfigurationVersion | đơn vị/máy/bài, fields, tiêu chí, đơn vị, profile ảnh, version | Tái sử dụng/migrate phần thực thi trong QAProtocolVersion/Rule |
+| QAAttempt | đơn vị, máy, bài, tên, thời gian đo, nguồn, ghi chú, revision, deleted_at | QACase cũ có thể là lớp lưu trữ phía dưới; adapter tránh mất liên kết |
+| MeasurementRow | metric_key, value/boolean/NA, unit, nguồn, uncertainty tùy chọn | Chuẩn hóa QA nhập tay |
+| AnalysisRun | attempt, engine/profile version, input snapshot, config snapshot, status, result | Lớp giao diện chung trên các run chuyên biệt hiện có |
+| AssessmentRevision | run/attempt, người dùng, thời điểm, Đạt/Cảnh báo/Không đạt, ghi chú | Lưu riêng với machine-suggested assessment |
+| ImageAnalysisArtifact | ảnh nền, hệ tọa độ, lớp hình học, nhãn, thumbnail | Mới cho QA ảnh; dùng Artifact hiện có |
+| ReportRevision | nguồn run/assessment, layout snapshot, locale, render version, tệp | Giữ mô hình snapshot hiện có, mở rộng bộ chọn dòng/ảnh |
+| TrendPoint | run, metric definition/version, value/unit, máy, phép đo, visibility | Tái sử dụng; bổ sung tác động xóa/khôi phục |
+| KnowledgeArticle / KnowledgeArticleRevision | chủ sở hữu, QA/TREATMENT, bản nháp/nội bộ, nội dung và tệp theo phiên bản | Chuyển dữ liệu thư viện cũ về nội bộ; tách quy trình tính khỏi bài đọc |
+| KnowledgePublication | chủ sở hữu, bản chia sẻ bất biến, các tệp được chọn, phiên bản quyền truy cập | Cộng đồng đọc riêng bản chia sẻ; không nối lấy toàn bộ bản nguồn |
+| KnowledgeAsset / KnowledgeRevisionAsset | đối tượng tệp riêng tư, nội dung trích, hình thu nhỏ, liên kết phiên bản | Bộ lưu tệp thư viện riêng; không dùng chung quyền đọc với tệp ca QA |
+| KnowledgeBookmark | định danh người lưu, tham chiếu nội bộ/cộng đồng | Dấu trang cá nhân; không sao chép nội dung hoặc cấp thêm quyền |
+| TreatmentContext | bệnh, giai đoạn, bệnh viện, sau mổ, mục tiêu, kỹ thuật, phân liều | Bối cảnh bắt buộc khi áp dụng nguồn |
+| DoseConstraint | organ, metric, tham số, comparator, limit, unit, normalization, context, source version | Không coi là số liều chung cho cơ quan |
+| AlphaBetaEntry | mô/đáp ứng, value/range Gy, context, source version | Dùng chung thư viện và công cụ |
+| CalculationWorksheet | loại công cụ, tên tùy chọn, input/result/source snapshot | Chỉ tạo khi người dùng lưu; không bắt BiologicalScenario trước khi tính |
+| DeletionRecord | target, phạm vi tệp, deleted_by/time, restore/purge status | Xóa mềm và dọn vật lý có kiểm soát |
 
-Snapshot này **không có screen Stitch đang hoạt động cho MOD-02 Organization/Site/Machine hoặc MOD-10–MOD-13 Biological Toolkit**. `get_project` vẫn có thể trả bốn instance Biological cũ ở trạng thái `hidden`; chúng là legacy/deprecated sau khi user loại khỏi canvas hoạt động, không phải nguồn thiết kế hiện hành và không được tự khôi phục. Đây là design gap P0-W03 cần ghi nhận, không phải lý do để chặn backend hoặc route implementation. MOD-02 và MOD-10 đến MOD-13 phải dùng các screen implementation hiện hành theo thứ tự Organization/Site/Machine → Biological Hub → BED/EQD2 → Plan Comparison → Re-irradiation/Fraction Compensation, kế thừa Design System `Clinical Precision Interface` và AppShell. Khi cần visual acceptance cho các route còn thiếu, phải tạo hoặc chỉnh screen trong đúng project Stitch rồi cập nhật registry; không gán nhầm ID legacy/hidden vào route mới.
+Ràng buộc: mọi thực thể riêng của đơn vị có khóa phạm vi; tham chiếu nguồn/phiên bản bất biến cho kết quả đã lưu. Một tệp dùng chung có quan hệ tham chiếu; dọn tệp chỉ khi không còn tham chiếu hợp lệ.
 
-Các resource tài liệu cũ trên Stitch không phải bản canonical trong repository. `UI-UX.md` không còn được duy trì; việc thiết kế mới hoặc sửa thiết kế được thực hiện trực tiếp trong project Stitch qua MCP.
+Nội dung thiếu nguồn không được migrate thành “đã xác minh”. Dữ liệu lịch sử chỉ có rule thì chuyển sang cài đặt bài; chỉ có bài viết thì chuyển thư viện; trộn cả hai thì tách, giữ liên kết nguồn gốc và báo những dòng cần đối chiếu.
 
-Vì project Stitch hiện là `PUBLIC`, chỉ được dùng dữ liệu giả lập. Không upload DICOM thật, PatientID, token, database URL, secret hoặc dữ liệu vận hành vào prompt, image, HTML hay metadata của Stitch.
+## 5. Hợp đồng API và lỗi
 
-### 0.2. Railway
+### 5.1. Nguyên tắc chung
 
-| Thuộc tính | Giá trị kiểm tra hiện tại |
+Prefix /api/v1. Dưới đây là API đích; có thể dùng adapter trên API hiện tại trong chuyển tiếp, nhưng phải có kiểm thử tương thích.
+
+Mỗi yêu cầu ghi dữ liệu gồm schema version nội bộ, đơn vị đã kiểm tra, dữ liệu đã chuẩn hóa và expected_revision nếu sửa. Yêu cầu tạo/chạy/xuất dùng khóa idempotency; cùng khóa+cùng dữ liệu trả cùng kết quả, cùng khóa+khác dữ liệu trả xung đột.
+
+| Nhóm | API đích tiêu biểu | Ý nghĩa |
+| :--- | :--- | :--- |
+| Bài QA | GET /qa-test-definitions; GET/PUT /qa-test-configurations/... | Danh mục và cài đặt thực thi, không phải thư viện |
+| Lượt thực hiện | POST/GET /qa-attempts; GET/PATCH /qa-attempts/:id | Tạo theo tên bài/máy; cập nhật có revision |
+| Nhập dữ liệu | PUT /qa-attempts/:id/measurements; POST .../uploads | Số liệu thủ công hoặc đăng ký tải tệp |
+| Kiểm tra và chạy | POST .../validate; POST .../runs; GET /analysis-runs/:id | Kiểm tra input, tạo run, xem trạng thái |
+| Đánh giá | POST /qa-attempts/:id/assessments | Lưu đánh giá của người thực hiện độc lập |
+| Lịch sử và xóa | GET /qa-history; DELETE /qa-attempts/:id; POST .../restore; POST .../purge | Phân trang, xóa mềm, khôi phục, xóa vĩnh viễn |
+| Báo cáo | POST /qa-attempts/:id/report-previews; POST .../reports | Cùng snapshot cho preview và xuất |
+| Xu hướng | GET /qa-trends | Lọc tương thích định nghĩa, cursor và giới hạn truy vấn |
+| Thư viện nội bộ | /organizations/:organizationId/knowledge/articles và tài nguyên con | Viết, sửa, đăng nội bộ, tệp, chia sẻ và quản lý bài; chi tiết mục 11 |
+| Thư viện cộng đồng | GET /knowledge/community và /knowledge/community/:publicationId | Chỉ bản chia sẻ hiệu lực; định danh đăng nhập là đủ để đọc |
+| Tra cứu | GET /knowledge/references với scope rõ ràng | Giới hạn/αβ dùng cùng quy tắc phạm vi với bài và công cụ |
+| Tính nhanh | POST /biological/calculate; POST /biological/compare | Hàm không tạo hồ sơ/lịch sử bắt buộc |
+| Lưu tùy chọn | POST /biological/worksheets | Lưu kết quả sau khi người dùng chọn lưu |
+
+API dùng JSON nội bộ là bình thường; cấm đưa JSON thành phương thức thao tác của người dùng. Không truyền secret hoặc access token qua query string.
+
+### 5.2. Hợp đồng operation tối thiểu
+
+Mỗi operation ghi rõ: actor đã xác thực; scope; input/miền giá trị; precondition; thay đổi trong transaction; postcondition; idempotency; xung đột revision; side effect; timeout; lỗi có thể thử lại; cách phục hồi; thử nghiệm thành công và thất bại.
+
+Upload hoàn tất không đồng nghĩa phân tích hoàn tất. HTTP nhận công việc dài trả trạng thái chờ và polling/subscription có giới hạn; tắt trang không hủy việc trừ khi người dùng chọn hủy.
+
+### 5.3. Error/recovery record chuẩn
+
+Lỗi máy gồm code, field_errors nếu có, retryable, correlation_id nội bộ; không gửi stack trace, SQL, token, DICOM header thô. UI ánh xạ sang thông báo và thao tác:
+
+| HTTP/nhóm lỗi | Hành vi UI | Phục hồi |
+| :--- | :--- | :--- |
+| 401 / hết phiên | “Phiên đăng nhập đã hết hạn” | Làm mới phiên một lần; thất bại thì đăng nhập, giữ bản nháp không nhạy cảm đúng phạm vi |
+| 403 / không thuộc đơn vị | “Bạn chưa tham gia đơn vị này” | Chọn đơn vị/lời mời; không gọi là lỗi mạng |
+| 404 / không thấy | “Không tìm thấy nội dung” | Về lịch sử; không tiết lộ tài nguyên ngoài phạm vi |
+| 409 / revision hoặc khóa chạy trùng khác dữ liệu | Nêu dữ liệu đã thay đổi | Tải mới, so sánh; không tự ghi đè |
+| 413 / tệp quá lớn | Nêu giới hạn dung lượng | Đổi tệp; không lặp vô hạn |
+| 415 / loại dữ liệu không hỗ trợ | Nêu loại bài/tệp được hỗ trợ | Chọn đúng tệp hoặc nhập số liệu |
+| 422 / dữ liệu không hợp lệ | Lỗi theo trường và đơn vị | Giữ phần hợp lệ; sửa rồi tính lại |
+| 429 / quá nhiều tác vụ | Nêu đang chờ hoặc thử sau | Backoff có giới hạn, không tạo thêm job |
+| Timeout/502/503/504 | “Dịch vụ chưa phản hồi” | Cho thử lại, kiểm trạng thái run trước khi gửi mới |
+| Phân tích không hội tụ/không tìm được đối tượng | Lý do theo bài, không có kết quả giả | Xem ảnh, chỉnh tham số có hỗ trợ, tạo run mới |
+| PDF không dựng được/tệp chưa có | Giữ lựa chọn báo cáo | Thử lại cùng snapshot |
+| Tài nguyên đã xóa | Nêu thùng rác nếu đúng scope | Khôi phục hoặc quay lại lịch sử |
+
+Lỗi mới phải bổ sung vào danh mục và test hồi quy; không tuyên bố liệt kê hữu hạn là mọi lỗi có thể xảy ra.
+
+## 6. Nhập số liệu và dữ liệu ảnh/liều
+
+### 6.1. QA nhập tay
+
+Field schema: số hữu hạn/boolean/enum/NA; đơn vị; số chữ số hiển thị; miền giá trị; bắt buộc; nguồn đo; công thức trong danh sách cho phép. Chấp nhận dấu phẩy thập phân ở giao diện vi, chuẩn hóa trước API; không tự hiểu dấu phân cách hàng nghìn mơ hồ.
+
+Rule dùng toán tử có kiểu và đơn vị; không chạy JavaScript/Python/SQL từ nội dung người dùng. Khoảng đạt và cảnh báo phải có thứ tự nhất quán, định nghĩa dấu bằng, quy tắc thiếu dữ liệu và tổng hợp. Baseline bằng 0 không được dùng làm mẫu số sai lệch phần trăm.
+
+Các công thức đo có tên/phiên bản: ví dụ sai lệch tuyệt đối, phần trăm so với chuẩn, trung bình, độ lệch chuẩn theo định nghĩa đã chọn. Độ phẳng/đối xứng không chỉ có một định nghĩa chung; phải chọn định nghĩa trước khi tính.
+
+### 6.2. Upload và Input Manifest
+
+Chọn vai trò tệp trước khi chạy: ảnh QA, liều tham chiếu, liều đo/đối chiếu, cấu trúc, ảnh giải phẫu. Tên mở rộng .dcm/.dicom không chứng minh nội dung hợp lệ.
+
+Manifest nội bộ gồm hash, kích thước, loại thực, SOP/Study/Series/Frame of Reference UID khi có, modality, đơn vị, scaling, spacing, origin, orientation, grid, máy và quan hệ tham chiếu, phiên bản bộ đọc, validation. Không đưa manifest thô lên UI.
+
+Giới hạn upload, số tệp, pixel/voxel, nén giải nén, thời gian parse và bộ nhớ phải được khai báo theo profile và kiểm trước/cả trong xử lý. Tệp lỗi hoặc nén không hỗ trợ trả lỗi rõ; không sửa tệp gốc.
+
+RTDOSE phải dùng DoseUnits/DoseGridScaling và hình học đúng; không chỉ kiểm modality. Dữ liệu GY và RELATIVE là các ngữ nghĩa khác nhau; chuyển cGy từ định dạng đo cần ghi hệ số và xác nhận. Hướng dẫn nguồn: [DICOM RT Dose Module](https://dicom.nema.org/medical/dicom/current/output/chtml/part03/sect_C.8.8.3.html).
+
+### 6.3. Hình học và thang đo
+
+Mọi ảnh có hệ tọa độ gốc, orientation, phép biến đổi hiển thị và đơn vị. Xoay/lật khi xem không làm đổi kết quả phân tích. Chuyển pixel sang mm theo metadata hoặc hiệu chuẩn được nhập rõ; lưu vị trí mặt phẳng đo và cách chiếu về mặt phẳng đánh giá.
+
+Ảnh chụp EPID và film quét có cách hiệu chuẩn khác nhau. Chỉ hỗ trợ ảnh PNG/TIFF khi profile chấp nhận và đủ DPI/scale/calibration; không coi mọi ảnh màn hình là dữ liệu đo.
+
+CT không thay cho ảnh cổng chụp của Picket Fence. RTSTRUCT không thay cho dữ liệu đo Gamma. RTDOSE không phải ảnh grayscale chưa scaling. Dữ liệu cùng bệnh nhân nhưng khác Frame of Reference không tự được coi đã đăng ký.
+
+## 7. Bộ phân tích QA ảnh và PSQA
+
+### 7.1. Adapter chung
+
+Hợp đồng adapter gồm `validate_inputs → prepare_supported_input → invoke_pylinac → map_results_data → build_overlay → summarize`. `prepare_supported_input` chỉ chuẩn hóa định dạng/đơn vị/hình học theo contract đã công bố; không thay thuật toán phân tích. `map_results_data` chỉ ánh xạ tên và cấu trúc; không tính lại metric mà pylinac đã trả. Kết quả chứa `metric_key`, `definition_version`, value, unit, calculability, suggested status, warnings, geometry, input/config snapshot và tài nguyên minh họa.
+
+Pylinac là engine bắt buộc cho toàn bộ capability mà bản runtime đã khóa cung cấp. Việc kiểm dependency xác định pylinac chạy chung process hay trong `qa-image-worker`; không phải vòng tuyển chọn lại engine. Tài liệu chính thức hiện liệt kê 16 mô-đun chính và nhóm `contrib/One-Offs`; [trang PyPI](https://pypi.org/project/pylinac/) là nguồn gói phát hành, [tài liệu pylinac](https://pylinac.readthedocs.io/en/latest/) là nguồn API và [tài liệu contrib](https://pylinac.readthedocs.io/en/latest/contrib.html) là nguồn hai bài đóng góp.
+
+Tại ngày 2026-09-12, PyPI công bố pylinac 3.47.0 và Python từ 3.10, trong khi trang tài liệu `latest` hiển thị 3.48.0. Mốc khóa runtime đầu tiên là wheel 3.47.0 cùng SHA-256 của wheel; bước P07-W02 phải xác minh cài/import/fixture trên runtime thực. Nếu dependency con chưa tương thích Python 3.14 hoặc footprint xung đột API, chạy `qa-image-worker` bằng phiên bản Python tương thích với pylinac; không thay pylinac bằng engine khác và không hạ runtime API.
+
+RT-CONNECT dùng Anti-Corruption Layer để không lưu trực tiếp object/JSON riêng của pylinac:
+
+- `PylinacAdapter` nhận input manifest + machine/test profile + điều chỉnh người dùng, gọi đúng class/`analyze` của registry và chuyển `results_data()` sang `AnalysisRun` chung.
+- Adapter không tự tính lại metric pylinac. Các phép tính bổ sung chỉ được phép nếu là capability pylinac mức thấp được gọi rõ ràng và snapshot ghi đúng hàm/module/version.
+- `engine_name=pylinac`, `pylinac_version`, wheel hash, adapter version, module/class, tham số analyze và hash input được lưu trong snapshot. Kết quả cũ không bị tính lại khi nâng phiên bản.
+- Lỗi/thông báo của pylinac được ánh xạ sang error code ổn định và tiếng Việt; stack trace chỉ ở log đã khử dữ liệu.
+- PDF/PNG do pylinac tạo có thể dùng cho chẩn đoán phát triển, không dùng làm báo cáo chính. Renderer RT-CONNECT dựng từ structured metrics và overlay đã chuẩn hóa.
+- `PylinacCapabilityRegistry` phải bao phủ mọi class/capability công khai thuộc 16 họ mô-đun chính và các bài QA `contrib/One-Offs` trong wheel đã khóa. Build fail nếu inventory runtime khác registry mà chưa có quyết định migration.
+- Capability đã có trong pylinac nhưng adapter/UI chưa xong mang trạng thái kỹ thuật `NOT_IMPLEMENTED`; nó không biến mất khỏi phạm vi và P7 không được đóng.
+
+### 7.2. Ma trận engine bắt buộc
+
+Ma trận chi tiết class/biến thể/đầu vào/UI nằm ở [danh mục QA pylinac](docs/pylinac-qa-catalog.md). Registry kỹ thuật tối thiểu phải có đủ 16 họ chính sau và mọi bài QA public trong `contrib/One-Offs`:
+
+| Capability family | Class/biến thể bắt buộc trong registry phiên bản 3.47.0 | Loại giao diện |
+| :--- | :--- | :--- |
+| Calibration | `TG51Photon`, `TG51ElectronLegacy`, `TG51ElectronModern`, `TRS398Photon`, `TRS398Electron` | Form số đo theo protocol; bảng hệ số/dose |
+| Starshot | `Starshot` | Canvas chọn tâm/radius và tham số analyze |
+| VMAT | `DRGS`, `DRMLC`, `DRCS` | Cặp ảnh, ROI/segment/tolerance |
+| CatPhan | `CatPhan503`, `CatPhan504`, `CatPhan600`, `CatPhan604` | Chuỗi ảnh, origin slice, module/ROI adjustments |
+| ACR | `ACRCT`, `ACRMRILarge`, `ACRMRIMedium` | Chuỗi ảnh, slice/module/ROI adjustments |
+| Cheese | `TomoCheese`, `CIRS062M` | Chuỗi ảnh, density/HU ROI |
+| GE Helios | `GEHeliosCTDaily` | Chuỗi ảnh, module/ROI controls |
+| Quart | `QuartDVT`; alias/biến thể HyperSight nếu còn public trong wheel | Chuỗi ảnh, origin/module/ROI controls |
+| Log Analyzer | Dynalog và Trajectory Log 2.1/3.0/4.0 qua loader công khai | Upload log, chọn trục/fluence/Gamma log |
+| Picket Fence | `PicketFence` + MLC/profile public | Canvas leaf/picket, tolerance/crop/orientation/sag |
+| Winston–Lutz | `WinstonLutz`, `WinstonLutz2D` khi là kết quả con công khai | Bộ ảnh, góc, BB/field, axis plots |
+| Winston–Lutz Multi-Target | `WinstonLutzMultiTargetMultiField` | Cấu hình BB/field có form, không raw config |
+| Planar Imaging | Leeds/Leeds Blue, SI QC-3/QC-kV, Las Vegas/Elekta, Doselab MC2 MV/kV, SNC MV/MV12510/kV, PTW EPID QC, IBA Primus A, SI FC-2, IMT L-RAD, Doselab RLf, IsoAlign, SNC FSQA, ACR Digital Mammography | Canvas center/angle/size/ROI/SSD/invert theo class |
+| Field Profile Analysis | `FieldProfileAnalysis` + metrics profile public | Click vị trí profile, centering/width/edge/normalization/metrics |
+| Field Analysis | `FieldAnalysis` legacy | UI tương thích; bài mới mặc định dùng Field Profile Analysis |
+| Nuclear | `MaxCountRate`, `PlanarUniformity`, `CenterOfRotation`, `TomographicResolution`, `SimpleSensitivity`, `FourBarResolution`, `QuadrantResolution`, `TomographicUniformity`, `TomographicContrast` | Form riêng từng phép thử, frame/ROI/threshold/scale/activity |
+| One-Offs/Contrib QA | `QuasarLightRadScaling`, `JawOrthogonality` | Quasar: invert/FWXM/BB-edge threshold; Jaw: ảnh trường và bốn góc/cạnh. Gắn nhãn nguồn contrib và contract test riêng |
+
+`Core`, `Image Generator` và `Plan Generator` không là bài QA độc lập; chúng hỗ trợ input/fixture/biến đổi. `One-Offs` có hai bài QA công khai nên phải được ánh xạ, nhưng metadata `source_tier=PYLINAC_CONTRIB` và cảnh báo tương thích không được bỏ. Gamma 1D/2D là capability mức thấp dùng trong P8. Field Analysis vẫn được đưa vào registry vì người dùng yêu cầu toàn bộ danh mục, nhưng UI nêu đây là mô-đun cũ và dùng Field Profile Analysis làm mặc định mới theo cảnh báo deprecation của tài liệu pylinac.
+
+Calibration phải lưu đúng protocol implementation. Tài liệu pylinac hiện cảnh báo chưa tích hợp các thay đổi liên quan của revision TRS-398 năm 2024; UI/result không được gắn nhãn “TRS-398 2024” nếu runtime chưa thực hiện revision đó.
+
+### 7.3. Gamma
+
+Run PSQA mới dùng `pylinac.profile.gamma_1d` hoặc `pylinac.image.gamma_2d`. RTDOSE tham chiếu và measurement/comparison là hai vai trò; nhiều RTDOSE phải chọn rõ. Bộ đọc định dạng đo có registry phiên bản; import CSV nếu hỗ trợ dùng wizard ghép cột/đơn vị và xem trước bảng, không bắt sửa JSON.
+
+Schema giao diện cơ bản:
+
+| Trường UI | Trường nội bộ | Quy tắc |
+| :--- | :--- | :--- |
+| Chênh lệch liều (%) | `dose_difference_percent` | Số hữu hạn >0; truyền vào `dose_to_agreement`; không cho nhập mơ hồ Gy/% trong cùng ô |
+| Khoảng cách DTA (mm) | `distance_to_agreement_mm` | Số hữu hạn >0; hiển thị mm cho người dùng |
+| Chuẩn hóa | `global_dose` | Toàn cục/cục bộ; giá trị local zero phải được xử lý theo contract pylinac và ghi warning/error |
+| Ngưỡng liều thấp (%) | `dose_threshold_percent` | Miền profile công bố; số điểm bị loại và mẫu số phải hiển thị |
+| Gamma tối đa | `gamma_cap_value` | Nâng cao; không được dùng để biến điểm fail thành pass |
+| Ngưỡng tỷ lệ đạt (%) | `pass_rate_target_percent` | Rule đánh giá RT-CONNECT, không phải input thay đổi map Gamma |
+
+Pylinac `gamma_2d` nhận DTA theo số phần tử/pixel, không nhận trực tiếp mm. `PylinacPsqaAdapter` phải:
+
+1. kiểm hai dataset có cùng đại lượng, orientation và vùng chồng lấp;
+2. resample về `analysis_spacing_mm` được profile công bố;
+3. tính `distance_elements = distance_to_agreement_mm / analysis_spacing_mm`;
+4. chỉ gọi pylinac khi giá trị này biểu diễn được bằng số phần tử mà API nhận trong tolerance đã định; nếu không thì trả `GAMMA_DTA_GRID_INCOMPATIBLE`, không làm tròn âm thầm;
+5. lưu spacing trước/sau, transform/resampling, DTA mm và giá trị phần tử đã truyền vào snapshot.
+
+Lưu normalization, threshold denominator, per-field/composite, detector/phantom, thời điểm đo, transform, resampling và phạm vi chồng lấp. Không tự đăng ký dịch ảnh để làm đẹp tỷ lệ; mọi transform phải được người dùng chọn hoặc profile khai báo và hiện thông tin.
+
+Tài liệu pylinac hiện công bố Gamma 1D và 2D, không công bố Gamma 3D. Do đó:
+
+- `PylinacCapabilityRegistry` chỉ quảng bá `GAMMA_1D` và `GAMMA_2D` cho run mới;
+- API từ chối yêu cầu 3D mới bằng `PYLINAC_GAMMA_3D_UNAVAILABLE`, không fallback âm thầm sang engine cũ;
+- kết quả Gamma 3D cũ của `gamma-nd-p8.2` vẫn đọc/xuất được với provenance engine cũ và không tự tính lại;
+- DVH tiếp tục ở P17 như capability RT-CONNECT riêng, không gắn nhãn pylinac.
+
+### 7.4. Giao diện tham số và thao tác tay
+
+Web không gửi tọa độ màn hình trực tiếp. Canvas lưu transform giữa ảnh gốc và viewport; click/drag được đổi về tọa độ ảnh gốc hoặc hệ tọa độ mà adapter công bố. Zoom, pan, rotate hiển thị không làm đổi kết quả khi người dùng chưa xác nhận điều chỉnh.
+
+Mỗi capability khai báo `ui_parameter_schema` có nhãn tiếng Việt, kiểu, đơn vị, miền, default từ profile máy, mức cơ bản/nâng cao và ánh xạ chính xác sang tham số pylinac. Không tạo form chung bằng cách đổ JSON schema thô lên màn hình.
+
+Các control bắt buộc gồm:
+
+- Starshot: chọn/kéo `start_point`, radius, min peak height, tolerance, FWHM, recursive và invert khi class hỗ trợ;
+- Field Profile/Field Analysis: centering manual/beam/geometric, click `position`, x/y width, normalization, edge type, metrics/protocol;
+- Planar Imaging: center/angle/size override, SSD, x/y/angle adjustment, ROI size/scaling, invert theo class;
+- CatPhan/ACR/Cheese/Helios/Quart: origin slice, module/lát, tâm/x/y/góc, ROI/scale và giá trị tham chiếu class cho phép;
+- Picket Fence, Winston–Lutz, multi-target, VMAT và Nuclear: đúng control được liệt kê trong catalog/registry, không dùng raw file cấu hình.
+
+Phân tích tự động là run thứ nhất. Nếu người dùng chỉnh tâm/ROI/profile/góc/scale rồi chạy lại, tạo run mới trỏ cùng input hash và lưu parameter diff; không overwrite run tự động. Overlay server trả primitive có hệ tọa độ và style semantic; frontend dựng thống nhất và PDF dùng cùng primitive.
+
+### 7.5. Tác vụ, thử lại và tính bền vững
+
+Trạng thái nội bộ: QUEUED → RUNNING → SUCCEEDED/FAILED/CANCELLED. Kết luận QA là trường khác. Tác vụ có timeout, heartbeat, cancellation, retry hữu hạn, deduplication và lưu lỗi. Outbox/hàng đợi hiện có được tái sử dụng.
+
+Trước ghi kết quả kiểm tra attempt chưa bị xóa, scope và revision phù hợp. Job chạy chậm sau khi người dùng xóa không được tạo lại bài hoặc điểm xu hướng. Nếu upload hoặc output ghi dở, có tiến trình dọn orphan an toàn và có thể thử lại.
+
+## 8. Kết quả, lịch sử, xóa và báo cáo
+
+### 8.1. Lưu kết quả và đánh giá
+
+Run thành công chụp input/config/definition version. Sửa số liệu tạo run mới, không ghi đè run thành công. AssessmentRevision lưu user conclusion riêng; mọi thành viên đều dùng cùng API. Thay nhãn báo cáo không thay metric key hoặc phép tính.
+
+Run thất bại không có giá trị giả. Người dùng có thể lưu bản nhập/nhận xét mà không có run thành công; PDF nếu chọn chỉ xuất đúng nội dung hiện có.
+
+### 8.2. Xóa mềm, khôi phục và xóa vĩnh viễn
+
+DELETE đánh dấu deleted_at và ghi deletion record trong transaction, đồng thời tạo sự kiện loại khỏi trend/search. Xóa nhiều có danh sách kết quả từng mục và không báo thành công toàn bộ khi một mục xung đột.
+
+Restore bỏ dấu xóa một lần và rebuild projection idempotent. Nếu máy/thư mục cũ ngừng hoạt động, vẫn khôi phục được bài lịch sử; không tự kích hoạt lại máy.
+
+Purge hiển thị trước phạm vi run/report/tệp, yêu cầu xác nhận trực tiếp. Kiểm tra references, hủy job, bỏ quyền cấp signed URL mới, dọn dữ liệu/tệp theo tiến trình retry; chỉ báo xóa vĩnh viễn xong khi phần bắt buộc đã dọn. Signed URL đã cấp có thể còn hiệu lực tới hết TTL; không hứa thu hồi tức thì nếu hạ tầng không hỗ trợ. PDF đã tải ra ngoài không thu hồi được.
+
+Giữ tombstone tối thiểu cho sự kiện và chống retry tái tạo; không giữ toàn bộ nội dung đã purge trong audit. Backup theo lịch có chính sách lưu giữ riêng được công bố; restore backup phải áp dụng deletion ledger để tránh phục hồi dữ liệu đã xóa không có chủ đích.
+
+### 8.3. Overlay ảnh
+
+Lưu ảnh gốc và lớp hình học độc lập: đường, điểm, vòng tròn, vector, nhãn, hệ tọa độ, thang đo. UI và renderer dùng chung dữ liệu, không chụp màn hình giả làm kết quả.
+
+Starshot hỗ trợ ảnh + spokes + center + circle + chú giải; PDF cho chọn từng nhóm lớp. Với WL/PF tương tự cho bi/trường hoặc lá/vạch. Kiểm thử ảnh xoay/lật/crop, zoom và tỷ lệ PDF không lệch tọa độ.
+
+### 8.4. Bộ dựng PDF toàn quyền bố cục
+
+Report layout có danh sách khối, dòng/cột hiển thị, label override, precision, figure layer selection, notes, logo, header/footer, page settings. Mọi khối đều có thể ẩn; không có canonical block bắt buộc.
+
+Snapshot gồm run/assessment/source version, layout và locale; renderer không truy bảng kết quả mới nhất khi dựng lại. Preview và export dùng cùng layout engine, font và snapshot. Có thể dựng lại từ snapshot hoặc tải nguyên tệp cũ; phiên bản mới của template không thay bản PDF đã phát hành.
+
+Không chạy HTML/script/template code từ người dùng; escape nội dung và hạn chế tài nguyên ảnh. Tệp không chứa JSON/raw IDs dù dữ liệu snapshot máy có các trường đó. Chữ tiếng Việt, ký hiệu α/β, công thức, bảng qua trang, hình có chú giải đều được kiểm.
+
+Ẩn mọi khối dẫn đến lỗi chọn nội dung; ảnh đang xử lý không được thay bằng hình giả. Bấm xuất nhiều lần cùng snapshot/layout/renderer dùng cùng namespace idempotency; thay layout hoặc renderer phải tạo bản tương ứng.
+
+## 9. Xu hướng
+
+Lọc theo organization, máy, bài, metric_key + definition_version, đơn vị, kỹ thuật đo/profile và khoảng ngày. Tách series khi đổi định nghĩa hoặc điều kiện đo không tương thích; nếu hiển thị cùng đồ thị phải có chú giải.
+
+Giá trị số lấy từ run được chọn; assessment trend lấy từ đánh giá người dùng. Chọn điểm mở đúng kết quả. Baseline/ngưỡng và bảo trì có phiên bản/thời điểm; không thay dữ liệu lịch sử khi sửa baseline.
+
+Cursor pagination và giới hạn số điểm; downsampling có metadata và không làm mất điểm cực trị cần xem. Xóa/restore/reanalysis/update assessment cập nhật projection idempotent; kiểm query budget. Không có điểm thì trả series rỗng, không trả giá trị 0 giả.
+
+## 10. Công cụ sinh học
+
+### 10.1. Hợp đồng tính không cần hồ sơ
+
+UI có một route/container và sáu panel. Endpoint tính nhận cấu trúc typed theo tool, trả kết quả/đơn vị/giả định/source references, không bắt worksheet_id/case_id/organization scenario trước khi tính. Vẫn yêu cầu phiên hợp lệ khi ứng dụng đang ở chế độ thành viên.
+
+Không ghi lịch sử cho mỗi lần nhấn phím. Tính bằng nút hoặc debounce hợp lý; lưu khi người dùng chọn. Dữ liệu nháp trong phiên được tách theo đơn vị, xóa khi đăng xuất và không đặt trong URL.
+
+### 10.2. BED/EQD2 và đồ thị
+
+Đặt a = α/β > 0 (Gy), n nguyên dương, D ≥ 0 (Gy), d = D/n.
+
+- BED = n·d·(1 + d/a).
+- EQD2 = BED / (1 + 2/a).
+- Nhiều đoạn phân liều: tính BED từng đoạn với cùng mô hình/đích rồi cộng; không dùng liều mỗi buổi trung bình nếu các đoạn khác nhau.
+- Giữ n khi vẽ theo D: BED(D) = D·(1 + D/(n·a)).
+- Giữ d: BED(D) = D·(1 + d/a), n = D/d; chỉ các điểm có n nguyên là phác đồ rời rạc hợp lệ.
+- EQD2 theo D áp dụng cùng mẫu số; miền D không âm, giới hạn số điểm và nhãn đơn vị.
+
+Mô hình LQ và ý nghĩa α/β tham khảo [tài liệu đào tạo sinh học bức xạ IAEA](https://www-pub.iaea.org/MTCD/Publications/PDF/TCS-42_web.pdf). Các công thức trên là hợp đồng tính cơ bản, không lựa chọn thông số điều trị cho bệnh nhân.
+
+Bộ số kiểm thử toán học, không phải phác đồ khuyến nghị: D=60, n=30, a=10 → d=2, BED=72, EQD2=60; D=50, n=25, a=3 → BED=83.333333…, EQD2=50. a=0, n=0, n không nguyên, NaN/Infinity hoặc liều âm trả lỗi.
+
+### 10.3. So sánh
+
+Tính A và B độc lập bằng cùng engine. Chênh lệch tuyệt đối và phần trăm chỉ tính khi mẫu số khác 0; B=0 thì phần trăm phải có định nghĩa/không khả dụng, không Infinity. α/β chung cho cùng đích là mặc định; nếu khác, không xuất kết luận tương đương đơn giản.
+
+### 10.4. Tái xạ
+
+Mỗi course có dose_metric, vị trí/cơ quan/đích đánh giá, D/n hoặc các đoạn, a, ngày tùy chọn, nguồn. Chỉ tổng hợp trực tiếp khi cùng a, mô hình và ngữ nghĩa tương thích; dữ liệu không tương thích hiển thị từng đợt, không tạo tổng có vẻ chính xác.
+
+Chế độ cơ bản: BED_sum = Σ BED_i, EQD2_sum = BED_sum/(1+2/a). Đây là tổng vô hướng theo giả định đã chọn, không phải spatial accumulation.
+
+Tùy chọn hồi phục: người dùng nhập r_i ∈ [0,1] cho từng đợt trước; residual_BED = Σ(1-r_i)·BED_i. Đợt mới không áp dụng hồi phục của đợt cũ. Mặc định r_i=0; thời gian giữa đợt không tự sinh r_i. Hiển thị cả tổng chưa hiệu chỉnh và tổng theo giả định.
+
+Không dùng giới hạn từ thư viện khi sai phân liều, metric hoặc bối cảnh; không tính “liều còn được phép chiếu” từ một Dmax khác vị trí mà không nêu giả định.
+
+### 10.5. Bù buổi chiếu
+
+Ghi riêng planned schedule, delivered segments, remaining candidate. BED_delivered tính từ số buổi/liều thực tế, không từ phần trăm hoàn thành. So sánh tổng đề xuất với planned.
+
+Giải một ẩn theo mục tiêu BED_rem và m buổi còn lại: m·d·(1+d/a)=BED_rem. Nghiệm không âm d=(-a+sqrt(a²+4a·BED_rem/m))/2 khi a>0, m nguyên dương, BED_rem≥0. Không tự làm tròn lên để khuyến nghị liều; hiển thị nghiệm và sai khác khi người dùng nhập giá trị làm tròn.
+
+Nếu có hiệu chỉnh thời gian phải có model id, đơn vị, K/Tk hoặc tham số tương ứng và nguồn, kiểm không áp dụng hai lần. Thiếu thông số thì chỉ chạy mô hình cơ bản và ghi “Chưa tính ảnh hưởng thời gian”. Không dùng mặc định K/Tk từ tên bệnh.
+
+### 10.6. Nguồn α/β và giới hạn liều
+
+Nguồn được gắn reference_version_id; dữ liệu hiển thị có tên tác giả/tài liệu, năm và trang/mục. Người dùng chọn một giá trị từ nhiều nguồn hoặc tự nhập. Một range không tự lấy trung điểm nếu chưa chọn.
+
+Dose constraint biểu diễn metric có tham số: D0.03cc khác Dmax; D95% khác V95%; %Rx khác Gy. Bảng tham khảo dùng một nguồn với thư viện; bộ nhớ đệm tách phạm vi/đơn vị/bản chia sẻ/access_epoch/phiên bản/bối cảnh/ngôn ngữ. Kiểm quyền hiện thời trước khi trả dữ liệu đã lưu đệm; cập nhật hoặc thu hồi phải có hiệu lực với yêu cầu mới theo mục 11.
+
+## 11. Thư viện kiến thức
+
+### 11.1. Hai phạm vi đọc và quyền sở hữu
+
+`scope=organization` yêu cầu phiên hợp lệ và thành viên trong đơn vị đang chọn; `scope=community` chỉ yêu cầu phiên hợp lệ, gồm người chưa có đơn vị. Các tuyến cộng đồng phải nằm ngoài thành phần giao diện chặn người thiếu đơn vị. Viết bài cần chọn một đơn vị mà người viết đang là thành viên.
+
+Nhóm nội dung `QA|TREATMENT` độc lập với phạm vi đọc; bảng α/β, giới hạn và nguồn là nội dung con. `owner_organization_id` lấy từ phiên và tuyến ghi đã kiểm tra. `source_hospital_name` chỉ là thông tin xuất xứ, không cấp quyền. Tất cả thành viên đang hoạt động trong đơn vị chủ sở hữu sửa, chia sẻ, lưu trữ, xóa và khôi phục ngang nhau.
+
+Các hàm đọc nội bộ và cộng đồng riêng biệt. Cộng đồng không được tuần tự hóa đối tượng ORM nguồn rồi chỉ bỏ vài trường sau đó. Định nghĩa kiểu trả về riêng cho `CommunityArticle`, danh sách tệp và trích đoạn; không có bản nháp, nhật ký nội bộ, khóa lưu trữ hoặc email cá nhân. Xử lý tìm kiếm, bộ lọc, số lượng, ảnh thu nhỏ, so sánh, bảng α/β, tải tệp và lịch sử đều dùng cùng chính sách này.
+
+### 11.2. Mô hình bài, bản sửa và bản chia sẻ
+
+| Thực thể | Dữ liệu tối thiểu | Ràng buộc |
+| :--- | :--- | :--- |
+| KnowledgeArticle | chủ sở hữu, nhóm, tên ổn định, bản nháp hiện tại, bản nội bộ hiện tại, trạng thái, revision | Khóa theo đơn vị; trạng thái ACTIVE/ARCHIVED/TRASHED; tên hiển thị không làm khóa quyền |
+| KnowledgeArticleRevision | số phiên bản, tiêu đề, tóm tắt, nội dung trình soạn, văn bản tìm kiếm, nguồn, người sửa, thời điểm | Phiên bản đã đăng bất biến; bản nháp có expected_revision; không trả lịch sử nội bộ ra cộng đồng |
+| KnowledgePublication | khóa chia sẻ ổn định, chủ sở hữu, current_snapshot_id, access_epoch, withdrawn_at | Chỉ có một bản đang đọc cho mỗi bài; thu hồi tăng access_epoch trong cùng giao dịch |
+| KnowledgePublicationSnapshot | nội dung chia sẻ, nguồn/bối cảnh chia sẻ, source_revision_id nội bộ, attachment_manifest | Nội dung độc lập; không tự lấy bản nguồn mới nhất; không chứa tệp/hình chưa chọn |
+| KnowledgeAsset | chủ sở hữu, loại tệp, kích thước, hash nội bộ, storage_key, scan_status, extraction_status | Đối tượng riêng tư; không đặt bucket public; không khử trùng lặp xuyên đơn vị để lộ sự tồn tại |
+| KnowledgeRevisionAsset / PublicationAsset | quan hệ phiên bản và tệp, thứ tự, chú thích, trang | Tham chiếu nội bộ và danh sách tệp được chia sẻ độc lập |
+| KnowledgeBookmark | identity_id, loại tham chiếu, khóa bài/bản chia sẻ | Duy nhất theo người/đích; mỗi lần xem kiểm quyền lại, không lưu bản sao nội dung vào dấu trang |
+| KnowledgeReference | phiên bản nguồn, bệnh viện/bệnh cảnh, liều/αβ có kiểu, trích dẫn/trang | P11 tạo hợp đồng cơ sở; P16 hoàn thiện bảng/phác đồ; phạm vi kế thừa bài/bản chia sẻ |
+
+Lịch sử phép tính được phép giữ giá trị và trích dẫn đã sử dụng theo bản chụp hiện có. Dấu trang, bộ nhớ đệm và liên kết bài không được dùng bản chụp đó để mở lại toàn văn nguồn đã thu hồi.
+
+Mỗi lần đăng/cập nhật dùng idempotency key cùng expected_revision. Giao dịch khóa hàng bài và bản chia sẻ; ghi bản chụp, danh sách tệp, con trỏ hiện tại và sự kiện cập nhật chỉ mục trong cùng giao dịch. Cùng khóa/cùng nội dung trả cùng kết quả; khác nội dung trả 409. Nếu chuẩn bị tệp thất bại thì giữ bản chia sẻ cũ, không công bố một phần.
+
+### 11.3. Hợp đồng thao tác và tuyến
+
+Tiền tố `/api/v1`. Ký hiệu `/organizations/:organizationId/knowledge/articles/:articleId` viết gọn thành `/org-article` trong bảng này; không phải đường dẫn thực cần tạo.
+
+| Thao tác | Tuyến thực hoặc hậu tố | Điều kiện và kết quả |
+| :--- | :--- | :--- |
+| Danh sách nội bộ/tạo bài | GET/POST /organizations/:organizationId/knowledge/articles | Thành viên đơn vị; tạo bản nháp nội bộ, không có tác động cộng đồng |
+| Đọc/sửa nháp | GET /org-article; PATCH /org-article/draft | Kiểm phạm vi từ truy vấn đầu; expected_revision để chống ghi đè |
+| Phiên bản và phục hồi | GET /org-article/revisions; POST /org-article/revisions/:revisionId/restore | Chỉ đơn vị chủ sở hữu; phục hồi tạo nháp mới |
+| Đăng nội bộ | POST /org-article/publish-internal | Chốt bản sửa làm bản nội bộ hiện tại |
+| Xem trước chia sẻ | POST /org-article/publication-preview | Nhận phiên bản, danh sách tệp được chọn; kiểm hình/trích dẫn không dẫn tệp riêng |
+| Đăng/cập nhật cộng đồng | POST /org-article/publications | Giao dịch chốt bản chia sẻ; không tự chia sẻ tệp mới |
+| Thu hồi | POST /org-article/publication/withdraw | Tăng access_epoch, vô hiệu hóa truy cập mới đồng bộ, cập nhật chỉ mục |
+| Lưu trữ/xóa/khôi phục | POST /org-article/archive; DELETE /org-article; POST /org-article/restore | Thu hồi bản chia sẻ khi lưu trữ/xóa; khôi phục nội bộ |
+| Dọn vĩnh viễn | POST /org-article/purge | Chỉ TRASHED, kiểm tham chiếu trước khi dọn tệp; lặp yêu cầu không dọn nhầm |
+| Đọc cộng đồng | GET /knowledge/community; GET /knowledge/community/:publicationId | Phiên hợp lệ, bản chia sẻ còn hiệu lực; không cần đơn vị |
+| Khởi tạo tải tệp | POST /org-article/assets/uploads | Kiểm đơn vị/bản nháp/giới hạn; cấp phiên tải riêng cho tệp, không đổi phạm vi bài |
+| Hoàn tất tải | POST /org-article/assets/uploads/:uploadId/complete | Đối chiếu kích thước/hash/loại thực tế; gọi lặp không nhân bản tệp; chỉ đính kèm khi hợp lệ |
+| Trạng thái và thử trích chữ lại | GET /org-article/assets/:assetId; POST /org-article/assets/:assetId/extraction-retry | Trạng thái theo tệp; tác vụ thử lại có giới hạn, không tải lại PDF khi chỉ lỗi trích chữ |
+| Gỡ tệp khỏi nháp | DELETE /org-article/draft/assets/:assetId | expected_revision; chỉ gỡ quan hệ nháp, không xóa tệp của bản đã chia sẻ/phiên bản cũ |
+| Tệp nội bộ | GET /org-article/assets/:assetId/content | Kiểm quan hệ tệp–phiên bản–đơn vị |
+| Tệp cộng đồng | GET /knowledge/community/:publicationId/assets/:assetId/content | Kiểm manifest và access_epoch; không dùng quyền nội bộ của trình duyệt để đoán tệp |
+| Dấu trang | GET/POST /me/knowledge-bookmarks; DELETE /me/knowledge-bookmarks/:bookmarkId | Chỉ người sở hữu; tài nguyên không đọc được trả nhãn chung |
+| Tìm nguồn số liệu | GET /knowledge/references?scope=... | Cùng ràng buộc truy cập, phiên bản/bệnh viện/bối cảnh bắt buộc khi chọn |
+
+Lỗi 401 là hết phiên. Yêu cầu ngoài phạm vi tài nguyên nhận 404 không tiết lộ tên. 409 là bản đã thay đổi, đăng lặp khác nội dung hoặc bài đã bị thu hồi. 413 là quá dung lượng, 415 là không đúng loại tệp, 422 là dữ liệu/quan hệ tệp không hợp lệ, 429/503 có thời gian thử lại phù hợp. Thông báo người dùng đều bằng tiếng Việt.
+
+### 11.4. Soạn bài và tự lưu
+
+Trình soạn trực quan hỗ trợ đề mục, đoạn, đậm/nghiêng, danh sách, bảng, hình/chú thích, công thức và liên kết nguồn. Dữ liệu cấu trúc chỉ ở bên trong. Chọn thành phần biên tập tương thích React hiện tại khi triển khai P11; không thêm dịch vụ soạn thảo trả phí.
+
+API làm sạch nội dung theo tập phần tử/thuộc tính cho phép; bỏ script, handler, iframe và liên kết không an toàn. Ảnh trong bài là tài nguyên do ứng dụng quản lý; nguồn URL bên ngoài chỉ hiện liên kết, không tự tải phía máy chủ. Điều này áp dụng cả nội dung dán từ phần mềm soạn văn bản.
+
+Tự lưu sau 2 giây không gõ và khi rời trường; nút Lưu dùng cùng luồng. Mỗi nháp có revision; một người sửa trong hai thẻ hoặc hai đồng nghiệp cùng sửa nhận 409, hiển thị bản của mình và bản trên máy chủ để chọn tiếp tục. Không cần đồng biên tập thời gian thực trong đợt này.
+
+Nếu mất mạng, giữ nội dung đang gõ trong bộ nhớ trang và nêu “Chưa lưu được”; cho thử lại, ngăn điều hướng âm thầm mất phần chưa lưu. Bản đã được máy chủ xác nhận mở lại được sau khi đăng nhập. Không hứa khôi phục phần chưa từng lưu khi trình duyệt đóng đột ngột. Xóa bộ nhớ của đơn vị cũ khi đổi đơn vị/đăng xuất sau khi đã xử lý phần chưa lưu.
+
+Đọc bài cộng đồng đang sửa chỉ thấy snapshot hiện tại. Xem trước cộng đồng dùng đúng bộ ánh xạ sẽ đăng, không lấy bản đọc nội bộ rồi che tệp bằng CSS.
+
+### 11.5. Tệp PDF, ảnh và chỉ mục nội dung
+
+Luồng tệp riêng cho thư viện: đăng ký tải → kiểm dung lượng/loại → tải đối tượng riêng tư → xác minh nội dung và hash → sẵn sàng đính kèm → trích văn bản/hình thu nhỏ. Mặc định PDF tối đa 50 MiB/tệp, ảnh PNG/JPEG 10 MiB, tối đa 20 tệp/bài và 200 MiB/bài; giới hạn được cấu hình phía máy chủ và trả về biểu mẫu. Không nhận DICOM qua thư viện kiến thức.
+
+Kiểm chữ ký tệp thực, PDF rỗng/hỏng/mã hóa, ảnh vượt giới hạn pixel và phần nhúng chủ động. PDF có mật khẩu trả lỗi để người dùng chuẩn bị bản đọc được; PDF là ảnh vẫn có thể xem/tải với `extraction_status=NO_TEXT`. Trích văn bản không thành công không xóa PDF hợp lệ. Tác vụ trích tối đa số trang/tài nguyên theo cấu hình, có hủy/thử lại và không làm nghẽn tác vụ QA.
+
+Trình đọc PDF có thanh công cụ tiếng Việt, số trang, phóng to, tìm chữ khi có lớp văn bản; nhận dạng chữ tự động chưa là điều kiện đóng P11. Bảng liều/αβ phải được người dùng nhập hoặc đối chiếu qua biểu mẫu, không tự chuyển kết quả nhận dạng thành số liệu có hiệu lực.
+
+Tệp gốc, hình thu nhỏ và văn bản trích đều là dữ liệu cần kiểm phạm vi. Trình đọc dùng tuyến API có xác thực, hỗ trợ Range khi PDF cần. Không trả URL S3 dùng được ngoài kiểm soát vào HTML/bản cộng đồng; máy chủ có thể dùng URL ký ngắn hạn nội bộ để lấy đối tượng. Phản hồi bài/tệp dùng `Cache-Control: private, no-store`, không ghi nội dung vào bộ nhớ đệm công cộng hoặc bộ lưu ngoại tuyến.
+
+Thu hồi chặn yêu cầu đọc/tải mới ngay sau khi giao dịch hoàn tất, kể cả Range tiếp theo; luồng truyền đang diễn ra kiểm hủy theo thiết kế phục vụ tệp. Không cam kết thu hồi các byte đã truyền hoặc bản người dùng đã tải xong. Kiểm quyền lại ngay trước khi bắt đầu trả nội dung; tác vụ nền cũ phải kiểm epoch trước khi ghi kết quả khả kiến.
+
+### 11.6. Tìm kiếm có dấu/không dấu
+
+Dùng PostgreSQL hiện có: cột văn bản chuẩn hóa có dấu/không dấu, tìm toàn văn với cấu hình phù hợp và `pg_trgm` khi cần tên gần đúng. `unaccent` loại dấu, `pg_trgm` hỗ trợ độ tương tự và chỉ mục tìm kiếm; cần kiểm riêng đ/Đ, Unicode tổ hợp và ký hiệu liều. Không gọi khả năng này là phân tích ngôn ngữ tiếng Việt hoàn chỉnh. Nguồn kỹ thuật: [unaccent](https://www.postgresql.org/docs/current/unaccent.html), [pg_trgm](https://www.postgresql.org/docs/current/pgtrgm.html).
+
+Ưu tiên tiêu đề → từ khóa/chủ đề → tóm tắt → nội dung bài → tên/văn bản PDF; trọng số công bố và có bộ ví dụ. Trả đoạn trích kèm trang PDF nếu chỉ mục có vị trí trang. Tìm trong đúng phạm vi trước khi tính tổng, nhóm, gợi ý hoặc xếp hạng; cộng đồng chỉ dùng snapshot đang hiệu lực. Không đưa bản nháp mới vào chỉ mục cộng đồng.
+
+Chỉ mục lưu source revision và access_epoch; truy vấn vẫn nối kiểm bản chia sẻ hiện tại nên hàng cũ trong hàng đợi không gây rò nội dung. Hệ thống ghi sự kiện trong giao dịch và tác vụ cập nhật chỉ mục xử lý lặp an toàn. Sau lưu có thể tìm ngay bằng tiêu đề trên bảng chính; trích văn bản nền hiện trạng thái đang xử lý.
+
+Phân trang 20 mục, tối đa 100; câu tìm tối đa 200 ký tự; chống yêu cầu liên tục bằng khoảng chờ 300 ms hoặc nút Tìm kiếm. Khóa lưu bộ nhớ theo người/đơn vị/phạm vi/bộ lọc/phiên bản, hủy yêu cầu đang chờ khi đổi phạm vi. Mục tiêu đo P95 ≤ 2 giây với 10.000 bài và 100.000 trang trích trên môi trường thử ghi rõ; không suy thành cam kết mọi quy mô.
+
+### 11.7. Phác đồ, nguồn và liên kết công cụ
+
+`TreatmentContext` giữ bệnh, giai đoạn/nguy cơ, tình trạng sau mổ, mục đích, bệnh viện nguồn, kỹ thuật, phân liều và phối hợp điều trị. P11 tạo cấu trúc nguồn cơ sở và dữ liệu có kiểu để P13/P15 sử dụng mà không phụ thuộc mã P16 chưa làm. P16 hoàn thiện biên tập phác đồ, các đoạn tăng liều/SIB, bảng cơ quan và so sánh nguồn.
+
+HI/CI có tên định nghĩa, công thức, tham số, đơn vị và nguồn. Không xem HI=(D2-D98)/D50 và HI=D5/D95 là cùng một định nghĩa; không gộp CI theo RTOG với Paddick. Không tạo ngưỡng HI/CI, α/β hoặc 105%/107% không nguồn.
+
+Nguồn số liệu từ bài nội bộ chỉ được dùng trong đơn vị đó. Nguồn từ cộng đồng phải nằm trong snapshot có hiệu lực. Tạo phép tính mới kiểm quyền lại, lưu giá trị và trích dẫn đã chọn. Nguồn bị thu hồi không làm thay đổi phép tính đã lưu và không cấp quyền đọc toàn văn nguồn từ phép tính đó.
+
+Migrate dữ liệu thư viện/rule cũ có bảng đối chiếu: phần thực thi thuộc cài đặt bài P7, phần hướng dẫn thuộc bài đọc. Mọi bài/tệp cũ mặc định nội bộ. Trạng thái cũ `PUBLISHED` chỉ có nghĩa đã đăng nội bộ, tuyệt đối không được suy thành công khai cộng đồng.
+
+### 11.8. Lưu trữ, thùng rác và kiểm thử bắt buộc
+
+Lưu trữ hoặc xóa bài cập nhật trạng thái nội bộ và thu hồi publication trong một giao dịch. Đăng/cập nhật đồng thời với xóa/thu hồi phải có expected_revision và khóa hàng chung, không để tác vụ cũ đăng lại sau xóa. Khôi phục chỉ về nội bộ; nút đăng cộng đồng vẫn là một thao tác mới.
+
+Thùng rác mặc định 30 ngày. Dọn vật lý chạy sau khi kiểm mọi tham chiếu còn hiệu lực, gồm phiên bản đã lưu trong kết quả; tham chiếu giữ lại bản chụp tối thiểu, không giữ cửa đọc cộng đồng. Xóa tệp mồ côi có danh sách cụ thể và nhật ký. Sao lưu không thay thế thao tác khôi phục bằng ứng dụng.
+
+Bộ kiểm thử P11/P16 tối thiểu gồm: hai thành viên A ngang quyền, một thành viên B, một định danh chưa có đơn vị và khách; hai bản cùng tên/khác đơn vị; bài nội bộ có PDF trùng hash; bản cộng đồng chỉ có một trong hai tệp; sửa nháp sau đăng; thu hồi khi chỉ mục/trình đọc còn cũ; gợi ý/số đếm; link tệp trực tiếp; dấu trang; đổi đơn vị; tranh chấp đăng–xóa; HTML không an toàn; PDF quá lớn/hỏng/ảnh/mã hóa; khôi phục về nội bộ; tệp còn tham chiếu và nguồn cho công cụ. Kiểm cả mã trả về và nội dung thật được hiển thị.
+
+## 12. DVH và chỉ số kế hoạch
+
+Nằm trong kết quả PSQA, không thêm mục điều hướng chính. Tái sử dụng engine có giới hạn tài nguyên, bộ kiểm hình học và oracle hiện có sau khi đối chiếu contract mới.
+
+RTDOSE/RTSTRUCT phải liên kết đúng; CT bắt buộc khi công cụ cần anatomy overlay hoặc reconstruction/profile yêu cầu, không bắt CT vô điều kiện cho mọi phép tính DVH có đủ hình học khác.
+
+Xác định dose sampling, voxel/contour inclusion, đơn vị cc/% và Gy/%Rx. ROI rỗng/ngoài lưới/thiếu contour/không hỗ trợ cấu trúc không được cho đường DVH giả. Dxx/Vxx và HI/CI phải có đủ tham số định nghĩa; thiếu thì nêu không tính được. Không tự dùng ngưỡng từ phác đồ không cùng bệnh cảnh.
+
+## 13. Triển khai Railway, xác thực Supabase và vận hành
+
+### 13.1. Sổ cấu hình hai môi trường
+
+Mỗi môi trường ghi service web/API/worker/PostgreSQL/Redis/storage, nguồn branch, root, build/start/predeploy, config path hiệu lực, health path, domain, target port và release SHA. Chỉ lưu tên biến hoặc giá trị công khai cần thiết; không commit secret.
+
+| Cấu hình | Nguyên tắc |
 | :--- | :--- |
-| Railway project name | `prolific-learning` |
-| Railway project ID | `339f2c50-ddd7-491f-8c4e-da2a2d169502` |
-| Environment hiện có | `production` và `staging` |
-| Environment ID | `910dff25-75b6-42b2-bf6b-e2601ba9d7d2` |
-| Service hiện có | `RT-connect` |
-| Service ID | `9544c3e6-c8bd-4c29-b62e-c6172eb51af3` |
-| Latest deployment tại thời điểm kiểm tra | `FAILED` |
-| PostgreSQL service | Có service riêng cho production và staging |
-| Worker/Redis/Renderer service | Staging đã có Gamma worker và Redis; renderer chưa provision |
-| Ngân sách/credit khởi điểm do user cung cấp | 5 USD; usage/cost phải được kiểm tra theo service và environment |
+| DATABASE_URL | API và Alembic dùng cùng hàm chuẩn hóa postgresql:// hoặc postgres:// → postgresql+psycopg://; giữ nguyên user/password/host/query |
+| Supabase | Web dùng URL và publishable key đúng môi trường; backend kiểm issuer/audience/JWKS phù hợp cấu hình |
+| VITE_* | Nếu Vite dùng build-time env, phải truyền khi build web và rebuild khi đổi; không chỉ thêm vào API |
+| CORS/redirect | Cho phép đúng web origin; redirect xác thực trỏ về web tương ứng, không về API |
+| API startup | Lắng nghe 0.0.0.0 và PORT của Railway; không cố định localhost |
+| Migrations | Chạy Alembic predeploy đúng root; không bỏ migration để che lỗi thiếu driver |
+| Health/readiness | /api/v1/health cho tiến trình; /api/v1/ready cho phụ thuộc bắt buộc; kiểm theo deployment mới, không chỉ URL trỏ bản cũ |
+| Config-as-code | Nếu dùng /apps/api/railway.toml, kiểm file có trong source được build và cấu hình hiệu lực; không suy luận từ một ô UI trống |
+| Storage | Tệp riêng tư, endpoint/bucket đúng môi trường; không dùng ổ tạm container làm nguồn tệp duy nhất |
+| Worker | Cùng schema/output contract với API, giới hạn RAM/CPU/concurrency theo phép đo |
 
-Project Token hiện trỏ đúng vào environment `production`. Token cấp rộng hơn có thể liệt kê project và được dùng để provisioning environment/service nếu phạm vi Railway thực tế cho phép. Không ghi giá trị token vào tài liệu, source, log hoặc Railway runtime variables của ứng dụng.
+Production và staging dùng DB/storage riêng. DATABASE_URL dạng driver khác nhau không có nghĩa hai phiên bản PostgreSQL khác nhau; URI cần được chuẩn hóa đồng nhất cả runtime và migration.
 
-Repository `.env` dùng hai tên nội bộ:
+Sổ môi trường phải phân biệt cấu hình mong muốn với quan sát trực tiếp có timestamp. Không gọi URL public hoạt động là bằng chứng mọi endpoint nghiệp vụ hoặc migration mới đã chạy.
 
-- `RAILWAY_PROJECT_TOKEN`: ánh xạ tạm thành `RAILWAY_TOKEN` khi Railway CLI cần thao tác project/environment hiện tại.
-- `RAILWAY_ACCOUNT_TOKEN`: ánh xạ tạm thành `RAILWAY_API_TOKEN` khi Railway CLI cần thao tác account/workspace.
+### 13.2. Release manifest và rollback
 
-Chỉ đặt một biến xác thực CLI chính thức tại một thời điểm. Hai token là credential phục vụ deployment/automation, không phải secret mà backend RT-CONNECT cần khi chạy. `.env` phải tiếp tục bị Git ignore và không được đưa vào image build.
+Manifest nội bộ gồm Git SHA, image digest nếu có, migration, web/API/worker versions, engine profile versions, renderer, biến công khai cần khớp và test evidence. Không đưa manifest thành màn hình cho bác sĩ/kỹ sư.
 
-### 0.3. Supabase và repository
+Triển khai staging trước; thử đường mới + dữ liệu lịch sử; promote cùng artifact khi phù hợp. Migration theo expand → backfill có kiểm → chuyển consumer → chỉ dọn legacy trong đợt riêng. Rollback web/API phải xét schema backward compatibility; không downgrade DB mù hoặc xóa bảng để quay lui.
 
-- Supabase được chọn làm Auth/Identity/Session plane nhưng repository chưa có biến cấu hình Supabase tại baseline này.
-- Cần tạo/chọn Supabase project cho development/staging trước khi MOD-00 được triển khai.
-- Repository hiện chỉ có tài liệu Markdown, chưa có frontend, backend, migration, test hoặc deployment manifest.
-- Các file `UI-UX.md`, `DESIGN.md` và `Biological-toolkit.html` đã được user xóa; không tự khôi phục. Thiết kế UI được truy xuất qua Stitch MCP.
-- Không triển khai trực tiếp production từ baseline tài liệu. Trước hết phải tạo staging, sửa nguyên nhân deployment thất bại và chạy health/migration/smoke test.
+Giữ các [runbook vận hành](deployment/railway/production-runbook.md) và công cụ kiểm tra hiện có; cập nhật nội dung tương thích UX1 khi bước triển khai thực sự diễn ra. Chi phí gói Railway không được hiểu là toàn bộ dịch vụ/backup/worker luôn nằm trong một mức tiền cố định; đo tài nguyên và báo chi phí trước khi mở rộng hạ tầng.
 
-### 0.4. Addendum repository hiện tại — 2026-09-08
+## 14. Kiểm thử và bằng chứng
 
-Phần 0.1–0.3 là baseline lịch sử ngày 2026-09-04 và không được đọc như trạng thái source hiện tại. Repository hiện đã có backend FastAPI, frontend React/Vite, Alembic migrations, Redis worker và object-storage adapter. Các mốc code đã được kiểm local gồm:
+Mỗi test UX1 dùng namespace mới TC-UX1-Pxx-S/E; không dùng nhãn PASS của bản trước để đóng UI/engine mới.
 
-| Slice | Thành phần hiện có | Schema/check |
-| :--- | :--- | :--- |
-| P6 | Artifact, Input Manifest, validation, checksum/signed download | `20260907_0005` |
-| P7 | QA protocol seed, Machine QA run/rule/result/rerun/compare, TrendPoint projection | `20260907_0006` |
-| P8 | Gamma 2D/3D adapter, RTDOSE GY/scaling, Redis Streams, lease/attempt/outbox, retry/dead-letter/resource guard | `20260907_0007` + `20260908_0008` |
-| P9 | Report template/revision/block/export renderer | `20260908_0009` |
-| P10 | Trend query/aggregate/export/rebuild, BaselineVersion, MaintenanceEvent/Revisions, source drill-down | `20260908_0010` |
-| P11 | QA Protocol Library, rule validation, lifecycle, clone/compare and active-only Machine QA consumer | `20260908_0011` |
-| P12 | Biological Hub, independent scenario/revision/history, capability discovery and scoped calculation read model | `20260908_0012` |
-| P13 | BED/EQD2 pure engine, calculation snapshot, idempotency, chart dataset and JSON/CSV export | `20260908_0013` |
-| P14 | Plan Comparison engine, immutable comparison snapshot, baseline/delta table-chart, clone and JSON/CSV export | `20260908_0014` |
-| P15 | Re-irradiation/fraction-compensation scalar engine, recovery/sensitivity, schedule alternatives, immutable snapshot and JSON/CSV export | `20260908_0015` |
-| P16 | Organization-scoped Biological Knowledge Library: dose limits, treatment-protocol references, knowledge/alpha-beta entries, validation, import, versioning, explicit-use snapshots and export | `20260908_0016` |
-| P17 | RTDOSE/RTSTRUCT physical-dose DVH engine, bounded CT HU/slice/dose/ROI overlay in patient LPS, coverage/metrics, immutable run snapshots, API/UI and JSON/CSV export | `20260908_0017` |
-| P4 addendum | Organization member list/toggle and email-bound one-time invitation lifecycle | `20260909_0018` |
-| P4 concurrency addendum | Organization/Site/Machine revision, stale PATCH conflict and PostgreSQL row lock | `20260911_0020` |
-
-Ngày 2026-09-08, P11–P17 đã bổ sung model/API/UI và migrations `20260908_0011`/`20260908_0012`/`20260908_0013`/`20260908_0014`/`20260908_0015`/`20260908_0016`/`20260908_0017`; ngày 2026-09-09 bổ sung P4 membership/invitation và migration `20260909_0018`; ngày 2026-09-11 bổ sung P4 concurrency migration `20260911_0020`. P12–P16 giữ Biological như bounded context độc lập, không có FK bắt buộc tới QACase/patient; P17 thuộc QA case và giữ raw DICOM immutable; P4 invitation chỉ lưu token hash và không tạo role hierarchy. Checkpoint local phải ghi đủ full suite, focused phase tests, Ruff/mypy, frontend lint/typecheck/Vitest/build và migration head trên cùng SHA; build warning không được coi là lỗi chức năng nhưng phải theo dõi bundle budget. Đây là implementation evidence, chưa phải staging/production clinical readiness. Staging phải kiểm lại đúng SHA, environment, schema, Auth, object storage, worker và browser workflow trước khi đổi trạng thái phase.
-
-> Revision addendum v1.20: P8 Redis Streams phải đưa malformed dispatch vào quarantine bằng một
-> dead-letter diagnostic bounded, không sao chép payload value; chỉ ACK sau khi dead-letter thành công.
-> Nếu quarantine hoặc ACK lỗi, để message pending để worker/reconciliation thử lại.
-
-> Revision addendum v1.22: P7 Machine QA lưu `is_not_applicable` và `na_reason` trong JSON
-> measurement/result snapshot, không cần migration riêng vì `MachineQARun.measurements` và
-> `result_snapshot` là JSON columns. N/A phải có reason, không được có numeric value, không tạo
-> `TrendPoint` và không được làm overall result thành PASS ngầm. Aggregation dùng precedence
-> `FAIL > REVIEW > WARNING > NA > PASS`; frontend phải có checkbox N/A, input reason, trạng thái
-> disabled cho numeric field và hiển thị reason trong kết quả/history.
-
----
-
-## 1. Mục đích và phạm vi
-
-### 1.1. Mục đích
-
-RT-CONNECT là hệ thống web gồm:
-
-1. Khu vực QA Management để lưu trữ, kiểm tra, phân tích, report và theo dõi trend QA xạ trị.
-2. Khu vực Biological Toolkit để tính BED/EQD2, so sánh phác đồ, tạo re-irradiation scenario và tra cứu kiến thức điều trị độc lập với QA case và ca bệnh.
-
-### 1.2. Nguyên tắc kỹ thuật bắt buộc
-
-- Business requirement trong business-analysis.md là nguồn yêu cầu chính.
-- Không lưu hoặc xử lý file gốc theo cách làm thay đổi nội dung nguồn.
-- Dữ liệu dẫn xuất, analysis result, report và scenario phải có lineage về input và phiên bản đã dùng.
-- Người dùng trong cùng organization được sử dụng nghiệp vụ ngang nhau.
-- Không tạo module phân cấp bác sĩ–kỹ sư hoặc ma trận quyền theo hành động.
-- Report Builder cho phép tùy chỉnh toàn diện.
-- Biological Toolkit là bounded context riêng, không tự liên kết với QA case hoặc ca bệnh.
-- Không tự sửa RT Plan, prescription, TPS hoặc PACS.
-- Không tự phát hành clinical order.
-- Engine phân tích phải có kết quả xác định được từ input, configuration và engine version.
-- Giai đoạn phát triển nghiệm thu bằng test/reference dataset; dataset thật được đưa vào pilot và cải tiến tiếp theo.
-
-### 1.3. Ngoài phạm vi kỹ thuật
-
-- Thay thế TPS, PACS, OIS hoặc bệnh án điện tử.
-- Điều khiển trực tiếp máy điều trị.
-- Thay đổi treatment plan hoặc prescription.
-- Tự động ra quyết định điều trị.
-- Tự động cộng liều re-irradiation khi thiếu geometry hoặc registration hợp lệ.
-- Tự động đoán format, đơn vị hoặc ý nghĩa cột dữ liệu mơ hồ.
-
----
-
-## 2. Kiến trúc tổng thể
-
-### 2.1. Mô hình triển khai
-
-Kiến trúc mục tiêu gồm các lớp:
-
-~~~text
-[Browser]
-    |
-    +--> HTTPS --> [Frontend static host]
-    |
-    +--> HTTPS --> [Railway Public API: Domain + TLS + Edge]
-                              |
-                              +--> [Supabase Auth]
-                              +--> [Railway PostgreSQL]
-                              +--> [Object Storage]
-                              +--> [Railway Private Redis]
-                                      |
-                                      v
-                              [Railway Worker/Renderer]
-                                      |
-                                      v
-                              [Derived Artifacts]
-
-[Optional DICOM Gateway: Orthanc/DICOMweb]
-    |
-    v
-[Ingestion Service] ---> [Object Storage + Manifest]
-~~~
-
-Người dùng truy cập frontend qua HTTPS của static host hoặc frontend do API phục vụ; API public backend chạy qua Railway public networking và HTTPS. Supabase Auth là dịch vụ quản lý danh tính/session, còn Railway PostgreSQL là database mục tiêu; API RT-CONNECT phải tự xác minh token và kết nối database từ backend qua private networking/reference variable, không để browser giữ database credential. Redis, object storage, worker và Orthanc không được mở trực tiếp ra Internet; chúng chỉ nhận kết nối từ các service hoặc mạng riêng đã cấu hình. “Truy cập từ xa” trong tài liệu này nghĩa là truy cập website bằng URL công khai có kiểm soát, không phải mở dữ liệu cho người dùng ẩn danh.
-
-### 2.2. Thành phần chính
-
-| Thành phần | Công nghệ tham chiếu | Trách nhiệm |
-| :--- | :--- | :--- |
-| Web frontend | React, TypeScript, Vite trên static web host hoặc bundle được backend phục vụ | Giao diện QA, report, trend và Biological Toolkit |
-| API/backend server | Python, FastAPI, Pydantic trên Railway | API nghiệp vụ, validation request/response, OpenAPI |
-| Identity/Auth | Supabase Auth, `@supabase/supabase-js` | Đăng ký/đăng nhập, session, access token, password recovery và email/OTP theo cấu hình; không lưu password trong RT-CONNECT |
-| ORM/migration | SQLAlchemy, Alembic | Truy cập dữ liệu và quản lý schema |
-| Database | Railway PostgreSQL service | Metadata, quan hệ nghiệp vụ, cấu hình, provenance và audit |
-| Object storage | S3-compatible/MinIO bên ngoài hoặc service được chỉ định | File DICOM, measurement, map, plot, PDF và artifact lớn; không dùng filesystem ephemeral của Railway làm kho chính |
-| Job queue | Redis service trên Railway hoặc Redis tương thích | Hàng đợi và trạng thái job; không phải nguồn dữ liệu nghiệp vụ chính |
-| Worker | Celery hoặc worker tương đương trên Railway | Phân tích bất đồng bộ, render report, import và export |
-| DICOM parser | pydicom, NumPy | Đọc metadata, pixel data và DICOM RT objects |
-| Gamma engine | Wrapper engine riêng, PyMedPhys/reference implementation | Tính Gamma và bảo toàn configuration |
-| DVH engine | Module tính riêng với NumPy/SciPy/SimpleITK khi cần | Voxelization, interpolation và metric DVH |
-| Plot/render | Matplotlib, Pillow, HTML template, Chromium/Playwright; P9 PDF dùng `fonttools==4.63.0` + `DejaVuSans.ttf` pinned | Gamma map, DVH, profile, trend và PDF; PDF Unicode phải embed font/ToUnicode và qua visual fixture |
-| DICOM gateway | Orthanc/DICOMweb, giai đoạn mở rộng | Nhận/truy vấn DICOM khi bệnh viện cần tích hợp |
-| Public web edge | Railway Public Networking; Nginx/Caddy chỉ dùng khi cần edge riêng | Public domain, automatic TLS của Railway, routing và giới hạn request theo topology |
-| Observability | Structured logging, metrics và health checks | Theo dõi job, lỗi, hiệu năng và tình trạng dịch vụ |
-
-Phiên bản package phải được khóa trong lockfile và image build. Không dùng giá trị latest trong triển khai.
-
-### 2.3. Môi trường
-
-| Môi trường | Mục đích | Database | Dữ liệu |
-| :--- | :--- | :--- | :--- |
-| Development | Phát triển tính năng | PostgreSQL/Redis cục bộ hoặc Railway dev environment; Supabase Auth dev project | Fixture/synthetic |
-| Test/CI | Chạy unit, integration và golden test | PostgreSQL container hoặc Railway test database; Supabase Auth test project | Test fixture |
-| Staging | Kiểm tra deployment và remote access trước production | Railway staging environment + Railway PostgreSQL staging service + Supabase Auth staging project | Synthetic hoặc dataset pilot đã được phê duyệt |
-| Pilot | Chạy thử workflow thực tế | Railway pilot environment + Railway PostgreSQL pilot service + Supabase Auth pilot project + Redis | Dataset bệnh viện theo kế hoạch pilot |
-| Production | Vận hành thường xuyên | Railway production services + Railway PostgreSQL production service + Supabase Auth production project + Redis được backup | Dữ liệu vận hành |
-
-SQLite chỉ được phép dùng cho demo hoặc development đơn giản. Không dùng SQLite làm database mục tiêu của pilot hoặc production.
-
-Mỗi environment phải có biến cấu hình riêng cho Railway và Supabase; không dùng nhầm Railway PostgreSQL service/connection URL, Supabase Auth project, redirect URL, publishable key hoặc secret giữa dev, staging, pilot và production.
-
-### 2.4. Nguyên tắc tách dịch vụ
-
-- API không thực hiện phép tính Gamma/DVH lớn trên request đồng bộ.
-- Worker nhận job có mã định danh và idempotency key.
-- File lớn được đọc từ object storage theo stream hoặc vùng cần thiết.
-- Worker không ghi đè artifact nguồn.
-- Render report không được làm thay đổi analysis result.
-- Biological Toolkit có namespace và API riêng, dù được triển khai chung trong giai đoạn đầu.
-
-### 2.5. Thiết kế UX/UI và handoff bằng Google Stitch
-
-Google Stitch là design source truy cập trực tiếp qua MCP, không còn phụ thuộc vào `UI-UX.md` hoặc `DESIGN.md` trong repository. Stitch vẫn chỉ là công cụ design-time/handoff; production frontend không gọi Stitch API và không phụ thuộc MCP để chạy.
-
-#### 2.5.1. Quy trình đọc design trước khi triển khai một module
-
-1. Gọi `list_projects` và xác nhận project ID `14242591911141046021`, title `RT-connect`.
-2. Gọi `list_screens` và phân loại application screen với asset/tài liệu hỗ trợ.
-3. Gọi `get_screen` cho screen của module để lấy metadata, screenshot và HTML hiện hành.
-4. Ghi `stitch_project_id`, `stitch_screen_id`, title và thời điểm đọc design trong issue/PR của module.
-5. Lập mapping screen → route → component → API → entity → event → trạng thái.
-6. Chỉ sau khi mapping được review mới chuyển HTML/design thành React component.
-
-#### 2.5.2. Quy trình bổ sung screen còn thiếu
-
-Trước khi code frontend của module chưa có screen, dùng MCP để tạo hoặc chỉnh screen trong cùng project `RT-connect`. Tối thiểu còn thiếu các nhóm:
-
-- Login, password recovery và auth callback.
-- Organization/site/machine management.
-- QA case detail, upload queue, Input Manifest và validation detail.
-- Machine QA checklist/editor/result.
-- Trend dashboard và drill-down.
-- QA Protocol Library và version comparison.
-- Report viewer/revision history ngoài Report Builder.
-- Dose-limit, treatment protocol và knowledge library.
-- Global empty/error/offline/404/maintenance states.
-- Responsive variants cho tablet/mobile của các workflow được phát hành.
-
-Mỗi screen mới phải dùng synthetic data và có ít nhất loading, empty, success, warning/invalid, error/retry và disabled/running state phù hợp. Nếu module có job bất đồng bộ, thiết kế phải thể hiện queued/running/succeeded/failed/retry và trạng thái sau khi browser refresh.
-
-#### 2.5.3. Handoff và implementation contract
-
-- Screenshot là visual reference; HTML do Stitch tạo là implementation reference, không phải code production mặc định.
-- Không sao chép inline secret, remote tracking script hoặc dependency không được review từ HTML export.
-- Chuyển màu, typography, spacing, radius, shadow, chart palette và breakpoint thành design tokens trong source frontend.
-- Component chung phải được tách khỏi page-specific markup: AppShell, Sidebar, Header, DataTable, FilterBar, FileUploader, StatusBadge, WarningPanel, JobProgress, ChartCard, RevisionPanel và ReportBlock.
-- Event handler phải gọi typed API client; không giữ mock result trong production path.
-- Accessibility tối thiểu: keyboard navigation, focus visibility, label/form association, semantic table, chart fallback table, color contrast và trạng thái không chỉ biểu diễn bằng màu.
-- Frontend route phải hỗ trợ deep-link/reload và organization context.
-- Thay đổi design sau khi module đã implement phải được đánh giá ảnh hưởng tới component, API contract, screenshot test và acceptance test.
-
-#### 2.5.4. Tiêu chí design-to-code hoàn thành
-
-- Screen ID và route mapping tồn tại.
-- Component inventory và design tokens được implement trong source, không chỉ mô tả.
-- Dữ liệu mock được thay bằng API thật hoặc fixture test có nhãn rõ.
-- Loading/empty/error/warning/success được kiểm thử.
-- Desktop baseline khớp design; responsive behavior không làm mất chức năng.
-- Screenshot/visual regression được lưu trong test artifact của CI hoặc release, không bắt buộc tạo lại `UI-UX.md`.
-- Frontend build và runtime hoạt động khi MCP/Stitch không khả dụng.
-
-### 2.6. Route và screen map ban đầu
-
-| Route đề xuất | Screen Stitch | Module | Ghi chú triển khai |
-| :--- | :--- | :--- | :--- |
-| `/app` | Home Dashboard | MOD-01 | Tổng quan organization, quick action, job và cảnh báo |
-| `/app/qa` | Kho lưu trữ QA & Thư mục | MOD-03 | Folder tree, search, case list |
-| `/app/qa/cases/:caseId/gamma` | PSQA Gamma Workspace | MOD-04, MOD-06 | Upload/manifest/config/job/result |
-| `/app/reports/:reportId/edit` | Report Builder Studio | MOD-07 | Builder, preview, revision và export |
-| `/app/biological` | Active implementation trong P12; kế thừa Clinical Precision Interface | MOD-10 | Hub độc lập với QA case |
-| `/app/biological/bed-eqd2` | Active Clinical Precision Interface implementation; Stitch generation unavailable at P13 attempt | MOD-11 | Calculator, chart, history, immutable snapshot and export |
-| `/app/biological/compare` | Active implementation trong P14; kế thừa Clinical Precision Interface | MOD-12 | Multi-option P13 snapshot comparison |
-| `/app/biological/re-irradiation` | Active implementation trong P15; shared ReIrradiationPage | MOD-13 | Multi-course/recovery/scenario |
-
-Các route chưa có Stitch screen được tạo trong phase module tương ứng. Route cuối cùng được khóa trong typed route registry; không hardcode URL rải rác trong component.
-
-### 2.7. Topology Railway theo giai đoạn và giới hạn chi phí
-
-Để không tạo nhiều service trước khi có workload thật, topology được mở rộng theo phase:
-
-| Giai đoạn | Service tối thiểu | Ghi chú |
-| :--- | :--- | :--- |
-| Foundation/staging | `RT-connect` hoặc `api-web`, `postgres` | API có thể phục vụ frontend build; chưa chạy Gamma đồng bộ trong request |
-| Machine QA | API/web + Postgres | Job nhẹ có thể dùng background adapter phát triển nhưng result vẫn persisted |
-| PSQA Gamma | Thêm `worker` và `redis` | Analysis chạy bất đồng bộ; API chỉ enqueue và đọc trạng thái |
-| Report Builder | Renderer là capability của worker; tách `renderer` khi benchmark yêu cầu | Tránh service riêng nếu chưa có tải đủ lớn |
-| Production scale | API/web, Postgres, Redis, worker pool, renderer tùy tải | Quyết định bằng benchmark và queue depth |
-
-Khoản thanh toán hoặc credit Railway không được dùng làm giả định rằng mọi service sẽ luôn nằm trong ngân sách. Trước khi thêm service hoặc tăng resource, phải xem usage/cost hiện tại, benchmark workload và đặt giới hạn/alert phù hợp. Không giảm tính toàn vẹn dữ liệu chỉ để tiết kiệm chi phí; có thể trì hoãn module hoặc scale-to-zero ở môi trường không dùng.
-
----
-
-## 3. Cấu trúc source code đề xuất
-
-Đặc tả này không khóa tên thư mục tuyệt đối, nhưng source code nên tách theo domain:
-
-~~~text
-rt-connect/
-├── apps/
-│   ├── web/
-│   └── api/
-├── services/
-│   ├── ingestion/
-│   ├── analysis/
-│   ├── reporting/
-│   └── biological/
-├── packages/
-│   ├── contracts/
-│   ├── dicom/
-│   ├── gamma/
-│   ├── dvh/
-│   ├── biological-models/
-│   └── rendering/
-├── tests/
-│   ├── unit/
-│   ├── integration/
-│   ├── golden/
-│   ├── fixtures/
-│   └── e2e/
-├── deployment/
-│   ├── web/
-│   │   └── README.md
-│   ├── railway/
-│   │   ├── README.md
-│   │   ├── services.md
-│   │   └── env.example
-│   ├── supabase/
-│   │   ├── README.md
-│   │   └── env.example
-├── docs/
-└── pyproject.toml / package manifests
-~~~
-
-Nguyên tắc:
-
-- Domain logic không phụ thuộc giao diện.
-- Engine tính toán không phụ thuộc database hoặc HTTP.
-- API gọi application service.
-- Worker gọi cùng application service với API nhưng chạy bất đồng bộ.
-- Contract input/output được dùng chung cho backend, frontend và test.
-- Không đặt logic tính liều trong component giao diện.
-
-### 3.1. Quy ước deployment files
-
-- `deployment/railway/services.md` mô tả Railway service `api`, `postgres`, `worker`, `renderer` và Redis nếu dùng Railway cho queue.
-- `deployment/web/README.md` hoặc tài liệu tương đương mô tả nơi phát hành static frontend nếu frontend không được backend phục vụ.
-- `deployment/supabase/README.md` mô tả Supabase Auth project, provider, site/redirect URL và JWT verification; không dùng Supabase làm database nghiệp vụ.
-- `deployment/railway/env.example` chỉ chứa tên biến và giá trị mẫu không nhạy cảm.
-- Railway reference variables được ưu tiên cho kết nối giữa các service trong cùng project/environment.
-- Supabase Auth URL, publishable/anon key, JWKS URL, audience và redirect URL được ghi theo environment; Railway PostgreSQL connection URL/private reference variable và secret chỉ cấu hình trong Railway dashboard hoặc secret store.
-- Deployment manifest phải ghi image/commit, migration version, engine version, renderer version và biến cấu hình bắt buộc.
-- Không commit Railway PostgreSQL password, Redis password, S3 secret, Supabase service role key hoặc token thật.
-
-### 3.2. Module boundaries dùng chung với plan.md
-
-| Module | Frontend boundary | Backend/domain boundary | Worker/engine |
-| :--- | :--- | :--- | :--- |
-| MOD-00 Identity | auth routes, session bootstrap, organization selector | token verifier, UserIdentity, OrganizationMembership | Không |
-| MOD-01 Dashboard | dashboard route/widgets | dashboard read model/query service | Chỉ aggregate job status |
-| MOD-02 Organization/Site/Machine | management pages/forms | organization/site/machine services | Không |
-| MOD-03 QA Archive | folder tree, case list/detail shell | Folder, QACase, search service | Không |
-| MOD-04 Artifact/Validation | upload, manifest, warning panels | Artifact, ValidationRun, InputManifest | ingestion/validation job |
-| MOD-05 Machine QA | checklist/editor/result | protocol application, metric/rule evaluation | Có thể chạy nhẹ, vẫn qua analysis contract |
-| MOD-06 PSQA Gamma | Gamma workspace/result | AnalysisRun/GammaConfiguration | GammaEngine worker |
-| MOD-07 Report | builder/viewer/revision | report snapshot/template services | renderer/export worker |
-| MOD-08 Trend | chart/filter/drill-down | TrendPoint/query/read model | projection/rebuild job khi cần |
-| MOD-09 QA Protocol | library/version/rule editor | QAProtocol/Version/Rule/Reference | Không |
-| MOD-10 Biological Hub | hub/history/report entry | BiologicalScenario/read model | Không |
-| MOD-11 BED/EQD2 | calculator/chart/history | BiologicalCalculationRun | BiologicalEngine |
-| MOD-12 Comparison | multi-course editor/chart | course comparison service | BiologicalEngine |
-| MOD-13 Re-irradiation | course/scenario/recovery UI | re-irradiation scenario service | BiologicalEngine; spatial worker chỉ phase mở rộng |
-| MOD-14 Knowledge | dose-limit/protocol/knowledge pages | versioned knowledge repositories | Import/index job khi cần |
-| MOD-15 Dose/DVH | dose viewer/DVH workspace | DICOM linkage/DVH contracts | DVHEngine worker |
-| MOD-16 Operations | status/history/diagnostic UI cần thiết | AuditEvent, health, backup manifest | monitoring/maintenance jobs |
-
-Cross-module import phải đi qua public application interface hoặc shared contract; không truy cập trực tiếp table của module khác từ frontend. Biological module không được thêm foreign key bắt buộc tới QA case hoặc patient record.
-
----
-
-## 4. Mô hình dữ liệu nghiệp vụ
-
-### 4.1. Quy ước chung
-
-- Khóa chính dùng UUID hoặc định danh không đoán được.
-- Thời gian lưu ở UTC; giao diện hiển thị theo timezone đã chọn.
-- Mỗi entity có created_at và updated_at.
-- Entity có version phải có version number, parent revision và created_by.
-- File lớn không lưu trực tiếp trong PostgreSQL; chỉ lưu metadata và object key.
-- Các cấu hình phân tích lưu dưới dạng JSON có schema version.
-- Các metric lưu giá trị số, đơn vị, rule, margin và trạng thái riêng.
-- Không có bảng role hierarchy hoặc action permission trong domain model.
-
-### 4.1.1. Identity và organization membership
-
-Supabase Auth là nguồn identity bên ngoài của RT-CONNECT. Database ứng dụng chỉ lưu mapping và membership cần cho nghiệp vụ, không lưu password hoặc secret xác thực của user.
-
-`UserIdentity` tối thiểu gồm:
-
-- `supabase_user_id`: giá trị `sub` trong Supabase access token, unique.
-- `email` hoặc email snapshot nếu cần hiển thị.
-- `display_name`/profile snapshot nếu cần hiển thị.
-- `status` ở mức tài khoản ứng dụng.
-- `last_seen_at`.
-- `created_at`, `updated_at`.
-
-`OrganizationMembership` tối thiểu gồm:
-
-- `organization_id`.
-- `supabase_user_id` hoặc `user_identity_id`.
-- `membership_status`.
-- `joined_at`, `updated_at`.
-
-Membership chỉ dùng để xác định user thuộc organization nào và áp dụng organization isolation. Không có role hierarchy, không có permission matrix theo hành động và không có nhánh bác sĩ–kỹ sư trong mô hình này. Worker lưu actor snapshot/correlation ID của request tạo job, không giữ user access token lâu dài.
-
-`OrganizationInvitation` là entity P4 bổ sung cho membership onboarding:
-
-| Field | Mapping kỹ thuật | Quy tắc |
-| :--- | :--- | :--- |
-| `id` | UUID primary key | Không dùng làm secret hoặc token. |
-| `organization_id` | FK `organizations.id`, indexed | Mọi truy vấn/repository method phải có organization scope đã resolve. |
-| `invited_email` | `VARCHAR(320)`, required | Trim + Unicode case-fold ở request boundary; dùng để so với verified email claim. |
-| `token_hash` | `VARCHAR(64)`, unique | SHA-256 hex của token random; raw token chỉ tồn tại trong memory/response create. |
-| `status` | `VARCHAR(20)` | `PENDING`, `ACCEPTED`, `REVOKED`, `EXPIRED`; terminal state không mở lại. |
-| `expires_at` | timezone-aware UTC | Default 7 ngày, range 1–30 ngày. |
-| `accepted_at`, `revoked_at` | nullable UTC | Chỉ set ở transition tương ứng. |
-| `created_by_user_identity_id`, `accepted_by_user_identity_id` | nullable FK `user_identities.id` | Provenance actor; không phải role hoặc action permission. |
-| `created_at`, `updated_at` | timestamp mixin | Dùng cho audit/history và ordering. |
-
-Migration `20260909_0018_organization_invitations.py` tạo bảng, foreign keys, index lookup/expiry và partial unique index `uq_organization_invitations_pending_email` trên `(organization_id, invited_email)` với điều kiện `status='PENDING'`. Partial index là lớp bảo vệ cuối cùng cho hai request invite đồng thời; service vẫn phải kiểm trước để trả lỗi dễ hiểu.
-
-Luồng accept tạo `UserIdentity` projection nếu subject chưa có, nhưng chỉ khi request có verified identity. Nó không lưu password, access token hoặc raw invitation token. Trước khi tạo membership, service kiểm một active membership ở organization khác; nếu có trả `ORGANIZATION_CONTEXT_ALREADY_ASSIGNED` để giữ session context đơn trị. Accept membership, chuyển invitation sang `ACCEPTED` và `AuditEvent` phải cùng transaction. Retry cùng token và cùng subject sau commit trả membership đã tồn tại; token của subject khác bị từ chối.
-
-Mọi member active đều gọi được các operation P4; backend không được đọc claim `role` để rẽ nhánh. `PATCH membership` chỉ thay `is_active`, bảo vệ last-active invariant và ghi audit. Đây là lifecycle/scope operation, không phải hệ thống cấp quyền.
-
-### 4.2. Organization
-
-Các trường chính:
-
-- id.
-- name.
-- code.
-- description.
-- status.
-- is_archived, soft-delete lifecycle flag; archive không xóa row hoặc history.
-- revision, bắt đầu từ 1 và tăng một lần sau mỗi PATCH thành công.
-- created_at.
-- updated_at.
-
-Quan hệ:
-
-- Một organization có nhiều site.
-- Một organization có nhiều member.
-- Một organization có folder, QA protocol, report template và knowledge content.
-
-#### 4.2.1. Organization lifecycle và active-parent guard
-
-`PATCH /organizations/{organization_id}` là mutation lifecycle duy nhất được
-phép resolve một active membership tới organization đã archived, để member còn
-đúng scope có thể restore bằng `expected_revision`. Các endpoint nghiệp vụ
-khác tiếp tục yêu cầu organization active.
-
-Child mutation phải lấy organization bằng `SELECT ... FOR UPDATE` trên
-PostgreSQL trước khi kiểm tra/trước khi insert. Organization archived trả
-`PARENT_NOT_AVAILABLE` và transaction không được tạo site, machine,
-invitation hoặc audit một phần. Đây là invariant transaction, không phải chỉ là
-kiểm tra UI.
-
-### 4.3. Site
-
-Các trường chính:
-
-- id.
-- organization_id.
-- name.
-- code.
-- address_label.
-- timezone.
-- status.
-- is_archived; site archived vẫn đọc được trong history/include-archived nhưng
-  không nhận child mutation.
-- revision, bắt đầu từ 1 và tăng một lần sau mỗi PATCH thành công.
-- created_at.
-- updated_at.
-
-Một site thuộc đúng một organization và có nhiều machine.
-
-Tạo hoặc sửa machine phải khóa/kiểm organization và site theo thứ tự parent →
-child. Site archived trả `PARENT_NOT_AVAILABLE`; site restore yêu cầu
-`expected_revision` hiện tại và organization active.
-
-### 4.4. Machine
-
-Các trường chính:
-
-- id.
-- site_id.
-- display_name.
-- machine_code.
-- manufacturer.
-- model.
-- serial_number nếu có.
-- treatment_device_uid nếu có.
-- revision, bắt đầu từ 1 và tăng một lần sau mỗi PATCH thành công.
-- room_name.
-- modalities.
-- energy_modes.
-- lifecycle_note.
-- is_archived; machine archived chỉ được PATCH `is_archived=false` để restore,
-  không được sửa display/status trong cùng trạng thái archived.
-- status.
-- created_at.
-- updated_at.
-
-machine_id phải ổn định. Đổi tên hiển thị không tạo machine mới và không làm tách trend.
-
-### 4.5. Folder
-
-Các trường chính:
-
-- id.
-- organization_id.
-- parent_folder_id.
-- name.
-- path materialized hoặc path queryable.
-- status: ACTIVE hoặc ARCHIVED.
-- created_by.
-- created_at.
-- updated_at.
-
-Quy tắc:
-
-- Cho phép folder lồng nhau.
-- Tên do user đặt.
-- Đổi tên hoặc di chuyển không làm thay đổi QA case.
-- Folder archive không xóa dữ liệu con.
-- Folder không quyết định kết quả phân tích.
-
-### 4.6. QA Case
-
-Các trường chính:
-
-- id.
-- organization_id.
-- site_id.
-- machine_id.
-- primary_folder_id.
-- qa_type.
-- qa_cycle.
-- performed_at.
-- scheduled_at nếu có.
-- title.
-- description.
-- protocol_version_id nếu có.
-- status_note do user ghi nhận nếu cần.
-- created_by.
-- created_at.
-- updated_at.
-
-Một QA case có thể có:
-
-- Nhiều input artifact.
-- Nhiều validation run.
-- Nhiều analysis run.
-- Nhiều report revision.
-- Nhiều trend point.
-
-### 4.7. Artifact
-
-Các trường chính:
-
-- id.
-- organization_id.
-- qa_case_id nullable khi artifact thuộc Biological Toolkit.
-- artifact_type: DICOM, MEASUREMENT, CSV, JSON, IMAGE, PDF, OTHER.
-- modality nullable.
-- original_filename.
-- object_key.
-- byte_size.
-- media_type.
-- sha256.
-- sop_class_uid nullable.
-- sop_instance_uid nullable.
-- study_instance_uid nullable.
-- series_instance_uid nullable.
-- frame_of_reference_uid nullable.
-- source_system.
-- uploaded_by.
-- uploaded_at.
-- data_status: UPLOADED, VALIDATING, VALID, WARNING, INVALID, ARCHIVED.
-- parent_artifact_id nullable.
-- metadata_snapshot.
-- created_at.
-
-Artifact gốc không bị sửa. Artifact dẫn xuất phải tham chiếu parent_artifact_id.
-
-### 4.8. Input Manifest
-
-Các trường chính:
-
-- id.
-- analysis_run_id.
-- artifact_id.
-- logical_role: REFERENCE, EVALUATION, CT, RTSTRUCT, RTPLAN, MEASUREMENT, OTHER.
-- checksum_at_use.
-- selected_metadata.
-- geometry_summary.
-- unit_summary.
-- validation_summary.
-
-Input Manifest là bản ghi chính xác dữ liệu đã được dùng trong một analysis run.
-
-### 4.9. Validation Run
-
-Các trường chính:
-
-- id.
-- subject_type.
-- subject_id.
-- validation_type.
-- validator_version.
-- started_at.
-- completed_at.
-- result: VALID, WARNING hoặc INVALID.
-- checks.
-- warnings.
-- errors.
-- input_manifest_snapshot.
-
-Validation run không thay đổi file gốc.
-
-### 4.10. QA Protocol
-
-Các entity:
-
-- QAProtocol.
-- QAProtocolVersion.
-- QAProtocolRule.
-- QAProtocolReference.
-
-QAProtocolVersion phải chứa:
-
-- Tên protocol.
-- Loại QA.
-- Machine scope.
-- Tần suất.
-- Test items.
-- Metric keys.
-- Tolerance.
-- Action level.
-- Unit.
-- Rule expression.
-- Reference/source.
-- Effective note.
-- Changelog.
-
-Một report cũ tham chiếu đúng QAProtocolVersion đã dùng.
-
-#### 4.10.1. P11 implementation contract
-
-P11 hiện thực protocol theo `QAProtocolVersion` trong một organization; `protocol_key` là
-stable family key còn `version_number` là số tăng dần trong family. Version có các trạng thái:
-
-- `DRAFT`: mutable, dùng để nhập và validate; không được consumer coi là protocol đang áp dụng.
-- `ACTIVE`: immutable và được chọn cho run mới.
-- `ARCHIVED`: immutable, không được chọn cho run mới nhưng vẫn đọc được trong history.
-
-Các trường P11 đã có trong model là `description`, `applicability`, `source_type`,
-`source_reference`, `source_protocol_version_id` và `revision`; `QAProtocolRule` có thêm
-`reference`. Applicability chỉ nhận các dimension được công bố (site, machine, cycle, QA type,
-energy, beam quality, technique, detector, phantom), mỗi dimension là string list explicit.
-Source type gồm `USER_DEFINED`, `REFERENCE`, `INTERNAL`, `SITE_APPROVED`; `REFERENCE` phải có
-source reference. Rule types gồm `RANGE`, `MIN`, `MAX`, `ABSOLUTE_DEVIATION`,
-`PERCENT_DEVIATION` và `NA`. Backend kiểm finite numeric, duplicate key, unit/type,
-min/max, target/tolerance/action ordering và reference trước khi commit.
-
-Migration `20260908_0011_protocol_library.py` thêm các field/index/self-reference lineage.
-Create/update/clone/transition ghi header, child rule và audit trong một transaction; PATCH và
-transition dùng `expected_revision`. Clone deep-copy child rule và ghi source version. Các
-consumer mới phải pin `protocol_version_id` và snapshot rule/limit/source; không resolve lại
-version live khi mở run/report/trend cũ.
-
-P11 consumer snapshot kỹ thuật dùng schema `p11.protocol-snapshot.v1`. Snapshot được tạo tại
-thời điểm run được tạo hoặc rerun, bao gồm protocol identity/family/version, `status_at_use`,
-revision nghiệp vụ, applicability, source type/reference, source lineage, engine capability và
-toàn bộ rule snapshot (limits, action level, required, note, reference). `MachineQARun.result_snapshot`
-là authority khi evaluate/report/trend; protocol row live chỉ dùng để kiểm tra scope và đối chiếu.
-Archive là thay đổi lifecycle được chấp nhận: evaluation vẫn dùng snapshot ACTIVE đã pin và không
-đổi revision snapshot chỉ vì archive. Nếu bất kỳ field định nghĩa, source, applicability, capability
-hoặc rule nào lệch snapshot thì API dừng fail-closed với `MACHINE_QA_PROTOCOL_SNAPSHOT_MISMATCH`,
-không tạo metric/trend/result mới. Trend phải mang `protocol_version_id` trong source context;
-Machine QA UI phải hiển thị source/applicability/revision/rule count từ snapshot và không seed protocol
-synthetic trong workflow thường. Legacy run chưa có snapshot chỉ được nâng cấp tại lần evaluate đầu
-tiên theo policy tương thích đã ghi trong test.
-
-API implementation P11 (base prefix `/api/v1`):
-
-| Method | Path | Mục đích |
-| :--- | :--- | :--- |
-| POST | `/organizations/{id}/qa-protocols/validate` | Validate-only, không mutation |
-| GET/POST | `/organizations/{id}/qa-protocols` | List hoặc tạo version |
-| GET/PATCH | `/organizations/{id}/qa-protocols/{protocol_id}` | Detail hoặc sửa DRAFT với revision |
-| POST | `/organizations/{id}/qa-protocols/{protocol_id}/clone` | Clone version, deep-copy rules |
-| POST | `/organizations/{id}/qa-protocols/{protocol_id}/activate` | DRAFT thành ACTIVE |
-| POST | `/organizations/{id}/qa-protocols/{protocol_id}/archive` | Chuyển ARCHIVED |
-| GET | `/organizations/{id}/qa-protocols/{protocol_id}/compare?other_id=...` | So sánh metadata/rule |
-
-`GET /organizations/{id}/machine-qa/protocols` chỉ trả version `ACTIVE` cho run mới; detail
-protocol vẫn có thể trả version archived nếu caller thuộc đúng organization. Các mã lỗi chính
-được định nghĩa trong `specification.md` SPEC-P11.2. P11 local code/test không tự chứng minh
-staging consumer E2E hay clinical readiness; các bằng chứng đó thuộc plan P11/P18/P19.
-
-### 4.11. Analysis Configuration
-
-Các trường chính:
-
-- id.
-- analysis_type.
-- schema_version.
-- configuration_json.
-- protocol_version_id nullable.
-- created_by.
-- created_at.
-- label.
-
-Cấu hình không bị thay đổi sau khi được dùng; chỉnh sửa tạo configuration mới.
-
-### 4.12. Analysis Run
-
-Các trường chính:
-
-- id.
-- organization_id.
-- qa_case_id nullable.
-- analysis_type.
-- configuration_id.
-- engine_name.
-- engine_version.
-- job_id.
-- input_manifest_id.
-- started_at.
-- completed_at.
-- execution_status: QUEUED, RUNNING, SUCCEEDED, FAILED, CANCELED.
-- result_status: PASS, FAIL, REVIEW_REQUIRED, INVALID_INPUT, NOT_APPLICABLE nếu có.
-- result_artifact_id nullable.
-- summary_json.
-- error_json.
-- warnings_json.
-- created_by.
-
-Analysis Run là bất biến sau khi hoàn tất về mặt nội dung; chạy lại tạo run mới.
-
-### 4.13. Metric Result
-
-Các trường chính:
-
-- id.
-- analysis_run_id.
-- metric_key.
-- display_label_snapshot.
-- value_numeric nullable.
-- value_text nullable.
-- unit.
-- limit_value nullable.
-- action_value nullable.
-- margin nullable.
-- status.
-- rule_snapshot.
-- explanation.
-- source_pointer.
-- created_at.
-
-Metric phải giữ label và rule snapshot để report cũ không thay đổi khi protocol mới được cập nhật.
-
-### 4.14. Warning
-
-Các trường chính:
-
-- id.
-- analysis_run_id.
-- code.
-- severity: INFO, WARNING, ERROR.
-- message.
-- evidence.
-- source_pointer.
-- blocking_for_calculation boolean.
-- created_at.
-
-Warning không bị xóa khi user chạy lại analysis.
-
-### 4.15. Report Template và Report Revision
-
-Các entity:
-
-- ReportTemplate.
-- ReportTemplateVersion.
-- Report.
-- ReportRevision.
-- ReportBlockConfig.
-- ReportArtifact.
-
-ReportBlockConfig gồm:
-
-- block_type.
-- block_key.
-- title.
-- visible.
-- order_index.
-- selected_metric_keys.
-- conditional_expression nếu có.
-- layout_config.
-- display_options.
-
-Report revision phải lưu snapshot của:
-
-- Input Manifest.
-- Analysis Run.
-- Protocol version.
-- Analysis Configuration.
-- Report Template Version.
-- Block configuration.
-- Render options.
-- User note.
-- Rendered artifacts.
-
-Report Builder không áp đặt block bắt buộc; user toàn quyền tùy chỉnh nội dung hiển thị.
-
-### 4.16. Trend Point
-
-Các trường chính của projection đang triển khai:
-
-- id.
-- organization_id.
-- machine_id.
-- qa_case_id.
-- source_run_id (`MachineQARun`).
-- metric_key.
-- value.
-- unit.
-- status.
-- measured_at.
-- context_snapshot: qa_type, qa_cycle, protocol key/version và context đo (energy, detector, phantom, beam quality, acquisition mode).
-- created_at.
-
-Unique key của projection là `organization_id + source_run_id + metric_key`; index phục vụ organization/machine/metric và organization/measured_at. Trend point không được tự động xóa khi có outlier, machine/case archive hoặc rebuild. Baseline không nằm trong point: `BaselineVersion` được chọn theo effective interval và context khi query. `MaintenanceEvent` là marker hiện tại, còn `MaintenanceEventRevision` là lịch sử append-only. Chi tiết field/API/error nằm trong `specification.md` SPEC-P10.
-
-### 4.17. Biological Toolkit entities
-
-Các entity chính:
-
-- BiologicalScenario.
-- BiologicalCourse.
-- BiologicalCalculationRun.
-- BiologicalMetric.
-- BiologicalChart.
-- DoseLimitEntry.
-- TreatmentProtocolReference.
-- KnowledgeEntry.
-- AlphaBetaEntry.
-- BiologicalReport.
-
-Các entity này không có qa_case_id mặc định. Nếu user xuất kết quả, tạo BiologicalReport độc lập.
-
-### 4.17.1. P12 implementation contract
-
-#### Biological report integration
-
-Report Builder dùng chung renderer P9 nhưng phải phân biệt source namespace. Khi client tạo report với `source_type=BIOLOGICAL` và `source_id`, API lookup `BiologicalScenario` và revision hiện tại bằng cặp `id + organization_id`, sau đó ghi metadata cùng `scenario_snapshot` vào `ReportRevision.source_snapshot`. Mọi lỗi thiếu nguồn hoặc thiếu revision trả `REPORT_SOURCE_UNAVAILABLE` trước khi commit, còn organization mismatch bị chặn ở lớp session/scope. Vì source snapshot đã được pin, thay đổi scenario về sau không làm thay đổi report revision cũ; người dùng muốn phản ánh revision mới phải tạo report revision mới.
-
-Biological Hub cung cấp nút `Tạo report` cho scenario trong phạm vi organization. Sau khi API trả report revision, client điều hướng tới `/app/reports?reportKey=...`; Report Builder chọn report đó từ query state và cho phép tạo report mới bằng cách xóa query. Integration này không tạo QA linkage và không biến biological calculation thành QA PASS/FAIL, treatment order hoặc prescription.
-
-Slice P12 hiện thực ba bảng nền tảng trong namespace nghiệp vụ riêng:
-
-- `biological_scenarios`: organization-scoped stable key, tên/loại/context, source/reference, finite assumptions, trạng thái `DRAFT|SAVED|ARCHIVED`, revision và lineage tới source scenario revision khi clone.
-- `biological_scenario_revisions`: snapshot append-only của từng revision, unique theo scenario + revision number; dùng để mở lại đúng input đã lưu.
-- `biological_calculation_runs`: model/version, input/result/warning/error snapshot và liên kết scenario revision; P12 cung cấp read contract, P13 tạo calculation BED/EQD2 bất biến, P14 đọc các snapshot này để so sánh. P15 dùng namespace `biological_reirradiation_runs` riêng cho re-irradiation/fraction compensation để không trộn semantics với một calculation BED/EQD2 đơn.
-
-Tất cả query đầu tiên đều kèm `organization_id` sau khi resolve membership. Mutation create/update/save/clone/archive ghi header, snapshot và audit trong một transaction. `PATCH` bắt `expected_revision`; chỉ DRAFT sửa trực tiếp; clone tạo ID/key mới và không sửa nguồn. `validate` là validate-only. `ARCHIVED` bị loại khỏi list mặc định nhưng history/detail vẫn đọc được.
-
-API implementation prefix là `/api/v1/organizations/{organization_id}/biological` với các nhóm `/tools`, `/summary`, `/scenarios`, `/scenarios/{id}/revisions`, `/calculations`, `/comparisons`, `/re-irradiation`, `/fraction-compensation` và `/library`. P13–P16 đã có engine/API/UI contract và test local; P16 library không tạo calculation giả và chỉ trả explicit-use snapshot khi user chủ động yêu cầu. P17 thuộc QA case với prefix `/api/v1/organizations/{organization_id}/qa-cases/{case_id}/dvh`; P17 local slice không đọc trực tiếp bảng Biological. Staging/release availability vẫn phải kiểm theo evidence tương ứng.
-
-### 4.17.2. P13 BED/EQD2 implementation contract
-
-P13 dùng engine thuần `services/bed_eqd2_engine.py`, không phụ thuộc database, HTTP hoặc patient data. API route được đăng ký tại `/api/v1/organizations/{organization_id}/biological` và UI route tại `/app/biological/bed-eqd2`.
-
-- **Schema/migration:** `biological_calculation_runs.idempotency_key` nullable cho các row read-model P12 cũ, unique theo `(organization_id, idempotency_key)` cho calculation P13; migration `20260908_0013_bed_eqd2_calculations.py`.
-- **Engine identity:** key `biological.bed-eqd2`; version `p13-lq-1.0.0`. Engine chuẩn hóa D/n/d, kiểm finite/nonnegative/positive/integer, tolerance, source và point budget; không làm tròn trước phép tính.
-- **Primary result:** LQ BED/EQD2 với D [Gy], n [fraction], d [Gy/fraction], alpha/beta [Gy]. Kết quả JSON chứa formula, fractionation normalized, alpha/beta provenance, primary, table rows và chart dataset canonical có SHA-256.
-- **Curve modes:** `FIXED_N` giữ số fraction và tạo d=D/n; `FIXED_D` giữ d và chỉ tạo D=n×d với n nguyên. Point limit tính trên toàn bộ alpha/beta series; range/step không hợp lệ chặn toàn bộ operation.
-- **API operations:** validate-only không mutation; create calculation commit + audit; replay idempotent trả snapshot đã lưu; chart preview chỉ đọc/rebuild từ input snapshot với `persisted=false`; JSON/CSV export đọc result snapshot. Mọi route resolve membership trước rồi mới query resource bằng organization scope.
-- **Failure boundary:** input/domain errors trả `valid=false` ở validate hoặc error envelope 422; idempotency conflict 409; scenario/revision/calculation scope lỗi 403/404/409; persistence lỗi 503. Không tạo calculation COMPLETED một phần và không liên kết mặc định với QA/patient/TPS/PACS.
-- **Evidence local:** engine/API focused tests, full backend, Ruff/mypy, frontend lint/typecheck/Vitest/build và Alembic head `20260908_0013` đã pass trên candidate. Staging browser/API/PostgreSQL/checksum/export evidence vẫn là gate tiếp theo và được ghi trong `implementation-progress.md`.
-
-### 4.17.3. P14 Plan Comparison implementation contract
-
-P14 là bounded context đọc các P13 `BiologicalCalculationRun` đã `COMPLETED`. P14 không đọc raw browser form sau khi đã resolve request, không nhận treatment/patient record ngầm và không thay đổi source calculation. Engine thuần nằm tại `services/plan_comparison_engine.py`; API adapter chịu trách nhiệm organization scope, snapshot lookup, persistence và export; UI route nằm tại `/app/biological/compare`.
-
-- **Schema/migration:** migration `20260908_0014_plan_comparison.py` tạo `biological_comparison_runs`, có UUID/organization/scenario/revision foreign keys, unique `(organization_id, idempotency_key)`, status, input/result/warning/error snapshots, actor và timestamps; index theo organization/scenario và organization/status. Không có FK bắt buộc tới QA case/patient.
-- **Source resolution:** request chỉ gửi `calculation_id`; API thực hiện lookup ban đầu với `organization_id`, yêu cầu `calculation_type=BED_EQD2` và `status=COMPLETED`, lấy scenario cùng scope rồi copy D/n/d, alpha/beta/source, tissue, model key/version và primary BED/EQD2 vào immutable option snapshot. Calculation ID bị trùng giữa hai option là invalid.
-- **Engine identity:** key `biological.plan-comparison`; version `p14-comparison-1.0.0`. Engine nhận 2–10 `ComparisonOption`, kiểm stable option ID/label, numeric finite/nonnegative, positive integer fractions, model/context/provenance, baseline và unique calculation IDs.
-- **Compatibility:** mọi option phải cùng `scenario_id`, `scenario_revision_id`, `tissue_context`, `model_key`, `model_version`. Alpha/beta khác nhau tạo warning `COMPARISON_ALPHA_BETA_MISMATCH`, giữ kết quả riêng và đặt `ranking_allowed=false`; P14 không auto-rank.
-- **Delta/chart:** baseline được resolve theo option ID; `delta=value-baseline`, `percent=delta/baseline*100`; baseline zero trả percent `null` và reason `BASELINE_ZERO`. `table_rows` và chart categories được tạo từ cùng result; chart dataset có SHA-256 canonical. Reorder preview tính lại presentation order với `persisted=false`, không mutation.
-- **API operations:** `POST /comparisons/validate` validate-only; `POST /comparisons` create/replay idempotent; `GET /comparisons` list; `GET /comparisons/{id}` detail; `POST /comparisons/{id}/charts` reorder preview; `POST /comparisons/{id}/clone` clone snapshot; `GET /comparisons/{id}/export?export_format=JSON|CSV` export result snapshot.
-- **Transaction/error boundary:** create/clone thêm comparison và audit trong một transaction; same key + same fingerprint trả row cũ, same key + khác fingerprint trả `409 COMPARISON_IDEMPOTENCY_CONFLICT`; validation `422`, scope `403`, missing `404`, persistence `503`. Validate/preview không ghi database. Error response dùng shared flat envelope và correlation ID.
-- **Frontend behavior:** nếu không có hai P13 snapshot `COMPLETED`, hiển thị empty state; form chỉ chọn source snapshot có thật; warning/error/zero-percent có text và reason; history sau refresh đọc lại từ API; export/clone chỉ thực hiện từ persisted comparison. Không coi HTTP 200 là tính toán thành công nếu schema parse thất bại.
-- **Evidence:** migration `0014`, full backend suite, focused P14 engine/API/biological tests, Ruff, strict mypy, frontend lint/typecheck/Vitest/build và OpenAPI check đã pass trên candidate. Staging browser/API smoke trên candidate `31a5900` cũng đã pass validate-only, save, reorder preview, clone, JSON/CSV export và refresh readback; direct PostgreSQL row/checksum, organization-scope negative probe và release manifest vẫn là gate kế tiếp. Đây chưa phải tuyên bố clinical readiness.
-
-### 4.17.4. P15 Re-irradiation và Fraction Compensation implementation contract
-
-P15 là hai operation synchronous trong Biological bounded context. Engine thuần không import FastAPI/SQLAlchemy/Auth/QA data; API adapter chịu trách nhiệm resolve organization membership, saved scenario revision, idempotency và persistence. UI chỉ gửi input đã nhập, hiển thị field error/warning và đọc immutable snapshot.
-
-#### Engine và dữ liệu chuẩn hóa
-
-- `services/re_irradiation_engine.py` công bố hai engine identity: `biological.re-irradiation / p15-lq-reirradiation-1.0.0` và `biological.fraction-compensation / p15-lq-compensation-1.0.0`.
-- Re-irradiation parser chuẩn hóa lịch uniform từ D/n/d hoặc giữ nguyên `fraction_doses_gy[]` nếu nonuniform. Mọi số được kiểm finite; dose không âm; alpha/beta dương; fraction count nguyên trong giới hạn. `BED` được tính theo từng fraction, `EQD2` tính từ BED chưa làm tròn.
-- Course phải có ID duy nhất, explicit prior/current role và tissue rows độc lập. Engine từ chối scenario không có đủ một prior và một current. Cùng tissue với alpha/beta khác nhau được group bằng `tissue_key|alpha-beta={value} Gy` và trả warning thay vì cộng khác context.
-- Recovery là scalar user-defined. `NONE` không giảm BED; `USER_DEFINED` yêu cầu evaluation date và source cho từng prior course, áp dụng `(1-recovery_fraction)` đúng một lần. Sensitivity chỉ là bảng giả định, không phải uncertainty interval.
-- Fraction compensation kiểm `delivered_fraction_doses_gy[]` là prefix khớp `planned_fraction_doses_gy[]` trong tolerance. Alternative được ghép từ prefix + remaining; output chứa prefix unchanged, total/BED/EQD2 và delta so với planned. Interruption được parse thành interval không overlap. `USER_DEFINED_LINEAR` tính penalty BED theo rate sau kickoff và luôn lưu source; không có model thì warning `NO_REPOPULATION_CORRECTION`.
-- `spatial.requested=true` chỉ tạo capability/warning `SPATIAL_ACCUMULATION_UNAVAILABLE`; không đọc DICOM, không resample, không đăng ký geometry và không tạo voxel result trong P15.
-
-#### Model và migration
-
-Migration `20260908_0015_reirradiation.py` tạo `biological_reirradiation_runs` với:
-
-| Cột/constraint | Mục đích |
+| Lớp | Phạm vi |
 | :--- | :--- |
-| `id`, `organization_id`, `scenario_id`, `scenario_revision_id` | Identity và tenant/scenario lineage; foreign key tới resource hiện hữu. |
-| `operation_type` | `REIRRADIATION` hoặc `FRACTION_COMPENSATION`; list/detail luôn lọc operation. |
-| `name`, `idempotency_key` | Tên hiển thị và retry identity; unique theo `(organization_id, idempotency_key)`. |
-| `model_key`, `model_version`, `status` | Provenance engine và terminal state; hiện calculation synchronous `COMPLETED`. |
-| `input_snapshot`, `result_snapshot`, `warning_snapshot`, `error_snapshot` | Snapshot JSON immutable, đủ để export/reproduce; không trỏ live form. |
-| `created_by_user_identity_id`, timestamps | Actor/audit lineage và thời gian. |
+| Unit | Chuẩn hóa URL, đơn vị, rule boundaries, công thức sinh học, formatter ngôn ngữ |
+| Engine | Fixture cho đủ 16 họ pylinac/biến thể chính, QA contrib trong registry, hình học scale/rotate/shift, ảnh lỗi, adapter fidelity, Gamma 1D/2D và DVH oracle |
+| API/DB | Scope ngay từ lookup, transaction/revision/idempotency, delete/restore, version snapshots |
+| Worker/storage | Retry, crash, timeout, job hoàn thành sau xóa, orphan cleanup, signed URL hết hạn |
+| Web | Compact layout, bàn phím, không JSON/ID, locale hoàn chỉnh, các trạng thái lỗi/empty/loading |
+| PDF | Trích text, render ảnh, đối chiếu preview, dấu tiếng Việt, lớp phân tích và trang dài |
+| E2E | Chọn bài → nhập đúng loại → phân tích → tự đánh giá → lịch sử → PDF → xóa/khôi phục → xu hướng |
+| Môi trường | URL và SHA đúng, auth/DB/upload/worker/render chạy xuyên suốt staging rồi production |
 
-Indexes gồm organization, scenario, scenario revision, organization+operation, organization+status và actor. Không có FK tới QA case/patient/TPS/PACS; calculation P15 là namespace Biological độc lập.
+Bộ fixture phải có ít nhất một happy path và các lỗi đặc trưng cho từng capability công khai trong `PylinacCapabilityRegistry`; PF/WL/Starshot có sai lệch biết trước, thang đo thay đổi, ảnh đảo/thiếu/đa đối tượng, ngưỡng sát biên. Contract test đối chiếu adapter với `results_data()` trực tiếp cùng input/tham số/version; không tự lấy output của lần chạy đang kiểm làm expected và không kiểm lại bằng cách viết bản sao thuật toán pylinac.
 
-#### API transaction và error mapping
+Các số BED kiểm chứng trong mục 10 là test toán học. Test không thay việc đơn vị đánh giá tính phù hợp của dữ liệu/giả định cho mục đích thực tế.
 
-API prefix là `/api/v1/organizations/{organization_id}/biological`. Mọi read đầu tiên resolve identity/membership rồi mới query với `organization_id`; detail/list của organization khác trả scope-safe error. Validate-only không commit. Create tính trước, tạo run + audit rồi commit; `IntegrityError` sau concurrent insert chỉ trả existing nếu fingerprint trùng, ngược lại `P15_IDEMPOTENCY_CONFLICT`.
+## 15. Liên kết giai đoạn và tiêu chí bàn giao
 
-| Tình huống | Mapping |
+| Giai đoạn | Hợp đồng kỹ thuật chính |
 | :--- | :--- |
-| Pydantic extra field, type, UUID, finite/range | HTTP `422`, shared error envelope; không tạo run. |
-| Engine input error | Validate route HTTP `200` + `valid=false`; create route HTTP `422` + code/field details. |
-| Missing/archived/unsaved scenario revision | `404` resource hoặc `409` lifecycle; không chạy engine. |
-| Organization mismatch | `403`, query không lấy resource ngoài scope. |
-| Same key/same fingerprint | `200` replay row cũ, không insert row thứ hai. |
-| Same key/different fingerprint | `409 P15_IDEMPOTENCY_CONFLICT`. |
-| DB/transaction failure | `503 REIRRADIATION_PERSISTENCE_FAILED`; rollback và query key trước retry. |
-| Export | JSON/CSV đọc snapshot; không tính lại, không mutation; run thiếu trả `404`. |
-
-#### Frontend route và trạng thái
-
-`/app/biological/re-irradiation` và `/app/biological/fraction-compensation` dùng cùng `ReIrradiationPage` nhưng hai form mode. UI có scenario/revision selector chỉ lấy `SAVED`, course×tissue matrix, recovery/sensitivity, planned/delivered prefix, alternatives, interruptions, optional time model, validate-only, save, history và JSON/CSV export. Các trạng thái bắt buộc là loading, no saved scenario, validation error, warning, persisted result, export error và API/session error. Kết quả luôn có model/version/checksum và nhãn `SCENARIO / ESTIMATE ONLY`.
-
-#### Local verification checkpoint
-
-Working-tree candidate đã kiểm: P15 API tests `5/5`, pure engine/error tests `22/22`, full backend `133 passed`, Ruff, strict mypy, frontend lint/typecheck/build, OpenAPI regenerate/check và Alembic PostgreSQL head `20260908_0015`. Đây chỉ là local implementation evidence; staging deploy, authenticated browser smoke, direct PostgreSQL row/checksum/scope query và release manifest vẫn là gate riêng.
-
-### 4.17.5. P16 Biological Knowledge Library implementation contract
-
-P16 là một bounded context thư viện tham khảo trong Biological Toolkit. Một bảng versioned duy nhất được dùng cho bốn loại entry để giữ chung search, provenance và lifecycle; các màn hình dose limit, treatment protocol, knowledge note và alpha/beta là các view/entry type của cùng namespace, không phải bốn nguồn dữ liệu không liên quan.
-
-#### Thành phần triển khai
-
-- **Engine thuần:** `services/biological_library_engine.py` thực hiện canonicalization, validation field/cross-field, applicability matching, search text, snapshot và fingerprint. Engine không truy cập database, Auth, URL external hoặc patient data.
-- **API adapter:** `api/biological_library.py` dùng prefix `/api/v1/organizations/{organization_id}/biological/library`; route resolve membership trước mọi query, ghi audit cho mutation và rollback khi persistence thất bại.
-- **Entity/migration:** `BiologicalLibraryEntry` và migration `20260908_0016_biological_library.py`; unique family/version `(organization_id, entry_type, entry_key, version_number)`, `source_entry_id` cho clone, revision optimistic, content/citation/applicability JSON và hash.
-- **Frontend:** `KnowledgeLibraryPage` tại `/app/biological/knowledge`, dùng AppShell/Clinical Precision Interface hiện có; có list/filter, editor, validation, import, history/compare, explicit-use và JSON/CSV export.
-
-#### Schema và validation
-
-`entry_type` nhận `DOSE_LIMIT`, `TREATMENT_PROTOCOL`, `KNOWLEDGE`, `ALPHA_BETA`; `source_type` nhận `USER_DEFINED`, `REFERENCE`, `INTERNAL`, `SITE_APPROVED`; `reference_status` nhận `UNVERIFIED`, `AVAILABLE`, `UNAVAILABLE`. Key được uppercase canonical; mọi số phải finite và mọi JSON phải là object hữu hạn.
-
-- `DOSE_LIMIT` bắt buộc metric/unit/operator. `MAX|MIN|TARGET` dùng `limit_value`; `RANGE` dùng lower/upper và lower ≤ upper. DMAX/DMEAN/Dxcc dùng dose-like unit; Dxcc bắt buộc volume dương; Vx bắt buộc metric parameter dương và `%|cc|cm3`.
-- `ALPHA_BETA` yêu cầu alpha/beta dương, chuẩn hóa unit `Gy`, có thể dùng `limit_value` làm alias; thiếu tissue/OAR chỉ tạo warning `DOSE_LIMIT_NOT_APPLICABLE`, không auto-apply.
-- Direct context được sao chép vào applicability arrays. Search disease/anatomy/technique/tissue/metric/fractions là exact case-insensitive match; context thiếu không phải wildcard.
-- `REFERENCE` không có source identifier là lỗi `KNOWLEDGE_SOURCE_REQUIRED`. Link external chỉ là metadata; service không tự fetch/private URL và `UNVERIFIED` không thành `AVAILABLE` bằng việc lưu URL.
-- Content/citation không được chứa script/iframe/object/embed/style, event attribute, `javascript:` hoặc `data:text/html`; formula text không được chạy như code.
-
-#### API operation và transaction
-
-| Operation | Hành vi kỹ thuật |
-| :--- | :--- |
-| `POST /validate` | Validate-only; trả normalized entry/fingerprint/errors/warnings, không insert. |
-| `GET /` | Organization-scoped list; filter q/type/status/context/fractions, mặc định loại ARCHIVED, offset/limit tối đa 500. |
-| `POST /` | Validate lại server-side, tạo DRAFT hoặc PUBLISHED theo request, assign next family version và audit trong transaction. |
-| `PATCH /{id}` | Chỉ DRAFT; bắt `expected_revision`; cập nhật normalized fields, revision và hash atomically. |
-| `POST /{id}/clone` | Copy definition thành family version mới, lưu `source_entry_id`; key/name override phải validate lại. |
-| `POST /{id}/publish` / `archive` | Optimistic revision; publish validate đầy đủ; archive giữ read/history/export nhưng loại khỏi list/use mặc định. |
-| `GET /{id}/revisions` / `compare` | Read-only family history và field-level metadata/content diff; không sửa entry. |
-| `POST /{id}/use` | Tạo response snapshot với target tool, source snapshot, effective values, override label và SHA; không ghi trực tiếp vào calculator/QA. |
-| `POST /import/validate` / `POST /import` | Preview/commit 1–500 rows; duplicate family trong batch là row error; commit row hợp lệ và audit, rollback nếu DB lỗi. |
-| `GET /{id}/export` | JSON/CSV serialize đúng row đã chọn; không tự resolve latest version và không tính lại. |
-
-Explicit-use override whitelist chỉ gồm `limit_value`, `lower_limit`, `upper_limit`, `unit`, `alpha_beta_gy`, `fractions`, `metric_parameter`. Entry ARCHIVED bị chặn; DRAFT được preview nhưng trả warning `KNOWLEDGE_DRAFT_SELECTED`. Target không phù hợp tạo warning, không tạo rule/PASS.
-
-#### Error, observability và capability boundary
-
-`REQUEST_VALIDATION_FAILED`/field schema là 422; engine validation trên validate-only là 200 với `valid=false`, còn mutation là 422; source/unit/content/applicability dùng các mã `KNOWLEDGE_SOURCE_REQUIRED`, `DOSE_LIMIT_UNIT_INVALID`, `DOSE_LIMIT_NOT_APPLICABLE`, `KNOWLEDGE_CONTENT_INVALID`; import dùng `KNOWLEDGE_IMPORT_INVALID`; reference warning là `REFERENCE_NOT_VERIFIED`/`REFERENCE_LINK_UNAVAILABLE`; revision/lifecycle dùng `KNOWLEDGE_REVISION_CONFLICT`, `KNOWLEDGE_VERSION_IMMUTABLE`, `KNOWLEDGE_NOT_AVAILABLE`; scope/not-found dùng shared `ORGANIZATION_SCOPE_MISMATCH`/`KNOWLEDGE_ENTRY_NOT_FOUND`; DB/unique failure dùng `KNOWLEDGE_VERSION_CONFLICT`/`KNOWLEDGE_PERSISTENCE_FAILED` với 409/503.
-
-Every mutation audit payload tối thiểu có organization, actor, entry ID, type/key/version/status và source lineage. Log không ghi content nhạy cảm hoặc token. Snapshot use/export phải có schema version, source version/hash và correlation ID trong response envelope. P16 chỉ cung cấp reference snapshot; P13/P14/P15/P17 phải có adapter riêng nếu muốn prefill, không được đọc trực tiếp bảng P16. P17 hiện có adapter riêng cho explicit source binding; P13/P14/P15 vẫn chưa được coi là đã prefill chỉ vì P16 snapshot tồn tại.
-
-#### Local verification checkpoint
-
-Engine commit `cdf4372` (`p17-dvh-1.1.0`), được kiểm lại trên clean verification commit `50d890e`, đã pass P16 focused tests `3/3`, P17 DVH/CT engine/API/report-source/binding suite `27 passed`, P18 integrated journey suite `2 passed`, full backend `169 passed`, Ruff, strict mypy, frontend lint/typecheck/Vitest/build. Migration/OpenAPI đã được regenerate/check; staging readiness `20260909_0018` là schema head hiện hành (P17 migration `20260908_0017` đã nằm trong lịch sử), browser lifecycle, import/use/export, explicit binding/report source, direct PostgreSQL row/hash/scope và full negative matrix vẫn là gate trước STAGING_VERIFIED.
-
-### 4.18. Audit Event
-
-Các trường chính:
-
-- id.
-- organization_id.
-- actor_user_id.
-- event_type.
-- subject_type.
-- subject_id.
-- occurred_at.
-- before_snapshot nullable.
-- after_snapshot nullable.
-- reason nullable.
-- request_id.
-- source: UI, API, WORKER, IMPORT, EXPORT.
-- metadata.
-
-Audit Event append-only. Không dùng audit event để tạo phân cấp người dùng.
-
----
-
-## 5. Luồng kỹ thuật chính
-
-### 5.1. Luồng tạo QA case và upload
-
-~~~text
-User tạo QA case
-    -> chọn organization/site/machine/folder/QA type
-    -> upload file
-    -> object storage nhận file
-    -> tạo Artifact metadata + checksum
-    -> tạo Input Manifest sơ bộ
-    -> chạy validation job
-    -> cập nhật data_status
-    -> user xem lỗi/cảnh báo
-    -> user chọn configuration
-    -> tạo Analysis Run
-~~~
-
-#### 5.1.1. Transaction và compensation khi upload artifact
-
-Object storage và Railway PostgreSQL không dùng chung distributed transaction. Upload phải thực hiện theo thứ tự:
-
-1. Đọc multipart theo chunk, tính SHA-256 và dừng ngay khi vượt `MAX_UPLOAD_BYTES`.
-2. Kiểm tra duplicate trong đúng `organization_id + qa_case_id + artifact_type`; nếu cùng bytes/type đã có thì không ghi object mới, chỉ tạo `InputManifest` cho logical role còn thiếu trong một transaction riêng.
-3. Validate content theo `artifact_type`, tạo object key bất biến và ghi object vào durable storage.
-4. Tạo `Artifact`, `InputManifest` và `AuditEvent` trong cùng transaction PostgreSQL; chỉ trả `201` sau khi commit thành công.
-5. Nếu bước 4 thất bại sau khi object đã ghi, rollback transaction và gọi `delete_object(object_key)`. Cleanup thành công thì giữ nguyên lỗi gốc (`ARTIFACT_CONFLICT` hoặc persistence error); cleanup thất bại thì trả `ARTIFACT_PERSISTENCE_FAILED` HTTP 503 và ghi signal để reconciliation tìm object không có row tham chiếu.
-
-`delete_object` là một operation nội bộ của adapter object storage, không expose cho browser. Không xóa theo prefix hoặc theo filename; compensation chỉ được phép dùng object key vừa tạo và phải có log correlation/sha256 đã redaction phù hợp. Orphan retention, inventory và provider reconciliation định kỳ vẫn cần được triển khai/kiểm trong P18/P20.
-
-### 5.2. Luồng phân tích bất đồng bộ
-
-~~~text
-POST analysis request
-    -> kiểm tra request schema
-    -> tạo Analysis Run QUEUED
-    -> enqueue job vào Redis
-    -> worker lấy job
-    -> đọc immutable input
-    -> validate lại tại thời điểm chạy
-    -> normalize input
-    -> execute engine
-    -> lưu result + metrics + warnings
-    -> cập nhật trend nếu đủ điều kiện
-    -> report đọc snapshot của run
-~~~
-
-Nếu worker lỗi:
-
-- Job được retry theo policy.
-- Không tạo kết quả một phần được coi là hợp lệ.
-- Log có correlation ID.
-- User xem được lỗi kỹ thuật và có thể chạy lại bằng run mới.
-
-### 5.3. Luồng report
-
-~~~text
-User chọn analysis run
-    -> chọn report template version
-    -> chỉnh ReportBlockConfig tùy ý
-    -> tạo Report Revision
-    -> renderer đọc snapshot
-    -> tạo HTML/PDF/PNG
-    -> lưu Report Artifact
-    -> report viewer hiển thị nội dung và provenance
-~~~
-
-### 5.4. Luồng Biological Toolkit
-
-~~~text
-User mở Biological Toolkit
-    -> tạo scenario độc lập
-    -> nhập course/alpha-beta/assumption
-    -> validate input
-    -> chạy calculation
-    -> lưu Biological Calculation Run
-    -> hiển thị bảng/đồ thị
-    -> export Biological Report độc lập
-~~~
-
-Không có bước tự động tìm hoặc gắn QA case/ca bệnh.
-
----
-
-## 6. API kỹ thuật
-
-### 6.1. Quy ước API
-
-- Base path: /api/v1.
-- JSON UTF-8.
-- Thời gian dùng ISO 8601 UTC.
-- API trả request_id hoặc correlation_id.
-- Job bất đồng bộ trả analysis_run_id và job status.
-- Pagination dùng limit, cursor hoặc page token.
-- File upload hỗ trợ upload multipart và signed object upload khi cần.
-- API schema được công bố bằng OpenAPI.
-- Mọi request có organization context hợp lệ.
-
-### 6.1.1. Authentication bằng Supabase Auth
-
-- Frontend dùng `@supabase/supabase-js` để đăng nhập, duy trì session, refresh token, logout và password recovery theo cấu hình Supabase project.
-- Frontend chỉ được chứa Supabase Auth project URL và publishable/anon key phù hợp; không đưa `service_role` key, Railway PostgreSQL credential hoặc secret Railway vào bundle.
-- Request tới RT-CONNECT API gửi `Authorization: Bearer <Supabase access token>`.
-- API middleware kiểm tra chữ ký, `iss`, `aud`, `exp`, `nbf` nếu có, `sub` và token type bằng thư viện JWT chuẩn hoặc cơ chế xác minh được Supabase khuyến nghị.
-- Khi dùng asymmetric signing keys, API lấy public keys từ JWKS endpoint của đúng Supabase project và cache có thời hạn; phải xử lý key rotation. Khi cấu hình signing key yêu cầu introspection, API dùng endpoint xác minh phù hợp thay vì tự đoán.
-- `sub` được map tới `UserIdentity`; sau đó API kiểm tra `OrganizationMembership` trước khi truy cập mọi record có `organization_id`.
-- Không dùng claim `role` để tạo phân cấp bác sĩ–kỹ sư hoặc action permission. Claim/membership chỉ phục vụ identity và organization isolation theo phạm vi nghiệp vụ đã thống nhất.
-- Job bất đồng bộ lưu `created_by`, `supabase_user_id` snapshot và correlation ID; worker không dùng lại access token của user để chạy về sau.
-- Token hết hạn, user bị logout/revoke hoặc Supabase Auth không khả dụng phải trả error contract rõ ràng; không fallback sang user giả hoặc anonymous access cho dữ liệu QA.
-- Redirect URL, site URL, email template/provider và provider được phép phải tách theo dev, staging, pilot và production.
-- Test phải bao gồm token hợp lệ, hết hạn, sai issuer/audience, sai signature, user không thuộc organization và membership bị vô hiệu hóa.
-
-#### 6.1.1. First-use organization onboarding
-
-- `GET /session/bootstrap` chỉ trả context khi identity đã có `UserIdentity`, membership active và organization chưa archive.
-- Nếu identity hợp lệ nhưng chưa có membership, API trả error contract `ORGANIZATION_MEMBERSHIP_REQUIRED` với HTTP 403; không trả organization giả hoặc dữ liệu synthetic trong production path.
-- Frontend hiển thị Session Error onboarding form để người dùng nhập tên organization.
-- `POST /organizations` tạo organization, tạo hoặc cập nhật `UserIdentity`, tạo `OrganizationMembership` active cho identity hiện tại và ghi audit event trong cùng transaction.
-- Identity đã có membership active bị từ chối với `ORGANIZATION_CONTEXT_ALREADY_ASSIGNED`; không tự động tạo organization thứ hai.
-- Sau khi tạo thành công, frontend loại cache bootstrap lỗi, gọi lại bootstrap và mở Home Dashboard.
-- Membership là organization scope; không có role hierarchy hoặc action-level permission giữa các thành viên trong organization.
-
-### 6.1.2. Session bootstrap và Home Dashboard
-
-| Method | Path | Mục đích |
-| :--- | :--- | :--- |
-| GET | `/session/bootstrap` | Trả identity snapshot, organization membership và feature/module availability |
-| GET | `/organizations/{id}/dashboard` | Read model cho Home Dashboard: machine summary, recent QA, warning, job và quick links |
-| GET | `/jobs/{id}` | Trạng thái job bất đồng bộ dùng chung |
-| GET | `/jobs` | Danh sách job gần đây theo organization và filter |
-
-Dashboard endpoint là read model tổng hợp; không chạy analysis khi render trang và không trả file lớn. Widget không có dữ liệu phải trả collection rỗng/metadata rõ ràng, không coi là lỗi server.
-
-### 6.2. Organization, site và machine
-
-| Method | Path | Mục đích |
-| :--- | :--- | :--- |
-| GET | /organizations | Liệt kê organization của user |
-| POST | /organizations | Tạo organization |
-| GET | /organizations/{id} | Xem organization |
-| PATCH | /organizations/{id} | Đổi tên/archive organization với `expected_revision` |
-| GET | /organizations/{id}/sites | Liệt kê site |
-| POST | /organizations/{id}/sites | Tạo site |
-| PATCH | /organizations/{id}/sites/{site_id} | Đổi tên/archive site với `expected_revision` |
-| GET | /organizations/{id}/sites/{site_id}/machines | Liệt kê machine |
-| POST | /organizations/{id}/sites/{site_id}/machines | Tạo machine |
-| PATCH | /organizations/{id}/sites/{site_id}/machines/{machine_id} | Cập nhật machine với `expected_revision` |
-
-Các PATCH hierarchy đều resolve membership trước lookup, đọc bản ghi bằng row lock trên PostgreSQL,
-so sánh `expected_revision` với `revision` hiện tại rồi tăng revision atomically. Revision bắt đầu
-từ `1`; stale request trả `409 REVISION_CONFLICT` và không đổi dữ liệu/audit. Migration
-`20260911_0020_organization_revisions.py` thêm field cho cả ba bảng và nối sau
-`20260909_0019_dvh_immutability.py`.
-
-P4 membership/invitation routes dùng prefix thực tế `/api/v1/organizations` và không có
-action-level role. Các route organization-scoped resolve context trước khi lookup `id`:
-
-| Method | Path | Mục đích và response |
-| :--- | :--- | :--- |
-| GET | `/organizations/{organization_id}/members` | List active members mặc định; `include_inactive=true` để xem lifecycle đầy đủ; có `offset/limit`. |
-| PATCH | `/organizations/{organization_id}/members/{membership_id}` | Toggle `is_active`; bảo vệ last active member; trả member snapshot + audit. |
-| POST | `/organizations/{organization_id}/invitations` | Chuẩn hóa email, tạo token random và trả raw token đúng một lần cùng invitation metadata. |
-| GET | `/organizations/{organization_id}/invitations` | List invitation metadata; mặc định PENDING; `include_closed=true` để xem terminal history; không bao giờ trả raw token. |
-| POST | `/organizations/{organization_id}/invitations/{invitation_id}/revoke` | Chuyển PENDING → REVOKED; token cũ không thể accept. |
-| POST | `/organizations/invitations/accept` | Hash token, kiểm verified email/context/expiry và tạo hoặc reactivate membership trong một transaction. |
-
-Error mapping tối thiểu: request schema → `REQUEST_VALIDATION_FAILED`/422; stale hierarchy edit →
-`REVISION_CONFLICT`/409; scope →
-`ORGANIZATION_SCOPE_MISMATCH`/403; chưa có membership → `ORGANIZATION_MEMBERSHIP_REQUIRED`/403;
-duplicate member/pending → `INVITATION_ALREADY_MEMBER` hoặc `INVITATION_ALREADY_PENDING`/409;
-invalid token → `INVITATION_INVALID`/403 hoặc 409 theo nhánh; active context khác →
-`ORGANIZATION_CONTEXT_ALREADY_ASSIGNED`/409; last member → `LAST_MEMBERSHIP_CONFLICT`/409.
-Commit race dùng `INVITATION_CONFLICT` hoặc `MEMBERSHIP_CONFLICT`/409; không trả stack trace,
-secret hay raw token trong error/log.
-
-### 6.3. Folder và QA case
-
-| Method | Path | Mục đích |
-| :--- | :--- | :--- |
-| GET | /organizations/{id}/folders/tree | Xem cây folder |
-| POST | /organizations/{id}/folders | Tạo folder |
-| PATCH | /folders/{id} | Đổi tên, di chuyển hoặc archive folder |
-| GET | /organizations/{id}/qa-cases | Tìm kiếm QA case |
-| POST | /organizations/{id}/qa-cases | Tạo QA case |
-| GET | /qa-cases/{id} | Xem chi tiết case |
-| PATCH | /qa-cases/{id} | Cập nhật metadata nghiệp vụ |
-| GET | /qa-cases/{id}/history | Xem artifact, run, report và lịch sử |
-
-### 6.4. Artifact và validation
-
-| Method | Path | Mục đích |
-| :--- | :--- | :--- |
-| POST | /qa-cases/{id}/artifacts | Upload artifact |
-| GET | /qa-cases/{id}/artifacts | Liệt kê artifact trong QA case |
-| GET | /artifacts/{id} | Xem metadata |
-| GET | /artifacts/{id}/download | Tải file theo organization |
-| POST | /artifacts/{id}/validate | Chạy validation |
-| GET | /artifacts/{id}/validations | Xem validation history |
-| GET | /artifacts/{id}/manifest | Xem metadata DICOM/measurement đã chuẩn hóa |
-
-#### 6.4.1. Signed artifact download filename
-
-Endpoint `GET /artifacts/{id}/download` không trả bytes trực tiếp; endpoint kiểm tra
-organization/case scope rồi phát một signed URL có thời hạn. Adapter object storage
-phải nhận thêm response parameters để provider trả header:
-
-```text
-Content-Disposition: attachment; filename="<safe-basename>"
-```
-
-Quy tắc bắt buộc:
-
-1. `filename` trong response API là basename được chuẩn hóa từ
-   `Artifact.original_filename`; không giữ `/`, `\\`, quote, CR/LF hoặc control
-   characters do người dùng cung cấp.
-2. Filename không được dùng để tạo object key, xác định artifact, kiểm tra integrity
-   hoặc thay thế SHA-256. Object key, artifact ID, byte count và bytes tải xuống giữ
-   nguyên như artifact đã commit.
-3. Nếu filename rỗng, chỉ là path, hoặc không còn hợp lệ trong dữ liệu legacy, adapter
-   dùng fallback xác định từ artifact ID để mọi lần renewal cho cùng artifact trả cùng
-   tên logic.
-4. `DownloadResponse` phải có `artifact_id`, `url`, `expires_at` và `filename`; client
-   validate theo OpenAPI nhưng không tự suy diễn thành công chỉ từ HTTP 200.
-5. Mỗi request download tạo URL mới sau khi scope check. Khi URL hết hạn, client gọi
-   lại endpoint để renewal, không upload lại artifact và không thay đổi metadata.
-6. InMemory, MinIO/S3-compatible và adapter production phải cùng nhận/ghi nhận
-   `response_headers`; test contract phải chứng minh header không chứa dữ liệu phá
-   vỡ HTTP và filename không làm thay đổi checksum/bytes.
-
-### 6.5. QA analysis
-
-| Method | Path | Mục đích |
-| :--- | :--- | :--- |
-| GET | /qa-protocols | Tìm QA protocol |
-| POST | /qa-protocols | Tạo protocol |
-| POST | /qa-protocols/{id}/versions | Tạo protocol version |
-| GET | /analysis-configurations | Tìm configuration |
-| POST | /qa-cases/{id}/analysis-runs | Tạo analysis run |
-| GET | /analysis-runs/{id} | Xem trạng thái và kết quả |
-| POST | /analysis-runs/{id}/rerun | Chạy lại bằng configuration mới |
-| GET | /analysis-runs/{id}/metrics | Xem metrics |
-| GET | /analysis-runs/{id}/warnings | Xem warnings |
-| GET | /analysis-runs/{id}/artifacts | Xem map, plot và result artifact |
-
-Machine QA dùng cùng Analysis Run contract nhưng có endpoint nghiệp vụ rõ:
-
-| Method | Path | Mục đích |
-| :--- | :--- | :--- |
-| POST | `/qa-cases/{id}/machine-qa-runs` | Tạo lần nhập/chạy Machine QA từ protocol version |
-| PATCH | `/machine-qa-runs/{id}/measurements` | Lưu draft measurement/value/unit/note theo idempotency/version |
-| POST | `/machine-qa-runs/{id}/evaluate` | Evaluate rule và tạo immutable result run |
-| GET | `/machine-qa-runs/{id}` | Xem checklist, measurement, metric, warning và provenance |
-
-P7 triển khai thêm các endpoint và snapshot contract sau:
-
-| Method | Path | Mục đích |
-| :--- | :--- | :--- |
-| GET | `/organizations/{id}/machine-qa/protocols` | Liệt kê protocol version trong organization, kèm rule đã sắp thứ tự |
-| POST | `/organizations/{id}/machine-qa/protocols/seed` | Tạo protocol seed `MACHINE_QA_BASELINE` v1 cho staging/local khi organization chưa có protocol |
-| GET | `/qa-cases/{id}/machine-qa-runs` | Liệt kê các lượt Machine QA theo QA case |
-| POST | `/machine-qa-runs/{id}/rerun` | Tạo lượt mới từ measurement của run đã hoàn tất; không sửa hoặc xóa run nguồn |
-| GET | `/machine-qa-runs/{id}/compare?other_run_id=...` | So sánh metric snapshot của hai run cùng organization |
-
-P7 lưu bốn nhóm dữ liệu: `qa_protocol_versions` và `qa_protocol_rules` là cấu hình có version; `machine_qa_runs` là measurement draft và kết quả đã chốt; `trend_points` là projection từ metric thực tế của run hoàn tất. Mỗi measurement có thể có `is_not_applicable` và `na_reason`; explicit N/A phải có reason sau trim, không có numeric value, được snapshot cùng result và không tạo `TrendPoint`. Khi evaluate, result snapshot giữ lại protocol/rule snapshot, actual, baseline, tolerance, action level, margin, status và thời điểm đánh giá. Overall status dùng precedence `FAIL > REVIEW > WARNING > NA > PASS`; N/A không được trở thành PASS ngầm. Run `COMPLETED` hoặc `FAILED` không được sửa; rerun luôn sinh `machine_qa_runs` mới với `supersedes_run_id`. Mọi lookup đầu tiên đều kèm `organization_id` lấy từ membership của identity, không dùng truy vấn resource-ID toàn cục rồi mới kiểm tra scope.
-
-Rule engine P7 hỗ trợ `RANGE`, `MIN`, `MAX`, `ABSOLUTE_DEVIATION`, `PERCENT_DEVIATION` và `NA`. Thiếu metric bắt buộc, sai unit hoặc giá trị không hợp lệ làm run `FAILED` và lưu `error_snapshot`; explicit N/A hợp lệ tạo quality status `NA`, không phải technical failure và không phải PASS; lệch trong action band tạo metric `WARNING`; kết quả nằm trong tolerance tạo `PASS`. Optional metric bỏ trống là not recorded và bị loại khỏi aggregate/trend; required metric bỏ trống vẫn lỗi evaluate. Protocol seed chỉ là fixture kỹ thuật cho vertical slice, không phải giới hạn lâm sàng mặc định; thư viện protocol được quản trị/version hóa đầy đủ ở P11.
-
-P8 local implementation slice hiện có migration `20260907_0007` cho Gamma run và
-`20260908_0008` cho lease/attempt/outbox. Các entity reliability hiện có là
-`gamma_analysis_runs`, `gamma_run_attempts` và `gamma_dispatch_outbox`. Các endpoint thực tế là:
-
-| Method | Path | Mục đích |
-| :--- | :--- | :--- |
-| POST | `/qa-cases/{id}/gamma-runs` | Preflight input, snapshot configuration/manifest và enqueue job bằng idempotency key |
-| GET | `/qa-cases/{id}/gamma-runs` | Liệt kê job/result theo QA case và organization |
-| GET | `/gamma-runs/{id}` | Poll status, progress, heartbeat, errors, warnings và result snapshot |
-| POST | `/gamma-runs/{id}/retry` | Đưa job `FAILED` trở lại queue mà không đổi input/config snapshot |
-| GET | `/gamma-runs/{id}/compare?other_run_id=...` | So sánh result snapshots của hai run cùng organization |
-| GET | `/gamma/queue-metrics` | Kiểm tra backend queue, Redis stream/pending/consumer metrics và số run theo organization |
-
-API không gọi engine trong request. `rt_connect_api.worker` publish các dispatch intent từ
-`gamma_dispatch_outbox`, claim message, lấy lease/fencing token có điều kiện trong PostgreSQL,
-đọc object storage, cập nhật `RUNNING`/heartbeat/progress rồi lưu `COMPLETED` hoặc `FAILED`.
-Mỗi lần thực thi có `gamma_run_attempts`; worker cũ mất lease không được commit. Khi
-`REDIS_URL` được cấu hình, API/dispatcher dùng Redis Stream consumer group; worker dùng
-`XREADGROUP`, reclaim message quá visibility timeout bằng `XAUTOCLAIM`, rồi `XACK` sau khi
-PostgreSQL đã có terminal state. PostgreSQL vẫn là nguồn dữ liệu nghiệp vụ, giữ retry count,
-lease, attempt, heartbeat, result và error snapshot; Redis không phải nguồn dữ liệu duy nhất.
-Khi không có `REDIS_URL`, local worker dùng database polling để giữ môi trường phát triển đơn
-giản. Queue metrics không trả payload bệnh nhân; các bộ đếm stream là operational metrics,
-còn bộ đếm Gamma run trong response được scope theo organization. Implementation hiện dùng
-lease/visibility 120 s, tối đa 3 automatic attempts, exponential backoff có jitter, execution
-deadline 900 s, voxel limit và candidate-evaluation limit từ `Settings`; release manifest phải
-ghi giá trị effective của từng environment và benchmark/failure injection phải chứng minh chúng
-không gây mất job hoặc chạy vô hạn.
-
-Staging phải chứng minh cả hai service API và worker nhận cùng reference `REDIS_URL`, worker
-log khởi động bằng Redis Streams thay vì polling, một run Gamma đi qua queue thật, message
-được acknowledge sau khi hoàn tất, và pending count trở về 0. Nếu Redis không khả dụng, API
-không âm thầm chạy phân tích trong HTTP request: nó trả lỗi queue rõ ràng, lưu trạng thái run
-phù hợp và cho phép retry có kiểm soát.
-
-Engine `gamma-nd-p8.2` nhận profile đã khóa của `gamma.measurement.v1` và DICOM RTDOSE:
-
-- JSON measurement có `data_type=dose` hoặc `PLANAR_DOSE`, dose `GY`/`CGY`, position
-  `mm`, grid 2D hoặc 3D và giá trị inline finite theo row-major shape. `CGY` được
-  chuẩn hóa rõ ràng sang `GY`; engine không đoán đơn vị, không tự đổi shape và không
-  tự đọc `object_key` trong JSON ở slice này.
-- DICOM RTDOSE được đọc pixel data sau khi artifact đã qua metadata validation. Profile
-  chuẩn P8 yêu cầu `DoseUnits=GY`; adapter kiểm tra modality, pixel data, `DoseGridScaling`,
-  `DoseUnits`, `PixelSpacing`,
-  `ImagePositionPatient`, `ImageOrientationPatient`, `NumberOfFrames` và
-  `GridFrameOffsetVector`; chỉ nhận orientation axial IEC-aligned và grid z-spacing
-  đều. JSON measurement có thể khai CGY và được chuyển đổi có provenance; DICOM CGY trực tiếp
-  không phải fixture chuẩn P8 và phải bị chặn hoặc được gắn compatibility profile riêng.
-- Grid 3D dùng thứ tự `(frame/z, row/y, column/x)` với spacing và origin cùng thứ tự.
-  Reference và evaluation phải cùng số chiều, còn configuration `2D`/`3D` phải khớp
-  grid. Measurement JSON và RTDOSE DICOM có thể là hai input của cùng một run.
-- Gamma node search dùng bán kính `max_gamma × DTA`; interpolation `GRID` và
-  multidimensional linear interpolation được snapshot trong configuration. `FULL_ROI` không
-  bỏ điểm thiếu candidate khỏi mẫu số; `OVERLAP_ONLY` phải ghi coverage fraction; gamma vượt
-  max bound là censored và percentile phải mang nhãn không exact.
-
-Kết quả lưu dimensionality, source format, grid summary, map điểm, số điểm
-evaluated/passing/nonpassing/excluded/no-candidate/censored, pass rate, coverage fraction,
-percentile exactness, histogram, warning, configuration, input checksum và engine version.
-Đây là deterministic engineering/golden slice; test local hiện có exhaustive independent node
-oracle và các guard resource/retry, nhưng không thay thế benchmark theo phần cứng hoặc
-commissioning. Gate phát triển, pilot và release theo plan.md v4.22. Coordinate frame/axis order/transform compatibility
-đã được hiện thực ở validator/engine/API trên candidate local,
-crash/ack/dead-letter injection, large workload benchmark và evidence effective schema/release
-trên staging vẫn là điều kiện đóng P8.
-
-### 6.6. Report và trend
-
-| Method | Path | Mục đích |
-| :--- | :--- | :--- |
-| GET | /report-templates | Liệt kê template |
-| POST | /report-templates | Tạo template |
-| POST | /report-templates/{id}/versions | Tạo template version |
-| POST | /analysis-runs/{id}/reports | Tạo report revision |
-| GET | /reports/{id} | Xem report |
-| GET | /reports/{id}/revisions | Xem các revision |
-| GET | /reports/{id}/export | Export report |
-| GET | /trend | Truy vấn trend |
-| GET | /trend/{machine_id} | Trend theo machine |
-| POST | /trend/events | Ghi sự kiện bảo trì/thay đổi |
-
-### 6.7. Biological Toolkit
-
-API target và implementation phải dùng organization-scoped prefix `/api/v1/organizations/{organization_id}/biological`; bảng dưới đây mô tả target toàn bộ, còn route lifecycle P12 đã hiện thực được ghi trong `specification.md` SPEC-P12. Không gọi các target endpoint là available trước khi phase tương ứng có test và evidence.
-
-| Method | Path | Mục đích |
-| :--- | :--- | :--- |
-| GET | /biological/alpha-beta | Tra cứu alpha/beta |
-| POST | /biological/scenarios | Tạo scenario |
-| GET | /biological/scenarios | Tìm scenario |
-| GET | /biological/scenarios/{id} | Xem scenario |
-| POST | /biological/scenarios/{id}/calculations | Chạy calculation |
-| GET | /biological/calculations/{id} | Xem kết quả |
-| POST | /biological/calculations/{id}/charts | Tạo đồ thị |
-| POST | /biological/comparisons | So sánh hai hoặc nhiều course/phác đồ |
-| POST | /biological/re-irradiation | Tạo và tính re-irradiation scenario |
-| POST | /biological/fraction-compensation | Tạo các phương án bù fraction/gián đoạn |
-| POST | /biological/library/validate | Validate-only một entry, không mutation |
-| GET | /biological/library | Tìm/lọc entry theo type/status/context/fractions |
-| POST | /biological/library | Tạo DRAFT/PUBLISHED entry |
-| PATCH | /biological/library/{id} | Sửa DRAFT bằng optimistic revision |
-| GET | /biological/library/{id}/revisions | Lịch sử family version |
-| POST | /biological/library/{id}/clone | Clone sang version/key mới |
-| POST | /biological/library/{id}/publish | Publish entry đã validate |
-| POST | /biological/library/{id}/archive | Archive, giữ history |
-| GET | /biological/library/{id}/compare | So sánh metadata/content |
-| POST | /biological/library/{id}/use | Tạo explicit-use source snapshot |
-| POST | /biological/library/import/validate | Preview import theo từng row |
-| POST | /biological/library/import | Commit row hợp lệ của import |
-| GET | /biological/library/{id}/export | Export JSON/CSV đúng version |
-| POST | /biological/reports | Tạo calculation report độc lập |
-
-### 6.8. API error contract
-
-~~~json
-{
-  "code": "RTDOSE_REQUIRED",
-  "message": "Workflow PSQA Gamma cần RTDOSE.",
-  "correlation_id": "opaque-request-id",
-  "details": [
-    {"field": "body.reference_artifact_id", "message": "Required RTDOSE reference."}
-  ]
-}
-~~~
-
-Envelope phẳng khớp `core/errors.py`. `RTDOSE_REQUIRED`, `COMPARISON_REQUIRED`,
-`GAMMA_WORKFLOW_PROFILE_INVALID` và `GAMMA_QUEUE_UNAVAILABLE` đã có trong P8 API slice;
-engine warning `GAMMA_NO_CANDIDATE_WITHIN_DTA`/`GAMMA_SEARCH_CENSORED` được lưu trong result.
-Các mã còn lại là target và phải được map bằng contract test, không được coi là đã triển khai chỉ vì xuất hiện trong tài liệu (xem specification.md §2.2):
-
-- ORGANIZATION_NOT_FOUND.
-- MACHINE_NOT_FOUND.
-- FOLDER_NOT_FOUND.
-- ARTIFACT_NOT_FOUND.
-- UNSUPPORTED_MODALITY.
-- INVALID_DICOM.
-- GEOMETRY_MISMATCH.
-- UNIT_MISSING.
-- RTDOSE_REQUIRED.
-- COMPARISON_REQUIRED.
-- MEASUREMENT_REQUIRED.
-- DVH_INPUT_REQUIRED.
-- GAMMA_CONFIG_INVALID.
-- GAMMA_WORKFLOW_PROFILE_INVALID.
-- GAMMA_QUEUE_UNAVAILABLE.
-- GAMMA_INPUT_NOT_VALIDATED.
-- GAMMA_ARTIFACT_SCOPE_MISMATCH.
-- BIOLOGICAL_INPUT_INVALID.
-- CALCULATION_FAILED.
-- REPORT_RENDER_FAILED.
-- EXPORT_FAILED.
-- REPORT_EXPORT_PERSISTENCE_FAILED.
-
-P17 hiện đã có các mã engine/API cụ thể sau và phải giữ nguyên khi mở rộng UI hoặc worker: `DVH_INPUT_MANIFEST_REQUIRED`, `DVH_INPUT_NOT_VALIDATED`, `DVH_INPUT_MANIFEST_INVALID`, `DVH_INPUT_SCOPE_MISMATCH`, `DVH_INPUTS_MUST_DIFFER`, `DVH_DOSE_ARTIFACT_INVALID`, `DVH_STRUCTURE_ARTIFACT_INVALID`, `DVH_ANATOMY_ARTIFACT_INVALID`, `DICOM_GEOMETRY_INVALID`, `DICOM_CAPABILITY_UNSUPPORTED`, `DICOM_FRAME_MISMATCH`, `DVH_DOSE_UNITS_UNSUPPORTED`, `DVH_DOSE_VALUES_INVALID`, `DVH_ROI_INVALID`, `CONTOUR_GEOMETRY_INVALID`, `DVH_EMPTY_STRUCTURE`, `DVH_INCOMPLETE_COVERAGE`, `DVH_PARTIAL_COVERAGE`, `DVH_COVERAGE_POLICY_INVALID`, `DVH_METRIC_INVALID`, `DVH_RESOURCE_LIMIT`, `DVH_SOURCE_CHANGED`, `DVH_IDEMPOTENCY_CONFLICT`, `DVH_STORAGE_UNAVAILABLE`, `DVH_EXECUTION_FAILED`, `DVH_PERSISTENCE_FAILED`, `DVH_RUN_NOT_FOUND`, `DVH_LIMIT_BINDING_CONFLICT`, `DVH_LIMIT_OVERRIDE_INVALID`, `DVH_LIMIT_ENTRY_NOT_FOUND`, `DVH_LIMIT_NOT_AVAILABLE`, `DVH_LIMIT_ENTRY_INVALID`, `DVH_PROTOCOL_NOT_FOUND`, `DVH_PROTOCOL_NOT_AVAILABLE`, `DVH_PROTOCOL_RULE_REQUIRED`, `DVH_PROTOCOL_RULE_NOT_FOUND`, `DVH_PROTOCOL_RULE_UNSUPPORTED`, `DVH_PROTOCOL_RULE_INVALID`, `DVH_LIMIT_METRIC_NOT_COMPUTED`, `DVH_LIMIT_METRIC_UNSUPPORTED`, `DVH_LIMIT_UNIT_MISMATCH` và `DVH_LIMIT_DEFINITION_INVALID`. `DVH_DOSE_ONLY_MODE` là warning; CT preview bổ sung warning `CT_RESCALE_DEFAULTED`, `CT_WINDOW_DEFAULTED`, `CT_SLICE_SPACING_DEFAULTED`, `CT_DOSE_NO_OVERLAP`. `QA_CASE_ARCHIVED` và `ORGANIZATION_SCOPE_MISMATCH` là boundary/lifecycle errors dùng chung. Mọi code mới phải có mapping HTTP, field details, UI message, recovery và test ID trong specification/plan.
-
----
-
-## 7. DICOM ingestion và validation
-
-### 7.1. DICOM hỗ trợ
-
-Giai đoạn đầu hỗ trợ các nhóm:
-
-- CT Image.
-- RTDOSE.
-- RTSTRUCT.
-- RTPLAN.
-- RTIMAGE nếu workflow cần.
-- RTRECORD hoặc object delivery chỉ khi được đặc tả riêng.
-
-Mỗi SOP Class được hỗ trợ phải có fixture và validation rule tương ứng.
-
-### 7.2. Nguyên tắc đọc file
-
-- Đọc metadata trước khi đọc pixel data lớn.
-- Xác định Transfer Syntax.
-- Kiểm tra Pixel Data khi workflow cần.
-- Không sửa dataset trong object storage.
-- Khi cần de-identification hoặc chuẩn hóa, tạo artifact dẫn xuất và ghi parent.
-- Không dùng tên file làm định danh chính.
-
-### 7.3. Validation RTDOSE
-
-Tối thiểu kiểm tra:
-
-- Modality là RTDOSE.
-- SOP Instance UID không rỗng.
-- Rows, Columns, Number of Frames hợp lệ.
-- Pixel Spacing hợp lệ.
-- Grid Frame Offset Vector hợp lệ nếu có.
-- Image Position Patient và Image Orientation Patient hợp lệ khi có grid.
-- Dose Grid Scaling hợp lệ.
-- Dose Units được đọc và ghi nhận.
-- Dose Type và Dose Summation Type được ghi nhận.
-- Referenced RTPLAN hoặc RTSTRUCT/Referenced Image được kiểm tra khi có.
-- Giá trị dose sau scaling không chứa giá trị bất hợp lệ ngoài rule.
-
-### 7.4. Validation RTSTRUCT
-
-Tối thiểu kiểm tra:
-
-- Modality là RTSTRUCT.
-- Structure Set ROI Sequence có ROI Number duy nhất.
-- ROI có Referenced Frame of Reference UID.
-- Contour sequence có tọa độ hợp lệ.
-- Referenced Series/Images được truy ra khi cần.
-- ROI name, ROI number và geometry được lưu vào normalized manifest.
-- Structure không được ghép với dose chỉ dựa trên tên ROI.
-
-### 7.5. Validation RTPLAN
-
-Khi workflow dùng RTPLAN, kiểm tra:
-
-- Modality là RTPLAN.
-- Plan UID và referenced fraction/beam group.
-- Beam number, beam name và control point nếu có.
-- Machine/beam device reference.
-- Isocenter và coordinate system.
-- Liên kết với RTDOSE theo UID hoặc explicit user selection.
-- Prescription chỉ được đọc và hiển thị; không được tự sửa.
-
-### 7.6. Liên kết dataset
-
-Hệ thống không tự ghép dataset chỉ vì cùng PatientID hoặc cùng tên file. Việc ghép phải dựa trên:
-
-- UID reference hợp lệ.
-- Frame of Reference phù hợp.
-- User selection rõ ràng.
-- Geometry validation.
-- Workflow requirement.
-
-Nếu có nhiều dataset phù hợp, hiển thị danh sách để user chọn.
-
-### 7.7. Measurement import
-
-Measurement contract phải mô tả:
-
-- schema_version.
-- Dataset id.
-- Data type.
-- Dose unit.
-- Position unit.
-- Grid dimensions.
-- Grid spacing.
-- Origin.
-- Orientation.
-- Values hoặc points.
-- Detector/array.
-- Phantom.
-- Acquisition timestamp.
-- Reference metadata.
-- Source file checksum.
-
-Dữ liệu không có đơn vị, spacing hoặc ý nghĩa cột rõ ràng bị từ chối hoặc yêu cầu bổ sung.
-
----
-
-## 8. Gamma Analysis Engine
-
-### 8.1. Định nghĩa dữ liệu
-
-Mỗi Gamma run có:
-
-- Reference dataset.
-- Evaluation/comparison dataset.
-- Dose difference criterion.
-- Distance-to-agreement criterion.
-- Dose normalization.
-- Dose threshold.
-- Global/local mode.
-- Absolute/relative mode.
-- 2D/3D mode.
-- Per-field/composite mode.
-- ROI/mask.
-- Alignment/shift.
-- Interpolation/resampling.
-- Search distance.
-- Maximum gamma.
-- Engine version.
-- Input checksums.
-
-### 8.2. Contract gamma.measurement.v1
-
-Ví dụ contract kỹ thuật:
-
-~~~json
-{
-  "schema_version": "gamma.measurement.v1",
-  "dataset_id": "measurement-001",
-  "data_type": "PLANAR_DOSE",
-  "units": {
-    "dose": "cGy",
-    "position": "mm"
-  },
-  "grid": {
-    "shape": [128, 128],
-    "spacing_mm": [2.5, 2.5],
-    "origin_mm": [-160.0, -160.0],
-    "orientation": "IEC_XY",
-    "values_order": "row-major"
-  },
-  "coordinate_frame": {
-    "basis": "IEC_PHANTOM",
-    "frame_id": "example-phantom-2026-01",
-    "axis_order": ["y", "x"],
-    "transform_to_reference": {
-      "direction": "SOURCE_TO_REFERENCE",
-      "units": "mm",
-      "matrix": [
-        [1, 0, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, 1, 0],
-        [0, 0, 0, 1]
-      ],
-      "source": {
-        "type": "phantom-setup",
-        "version": "setup-v1",
-        "sha256": "<64-char-hex>"
-      }
-    }
-  },
-  "values": {
-    "encoding": "float32",
-    "object_key": "measurements/measurement-001.npy"
-  },
-  "acquisition": {
-    "detector": "example-array",
-    "phantom": "example-phantom",
-    "measured_at": "2026-01-01T00:00:00Z"
-  },
-  "source": {
-    "filename": "measurement.json",
-    "sha256": "..."
-  }
-}
-~~~
-
-Ví dụ object_key phía trên là thiết kế mục tiêu, không phải profile được adapter hiện tại hỗ trợ. Values lớn chỉ được trỏ tới managed artifact đã kiểm organization/checksum; không đọc arbitrary object_key từ input. Contract phải có schema validator và fixture.
-
-Adapter 2D ban đầu là snapshot lịch sử. Code `gamma-nd-p8.2` đã mở rộng inline 2D/3D và RTDOSE như mô tả §6.5. Profile measurement hiện hành yêu cầu `coordinate_frame` explicit: `PATIENT_LPS` dùng `frame_id`/`frame_of_reference_uid` và axis order canonical; `IEC_PHANTOM` dùng frame ID của phantom/setup; cả hai đều cần transform `SOURCE_TO_REFERENCE` bằng ma trận finite 4×4 và provenance type/version/SHA-256. RTDOSE DICOM lấy patient frame từ `FrameOfReferenceUID` và native axial geometry đã validated. API preflight so sánh basis, frame ID, axis order và transform compatibility trước enqueue; DICOM native identity tương thích với measurement identity explicit cùng frame. Capability hiện tại chỉ thực thi identity transform; translation/rigid/oblique/non-uniform adapter phải được version hóa và test riêng, nếu chưa có thì trả lỗi thay vì tự căn chỉnh. Cặp JSON legacy chỉ còn compatibility cho ENGINE_TEST nội bộ, không dùng để trộn với DICOM hoặc input explicit trong PSQA. Profile production, DICOM chuẩn, denominator/search và oracle được khóa ở specification.md §3.4/§5; các gap P8 vẫn phải được kiểm thử trước đóng phase.
-
-### 8.3. Pipeline
-
-~~~text
-Load input
-  -> validate contract and DICOM
-  -> resolve reference/evaluation roles
-  -> normalize units
-  -> validate geometry
-  -> apply explicit alignment/resampling
-  -> calculate gamma
-  -> calculate summary metrics
-  -> generate map/histogram
-  -> persist result and provenance
-~~~
-
-### 8.4. Kết quả Gamma
-
-Tối thiểu lưu:
-
-- Pass rate.
-- Number of valid points.
-- Number of points passing.
-- Number of points failing.
-- Mean gamma.
-- Maximum gamma hoặc capped maximum.
-- Percentiles.
-- Dose cutoff.
-- Gamma map.
-- Histogram.
-- Reference/evaluation summary.
-- Configuration snapshot.
-- Input checksums.
-- Warnings.
-- Execution duration.
-- Engine version.
-- Result status.
-
-### 8.5. Điều kiện không được tính
-
-- Thiếu RTDOSE khi workflow yêu cầu RTDOSE.
-- Thiếu comparison dataset.
-- Thiếu measurement contract.
-- Dose unit không xác định.
-- Geometry không xác định.
-- Array shape không phù hợp.
-- Cấu hình có criterion không dương.
-- Không thể xác định reference/evaluation role.
-- Dữ liệu có lỗi không thể xử lý.
-
-### 8.6. Tính tái lập
-
-Cùng một input checksum, configuration snapshot và engine version phải tạo kết quả tương đương trong sai số số học đã công bố. Random subset không dùng cho kết quả clinical summary mặc định; nếu có dùng cho preview, phải ghi rõ là preview và lưu random seed.
-
----
-
-## 9. DVH và Plan Review
-
-### 9.1. Input
-
-DVH review yêu cầu:
-
-- RTDOSE.
-- RTSTRUCT.
-- Liên kết structure–dose hợp lệ.
-- Frame of Reference phù hợp hoặc transform rõ ràng.
-- Dose unit và scaling hợp lệ.
-
-CT chỉ bắt buộc khi cần hiển thị dose trên anatomy hoặc kiểm tra trực quan.
-
-### 9.2. Pipeline DVH
-
-~~~text
-Read RTDOSE grid
-  -> read RTSTRUCT contours
-  -> resolve Frame of Reference
-  -> rasterize structure mask
-  -> resample dose only with explicit method
-  -> calculate voxel dose distribution
-  -> build cumulative/differential DVH
-  -> calculate requested metrics
-  -> compare protocol rules
-  -> save metric + plot + provenance
-~~~
-
-### 9.3. Metric hỗ trợ
-
-Giai đoạn đầu có thể hỗ trợ:
-
-- Dmin.
-- Dmax.
-- Dmean.
-- Dmedian.
-- D2, D5, D50, D95, D98.
-- Vx.
-- Volume.
-- Integral dose nếu được đặc tả.
-- Homogeneity index nếu protocol định nghĩa.
-- Conformity index nếu protocol định nghĩa.
-
-Mỗi metric phải có định nghĩa, percentile convention, interpolation method và unit.
-
-### 9.4. Structure mapping
-
-- Ưu tiên ROI Number và Referenced Frame of Reference.
-- ROI name chỉ dùng làm label hiển thị.
-- Mapping thủ công được lưu trong configuration snapshot.
-- Nếu ROI không map được, trả `DVH_ROI_INVALID`, `DVH_STRUCTURE_ARTIFACT_INVALID` hoặc `DVH_EMPTY_STRUCTURE` tùy tình trạng; không dùng `ROIName` thay cho ROINumber.
-- Không tự gộp hai ROI cùng tên nhưng khác structure set.
-
-### 9.5. P17 implementation contract — current code
-
-P17 hiện được hiện thực bởi bốn lớp tách biệt, để phần số học không phụ thuộc HTTP hay database và việc gắn giới hạn không làm thay đổi engine thuần:
-
-| Lớp | Thành phần | Trách nhiệm |
-| :--- | :--- | :--- |
-| Domain engine | `apps/api/src/rt_connect_api/services/dose_dvh_engine.py` | Đọc RTDOSE/RTSTRUCT, giải affine patient LPS, rasterize ROI, tính coverage/metrics/curve/preview và hash kết quả. Không biết organization, auth hay storage. |
-| Limit adapter | `apps/api/src/rt_connect_api/services/dvh_limit_adapter.py` | Resolve đúng một P16 `DOSE_LIMIT` hoặc P11 rule `ACTIVE` theo organization; validate override/metric/unit; tạo source/effective snapshot và tính actual/limit/margin. Không tự search, rank hoặc auto-apply. |
-| API/persistence | `apps/api/src/rt_connect_api/api/dvh.py`, `DVHAnalysisRun`, migration `20260908_0017_dvh_analysis.py` | Resolve scope trước query, kiểm artifact/manifest/checksum, tải object, gọi engine, idempotency, audit, snapshot và export. |
-| CT preview/web | `create_ct_preview`, `GET .../dvh/ct-preview`, `apps/web/src/pages/DVHPage.tsx` | Đọc CT bounded single-file/multi-frame, rescale HU, window/level, chọn frame, map dose/ROI bằng patient LPS nearest-neighbor, vẽ grayscale/overlay/crosshair. Read-only, không tạo DVH run. |
-| Report integration/web | `apps/api/src/rt_connect_api/api/reports.py`, `apps/web/src/pages/ReportBuilderPage.tsx`, route `/app/qa/cases/:caseId/dvh` | DVH route chọn input/ROI/policy, validate-preview, save, hiển thị metric/curve/dose-native mask/CT preview/history/provenance và JSON/CSV; Report Builder chọn run DVH theo case và lưu source snapshot. Route DVH không nằm trong global sidebar. |
-
-**Engine identity:** `visual-dose.dvh` / `p17-dvh-1.1.0`. Bản `1.1.0` pin volume-weighted cumulative-DVH interpolation cho `D(x)` và phải được lưu trong mọi result snapshot; không đọc lại run cũ bằng engine mới rồi ghi đè kết quả cũ.
-
-#### 9.5.1. Input resolution và boundary
-
-1. `organization_id` trong URL phải khớp membership của JWT; `case_id` phải thuộc organization và chưa archive.
-2. Artifact phải đồng thời thuộc organization/case, `artifact_type=DICOM`, đúng modality (`RTDOSE`, `RTSTRUCT`, tùy chọn `CT`) và `data_status=VALID`.
-3. Mỗi artifact phải có `InputManifest` mới nhất với `validation_summary.result=VALID` và checksum 64 ký tự hex thường. Trước khi engine đọc, bytes tải từ object storage được hash lại và phải khớp cả `Artifact.sha256` lẫn `InputManifest.checksum_at_use`.
-4. Không dùng global artifact lookup, filename, ROIName, dữ liệu do browser tự tính hoặc database pointer “latest” làm authority cho một run.
-
-#### 9.5.2. DICOM geometry algorithm
-
-- RTDOSE pixel array được đổi sang Gy bằng `pixel_array * DoseGridScaling`; chỉ chấp nhận `DoseUnits=GY`, pixel finite và không âm.
-- `ImageOrientationPatient` gồm direction của columns trước, direction của rows sau. `PixelSpacing` giữ thứ tự `(row_spacing, column_spacing)`. Normal là tích có hướng `row × column`; điểm contour patient LPS được chiếu về frame/row/column theo affine này.
-- `GridFrameOffsetVector` được chuẩn hóa thành một vector kể cả trường hợp single-frame pydicom trả scalar. Slice thickness lấy metadata hợp lệ hoặc request override dương cho single-frame; nhiều frame phải có spacing/thickness hợp lệ.
-- ROI contour được chọn bằng `ROINumber`; polygon kín rasterize trên frame gần z-offset nhất. Contour `CLOSED_PLANAR_XOR` và hole/disjoint dùng parity; không phụ thuộc contour winding. Contour ngoài grid được đếm để áp dụng coverage policy, không silently clip thành zero dose.
-- Voxel volume dùng `row_spacing × column_spacing × slice_thickness / 1000` cc. `Dmean` là weighted average; `D(x)` gom các dose quan sát bằng nhau, sắp dose giảm dần, cộng dồn `voxel_volume_cc` và nội suy tuyến tính giữa hai điểm cumulative-volume kề nhau; `D0=Dmax`, `D100=Dmin`, ngoài khoảng quan sát không ngoại suy. `V(x)` cộng volume của voxel có dose `>= x` và trả cả cc/%. Quy ước này phải nằm trong engine version/result snapshot.
-
-#### 9.5.2a. CT preview và patient-LPS overlay
-
-CT preview dùng chung dose loader/geometry của P17 nhưng là operation riêng, không đưa pixel CT vào phép tính DVH:
-
-1. `load_ct_volume()` chỉ nhận CT DICOM single-file hoặc multi-frame có `Modality=CT`, top-level `ImagePositionPatient`/`ImageOrientationPatient`/`PixelSpacing`, frame offsets tăng dần, `SamplesPerPixel=1` và photometric `MONOCHROME1` hoặc `MONOCHROME2`. `CTGeometry` giữ shape `(frames, rows, columns)`, direction cosines, origin, spacing, offsets, thickness, Frame UID và photometric.
-2. Pixel array được giới hạn bởi `Settings.dvh_max_ct_pixels` (`DVH_MAX_CT_PIXELS`, mặc định 8,000,000). `create_ct_preview()` giới hạn số pixel output bởi `Settings.dvh_max_ct_preview_pixels` (`DVH_MAX_CT_PREVIEW_PIXELS`, mặc định 65,536; API cho phép 256–262,144 nhưng không được vượt cấu hình). Vượt ngưỡng trả `DVH_RESOURCE_LIMIT` trước khi cấp output lớn.
-3. Giá trị hiển thị là HU: `stored × RescaleSlope + RescaleIntercept`. Slope/intercept thiếu hoàn toàn có default `1/0` kèm warning `CT_RESCALE_DEFAULTED`; field sai kiểu, non-finite hoặc slope bằng 0 là lỗi. Thiếu cả window center/width dùng percentile 1–99 cho display và warning `CT_WINDOW_DEFAULTED`; width không dương là lỗi. Các default này chỉ dành cho preview, không được ghi ngược thành metadata DICOM.
-4. `_grid_points()` tạo patient-LPS point cho từng pixel output của lát `frame_index`; `DoseGeometry.world_to_continuous_indices()` map point về dose continuous `(frame,row,column,normal)`. Dose và ROI dùng nearest-neighbor với kiểm tra bounds; pixel ngoài dose là `null/false`, không clip và không gán 0.
-5. `registration` luôn ghi `mode=SHARED_FRAME_OF_REFERENCE`, `patient_coordinate_system=LPS`, `overlay_algorithm=NEAREST_NEIGHBOR_IN_PATIENT_LPS`, source/target Frame UID, selected dose frame, mapping matrix và crosshair từ tâm dose grid. Đây là rigid shared-frame mapping, không phải deformable registration, image registration tối ưu hay dose accumulation.
-6. `CT_PREVIEW_SCHEMA_VERSION=visual-dose-ct-preview.v1`, `CT_PREVIEW_ENGINE_KEY=visual-dose.ct-preview` và `CT_PREVIEW_ENGINE_VERSION=p17-ct-preview-1.0.0` được trả trong response. `result_sha256` hash canonical JSON gồm CT display, registration, overlay, ROI và warnings. Endpoint không insert DB, không enqueue worker, không tạo audit mutation và không được dùng làm source để tính DVH.
-
-API adapter tải dose/CT/structure bằng `_download_resolved_artifact()`, kiểm `Artifact.sha256` và `InputManifest.checksum_at_use` trước khi gọi engine. Nếu structure/ROI được gửi, hai tham số phải cùng tồn tại; nếu không, `DVH_ROI_INVALID`. CT cùng Frame UID là điều kiện bắt buộc; không có overlap trả `CT_DOSE_NO_OVERLAP` warning với `overlay_available=false`, vẫn cho hiển thị CT grayscale.
-
-#### 9.5.3. Persistence và API sequence
-
-```text
-JWT -> resolve membership/org -> resolve case
-    -> resolve VALID artifacts/manifests
-    -> download + checksum verify
-    -> engine preflight/calculation
-    -> validate response OR transaction(run + audit)
-    -> read snapshot for history/export
-```
-
-`POST .../dvh/validate` không mutation. `POST .../dvh/runs` tính xong mới flush `DVHAnalysisRun` và audit; unique `(organization_id, idempotency_key)` cùng request fingerprint bảo vệ double-click/retry. Nếu race commit gặp unique conflict, API query key và trả run cùng fingerprint với HTTP 200; fingerprint khác trả HTTP 409. Export JSON/CSV lấy dữ liệu đã lưu, không rerun engine.
-
-`DVHAnalysisRun` lưu `organization_id`, `qa_case_id`, dose/structure/CT artifact IDs, `roi_number`, idempotency key/fingerprint, engine key/version, status, input/result/warning/error snapshots, actor và timestamps. Snapshot phải giữ source artifact/manifest IDs, filename/type/modality/byte size/SHA, selected metadata, validation summary, normalized request, geometry, coverage, metrics, curve, preview và result SHA. Khi user chọn limit source, `input_snapshot.limit_binding` pin source type/id, version/status/hash, effective values, override, warnings và binding hash; `result_snapshot.limit_evaluation` pin actual/limit/margin/rule status và giữ `engine_result_sha256` trước lớp binding.
-
-#### 9.5.4. Explicit P11/P16 limit binding
-
-`resolve_dvh_limit_binding()` là boundary duy nhất nối P17 với P11/P16 trong candidate hiện tại:
-
-1. Không có `limit_entry_id` và `protocol_version_id`: chạy pure DVH, không có comparison evaluation. `protocol_metric_key` hoặc `limit_override` đi kèm không source là lỗi.
-2. Có `limit_entry_id`: lookup bằng `(organization_id, id)`, yêu cầu `entry_type=DOSE_LIMIT`, không archived; chỉ override whitelist được nhận và phải qua validator P16. Draft/reference chưa available tạo warning được snapshot, không tự chặn nếu definition vẫn hợp lệ.
-3. Có `protocol_version_id`: lookup bằng `(organization_id, id)`, yêu cầu `status=ACTIVE`, `protocol_metric_key` bắt buộc và rule được lookup trong cùng organization/protocol. Chỉ `MAX`, `MIN`, `RANGE`, `TARGET` có limit rõ ràng được evaluate; protocol không nhận override tự do.
-4. Metric mapping: DMIN/DMEAN/DMAX đọc scalar; `Dxx` đọc key trong `Dx_gy`; `Vx` đọc `Vx_percent` hoặc `Vx_cc` theo unit và kiểm tra `metric_parameter`; Dxcc chưa được bật. Actual/limit unit mismatch hoặc metric không có trong request là lỗi rõ ràng.
-5. Evaluation dùng margin có dấu: MAX=`limit-actual`, MIN=`actual-limit`, RANGE=`min(actual-lower,upper-actual)`, TARGET=`-abs(actual-target)`. `rule_status` là PASS/FAIL của rule; source warning làm display `status=REVIEW_REQUIRED`, không làm mất rule status. `auto_applied=false` luôn được lưu.
-
-`Report Builder` cho phép `source_type=DVH` với `source_id` là một run đã lưu. API report lookup phải có `organization_id`; payload source snapshot chứa run/input/result/warning/error snapshot và engine/fingerprint. Report revision không rerun DVH, không đọc latest pointer và không làm thay đổi run.
-
-#### 9.5.5. Capability boundary và phần chưa hoàn tất
-
-- P17 current slice là synchronous, physical-dose, dose-native grid; CT preview cũng synchronous/read-only. Đã có explicit P11/P16 actual/limit/margin adapter, DVH report source và CT pixel renderer/crosshair/LPS registration payload ở local candidate; local Docker workload verifier hiện có policy `1 CPU/768 MiB`, process peak RSS và API responsiveness evidence; chưa có worker queue cho DVH/CT workload lớn, deformable registration, CT series aggregation hoặc staging evidence đầy đủ cho binding/report/CT.
-- CT preview chỉ là bounded visual overlay trên shared Frame of Reference. Không suy ra image registration thành công từ UID giống nhau, không dùng default window/rescale làm clinical metadata, không cho phép output vượt resource policy và không biến overlay warning thành QA result.
-- P17 không tính deformable cumulative dose, không tự cộng dose giữa course, không sửa prescription/RTPLAN/TPS/PACS và không tự tạo QA PASS.
-- Benchmark local P17-W06 dùng `scripts/benchmark-p17-dvh.py` với dữ liệu DICOM tổng hợp tạm thời, mặc định `64×128×128` (`1,048,576` voxel), bốn mức dose lặp lại và ROI phủ toàn grid. Script tự xóa file tạm, không ghi database/object/queue, đo elapsed time, `tracemalloc` peak và process peak RSS bằng `resource.getrusage(RUSAGE_SELF).ru_maxrss` khi runtime hỗ trợ. `docker-compose.yml` pin API local ở `1 CPU/768 MiB`; `scripts/verify-p17-docker-workload.ps1` kiểm HostConfig, chạy 2 job đồng thời × 3 lần và polling `/health`. Evidence `docs/evidence/p17-local-docker-workload-20260910.json` đạt `LOCAL_RESOURCE_GATE_PASS`: 6/6 process RSS, max `127,086,592 bytes`, max elapsed `2.0811 s`, p95 health `166.016 ms`, `/health=ok`, `/ready=ready`, schema `20260909_0019`, oracle `Dmean=2.5 Gy`, `Dmin=1 Gy`, `Dmax=4 Gy`. Cgroup v1 peak `385,990,656 bytes` kể từ lúc container start và `docker stats` sample được lưu để đối chiếu nhưng không dùng làm peak RSS. Đây là local resource gate; worker/service capacity Railway, fault/retry, staging workload và P8 Gamma large-workload vẫn phải có evidence riêng trước khi đóng phase.
-- Independent known-answer support: `scripts/verify-p17-independent-dvh-oracle.py` không gọi các helper metric/geometry của engine để tính expected; nó pin cấu trúc synthetic, bốn voxel, volume và cumulative-DVH interpolation bằng phép tính riêng, rồi đối chiếu engine. Evidence `docs/evidence/p17-independent-dvh-oracle-20260909.json` đạt 13/13 comparisons; đây là `LOCAL_INDEPENDENT_ORACLE_VERIFIED` cho fixture, không phải vendor/reference oracle cho dữ liệu lâm sàng tùy ý.
-- Các phần mở phải có package/test/evidence riêng ở P17/P18; không dùng ảnh Stitch hoặc `/ready` 200 làm bằng chứng thay thế.
-
----
-
-## 10. Machine QA và Trend
-
-### 10.1. Machine QA
-
-Machine QA cho phép:
-
-- Tạo checklist theo Daily/Monthly/Annual/Custom.
-- Nhập giá trị đo.
-- Gắn unit.
-- Gắn baseline.
-- Gắn tolerance/action level.
-- Tính margin.
-- Ghi chú và artifact liên quan.
-- Đưa metric hợp lệ vào trend.
-
-### 10.1.1. Evaluate revision và single-writer finalize
-
-`MachineQARun.measurement_revision` là số phiên bản của measurement draft, bắt đầu từ
-`0` và tăng đúng một lần cho mỗi PATCH được commit. `PATCH /measurements` bắt buộc
-`expected_revision` ở caller chính; revision lệch trả 409 và không thay đổi JSON measurement.
-
-`POST /evaluate` nhận body tùy chọn `expected_revision`. Khi có giá trị, API chỉ finalize
-run nếu run còn `DRAFT` và revision khớp; body rỗng vẫn được chấp nhận cho tương thích
-ngược, nhưng web client phải truyền revision của response autosave. Trên PostgreSQL,
-service tải run bằng `SELECT ... FOR UPDATE` trước khi đọc case/protocol và gọi evaluator.
-Transaction ghi status, error/result snapshot và các `TrendPoint` numeric cùng nhau. Nếu
-request khác đã finalize run, request đó đọc trạng thái terminal và trả đúng snapshot cũ;
-không chạy evaluator lần hai, không tạo point thứ hai. `COMPLETED` là immutable; thay đổi
-measurement chỉ đi qua `rerun`, tạo run ID và source lineage mới.
-
-P7 local contract tests phải bao phủ: caller cũ không body; stale expected revision; autosave
-thành công rồi evaluate bằng revision mới; double-submit/replay; ba trend metric sau replay
-vẫn có đúng ba point; và seed protocol lặp lại không tạo protocol version/rule mới.
-
-### 10.2. Rule engine
-
-Rule engine cần hỗ trợ:
-
-- value <= limit.
-- value >= limit.
-- Khoảng min–max.
-- Sai lệch tuyệt đối so với baseline.
-- Sai lệch phần trăm so với baseline.
-- Nhiều metric trong một test.
-- Rule không áp dụng.
-- Metric cần user review.
-
-Rule snapshot được lưu trong Analysis Run và Report Revision.
-
-### 10.3. Trend normalization
-
-Trend key/projection hiện tại gồm:
-
-- machine_id.
-- qa_type.
-- qa_cycle.
-- metric_key.
-- unit.
-- energy.
-- detector.
-- phantom.
-- beam_quality.
-- acquisition_mode.
-- protocol_key.
-- protocol_version.
-- measured_at.
-
-Projection lưu `context_snapshot` cùng `organization_id`, `source_run_id`, `qa_case_id`, value, unit, status và measured_at. Unique constraint hiện tại là organization + source run + metric; đây là read model có thể rebuild từ Machine QA result snapshot, không phải source of truth. Nếu unit/context khác nhau, compatibility signature tạo series riêng; không vẽ chung và không tự quy đổi.
-
-API P10 hiện triển khai các surface sau: trend raw/day/week; filter machine/metric/unit/timezone/context; baseline list/create/update có version; maintenance event list/create/update có revision và revision history; rebuild projection; source drill-down; CSV/JSON export. Khoảng thời gian API là `[from, to)`, bucket day/week theo IANA timezone, còn timestamp/source ID canonical theo UTC.
-
-#### 10.3.1. Trend query budget và aggregate lineage
-
-API lấy `Settings.trend_max_raw_points` từ `TREND_MAX_RAW_POINTS` (mặc định `10_000`) và `Settings.trend_max_aggregate_source_points` từ `TREND_MAX_AGGREGATE_SOURCE_POINTS` (mặc định `100_000`). Trước khi materialize các bản ghi ORM, `_count_source_rows()` thực hiện `COUNT` với cùng organization, machine, metric, unit, khoảng thời gian và các filter tương thích. `raw` dùng raw budget; `day/week` dùng aggregate budget. Vượt giới hạn trả HTTP `413/TREND_QUERY_TOO_LARGE`, details gồm `aggregate`, `matched_points`, `max_points`; không trả partial response và không tạo side effect.
-
-Sau count, `_load_source_rows()` vẫn là authority cho context matcher và duplicate-source invariant, rồi kiểm tra lần hai số rows đã match để bảo vệ các row legacy không biểu diễn đầy đủ trong JSON predicate. Aggregate có source count lớn hơn raw budget thêm warning `TREND_AGGREGATED_LARGE_QUERY`; không downsample im lặng, không thay missing bằng zero và không biến bucket thành một point không có lineage.
-
-CSV raw giữ record `POINT` và các cột point hiện có. CSV day/week thêm record `BUCKET` với thời gian bucket, count, mean, minimum, maximum, first/last, status counts và JSON-encoded toàn bộ source point/run IDs. JSON export giữ nguyên `TrendResponse`; `total_points` là số source points trước aggregation, còn `buckets` là read model có thể dùng để drill-down. Mọi giới hạn phải được ghi trong environment inventory/release manifest và được benchmark lại khi thay đổi.
-
-Baseline chọn theo machine/metric/unit/context và effective interval của từng point. `delta = value - baseline`; outlier dùng action level nếu có, nếu không dùng tolerance. Thiếu baseline chỉ tạo warning. Aggregate luôn giữ count, mean, min, max, first/last, status counts, source point IDs và source run IDs để không mất khả năng điều tra.
-
-### 10.4. Maintenance event
-
-Maintenance event gồm:
-
-- machine_id.
-- event_type.
-- title.
-- started_at/ended_at.
-- notes.
-- metadata snapshot.
-- revision_number.
-- status.
-- created_by.
-- append-only revision snapshots.
-
-Trend chỉ hiển thị sự kiện; không tự suy luận nguyên nhân. Update phải có `expected_revision`; conflict không overwrite bản hiện tại. Marker không sửa `TrendPoint`, `MachineQARun` hoặc report.
-
----
-
-## 11. Report Builder và rendering
-
-### 11.1. Kiến trúc report
-
-Report gồm:
-
-1. Data snapshot.
-2. Template version.
-3. Block configuration.
-4. Render context.
-5. Output artifacts.
-6. Provenance manifest.
-
-### 11.2. Full customization
-
-User được tùy chỉnh:
-
-- Thêm, bớt, ẩn block.
-- Đổi tên title/label.
-- Chọn metric.
-- Chọn biểu đồ.
-- Đổi thứ tự.
-- Đổi khoảng thời gian trend.
-- Thêm nhận xét.
-- Chọn điều kiện hiển thị.
-- Tạo nhiều template theo mục đích.
-
-Hệ thống không áp đặt một mẫu report bắt buộc. Nội dung do user ẩn hoặc thay đổi vẫn được giữ trong snapshot của revision và lịch sử.
-
-### 11.3. Block types
-
-Block registry tối thiểu:
-
-- OrganizationInfo.
-- SiteInfo.
-- MachineInfo.
-- QACaseInfo.
-- InputManifest.
-- ValidationSummary.
-- MetricTable.
-- WarningTable.
-- GammaMap.
-- GammaHistogram.
-- DoseProfile.
-- DVHPlot.
-- TrendChart.
-- ComparisonTable.
-- BiologicalCalculationSummary.
-- UserNotes.
-- RevisionHistory.
-- ProvenanceSummary.
-
-### 11.4. Rendering
-
-- Render HTML trước khi render PDF.
-- Dùng font và locale được cấu hình.
-- Hình ảnh plot lưu riêng và có checksum.
-- PDF/PNG render lỗi phải trả REPORT_RENDER_FAILED.
-- Output lưu engine/render version.
-- Tái render từ snapshot không đọc dữ liệu đang thay đổi.
-- Export CSV/JSON dùng schema version rõ ràng.
-
-### 11.5. Export object và metadata transaction
-
-`ExportJob` là metadata durable; bytes render nằm trong object storage và không được
-coi là export hoàn tất nếu chưa có row `ExportJob` với `status=COMPLETED`, object key,
-SHA-256, byte size, media type và warning snapshot. Flow chuẩn của `POST
-/reports/{report_key}/revisions/{revision_id}/exports` là:
-
-1. Resolve `organization_id`, revision và idempotency fingerprint; cùng key khác
-   fingerprint trả `EXPORT_IDEMPOTENCY_CONFLICT` trước khi ghi object.
-2. Tạo hoặc chuyển job về `QUEUED`, commit claim trước khi render để retry có
-   identity bền vững.
-3. Render từ immutable revision snapshot, ghi object bằng key chứa organization,
-   report, revision, job ID và extension; không ghi đè export của job khác.
-4. Gán `COMPLETED` cùng hash/size/media/warnings rồi commit metadata. Chỉ sau commit
-   thành công mới trả `201`/`200` và signed URL.
-5. Nếu commit metadata thất bại sau khi object đã ghi, rollback session và gọi
-   `ObjectStorage.delete_object` đúng exact key. Compensation thành công trả
-   `REPORT_EXPORT_PERSISTENCE_FAILED` HTTP 503 với hướng dẫn retry; compensation
-   thất bại vẫn trả HTTP 503 cùng code nhưng phải gắn signal `reconciliation`. Không
-   trả `COMPLETED`, không phát signed URL và không xóa theo prefix/filename.
-
-Lỗi ghi object/bucket trước bước 4 dùng `REPORT_STORAGE_UNAVAILABLE`; lỗi render dùng
-`REPORT_RENDER_FAILED` và giữ job `FAILED` nếu transition đó commit được. Export cũ,
-report revision và analysis result không bị sửa khi một lần export mới thất bại.
-Provider inventory, orphan reconciliation, retention và restore drill được kiểm ở
-P18/P20; local in-memory double không thay thế provider/network evidence.
-
----
-
-## 12. Biological Toolkit
-
-### 12.1. Bounded context
-
-Biological Toolkit có database namespace hoặc logical module riêng:
-
-- Không có foreign key bắt buộc tới QA case.
-- Không tự truy cập patient list.
-- Không tự lấy RT Plan.
-- User chủ động upload hoặc nhập dataset.
-- Biological Report là report độc lập.
-- Có thể dùng chung object storage và audit infrastructure.
-
-### 12.2. BED/EQD2 engine
-
-Input:
-
-- Tổng liều D.
-- Số fraction n.
-- Liều mỗi fraction d.
-- Alpha/beta.
-- Đơn vị.
-- Tissue label.
-- Model name.
-- Source.
-- Assumptions.
-
-Công thức LQ cơ bản:
-
-~~~text
-BED = n*d*(1 + d/(alpha/beta))
-EQD2 = BED/(1 + 2/(alpha/beta))
-~~~
-
-Validation:
-
-- n > 0.
-- d >= 0.
-- D >= 0.
-- Alpha/beta > 0.
-- D phải nhất quán với n*d nếu user nhập cả hai.
-- Cảnh báo nếu input dùng fraction rất lớn hoặc model không phù hợp với scenario được chọn.
-- Không tự chọn alpha/beta mặc định khi user chưa xác nhận context.
-
-### 12.3. Đồ thị theo tổng liều D
-
-Tham số:
-
-- D min/max/step.
-- n.
-- alpha/beta list.
-- tissue/target/OAR label.
-- BED hoặc EQD2.
-- Unit.
-- Model.
-- Source.
-
-Output:
-
-- Line chart.
-- Data table.
-- Marker theo D user chọn.
-- Legend alpha/beta.
-- Export PNG/SVG/CSV.
-- Calculation snapshot.
-
-### 12.4. So sánh phác đồ
-
-Mỗi course:
-
-- Tên.
-- Bệnh lý/scenario.
-- D.
-- n.
-- d.
-- Overall treatment time nếu có.
-- Tissue.
-- Alpha/beta.
-- Source.
-- Assumption.
-
-Output:
-
-- BED/EQD2 từng course.
-- Chênh lệch tuyệt đối.
-- Chênh lệch phần trăm.
-- Bảng.
-- Đồ thị.
-- Warnings về khác biệt model hoặc context.
-
-### 12.5. Bảng giới hạn liều
-
-DoseLimitEntry gồm:
-
-- Disease.
-- Anatomy.
-- Structure/OAR.
-- Technique.
-- Fractionation.
-- Metric.
-- Limit.
-- Unit.
-- Context.
-- Source type.
-- Citation.
-- Evidence level.
-- Applicability.
-- Notes.
-- Updated date.
-
-Bảng chỉ phục vụ tra cứu và tính toán, không biến thành prescription.
-
-### 12.6. Protocol điều trị và knowledge library
-
-KnowledgeEntry có:
-
-- Title.
-- Disease.
-- Anatomy.
-- Topic.
-- Summary.
-- Formula.
-- Assumptions.
-- Reference.
-- DOI/URL.
-- Evidence level.
-- Applicability limits.
-- User note.
-- Version.
-
-TreatmentProtocolReference có:
-
-- Tên phác đồ.
-- Bệnh lý.
-- Vị trí.
-- Kỹ thuật.
-- Tổng liều.
-- Số fraction.
-- Target/OAR notes.
-- Planning notes.
-- Dose constraints.
-- BED/EQD2 reference.
-- Source.
-- Applicability limit.
-
-Các entry chỉ là kiến thức và công cụ tính toán, không tự link với ca lâm sàng.
-
-P16 hiện thực các loại entry trên bằng `biological_library_entries` trong một
-organization-scoped namespace. `entry_type` phân biệt `DOSE_LIMIT`,
-`TREATMENT_PROTOCOL`, `KNOWLEDGE` và `ALPHA_BETA`; `version_number`,
-`source_entry_id`, `revision`, `source_type`, `reference_status`,
-`applicability`, `citation` và `content_sha256` tạo lineage. API/UI không dùng
-những entry này để tự động prefill hay thay đổi một calculation; việc sử dụng
-phải qua explicit-use snapshot theo SPEC-P16.
-
-### 12.7. Re-irradiation calculator
-
-Input nhiều course:
-
-- Course name.
-- Treatment date/range.
-- Total dose.
-- Fractions.
-- Dose per fraction.
-- Tissue/OAR/target.
-- Alpha/beta.
-- Source.
-- Recovery assumption.
-- Time interval.
-- Spatial dataset nếu user chủ động cung cấp.
-- Registration/transform note nếu có.
-
-Output:
-
-- BED/EQD2 từng course.
-- Cumulative scalar BED/EQD2.
-- Scenario comparison.
-- Recovery/no-recovery comparison.
-- Graph theo course và thời gian.
-- Assumption table.
-- Warnings.
-- Calculation report độc lập.
-
-Spatial accumulation:
-
-- Chỉ thực hiện khi geometry và registration đáp ứng contract.
-- Không cộng dose theo không gian chỉ từ tên structure hoặc PatientID.
-- Nếu thiếu geometry, chỉ cho scalar calculation và hiển thị rõ giới hạn.
-- Không tự lấy dữ liệu từ QA case hoặc treatment record.
-
-### 12.8. Bù fraction
-
-Input:
-
-- Lịch ban đầu.
-- Số fraction đã thực hiện.
-- Liều đã thực hiện.
-- Fraction bị thiếu.
-- Fraction còn lại.
-- Khoảng gián đoạn.
-- Overall treatment time.
-- Các phương án user muốn so sánh.
-
-Output là scenario/proposal tính toán, không phải prescription.
-
----
-
-## 13. Provenance và audit
-
-### 13.1. Lineage bắt buộc
-
-~~~text
-Report Revision
-  -> Report Template Version
-  -> Analysis Run / Biological Calculation Run
-  -> Analysis Configuration
-  -> Protocol Version hoặc Model
-  -> Input Manifest
-  -> Artifact checksum
-  -> User + timestamp
-  -> Engine version
-~~~
-
-### 13.2. Hash và snapshot
-
-- File gốc có SHA-256.
-- Configuration có canonical JSON hash.
-- Input Manifest có hash.
-- Result payload có hash.
-- Report render có hash.
-- Biological scenario có snapshot trước khi tính.
-- Hash chỉ phục vụ kiểm tra tính toàn vẹn, không dùng để khóa tùy chỉnh report.
-
-### 13.3. Audit event
-
-Audit event được tạo khi:
-
-- Tạo/sửa/archive folder.
-- Upload/import/export artifact.
-- Chạy validation.
-- Tạo/chỉnh configuration.
-- Chạy analysis.
-- Tạo/chỉnh report.
-- Tạo/chỉnh protocol.
-- Tạo/chỉnh biological scenario.
-- Thay đổi knowledge hoặc dose limit.
-
-Audit history không bị xóa cứng.
-
----
-
-## 14. Bảo mật và vận hành dữ liệu
-
-Phần này chỉ mô tả bảo vệ dữ liệu và tính ổn định vận hành, không tạo phân cấp nghiệp vụ.
-
-### 14.1. Organization isolation
-
-- Mọi record nghiệp vụ có organization_id hoặc truy ra organization.
-- API luôn kiểm tra organization context.
-- Không cho truy vấn chéo organization.
-- Background job giữ organization context.
-- Export ghi organization context vào manifest.
-
-### 14.2. Authentication
-
-- Supabase Auth quản lý user identity, password/OTP/magic link theo provider được bật và session.
-- RT-CONNECT không lưu password; chỉ lưu `supabase_user_id`/profile snapshot và membership cần cho nghiệp vụ.
-- API luôn xác minh Supabase access token ở server; không tin dữ liệu user hoặc organization do frontend tự gửi mà chưa đối chiếu database.
-- Có logout, refresh/revoke session theo khả năng của Supabase Auth và timeout cấu hình được.
-- Supabase publishable/anon key có thể xuất hiện ở frontend theo mô hình của Supabase; service key, Railway PostgreSQL URL/password và Railway secrets tuyệt đối không xuất hiện ở frontend hoặc log.
-- Các service-to-service token tách khỏi user token; worker không giữ access token của user.
-- Supabase Auth project, redirect URL, email provider và Railway database connection/secrets được tách theo environment.
-- Khi key rotation hoặc Auth provider lỗi, hệ thống có error handling và runbook tương ứng; không tự chuyển sang anonymous access.
-
-### 14.3. File safety
-
-- Giới hạn dung lượng và loại file.
-- Kiểm tra media type thực tế.
-- Quét file theo khả năng hạ tầng.
-- Object key không dùng trực tiếp tên file từ user.
-- Signed URL có thời hạn.
-- Download ghi audit event.
-
-### 14.4. Backup và khôi phục
-
-Backup tối thiểu gồm:
-
-- Railway PostgreSQL database/schema/data.
-- Object storage.
-- Configuration và deployment manifest.
-- Secrets reference, không ghi secret plaintext vào backup log.
-
-Phải có bài kiểm tra restore định kỳ và ghi kết quả vào vận hành.
-
-Local support harness hiện thực hóa một phép kiểm bounded tại
-`scripts/verify-local-backup-restore.py`. Harness dùng `pg_dump --format=custom`,
-restore vào database tạm, inventory mọi object MinIO theo kích thước và SHA-256,
-copy sang bucket tạm, so sánh inventory rồi dọn tài nguyên tạm. Harness chỉ được
-chạy với topology `docker-compose.yml` local và không phải provider backup,
-staging restore, RPO/RTO hoặc production runbook. Evidence của nó ghi row/object
-inventory hash, dump size/hash và trạng thái cleanup nhưng không ghi dump/object
-content hay secret. P18 vẫn phải kiểm provider backup/restore, isolated restore,
-lineage/checksum và thời gian RPO/RTO trên candidate thật.
-
-### 14.5. Bảo vệ public web
-
-- Chỉ public endpoint cần thiết cho web/API qua HTTPS; database, Redis, object storage, worker và DICOM gateway nằm trong private network.
-- Không dùng public bucket. File được tải xuống qua API hoặc signed URL có thời hạn.
-- Cấu hình CORS theo domain triển khai, không dùng wildcard trong production nếu không có lý do được ghi nhận.
-- Bật HSTS sau khi đã xác nhận HTTPS hoạt động ổn định; chuyển hướng HTTP sang HTTPS.
-- Giới hạn request body, thời gian upload, số request và số job để tránh làm nghẽn dịch vụ.
-- Dùng secure cookie hoặc token có thời hạn; chống CSRF nếu dùng cookie-based session.
-- Không đưa PatientID, token, secret hoặc nội dung DICOM nhạy cảm vào URL, log public hay thông báo lỗi phía client.
-- Health/readiness endpoint không trả secret, metadata bệnh nhân hoặc thông tin nội bộ không cần thiết.
-- Có cơ chế cập nhật và thu hồi certificate, secret, session và service token.
-- Thực hiện kiểm tra từ một mạng bên ngoài hạ tầng trước khi mở public release.
-
----
-
-## 15. Non-functional requirements
-
-### 15.1. Tính đúng và toàn vẹn
-
-- Không mất file gốc khi import.
-- Không thay đổi result cũ khi chạy result mới.
-- Report cũ tái hiện từ snapshot.
-- Analysis failure không tạo result hợp lệ một phần.
-- Dữ liệu thiếu bị cảnh báo hoặc từ chối theo validation rule.
-
-### 15.2. Hiệu năng mục tiêu ban đầu
-
-Các mục tiêu này là target kỹ thuật để đo trong phase triển khai, có thể điều chỉnh sau benchmark. P17 đã có một phép đo hỗ trợ local, không thay đổi trạng thái của các target bên dưới: `scripts/benchmark-p17-dvh.py --shape 64x128x128 --repeats 3` cho engine `p17-dvh-1.1.0` đạt median `1.2667533 s` trên `1,048,576` voxel và peak Python-traced allocation `69,235,606` bytes. Vì chưa đo RSS/container, concurrent jobs, warm/cold policy và network/API, evidence này có trạng thái `NOT_ASSESSED` và không đóng Gamma large, worker capacity hay release gate:
-
-- API metadata p95 dưới 500 ms trong tải thông thường.
-- Trang danh sách hỗ trợ pagination và không tải toàn bộ artifact.
-- Upload file lớn có progress và retry.
-- Gamma/DVH chạy bất đồng bộ.
-- Worker có thể xử lý nhiều job theo queue.
-- Render report không khóa API.
-- Trend query có index theo machine_id, metric_key và measured_at.
-
-### 15.3. Khả năng mở rộng
-
-- Object storage tách khỏi database.
-- Job queue có thể mở rộng worker.
-- Analysis engine có interface plugin.
-- Metric key có namespace.
-- Report block registry mở rộng được.
-- Protocol rule có schema version.
-- Biological module có thể thêm model mới mà không sửa QA engine.
-
-### 15.4. Tính quan sát
-
-Health check:
-
-- API health.
-- Database connectivity.
-- Redis connectivity.
-- Object storage connectivity.
-- Worker heartbeat.
-- Queue depth.
-- Failed job count.
-- Render failure count.
-- Validation failure count.
-
-Mọi log job phải có request_id, job_id, organization_id và subject_id phù hợp; không ghi dữ liệu nhạy cảm vào message log không cần thiết.
-
----
-
-## 16. Kiểm thử và xác minh
-
-### 16.1. Unit test
-
-Bao phủ:
-
-- Domain model.
-- Folder path.
-- Organization scoping.
-- DICOM metadata parser.
-- Dose scaling.
-- Geometry checks.
-- Gamma configuration.
-- BED/EQD2 formulas.
-- DVH metrics.
-- Rule evaluation.
-- Report block selection.
-- Snapshot hash.
-
-### 16.2. Contract test
-
-- API request/response.
-- gamma.measurement.v1.
-- Export CSV/JSON.
-- Input Manifest.
-- Report template schema.
-- Biological scenario schema.
-
-### 16.3. DICOM fixture test
-
-Fixture phải có:
-
-- RTDOSE hợp lệ.
-- RTDOSE thiếu scaling.
-- RTDOSE sai grid.
-- RTSTRUCT đúng Frame of Reference.
-- RTSTRUCT không map được.
-- RTPLAN có nhiều beam.
-- CT và dose khác orientation.
-- Dataset có giá trị bất thường.
-- DICOM compressed và uncompressed nếu hỗ trợ.
-
-### 16.4. Golden/reference test
-
-Gamma:
-
-- 2D/3D.
-- Global/local.
-- Absolute/relative.
-- Grid khác nhau.
-- Dịch chuyển có kiểm soát.
-- Vùng dose thấp.
-- Biên trường.
-- Dữ liệu lỗi.
-- Expected pass rate và expected map characteristics.
-
-DVH:
-
-- Hình học đơn giản có kết quả tính bằng tay.
-- Structure hình cầu/hộp.
-- Dose uniform.
-- Dose gradient.
-- Dose grid khác spacing.
-- Contour ngoài grid.
-- Nhiều ROI.
-
-Biological:
-
-- Bộ giá trị BED/EQD2 biết trước.
-- So sánh hai phác đồ.
-- Đồ thị D.
-- Nhiều alpha/beta.
-- Recovery/no-recovery scenario.
-- Re-irradiation nhiều course.
-- Invalid input.
-
-### 16.5. Integration test
-
-- Upload → checksum → validation.
-- Validation → analysis queue.
-- Worker → result → metrics.
-- Result → report snapshot.
-- Report → PDF/PNG/CSV.
-- Trend point → query → source case.
-- Biological scenario → calculation → chart → independent report.
-- Archive folder → data remains available.
-- Rerun → old result remains.
-
-### 16.6. End-to-end test
-
-Một workflow hoàn chỉnh phải kiểm tra:
-
-1. Tạo organization/site/machine.
-2. Tạo folder và QA case.
-3. Upload RTDOSE + measurement.
-4. Validation.
-5. Chọn Gamma configuration.
-6. Chạy analysis.
-7. Xem map/pass rate/warning.
-8. Tạo report tùy chỉnh.
-9. Export report.
-10. Chạy lại với configuration khác.
-11. So sánh revision.
-12. Xem trend.
-
-### 16.7. Test-first và dataset thật
-
-- Engine chỉ được merge khi bộ test/reference dataset đạt.
-- Dataset thật không phải điều kiện để hoàn thành code phase ban đầu.
-- Dataset thật được dùng ở pilot hoặc vận hành có kiểm soát để bổ sung fixture và test case.
-- Mỗi lỗi phát hiện từ dataset thật phải được chuyển thành regression test trước khi sửa được coi là hoàn tất.
-- Không dùng kết quả test đơn lẻ để tuyên bố toàn bộ hệ thống đã được thẩm định lâm sàng.
-
----
-
-## 17. CI/CD và triển khai
-
-### 17.1. CI pipeline
-
-Mỗi change chạy:
-
-1. Format/lint.
-2. Type check.
-3. Unit test.
-4. Contract test.
-5. DICOM fixture test.
-6. Golden test.
-7. Integration test.
-8. Frontend build.
-9. API schema generation.
-10. Migration check.
-11. Diff/document check.
-
-### 17.2. Build artifact
-
-- Frontend static bundle.
-- API image.
-- Worker image.
-- Render image.
-- Migration package.
-- Configuration template.
-- Test report.
-- Dependency inventory.
-- Source/deployment SHA embedded in API and frontend release metadata when the platform
-  provides `RAILWAY_GIT_COMMIT_SHA`; configured manual version labels remain a local/manual
-  fallback and cannot override the Git-triggered source identity.
-
-### 17.3. Migration
-
-- Migration được review bằng test database.
-- Migration không làm mất dữ liệu cũ.
-- Có backup trước migration pilot/production.
-- Có kế hoạch rollback hoặc forward-fix.
-- Version schema lưu cùng release.
-- Application schema migration chạy trên Railway PostgreSQL bằng Alembic hoặc migration workflow đã chọn ở P0; chỉ dùng một nguồn migration chính thức.
-- Không tự sửa các schema/bảng nội bộ do Supabase Auth quản lý.
-- API/worker dùng Railway PostgreSQL connection string hoặc private reference variable từ Railway secret; migration không chạy từ frontend.
-- Kiểm tra kết nối private networking, TLS, connection limit và pool sizing của Railway PostgreSQL với Railway runtime trước khi chốt production.
-
-### 17.4. Release
-
-Mỗi release ghi:
-
-- Application version.
-- API version.
-- Engine version.
-- DICOM validator version.
-- Report renderer version.
-- Database schema version.
-- Dependency lock hash.
-- Test result summary.
-- Known limitations.
-- Source commit SHA and deployment ID; API `/api/v1/version` and the frontend build label
-  must resolve to that SHA for a Git-triggered Railway deployment.
-
-### 17.5. Public Web Deployment và remote access
-
-#### 17.5.0. Bootstrap từ Railway project hiện có
-
-Không tạo project Railway mới khi chưa có lý do. Dùng project `prolific-learning` (`339f2c50-ddd7-491f-8c4e-da2a2d169502`) làm project triển khai RT-CONNECT và thực hiện theo thứ tự:
-
-1. Cài hoặc dùng Railway CLI phiên bản được pin; không giả định CLI đã có trên máy.
-2. Dùng Account/Workspace token để kiểm tra quyền, tạo environment `staging` và provisioning service; không xuất token ra terminal/log.
-3. Dùng Project Token hiện có chỉ cho thao tác environment `production` mà token trỏ tới.
-4. Điều tra deployment `FAILED` của service `RT-connect`; lưu nguyên nhân và regression/smoke check trước khi deploy lại.
-5. Tạo Railway PostgreSQL trong staging, chạy migration baseline và kiểm tra private connection từ backend.
-6. Deploy health-only/API shell lên staging trước; chưa deploy production khi source/test/migration chưa tồn tại.
-7. Tạo Redis/worker ở phase PSQA Gamma; renderer tách service chỉ khi benchmark hoặc failure isolation yêu cầu.
-8. Chỉ promote release đã có manifest từ staging sang production.
-
-Tên biến `.env` nội bộ không được copy nguyên xi vào runtime. Script deployment đọc chúng cục bộ rồi ánh xạ một token tại một thời điểm sang biến mà Railway CLI hỗ trợ. Token Railway không được đưa vào frontend, backend runtime image hoặc bảng database.
-
-#### 17.5.1. Mục tiêu triển khai
-
-RT-CONNECT phải có một URL web để người dùng được tổ chức cho phép truy cập từ xa bằng desktop hoặc mobile browser. Phương án triển khai mục tiêu là Supabase cho Auth, Railway cho PostgreSQL, backend server/API, worker, renderer, queue và public API networking; frontend là static web riêng hoặc được backend phục vụ tùy phương án phát hành; object storage dùng S3-compatible/MinIO được chỉ định.
-
-Railway project được tổ chức tối thiểu thành các backend service:
-
-1. `api`: FastAPI public HTTP service.
-2. `postgres`: Railway PostgreSQL service cho database nghiệp vụ, chỉ nhận kết nối private.
-3. `worker`: Celery/analysis worker, không public domain.
-4. `renderer`: report-render service hoặc worker capability, không public domain.
-5. `redis`: Redis Railway service hoặc Redis tương thích cho job queue.
-
-Supabase project cung cấp:
-
-- Supabase Auth cho user identity/session.
-- Cấu hình provider, site URL, redirect URL và JWT verification cho đúng environment.
-
-Railway project cung cấp:
-
-- Railway PostgreSQL cho metadata, quan hệ nghiệp vụ, provenance và audit.
-- Database connection/private reference variable được cấu hình cho API/worker; không kết nối trực tiếp từ browser.
-
-Mỗi environment dùng Railway environment và Railway PostgreSQL service riêng, cùng với Supabase Auth project riêng hoặc cấu hình được cô lập tương đương. Frontend production phải dùng đúng API URL của environment tương ứng. Nếu bệnh viện yêu cầu không có public inbound trực tiếp, Railway có thể được đặt sau VPN/zero-trust gateway hoặc mô hình private connectivity do tổ chức lựa chọn; đây là biến thể triển khai, không thay đổi contract ứng dụng.
-
-#### 17.5.2. Sơ đồ public edge
-
-~~~text
-[Remote browser]
-      | HTTPS
-      v
-[Frontend static host hoặc frontend bundle được API phục vụ]
-      | HTTPS
-      v
-[Railway public API domain + automatic TLS]
-      |                         \
-      v                          v
-[Supabase Auth]          [Railway API service]
-                               |
-                               v
-                      [Railway private network]
-                         |       |       |
-                         v       v       v
-                      [Redis] [Worker] [Renderer]
-                               |
-                               v
-                   [Railway PostgreSQL]
-                               |
-                               v
-                    [S3-compatible object storage]
-
-[Optional Orthanc/DICOMweb] --> [Railway API/Ingestion]
-
-~~~
-
-Frontend và API là các endpoint được public qua HTTPS theo nhu cầu của browser. Railway là application/backend/data plane; PostgreSQL, worker, renderer, Redis, object storage và Orthanc admin không có public domain của RT-CONNECT. API/worker kết nối tới Railway PostgreSQL qua private networking hoặc reference variable được giữ trong Railway secret. Supabase chỉ cung cấp Auth; browser không kết nối trực tiếp tới PostgreSQL, Redis, MinIO/S3, Celery monitor hoặc Orthanc admin. Nếu cần truy cập DICOM từ xa, phải đi qua API/gateway đã kiểm soát, không cấp URL quản trị nội bộ cho browser.
-
-#### 17.5.3. Hợp đồng hạ tầng tối thiểu
-
-- Public domain/custom domain cho frontend; Railway public domain hoặc custom domain cho API. Có thể dùng cùng domain qua path nếu frontend được API phục vụ.
-- Railway automatic TLS/custom-domain provisioning hoặc edge riêng nếu topology yêu cầu; certificate phải được kiểm tra và theo dõi.
-- Railway private domains/reference variables cho kết nối service-to-service; browser không gọi Railway private domain.
-- Environment variables/secrets được cấu hình trong Railway environment hoặc secret store, không commit vào source code.
-- Railway PostgreSQL dùng service/database có retention, backup và restore phù hợp; phải xác nhận restore thực tế trước production.
-- Redis dùng Railway service hoặc Redis tương thích; queue state không được coi là nguồn dữ liệu nghiệp vụ duy nhất.
-- Object storage dùng S3-compatible/MinIO có persistence; không dùng filesystem ephemeral của Railway làm kho artifact chính.
-- Upload file lớn đi qua streaming/chunking hoặc cơ chế upload phù hợp, tránh giữ toàn bộ file trong memory của API.
-- Job Gamma/DVH/render chạy worker; client theo dõi bằng job status/polling hoặc cơ chế realtime đã được kiểm thử.
-- Signed download URL có thời hạn; object storage không anonymous-read.
-- Supabase Auth URL, publishable/anon key, JWKS URL/audience và redirect URL tách theo environment; Railway PostgreSQL URL/secret cũng phải tách theo environment.
-- API public có rate limit, body limit, request timeout và CORS theo domain thật.
-- Migration chạy trước release theo quy trình backup và kiểm tra schema.
-- Có staging domain hoặc môi trường staging tách dữ liệu production trước public release.
-
-#### 17.5.4. CI/CD và phát hành public
-
-Pipeline public release tối thiểu:
-
-1. Build frontend/API/worker/render image với source SHA cố định. Với Git-triggered Railway
-   Docker builds, khai báo `ARG RAILWAY_GIT_COMMIT_SHA`; frontend ưu tiên SHA này khi chạy
-   `npm run build`, còn API đọc biến hệ thống runtime đó cho `/api/v1/version`. Chỉ dùng
-   `APP_VERSION`/`VITE_APP_VERSION` làm fallback ngoài Git-triggered deployment.
-2. Chạy test và scan dependency/image theo năng lực hạ tầng.
-3. Deploy các service vào Railway staging environment.
-4. Chạy smoke test từ browser và API client; `scripts/verify-public-deployment.ps1` có thể tạo public-contract evidence JSON cho health/readiness/schema/version/OpenAPI/web bundle, nhưng không thay authenticated E2E.
-5. Kiểm tra Supabase Auth config, Railway PostgreSQL migration/health, queue, upload, analysis và export.
-6. Backup Railway PostgreSQL/object storage trước production migration.
-7. Deploy Railway production environment theo version manifest và environment variables đã review.
-8. Kiểm tra từ mạng ngoài: đăng nhập, tạo case, upload, xem validation, chạy job, xem report, tải export và truy cập Biological Toolkit.
-9. Theo dõi log/metrics sau phát hành.
-10. Rollback về image/version trước nếu smoke test hoặc monitoring không đạt.
-
-`scripts/create-release-manifest.py` và `scripts/release_manifest.py` là implementation
-support cho P19-W01. Tool nhận metadata đã được operator thu thập, hash fixture nằm trong
-repository, loại bỏ secret-like value và tạo manifest canonical có `manifest_sha256`.
-Manifest ghi riêng SHA nguồn của API/web/worker; nếu working tree bẩn hoặc service SHA
-không đồng nhất với `source_sha`, output vẫn được giữ để điều tra nhưng có
-`release_gate=RELEASE_BLOCKED` và exit code khác 0. Validator tự tính lại service parity và
-gate reasons thay vì tin cờ có sẵn. `--verify-manifest` kiểm tra schema, secret scan và
-canonical hash; hash này không phải chữ ký chống giả mạo, nên artifact lưu trữ phải được
-bảo toàn qua cơ chế review/retention phù hợp. Tool không gọi Railway, Supabase hoặc PostgreSQL và không thể
-thay thế remote E2E, backup/restore, rollback rehearsal hay production promotion.
-
-#### 17.5.5. Kiểm thử remote access
-
-Phải kiểm tra tối thiểu trên một mạng ngoài bệnh viện/server và trên desktop/mobile browser:
-
-- DNS phân giải đúng.
-- HTTPS certificate và redirect hoạt động.
-- Người dùng có thể mở frontend/public API, đăng nhập/đăng xuất Supabase Auth và truy cập organization của mình.
-- Access token Supabase được API xác minh; token hết hạn hoặc sai signature bị từ chối.
-- Không thể truy cập dữ liệu organization khác.
-- Upload artifact và file lớn không lỗi do proxy timeout/body limit.
-- Validation và worker job hoàn thành sau khi browser refresh hoặc mất kết nối tạm thời.
-- Report, biểu đồ và file export tải được qua signed URL.
-- Biological Toolkit hoạt động độc lập với QA case.
-- Reload/deep-link frontend không trả 404 sai route.
-- Cảnh báo lỗi không làm lộ stack trace, secret hoặc định danh không cần thiết.
-- Restart một service không làm mất dữ liệu hoặc tạo result trùng.
-- Backup/restore đã được kiểm tra ở đúng topology triển khai.
-
-#### 17.5.6. Tiêu chí không được coi là public-ready
-
-- Chỉ mở được web trong localhost hoặc mạng LAN.
-- Chưa có domain/TLS hoặc certificate hết hạn.
-- Database/object storage/Redis/Orthanc bị expose trực tiếp.
-- Upload được ở local nhưng timeout trên mạng ngoài.
-- Worker hoặc report renderer chỉ chạy bằng tay.
-- Không có backup/restore evidence và rollback version.
-- Không biết bản release đang chạy gồm engine, schema và frontend version nào.
-- Supabase Auth dùng nhầm project/redirect URL/key hoặc Railway PostgreSQL service/URL với environment khác.
-
----
-
-## 18. Traceability từ nghiệp vụ sang kỹ thuật
-
-| Nhóm nghiệp vụ | Thành phần kỹ thuật |
-| :--- | :--- |
-| Organization → site → machine → QA case | Organization, Site, Machine, QACase models và API |
-| Folder lồng nhau | Folder parent_id, tree API, archive metadata |
-| File gốc không đổi | Object storage, SHA-256, Artifact parent lineage |
-| PSQA RTDOSE + measurement | Workflow validator, gamma.measurement.v1, Gamma service |
-| RTSTRUCT tùy workflow | DICOM role resolution và workflow-specific validator |
-| Gamma configuration đầy đủ | AnalysisConfiguration schema và snapshot |
-| Metric actual/limit/margin/status | MetricResult và Rule evaluator |
-| Report tùy chỉnh | ReportTemplateVersion, ReportBlockConfig, renderer |
-| Report revision | ReportRevision và snapshot |
-| Trend theo machine | TrendPoint và indexed query |
-| QA protocol version | QAProtocolVersion và QAProtocolRule |
-| BED/EQD2 | BiologicalCalculationRun và biological engine |
-| Đồ thị theo D | BiologicalChart service |
-| So sánh phác đồ | Course comparison service |
-| Giới hạn liều | DoseLimitEntry |
-| Re-irradiation | BiologicalScenario, BiologicalCourse, assumptions |
-| Không gắn Biological với QA | Bounded context và API namespace riêng |
-| Audit/provenance | AuditEvent, hash và lineage |
-| Bộ test engine | Unit, fixture, golden, integration và E2E suite |
-| Truy cập web từ xa qua HTTPS | Public web edge, DNS/TLS, reverse proxy, private service network và remote smoke test |
-| Google Stitch là nguồn thiết kế | Stitch MCP adapter/workflow, screen ID map, design-to-code checklist; không runtime dependency |
-| Supabase chỉ làm Auth | Supabase session/JWT verifier + UserIdentity mapping; không dùng Supabase database cho domain |
-| Railway backend và PostgreSQL | Railway API/web/worker/renderer topology, Railway PostgreSQL, private reference variables và migration |
-| Hoàn thiện theo module | MOD-00 đến MOD-16, mỗi module có route/API/entity/test/exit criteria trong plan.md |
-| Không lộ deployment secret | `.env` ignored, secret store, log redaction và frontend bundle scan |
-
----
-
-## 19. Quyết định kỹ thuật và điểm cần khóa ở phase 0
-
-### 19.1. Đã chọn làm kiến trúc tham chiếu
-
-- React + TypeScript + Vite.
-- Python + FastAPI + Pydantic.
-- Supabase Auth cho identity, session và access token; không tự xây password store.
-- Railway làm nền tảng triển khai target cho backend API, worker, renderer và Redis/queue nếu dùng Railway cho queue.
-- Railway PostgreSQL cho metadata/provenance, schema ứng dụng và audit.
-- API/worker kết nối Railway PostgreSQL qua private networking/reference variable và secret phù hợp; không kết nối từ frontend.
-- S3-compatible/MinIO được chỉ định cho artifact; không dùng filesystem ephemeral của Railway làm kho chính.
-- pydicom + NumPy cho DICOM.
-- Gamma engine được bọc qua interface riêng.
-- Biological Toolkit tách module và API namespace.
-- Docker-based deployment cho development, pilot và production khi phù hợp.
-- Railway public networking qua domain/TLS; Railway private networking cho service nội bộ.
-- Google Stitch chỉ là công cụ design-time/handoff, không phải runtime dependency.
-
-### 19.2. Cần khóa bằng PoC trước khi triển khai sâu
-
-- Lựa chọn Celery hoặc worker tương đương.
-- Cách render PDF tiếng Việt và biểu đồ lớn.
-- DICOM compressed transfer syntax cần hỗ trợ.
-- DICOM gateway có cần ngay trong pilot hay chỉ upload.
-- DVH rasterization/resampling method.
-- Cách lưu grid values lớn.
-- Benchmark Gamma trên dataset kích thước lớn.
-- Quy ước metric key và rule expression.
-- Mức hỗ trợ nhiều site/machine trong một organization.
-
-### 19.3. Không được tự ý quyết định trong code
-
-- Không tự đặt tolerance lâm sàng nếu chưa có protocol.
-- Không tự chọn alpha/beta mặc định không có source.
-- Không tự ghép RTDOSE/RTSTRUCT chỉ bằng PatientID.
-- Không tự đổi đơn vị khi thiếu metadata.
-- Không tự biến Biological scenario thành prescription.
-- Không tự xóa result, report revision hoặc audit history.
-
----
-
-## 20. Tài liệu tham chiếu kỹ thuật
-
-- DICOM RT Dose Module: https://dicom.nema.org/medical/dicom/2024e/output/chtml/part03/sect_C.8.8.3.html
-- DICOM Structure Set Module: https://dicom.nema.org/medical/DICOM/current/output/chtml/part03/sect_C.8.8.5.html
-- AAPM TG-142: https://www.aapm.org/pubs/reports/detail.asp?docid=125
-- AAPM TG-198: https://www.aapm.org/pubs/reports/detail.asp?docid=215
-- AAPM TG-218: https://www.aapm.org/pubs/reports/detail.asp?docid=173
-- IAEA Quality Management System for Radiotherapy: https://www.iaea.org/resources/hhc/medical-physics/radiotherapy/quality-management-system
-- FastAPI documentation: https://fastapi.tiangolo.com/
-- pydicom documentation: https://pydicom.github.io/pydicom/stable/
-- PyMedPhys Gamma documentation: https://docs.pymedphys.com/en/stable/users/ref/lib/gamma.html
-- Orthanc DICOMweb documentation: https://orthanc.uclouvain.be/book/plugins/dicomweb.html
-- Supabase Auth documentation: https://supabase.com/docs/guides/auth
-- Supabase JWT and signing keys: https://supabase.com/docs/guides/auth/jwts
-- Railway database services: https://docs.railway.com/databases
-- Railway public networking and custom domains: https://docs.railway.com/networking/public-networking
-- Railway private domains: https://docs.railway.com/networking/domains/working-with-domains
-- Railway Redis/databases overview (queue reference): https://docs.railway.com/databases
-- Google Stitch overview: https://blog.google/innovation-and-ai/models-and-research/google-labs/stitch-ai-ui-design/
-- Google Developers — Introducing Stitch: https://developers.googleblog.com/en/stitch-a-new-way-to-design-uis/
-
----
-
-## 21. Kết luận
-
-`technical-specification.md` định nghĩa RT-CONNECT thành một hệ thống web gồm hai bounded context:
-
-1. QA Management cho machine QA, PSQA Gamma, DICOM workflow, report và trend.
-2. Biological Toolkit độc lập cho các phép tính sinh học, scenario, phác đồ và knowledge library.
-
-Kiến trúc giữ nguyên quyền sử dụng nghiệp vụ ngang nhau, không xây dựng phân quyền theo hành động, đồng thời vẫn giữ provenance, version, checksum và audit để tái hiện kết quả. Việc triển khai phải đi theo test-first, sau đó dùng dataset thật ở pilot và vận hành để bổ sung regression test và hoàn thiện workflow.
-
-Hệ thống được thiết kế để phát hành qua public web edge cho truy cập từ xa, nhưng chỉ frontend/API được expose qua HTTPS; dữ liệu và các service nội bộ vẫn nằm trong private network. Google Stitch project `RT-connect` được đọc/chỉnh qua MCP ở design-time; screen ID là đầu mối traceability, không phải thành phần runtime hay nguồn thay thế cho API contract, kiểm thử và review frontend. Repository không cần tái tạo `UI-UX.md`.
-
-Trong deployment target, Supabase là auth/identity plane cho Supabase Auth, còn Railway là application/backend/data plane cho backend API/server, PostgreSQL, worker, renderer và queue. Frontend là static web host riêng hoặc static bundle được backend phục vụ. Không kết nối browser trực tiếp tới Railway PostgreSQL; mọi truy cập database đi qua backend/private networking.
-
-Baseline Railway hiện có mới gồm project/environment/service và một deployment thất bại; chưa có PostgreSQL hoặc source application. Vì vậy phase đầu phải dựng staging, migration, health endpoint và CI/CD trước khi sử dụng production token để deploy release thật.
+| P0 | Hiệu lực UX1, crosswalk và cấu trúc điều hướng |
+| P1 | Runtime/CI, baseline nguồn và kiểm hồi quy |
+| P2 | Cấu hình Railway/Supabase và kiểm URL driver chung |
+| P3 | AppShell/locale/routes/redirects |
+| P4 | Compact quản lý đơn vị, revision và scope |
+| P5 | QATestDefinition, QAAttempt, history/delete/restore |
+| P6 | Typed inputs, manifest và validation |
+| P7 | Manual QA + PylinacAdapter cho đủ 16 họ/biến thể chính và QA contrib public trong runtime + UI tham số/thao tác tay + overlays |
+| P8 | PSQA form ΔD (%) và DTA (mm) + Gamma pylinac 1D/2D + queue; 3D kế thừa chỉ đọc |
+| P9 | Snapshot/layout/renderer/PDF |
+| P10 | Trend projection/query và tương thích chỉ số |
+| P11 | KnowledgeArticle/Revision/PublicationSnapshot/Asset/Bookmark; phạm vi nội bộ/cộng đồng, PDF, tìm kiếm, thu hồi, cài đặt thực thi tách bài hướng dẫn |
+| P12 | Tool hub và stateless calculation |
+| P13 | BED/EQD2/graph/source selection |
+| P14 | Comparison contract |
+| P15 | Reirradiation/compensation assumptions |
+| P16 | TreatmentContext/DoseConstraint/AlphaBetaEntry; nguồn theo bệnh viện và phiên bản, kế thừa kiểm quyền P11 trên mọi nguồn tham chiếu |
+| P17 | DVH/ROI/metric definition trong PSQA |
+| P18 | Kiểm trọn luồng, giao diện, lỗi/phục hồi; đọc chéo đơn vị, chia sẻ/thu hồi PDF và truy cập từ bài đã lưu |
+| P19 | Release manifest và chuyển dữ liệu phát hành |
+| P20 | Runbooks, phản hồi và độ bao phủ nội dung |
+
+Bàn giao gồm thay đổi mã nguồn, chuyển dữ liệu nếu có, tình huống kiểm thử/đầu vào/kỳ vọng/thực tế, ảnh giao diện/PDF thích hợp, giới hạn hỗ trợ, trạng thái kiểm tại máy/môi trường thử/môi trường chính và bước còn thiếu. [Đặc tả cũ](docs/history/pre-ux-20260912/specification.md) chỉ để tra cứu khi không xung đột với UX1.3; không quyết định menu hoặc luồng mới.

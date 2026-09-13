@@ -13,7 +13,7 @@ describe('platform status assessment', () => {
 
     expect(result.key).toBe('NEEDS_REVIEW')
     expect(result.label).toBe('CẦN XEM XÉT')
-    expect(schemaParityValue({ status: 'ready', timestamp: '', correlation_id: '', schema_revision: 'a' }, { application: '', version: '', environment: '', engine_version: '', renderer_version: '', schema_revision: 'b' })).toBe('MISMATCH')
+    expect(schemaParityValue({ status: 'ready', timestamp: '', correlation_id: '', schema_revision: 'a' }, { application: '', version: '', environment: '', engine_version: '', renderer_version: '', schema_revision: 'b' })).toBe('KHÔNG KHỚP')
   })
 
   test('reports operational only when all independent probes agree', () => {

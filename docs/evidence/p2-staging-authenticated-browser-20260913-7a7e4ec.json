@@ -1,0 +1,52 @@
+{
+  "schema_version": "rt-connect.phase-evidence.v1",
+  "evidence_id": "P2-STAGING-AUTHENTICATED-BROWSER-20260913-7A7E4EC",
+  "phase": "P2",
+  "work_package": "P02-VERIFY",
+  "verification_level": "STAGING_AUTHENTICATED_READ_ONLY",
+  "captured_at_utc": "2026-09-13T06:01:00Z",
+  "environment": "staging",
+  "branch": "codex/p4-org-site-machine",
+  "source_sha_visible_in_web": "7a7e4ec8698f348e6921c69c4b4e212aab425977",
+  "web_url": "https://rt-connect-web-staging-staging.up.railway.app/app",
+  "observations": [
+    {
+      "step": "session recovery",
+      "route": "/app",
+      "result": "PASS",
+      "details": "Existing Supabase browser session recovered; the application displayed an authenticated session state."
+    },
+    {
+      "step": "organization dashboard",
+      "route": "/app",
+      "result": "PASS",
+      "details": "The dashboard read the current organization context and displayed one site, one machine and zero recent QA/job records without mock data."
+    },
+    {
+      "step": "organization management readback",
+      "route": "/app/organization",
+      "result": "PASS",
+      "details": "The API-backed page displayed the organization, one active site, one active machine and one active membership."
+    },
+    {
+      "step": "user-facing boundary",
+      "route": "/app/organization",
+      "result": "PASS",
+      "details": "No password, access token, database URL, patient data or technical credential was displayed or recorded in this evidence."
+    }
+  ],
+  "not_run": [
+    "Expired-token browser session after a controlled wait",
+    "Production authenticated readback",
+    "Cross-identity invitation workflow"
+  ],
+  "result": "STAGING_AUTHENTICATED_SLICE_PASS",
+  "phase_gate": "OPEN",
+  "open_blockers": [
+    "The public staging API reports f05508ecb8ce7213eceaf4ac8bf9a0a71833a7e6 while the web bundle reports 7a7e4ec8698f348e6921c69c4b4e212aab425977.",
+    "Production does not yet have a matching API, web and worker service packet with Supabase Auth configuration."
+  ],
+  "contains_secrets": false,
+  "contains_database_urls": false,
+  "contains_patient_data": false
+}

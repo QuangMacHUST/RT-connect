@@ -7,7 +7,7 @@ export function AuthCallbackPage() {
   const navigate = useNavigate()
   const supabase = getSupabaseClient()
   const [error, setError] = useState<string | null>(() => (
-    supabase ? null : 'Supabase Auth chưa được cấu hình cho môi trường này.'
+    supabase ? null : 'Dịch vụ đăng nhập chưa được cấu hình cho môi trường này.'
   ))
 
   useEffect(() => {
@@ -18,5 +18,5 @@ export function AuthCallbackPage() {
     })
   }, [navigate, supabase])
 
-  return <main className="auth-state" aria-live="polite"><h1>{error ? 'Không thể hoàn tất đăng nhập' : 'Đang hoàn tất đăng nhập…'}</h1><p>{error ?? 'Đang xác minh phiên Supabase Auth và mở không gian làm việc.'}</p>{error && <Link className="button-link" to="/auth/login">Quay lại đăng nhập</Link>}</main>
+  return <main className="auth-state" aria-live="polite"><h1>{error ? 'Không thể hoàn tất đăng nhập' : 'Đang hoàn tất đăng nhập…'}</h1><p>{error ?? 'Đang xác minh phiên đăng nhập và mở nơi làm việc.'}</p>{error && <Link className="button-link" to="/auth/login">Quay lại đăng nhập</Link>}</main>
 }

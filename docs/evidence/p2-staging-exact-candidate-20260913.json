@@ -1,0 +1,49 @@
+{
+  "schema_version": "rt-connect.phase-evidence.v1",
+  "captured_at_utc": "2026-09-13T06:12:53.4075537Z",
+  "phase": "P2",
+  "status": "STAGING_VERIFIED",
+  "environment": "staging",
+  "candidate_sha": "7a7e4ec8698f348e6921c69c4b4e212aab425977",
+  "railway": {
+    "service": "Railway-API-staging",
+    "deployment_id": "173c5be1-a366-4410-8d5e-088bd8f72020",
+    "deployment_status": "SUCCESS",
+    "config_as_code_path": null,
+    "config_as_code_path_required": false
+  },
+  "checks": [
+    {
+      "name": "web_api_exact_candidate_parity",
+      "ok": true,
+      "details": "web bundle and API version both report candidate_sha"
+    },
+    {
+      "name": "public_health_readiness_version_openapi",
+      "ok": true,
+      "details": "13/13 public deployment checks passed; schema_revision=20260911_0020"
+    },
+    {
+      "name": "unauthenticated_boundary",
+      "ok": true,
+      "details": "organization member, invitation and invalid-token probes return 401"
+    },
+    {
+      "name": "authenticated_organization_readback",
+      "ok": true,
+      "details": "existing staging session reads organization, site, machine and active membership"
+    }
+  ],
+  "production_follow_up": {
+    "required_at_phase": "P19",
+    "status": "NOT_RELEASED",
+    "reason": "current production has only the legacy API service; web/worker/Auth packet is not yet aligned"
+  },
+  "secret_scan": {
+    "tokens_recorded": false,
+    "database_url_recorded": false,
+    "patient_data_recorded": false,
+    "access_token_recorded": false
+  },
+  "gate_decision": "P2_CLOSED_FOR_DEVELOPMENT_PRODUCTION_GATED_TO_P19"
+}

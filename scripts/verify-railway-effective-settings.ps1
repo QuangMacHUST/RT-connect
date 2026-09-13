@@ -284,7 +284,8 @@ Add-Check -Checks $checks -Name 'api.root_directory' -Ok ($api.rootDirectory -eq
 Add-Check -Checks $checks -Name 'api.dockerfile' -Ok ($api.dockerfilePath -eq '/apps/api/Dockerfile') -Details "observed=$($api.dockerfilePath)"
 Add-Check -Checks $checks -Name 'api.healthcheck' -Ok ($api.healthcheckPath -eq '/api/v1/health') -Details "observed=$($api.healthcheckPath)"
 Add-Check -Checks $checks -Name 'api.pre_deploy_migration' -Ok (@($api.preDeployCommand) -contains 'alembic upgrade head') -Details "observed=$(@($api.preDeployCommand) -join ',')"
-Test-RequiredNames -Checks $checks -Service 'api' -Map $variables.api -Names @('DATABASE_URL','REDIS_URL','S3_ENDPOINT','S3_BUCKET','SUPABASE_JWT_ISSUER','SUPABASE_JWT_AUDIENCE','SUPABASE_JWKS_URL','CORS_ALLOWED_ORIGINS')
+Test-RequiredNames -Checks $checks -Service 'api' -Map $variables.api -Names @('DATABASE_URL','REDIS_URL','S3_ENDPOINT','S3_BUCKET','SUPABASE_JWT_ISSUER','SUPABASE_JWT_AUDIENCE','SUPABASE_JWKS_URL','CORS_ALLOWED_ORIGINS','PORT')
+Test-ExactValue -Checks $checks -Name 'api.port' -Map $variables.api -VariableName 'PORT' -Expected '8000'
 Test-CorsOrigin -Checks $checks -Map $variables.api -ExpectedOrigin $ExpectedWebOrigin
 Test-InternalHost -Checks $checks -Name 'api' -Map $variables.api -VariableName 'DATABASE_URL'
 Test-InternalHost -Checks $checks -Name 'api' -Map $variables.api -VariableName 'REDIS_URL'

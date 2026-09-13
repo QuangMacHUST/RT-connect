@@ -10,6 +10,19 @@ permissions:
   contents: read
 
 jobs:
+  planning-contract:
+    name: UX1 planning contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - name: Verify current planning documents and phase contract
+        run: python scripts/verify-planning-contract.py --output docs/evidence/ci-planning-contract.json
+      - name: Verify planning verifier tests
+        run: python -m unittest discover -s scripts -p 'test_verify_planning_contract.py' -q
+
   api:
     name: API quality and contract
     runs-on: ubuntu-latest

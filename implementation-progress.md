@@ -1,7 +1,50 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
-Revision hiện hành: `business-analysis.md` v0.27, `specification.md` v1.29,
-`technical-specification.md` v1.30 và `plan.md` v4.25.
+Tài liệu hiện hành: `business-analysis.md` v1.3,
+`technical-specification.md` v2.3 và `plan.md` v5.3 — mốc UX1.3.
+`docs/history/pre-ux-20260912/specification.md` v1.29 là hợp đồng kế thừa, không ghi đè yêu cầu mới.
+
+## UX1.3 — Thư viện nội bộ/cộng đồng và triển khai tuần tự — 2026-09-13
+
+- Phạm vi đợt: hoàn thiện nền giao diện UX1.3 theo kế hoạch tuần tự; tài liệu, thiết kế Google Stitch và dọn tệp thừa được giữ làm đầu vào, không thay dữ liệu Railway/Supabase trong slice này.
+- Bài nội bộ chỉ thành viên đơn vị đọc/sửa; thành viên ngang quyền. Bản chia sẻ cộng đồng có nội dung và tệp được chọn rõ ràng; người dùng đã đăng nhập, kể cả chưa có đơn vị, được đọc. Sửa nháp không sửa bản cộng đồng; thu hồi chặn truy cập mới cả bài, PDF, hình, tìm kiếm và dấu trang.
+- Bổ sung soạn trực quan/tự lưu/phiên bản/xung đột, PDF và trích văn bản, tìm tiếng Việt không dấu, nguồn theo bệnh viện, lưu bài, lưu trữ, thùng rác 30 ngày và khôi phục về nội bộ.
+- Giữ pylinac là bộ tính chính thức cho đủ danh mục, giao diện tham số/chọn tâm thuộc RT-CONNECT; không rút P7 còn ba ví dụ.
+- Kế hoạch có 21 giai đoạn P0–P20 theo đúng thứ tự, 260 tình huống nghiệm thu. Mỗi giai đoạn có trình tự triển khai, luồng thao tác, gói việc, trường hợp đúng/lỗi/phục hồi, kiểm chứng và bàn giao. Không mở giai đoạn sau khi giai đoạn trước chưa đóng.
+- Thiết kế mới và kết quả đối chiếu ghi tại [sổ thiết kế thư viện](docs/design/knowledge-library.md); không lấy số liệu/nội dung minh họa của Stitch làm nguồn chuyên môn.
+- Đã chuyển đặc tả cũ khỏi thư mục gốc vào lịch sử, sửa các liên kết đang có hiệu lực và thêm bản đồ tài liệu vào README. Bản lưu nghiệp vụ/kỹ thuật/kế hoạch cũ và bằng chứng triển khai vẫn được giữ nguyên.
+- Dọn tệp: đã bỏ bản đặc tả trùng nguồn ở thư mục gốc bằng cách chuyển vào lịch sử, không mất nội dung. Các thư mục nhớ đệm `.mypy_cache`, `.pytest_cache`, `.ruff_cache` đã nhận diện là có thể tạo lại nhưng thao tác xóa bị môi trường chặn; chúng vẫn được giữ, không ghi nhận đã xóa. Không xóa mã, tệp khóa, `.env`, mẫu thử hoặc bằng chứng còn được tham chiếu.
+- Kiểm chứng UX1.3: đạt 516/516 điều kiện, 21 giai đoạn/260 tình huống được mô tả; 15/15 phép thử bộ kiểm tài liệu đạt, gồm bỏ phụ thuộc giai đoạn trước. Bằng chứng: `docs/evidence/ux1-3-planning-contract-20260913.json`. Đây không phải 260 kiểm thử ứng dụng đã chạy. Kiểm 41 liên kết cục bộ không có liên kết hỏng; phần thân đặc tả đã chuyển đối chiếu khớp bản Git.
+- Stitch đã tạo năm màn: nội bộ, cộng đồng/tra cứu, soạn/chia sẻ, đọc bài/PDF, bài của đơn vị/thùng rác. Cả ba lượt sửa năm màn được dịch vụ xác nhận; kiểm cuối bằng lấy lại màn và tải mã mới vẫn nhận nội dung cũ. Sổ thiết kế ghi từng điểm chưa đồng bộ; chỉ coi năm bố cục là bản thiết kế ban đầu, chưa nghiệm thu giao diện hoặc bản sửa xuất từ Stitch.
+- P0 hoàn thành gói yêu cầu/tài liệu và bàn giao hướng thiết kế; kiểm giao diện thật thuộc P11. Không coi bố cục Stitch là chứng minh chức năng đã chạy. Việc xóa nhớ đệm bị chặn được ghi rõ, không ảnh hưởng hợp đồng triển khai.
+- P1 đã đạt `LOCAL_VERIFIED` trên HEAD `7a7e4ec`: API 204/204, web 9 tệp/20 phép thử, lint/typecheck/build, migration SQL và Compose full smoke đều đạt. Evidence: `docs/evidence/p1-foundation-recheck-20260913-7a7e4ec.json`. Đã sửa bộ kiểm manifest để dirty working tree tạo gate đúng và làm script P1 fail-closed; CI đã kiểm hợp đồng UX1.
+- P2 đã đạt `STAGING_VERIFIED` và mở P3: effective settings, psycopg 3/Alembic, CORS/Supabase/Auth session, health/readiness, web/API exact SHA parity và organization readback staging đều đạt. Evidence: [effective settings](docs/evidence/p2-railway-effective-settings-20260913.json), [public recheck trước triển khai API](docs/evidence/p2-staging-public-recheck-20260913.json), [public recheck sau triển khai API](docs/evidence/p2-staging-public-recheck-20260913-after-api-deploy.json), [authenticated browser](docs/evidence/p2-staging-authenticated-browser-20260913-7a7e4ec.json).
+- Production hiện chỉ có API nền cũ, chưa có web/worker/Auth packet đồng bộ; evidence: [production foundation gap](docs/evidence/p2-production-foundation-gap-20260913.json). Đây là cổng phát hành phải hoàn tất ở P19, không chặn P3–P18 xây dựng và kiểm thử trên local/staging.
+- P3 đã bắt đầu và đạt `LOCAL_VERIFIED_SLICE` với giao diện gọn, điều hướng năm mục và tiếng Việt ở luồng nền; giữ nguyên cổng production cho P19.
+
+### P3 — giao diện gọn, điều hướng và đăng nhập — local verified slice — 2026-09-13
+
+- Đã tạo `AppShell`, `CompactPage` và `SplitPane`; thanh điều hướng chỉ còn năm mục chính: Trang chủ, QA máy, Công cụ sinh học, Thư viện kiến thức và Đơn vị và thiết bị. Mã mô-đun không còn hiển thị trên thanh bên.
+- Đã làm gọn trang chủ, luồng đăng nhập, khôi phục truy cập, nhận lời mời, tạo đơn vị đầu tiên và trạng thái dịch vụ; các trạng thái chính dùng tiếng Việt, không hiển thị mã định danh kỹ thuật trong giao diện thường dùng.
+- Liên kết cũ `/app/biological/knowledge` chuyển về `/app/knowledge`; bố cục hai cột tự chuyển một cột ở màn hình nhỏ.
+- Kiểm chứng local: lint PASS, typecheck PASS, Vitest **22/22**, Playwright **3/3** trên máy tính tiếng Việt, máy tính múi giờ UTC và thiết bị di động, production build PASS; AX trang đăng nhập và kiểm năm mục PASS.
+- Evidence: [p3-local-ui-20260913.json](docs/evidence/p3-local-ui-20260913.json). Đây là `LOCAL_VERIFIED_SLICE`, chưa phải staging/public evidence. P03-VERIFY và P03-HANDOFF vẫn mở; chưa mở P4.
+
+Các mục UX1.2 và cũ hơn bên dưới là lịch sử; thứ tự tiếp tục và phạm vi mới do UX1.3 ở trên quyết định.
+
+## UX1.2 — Toàn bộ danh mục pylinac là phạm vi bắt buộc — 2026-09-13
+
+- Đợt này chỉ viết lại tài liệu, không sửa giao diện/engine, không commit/push/deploy và không cập nhật dữ liệu Railway/Stitch.
+- Năm mục chính: Trang chủ, QA máy, Công cụ sinh học, Thư viện kiến thức, Đơn vị và thiết bị. Báo cáo/lịch sử/xu hướng nằm trong QA; sáu phép tính/tra cứu sinh học cùng một trang.
+- Giữ đăng nhập/cơ cấu và thành viên ngang quyền; yêu cầu mới tập trung compact layout, tiếng Việt nhất quán, không JSON/ID kỹ thuật, xóa/khôi phục lịch sử, PDF chọn dòng/ảnh.
+- P7 UX1.2 bắt buộc đủ 16 họ mô-đun chính, mọi class/biến thể và các bài QA `contrib/One-Offs` công khai của wheel pylinac đã khóa; Picket Fence/Winston–Lutz/Starshot chỉ còn là ba package trong danh mục, không phải điều kiện đóng đầy đủ.
+- Pylinac là engine chính thức, không còn là lựa chọn ưu tiên. RT-CONNECT giữ form, validation, parameter mapping, thao tác click/drag tâm/ROI/profile, result mapping, lịch sử, đánh giá, overlay và PDF; không viết lại metric pylinac đã cung cấp.
+- P8 mới dùng Gamma pylinac 1D/2D với ô Chênh lệch liều (%) và DTA (mm). Gamma 3D `gamma-nd-p8.2` là evidence/engine kế thừa chỉ đọc, không tự đóng P8 UX1.2 và không được gắn nhãn pylinac.
+- Danh mục chi tiết và nguồn: `docs/pylinac-qa-catalog.md` v1.1. Mọi cập nhật pylinac phải inventory-diff registry và fail build nếu có capability chưa ánh xạ.
+- Trạng thái P0 tài liệu: LOCAL_VERIFIED trên working tree UX1.2 từ HEAD `7a7e4ec`, chưa commit. Verifier đạt 471/471 điều kiện, 21 phase và 226 acceptance scenarios; 14/14 test verifier đạt, gồm kiểm tra phủ định khi hạ version catalog hoặc bỏ module family, bài contrib khỏi plan/catalog hay bỏ PylinacAdapter. Evidence: `docs/evidence/ux1-planning-contract-20260913.json`. Đây không phải 226 test ứng dụng đã chạy.
+- Checkpoint UX1.1 trước đó đạt 423 điều kiện/21 phase/193 tình huống và 11 test verifier; evidence cũ vẫn giữ nhưng đã bị UX1.2 thay phạm vi.
+- Bước thực thi tiếp theo: P3/P4 khung gọn → P5/P6 catalog/input framework → P07-W02/W03 runtime+registry → các package P07-CAL…P07-CONTRIB → P8/P9/P10.
+- Bản ba tài liệu trước UX1 giữ nguyên trong `docs/history/pre-ux-20260912/`. Các checkpoint bên dưới là lịch sử theo SHA và không tự đóng testcase TC-UX1.
 
 ## P0/P18 — partitioned backend regression — PASS, monolithic runner anomaly documented — 2026-09-11 / `249a8ba`
 

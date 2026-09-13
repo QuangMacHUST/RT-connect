@@ -1,5 +1,7 @@
 # ROUTE REGISTRY DRAFT
 
+> **KẾ THỪA — đối chiếu UX1.3, 2026-09-13.** Các tuyến/màn bên dưới là bản cũ, không chứng minh màn còn hoạt động trên Stitch. Tuyến đích ở [đặc tả kỹ thuật mục 3.2](../technical-specification.md) v2.3, thứ tự ở [plan.md](../plan.md) v5.3. [Màn thư viện đã tạo trên Stitch](design/knowledge-library.md) có sổ riêng. Cộng đồng yêu cầu đăng nhập nhưng không bắt có đơn vị; tuyến soạn/quản lý nội bộ phải có đơn vị hiện hành. Giữ truy cập dữ liệu cũ qua bộ chuyển tiếp; không dùng bảng này làm menu đích.
+
 All routes are typed in source during P1. This registry is the P0 contract draft; routes without an active Stitch screen are explicit design gaps rather than omitted features.
 
 | Route | Module | Active Stitch source | Main API boundary | Phase |

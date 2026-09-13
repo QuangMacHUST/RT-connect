@@ -27,12 +27,12 @@ test('renders an API-backed platform health state', async () => {
 
   renderPage()
 
-  expect(await screen.findByText('OK')).toBeInTheDocument()
-  expect(screen.getByText('READY')).toBeInTheDocument()
-  expect(screen.getByText(/Schema: test-schema/)).toBeInTheDocument()
-  expect(screen.getByText('0.1.0')).toBeInTheDocument()
+  expect(await screen.findByText('BÌNH THƯỜNG')).toBeInTheDocument()
+  expect(screen.getAllByText('SẴN SÀNG')).toHaveLength(2)
+  expect(screen.getByText(/Mức sẵn sàng và phiên bản phải phù hợp/)).toBeInTheDocument()
+  expect(screen.getByText('ĐANG HOẠT ĐỘNG')).toBeInTheDocument()
   expect(screen.getByText(/Lần kiểm tra gần nhất:/)).toBeInTheDocument()
-  expect(screen.getByText(/Không có dữ liệu bệnh nhân/)).toBeInTheDocument()
+  expect(screen.getByText(/Không hiển thị dữ liệu bệnh nhân/)).toBeInTheDocument()
 })
 
 test('surfaces readiness failure instead of claiming the platform is ready', async () => {
@@ -42,7 +42,7 @@ test('surfaces readiness failure instead of claiming the platform is ready', asy
 
   renderPage()
 
-  expect(await screen.findByText('Không thể đọc đầy đủ trạng thái API', {}, { timeout: 5000 })).toBeInTheDocument()
+  expect(await screen.findByText('Không thể đọc đầy đủ trạng thái dịch vụ', {}, { timeout: 5000 })).toBeInTheDocument()
   expect(screen.getByText('schema mismatch')).toBeInTheDocument()
   expect(screen.getByText('CẦN XEM XÉT')).toBeInTheDocument()
 })
@@ -55,6 +55,6 @@ test('marks schema mismatch as needs review even when health is ok', async () =>
   renderPage()
 
   expect(await screen.findByText('CẦN XEM XÉT')).toBeInTheDocument()
-  expect(screen.getByText('MISMATCH')).toBeInTheDocument()
-  expect(screen.getByText(/schema parity phải cùng đạt/)).toBeInTheDocument()
+  expect(screen.getByText('KHÔNG KHỚP')).toBeInTheDocument()
+  expect(screen.getByText(/Mức sẵn sàng và phiên bản phải phù hợp/)).toBeInTheDocument()
 })

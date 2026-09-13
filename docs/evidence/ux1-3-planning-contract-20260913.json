@@ -1,0 +1,2603 @@
+{
+  "schema_version": "rt-connect.planning-contract-verification.v2",
+  "captured_at_utc": "2026-09-13T07:46:33.517338+00:00",
+  "repository": "E:\\hoctap\\2026\\RT-connect",
+  "document_versions": {
+    "business": "1.3",
+    "specification": "1.29",
+    "technical": "2.3",
+    "plan": "5.3",
+    "pylinac_catalog": "1.1"
+  },
+  "phase_count": 21,
+  "acceptance_scenario_count": 260,
+  "passed": true,
+  "failed_check_count": 0,
+  "checks": [
+    {
+      "name": "file.business",
+      "ok": true,
+      "details": "business-analysis.md"
+    },
+    {
+      "name": "file.specification",
+      "ok": true,
+      "details": "docs\\history\\pre-ux-20260912\\specification.md"
+    },
+    {
+      "name": "file.technical",
+      "ok": true,
+      "details": "technical-specification.md"
+    },
+    {
+      "name": "file.plan",
+      "ok": true,
+      "details": "plan.md"
+    },
+    {
+      "name": "file.progress",
+      "ok": true,
+      "details": "implementation-progress.md"
+    },
+    {
+      "name": "file.pylinac_catalog",
+      "ok": true,
+      "details": "docs\\pylinac-qa-catalog.md"
+    },
+    {
+      "name": "version.business",
+      "ok": true,
+      "details": "expected=1.3; observed=1.3"
+    },
+    {
+      "name": "version.specification",
+      "ok": true,
+      "details": "expected=1.29; observed=1.29"
+    },
+    {
+      "name": "version.technical",
+      "ok": true,
+      "details": "expected=2.3; observed=2.3"
+    },
+    {
+      "name": "version.plan",
+      "ok": true,
+      "details": "expected=5.3; observed=5.3"
+    },
+    {
+      "name": "version.pylinac_catalog",
+      "ok": true,
+      "details": "expected=1.1; observed=1.1"
+    },
+    {
+      "name": "reference.business.plan",
+      "ok": true,
+      "details": "required=plan.md v5.3 or `plan.md` v5.3"
+    },
+    {
+      "name": "reference.specification.plan",
+      "ok": true,
+      "details": "required=plan.md v5.3 or `plan.md` v5.3"
+    },
+    {
+      "name": "reference.technical.plan",
+      "ok": true,
+      "details": "required=plan.md v5.3 or `plan.md` v5.3"
+    },
+    {
+      "name": "reference.progress.plan",
+      "ok": true,
+      "details": "required=plan.md v5.3 or `plan.md` v5.3"
+    },
+    {
+      "name": "marker.business.navigation",
+      "ok": true,
+      "details": "required=## 3. Cấu trúc điều hướng mới"
+    },
+    {
+      "name": "marker.business.no_technical_ui",
+      "ok": true,
+      "details": "required=### 3.3. Không yêu cầu kiến thức kỹ thuật"
+    },
+    {
+      "name": "marker.business.deletion",
+      "ok": true,
+      "details": "required=### 7.2. Xóa và khôi phục"
+    },
+    {
+      "name": "marker.business.biological",
+      "ok": true,
+      "details": "required=## 9. Công cụ sinh học — một trang, tính đơn giản trước"
+    },
+    {
+      "name": "marker.business.knowledge",
+      "ok": true,
+      "details": "required=## 10. Thư viện kiến thức"
+    },
+    {
+      "name": "marker.business.propagation",
+      "ok": true,
+      "details": "required=## 11. Yêu cầu liên kết và tính nhất quán"
+    },
+    {
+      "name": "marker.specification.legacy",
+      "ok": true,
+      "details": "required=TÀI LIỆU KẾ THỪA"
+    },
+    {
+      "name": "marker.technical.operations",
+      "ok": true,
+      "details": "required=### 5.2. Hợp đồng operation tối thiểu"
+    },
+    {
+      "name": "marker.technical.errors",
+      "ok": true,
+      "details": "required=### 5.3. Error/recovery record chuẩn"
+    },
+    {
+      "name": "marker.technical.release",
+      "ok": true,
+      "details": "required=### 13.2. Release manifest và rollback"
+    },
+    {
+      "name": "marker.technical.migration",
+      "ok": true,
+      "details": "required=## 4. Mô hình nghiệp vụ đích và chuyển đổi dữ liệu"
+    },
+    {
+      "name": "marker.plan.dependencies",
+      "ok": true,
+      "details": "required=### 2.1. Thứ tự bắt buộc, hoàn thành từng giai đoạn"
+    },
+    {
+      "name": "marker.plan.package_states",
+      "ok": true,
+      "details": "required=### 2.2. Trạng thái công việc và bàn giao"
+    },
+    {
+      "name": "marker.plan.legacy_crosswalk",
+      "ok": true,
+      "details": "required=## 3. Ma trận chuyển đổi phạm vi cũ sang UX1"
+    },
+    {
+      "name": "phase.0.plan_heading",
+      "ok": true,
+      "details": "heading=## P0 —"
+    },
+    {
+      "name": "phase.0.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.0.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.0.section.trình_tự_triển_khai_p0",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P0"
+    },
+    {
+      "name": "phase.0.section.luồng_thao_tác_p0",
+      "ok": true,
+      "details": "required=### Luồng thao tác P0"
+    },
+    {
+      "name": "phase.0.section.trường_hợp_chạy_đúng_p0",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P0"
+    },
+    {
+      "name": "phase.0.section.trường_hợp_lỗi_và_phục_hồi_p0",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P0"
+    },
+    {
+      "name": "phase.0.section.bất_biến_và_điều_kiện_đóng_p0",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P0"
+    },
+    {
+      "name": "phase.0.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.0.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.0.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.0.package.w01",
+      "ok": true,
+      "details": "package=P00-W01"
+    },
+    {
+      "name": "phase.0.package.w02",
+      "ok": true,
+      "details": "package=P00-W02"
+    },
+    {
+      "name": "phase.0.package.w03",
+      "ok": true,
+      "details": "package=P00-W03"
+    },
+    {
+      "name": "phase.0.package.w04",
+      "ok": true,
+      "details": "package=P00-W04"
+    },
+    {
+      "name": "phase.0.package.verify",
+      "ok": true,
+      "details": "package=P00-VERIFY"
+    },
+    {
+      "name": "phase.0.package.handoff",
+      "ok": true,
+      "details": "package=P00-HANDOFF"
+    },
+    {
+      "name": "phase.1.plan_heading",
+      "ok": true,
+      "details": "heading=## P1 —"
+    },
+    {
+      "name": "phase.1.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.1.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.1.section.trình_tự_triển_khai_p1",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P1"
+    },
+    {
+      "name": "phase.1.section.luồng_thao_tác_p1",
+      "ok": true,
+      "details": "required=### Luồng thao tác P1"
+    },
+    {
+      "name": "phase.1.section.trường_hợp_chạy_đúng_p1",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P1"
+    },
+    {
+      "name": "phase.1.section.trường_hợp_lỗi_và_phục_hồi_p1",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P1"
+    },
+    {
+      "name": "phase.1.section.bất_biến_và_điều_kiện_đóng_p1",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P1"
+    },
+    {
+      "name": "phase.1.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.1.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.1.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.1.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.1.package.w01",
+      "ok": true,
+      "details": "package=P01-W01"
+    },
+    {
+      "name": "phase.1.package.w02",
+      "ok": true,
+      "details": "package=P01-W02"
+    },
+    {
+      "name": "phase.1.package.w03",
+      "ok": true,
+      "details": "package=P01-W03"
+    },
+    {
+      "name": "phase.1.package.w04",
+      "ok": true,
+      "details": "package=P01-W04"
+    },
+    {
+      "name": "phase.1.package.verify",
+      "ok": true,
+      "details": "package=P01-VERIFY"
+    },
+    {
+      "name": "phase.1.package.handoff",
+      "ok": true,
+      "details": "package=P01-HANDOFF"
+    },
+    {
+      "name": "phase.2.plan_heading",
+      "ok": true,
+      "details": "heading=## P2 —"
+    },
+    {
+      "name": "phase.2.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.2.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.2.section.trình_tự_triển_khai_p2",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P2"
+    },
+    {
+      "name": "phase.2.section.luồng_thao_tác_p2",
+      "ok": true,
+      "details": "required=### Luồng thao tác P2"
+    },
+    {
+      "name": "phase.2.section.trường_hợp_chạy_đúng_p2",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P2"
+    },
+    {
+      "name": "phase.2.section.trường_hợp_lỗi_và_phục_hồi_p2",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P2"
+    },
+    {
+      "name": "phase.2.section.bất_biến_và_điều_kiện_đóng_p2",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P2"
+    },
+    {
+      "name": "phase.2.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.2.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.2.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.2.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.2.package.w01",
+      "ok": true,
+      "details": "package=P02-W01"
+    },
+    {
+      "name": "phase.2.package.w02",
+      "ok": true,
+      "details": "package=P02-W02"
+    },
+    {
+      "name": "phase.2.package.w03",
+      "ok": true,
+      "details": "package=P02-W03"
+    },
+    {
+      "name": "phase.2.package.w04",
+      "ok": true,
+      "details": "package=P02-W04"
+    },
+    {
+      "name": "phase.2.package.verify",
+      "ok": true,
+      "details": "package=P02-VERIFY"
+    },
+    {
+      "name": "phase.2.package.handoff",
+      "ok": true,
+      "details": "package=P02-HANDOFF"
+    },
+    {
+      "name": "phase.3.plan_heading",
+      "ok": true,
+      "details": "heading=## P3 —"
+    },
+    {
+      "name": "phase.3.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.3.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.3.section.trình_tự_triển_khai_p3",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P3"
+    },
+    {
+      "name": "phase.3.section.luồng_thao_tác_p3",
+      "ok": true,
+      "details": "required=### Luồng thao tác P3"
+    },
+    {
+      "name": "phase.3.section.trường_hợp_chạy_đúng_p3",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P3"
+    },
+    {
+      "name": "phase.3.section.trường_hợp_lỗi_và_phục_hồi_p3",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P3"
+    },
+    {
+      "name": "phase.3.section.bất_biến_và_điều_kiện_đóng_p3",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P3"
+    },
+    {
+      "name": "phase.3.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.3.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.3.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.3.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.3.package.w01",
+      "ok": true,
+      "details": "package=P03-W01"
+    },
+    {
+      "name": "phase.3.package.w02",
+      "ok": true,
+      "details": "package=P03-W02"
+    },
+    {
+      "name": "phase.3.package.w03",
+      "ok": true,
+      "details": "package=P03-W03"
+    },
+    {
+      "name": "phase.3.package.w04",
+      "ok": true,
+      "details": "package=P03-W04"
+    },
+    {
+      "name": "phase.3.package.verify",
+      "ok": true,
+      "details": "package=P03-VERIFY"
+    },
+    {
+      "name": "phase.3.package.handoff",
+      "ok": true,
+      "details": "package=P03-HANDOFF"
+    },
+    {
+      "name": "phase.4.plan_heading",
+      "ok": true,
+      "details": "heading=## P4 —"
+    },
+    {
+      "name": "phase.4.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.4.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.4.section.trình_tự_triển_khai_p4",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P4"
+    },
+    {
+      "name": "phase.4.section.luồng_thao_tác_p4",
+      "ok": true,
+      "details": "required=### Luồng thao tác P4"
+    },
+    {
+      "name": "phase.4.section.trường_hợp_chạy_đúng_p4",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P4"
+    },
+    {
+      "name": "phase.4.section.trường_hợp_lỗi_và_phục_hồi_p4",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P4"
+    },
+    {
+      "name": "phase.4.section.bất_biến_và_điều_kiện_đóng_p4",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P4"
+    },
+    {
+      "name": "phase.4.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.4.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.4.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.4.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.4.package.w01",
+      "ok": true,
+      "details": "package=P04-W01"
+    },
+    {
+      "name": "phase.4.package.w02",
+      "ok": true,
+      "details": "package=P04-W02"
+    },
+    {
+      "name": "phase.4.package.w03",
+      "ok": true,
+      "details": "package=P04-W03"
+    },
+    {
+      "name": "phase.4.package.w04",
+      "ok": true,
+      "details": "package=P04-W04"
+    },
+    {
+      "name": "phase.4.package.verify",
+      "ok": true,
+      "details": "package=P04-VERIFY"
+    },
+    {
+      "name": "phase.4.package.handoff",
+      "ok": true,
+      "details": "package=P04-HANDOFF"
+    },
+    {
+      "name": "phase.5.plan_heading",
+      "ok": true,
+      "details": "heading=## P5 —"
+    },
+    {
+      "name": "phase.5.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.5.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.5.section.trình_tự_triển_khai_p5",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P5"
+    },
+    {
+      "name": "phase.5.section.luồng_thao_tác_p5",
+      "ok": true,
+      "details": "required=### Luồng thao tác P5"
+    },
+    {
+      "name": "phase.5.section.trường_hợp_chạy_đúng_p5",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P5"
+    },
+    {
+      "name": "phase.5.section.trường_hợp_lỗi_và_phục_hồi_p5",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P5"
+    },
+    {
+      "name": "phase.5.section.bất_biến_và_điều_kiện_đóng_p5",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P5"
+    },
+    {
+      "name": "phase.5.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.5.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.5.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.5.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.5.package.w01",
+      "ok": true,
+      "details": "package=P05-W01"
+    },
+    {
+      "name": "phase.5.package.w02",
+      "ok": true,
+      "details": "package=P05-W02"
+    },
+    {
+      "name": "phase.5.package.w03",
+      "ok": true,
+      "details": "package=P05-W03"
+    },
+    {
+      "name": "phase.5.package.w04",
+      "ok": true,
+      "details": "package=P05-W04"
+    },
+    {
+      "name": "phase.5.package.verify",
+      "ok": true,
+      "details": "package=P05-VERIFY"
+    },
+    {
+      "name": "phase.5.package.handoff",
+      "ok": true,
+      "details": "package=P05-HANDOFF"
+    },
+    {
+      "name": "phase.6.plan_heading",
+      "ok": true,
+      "details": "heading=## P6 —"
+    },
+    {
+      "name": "phase.6.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.6.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.6.section.trình_tự_triển_khai_p6",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P6"
+    },
+    {
+      "name": "phase.6.section.luồng_thao_tác_p6",
+      "ok": true,
+      "details": "required=### Luồng thao tác P6"
+    },
+    {
+      "name": "phase.6.section.trường_hợp_chạy_đúng_p6",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P6"
+    },
+    {
+      "name": "phase.6.section.trường_hợp_lỗi_và_phục_hồi_p6",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P6"
+    },
+    {
+      "name": "phase.6.section.bất_biến_và_điều_kiện_đóng_p6",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P6"
+    },
+    {
+      "name": "phase.6.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.6.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.6.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.6.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.6.package.w01",
+      "ok": true,
+      "details": "package=P06-W01"
+    },
+    {
+      "name": "phase.6.package.w02",
+      "ok": true,
+      "details": "package=P06-W02"
+    },
+    {
+      "name": "phase.6.package.w03",
+      "ok": true,
+      "details": "package=P06-W03"
+    },
+    {
+      "name": "phase.6.package.w04",
+      "ok": true,
+      "details": "package=P06-W04"
+    },
+    {
+      "name": "phase.6.package.verify",
+      "ok": true,
+      "details": "package=P06-VERIFY"
+    },
+    {
+      "name": "phase.6.package.handoff",
+      "ok": true,
+      "details": "package=P06-HANDOFF"
+    },
+    {
+      "name": "phase.7.plan_heading",
+      "ok": true,
+      "details": "heading=## P7 —"
+    },
+    {
+      "name": "phase.7.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.7.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.7.section.trình_tự_triển_khai_p7",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P7"
+    },
+    {
+      "name": "phase.7.section.luồng_thao_tác_p7",
+      "ok": true,
+      "details": "required=### Luồng thao tác P7"
+    },
+    {
+      "name": "phase.7.section.trường_hợp_chạy_đúng_p7",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P7"
+    },
+    {
+      "name": "phase.7.section.trường_hợp_lỗi_và_phục_hồi_p7",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P7"
+    },
+    {
+      "name": "phase.7.section.bất_biến_và_điều_kiện_đóng_p7",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P7"
+    },
+    {
+      "name": "phase.7.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.7.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.7.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.7.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.7.package.w01",
+      "ok": true,
+      "details": "package=P07-W01"
+    },
+    {
+      "name": "phase.7.package.w02",
+      "ok": true,
+      "details": "package=P07-W02"
+    },
+    {
+      "name": "phase.7.package.w03",
+      "ok": true,
+      "details": "package=P07-W03"
+    },
+    {
+      "name": "phase.7.package.w04",
+      "ok": true,
+      "details": "package=P07-W04"
+    },
+    {
+      "name": "phase.7.package.verify",
+      "ok": true,
+      "details": "package=P07-VERIFY"
+    },
+    {
+      "name": "phase.7.package.handoff",
+      "ok": true,
+      "details": "package=P07-HANDOFF"
+    },
+    {
+      "name": "phase.8.plan_heading",
+      "ok": true,
+      "details": "heading=## P8 —"
+    },
+    {
+      "name": "phase.8.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.8.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.8.section.trình_tự_triển_khai_p8",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P8"
+    },
+    {
+      "name": "phase.8.section.luồng_thao_tác_p8",
+      "ok": true,
+      "details": "required=### Luồng thao tác P8"
+    },
+    {
+      "name": "phase.8.section.trường_hợp_chạy_đúng_p8",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P8"
+    },
+    {
+      "name": "phase.8.section.trường_hợp_lỗi_và_phục_hồi_p8",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P8"
+    },
+    {
+      "name": "phase.8.section.bất_biến_và_điều_kiện_đóng_p8",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P8"
+    },
+    {
+      "name": "phase.8.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.8.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.8.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.8.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.8.package.w01",
+      "ok": true,
+      "details": "package=P08-W01"
+    },
+    {
+      "name": "phase.8.package.w02",
+      "ok": true,
+      "details": "package=P08-W02"
+    },
+    {
+      "name": "phase.8.package.w03",
+      "ok": true,
+      "details": "package=P08-W03"
+    },
+    {
+      "name": "phase.8.package.w04",
+      "ok": true,
+      "details": "package=P08-W04"
+    },
+    {
+      "name": "phase.8.package.verify",
+      "ok": true,
+      "details": "package=P08-VERIFY"
+    },
+    {
+      "name": "phase.8.package.handoff",
+      "ok": true,
+      "details": "package=P08-HANDOFF"
+    },
+    {
+      "name": "phase.9.plan_heading",
+      "ok": true,
+      "details": "heading=## P9 —"
+    },
+    {
+      "name": "phase.9.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.9.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.9.section.trình_tự_triển_khai_p9",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P9"
+    },
+    {
+      "name": "phase.9.section.luồng_thao_tác_p9",
+      "ok": true,
+      "details": "required=### Luồng thao tác P9"
+    },
+    {
+      "name": "phase.9.section.trường_hợp_chạy_đúng_p9",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P9"
+    },
+    {
+      "name": "phase.9.section.trường_hợp_lỗi_và_phục_hồi_p9",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P9"
+    },
+    {
+      "name": "phase.9.section.bất_biến_và_điều_kiện_đóng_p9",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P9"
+    },
+    {
+      "name": "phase.9.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.9.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.9.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.9.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.9.package.w01",
+      "ok": true,
+      "details": "package=P09-W01"
+    },
+    {
+      "name": "phase.9.package.w02",
+      "ok": true,
+      "details": "package=P09-W02"
+    },
+    {
+      "name": "phase.9.package.w03",
+      "ok": true,
+      "details": "package=P09-W03"
+    },
+    {
+      "name": "phase.9.package.w04",
+      "ok": true,
+      "details": "package=P09-W04"
+    },
+    {
+      "name": "phase.9.package.verify",
+      "ok": true,
+      "details": "package=P09-VERIFY"
+    },
+    {
+      "name": "phase.9.package.handoff",
+      "ok": true,
+      "details": "package=P09-HANDOFF"
+    },
+    {
+      "name": "phase.10.plan_heading",
+      "ok": true,
+      "details": "heading=## P10 —"
+    },
+    {
+      "name": "phase.10.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.10.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.10.section.trình_tự_triển_khai_p10",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P10"
+    },
+    {
+      "name": "phase.10.section.luồng_thao_tác_p10",
+      "ok": true,
+      "details": "required=### Luồng thao tác P10"
+    },
+    {
+      "name": "phase.10.section.trường_hợp_chạy_đúng_p10",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P10"
+    },
+    {
+      "name": "phase.10.section.trường_hợp_lỗi_và_phục_hồi_p10",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P10"
+    },
+    {
+      "name": "phase.10.section.bất_biến_và_điều_kiện_đóng_p10",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P10"
+    },
+    {
+      "name": "phase.10.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.10.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.10.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.10.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.10.package.w01",
+      "ok": true,
+      "details": "package=P10-W01"
+    },
+    {
+      "name": "phase.10.package.w02",
+      "ok": true,
+      "details": "package=P10-W02"
+    },
+    {
+      "name": "phase.10.package.w03",
+      "ok": true,
+      "details": "package=P10-W03"
+    },
+    {
+      "name": "phase.10.package.w04",
+      "ok": true,
+      "details": "package=P10-W04"
+    },
+    {
+      "name": "phase.10.package.verify",
+      "ok": true,
+      "details": "package=P10-VERIFY"
+    },
+    {
+      "name": "phase.10.package.handoff",
+      "ok": true,
+      "details": "package=P10-HANDOFF"
+    },
+    {
+      "name": "phase.11.plan_heading",
+      "ok": true,
+      "details": "heading=## P11 —"
+    },
+    {
+      "name": "phase.11.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.11.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.11.section.trình_tự_triển_khai_p11",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P11"
+    },
+    {
+      "name": "phase.11.section.luồng_thao_tác_p11",
+      "ok": true,
+      "details": "required=### Luồng thao tác P11"
+    },
+    {
+      "name": "phase.11.section.trường_hợp_chạy_đúng_p11",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P11"
+    },
+    {
+      "name": "phase.11.section.trường_hợp_lỗi_và_phục_hồi_p11",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P11"
+    },
+    {
+      "name": "phase.11.section.bất_biến_và_điều_kiện_đóng_p11",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P11"
+    },
+    {
+      "name": "phase.11.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.11.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.11.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.11.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.11.package.w01",
+      "ok": true,
+      "details": "package=P11-W01"
+    },
+    {
+      "name": "phase.11.package.w02",
+      "ok": true,
+      "details": "package=P11-W02"
+    },
+    {
+      "name": "phase.11.package.w03",
+      "ok": true,
+      "details": "package=P11-W03"
+    },
+    {
+      "name": "phase.11.package.w04",
+      "ok": true,
+      "details": "package=P11-W04"
+    },
+    {
+      "name": "phase.11.package.verify",
+      "ok": true,
+      "details": "package=P11-VERIFY"
+    },
+    {
+      "name": "phase.11.package.handoff",
+      "ok": true,
+      "details": "package=P11-HANDOFF"
+    },
+    {
+      "name": "phase.12.plan_heading",
+      "ok": true,
+      "details": "heading=## P12 —"
+    },
+    {
+      "name": "phase.12.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.12.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.12.section.trình_tự_triển_khai_p12",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P12"
+    },
+    {
+      "name": "phase.12.section.luồng_thao_tác_p12",
+      "ok": true,
+      "details": "required=### Luồng thao tác P12"
+    },
+    {
+      "name": "phase.12.section.trường_hợp_chạy_đúng_p12",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P12"
+    },
+    {
+      "name": "phase.12.section.trường_hợp_lỗi_và_phục_hồi_p12",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P12"
+    },
+    {
+      "name": "phase.12.section.bất_biến_và_điều_kiện_đóng_p12",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P12"
+    },
+    {
+      "name": "phase.12.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.12.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.12.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.12.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.12.package.w01",
+      "ok": true,
+      "details": "package=P12-W01"
+    },
+    {
+      "name": "phase.12.package.w02",
+      "ok": true,
+      "details": "package=P12-W02"
+    },
+    {
+      "name": "phase.12.package.w03",
+      "ok": true,
+      "details": "package=P12-W03"
+    },
+    {
+      "name": "phase.12.package.w04",
+      "ok": true,
+      "details": "package=P12-W04"
+    },
+    {
+      "name": "phase.12.package.verify",
+      "ok": true,
+      "details": "package=P12-VERIFY"
+    },
+    {
+      "name": "phase.12.package.handoff",
+      "ok": true,
+      "details": "package=P12-HANDOFF"
+    },
+    {
+      "name": "phase.13.plan_heading",
+      "ok": true,
+      "details": "heading=## P13 —"
+    },
+    {
+      "name": "phase.13.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.13.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.13.section.trình_tự_triển_khai_p13",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P13"
+    },
+    {
+      "name": "phase.13.section.luồng_thao_tác_p13",
+      "ok": true,
+      "details": "required=### Luồng thao tác P13"
+    },
+    {
+      "name": "phase.13.section.trường_hợp_chạy_đúng_p13",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P13"
+    },
+    {
+      "name": "phase.13.section.trường_hợp_lỗi_và_phục_hồi_p13",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P13"
+    },
+    {
+      "name": "phase.13.section.bất_biến_và_điều_kiện_đóng_p13",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P13"
+    },
+    {
+      "name": "phase.13.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.13.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.13.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.13.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.13.package.w01",
+      "ok": true,
+      "details": "package=P13-W01"
+    },
+    {
+      "name": "phase.13.package.w02",
+      "ok": true,
+      "details": "package=P13-W02"
+    },
+    {
+      "name": "phase.13.package.w03",
+      "ok": true,
+      "details": "package=P13-W03"
+    },
+    {
+      "name": "phase.13.package.w04",
+      "ok": true,
+      "details": "package=P13-W04"
+    },
+    {
+      "name": "phase.13.package.verify",
+      "ok": true,
+      "details": "package=P13-VERIFY"
+    },
+    {
+      "name": "phase.13.package.handoff",
+      "ok": true,
+      "details": "package=P13-HANDOFF"
+    },
+    {
+      "name": "phase.14.plan_heading",
+      "ok": true,
+      "details": "heading=## P14 —"
+    },
+    {
+      "name": "phase.14.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.14.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.14.section.trình_tự_triển_khai_p14",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P14"
+    },
+    {
+      "name": "phase.14.section.luồng_thao_tác_p14",
+      "ok": true,
+      "details": "required=### Luồng thao tác P14"
+    },
+    {
+      "name": "phase.14.section.trường_hợp_chạy_đúng_p14",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P14"
+    },
+    {
+      "name": "phase.14.section.trường_hợp_lỗi_và_phục_hồi_p14",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P14"
+    },
+    {
+      "name": "phase.14.section.bất_biến_và_điều_kiện_đóng_p14",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P14"
+    },
+    {
+      "name": "phase.14.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.14.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.14.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.14.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.14.package.w01",
+      "ok": true,
+      "details": "package=P14-W01"
+    },
+    {
+      "name": "phase.14.package.w02",
+      "ok": true,
+      "details": "package=P14-W02"
+    },
+    {
+      "name": "phase.14.package.w03",
+      "ok": true,
+      "details": "package=P14-W03"
+    },
+    {
+      "name": "phase.14.package.w04",
+      "ok": true,
+      "details": "package=P14-W04"
+    },
+    {
+      "name": "phase.14.package.verify",
+      "ok": true,
+      "details": "package=P14-VERIFY"
+    },
+    {
+      "name": "phase.14.package.handoff",
+      "ok": true,
+      "details": "package=P14-HANDOFF"
+    },
+    {
+      "name": "phase.15.plan_heading",
+      "ok": true,
+      "details": "heading=## P15 —"
+    },
+    {
+      "name": "phase.15.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.15.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.15.section.trình_tự_triển_khai_p15",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P15"
+    },
+    {
+      "name": "phase.15.section.luồng_thao_tác_p15",
+      "ok": true,
+      "details": "required=### Luồng thao tác P15"
+    },
+    {
+      "name": "phase.15.section.trường_hợp_chạy_đúng_p15",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P15"
+    },
+    {
+      "name": "phase.15.section.trường_hợp_lỗi_và_phục_hồi_p15",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P15"
+    },
+    {
+      "name": "phase.15.section.bất_biến_và_điều_kiện_đóng_p15",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P15"
+    },
+    {
+      "name": "phase.15.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.15.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.15.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.15.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.15.package.w01",
+      "ok": true,
+      "details": "package=P15-W01"
+    },
+    {
+      "name": "phase.15.package.w02",
+      "ok": true,
+      "details": "package=P15-W02"
+    },
+    {
+      "name": "phase.15.package.w03",
+      "ok": true,
+      "details": "package=P15-W03"
+    },
+    {
+      "name": "phase.15.package.w04",
+      "ok": true,
+      "details": "package=P15-W04"
+    },
+    {
+      "name": "phase.15.package.verify",
+      "ok": true,
+      "details": "package=P15-VERIFY"
+    },
+    {
+      "name": "phase.15.package.handoff",
+      "ok": true,
+      "details": "package=P15-HANDOFF"
+    },
+    {
+      "name": "phase.16.plan_heading",
+      "ok": true,
+      "details": "heading=## P16 —"
+    },
+    {
+      "name": "phase.16.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.16.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.16.section.trình_tự_triển_khai_p16",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P16"
+    },
+    {
+      "name": "phase.16.section.luồng_thao_tác_p16",
+      "ok": true,
+      "details": "required=### Luồng thao tác P16"
+    },
+    {
+      "name": "phase.16.section.trường_hợp_chạy_đúng_p16",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P16"
+    },
+    {
+      "name": "phase.16.section.trường_hợp_lỗi_và_phục_hồi_p16",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P16"
+    },
+    {
+      "name": "phase.16.section.bất_biến_và_điều_kiện_đóng_p16",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P16"
+    },
+    {
+      "name": "phase.16.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.16.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.16.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.16.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.16.package.w01",
+      "ok": true,
+      "details": "package=P16-W01"
+    },
+    {
+      "name": "phase.16.package.w02",
+      "ok": true,
+      "details": "package=P16-W02"
+    },
+    {
+      "name": "phase.16.package.w03",
+      "ok": true,
+      "details": "package=P16-W03"
+    },
+    {
+      "name": "phase.16.package.w04",
+      "ok": true,
+      "details": "package=P16-W04"
+    },
+    {
+      "name": "phase.16.package.verify",
+      "ok": true,
+      "details": "package=P16-VERIFY"
+    },
+    {
+      "name": "phase.16.package.handoff",
+      "ok": true,
+      "details": "package=P16-HANDOFF"
+    },
+    {
+      "name": "phase.17.plan_heading",
+      "ok": true,
+      "details": "heading=## P17 —"
+    },
+    {
+      "name": "phase.17.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.17.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.17.section.trình_tự_triển_khai_p17",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P17"
+    },
+    {
+      "name": "phase.17.section.luồng_thao_tác_p17",
+      "ok": true,
+      "details": "required=### Luồng thao tác P17"
+    },
+    {
+      "name": "phase.17.section.trường_hợp_chạy_đúng_p17",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P17"
+    },
+    {
+      "name": "phase.17.section.trường_hợp_lỗi_và_phục_hồi_p17",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P17"
+    },
+    {
+      "name": "phase.17.section.bất_biến_và_điều_kiện_đóng_p17",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P17"
+    },
+    {
+      "name": "phase.17.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.17.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.17.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.17.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.17.package.w01",
+      "ok": true,
+      "details": "package=P17-W01"
+    },
+    {
+      "name": "phase.17.package.w02",
+      "ok": true,
+      "details": "package=P17-W02"
+    },
+    {
+      "name": "phase.17.package.w03",
+      "ok": true,
+      "details": "package=P17-W03"
+    },
+    {
+      "name": "phase.17.package.w04",
+      "ok": true,
+      "details": "package=P17-W04"
+    },
+    {
+      "name": "phase.17.package.verify",
+      "ok": true,
+      "details": "package=P17-VERIFY"
+    },
+    {
+      "name": "phase.17.package.handoff",
+      "ok": true,
+      "details": "package=P17-HANDOFF"
+    },
+    {
+      "name": "phase.18.plan_heading",
+      "ok": true,
+      "details": "heading=## P18 —"
+    },
+    {
+      "name": "phase.18.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.18.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.18.section.trình_tự_triển_khai_p18",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P18"
+    },
+    {
+      "name": "phase.18.section.luồng_thao_tác_p18",
+      "ok": true,
+      "details": "required=### Luồng thao tác P18"
+    },
+    {
+      "name": "phase.18.section.trường_hợp_chạy_đúng_p18",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P18"
+    },
+    {
+      "name": "phase.18.section.trường_hợp_lỗi_và_phục_hồi_p18",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P18"
+    },
+    {
+      "name": "phase.18.section.bất_biến_và_điều_kiện_đóng_p18",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P18"
+    },
+    {
+      "name": "phase.18.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.18.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.18.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.18.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.18.package.w01",
+      "ok": true,
+      "details": "package=P18-W01"
+    },
+    {
+      "name": "phase.18.package.w02",
+      "ok": true,
+      "details": "package=P18-W02"
+    },
+    {
+      "name": "phase.18.package.w03",
+      "ok": true,
+      "details": "package=P18-W03"
+    },
+    {
+      "name": "phase.18.package.w04",
+      "ok": true,
+      "details": "package=P18-W04"
+    },
+    {
+      "name": "phase.18.package.verify",
+      "ok": true,
+      "details": "package=P18-VERIFY"
+    },
+    {
+      "name": "phase.18.package.handoff",
+      "ok": true,
+      "details": "package=P18-HANDOFF"
+    },
+    {
+      "name": "phase.19.plan_heading",
+      "ok": true,
+      "details": "heading=## P19 —"
+    },
+    {
+      "name": "phase.19.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.19.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.19.section.trình_tự_triển_khai_p19",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P19"
+    },
+    {
+      "name": "phase.19.section.luồng_thao_tác_p19",
+      "ok": true,
+      "details": "required=### Luồng thao tác P19"
+    },
+    {
+      "name": "phase.19.section.trường_hợp_chạy_đúng_p19",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P19"
+    },
+    {
+      "name": "phase.19.section.trường_hợp_lỗi_và_phục_hồi_p19",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P19"
+    },
+    {
+      "name": "phase.19.section.bất_biến_và_điều_kiện_đóng_p19",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P19"
+    },
+    {
+      "name": "phase.19.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.19.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.19.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.19.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.19.package.w01",
+      "ok": true,
+      "details": "package=P19-W01"
+    },
+    {
+      "name": "phase.19.package.w02",
+      "ok": true,
+      "details": "package=P19-W02"
+    },
+    {
+      "name": "phase.19.package.w03",
+      "ok": true,
+      "details": "package=P19-W03"
+    },
+    {
+      "name": "phase.19.package.w04",
+      "ok": true,
+      "details": "package=P19-W04"
+    },
+    {
+      "name": "phase.19.package.verify",
+      "ok": true,
+      "details": "package=P19-VERIFY"
+    },
+    {
+      "name": "phase.19.package.handoff",
+      "ok": true,
+      "details": "package=P19-HANDOFF"
+    },
+    {
+      "name": "phase.20.plan_heading",
+      "ok": true,
+      "details": "heading=## P20 —"
+    },
+    {
+      "name": "phase.20.business_mapping",
+      "ok": true,
+      "details": "UX1 requirement mapped in business table"
+    },
+    {
+      "name": "phase.20.technical_mapping",
+      "ok": true,
+      "details": "phase mapped in current technical document, not legacy specification"
+    },
+    {
+      "name": "phase.20.section.trình_tự_triển_khai_p20",
+      "ok": true,
+      "details": "required=### Trình tự triển khai P20"
+    },
+    {
+      "name": "phase.20.section.luồng_thao_tác_p20",
+      "ok": true,
+      "details": "required=### Luồng thao tác P20"
+    },
+    {
+      "name": "phase.20.section.trường_hợp_chạy_đúng_p20",
+      "ok": true,
+      "details": "required=### Trường hợp chạy đúng P20"
+    },
+    {
+      "name": "phase.20.section.trường_hợp_lỗi_và_phục_hồi_p20",
+      "ok": true,
+      "details": "required=### Trường hợp lỗi và phục hồi P20"
+    },
+    {
+      "name": "phase.20.section.bất_biến_và_điều_kiện_đóng_p20",
+      "ok": true,
+      "details": "required=### Bất biến và điều kiện đóng P20"
+    },
+    {
+      "name": "phase.20.sequential_dependency",
+      "ok": true,
+      "details": "previous phase must be completed before the next phase starts"
+    },
+    {
+      "name": "phase.20.success_tests",
+      "ok": true,
+      "details": "at least 3 success scenarios inside the phase"
+    },
+    {
+      "name": "phase.20.error_tests",
+      "ok": true,
+      "details": "at least 3 error/recovery scenarios inside the phase"
+    },
+    {
+      "name": "phase.20.fr_mapping",
+      "ok": true,
+      "details": "phase references its current business requirement"
+    },
+    {
+      "name": "phase.20.package.w01",
+      "ok": true,
+      "details": "package=P20-W01"
+    },
+    {
+      "name": "phase.20.package.w02",
+      "ok": true,
+      "details": "package=P20-W02"
+    },
+    {
+      "name": "phase.20.package.w03",
+      "ok": true,
+      "details": "package=P20-W03"
+    },
+    {
+      "name": "phase.20.package.w04",
+      "ok": true,
+      "details": "package=P20-W04"
+    },
+    {
+      "name": "phase.20.package.verify",
+      "ok": true,
+      "details": "package=P20-VERIFY"
+    },
+    {
+      "name": "phase.20.package.handoff",
+      "ok": true,
+      "details": "package=P20-HANDOFF"
+    },
+    {
+      "name": "phase.order_and_uniqueness",
+      "ok": true,
+      "details": "P0..P20 appear exactly once in order"
+    },
+    {
+      "name": "test_id.uniqueness",
+      "ok": true,
+      "details": "each acceptance scenario has a distinct UX1 test id"
+    },
+    {
+      "name": "pylinac_package.P07-CAL",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac_package.P07-STAR",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac_package.P07-VMAT",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac_package.P07-CT",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac_package.P07-ACR",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac_package.P07-CHEESE",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac_package.P07-HELIOS",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac_package.P07-QUART",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac_package.P07-LOG",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac_package.P07-PF",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac_package.P07-WL",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac_package.P07-WLMT",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac_package.P07-PLANAR",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac_package.P07-FPA",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac_package.P07-FA",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac_package.P07-NUCLEAR",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac_package.P07-CONTRIB",
+      "ok": true,
+      "details": "all 16 main pylinac module families and public contrib QA are mandatory inside P7"
+    },
+    {
+      "name": "pylinac.technical.PylinacAdapter",
+      "ok": true,
+      "details": "pylinac integration boundary and provenance are explicit"
+    },
+    {
+      "name": "pylinac.technical.PylinacCapabilityRegistry",
+      "ok": true,
+      "details": "pylinac integration boundary and provenance are explicit"
+    },
+    {
+      "name": "pylinac.technical.qa-image-worker",
+      "ok": true,
+      "details": "pylinac integration boundary and provenance are explicit"
+    },
+    {
+      "name": "pylinac.technical.pylinac_version",
+      "ok": true,
+      "details": "pylinac integration boundary and provenance are explicit"
+    },
+    {
+      "name": "pylinac.plan.adapter",
+      "ok": true,
+      "details": "P7 implements pylinac through the RT-CONNECT adapter"
+    },
+    {
+      "name": "pylinac.catalog.Calibration",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.Starshot",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.VMAT",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.CatPhan",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.ACR Phantoms",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.Cheese Phantoms",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.GE Helios",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.Quart",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.Log Analyzer",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.Picket Fence",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.Winston–Lutz",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.Winston–Lutz Multi-Target",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.Planar Imaging",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.Field Profile Analysis",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.Field Analysis",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.Nuclear",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.One-Offs/Contrib QA",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.QuasarLightRadScaling",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.catalog.JawOrthogonality",
+      "ok": true,
+      "details": "official pylinac main module family or public contrib QA is represented in the catalog"
+    },
+    {
+      "name": "pylinac.engine_policy",
+      "ok": true,
+      "details": "business, technical and plan lock pylinac as the selected engine"
+    },
+    {
+      "name": "pylinac.gamma_ui",
+      "ok": true,
+      "details": "PSQA user interface exposes dose difference percent and DTA millimetres"
+    },
+    {
+      "name": "pylinac.gamma_3d_boundary",
+      "ok": true,
+      "details": "new pylinac-only runs do not misrepresent legacy 3D Gamma"
+    },
+    {
+      "name": "ux1.business.Picket Fence",
+      "ok": true,
+      "details": "mandatory domain topic present; semantics require editorial review"
+    },
+    {
+      "name": "ux1.business.Starshot",
+      "ok": true,
+      "details": "mandatory domain topic present; semantics require editorial review"
+    },
+    {
+      "name": "ux1.business.α/β",
+      "ok": true,
+      "details": "mandatory domain topic present; semantics require editorial review"
+    },
+    {
+      "name": "ux1.business.105%/107%",
+      "ok": true,
+      "details": "mandatory domain topic present; semantics require editorial review"
+    },
+    {
+      "name": "link.business.docs/pylinac-qa-catalog.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.business.docs/history/pre-ux-20260912/business-analysis.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.business.docs/pylinac-qa-catalog.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.business.docs/pylinac-qa-catalog.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.business.docs/pylinac-qa-catalog.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "ux1.technical.Picket Fence",
+      "ok": true,
+      "details": "mandatory domain topic present; semantics require editorial review"
+    },
+    {
+      "name": "ux1.technical.Starshot",
+      "ok": true,
+      "details": "mandatory domain topic present; semantics require editorial review"
+    },
+    {
+      "name": "ux1.technical.α/β",
+      "ok": true,
+      "details": "mandatory domain topic present; semantics require editorial review"
+    },
+    {
+      "name": "ux1.technical.105%/107%",
+      "ok": true,
+      "details": "mandatory domain topic present; semantics require editorial review"
+    },
+    {
+      "name": "link.technical.docs/pylinac-qa-catalog.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.technical.docs/history/pre-ux-20260912/technical-specification.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.technical.docs/pylinac-qa-catalog.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.technical.deployment/railway/production-runbook.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.technical.docs/history/pre-ux-20260912/specification.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "ux1.plan.Picket Fence",
+      "ok": true,
+      "details": "mandatory domain topic present; semantics require editorial review"
+    },
+    {
+      "name": "ux1.plan.Starshot",
+      "ok": true,
+      "details": "mandatory domain topic present; semantics require editorial review"
+    },
+    {
+      "name": "ux1.plan.α/β",
+      "ok": true,
+      "details": "mandatory domain topic present; semantics require editorial review"
+    },
+    {
+      "name": "ux1.plan.105%/107%",
+      "ok": true,
+      "details": "mandatory domain topic present; semantics require editorial review"
+    },
+    {
+      "name": "link.plan.business-analysis.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.plan.technical-specification.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.plan.docs/pylinac-qa-catalog.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.plan.docs/history/pre-ux-20260912/plan.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.plan.docs/evidence/p1-foundation-recheck-20260913-7a7e4ec.json",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.plan.docs/design/knowledge-library.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.plan.deployment/railway/production-runbook.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.plan.docs/runbooks/p20-initial-operations-package.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.plan.implementation-progress.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "coverage.B01",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B02",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B03",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B04",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B05",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B06",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B07",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B08",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B09",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B10",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B11",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B12",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B13",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "coverage.B14",
+      "ok": true,
+      "details": "present in plan and business analysis"
+    },
+    {
+      "name": "execution_gate.G0",
+      "ok": true,
+      "details": "present in plan execution gates"
+    },
+    {
+      "name": "execution_gate.G1",
+      "ok": true,
+      "details": "present in plan execution gates"
+    },
+    {
+      "name": "execution_gate.G2",
+      "ok": true,
+      "details": "present in plan execution gates"
+    },
+    {
+      "name": "execution_gate.G3",
+      "ok": true,
+      "details": "present in plan execution gates"
+    },
+    {
+      "name": "execution_gate.G4",
+      "ok": true,
+      "details": "present in plan execution gates"
+    },
+    {
+      "name": "execution_gate.G5",
+      "ok": true,
+      "details": "present in plan execution gates"
+    },
+    {
+      "name": "execution_gate.G6",
+      "ok": true,
+      "details": "present in plan execution gates"
+    },
+    {
+      "name": "execution_gate.G7",
+      "ok": true,
+      "details": "present in plan execution gates"
+    },
+    {
+      "name": "artifact.docs/runbooks/p20-initial-operations-package.md",
+      "ok": true,
+      "details": "required support artifact"
+    },
+    {
+      "name": "artifact.deployment/railway/production-runbook.md",
+      "ok": true,
+      "details": "required support artifact"
+    },
+    {
+      "name": "artifact.scripts/verify-public-deployment.ps1",
+      "ok": true,
+      "details": "required support artifact"
+    },
+    {
+      "name": "artifact.scripts/verify-local-backup-restore.py",
+      "ok": true,
+      "details": "required support artifact"
+    },
+    {
+      "name": "artifact.scripts/create-release-manifest.py",
+      "ok": true,
+      "details": "required support artifact"
+    },
+    {
+      "name": "artifact.scripts/release_manifest.py",
+      "ok": true,
+      "details": "required support artifact"
+    },
+    {
+      "name": "artifact.scripts/inspect-railway-provider-capabilities.ps1",
+      "ok": true,
+      "details": "required support artifact"
+    },
+    {
+      "name": "artifact.docs/pylinac-qa-catalog.md",
+      "ok": true,
+      "details": "required support artifact"
+    },
+    {
+      "name": "artifact.docs/design/knowledge-library.md",
+      "ok": true,
+      "details": "required support artifact"
+    },
+    {
+      "name": "artifact.docs/history/pre-ux-20260912/business-analysis.md",
+      "ok": true,
+      "details": "required support artifact"
+    },
+    {
+      "name": "artifact.docs/history/pre-ux-20260912/technical-specification.md",
+      "ok": true,
+      "details": "required support artifact"
+    },
+    {
+      "name": "artifact.docs/history/pre-ux-20260912/plan.md",
+      "ok": true,
+      "details": "required support artifact"
+    }
+  ]
+}

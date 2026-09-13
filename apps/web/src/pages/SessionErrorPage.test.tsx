@@ -56,9 +56,9 @@ beforeEach(() => {
 test('requires a non-empty organization name before creating anything', () => {
   renderPage()
 
-  fireEvent.click(screen.getByRole('button', { name: 'Tạo organization và mở workspace' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Tạo đơn vị và mở nơi làm việc' }))
 
-  expect(screen.getByText('Hãy nhập tên bệnh viện hoặc organization trước khi tiếp tục.')).toBeInTheDocument()
+  expect(screen.getByText('Hãy nhập tên bệnh viện hoặc đơn vị trước khi tiếp tục.')).toBeInTheDocument()
   expect(apiClient.createOrganization).not.toHaveBeenCalled()
 })
 
@@ -71,20 +71,20 @@ test('creates the first organization and navigates to the workspace', async () =
   })
 
   renderPage()
-  fireEvent.change(screen.getByLabelText('Tên bệnh viện / organization'), { target: { value: '  Bệnh viện thử nghiệm  ' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Tạo organization và mở workspace' }))
+  fireEvent.change(screen.getByLabelText('Tên bệnh viện hoặc đơn vị'), { target: { value: '  Bệnh viện thử nghiệm  ' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Tạo đơn vị và mở nơi làm việc' }))
 
   await waitFor(() => expect(apiClient.createOrganization).toHaveBeenCalledWith('access-token', 'Bệnh viện thử nghiệm'))
   expect(screen.getByTestId('location')).toHaveTextContent('/app')
 })
 
 test('shows the API error and stays on onboarding when creation is rejected', async () => {
-  vi.mocked(apiClient.createOrganization).mockRejectedValue(new ApiClientError('Organization đã tồn tại.', 'ORGANIZATION_NAME_CONFLICT'))
+  vi.mocked(apiClient.createOrganization).mockRejectedValue(new ApiClientError('Đơn vị đã tồn tại.', 'ORGANIZATION_NAME_CONFLICT'))
 
   renderPage()
-  fireEvent.change(screen.getByLabelText('Tên bệnh viện / organization'), { target: { value: 'Bệnh viện trùng' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Tạo organization và mở workspace' }))
+  fireEvent.change(screen.getByLabelText('Tên bệnh viện hoặc đơn vị'), { target: { value: 'Bệnh viện trùng' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Tạo đơn vị và mở nơi làm việc' }))
 
-  expect(await screen.findByText('Organization đã tồn tại.')).toBeInTheDocument()
+  expect(await screen.findByText('Đơn vị đã tồn tại.')).toBeInTheDocument()
   expect(screen.getByTestId('location')).toHaveTextContent('/auth/session-error')
 })
