@@ -76,15 +76,15 @@ Không dùng thao tác này trên cơ sở thật đang chứa dữ liệu vận
 
 | Mã kiểm | Nội dung | Kết quả mong đợi | Kết quả thực tế | Bằng chứng |
 | :--- | :--- | :--- | :--- | :--- |
-| P4-S01 | Tài khoản A mở đơn vị, cơ sở, máy và lịch sử | Đúng dữ liệu, không phải cuộn qua biểu mẫu dài | Lát cắt người nhận sau khi tham gia đã mở được cơ sở, máy và hai bài QA lịch sử; phần kiểm đầy đủ theo tài khoản A và bộ chọn bài mới còn mở | `docs/evidence/p4-staging-invite-qa-readback-20260913-246d1e5.json` |
-| P4-S02 | Tài khoản B tham gia cùng đơn vị | Cùng thao tác, không có phân cấp vai trò | Đã readback 2 thành viên sau khi B tham gia; phần kiểm hai phiên cùng thao tác còn mở | `docs/evidence/p4-staging-invite-inbox-20260913-246d1e5.json` |
+| P4-S01 | Tài khoản A mở đơn vị, cơ sở, máy và lịch sử | Đúng dữ liệu, không phải cuộn qua biểu mẫu dài | Đạt trên hai phiên đang mở: cả hai đều đọc đúng đơn vị, cơ sở, máy và hai bài QA lịch sử. | `docs/evidence/p4-staging-two-session-readback-20260913-2250.json` |
+| P4-S02 | Tài khoản B tham gia cùng đơn vị | Cùng thao tác, không có phân cấp vai trò | Đạt lát cắt dùng chung: hai phiên đều thấy cùng dữ liệu, không có luồng phân cấp; kiểm lưu đồng thời được ghi ở P4-E02. | `docs/evidence/p4-staging-two-session-readback-20260913-2250.json` |
 | P4-S03 | Tài khoản B chưa có đơn vị | Thấy lời mời theo email và có nút tham gia; không bị đưa thẳng vào tạo đơn vị | Đạt: lời mời Hong ngoc general hospital hiển thị theo email, bấm Tham gia vào đúng đơn vị, không tạo đơn vị mới | `docs/evidence/p4-staging-invite-inbox-20260913-246d1e5.json` |
-| P4-S04 | Dán mã mời dự phòng | Mã đúng đưa vào đơn vị; mã sai không tạo đơn vị |  |  |
+| P4-S04 | Dán mã mời dự phòng | Mã đúng đưa vào đơn vị; mã sai không tạo đơn vị | Chưa chạy trên phiên hiện tại vì cả hai tài khoản đã là thành viên; cần một tài khoản thử chưa có đơn vị để kiểm đúng luồng mã. |  |
 | P4-E01 | Tên trống hoặc trùng | Báo lỗi, giữ nguyên biểu mẫu |  |  |
-| P4-E02 | Hai tài khoản lưu cùng phiên bản | Báo xung đột, giữ nội dung đang nhập |  |  |
+| P4-E02 | Hai tài khoản lưu cùng phiên bản | Báo xung đột, giữ nội dung đang nhập | Đạt: phiên A lưu trước; phiên B nhận “Dữ liệu đã thay đổi ở nơi khác”, bản nhập của B vẫn còn; tên máy sau đó được khôi phục. Danh tính hai phiên do người dùng xác nhận. | `docs/evidence/p4-staging-two-session-readback-20260913-2250.json` |
 | P4-E03 | Lời mời hết hạn, đã dùng hoặc sai email | Báo đúng nguyên nhân, không tạo thành viên trùng |  |  |
 | P4-E04 | Đổi đơn vị hoặc phiên hết hạn | Không lộ dữ liệu của đơn vị trước |  |  |
-| P4-E05 | Lưu trữ máy/cơ sở | Bài mới bị chặn, lịch sử cũ vẫn đọc được | Lát cắt một phiên staging đạt: máy Synthetic QA Linac bị loại khỏi bộ chọn bài mới; hai bài QA cũ và tệp RTDOSE vẫn đọc được; khôi phục đưa máy trở lại bộ chọn. Kiểm bằng tài khoản B và cơ sở riêng vẫn mở. | `docs/evidence/p4-staging-machine-archive-restore-20260913-392f4d9.json` |
+| P4-E05 | Lưu trữ máy/cơ sở | Bài mới bị chặn, lịch sử cũ vẫn đọc được | Lát cắt một phiên staging đã đạt: máy Synthetic QA Linac bị loại khỏi bộ chọn bài mới; hai bài QA cũ và tệp RTDOSE vẫn đọc được; khôi phục đưa máy trở lại bộ chọn. Kiểm lại bằng hai phiên độc lập vẫn còn mở. | `docs/evidence/p4-staging-machine-archive-restore-20260913-392f4d9.json` |
 
 ## Điều kiện đạt P4
 

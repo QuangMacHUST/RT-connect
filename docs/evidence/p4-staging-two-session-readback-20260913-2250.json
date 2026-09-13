@@ -1,0 +1,43 @@
+{
+  "evidence_type": "staging_two_session_organization_readback_and_revision_conflict",
+  "phase": "P4",
+  "status": "PASS_FOR_TWO_SESSION_CONCURRENCY_AND_SHARED_READBACK",
+  "checked_at": "2026-09-13T22:50:47+07:00",
+  "environment": "staging",
+  "deployed_api_commit": "392f4d97630c8ba4b78330166141d31e9d2f14dc",
+  "repository_head_at_check": "d8dc39545da793d2a44c724efdb799855ed59072",
+  "web_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "browser": "Microsoft Edge",
+  "session_labels": [
+    "member_session_a",
+    "member_session_b"
+  ],
+  "identity_note": "Người dùng xác nhận hai phiên lần lượt là trinhhuyvu@gmail.com và quangmacdang@gmail.com. Giao diện không hiển thị email phiên hiện tại; không ghi mã phiên hoặc mã truy cập vào bằng chứng.",
+  "checks": [
+    {
+      "id": "P4-S01-TWO-SESSION-ORG-READBACK",
+      "status": "PASS",
+      "observed": "Hai phiên staging đều mở được Đơn vị và thiết bị, cùng nhìn thấy Hong ngoc general hospital, Staging Synthetic Site và Synthetic QA Linac."
+    },
+    {
+      "id": "P4-S02-TWO-SESSION-QA-READBACK",
+      "status": "PASS",
+      "observed": "Hai phiên đều mở được QA máy, cùng nhìn thấy hai bài QA lịch sử và tệp RTDOSE hợp lệ; không xuất hiện luồng vai trò bác sĩ/kỹ sư hoặc màn hình xin quyền thao tác."
+    },
+    {
+      "id": "P4-E02-REVISION-CONFLICT",
+      "status": "PASS",
+      "observed": "Phiên A lưu tên máy tạm thời thành Synthetic QA Linac - A. Phiên B lưu bản cũ thành Synthetic QA Linac - B và nhận thông báo Dữ liệu đã thay đổi ở nơi khác; nội dung B vẫn còn trong biểu mẫu. Sau đó tên máy được khôi phục về Synthetic QA Linac."
+    },
+    {
+      "id": "P4-TWO-SESSION-RESTORE-READBACK",
+      "status": "PASS",
+      "observed": "Sau khi khôi phục tên máy, phiên B tải lại và đọc đúng Synthetic QA Linac; hai bài QA lịch sử và tệp RTDOSE vẫn còn."
+    }
+  ],
+  "not_proven": [
+    "Hộp thư mã mời hợp lệ trên tài khoản chưa có thành viên; cả hai tài khoản đang kiểm tra đã là thành viên.",
+    "Mã mời sai hoặc đã dùng trên một tài khoản chưa có đơn vị.",
+    "Lưu trữ/khôi phục máy được quan sát đồng thời ở phiên thứ hai; bằng chứng hiện hành vẫn là lát cắt một phiên trước đó."
+  ]
+}
