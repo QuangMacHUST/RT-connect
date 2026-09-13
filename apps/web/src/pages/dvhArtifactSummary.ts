@@ -11,9 +11,9 @@ export function dvhArtifactStatusLabel(
   summary: DvhArtifactSummary,
   state: 'loading' | 'error' | 'ready'
 ): string {
-  if (state === 'loading') return 'Đang kiểm tra artifact cho DVH…'
-  if (state === 'error') return 'Chưa đọc được artifact cho DVH'
-  return `DVH preflight: ${summary.dose} RTDOSE · ${summary.structure} RTSTRUCT · ${summary.ct} CT VALID`
+  if (state === 'loading') return 'Đang kiểm tra tệp cho phân tích liều…'
+  if (state === 'error') return 'Chưa đọc được tệp cho phân tích liều'
+  return `Phân tích liều: ${summary.dose} RTDOSE · ${summary.structure} RTSTRUCT · ${summary.ct} CT hợp lệ`
 }
 
 /** Summarize only selectable DICOM inputs; invalid or non-DICOM rows cannot satisfy DVH preflight. */

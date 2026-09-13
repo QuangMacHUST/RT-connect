@@ -22,7 +22,7 @@ test('does not claim DVH readiness when structure or dose is missing', () => {
 test('uses truthful loading and error labels for the archive DVH shortcut', () => {
   const summary = { dose: 1, structure: 0, ct: 0, ready: false }
 
-  expect(dvhArtifactStatusLabel(summary, 'loading')).toBe('Đang kiểm tra artifact cho DVH…')
-  expect(dvhArtifactStatusLabel(summary, 'error')).toBe('Chưa đọc được artifact cho DVH')
-  expect(dvhArtifactStatusLabel(summary, 'ready')).toBe('DVH preflight: 1 RTDOSE · 0 RTSTRUCT · 0 CT VALID')
+  expect(dvhArtifactStatusLabel(summary, 'loading')).toBe('Đang kiểm tra tệp cho phân tích liều…')
+  expect(dvhArtifactStatusLabel(summary, 'error')).toBe('Chưa đọc được tệp cho phân tích liều')
+  expect(dvhArtifactStatusLabel(summary, 'ready')).toBe('Phân tích liều: 1 RTDOSE · 0 RTSTRUCT · 0 CT hợp lệ')
 })
