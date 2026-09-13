@@ -7,7 +7,7 @@ from typing import Any
 
 import numpy as np
 from fastapi.testclient import TestClient
-from pydicom import FileDataset, FileMetaDataset
+from pydicom.dataset import FileDataset, FileMetaDataset
 from pydicom.uid import CTImageStorage, ExplicitVRLittleEndian, generate_uid
 
 from rt_connect_api.api.artifacts import _storage

@@ -32,7 +32,7 @@ Bản 4.25 được giữ ở [lịch sử](docs/history/pre-ux-20260912/plan.md
 | Đăng nhập/đơn vị/cơ cấu | Có mã và được người dùng chấp nhận chức năng | Giảm cỡ chữ/khoảng trắng, chia thẻ và kiểm hồi quy |
 | Kho QA, run, tệp | Có mô hình và luồng cơ sở | Danh mục theo bài; xóa/khôi phục; tránh bước nhập hồ sơ kỹ thuật |
 | QA nhập tay, Gamma, DVH | Có dịch vụ/tính toán và test cũ | Gắn vào workspace chung, test lại input/profile và UX |
-| Danh mục pylinac | Chưa có dependency/registry/adapter toàn bộ 16 họ chính và QA contrib công khai | Dùng pylinac làm engine chính thức, khóa version/hash và triển khai đủ mọi capability trong registry runtime |
+| Danh mục pylinac | Đã khóa dependency `pylinac 3.47.0` và `pydicom 2.4.5`; chưa có registry/adapter chạy đủ 16 họ chính và QA contrib công khai | Dùng pylinac làm engine chính thức, khóa version/hash và triển khai đủ mọi capability trong registry runtime |
 | PDF/xu hướng | Có nền snapshot/render/projection | Editor theo bài, chọn từng dòng/ảnh, overlays và delete propagation |
 | Sinh học | Có nhiều page/scenario/engine | Một trang tính nhanh, lưu tùy chọn, source drawer |
 | Thư viện | Có bài tham khảo theo đơn vị, biểu mẫu kỹ thuật; chưa có bản chia sẻ cộng đồng riêng | Cổng đọc/soạn bài, PDF, tìm kiếm, nội bộ/cộng đồng, thu hồi, lưu trữ/xóa và nguồn dùng chung |
@@ -384,6 +384,8 @@ Chức năng đã được người dùng chấp nhận vẫn hoạt động, la
 **Trạng thái hiện tại:** `STAGING_VERIFIED_SLICE`; danh mục, lịch sử, hồ sơ cũ chưa phân loại và vòng lưu trữ/khôi phục đã được kiểm chứng trên staging ở bản `544a40c1a6ca6697f8b951002411ed97484ff59d`. P5 chưa đóng vì còn cổng xóa vĩnh viễn có kiểm soát, lỗi mạng và tiến trình nền trên staging.
 Kiểm tra công khai sau triển khai đã đạt trên ứng viên `a4bed90b79aa0bc758e598c424ac0060379e98c0` với readiness `20260913_0022` và đúng các tuyến P5; bằng chứng: `docs/evidence/p5-staging-public-recheck-20260913.json`. Đây chỉ là kiểm tra nguồn/runtime công khai, chưa là nghiệm thu thao tác xác thực.
 
+**Cập nhật phụ thuộc 2026-09-14:** `pylinac==3.47.0` đã được thêm vào cấu hình API và khóa cài đặt. Vì phiên bản engine này yêu cầu `pydicom<3`, dự án đã đồng bộ `pydicom==2.4.5`; khóa phụ thuộc chạy kiểm tra cài đặt thử, `pip check`, import pylinac và toàn bộ kiểm thử API đều đạt. Đây chỉ là cổng chuẩn bị dependency cho P7, chưa được tính là đã triển khai adapter hay bất kỳ bài pylinac nào.
+
 Danh mục hiện có 63 bài theo sổ toàn bộ danh mục pylinac và bài nhập số đo. Trong đó bài nhập số đo là bài đầu tiên được phép thực hiện; 62 bài pylinac đã hiện trong danh mục nhưng vẫn khóa nút bắt đầu cho đến khi bộ tích hợp, màn hình nhập và kiểm chứng tương ứng được hoàn thành. Việc hiện đủ danh mục không được hiểu là đã triển khai đủ engine.
 
 **Bổ sung UX sau đánh giá thực tế 2026-09-14:** danh mục 63 bài phải hiện trực tiếp theo nhóm trên trang QA máy, có tìm nhanh nhưng không dùng danh sách thả xuống làm điểm vào chính. Khu vực tệp đầu vào chỉ được dựng khi bài đã chọn có đầu vào dạng tệp; bài chỉ nhập số đo không được hiện khu vực tải tệp. Nút mở phân tích liều chỉ hiện với bài có đầu vào liều hoặc hồ sơ đã có RTDOSE/RTSTRUCT hợp lệ. Khu vực thư mục, lịch sử và chi tiết dùng toàn bộ chiều ngang khả dụng; không để một cột hẹp bên cạnh khoảng trắng lớn. Đây là yêu cầu giao diện của P5/P6, không thay đổi điều kiện phải có bộ tích hợp pylinac thật ở P7/P8.
@@ -412,7 +414,7 @@ Danh mục hiện có 63 bài theo sổ toàn bộ danh mục pylinac và bài n
 - [ ] P05-VERIFY — Chạy các TC-UX1 dưới đây và nhóm lỗi dùng chung có liên quan; lưu actual/evidence theo SHA.
 - [ ] P05-HANDOFF — Cập nhật tiến độ, dữ liệu/migration/tuyến bị tác động, giới hạn hỗ trợ và bước tiếp theo.
 
-**Đã kiểm tra cục bộ:** migration `20260913_0021` và `20260913_0022` nâng thành công; nhóm kiểm thử P5 đạt 28/28; toàn bộ kiểm thử máy chủ đạt 209 bài, thêm 3 bài bản kê phát hành không chạy trong ảnh Docker vì ảnh không có Git; ruff đạt; giao diện đạt typecheck, lint, bản dựng sản xuất và toàn bộ kiểm thử **12/12 tệp, 31/31 bài**. Kiểm chứng staging danh mục/lịch sử/lưu trữ/khôi phục: [evidence P5](docs/evidence/p5-staging-authenticated-ui-20260914.json). Xóa vĩnh viễn staging và lỗi mạng/tiến trình nền vẫn mở.
+**Đã kiểm tra cục bộ:** migration `20260913_0021` và `20260913_0022` nâng thành công; nhóm kiểm thử P5 đạt 28/28; toàn bộ kiểm thử máy chủ đạt; ruff và mypy nghiêm ngặt đạt; giao diện đạt typecheck, lint, bản dựng sản xuất và toàn bộ kiểm thử **12/12 tệp, 31/31 bài**. Kiểm chứng staging danh mục/lịch sử/lưu trữ/khôi phục: [evidence P5](docs/evidence/p5-staging-authenticated-ui-20260914.json). Xóa vĩnh viễn staging và lỗi mạng/tiến trình nền vẫn mở.
 
 ### Trường hợp chạy đúng P5
 

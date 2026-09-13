@@ -6,10 +6,15 @@ const errorSchema = z.object({
   code: z.string(),
   message: z.string(),
   correlation_id: z.string(),
-  details: z.array(z.object({ field: z.string().nullable().optional(), message: z.string() })).default([])
+  details: z.array(z.object({
+    field: z.string().nullable().optional(),
+    message: z.string(),
+    source: z.string().nullable().optional(),
+    count: z.number().int().nonnegative().nullable().optional()
+  })).default([])
 })
 
-export type ApiErrorDetail = { field?: string | null; message: string }
+export type ApiErrorDetail = { field?: string | null; message: string; source?: string | null; count?: number | null }
 
 export class ApiClientError extends Error {
   readonly code: string

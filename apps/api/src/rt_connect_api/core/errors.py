@@ -11,6 +11,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 class ErrorDetail(BaseModel):
     field: str | None = None
     message: str
+    source: str | None = None
+    count: int | None = None
 
 
 class ApiError(BaseModel):
@@ -61,6 +63,10 @@ async def domain_error_handler(request: Request, exc: Exception) -> JSONResponse
     for item in exc.details:
         raw_field = item.get("field")
         raw_message = item.get("message")
+        raw_source = item.get("source")
+        raw_count = item.get("count")
+        source = raw_source if isinstance(raw_source, str) else None
+        count = raw_count if isinstance(raw_count, int) else None
         details.append(
             ErrorDetail(
                 field=raw_field if isinstance(raw_field, str) else None,
@@ -69,6 +75,8 @@ async def domain_error_handler(request: Request, exc: Exception) -> JSONResponse
                     if isinstance(raw_message, str)
                     else "The supplied value is invalid."
                 ),
+                source=source,
+                count=count,
             )
         )
     return _response(request, exc.code, exc.message, exc.status_code, details)

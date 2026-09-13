@@ -285,3 +285,52 @@ def test_qa_case_creation_retries_are_idempotent_and_key_reuse_is_rejected() -> 
     assert changed.status_code == 409
     assert changed.json()["code"] == "QA_CASE_IDEMPOTENCY_CONFLICT"
     assert cases.json()["total"] == 1
+
+
+def test_qa_case_purge_requires_archive_and_rejects_referenced_history() -> None:
+    with _workspace_client() as (client, organization):
+        site = client.get(f"/api/v1/organizations/{organization.id}/sites").json()["items"][0]
+        machine = client.get(
+            f"/api/v1/organizations/{organization.id}/sites/{site['id']}/machines"
+        ).json()["items"][0]
+        folder = client.post(
+            f"/api/v1/organizations/{organization.id}/folders",
+            json={"name": "P5 purge guards"},
+        ).json()
+        created = client.post(
+            f"/api/v1/organizations/{organization.id}/qa-cases",
+            json={
+                "site_id": site["id"],
+                "machine_id": machine["id"],
+                "primary_folder_id": folder["id"],
+                "qa_definition_key": "MANUAL_MACHINE_QA",
+                "qa_cycle": "DAILY",
+                "performed_at": "2026-09-14T08:00:00Z",
+                "title": "Hồ sơ còn lượt QA tham chiếu",
+            },
+        )
+        case_id = created.json()["id"]
+        active_purge = client.post(f"/api/v1/qa-cases/{case_id}/purge")
+
+        protocol = client.post(
+            f"/api/v1/organizations/{organization.id}/machine-qa/protocols/seed"
+        )
+        assert protocol.status_code == 201, protocol.text
+        run = client.post(
+            f"/api/v1/qa-cases/{case_id}/machine-qa-runs",
+            json={"protocol_version_id": protocol.json()["id"]},
+        )
+        assert run.status_code == 201, run.text
+        archived = client.delete(f"/api/v1/qa-cases/{case_id}")
+        referenced_purge = client.post(f"/api/v1/qa-cases/{case_id}/purge")
+        still_present = client.get(f"/api/v1/qa-cases/{case_id}")
+
+    assert active_purge.status_code == 409
+    assert active_purge.json()["code"] == "QA_CASE_PURGE_REQUIRES_ARCHIVE"
+    assert archived.status_code == 200
+    assert referenced_purge.status_code == 409
+    assert referenced_purge.json()["code"] == "QA_CASE_REFERENCED"
+    assert referenced_purge.json()["details"][0]["source"] == "machine_qa_runs"
+    assert referenced_purge.json()["details"][0]["count"] == 1
+    assert still_present.status_code == 200
+    assert still_present.json()["is_archived"] is True
