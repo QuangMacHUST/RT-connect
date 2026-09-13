@@ -23,8 +23,11 @@ const artifactTypeLabels: Record<string, string> = {
 
 const caseStatusLabels: Record<string, string> = {
   DRAFT: 'Bản nháp',
+  OPEN: 'Đang mở',
+  IN_REVIEW: 'Đang xem xét',
   ACTIVE: 'Đang thực hiện',
   COMPLETED: 'Đã hoàn tất',
+  CANCELLED: 'Đã hủy',
   ARCHIVED: 'Đã lưu trữ'
 }
 
