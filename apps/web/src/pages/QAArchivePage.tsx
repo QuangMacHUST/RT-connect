@@ -91,6 +91,7 @@ function errorMessage(error: unknown): string {
       QA_CASE_IDEMPOTENCY_CONFLICT: 'Lượt tạo bài này đã được dùng cho dữ liệu khác. Hãy tạo lại từ đầu.',
       QA_CASE_REFERENCED: 'Bài vẫn còn kết quả, tệp hoặc báo cáo liên quan nên chưa thể xóa vĩnh viễn.',
       QA_CASE_PURGE_REQUIRES_ARCHIVE: 'Hãy lưu trữ bài trước khi xóa vĩnh viễn.',
+      ACTION_CANCELLED: 'Đã hủy thao tác xóa vĩnh viễn.',
       QA_DEFINITION_NOT_FOUND: 'Loại bài kiểm tra không còn trong danh mục hiện tại.'
     }
     return messages[error.code] ?? 'Không thể hoàn tất thao tác. Hãy thử lại và kiểm tra kết nối.'

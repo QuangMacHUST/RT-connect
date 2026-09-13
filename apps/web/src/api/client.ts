@@ -1555,6 +1555,9 @@ export class ApiClient {
   }
 
   purgeQACase(accessToken: string, caseId: string): Promise<{ status: string; case_id: string }> {
+    if (typeof window !== 'undefined' && !window.confirm('Xóa vĩnh viễn bài kiểm tra này? Thao tác này không thể khôi phục; chỉ tiếp tục nếu bài không còn dữ liệu liên quan.')) {
+      return Promise.reject(new ApiClientError('Đã hủy thao tác xóa vĩnh viễn.', 'ACTION_CANCELLED'))
+    }
     return this.request(`/qa-cases/${caseId}/purge`, z.object({ status: z.string(), case_id: z.string().uuid() }), accessToken, { method: 'POST' })
   }
 

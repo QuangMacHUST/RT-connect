@@ -32,3 +32,17 @@ test('preserves structured error details for bounded trend queries', async () =>
     ]
   } satisfies Partial<ApiClientError>)
 })
+
+test('requires confirmation before permanently purging a QA case', async () => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  const fetchMock = vi.fn()
+  vi.stubGlobal('fetch', fetchMock)
+  const client = new ApiClient('http://api.test/api/v1')
+
+  await expect(client.purgeQACase('token', '00000000-0000-0000-0000-000000000001')).rejects.toMatchObject({
+    code: 'ACTION_CANCELLED',
+    message: 'Đã hủy thao tác xóa vĩnh viễn.'
+  })
+  expect(confirm).toHaveBeenCalledWith(expect.stringContaining('không thể khôi phục'))
+  expect(fetchMock).not.toHaveBeenCalled()
+})
