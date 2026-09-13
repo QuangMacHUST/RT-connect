@@ -28,8 +28,8 @@ Tài liệu hiện hành: `business-analysis.md` v1.3,
 - Đã làm gọn trang chủ, luồng đăng nhập, khôi phục truy cập, nhận lời mời, tạo đơn vị đầu tiên và trạng thái dịch vụ; các trạng thái chính dùng tiếng Việt, không hiển thị mã định danh kỹ thuật trong giao diện thường dùng.
 - Liên kết cũ `/app/biological/knowledge` chuyển về `/app/knowledge`; bố cục hai cột tự chuyển một cột ở màn hình nhỏ.
 - Kiểm chứng local: lint PASS, typecheck PASS, Vitest **22/22**, Playwright **9/9** trên hai kích thước 1366×768/1440×900 và ba cấu hình trình duyệt, production build PASS; AX trang đăng nhập và kiểm năm mục PASS.
-- Đã commit/push source `d288d669f264747bd0430e9f085255d0910592ab`; API, web và worker staging đều triển khai thành công cùng source. Public verifier staging đạt **17/17**, browser staging tải đúng trang chủ thật và điều hướng năm mục bằng tiếng Việt.
-- Evidence: [local](docs/evidence/p3-local-ui-20260913.json), [phase staging](docs/evidence/p3-staging-public-20260913-d288d66.json), [public verifier](docs/evidence/p3-staging-public-verifier-20260913-d288d66.json). P3 đã `STAGING_VERIFIED`; P4 được mở.
+- Đã commit/push source `dcf463c28dd64dcfa68a6fdf8c17cf40e623a2dc`; API, web và worker staging đều triển khai thành công cùng source. Public verifier staging đạt **17/17**, browser staging tải đúng trang chủ thật và điều hướng năm mục bằng tiếng Việt.
+- Evidence: [local](docs/evidence/p3-local-ui-20260913.json), [phase staging](docs/evidence/p3-staging-verified-20260913-dcf463c.json), [public verifier](docs/evidence/p3-staging-public-verifier-20260913-dcf463c.json). P3 đã `STAGING_VERIFIED`; P4 được mở.
 
 Các mục UX1.2 và cũ hơn bên dưới là lịch sử; thứ tự tiếp tục và phạm vi mới do UX1.3 ở trên quyết định.
 

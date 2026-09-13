@@ -297,7 +297,7 @@ mở rộng dịch vụ có phí trước P19.
 - [x] P03-W02 — Dịch nhãn chung và luồng đăng nhập sang tiếng Việt, bỏ MOD/Pxx/ID/API/JSON khỏi giao diện điều hướng và trạng thái nền tảng. Nhãn nghiệp vụ của từng mô-đun tiếp tục được kiểm tại phase tương ứng; `LOCAL_VERIFIED_SLICE`.
 - [x] P03-W03 — Giữ auth flow; phân biệt chưa vào đơn vị, hết phiên, mất mạng; đưa trạng thái dịch vụ vào menu tài khoản. `LOCAL_VERIFIED_SLICE`.
 - [x] P03-W04 — Tạo đúng năm mục, trang chủ gọn và chuyển hướng URL cũ; kiểm keyboard, back/forward, deep link. `LOCAL_VERIFIED_SLICE`.
-- [x] P03-VERIFY — Kiểm local đạt lint, typecheck, Vitest 22/22, production build và Playwright 9/9 ở hai kích thước 1366×768/1440×900 cùng ba cấu hình trình duyệt; kiểm staging công khai đạt 17/17 và trình duyệt staging tải đúng trang chủ/điều hướng năm mục. Evidence: `docs/evidence/p3-local-ui-20260913.json`, `docs/evidence/p3-staging-public-20260913-d288d66.json`, `docs/evidence/p3-staging-public-verifier-20260913-d288d66.json`.
+- [x] P03-VERIFY — Kiểm local đạt lint, typecheck, Vitest 22/22, production build và Playwright 9/9 ở hai kích thước 1366×768/1440×900 cùng ba cấu hình trình duyệt; kiểm staging công khai đạt 17/17 và trình duyệt staging tải đúng trang chủ/điều hướng năm mục. Evidence: `docs/evidence/p3-local-ui-20260913.json`, `docs/evidence/p3-staging-verified-20260913-dcf463c.json`, `docs/evidence/p3-staging-public-verifier-20260913-dcf463c.json`.
 - [x] P03-HANDOFF — Cập nhật `implementation-progress.md`, route registry và trạng thái bàn giao; không thay dữ liệu nghiệp vụ, không phát hành production. Bước kế tiếp duy nhất là P4.
 
 ### Trường hợp chạy đúng P3

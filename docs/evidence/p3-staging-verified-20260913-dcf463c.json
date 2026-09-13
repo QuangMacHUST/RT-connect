@@ -1,0 +1,31 @@
+{
+  "evidence_type": "phase_verification",
+  "phase": "P3",
+  "phase_status": "STAGING_VERIFIED",
+  "checked_at": "2026-09-13T08:02:58.5942990Z",
+  "environment": "staging",
+  "source_sha": "dcf463c28dd64dcfa68a6fdf8c17cf40e623a2dc",
+  "deployment_ids": {
+    "api": "786cfd9a-3162-45fb-b5a0-78778a910134",
+    "web": "d934571f-93e3-4c72-bd47-f994fcc37e85",
+    "worker": "bfbf2cc4-ceb1-43a5-a8f5-8497638c4809"
+  },
+  "public_verifier": {
+    "status": "PASS",
+    "checks": 17,
+    "failed_check_count": 0,
+    "schema_revision": "20260911_0020",
+    "source": "docs/evidence/p3-staging-public-verifier-20260913-dcf463c.json"
+  },
+  "browser_check": {
+    "status": "PASS",
+    "url": "https://rt-connect-web-staging-staging.up.railway.app/app",
+    "authenticated": true,
+    "observed": [
+      "Thanh bên hiển thị đúng năm mục chính bằng tiếng Việt.",
+      "Trang chủ hiển thị đơn vị thật, số cơ sở, máy xạ trị và trạng thái hoạt động.",
+      "Không hiển thị mã mô-đun trong thanh bên hoặc trang chủ."
+    ]
+  },
+  "passed": true
+}
