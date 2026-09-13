@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
-import { beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
 import { ApiClientError, apiClient } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
@@ -24,6 +24,8 @@ vi.mock('../api/client', () => ({
     organizationMembers: vi.fn(),
     organizationInvitations: vi.fn(),
     updateOrganization: vi.fn(),
+    updateSite: vi.fn(),
+    updateMachine: vi.fn(),
     createSite: vi.fn(),
     createMachine: vi.fn(),
     createOrganizationInvitation: vi.fn()
@@ -49,6 +51,8 @@ beforeEach(() => {
   vi.mocked(apiClient.organizationMembers).mockResolvedValue({ items: [{ id: 'member-id', email: 'bacsi@example.org', display_name: 'Bác sĩ thử nghiệm', is_active: true }], total: 1 } as never)
   vi.mocked(apiClient.organizationInvitations).mockResolvedValue({ items: [], total: 0 } as never)
 })
+
+afterEach(() => vi.restoreAllMocks())
 
 function renderPage() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -92,4 +96,15 @@ test('giữ nội dung biểu mẫu khi tạo cơ sở thất bại', async () =
 
   expect(await screen.findByText('Tên cơ sở đã được sử dụng trong đơn vị này.')).toBeInTheDocument()
   expect(screen.getByDisplayValue('Cơ sở mới')).toBeInTheDocument()
+})
+
+test('yêu cầu xác nhận trước khi lưu trữ cơ sở', async () => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  renderPage()
+
+  await screen.findByRole('heading', { name: 'Đơn vị và thiết bị' })
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu trữ' }))
+
+  expect(confirm).toHaveBeenCalledWith(expect.stringContaining('Dữ liệu và lịch sử liên quan vẫn được giữ lại'))
+  expect(apiClient.updateSite).not.toHaveBeenCalled()
 })
