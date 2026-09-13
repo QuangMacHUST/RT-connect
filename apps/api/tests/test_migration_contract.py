@@ -41,7 +41,7 @@ def test_compose_keeps_schema_revision_as_the_exact_string() -> None:
     configuration = yaml.safe_load(compose.read_text(encoding="utf-8"))
 
     revision = configuration["services"]["api"]["environment"]["SCHEMA_REVISION"]
-    assert revision == "20260911_0020"
+    assert revision == "20260913_0022"
     assert isinstance(revision, str)
 
 
@@ -174,4 +174,37 @@ def test_organization_revision_migration_declares_optimistic_concurrency_fields(
     assert '"sites"' in source
     assert '"machines"' in source
     assert 'sa.Column("revision", sa.Integer()' in source
+    assert "def downgrade()" in source
+
+
+def test_qa_catalog_migration_declares_backwards_compatible_case_link() -> None:
+    migration = (
+        Path(__file__).parents[1]
+        / "alembic"
+        / "versions"
+        / "20260913_0021_qa_catalog.py"
+    )
+    source = migration.read_text(encoding="utf-8")
+
+    assert 'revision: str = "20260913_0021"' in source
+    assert 'down_revision: str | Sequence[str] | None = "20260911_0020"' in source
+    assert '"qa_definition_key"' in source
+    assert "nullable=True" in source
+    assert "def downgrade()" in source
+
+
+def test_qa_case_idempotency_migration_declares_retry_safety() -> None:
+    migration = (
+        Path(__file__).parents[1]
+        / "alembic"
+        / "versions"
+        / "20260913_0022_qa_case_idempotency.py"
+    )
+    source = migration.read_text(encoding="utf-8")
+
+    assert 'revision: str = "20260913_0022"' in source
+    assert 'down_revision: str | Sequence[str] | None = "20260913_0021"' in source
+    assert '"idempotency_key"' in source
+    assert '"idempotency_fingerprint"' in source
+    assert "uq_qa_cases_organization_idempotency" in source
     assert "def downgrade()" in source

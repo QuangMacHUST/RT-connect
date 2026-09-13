@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 
-import { ApiClientError, apiClient, type FolderResource } from '../api/client'
+import { ApiClientError, apiClient, type FolderResource, type QATestDefinitionResource } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { dvhArtifactStatusLabel, summarizeDvhArtifacts } from './dvhArtifactSummary'
 import { processUploadQueue, type UploadQueueItem } from './uploadQueue'
@@ -66,7 +66,11 @@ function errorMessage(error: unknown): string {
       REVISION_CONFLICT: 'Dữ liệu đã thay đổi ở nơi khác. Hãy tải lại rồi thực hiện lại thao tác.',
       RESOURCE_ARCHIVED: 'Mục này đã được lưu trữ. Hãy khôi phục trước khi sửa.',
       PARENT_NOT_AVAILABLE: 'Mục cha đang được lưu trữ nên không thể thực hiện thao tác này.',
-      MACHINE_NOT_FOUND: 'Không tìm thấy máy đang chọn hoặc máy không còn hoạt động.'
+      MACHINE_NOT_FOUND: 'Không tìm thấy máy đang chọn hoặc máy không còn hoạt động.',
+      QA_CASE_IDEMPOTENCY_CONFLICT: 'Lượt tạo bài này đã được dùng cho dữ liệu khác. Hãy tạo lại từ đầu.',
+      QA_CASE_REFERENCED: 'Bài vẫn còn kết quả, tệp hoặc báo cáo liên quan nên chưa thể xóa vĩnh viễn.',
+      QA_CASE_PURGE_REQUIRES_ARCHIVE: 'Hãy lưu trữ bài trước khi xóa vĩnh viễn.',
+      QA_DEFINITION_NOT_FOUND: 'Loại bài kiểm tra không còn trong danh mục hiện tại.'
     }
     return messages[error.code] ?? 'Không thể hoàn tất thao tác. Hãy thử lại và kiểm tra kết nối.'
   }
@@ -83,9 +87,15 @@ export function QAArchivePage() {
     enabled: Boolean(accessToken), retry: false
   })
   const organizationId = bootstrap.data?.organization.id
+  const [showTrash, setShowTrash] = useState(false)
+  const testDefinitions = useQuery({
+    queryKey: ['qa-test-definitions', organizationId, accessToken],
+    queryFn: () => apiClient.qaTestDefinitions(accessToken!, organizationId!),
+    enabled: Boolean(accessToken && organizationId), retry: false
+  })
   const folders = useQuery({
-    queryKey: ['folders', organizationId, accessToken],
-    queryFn: () => apiClient.folders(accessToken!, organizationId!),
+    queryKey: ['folders', organizationId, accessToken, showTrash],
+    queryFn: () => apiClient.folders(accessToken!, organizationId!, showTrash),
     enabled: Boolean(accessToken && organizationId), retry: false
   })
   const sites = useQuery({
@@ -105,8 +115,8 @@ export function QAArchivePage() {
   const [selectedMachineId, setSelectedMachineId] = useState<string>()
   const selectedMachine = useMemo(() => machines.data?.items.find((item) => item.id === selectedMachineId) ?? machines.data?.items[0], [machines.data, selectedMachineId])
   const cases = useQuery({
-    queryKey: ['qa-cases', organizationId, selectedFolder?.id, accessToken],
-    queryFn: () => apiClient.qaCases(accessToken!, organizationId!, { folder_id: selectedFolder?.id }),
+    queryKey: ['qa-cases', organizationId, selectedFolder?.id, accessToken, showTrash],
+    queryFn: () => apiClient.qaCases(accessToken!, organizationId!, { folder_id: selectedFolder?.id, include_archived: showTrash }),
     enabled: Boolean(accessToken && organizationId), retry: false
   })
   const [selectedCaseId, setSelectedCaseId] = useState<string>()
@@ -121,7 +131,7 @@ export function QAArchivePage() {
   const [newFolderName, setNewFolderName] = useState('')
   const [rename, setRename] = useState('')
   const [caseTitle, setCaseTitle] = useState('')
-  const [caseType, setCaseType] = useState('Machine QA')
+  const [caseType, setCaseType] = useState('MANUAL_MACHINE_QA')
   const [caseCycle, setCaseCycle] = useState<(typeof cycles)[number]>('DAILY')
   const [caseDate, setCaseDate] = useState('')
   const [message, setMessage] = useState<string>()
@@ -131,6 +141,7 @@ export function QAArchivePage() {
   const uploadQueueIdRef = useRef(0)
   const [uploadQueue, setUploadQueue] = useState<UploadQueueItem[]>([])
   const [uploadQueueProcessing, setUploadQueueProcessing] = useState(false)
+  const caseCreateKeyRef = useRef<string | undefined>(undefined)
   const currentUploadQueue = selectedCase ? uploadQueue.filter((item) => item.caseId === selectedCase.id) : []
 
   const refresh = () => {
@@ -139,7 +150,7 @@ export function QAArchivePage() {
   }
   const mutation = useMutation({
     mutationFn: (action: () => Promise<unknown>) => action(),
-    onSuccess: () => { setMessage('Đã lưu thay đổi.'); refresh() },
+    onSuccess: () => { caseCreateKeyRef.current = undefined; setMessage('Đã lưu thay đổi.'); refresh() },
     onError: (error) => setMessage(errorMessage(error))
   })
   const validationMutation = useMutation({
@@ -151,11 +162,15 @@ export function QAArchivePage() {
     onError: (error) => setMessage(errorMessage(error))
   })
 
-  if (bootstrap.isPending || folders.isPending || sites.isPending) return <main className="auth-state">Đang tải khu vực kiểm tra chất lượng máy…</main>
-  const failure = bootstrap.error ?? folders.error ?? sites.error
+  if (bootstrap.isPending || folders.isPending || sites.isPending || testDefinitions.isPending) return <main className="auth-state">Đang tải khu vực kiểm tra chất lượng máy…</main>
+  const failure = bootstrap.error ?? folders.error ?? sites.error ?? testDefinitions.error
   if (failure || !organizationId || !folders.data || !sites.data) return <div className="page"><section className="alert alert--error"><h1>Không thể mở khu vực kiểm tra chất lượng máy</h1><p>{errorMessage(failure)}</p><button onClick={() => { void folders.refetch(); void sites.refetch() }}>Thử lại</button></section></div>
 
-  const visibleCases = cases.data?.items.filter((item) => item.title.toLowerCase().includes(search.trim().toLowerCase()) || item.qa_type.toLowerCase().includes(search.trim().toLowerCase())) ?? []
+  const definitions = testDefinitions.data?.items ?? []
+  const definitionByKey = new Map(definitions.map((item) => [item.key, item]))
+  const selectedDefinition = definitionByKey.get(caseType)
+  const displayCaseType = (item: { qa_definition_key: string | null; qa_type: string }) => item.qa_definition_key ? definitionByKey.get(item.qa_definition_key)?.name ?? item.qa_type : labelOf(qaTypeLabels, item.qa_type)
+  const visibleCases = cases.data?.items.filter((item) => item.title.toLowerCase().includes(search.trim().toLowerCase()) || displayCaseType(item).toLowerCase().includes(search.trim().toLowerCase())) ?? []
   const createFolder = () => {
     const name = newFolderName.trim()
     if (!name) return setMessage('Tên thư mục không được để trống.')
@@ -168,13 +183,15 @@ export function QAArchivePage() {
     mutation.mutate(() => apiClient.updateFolder(accessToken!, selectedFolder.id, { name }))
     setRename('')
   }
-  const archiveFolder = (folder: FolderResource) => mutation.mutate(() => apiClient.updateFolder(accessToken!, folder.id, { is_archived: true }))
+  const archiveFolder = (folder: FolderResource) => mutation.mutate(() => apiClient.updateFolder(accessToken!, folder.id, { is_archived: !folder.is_archived }))
   const createCase = () => {
     if (!selectedFolder || !selectedSite || !selectedMachine) return setMessage('Cần chọn thư mục, cơ sở và máy trước khi tạo bài kiểm tra.')
     if (!caseTitle.trim() || !caseDate) return setMessage('Tên bài kiểm tra và thời điểm thực hiện là bắt buộc.')
+    caseCreateKeyRef.current ??= crypto.randomUUID()
     mutation.mutate(() => apiClient.createQACase(accessToken!, organizationId, {
       site_id: selectedSite.id, machine_id: selectedMachine.id, primary_folder_id: selectedFolder.id,
-      qa_type: caseType, qa_cycle: caseCycle, performed_at: new Date(caseDate).toISOString(), title: caseTitle.trim()
+      qa_definition_key: caseType, qa_type: selectedDefinition?.name, qa_cycle: caseCycle,
+      performed_at: new Date(caseDate).toISOString(), title: caseTitle.trim(), idempotency_key: caseCreateKeyRef.current
     }))
     setCaseTitle('')
   }
@@ -245,11 +262,11 @@ export function QAArchivePage() {
 
   return (
     <div className="page">
-      <header className="page-header"><div><p className="eyebrow">KIỂM TRA CHẤT LƯỢNG MÁY</p><h1>Kiểm tra chất lượng máy</h1><p>Chọn bài kiểm tra, lưu kết quả, mở lại lịch sử và quản lý tệp theo cách quen thuộc.</p></div></header>
+      <header className="page-header"><div><p className="eyebrow">KIỂM TRA CHẤT LƯỢNG MÁY</p><h1>Kiểm tra chất lượng máy</h1><p>Chọn bài kiểm tra, nhập đúng loại dữ liệu, lưu kết quả và mở lại lịch sử khi cần.</p></div><button className="button-secondary" onClick={() => setShowTrash((current) => !current)}>{showTrash ? 'Đóng thùng rác' : 'Mở thùng rác'}</button></header>
       {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
       <div className="archive-layout">
-        <section className="panel folder-panel"><div className="panel-heading"><div><p className="eyebrow">CÂY THƯ MỤC</p><h2>Thư mục kiểm tra</h2></div><strong>{folders.data.total}</strong></div><div className="stack-form"><label>Thư mục mới<input placeholder="Ví dụ: 2026 / Kiểm tra hằng ngày" value={newFolderName} onChange={(event) => setNewFolderName(event.target.value)} /></label><button disabled={mutation.isPending} onClick={createFolder}>Tạo thư mục</button></div><div className="folder-tree" role="tree">{folders.data.items.map((folder) => <div className="folder-row" key={folder.id} style={{ paddingLeft: `${folder.depth * 18 + 8}px` }}><button className={folder.id === selectedFolder?.id ? 'folder-link folder-link--selected' : 'folder-link'} onClick={() => setSelectedFolderId(folder.id)}><span aria-hidden="true">{folder.is_archived ? '□' : '▣'}</span>{folder.name}</button><small>{folder.is_archived ? 'Đã lưu trữ' : ''}</small></div>)}</div>{selectedFolder && <div className="folder-editor"><label>Đổi tên thư mục<input value={rename || selectedFolder.name} onChange={(event) => setRename(event.target.value)} /></label><div className="table-actions"><button onClick={renameFolder}>Lưu tên</button><button className="button-secondary" onClick={() => archiveFolder(selectedFolder)}>Lưu trữ</button></div></div>}</section>
-        <section className="panel archive-content"><div className="panel-heading"><div><p className="eyebrow">BÀI KIỂM TRA</p><h2>{selectedFolder?.path ?? 'Tất cả bài kiểm tra'}</h2></div><strong>{cases.data?.total ?? '—'}</strong></div><div className="filter-row"><label>Tìm kiếm<input placeholder="Tên bài hoặc loại kiểm tra" value={search} onChange={(event) => setSearch(event.target.value)} /></label><label>Cơ sở<select aria-label="Cơ sở" value={selectedSite?.id ?? ''} onChange={(event) => setSelectedSiteId(event.target.value)}>{sites.data.items.map((site) => <option key={site.id} value={site.id}>{site.name}</option>)}</select></label><label>Máy<select aria-label="Máy" value={selectedMachine?.id ?? ''} onChange={(event) => setSelectedMachineId(event.target.value)}>{(machines.data?.items ?? []).map((machine) => <option key={machine.id} value={machine.id}>{machine.display_name}</option>)}</select></label></div><div className="stack-form case-form"><label>Tên bài kiểm tra<input placeholder="Ví dụ: Kiểm tra chất lượng tháng 9" value={caseTitle} onChange={(event) => setCaseTitle(event.target.value)} /></label><div className="filter-row"><label>Loại kiểm tra<select value={caseType} onChange={(event) => setCaseType(event.target.value)}>{Object.entries(qaTypeLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label><label>Chu kỳ<select value={caseCycle} onChange={(event) => setCaseCycle(event.target.value as (typeof cycles)[number])}>{cycles.map((cycle) => <option key={cycle} value={cycle}>{cycleLabels[cycle]}</option>)}</select></label><label>Thời điểm thực hiện<input type="datetime-local" value={caseDate} onChange={(event) => setCaseDate(event.target.value)} /></label></div><button disabled={mutation.isPending} onClick={createCase}>Tạo bài kiểm tra</button></div>{cases.isPending ? <p>Đang tải bài kiểm tra…</p> : cases.error ? <div className="alert alert--error"><p>{errorMessage(cases.error)}</p></div> : <div className="table-wrap"><table><thead><tr><th>Tên bài</th><th>Loại</th><th>Chu kỳ</th><th>Thực hiện</th><th>Trạng thái</th><th /></tr></thead><tbody>{visibleCases.map((item) => <tr key={item.id}><td><strong>{item.title}</strong></td><td>{labelOf(qaTypeLabels, item.qa_type)}</td><td>{labelOf(cycleLabels, item.qa_cycle)}</td><td>{new Date(item.performed_at).toLocaleString('vi-VN')}</td><td><span className="status-badge">{labelOf(caseStatusLabels, item.is_archived ? 'ARCHIVED' : item.case_status)}</span></td><td><div className="table-actions"><button className="button-secondary" onClick={() => setSelectedCaseId(item.id)}>Mở bài</button><Link className="button-link button-secondary" to={`/app/qa/cases/${item.id}/machine-qa`}>Kiểm tra máy</Link><Link className="button-link button-secondary" to={`/app/qa/cases/${item.id}/gamma`}>Phân tích Gamma</Link><button className="button-secondary" onClick={() => mutation.mutate(() => apiClient.updateQACase(accessToken!, item.id, { is_archived: true }))}>Lưu trữ</button></div></td></tr>)}</tbody></table>{!visibleCases.length && <p className="empty-state">Chưa có bài kiểm tra phù hợp. Tạo bài đầu tiên từ biểu mẫu ở trên.</p>}</div>}
+        <section className="panel folder-panel"><div className="panel-heading"><div><p className="eyebrow">CÂY THƯ MỤC</p><h2>{showTrash ? 'Thư mục và bài đã lưu trữ' : 'Thư mục kiểm tra'}</h2></div><strong>{folders.data.total}</strong></div>{!showTrash && <div className="stack-form"><label>Thư mục mới<input placeholder="Ví dụ: 2026 / Kiểm tra hằng ngày" value={newFolderName} onChange={(event) => setNewFolderName(event.target.value)} /></label><button disabled={mutation.isPending} onClick={createFolder}>Tạo thư mục</button></div>}<div className="folder-tree" role="tree">{folders.data.items.map((folder) => <div className="folder-row" key={folder.id} style={{ paddingLeft: `${folder.depth * 18 + 8}px` }}><button className={folder.id === selectedFolder?.id ? 'folder-link folder-link--selected' : 'folder-link'} onClick={() => setSelectedFolderId(folder.id)}><span aria-hidden="true">{folder.is_archived ? '□' : '▣'}</span>{folder.name}</button><small>{folder.is_archived ? 'Đã lưu trữ' : ''}</small></div>)}</div>{selectedFolder && <div className="folder-editor"><label>Đổi tên thư mục<input disabled={selectedFolder.is_archived} value={rename || selectedFolder.name} onChange={(event) => setRename(event.target.value)} /></label><div className="table-actions">{!selectedFolder.is_archived && <button onClick={renameFolder}>Lưu tên</button>}<button className="button-secondary" onClick={() => archiveFolder(selectedFolder)}>{selectedFolder.is_archived ? 'Khôi phục' : 'Lưu trữ'}</button></div></div>}</section>
+        <section className="panel archive-content"><div className="panel-heading"><div><p className="eyebrow">{showTrash ? 'THÙNG RÁC' : 'DANH MỤC BÀI KIỂM TRA'}</p><h2>{selectedFolder?.path ?? 'Tất cả bài kiểm tra'}</h2></div><strong>{cases.data?.total ?? '—'}</strong></div><div className="filter-row"><label>Tìm kiếm<input placeholder="Tên bài hoặc loại kiểm tra" value={search} onChange={(event) => setSearch(event.target.value)} /></label><label>Cơ sở<select aria-label="Cơ sở" value={selectedSite?.id ?? ''} onChange={(event) => setSelectedSiteId(event.target.value)}>{sites.data.items.map((site) => <option key={site.id} value={site.id}>{site.name}</option>)}</select></label><label>Máy<select aria-label="Máy" value={selectedMachine?.id ?? ''} onChange={(event) => setSelectedMachineId(event.target.value)}>{(machines.data?.items ?? []).map((machine) => <option key={machine.id} value={machine.id}>{machine.display_name}</option>)}</select></label></div>{!showTrash && <div className="stack-form case-form"><label>Tên bài kiểm tra<input placeholder="Ví dụ: Kiểm tra chất lượng tháng 9" value={caseTitle} onChange={(event) => setCaseTitle(event.target.value)} /></label><div className="filter-row"><label>Loại bài kiểm tra<select value={caseType} onChange={(event) => setCaseType(event.target.value)}>{Object.entries(definitions.reduce<Record<string, QATestDefinitionResource[]>>((groups, item) => { (groups[item.family] ??= []).push(item); return groups }, {})).map(([family, items]) => <optgroup key={family} label={family}>{items.map((item) => <option key={item.key} value={item.key} disabled={item.implementation_status !== 'READY'}>{item.name}{item.implementation_status !== 'READY' ? ' · Đang chuẩn bị' : ''}</option>)}</optgroup>)}</select></label><label>Chu kỳ<select value={caseCycle} onChange={(event) => setCaseCycle(event.target.value as (typeof cycles)[number])}>{cycles.map((cycle) => <option key={cycle} value={cycle}>{cycleLabels[cycle]}</option>)}</select></label><label>Thời điểm thực hiện<input type="datetime-local" value={caseDate} onChange={(event) => setCaseDate(event.target.value)} /></label></div>{selectedDefinition && <p className="form-hint">{selectedDefinition.description} Dữ liệu cần chuẩn bị: {selectedDefinition.required_inputs.join(', ')}.</p>}<button disabled={mutation.isPending || !selectedDefinition || selectedDefinition.implementation_status !== 'READY'} onClick={createCase}>Bắt đầu bài kiểm tra</button></div>}{cases.isPending ? <p>Đang tải bài kiểm tra…</p> : cases.error ? <div className="alert alert--error"><p>{errorMessage(cases.error)}</p></div> : <div className="table-wrap"><table><thead><tr><th>Tên bài</th><th>Loại</th><th>Phân loại</th><th>Chu kỳ</th><th>Thực hiện</th><th>Trạng thái</th><th /></tr></thead><tbody>{visibleCases.map((item) => <tr key={item.id}><td><strong>{item.title}</strong></td><td>{displayCaseType(item)}</td><td>{!item.qa_definition_key && !item.is_archived ? <select aria-label={`Gắn loại bài cho ${item.title}`} defaultValue="" onChange={(event) => { if (event.target.value) mutation.mutate(() => apiClient.updateQACase(accessToken!, item.id, { qa_definition_key: event.target.value })) }}><option value="">Chọn loại</option>{definitions.map((definition) => <option key={definition.key} value={definition.key}>{definition.name}</option>)}</select> : item.qa_definition_key ? 'Đã gắn' : '—'}</td><td>{labelOf(cycleLabels, item.qa_cycle)}</td><td>{new Date(item.performed_at).toLocaleString('vi-VN')}</td><td><span className="status-badge">{labelOf(caseStatusLabels, item.is_archived ? 'ARCHIVED' : item.case_status)}</span></td><td><div className="table-actions"><button className="button-secondary" onClick={() => setSelectedCaseId(item.id)}>Mở bài</button>{!item.is_archived && (!item.qa_definition_key || definitionByKey.get(item.qa_definition_key)?.implementation_status === 'READY') && <Link className="button-link button-secondary" to={`/app/qa/cases/${item.id}/machine-qa`}>Kiểm tra máy</Link>}{!item.is_archived && item.qa_definition_key === 'PSQA_GAMMA_2D' && <Link className="button-link button-secondary" to={`/app/qa/cases/${item.id}/gamma`}>Phân tích Gamma</Link>}{item.is_archived ? <><button className="button-secondary" onClick={() => mutation.mutate(() => apiClient.restoreQACase(accessToken!, item.id))}>Khôi phục</button><button className="button-secondary" onClick={() => mutation.mutate(() => apiClient.purgeQACase(accessToken!, item.id))}>Xóa vĩnh viễn</button></> : <button className="button-secondary" onClick={() => mutation.mutate(() => apiClient.updateQACase(accessToken!, item.id, { is_archived: true }))}>Lưu trữ</button>}</div></td></tr>)}</tbody></table>{!visibleCases.length && <p className="empty-state">{showTrash ? 'Thùng rác đang trống.' : 'Chưa có bài kiểm tra phù hợp. Hãy chọn một bài trong danh mục để bắt đầu.'}</p>}</div>}
           <section className="artifact-panel">
             {selectedCase && <div className="dvh-quick-link"><Link className="button-link button-secondary" to={`/app/qa/cases/${selectedCase.id}/dvh`}>Mở phân tích liều cho bài này</Link>{artifacts.isPending ? <span className="form-hint">{dvhArtifactStatusLabel(dvhArtifactSummary, 'loading')}</span> : artifacts.error ? <span className="status-badge status-badge--warning">{dvhArtifactStatusLabel(dvhArtifactSummary, 'error')}</span> : <span className={dvhArtifactSummary.ready ? 'status-badge' : 'status-badge status-badge--warning'}>{dvhArtifactStatusLabel(dvhArtifactSummary, 'ready')}</span>}</div>}
             <div className="panel-heading"><div><p className="eyebrow">TỆP ĐẦU VÀO</p><h2>{selectedCase ? `Tệp của ${selectedCase.title}` : 'Chọn bài kiểm tra để tải tệp'}</h2></div><strong>{artifacts.data?.total ?? '—'}</strong></div>

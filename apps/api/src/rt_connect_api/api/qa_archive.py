@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 from datetime import datetime
+from hashlib import sha256
 from typing import Literal
 from uuid import UUID
 
@@ -15,14 +17,21 @@ from sqlalchemy.orm import Session
 
 from rt_connect_api.core.errors import DomainError
 from rt_connect_api.db.models import (
+    Artifact,
     AuditEvent,
+    DVHAnalysisRun,
     Folder,
+    GammaAnalysisRun,
     Machine,
+    MachineQARun,
     QACase,
+    ReportRevision,
     Site,
+    TrendPoint,
     UserIdentity,
 )
 from rt_connect_api.db.session import get_session
+from rt_connect_api.qa_catalog import get_qa_test_definition
 from rt_connect_api.security.supabase_jwt import AuthenticatedIdentity, require_identity
 from rt_connect_api.services.session_context import SessionContext, resolve_session_context
 
@@ -63,7 +72,8 @@ class QACaseCreateRequest(BaseModel):
     site_id: UUID
     machine_id: UUID
     primary_folder_id: UUID
-    qa_type: str = Field(min_length=1, max_length=100)
+    qa_type: str | None = Field(default=None, min_length=1, max_length=100)
+    qa_definition_key: str | None = Field(default=None, min_length=1, max_length=120)
     qa_cycle: QACycle
     performed_at: datetime
     scheduled_at: datetime | None = None
@@ -71,11 +81,13 @@ class QACaseCreateRequest(BaseModel):
     description: str | None = Field(default=None, max_length=4000)
     protocol_version_id: UUID | None = None
     status_note: str | None = Field(default=None, max_length=4000)
+    idempotency_key: str | None = Field(default=None, min_length=1, max_length=200)
 
 
 class QACasePatchRequest(BaseModel):
     primary_folder_id: UUID | None = None
     qa_type: str | None = Field(default=None, min_length=1, max_length=100)
+    qa_definition_key: str | None = Field(default=None, min_length=1, max_length=120)
     qa_cycle: QACycle | None = None
     performed_at: datetime | None = None
     scheduled_at: datetime | None = None
@@ -93,6 +105,7 @@ class QACaseResponse(BaseModel):
     site_id: UUID
     machine_id: UUID
     primary_folder_id: UUID
+    qa_definition_key: str | None
     qa_type: str
     qa_cycle: str
     performed_at: datetime
@@ -242,6 +255,7 @@ def _case_response(case: QACase) -> QACaseResponse:
         site_id=case.site_id,
         machine_id=case.machine_id,
         primary_folder_id=case.primary_folder_id,
+        qa_definition_key=case.qa_definition_key,
         qa_type=case.qa_type,
         qa_cycle=case.qa_cycle,
         performed_at=case.performed_at,
@@ -491,6 +505,16 @@ def list_qa_cases(
     )
 
 
+def _case_request_fingerprint(request: QACaseCreateRequest) -> str:
+    payload = json.dumps(
+        request.model_dump(mode="json"),
+        sort_keys=True,
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return sha256(payload.encode("utf-8")).hexdigest()
+
+
 @router.post(
     "/organizations/{organization_id}/qa-cases",
     response_model=QACaseResponse,
@@ -506,10 +530,37 @@ def create_qa_case(
     _validate_case_references(
         session, organization_id, request.site_id, request.machine_id, request.primary_folder_id
     )
+    definition = (
+        get_qa_test_definition(request.qa_definition_key)
+        if request.qa_definition_key is not None
+        else None
+    )
+    if request.qa_definition_key is not None and definition is None:
+        raise DomainError(
+            "QA_DEFINITION_NOT_FOUND",
+            "The selected QA test is not in the current catalogue.",
+            422,
+        )
+    request_fingerprint = _case_request_fingerprint(request)
+    if request.idempotency_key is not None:
+        existing = session.scalar(
+            select(QACase).where(
+                QACase.organization_id == organization_id,
+                QACase.idempotency_key == request.idempotency_key.strip(),
+            )
+        )
+        if existing is not None:
+            if existing.idempotency_fingerprint == request_fingerprint:
+                return _case_response(existing)
+            raise DomainError(
+                "QA_CASE_IDEMPOTENCY_CONFLICT",
+                "The same request key was already used with different QA case data.",
+                409,
+            )
     title = request.title.strip()
     if not title:
         raise DomainError("QA_CASE_TITLE_REQUIRED", "QA case title cannot be blank.", 400)
-    qa_type = request.qa_type.strip()
+    qa_type = (request.qa_type or (definition.name if definition else "")).strip()
     if not qa_type:
         raise DomainError("QA_TYPE_REQUIRED", "QA type cannot be blank.", 400)
     case = QACase(
@@ -517,6 +568,9 @@ def create_qa_case(
         site_id=request.site_id,
         machine_id=request.machine_id,
         primary_folder_id=request.primary_folder_id,
+        idempotency_key=request.idempotency_key.strip() if request.idempotency_key else None,
+        idempotency_fingerprint=request_fingerprint if request.idempotency_key else None,
+        qa_definition_key=definition.key if definition else None,
         qa_type=qa_type,
         qa_cycle=request.qa_cycle,
         performed_at=request.performed_at,
@@ -578,7 +632,19 @@ def update_qa_case(
                 "FOLDER_ARCHIVED", "A QA case cannot be moved into an archived folder.", 409
             )
         case.primary_folder_id = request.primary_folder_id
+    if request.qa_definition_key is not None:
+        definition = get_qa_test_definition(request.qa_definition_key)
+        if definition is None:
+            raise DomainError(
+                "QA_DEFINITION_NOT_FOUND",
+                "The selected QA test is not in the current catalogue.",
+                422,
+            )
+        case.qa_definition_key = definition.key
+        if request.qa_type is None:
+            case.qa_type = definition.name
     for field in (
+        "qa_definition_key",
         "qa_type",
         "qa_cycle",
         "performed_at",
@@ -596,3 +662,116 @@ def update_qa_case(
     _audit(session, context, "QA_CASE_UPDATED", "QACase", case.id, _safe_payload(changes))
     _commit_or_raise(session)
     return _case_response(case)
+
+
+@router.post("/qa-cases/{case_id}/restore", response_model=QACaseResponse)
+def restore_qa_case(
+    case_id: UUID,
+    identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
+    session: Session = Depends(get_session),  # noqa: B008
+) -> QACaseResponse:
+    """Restore a case from the archive without changing its history."""
+
+    context = resolve_session_context(session, identity)
+    case = session.scalar(
+        select(QACase).where(
+            QACase.id == case_id, QACase.organization_id == context.organization_id
+        )
+    )
+    if case is None:
+        raise DomainError("QA_CASE_NOT_FOUND", "QA case was not found in this organization.", 404)
+    if not case.is_archived:
+        return _case_response(case)
+    case.is_archived = False
+    _audit(session, context, "QA_CASE_RESTORED", "QACase", case.id, {})
+    _commit_or_raise(session)
+    return _case_response(case)
+
+
+@router.delete("/qa-cases/{case_id}", response_model=QACaseResponse)
+def archive_qa_case(
+    case_id: UUID,
+    identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
+    session: Session = Depends(get_session),  # noqa: B008
+) -> QACaseResponse:
+    """Move a case to the archive; the default delete is recoverable."""
+
+    context = resolve_session_context(session, identity)
+    case = session.scalar(
+        select(QACase).where(
+            QACase.id == case_id, QACase.organization_id == context.organization_id
+        )
+    )
+    if case is None:
+        raise DomainError("QA_CASE_NOT_FOUND", "QA case was not found in this organization.", 404)
+    if not case.is_archived:
+        case.is_archived = True
+        _audit(session, context, "QA_CASE_ARCHIVED", "QACase", case.id, {})
+        _commit_or_raise(session)
+    return _case_response(case)
+
+
+def _case_reference_counts(session: Session, case_id: UUID) -> dict[str, int]:
+    """Find durable objects that would become orphaned by a permanent purge."""
+
+    counts: dict[str, int] = {}
+    for name, model, column in (
+        ("machine_qa_runs", MachineQARun, MachineQARun.qa_case_id),
+        ("gamma_analysis_runs", GammaAnalysisRun, GammaAnalysisRun.qa_case_id),
+        ("dvh_analysis_runs", DVHAnalysisRun, DVHAnalysisRun.qa_case_id),
+        ("trend_points", TrendPoint, TrendPoint.qa_case_id),
+        ("artifacts", Artifact, Artifact.qa_case_id),
+    ):
+        counts[name] = int(
+            session.scalar(select(func.count()).select_from(model).where(column == case_id)) or 0
+        )
+    counts["reports"] = int(
+        session.scalar(
+            select(func.count())
+            .select_from(ReportRevision)
+            .where(ReportRevision.source_id == case_id)
+        )
+        or 0
+    )
+    return {name: count for name, count in counts.items() if count}
+
+
+@router.post("/qa-cases/{case_id}/purge", response_model=dict[str, object])
+def purge_qa_case(
+    case_id: UUID,
+    identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
+    session: Session = Depends(get_session),  # noqa: B008
+) -> dict[str, object]:
+    """Permanently remove only an archived, unreferenced case.
+
+    Results, files and reports are immutable and remain the source of truth.
+    Therefore a case with any downstream reference is refused rather than
+    cascading into silent data loss.
+    """
+
+    context = resolve_session_context(session, identity)
+    case = session.scalar(
+        select(QACase).where(
+            QACase.id == case_id, QACase.organization_id == context.organization_id
+        )
+    )
+    if case is None:
+        raise DomainError("QA_CASE_NOT_FOUND", "QA case was not found in this organization.", 404)
+    if not case.is_archived:
+        raise DomainError(
+            "QA_CASE_PURGE_REQUIRES_ARCHIVE",
+            "Only an archived QA case can be permanently removed.",
+            409,
+        )
+    references = _case_reference_counts(session, case.id)
+    if references:
+        raise DomainError(
+            "QA_CASE_REFERENCED",
+            "The QA case is still referenced by results, files or reports.",
+            409,
+            details=[{"source": name, "count": count} for name, count in references.items()],
+        )
+    _audit(session, context, "QA_CASE_PURGED", "QACase", case.id, {})
+    session.delete(case)
+    _commit_or_raise(session)
+    return {"status": "PURGED", "case_id": case_id}

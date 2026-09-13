@@ -162,6 +162,24 @@ Mỗi yêu cầu ghi dữ liệu gồm schema version nội bộ, đơn vị đ�
 
 API dùng JSON nội bộ là bình thường; cấm đưa JSON thành phương thức thao tác của người dùng. Không truyền secret hoặc access token qua query string.
 
+### 5.1.1. Hợp đồng chuyển tiếp đang thực thi ở P5
+
+Trong khi mô hình đích `QAAttempt` chưa được tách thành bảng riêng, phiên bản P5 dùng `QACase` làm lớp tương thích để không làm mất hồ sơ, thư mục, tệp, kết quả hoặc báo cáo hiện có. Các tuyến thực thi hiện tại là:
+
+| Tuyến | Mục đích | Điều kiện và kết quả |
+| :--- | :--- | :--- |
+| `GET /organizations/{organization_id}/qa-test-definitions` | Đọc danh mục bài | Lọc theo tên/nhóm; mặc định hiện cả bài đang chuẩn bị; chỉ trả dữ liệu trong tổ chức đã xác thực |
+| `POST /organizations/{organization_id}/qa-cases` | Bắt đầu hồ sơ bài | Nhận cơ sở, máy, thư mục tùy chọn, loại bài, chu kỳ, thời điểm và tên thân thiện; loại bài phải thuộc danh mục |
+| `GET /organizations/{organization_id}/qa-cases` | Đọc lịch sử | Lọc theo thư mục, tên, cơ sở, máy và trạng thái lưu trữ; mặc định không hiện thùng rác |
+| `PATCH /qa-cases/{case_id}` | Sửa tên, phân loại hoặc trạng thái | Kiểm tra phạm vi tổ chức; cho gắn lại bài cho hồ sơ cũ chưa phân loại; không tự đoán loại bài |
+| `DELETE /qa-cases/{case_id}` | Lưu trữ có thể khôi phục | Chỉ đổi trạng thái lưu trữ, không dọn tệp/kết quả |
+| `POST /qa-cases/{case_id}/restore` | Khôi phục | Có tính lặp; đưa hồ sơ về lịch sử, không chạy lại phân tích |
+| `POST /qa-cases/{case_id}/purge` | Xóa vĩnh viễn hồ sơ không còn liên kết | Chỉ nhận hồ sơ đã lưu trữ; từ chối nếu còn lần tính, điểm xu hướng, tệp hoặc báo cáo tham chiếu |
+
+`QACase.qa_definition_key` có thể để trống cho dữ liệu cũ. `QACase.idempotency_key` và `QACase.idempotency_fingerprint` được dùng cho thao tác bắt đầu bài; cùng khóa và cùng nội dung trả lại hồ sơ cũ, cùng khóa nhưng khác nội dung trả lỗi xung đột. Migration `20260913_0021` thêm liên kết danh mục; migration `20260913_0022` thêm tính lặp an toàn. Hai migration đều không xóa dữ liệu cũ.
+
+Danh mục runtime hiện có 63 mục. Chỉ mục có `implementation_status=READY` được phép bắt đầu; mục `PLANNED` vẫn được giữ trong danh mục để bảo toàn phạm vi toàn bộ pylinac nhưng giao diện phải khóa nút thực hiện cho đến khi P6/P7 hoàn tất đầu vào và bộ tích hợp. Đây là trạng thái triển khai, không phải loại bỏ capability.
+
 ### 5.2. Hợp đồng operation tối thiểu
 
 Mỗi operation ghi rõ: actor đã xác thực; scope; input/miền giá trị; precondition; thay đổi trong transaction; postcondition; idempotency; xung đột revision; side effect; timeout; lỗi có thể thử lại; cách phục hồi; thử nghiệm thành công và thất bại.

@@ -1,0 +1,50 @@
+{
+  "schema_version": "rt-connect.p5-local-verification.v1",
+  "captured_at_utc": "2026-09-13T16:50:00Z",
+  "phase": "P5",
+  "status": "LOCAL_VERIFIED_SLICE",
+  "source_revision": "working-tree-p5-candidate",
+  "base_commit": "53268f577abff77f3970a1ad88828cfcdc703b80",
+  "scope": "Danh mục QA, bắt đầu bài, lịch sử, lưu trữ/khôi phục và xóa có kiểm tra liên kết.",
+  "catalogue": {
+    "total_definitions": 63,
+    "ready_definitions": 1,
+    "planned_definitions": 62,
+    "engine_policy": "pylinac là engine chính thức cho các bài hình ảnh; giao diện và tham số thuộc RT-CONNECT.",
+    "legacy_records": "qa_definition_key nullable; hồ sơ cũ được giữ và có thể phân loại lại từ giao diện."
+  },
+  "checks": [
+    {
+      "name": "database_migrations",
+      "result": "PASS",
+      "details": "Đã nâng cục bộ từ 20260913_0021 lên 20260913_0022; readiness contract đã cập nhật schema mới."
+    },
+    {
+      "name": "p5_api_tests",
+      "result": "PASS",
+      "details": "28/28 bài kiểm thử nhóm QA catalog, vòng đời lưu trữ/khôi phục/xóa và chống tạo trùng."
+    },
+    {
+      "name": "api_full_regression",
+      "result": "PARTIAL",
+      "details": "209 bài đạt; 3 bài bản kê phát hành không chạy trong ảnh Docker vì không có Git. Không có lỗi nghiệp vụ P5 trong nhóm thất bại."
+    },
+    {
+      "name": "api_ruff",
+      "result": "PASS",
+      "details": "Ruff kiểm tra src và tests đạt."
+    },
+    {
+      "name": "web_checks",
+      "result": "PASS",
+      "details": "Typecheck, lint, 12 tệp/31 bài kiểm thử và bản dựng sản xuất đạt."
+    }
+  ],
+  "not_yet_verified": [
+    "Staging exact-SHA và thao tác trên giao diện thật.",
+    "Hành vi khi tiến trình nền đang chạy.",
+    "Xóa nhiều mục và báo cáo kết quả từng mục.",
+    "Kiểm tra storage/provider với tệp thật và reference graph đầy đủ.",
+    "Không được dùng bằng chứng này để mở P6 hoặc suy ra sẵn sàng lâm sàng."
+  ]
+}

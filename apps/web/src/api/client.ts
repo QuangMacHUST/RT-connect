@@ -104,6 +104,7 @@ export type QACaseResource = {
   site_id: string
   machine_id: string
   primary_folder_id: string
+  qa_definition_key: string | null
   qa_type: string
   qa_cycle: string
   performed_at: string
@@ -114,6 +115,21 @@ export type QACaseResource = {
   status_note: string | null
   case_status: string
   is_archived: boolean
+}
+export type QATestDefinitionResource = {
+  key: string
+  name: string
+  family: string
+  description: string
+  input_kind: string
+  required_inputs: string[]
+  manual_controls: string[]
+  engine_name: string
+  engine_class: string | null
+  source_tier: string
+  implementation_status: string
+  is_legacy: boolean
+  supports_manual_adjustment: boolean
 }
 export type ArtifactResource = {
   id: string
@@ -1467,6 +1483,22 @@ export class ApiClient {
     }), accessToken, { method: 'PATCH', body: JSON.stringify(body) })
   }
 
+  qaTestDefinitions(accessToken: string, organizationId: string, params: { q?: string; family?: string; include_planned?: boolean } = {}): Promise<{ items: QATestDefinitionResource[]; total: number; catalogue_version: string }> {
+    const query = new URLSearchParams()
+    if (params.q) query.set('q', params.q)
+    if (params.family) query.set('family', params.family)
+    if (params.include_planned === false) query.set('include_planned', 'false')
+    const suffix = query.toString() ? `?${query.toString()}` : ''
+    return this.get(`/organizations/${organizationId}/qa-test-definitions${suffix}`, z.object({
+      items: z.array(z.object({
+        key: z.string(), name: z.string(), family: z.string(), description: z.string(),
+        input_kind: z.string(), required_inputs: z.array(z.string()), manual_controls: z.array(z.string()),
+        engine_name: z.string(), engine_class: z.string().nullable(), source_tier: z.string(),
+        implementation_status: z.string(), is_legacy: z.boolean(), supports_manual_adjustment: z.boolean()
+      })), total: z.number().int(), catalogue_version: z.string()
+    }), accessToken)
+  }
+
   qaCases(accessToken: string, organizationId: string, params: { q?: string; folder_id?: string; include_archived?: boolean } = {}): Promise<Collection<QACaseResource> & { include_archived: boolean }> {
     const query = new URLSearchParams()
     if (params.q) query.set('q', params.q)
@@ -1476,7 +1508,7 @@ export class ApiClient {
     return this.get(`/organizations/${organizationId}/qa-cases${suffix}`, z.object({
       items: z.array(z.object({
         id: z.string().uuid(), organization_id: z.string().uuid(), site_id: z.string().uuid(), machine_id: z.string().uuid(),
-        primary_folder_id: z.string().uuid(), qa_type: z.string(), qa_cycle: z.string(), performed_at: z.string(),
+        primary_folder_id: z.string().uuid(), qa_definition_key: z.string().nullable(), qa_type: z.string(), qa_cycle: z.string(), performed_at: z.string(),
         scheduled_at: z.string().nullable(), title: z.string(), description: z.string().nullable(),
         protocol_version_id: z.string().uuid().nullable(), status_note: z.string().nullable(),
         case_status: z.string(), is_archived: z.boolean()
@@ -1485,26 +1517,40 @@ export class ApiClient {
   }
 
   createQACase(accessToken: string, organizationId: string, body: {
-    site_id: string; machine_id: string; primary_folder_id: string; qa_type: string; qa_cycle: string;
+    site_id: string; machine_id: string; primary_folder_id: string; qa_type?: string; qa_definition_key?: string; qa_cycle: string;
+    idempotency_key?: string;
     performed_at: string; title: string
   }): Promise<QACaseResource> {
     return this.request(`/organizations/${organizationId}/qa-cases`, z.object({
       id: z.string().uuid(), organization_id: z.string().uuid(), site_id: z.string().uuid(), machine_id: z.string().uuid(),
-      primary_folder_id: z.string().uuid(), qa_type: z.string(), qa_cycle: z.string(), performed_at: z.string(),
+      primary_folder_id: z.string().uuid(), qa_definition_key: z.string().nullable(), qa_type: z.string(), qa_cycle: z.string(), performed_at: z.string(),
       scheduled_at: z.string().nullable(), title: z.string(), description: z.string().nullable(),
       protocol_version_id: z.string().uuid().nullable(), status_note: z.string().nullable(),
       case_status: z.string(), is_archived: z.boolean()
     }), accessToken, { method: 'POST', body: JSON.stringify(body) })
   }
 
-  updateQACase(accessToken: string, caseId: string, body: { is_archived?: boolean; title?: string }): Promise<QACaseResource> {
+  updateQACase(accessToken: string, caseId: string, body: { is_archived?: boolean; title?: string; qa_definition_key?: string }): Promise<QACaseResource> {
     return this.request(`/qa-cases/${caseId}`, z.object({
       id: z.string().uuid(), organization_id: z.string().uuid(), site_id: z.string().uuid(), machine_id: z.string().uuid(),
-      primary_folder_id: z.string().uuid(), qa_type: z.string(), qa_cycle: z.string(), performed_at: z.string(),
+      primary_folder_id: z.string().uuid(), qa_definition_key: z.string().nullable(), qa_type: z.string(), qa_cycle: z.string(), performed_at: z.string(),
       scheduled_at: z.string().nullable(), title: z.string(), description: z.string().nullable(),
       protocol_version_id: z.string().uuid().nullable(), status_note: z.string().nullable(),
       case_status: z.string(), is_archived: z.boolean()
     }), accessToken, { method: 'PATCH', body: JSON.stringify(body) })
+  }
+
+  restoreQACase(accessToken: string, caseId: string): Promise<QACaseResource> {
+    return this.request(`/qa-cases/${caseId}/restore`, z.object({
+      id: z.string().uuid(), organization_id: z.string().uuid(), site_id: z.string().uuid(), machine_id: z.string().uuid(),
+      primary_folder_id: z.string().uuid(), qa_definition_key: z.string().nullable(), qa_type: z.string(), qa_cycle: z.string(), performed_at: z.string(),
+      scheduled_at: z.string().nullable(), title: z.string(), description: z.string().nullable(),
+      protocol_version_id: z.string().uuid().nullable(), status_note: z.string().nullable(), case_status: z.string(), is_archived: z.boolean()
+    }), accessToken, { method: 'POST' })
+  }
+
+  purgeQACase(accessToken: string, caseId: string): Promise<{ status: string; case_id: string }> {
+    return this.request(`/qa-cases/${caseId}/purge`, z.object({ status: z.string(), case_id: z.string().uuid() }), accessToken, { method: 'POST' })
   }
 
   organizationMembers(accessToken: string, organizationId: string, includeInactive = true): Promise<Collection<OrganizationMemberResource>> {

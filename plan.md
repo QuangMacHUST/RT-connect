@@ -146,7 +146,7 @@ Không cam kết danh sách hữu hạn là tất cả lỗi có thể có. Lỗ
 - [x] P00-W02 — Đánh dấu specification/registry cũ; bổ sung bộ kiểm tra cấu trúc và test phủ định cho tài liệu/danh mục pylinac.
 - [x] P00-W03 — Chốt đủ 16 họ mô-đun chính/biến thể và QA contrib công khai của pylinac, UI thao tác tay và ranh giới Gamma; tách công việc nội dung thư viện khỏi phát triển chức năng.
 - [x] P00-W04 — Chốt chuỗi P0–P20 tuần tự, đối chiếu Stitch, lưu yêu cầu thiết kế và sổ dọn tệp; bảo toàn lịch sử và liên kết.
-- [x] P00-VERIFY — Đạt 516 điều kiện cấu trúc, 15 phép thử bộ kiểm; 21 giai đoạn/260 tình huống được mô tả. Kiểm liên kết và giữ nội dung lịch sử; thiết kế có năm màn, phần chưa đồng bộ tệp xuất ghi riêng. Bằng chứng: docs/evidence/ux1-3-planning-contract-20260913.json.
+- [x] P00-VERIFY — Đạt 516 điều kiện cấu trúc, 15 phép thử bộ kiểm; 21 giai đoạn/263 tình huống được mô tả. Kiểm liên kết và giữ nội dung lịch sử; thiết kế có năm màn, phần chưa đồng bộ tệp xuất ghi riêng. Bằng chứng: docs/evidence/ux1-3-planning-contract-20260913.json.
 - [x] P00-HANDOFF — Điểm bàn giao UX1.3 ở đầu implementation-progress.md; không sửa mã ứng dụng/triển khai, không nhầm thiết kế với sản phẩm. Bước tiếp theo duy nhất là P1; phần tinh chỉnh và kiểm tương tác thư viện thuộc P11.
 
 ### Trường hợp chạy đúng P0
@@ -381,6 +381,9 @@ Chức năng đã được người dùng chấp nhận vẫn hoạt động, la
 **Đầu vào/phụ thuộc:** P4 đã hoàn thành và có bàn giao; các hợp đồng liên quan xem mục kỹ thuật tương ứng.
 **Phạm vi:** FR-UX1-P05-01; B05/B08. Thay kho hồ sơ làm điểm bắt đầu bằng danh mục bài.
 **Trạng thái UX1 lúc lập kế hoạch:** yêu cầu mới; chưa được tính là hoàn thành từ evidence cũ.
+**Trạng thái hiện tại:** `LOCAL_VERIFIED_SLICE`; phần mã và giao diện đã kiểm tra cục bộ, nhưng P5 chưa được đóng vì chưa có kiểm chứng staging và chưa mở P6.
+
+Danh mục hiện có 63 bài theo sổ toàn bộ danh mục pylinac và bài nhập số đo. Trong đó bài nhập số đo là bài đầu tiên được phép thực hiện; 62 bài pylinac đã hiện trong danh mục nhưng vẫn khóa nút bắt đầu cho đến khi bộ tích hợp, màn hình nhập và kiểm chứng tương ứng được hoàn thành. Việc hiện đủ danh mục không được hiểu là đã triển khai đủ engine.
 
 ### Trình tự triển khai P5
 
@@ -399,12 +402,14 @@ Chức năng đã được người dùng chấp nhận vẫn hoạt động, la
 
 ### Gói công việc P5
 
-- [ ] P05-W01 — Tạo QATestDefinition/capability registry và adapter trên QACase; seed đầy đủ các nhóm trong BA, ghi đúng manual/automatic.
-- [ ] P05-W02 — Làm danh mục, bắt đầu bài, lưu nháp và lịch sử phân trang; giữ folder lồng nhau nhưng không bắt dùng.
-- [ ] P05-W03 — Triển khai soft delete, trash/restore, purge có reference check và xử lý job đang chạy.
-- [ ] P05-W04 — Backfill dữ liệu cũ, giữ URL/tệp/report/run; kiểm projection lịch sử và tính idempotent.
+- [x] P05-W01 — Tạo danh mục có phiên bản và khóa bài; đã đưa đủ 63 mục từ sổ pylinac vào lớp dữ liệu, phân biệt bài nhập số đo, bài dùng hình ảnh, bài dùng liều và bài có điều khiển tay. Khóa bài chưa có bộ tích hợp để không tạo cảm giác đã sẵn sàng.
+- [x] P05-W02 — Làm danh mục, bắt đầu bài, lưu hồ sơ và lịch sử; giữ thư mục lồng nhau nhưng không bắt người dùng phải tạo thư mục. Khóa chống gửi lại yêu cầu đã được thêm cho thao tác bắt đầu bài.
+- [x] P05-W03 — Đã có lưu trữ có thể khôi phục, thùng rác, khôi phục và xóa vĩnh viễn có kiểm tra liên kết kết quả/tệp/báo cáo. Kiểm tra hành vi khi tiến trình nền đang chạy, xóa nhiều mục và thao tác trên staging vẫn là phần nghiệm thu còn mở.
+- [x] P05-W04 — Đã giữ tương thích hồ sơ cũ bằng trường phân loại có thể để trống; hồ sơ cũ vẫn mở được và có thể gắn bài phù hợp từ giao diện. Không tự đoán loại bài để tránh gắn nhầm engine; liên kết tệp, kết quả và báo cáo không bị đổi.
 - [ ] P05-VERIFY — Chạy các TC-UX1 dưới đây và nhóm lỗi dùng chung có liên quan; lưu actual/evidence theo SHA.
 - [ ] P05-HANDOFF — Cập nhật tiến độ, dữ liệu/migration/tuyến bị tác động, giới hạn hỗ trợ và bước tiếp theo.
+
+**Đã kiểm tra cục bộ:** migration `20260913_0021` và `20260913_0022` nâng thành công; nhóm kiểm thử P5 đạt 28/28; toàn bộ kiểm thử máy chủ đạt 209 bài, thêm 3 bài bản kê phát hành không chạy trong ảnh Docker vì ảnh không có Git; ruff đạt; giao diện đạt typecheck, lint, 31/31 kiểm thử và bản dựng sản xuất. Đây là bằng chứng cục bộ, chưa phải nghiệm thu staging.
 
 ### Trường hợp chạy đúng P5
 
@@ -425,6 +430,8 @@ Chức năng đã được người dùng chấp nhận vẫn hoạt động, la
 ### Bất biến và điều kiện đóng P5
 
 Danh mục đúng đầu vào, dữ liệu cũ mở được, trash/restore/purge và liên kết lịch sử có test DB/worker/storage; không coi chỉ xóa hàng trên UI là đạt.
+
+**Các điều kiện còn mở trước P5-VERIFY:** kiểm trực tiếp danh mục và lịch sử trên staging; kiểm hồ sơ cũ chưa phân loại; kiểm lưu trữ/khôi phục/xóa vĩnh viễn khi có và không có liên kết; kiểm thao tác lặp sau lỗi mạng; kiểm phản hồi khi tiến trình nền đang chạy; xác nhận không mất tệp, kết quả, báo cáo hoặc xu hướng. Chỉ sau khi các kiểm tra này có bằng chứng mới được mở P6.
 
 ## P6 — Đầu vào theo bài và kiểm tra dữ liệu
 

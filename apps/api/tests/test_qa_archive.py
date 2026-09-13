@@ -159,3 +159,129 @@ def test_qa_case_references_must_match_the_same_site_and_active_folder() -> None
     assert archived_folder.status_code == 200
     assert invalid_folder.status_code == 409
     assert invalid_folder.json()["code"] == "FOLDER_ARCHIVED"
+
+
+def test_qa_catalog_is_complete_and_case_can_start_from_a_definition() -> None:
+    with _workspace_client() as (client, organization):
+        site = client.get(f"/api/v1/organizations/{organization.id}/sites").json()["items"][0]
+        machine = client.get(
+            f"/api/v1/organizations/{organization.id}/sites/{site['id']}/machines"
+        ).json()["items"][0]
+        folder = client.post(
+            f"/api/v1/organizations/{organization.id}/folders", json={"name": "QA catalog"}
+        ).json()
+
+        catalogue = client.get(
+            f"/api/v1/organizations/{organization.id}/qa-test-definitions"
+        )
+        started = client.post(
+            f"/api/v1/organizations/{organization.id}/qa-cases",
+            json={
+                "site_id": site["id"],
+                "machine_id": machine["id"],
+                "primary_folder_id": folder["id"],
+                "qa_definition_key": "STARSHOT",
+                "qa_cycle": "MONTHLY",
+                "performed_at": "2026-09-13T08:00:00Z",
+                "title": "Kiểm tra sao tháng 9",
+            },
+        )
+
+    assert catalogue.status_code == 200
+    definitions = catalogue.json()["items"]
+    keys = {item["key"] for item in definitions}
+    assert len(definitions) >= 55
+    assert len(keys) == len(definitions)
+    assert {"STARSHOT", "PICKET_FENCE", "WINSTON_LUTZ", "PSQA_GAMMA_2D"} <= keys
+    assert catalogue.json()["total"] == len(definitions)
+    assert started.status_code == 201
+    assert started.json()["qa_definition_key"] == "STARSHOT"
+    assert started.json()["qa_type"] == "Kiểm tra sao"
+
+
+def test_qa_case_archive_restore_and_purge_are_idempotent_and_recoverable() -> None:
+    with _workspace_client() as (client, organization):
+        site = client.get(f"/api/v1/organizations/{organization.id}/sites").json()["items"][0]
+        machine = client.get(
+            f"/api/v1/organizations/{organization.id}/sites/{site['id']}/machines"
+        ).json()["items"][0]
+        folder = client.post(
+            f"/api/v1/organizations/{organization.id}/folders", json={"name": "QA history"}
+        ).json()
+        created = client.post(
+            f"/api/v1/organizations/{organization.id}/qa-cases",
+            json={
+                "site_id": site["id"],
+                "machine_id": machine["id"],
+                "primary_folder_id": folder["id"],
+                "qa_definition_key": "MANUAL_MACHINE_QA",
+                "qa_cycle": "DAILY",
+                "performed_at": "2026-09-13T08:00:00Z",
+                "title": "Số đo đầu ngày",
+            },
+        )
+        case_id = created.json()["id"]
+
+        archived = client.delete(f"/api/v1/qa-cases/{case_id}")
+        repeated_archive = client.delete(f"/api/v1/qa-cases/{case_id}")
+        hidden = client.get(f"/api/v1/organizations/{organization.id}/qa-cases")
+        trash = client.get(
+            f"/api/v1/organizations/{organization.id}/qa-cases",
+            params={"include_archived": True},
+        )
+        restored = client.post(f"/api/v1/qa-cases/{case_id}/restore")
+        repeated_restore = client.post(f"/api/v1/qa-cases/{case_id}/restore")
+        archived_again = client.delete(f"/api/v1/qa-cases/{case_id}")
+        purged = client.post(f"/api/v1/qa-cases/{case_id}/purge")
+        after_purge = client.get(
+            f"/api/v1/organizations/{organization.id}/qa-cases",
+            params={"include_archived": True},
+        )
+
+    assert archived.status_code == 200
+    assert archived.json()["is_archived"] is True
+    assert repeated_archive.status_code == 200
+    assert hidden.json()["total"] == 0
+    assert trash.json()["total"] == 1
+    assert restored.status_code == 200
+    assert restored.json()["is_archived"] is False
+    assert repeated_restore.status_code == 200
+    assert archived_again.status_code == 200
+    assert purged.status_code == 200
+    assert purged.json()["status"] == "PURGED"
+    assert after_purge.json()["total"] == 0
+
+
+def test_qa_case_creation_retries_are_idempotent_and_key_reuse_is_rejected() -> None:
+    with _workspace_client() as (client, organization):
+        site = client.get(f"/api/v1/organizations/{organization.id}/sites").json()["items"][0]
+        machine = client.get(
+            f"/api/v1/organizations/{organization.id}/sites/{site['id']}/machines"
+        ).json()["items"][0]
+        folder = client.post(
+            f"/api/v1/organizations/{organization.id}/folders", json={"name": "Retry safe"}
+        ).json()
+        payload = {
+            "site_id": site["id"],
+            "machine_id": machine["id"],
+            "primary_folder_id": folder["id"],
+            "qa_definition_key": "MANUAL_MACHINE_QA",
+            "qa_cycle": "DAILY",
+            "performed_at": "2026-09-13T08:00:00Z",
+            "title": "Bản ghi không trùng",
+            "idempotency_key": "qa-create-retry-001",
+        }
+        first = client.post(f"/api/v1/organizations/{organization.id}/qa-cases", json=payload)
+        repeated = client.post(f"/api/v1/organizations/{organization.id}/qa-cases", json=payload)
+        changed = client.post(
+            f"/api/v1/organizations/{organization.id}/qa-cases",
+            json={**payload, "title": "Dữ liệu khác"},
+        )
+        cases = client.get(f"/api/v1/organizations/{organization.id}/qa-cases")
+
+    assert first.status_code == 201
+    assert repeated.status_code == 201
+    assert repeated.json()["id"] == first.json()["id"]
+    assert changed.status_code == 409
+    assert changed.json()["code"] == "QA_CASE_IDEMPOTENCY_CONFLICT"
+    assert cases.json()["total"] == 1

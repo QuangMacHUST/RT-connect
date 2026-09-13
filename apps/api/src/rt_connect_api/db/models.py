@@ -178,15 +178,28 @@ class QACase(TimestampedIdMixin, Base):
     """A QA record that remains stable while folders are renamed or moved."""
 
     __tablename__ = "qa_cases"
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "idempotency_key",
+            name="uq_qa_cases_organization_idempotency",
+        ),
+        Index("ix_qa_cases_organization_idempotency", "organization_id", "idempotency_key"),
+    )
 
     organization_id: Mapped[UUID] = mapped_column(
         ForeignKey("organizations.id"), nullable=False, index=True
     )
+    idempotency_key: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    idempotency_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
     site_id: Mapped[UUID] = mapped_column(ForeignKey("sites.id"), nullable=False, index=True)
     machine_id: Mapped[UUID] = mapped_column(ForeignKey("machines.id"), nullable=False, index=True)
     primary_folder_id: Mapped[UUID] = mapped_column(
         ForeignKey("folders.id"), nullable=False, index=True
     )
+    # Stable source-controlled catalogue key.  It is nullable for historical
+    # records created before the catalogue existed; those remain readable.
+    qa_definition_key: Mapped[str | None] = mapped_column(String(120), nullable=True, index=True)
     qa_type: Mapped[str] = mapped_column(String(100), nullable=False)
     qa_cycle: Mapped[str] = mapped_column(String(40), nullable=False)
     performed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

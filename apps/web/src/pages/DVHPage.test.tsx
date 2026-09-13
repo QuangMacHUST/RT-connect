@@ -68,7 +68,7 @@ beforeEach(() => {
   vi.mocked(apiClient.qaCases).mockResolvedValue({
     items: [{
       id: caseId, organization_id: organizationId, site_id: 'site-id', machine_id: 'machine-id',
-      primary_folder_id: 'folder-id', qa_type: 'DICOM', qa_cycle: 'CUSTOM', performed_at: '2026-09-09T00:00:00Z',
+      primary_folder_id: 'folder-id', qa_definition_key: null, qa_type: 'DICOM', qa_cycle: 'CUSTOM', performed_at: '2026-09-09T00:00:00Z',
       scheduled_at: null, title: 'P17 staging smoke', description: null, protocol_version_id: null,
       status_note: null, case_status: 'DRAFT', is_archived: false
     }],

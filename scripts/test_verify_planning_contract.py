@@ -39,7 +39,7 @@ class PlanningContractTests(unittest.TestCase):
         result = VERIFIER.verify(ROOT)
         self.assertTrue(result["passed"], [c for c in result["checks"] if not c["ok"]])
         self.assertEqual(result["phase_count"], 21)
-        self.assertEqual(result["acceptance_scenario_count"], 260)
+        self.assertEqual(result["acceptance_scenario_count"], 263)
 
     def test_stale_version_fails(self):
         result = self.verify_with_change(
