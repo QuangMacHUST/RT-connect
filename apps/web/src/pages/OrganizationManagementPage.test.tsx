@@ -108,3 +108,16 @@ test('yêu cầu xác nhận trước khi lưu trữ cơ sở', async () => {
   expect(confirm).toHaveBeenCalledWith(expect.stringContaining('Dữ liệu và lịch sử liên quan vẫn được giữ lại'))
   expect(apiClient.updateSite).not.toHaveBeenCalled()
 })
+
+test('hủy xác nhận lưu trữ máy thì không thay đổi dữ liệu', async () => {
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  renderPage()
+
+  await screen.findByRole('heading', { name: 'Đơn vị và thiết bị' })
+  await screen.findByDisplayValue('Máy xạ trị 01')
+  const archiveButtons = screen.getAllByRole('button', { name: 'Lưu trữ' })
+  fireEvent.click(archiveButtons[1])
+
+  expect(confirm).toHaveBeenCalledWith(expect.stringContaining('máy Máy xạ trị 01'))
+  expect(apiClient.updateMachine).not.toHaveBeenCalled()
+})
