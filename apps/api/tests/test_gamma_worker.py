@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from rt_connect_api.api.gamma import acquire_gamma_run_lease, process_gamma_run
+from rt_connect_api.api.qa_archive import _case_reference_counts
 from rt_connect_api.db.base import Base
 from rt_connect_api.db.models import (
     Artifact,
@@ -261,6 +262,22 @@ def test_only_one_worker_can_hold_a_gamma_lease() -> None:
         # A stale completion callback cannot reopen or overwrite a terminal run.
         process_gamma_run(session, run, storage, lease_token=first_token, worker_id="worker-a")
         assert run.status == "COMPLETED"
+    finally:
+        session.close()
+
+
+def test_running_gamma_run_remains_a_case_reference_for_purge_guard() -> None:
+    session, storage, run = _run_fixture()
+    del storage
+    try:
+        lease_token = acquire_gamma_run_lease(session, run, "worker-a")
+        assert lease_token is not None
+        session.refresh(run)
+        assert run.status == "RUNNING"
+
+        references = _case_reference_counts(session, run.qa_case_id)
+
+        assert references["gamma_analysis_runs"] == 1
     finally:
         session.close()
 

@@ -3,7 +3,7 @@
   "captured_at_utc": "2026-09-14",
   "phase": "P5",
   "status": "LOCAL_VERIFIED_NOT_STAGING",
-  "source_commit": "e2ff4fc",
+  "source_commit": "e742d5a",
   "scope": "Kiểm tra yêu cầu xóa vĩnh viễn lặp lại an toàn; không thay cho kiểm thử lỗi mạng, tiến trình nền hoặc xóa có kiểm soát trên staging.",
   "behavior": {
     "first_purge": "HTTP 200; status=PURGED",
@@ -11,10 +11,12 @@
     "tenant_scope": "Audit event chỉ được tra trong đơn vị của phiên hiện tại",
     "referenced_case": "Tiếp tục từ chối trước khi xóa nếu còn kết quả, tệp, báo cáo hoặc xu hướng liên quan",
     "queued_gamma_job": "HTTP 409; hồ sơ còn tác vụ Gamma đang chờ thì không bị xóa",
+    "running_gamma_job": "Bộ đếm liên kết vẫn giữ tác vụ Gamma đang chạy; hồ sơ tiếp tục nằm ngoài phạm vi được phép xóa",
     "unrelated_data": "Không cascade và không xóa dữ liệu liên quan"
   },
   "local_checks": {
     "qa_archive_focused": "PASS; 8 tests",
+    "gamma_worker_focused": "PASS; 7 tests",
     "api_full_suite": "PASS",
     "ruff": "PASS",
     "mypy": "PASS"
@@ -23,6 +25,6 @@
     "Kiểm thử xóa vĩnh viễn bằng dữ liệu thử riêng trên staging sau khi được cho phép rõ ràng",
     "Kiểm thử trường hợp hồ sơ còn liên kết trên staging",
     "Kiểm thử lỗi mạng và yêu cầu thử lại",
-    "Kiểm thử khi tiến trình nền đang chạy"
+    "Kiểm thử khi tiến trình nền đang chạy trên staging"
   ]
 }
