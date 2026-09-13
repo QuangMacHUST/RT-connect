@@ -1,0 +1,48 @@
+{
+  "evidence_type": "phase_verification",
+  "phase": "P4",
+  "phase_status": "STAGING_VERIFIED_SLICE",
+  "checked_at": "2026-09-13T08:22:00Z",
+  "environment": "railway-staging",
+  "source_sha": "21432553d8f101ac08c09d332fe47246acb7f6f8",
+  "services": {
+    "api": {
+      "name": "Railway-API-staging",
+      "deployment_id": "9e4de6d4-5aab-480a-be0b-19cdf98a1547",
+      "status": "SUCCESS"
+    },
+    "web": {
+      "name": "RT-connect-web-staging",
+      "deployment_id": "151f1de7-57e0-4795-a83e-771f7b3b92f4",
+      "status": "SUCCESS"
+    },
+    "worker": {
+      "name": "RT-connect-gamma-worker-staging",
+      "deployment_id": "5fdda371-d64c-454e-a6f4-d886c09ada46",
+      "status": "SUCCESS"
+    }
+  },
+  "public_verifier": {
+    "status": "PASS",
+    "checks": 17,
+    "failed_checks": 0,
+    "evidence": "docs/evidence/p4-staging-public-verifier-20260913-2143255.json"
+  },
+  "browser_check": {
+    "status": "PASS",
+    "url": "https://rt-connect-web-staging-staging.up.railway.app/app/organization",
+    "authenticated": true,
+    "observed": [
+      "trang Đơn vị và thiết bị mở được với đơn vị, cơ sở và máy thật từ API",
+      "thông tin thành viên và lời mời mặc định thu gọn",
+      "thanh điều hướng hiển thị năm mục chính bằng tiếng Việt",
+      "bảng máy không hiển thị mã máy kỹ thuật"
+    ]
+  },
+  "limitations": [
+    "Chưa kiểm hai danh tính thật cùng sửa một bản ghi và phản hồi xung đột phiên bản.",
+    "Chưa kiểm đầy đủ ngừng dùng/khôi phục và tác động tới bộ chọn bài QA/lịch sử.",
+    "Đây là lát cắt staging của P4, chưa phải điều kiện đóng P4 và không mở P5."
+  ],
+  "passed": true
+}
