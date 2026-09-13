@@ -255,6 +255,64 @@ def test_archived_site_blocks_machine_mutation_and_restore_is_explicit() -> None
         assert restored_machine.json()["is_archived"] is False
 
 
+def test_archived_machine_keeps_qa_history_but_blocks_new_cases() -> None:
+    with _workspace_client() as (client, organization):
+        organization_url = f"/api/v1/organizations/{organization.id}"
+        site = client.get(f"{organization_url}/sites").json()["items"][0]
+        machine = client.get(f"{organization_url}/sites/{site['id']}/machines").json()["items"][0]
+        folder = client.post(
+            f"/api/v1/organizations/{organization.id}/folders", json={"name": "QA history"}
+        )
+        assert folder.status_code == 201
+        case = client.post(
+            f"/api/v1/organizations/{organization.id}/qa-cases",
+            json={
+                "site_id": site["id"],
+                "machine_id": machine["id"],
+                "primary_folder_id": folder.json()["id"],
+                "qa_type": "Machine Output",
+                "qa_cycle": "DAILY",
+                "performed_at": "2026-09-13T08:00:00Z",
+                "title": "Lịch sử trước khi lưu trữ máy",
+            },
+        )
+        assert case.status_code == 201, case.text
+
+        archived = client.patch(
+            f"{organization_url}/sites/{site['id']}/machines/{machine['id']}",
+            json={"expected_revision": machine["revision"], "is_archived": True},
+        )
+        assert archived.status_code == 200, archived.text
+
+        active_machines = client.get(
+            f"{organization_url}/sites/{site['id']}/machines"
+        )
+        qa_history = client.get(f"/api/v1/organizations/{organization.id}/qa-cases")
+        old_case = client.get(f"/api/v1/qa-cases/{case.json()['id']}")
+        blocked_new_case = client.post(
+            f"/api/v1/organizations/{organization.id}/qa-cases",
+            json={
+                "site_id": site["id"],
+                "machine_id": machine["id"],
+                "primary_folder_id": folder.json()["id"],
+                "qa_type": "Machine Output",
+                "qa_cycle": "DAILY",
+                "performed_at": "2026-09-13T09:00:00Z",
+                "title": "Không được tạo sau khi lưu trữ máy",
+            },
+        )
+
+    assert active_machines.status_code == 200
+    assert active_machines.json()["total"] == 0
+    assert qa_history.status_code == 200
+    assert qa_history.json()["total"] == 1
+    assert qa_history.json()["items"][0]["id"] == case.json()["id"]
+    assert old_case.status_code == 200
+    assert old_case.json()["machine_id"] == machine["id"]
+    assert blocked_new_case.status_code == 404
+    assert blocked_new_case.json()["code"] == "MACHINE_NOT_FOUND"
+
+
 def test_organization_routes_reject_scope_mismatch_before_resource_lookup() -> None:
     with _workspace_client() as (client, organization):
         response = client.get(f"/api/v1/organizations/{uuid4()}/sites")
