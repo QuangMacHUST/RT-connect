@@ -30,8 +30,9 @@ Kết quả đạt: tài khoản A nhìn thấy đúng đơn vị, máy đang s�
 1. Từ tài khoản A, mở thẻ **Mời đồng nghiệp** và nhập email của tài khoản B.
 2. Tạo lời mời một lần. Chuyển mã mời cho B qua kênh riêng; không đưa mã vào Git, nhật ký triển khai hoặc ảnh chụp.
 3. Đăng nhập tài khoản B trong hồ sơ trình duyệt riêng.
-4. Dùng mã mời để tham gia đơn vị.
-5. Mở **Đơn vị và thiết bị**, **QA máy** và **Thư viện kiến thức**.
+4. Tại màn hình **Chưa có đơn vị**, xác nhận lời mời đang chờ xuất hiện theo đúng email B và tên đơn vị được hiển thị.
+5. Chọn **Tham gia** trên lời mời. Nếu lời mời không xuất hiện do lỗi tra cứu, dùng ô **Mã mời** để dán mã đã nhận rồi chọn **Tham gia bằng mã mời**.
+6. Mở **Đơn vị và thiết bị**, **QA máy** và **Thư viện kiến thức**.
 
 Kết quả đạt: B nhìn thấy cùng đơn vị, cơ sở và máy; không xuất hiện màn hình yêu cầu chọn vai trò bác sĩ/kỹ sư hay xin quyền thao tác.
 
@@ -77,6 +78,8 @@ Không dùng thao tác này trên cơ sở thật đang chứa dữ liệu vận
 | :--- | :--- | :--- | :--- | :--- |
 | P4-S01 | Tài khoản A mở đơn vị, cơ sở, máy và lịch sử | Đúng dữ liệu, không phải cuộn qua biểu mẫu dài |  |  |
 | P4-S02 | Tài khoản B tham gia cùng đơn vị | Cùng thao tác, không có phân cấp vai trò |  |  |
+| P4-S03 | Tài khoản B chưa có đơn vị | Thấy lời mời theo email và có nút tham gia; không bị đưa thẳng vào tạo đơn vị |  |  |
+| P4-S04 | Dán mã mời dự phòng | Mã đúng đưa vào đơn vị; mã sai không tạo đơn vị |  |  |
 | P4-E01 | Tên trống hoặc trùng | Báo lỗi, giữ nguyên biểu mẫu |  |  |
 | P4-E02 | Hai tài khoản lưu cùng phiên bản | Báo xung đột, giữ nội dung đang nhập |  |  |
 | P4-E03 | Lời mời hết hạn, đã dùng hoặc sai email | Báo đúng nguyên nhân, không tạo thành viên trùng |  |  |
@@ -88,6 +91,8 @@ Không dùng thao tác này trên cơ sở thật đang chứa dữ liệu vận
 P4 chỉ được ghi **Hoàn thành** khi:
 
 - P4-S01 và P4-S02 đạt trên môi trường thử bằng hai tài khoản thật.
+- P4-S03 đạt bằng tài khoản B chưa có thành viên trước khi nhận lời mời.
+- P4-S04 được kiểm ít nhất với một mã đúng và một mã sai hoặc đã dùng.
 - P4-E02 được kiểm bằng hai phiên độc lập, không phải hai cửa sổ dùng chung phiên.
 - P4-E05 xác nhận cả bộ chọn bài mới và lịch sử cũ.
 - Không có lỗi làm lộ dữ liệu khác đơn vị, mất dữ liệu đang nhập hoặc xóa lịch sử ngoài ý muốn.

@@ -108,6 +108,8 @@ Giữ cách xác thực và liên kết đơn vị đã hoạt động. Phân bi
 
 Trong “Đơn vị và thiết bị”, dùng các thẻ nội bộ “Đơn vị”, “Cơ sở và máy”, “Thành viên”. Không xếp tất cả biểu mẫu dài nối tiếp. Danh sách và vùng sửa cạnh nhau trên máy tính; tạo/sửa bằng khung nhỏ. Khi hai người cùng sửa, báo dữ liệu đã thay đổi và cho tải lại; không âm thầm ghi đè.
 
+Khi tài khoản đã xác thực nhưng chưa thuộc đơn vị, màn hình phải kiểm tra lời mời đang chờ theo đúng email của tài khoản. Nếu có lời mời, hiển thị tên đơn vị, hạn nhận và nút “Tham gia”; thao tác này đưa người dùng vào đơn vị được mời và không mở luồng tạo đơn vị. Nếu không tìm thấy lời mời, vẫn có ô “Mã mời” để người dùng dán mã do đồng nghiệp gửi. Luồng “Tạo đơn vị mới” phải được đặt sau luồng tham gia và ghi rõ chỉ dùng khi chưa có đơn vị sẵn.
+
 ## 5. QA máy — danh mục và đầu vào
 
 ### 5.1. Ba cách thực hiện

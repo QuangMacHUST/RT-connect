@@ -47,6 +47,18 @@ Không thêm ma trận vai trò/action permission. Mọi thành viên hoạt đ�
 
 Cơ chế optimistic concurrency dùng revision/ETag để chống ghi đè đồng thời; đây là bảo toàn dữ liệu, không phải phê duyệt.
 
+### 2.3. Luồng lời mời khi tài khoản chưa có đơn vị
+
+Tài khoản đã xác thực nhưng chưa có thành viên hoạt động được phép gọi `GET /api/v1/organizations/invitations/pending`. Máy chủ chỉ tìm lời mời có địa chỉ trùng với email đã xác thực, còn hạn và thuộc đơn vị chưa lưu trữ. Tuyến này không yêu cầu `organization_id`, không trả mã mời và không tiết lộ lời mời của địa chỉ khác; kết quả chỉ gồm mã bản ghi nội bộ, tên đơn vị và hạn nhận để giao diện hiển thị thân thiện.
+
+Khi người dùng chọn một lời mời đã hiển thị, giao diện gọi `POST /api/v1/organizations/invitations/accept-by-id` với mã bản ghi của lời mời. Máy chủ kiểm tra lại email xác thực, trạng thái, hạn dùng, đơn vị và tư cách thành viên trước khi tạo thành viên. Tất cả kiểm tra phải được thực hiện trong cùng giao dịch với thao tác nhận lời mời; gọi lặp lại không tạo thành viên thứ hai.
+
+Tuyến nhận lời mời bằng mã `POST /api/v1/organizations/invitations/accept` vẫn được giữ cho trường hợp người dùng được đồng nghiệp gửi mã trực tiếp. Mã mời chỉ được đối chiếu bằng giá trị băm ở máy chủ. Tuyệt đối không dùng mã mời làm tên đơn vị và không để giao diện chuyển dữ liệu của ô mã mời sang tuyến tạo đơn vị.
+
+### 2.4. Hợp đồng giao diện cho màn hình chưa có đơn vị
+
+Màn hình phải gọi danh sách lời mời ngay sau khi phiên Supabase sẵn sàng. Có ba trạng thái rõ ràng: đang tìm lời mời, có lời mời với nút “Tham gia”, và không có lời mời với ô “Mã mời”. Lỗi tra cứu không được biến thành màn hình trắng; vẫn cho phép dán mã mời hoặc đăng xuất. Nút “Tạo đơn vị mới” nằm ở phần riêng phía sau, có mô tả để tránh người dùng vô tình tạo tổ chức khi chỉ đang muốn tham gia.
+
 ## 3. Hợp đồng giao diện
 
 ### 3.1. Thành phần bố cục

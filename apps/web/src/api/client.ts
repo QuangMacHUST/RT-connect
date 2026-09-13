@@ -69,6 +69,12 @@ export type OrganizationInvitationResource = {
   revoked_at: string | null
 }
 export type OrganizationInvitationCreatedResource = OrganizationInvitationResource & { token: string }
+export type OrganizationPendingInvitationResource = {
+  id: string
+  organization_id: string
+  organization_name: string
+  expires_at: string
+}
 export type SiteResource = { id: string; organization_id: string; name: string; is_archived: boolean; revision: number }
 export type MachineResource = {
   id: string
@@ -1550,6 +1556,23 @@ export class ApiClient {
       id: z.string().uuid(), organization_id: z.string().uuid(), email: z.string().nullable(),
       display_name: z.string().nullable(), is_active: z.boolean()
     }), accessToken, { method: 'POST', body: JSON.stringify({ token }) })
+  }
+
+  pendingOrganizationInvitations(accessToken: string): Promise<{ items: OrganizationPendingInvitationResource[]; total: number }> {
+    return this.get('/organizations/invitations/pending', z.object({
+      items: z.array(z.object({
+        id: z.string().uuid(), organization_id: z.string().uuid(), organization_name: z.string(),
+        expires_at: z.string()
+      })),
+      total: z.number().int()
+    }), accessToken)
+  }
+
+  acceptOrganizationInvitationById(accessToken: string, invitationId: string): Promise<OrganizationMemberResource> {
+    return this.request('/organizations/invitations/accept-by-id', z.object({
+      id: z.string().uuid(), organization_id: z.string().uuid(), email: z.string().nullable(),
+      display_name: z.string().nullable(), is_active: z.boolean()
+    }), accessToken, { method: 'POST', body: JSON.stringify({ invitation_id: invitationId }) })
   }
 
   artifacts(accessToken: string, caseId: string): Promise<{ items: ArtifactResource[]; total: number; offset: number; limit: number }> {

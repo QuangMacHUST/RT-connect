@@ -334,7 +334,8 @@ Evidence hiện tại: `docs/evidence/p4-local-organization-ui-20260913-8a1fe44.
 1. Chuyển phần đơn vị/cơ sở/máy/thành viên thành thẻ và biểu mẫu gọn, giữ tên người dùng quen thuộc.
 2. Đối chiếu các thao tác hiện có với máy chủ; định danh kỹ thuật tự tạo bên trong.
 3. Thử hai đồng nghiệp cùng sửa, đổi đơn vị, ngừng dùng/khôi phục máy và lời mời hết hạn theo [phiếu kiểm chứng staging](docs/runbooks/p4-kiem-chung-hai-tai-khoan-staging.md).
-4. Bàn giao cơ cấu gọn cùng danh sách máy/đơn vị cho bộ chọn ở P5.
+4. Đăng nhập bằng một tài khoản chưa có đơn vị; kiểm tra danh sách lời mời theo email, tham gia bằng nút trên lời mời và kiểm tra thêm trường hợp dán mã mời. Luồng tạo đơn vị phải được đặt sau luồng tham gia.
+5. Bàn giao cơ cấu gọn cùng danh sách máy/đơn vị cho bộ chọn ở P5.
 
 **Điểm chuyển bước:** Chỉ mở P5 sau khi gói VERIFY và HANDOFF của P4 đạt đúng điều kiện bên dưới.
 
@@ -350,6 +351,7 @@ Evidence hiện tại: `docs/evidence/p4-local-organization-ui-20260913-8a1fe44.
 - [x] P04-W02 — Dịch nhãn, trạng thái, lời mời và lỗi; mã kỹ thuật vẫn được giữ ở lớp dữ liệu nhưng không hiển thị trong bảng và thông tin thường dùng. `STAGING_VERIFIED_SLICE`.
 - [x] P04-W03 — Giữ tính ngang quyền và scope; kiểm sửa đồng thời theo revision. `LOCAL_VERIFIED_SLICE`; 16/16 kiểm thử API P4 đạt với danh tính giả lập.
 - [x] P04-W04 — Kiểm ngừng dùng/khôi phục máy, chuyển đơn vị và tác động tới bộ chọn máy/QA lịch sử. `LOCAL_VERIFIED_SLICE`; kiểm máy lưu trữ bị loại khỏi danh sách máy hoạt động, bài QA cũ vẫn mở được và bài mới bị chặn. Evidence: `docs/evidence/p4-local-qa-history-20260913.json`. Kiểm bộ chọn/lịch sử trên staging vẫn mở.
+- [x] P04-W05 — Bổ sung hộp thư lời mời cho tài khoản chưa có đơn vị: tự tìm lời mời còn hạn theo email xác thực, tham gia theo lời mời đã chọn và vẫn hỗ trợ dán mã mời. `LOCAL_VERIFIED`; API tổ chức và giao diện đã có kiểm thử riêng. Chưa đánh dấu staging cho tới khi kiểm trực tiếp bằng tài khoản người nhận.
 - [ ] P04-VERIFY — Chạy các TC-UX1 dưới đây và nhóm lỗi dùng chung có liên quan; lưu actual/evidence theo SHA.
 - [ ] P04-HANDOFF — Cập nhật tiến độ, dữ liệu/migration/tuyến bị tác động, giới hạn hỗ trợ và bước tiếp theo.
 
@@ -358,6 +360,8 @@ Evidence hiện tại: `docs/evidence/p4-local-organization-ui-20260913-8a1fe44.
 - TC-UX1-P04-S01 — Sửa tên đơn vị, thêm máy và xem thành viên không cần cuộn qua toàn bộ các biểu mẫu khác.
 - TC-UX1-P04-S02 — Hai thành viên dùng được cùng thao tác; không hiện vai trò duyệt/quản trị nghiệp vụ mới.
 - TC-UX1-P04-S03 — Máy ngừng dùng vẫn có lịch sử, không xuất hiện mặc định cho bài mới.
+- TC-UX1-P04-S04 — Tài khoản chưa có đơn vị nhìn thấy lời mời đang chờ theo email, bấm “Tham gia” và được đưa vào đúng đơn vị; không gọi tạo đơn vị.
+- TC-UX1-P04-S05 — Khi danh sách lời mời không tải được hoặc không có kết quả, người dùng có thể dán mã mời; mã đúng đưa vào đơn vị, mã sai không tạo đơn vị và giữ nguyên biểu mẫu.
 
 ### Trường hợp lỗi và phục hồi P4
 
@@ -366,10 +370,11 @@ Evidence hiện tại: `docs/evidence/p4-local-organization-ui-20260913-8a1fe44.
 - TC-UX1-P04-E03 — Lời mời hết hạn/đã dùng/sai email → thông báo khác nhau và cách xử lý; không tạo membership trùng.
 - TC-UX1-P04-E04 — Chuyển đơn vị → xóa cache/draft sai scope, không lộ máy/dữ liệu của đơn vị trước.
 - TC-UX1-P04-E05 — Ngừng dùng cơ sở có máy/bài → xác nhận tác động, không xóa dây chuyền lịch sử.
+- TC-UX1-P04-E06 — Người dùng nhập mã mời vào ô tạo đơn vị hoặc truy cập lại màn hình sau khi đã nhận lời mời → giao diện phải hướng về luồng tham gia, không tạo tổ chức ngoài ý muốn.
 
 ### Bất biến và điều kiện đóng P4
 
-Chức năng đã được người dùng chấp nhận vẫn hoạt động, layout gọn và kiểm hồi quy scope/revision đạt. P4 chỉ được đóng sau khi lát cắt cục bộ và staging được nối với hai danh tính thật, kiểm vòng đời trên trình duyệt và xác nhận tác động tới bộ chọn/lịch sử QA.
+Chức năng đã được người dùng chấp nhận vẫn hoạt động, layout gọn và kiểm hồi quy scope/revision đạt. P4 chỉ được đóng sau khi lát cắt cục bộ và staging được nối với hai danh tính thật, tài khoản chưa có đơn vị nhìn thấy và nhận được lời mời, kiểm vòng đời trên trình duyệt và xác nhận tác động tới bộ chọn/lịch sử QA. Việc có lời mời đang chờ trong cơ sở dữ liệu nhưng giao diện không hiển thị không được xem là đạt.
 
 ## P5 — Danh mục QA, bắt đầu bài, lịch sử và xóa
 

@@ -19,7 +19,12 @@ vi.mock('../api/client', () => ({
       this.correlationId = correlationId
     }
   },
-  apiClient: { createOrganization: vi.fn() }
+  apiClient: {
+    createOrganization: vi.fn(),
+    pendingOrganizationInvitations: vi.fn(),
+    acceptOrganizationInvitation: vi.fn(),
+    acceptOrganizationInvitationById: vi.fn()
+  }
 }))
 
 vi.mock('../auth/AuthProvider', () => ({ useAuth: vi.fn() }))
@@ -43,6 +48,7 @@ function renderPage() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  vi.mocked(apiClient.pendingOrganizationInvitations).mockResolvedValue({ items: [], total: 0 })
   vi.mocked(useAuth).mockReturnValue({
     session: { access_token: 'access-token' } as never,
     loading: false,
@@ -75,6 +81,57 @@ test('creates the first organization and navigates to the workspace', async () =
   fireEvent.click(screen.getByRole('button', { name: 'Tạo đơn vị và mở nơi làm việc' }))
 
   await waitFor(() => expect(apiClient.createOrganization).toHaveBeenCalledWith('access-token', 'Bệnh viện thử nghiệm'))
+  await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/app'))
+})
+
+test('shows a pending invitation and accepts it without creating an organization', async () => {
+  vi.mocked(apiClient.pendingOrganizationInvitations).mockResolvedValue({
+    items: [{
+      id: '22222222-2222-4222-8222-222222222222',
+      organization_id: '33333333-3333-4333-8333-333333333333',
+      organization_name: 'Bệnh viện được mời',
+      expires_at: '2026-09-20T00:00:00Z'
+    }],
+    total: 1
+  })
+  vi.mocked(apiClient.acceptOrganizationInvitationById).mockResolvedValue({
+    id: '44444444-4444-4444-8444-444444444444',
+    organization_id: '33333333-3333-4333-8333-333333333333',
+    email: 'invitee@example.com',
+    display_name: null,
+    is_active: true
+  })
+
+  renderPage()
+
+  expect(await screen.findByText('Bệnh viện được mời')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Tham gia' }))
+
+  await waitFor(() => expect(apiClient.acceptOrganizationInvitationById).toHaveBeenCalledWith(
+    'access-token',
+    '22222222-2222-4222-8222-222222222222'
+  ))
+  expect(apiClient.createOrganization).not.toHaveBeenCalled()
+  expect(screen.getByTestId('location')).toHaveTextContent('/app')
+})
+
+test('accepts a manually entered invitation code', async () => {
+  vi.mocked(apiClient.acceptOrganizationInvitation).mockResolvedValue({
+    id: '55555555-5555-4555-8555-555555555555',
+    organization_id: '33333333-3333-4333-8333-333333333333',
+    email: 'invitee@example.com',
+    display_name: null,
+    is_active: true
+  })
+
+  renderPage()
+  fireEvent.change(screen.getByLabelText('Mã mời'), { target: { value: 'invitation-code-123456789012345' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Tham gia bằng mã mời' }))
+
+  await waitFor(() => expect(apiClient.acceptOrganizationInvitation).toHaveBeenCalledWith(
+    'access-token',
+    'invitation-code-123456789012345'
+  ))
   expect(screen.getByTestId('location')).toHaveTextContent('/app')
 })
 

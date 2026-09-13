@@ -461,6 +461,39 @@ def test_invitation_rejects_wrong_identity_and_duplicate_pending() -> None:
         assert rejected.json()["code"] == "INVITATION_INVALID"
 
 
+def test_invited_identity_can_see_and_accept_its_pending_invitation_without_membership() -> None:
+    with _workspace_client() as (client, organization):
+        created = client.post(
+            f"/api/v1/organizations/{organization.id}/invitations",
+            json={"email": "pending-invitee@example.com"},
+        )
+        assert created.status_code == 201, created.text
+        invitation = created.json()
+
+        client.app.dependency_overrides[require_identity] = lambda: AuthenticatedIdentity(
+            subject="pending-invitee-subject",
+            email="pending-invitee@example.com",
+            claims={"sub": "pending-invitee-subject"},
+        )
+        pending = client.get("/api/v1/organizations/invitations/pending")
+        assert pending.status_code == 200, pending.text
+        assert pending.json()["total"] == 1
+        assert pending.json()["items"][0]["organization_id"] == str(organization.id)
+        assert pending.json()["items"][0]["organization_name"] == organization.name
+        assert "token" not in pending.json()["items"][0]
+
+        accepted = client.post(
+            "/api/v1/organizations/invitations/accept-by-id",
+            json={"invitation_id": invitation["id"]},
+        )
+        assert accepted.status_code == 200, accepted.text
+        assert accepted.json()["email"] == "pending-invitee@example.com"
+
+        no_longer_pending = client.get("/api/v1/organizations/invitations/pending")
+        assert no_longer_pending.status_code == 200
+        assert no_longer_pending.json()["total"] == 0
+
+
 def test_invitation_revoke_is_terminal_and_allows_a_new_invitation() -> None:
     with _workspace_client() as (client, organization):
         created = client.post(

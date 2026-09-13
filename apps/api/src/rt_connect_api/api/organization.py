@@ -96,6 +96,10 @@ class OrganizationInvitationAcceptRequest(BaseModel):
     token: str = Field(min_length=20, max_length=256)
 
 
+class OrganizationInvitationAcceptByIdRequest(BaseModel):
+    invitation_id: UUID
+
+
 class OrganizationMemberPatchRequest(BaseModel):
     is_active: bool
 
@@ -136,6 +140,18 @@ class OrganizationInvitationCollectionResponse(BaseModel):
     total: int
     offset: int
     limit: int
+
+
+class OrganizationPendingInvitationResponse(BaseModel):
+    id: UUID
+    organization_id: UUID
+    organization_name: str
+    expires_at: datetime
+
+
+class OrganizationPendingInvitationCollectionResponse(BaseModel):
+    items: list[OrganizationPendingInvitationResponse]
+    total: int
 
 
 class OrganizationResponse(BaseModel):
@@ -247,6 +263,218 @@ def _invitation_response(
         accepted_at=invitation.accepted_at,
         revoked_at=invitation.revoked_at,
     )
+
+
+def _accept_invitation_record(
+    invitation: OrganizationInvitation,
+    identity: AuthenticatedIdentity,
+    session: Session,
+) -> OrganizationMemberResponse:
+    """Accept an invitation after the caller has selected a verified record."""
+
+    user_identity = _ensure_identity(session, identity)
+    now = _utc_now()
+    organization = session.scalar(
+        select(Organization).where(
+            Organization.id == invitation.organization_id,
+            Organization.is_archived.is_(False),
+        )
+    )
+    if organization is None:
+        session.rollback()
+        raise DomainError(
+            "INVITATION_INVALID",
+            "The invitation organization is no longer available.",
+            409,
+        )
+
+    if invitation.status == "ACCEPTED":
+        if invitation.accepted_by_user_identity_id != user_identity.id:
+            session.rollback()
+            raise DomainError(
+                "INVITATION_INVALID",
+                "The invitation has already been used by another identity.",
+                409,
+            )
+        membership = session.scalar(
+            select(OrganizationMembership).where(
+                OrganizationMembership.organization_id == invitation.organization_id,
+                OrganizationMembership.user_identity_id == user_identity.id,
+            )
+        )
+        if membership is None:
+            session.rollback()
+            raise DomainError(
+                "INVITATION_INVALID",
+                "The invitation membership record is unavailable.",
+                409,
+            )
+        session.rollback()
+        return _member_response(membership)
+
+    if invitation.status != "PENDING" or _utc_datetime(invitation.expires_at) <= now:
+        if invitation.status == "PENDING":
+            invitation.status = "EXPIRED"
+            session.commit()
+        else:
+            session.rollback()
+        raise DomainError(
+            "INVITATION_INVALID",
+            "The invitation is invalid, expired, revoked, or has already been used.",
+            409,
+        )
+
+    verified_email = _normalized_identity_email(identity)
+    if verified_email is None or verified_email != invitation.invited_email:
+        session.rollback()
+        raise DomainError(
+            "INVITATION_INVALID",
+            "The verified identity does not match this invitation.",
+            403,
+        )
+
+    existing_active_membership = session.scalar(
+        select(OrganizationMembership)
+        .join(Organization, Organization.id == OrganizationMembership.organization_id)
+        .where(
+            OrganizationMembership.user_identity_id == user_identity.id,
+            OrganizationMembership.is_active.is_(True),
+            OrganizationMembership.organization_id != invitation.organization_id,
+            Organization.is_archived.is_(False),
+        )
+    )
+    if existing_active_membership is not None:
+        session.rollback()
+        raise DomainError(
+            "ORGANIZATION_CONTEXT_ALREADY_ASSIGNED",
+            "This identity already has an active organization context.",
+            409,
+        )
+
+    membership = session.scalar(
+        select(OrganizationMembership).where(
+            OrganizationMembership.organization_id == invitation.organization_id,
+            OrganizationMembership.user_identity_id == user_identity.id,
+        )
+    )
+    if membership is None:
+        membership = OrganizationMembership(
+            organization_id=invitation.organization_id,
+            user_identity_id=user_identity.id,
+            is_active=True,
+        )
+        session.add(membership)
+        session.flush()
+    else:
+        membership.is_active = True
+
+    invitation.status = "ACCEPTED"
+    invitation.accepted_at = now
+    invitation.accepted_by_user_identity_id = user_identity.id
+    _audit(
+        session,
+        SessionContext(
+            subject=identity.subject,
+            email=identity.email,
+            organization_id=organization.id,
+            organization_name=organization.name,
+        ),
+        "ORGANIZATION_INVITATION_ACCEPTED",
+        "OrganizationInvitation",
+        invitation.id,
+        {"invited_email": invitation.invited_email},
+    )
+    _commit_or_raise(
+        session,
+        "INVITATION_CONFLICT",
+        "The invitation could not be accepted because membership changed concurrently.",
+    )
+    return _member_response(membership)
+
+
+@router.get(
+    "/invitations/pending",
+    response_model=OrganizationPendingInvitationCollectionResponse,
+)
+def list_pending_invitations_for_identity(
+    identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
+    session: Session = Depends(get_session),  # noqa: B008
+) -> OrganizationPendingInvitationCollectionResponse:
+    """List active invitations addressed to the verified email claim.
+
+    This endpoint intentionally does not require organization membership.  It
+    is the onboarding lookup that lets an invited identity see its invitation
+    before joining a workspace.  It returns organization names and expiry only;
+    invitation tokens remain write-once values returned at creation time.
+    """
+
+    email = _normalized_identity_email(identity)
+    if email is None:
+        return OrganizationPendingInvitationCollectionResponse(items=[], total=0)
+
+    now = _utc_now()
+    rows = session.execute(
+        select(OrganizationInvitation, Organization)
+        .join(Organization, Organization.id == OrganizationInvitation.organization_id)
+        .where(
+            func.lower(OrganizationInvitation.invited_email) == email,
+            OrganizationInvitation.status == "PENDING",
+            Organization.is_archived.is_(False),
+        )
+        .order_by(desc(OrganizationInvitation.created_at), OrganizationInvitation.id)
+    ).all()
+    active_rows = [
+        (invitation, organization)
+        for invitation, organization in rows
+        if _utc_datetime(invitation.expires_at) > now
+    ]
+    return OrganizationPendingInvitationCollectionResponse(
+        items=[
+            OrganizationPendingInvitationResponse(
+                id=invitation.id,
+                organization_id=organization.id,
+                organization_name=organization.name,
+                expires_at=invitation.expires_at,
+            )
+            for invitation, organization in active_rows
+        ],
+        total=len(active_rows),
+    )
+
+
+@router.post(
+    "/invitations/accept-by-id",
+    response_model=OrganizationMemberResponse,
+)
+def accept_organization_invitation_by_id(
+    request: OrganizationInvitationAcceptByIdRequest,
+    identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
+    session: Session = Depends(get_session),  # noqa: B008
+) -> OrganizationMemberResponse:
+    """Accept a pending invitation selected from the caller's own inbox."""
+
+    invitation = session.scalar(
+        select(OrganizationInvitation).where(
+            OrganizationInvitation.id == request.invitation_id,
+        )
+    )
+    if invitation is None:
+        raise DomainError(
+            "INVITATION_INVALID",
+            "The invitation is invalid, expired, revoked, or has already been used.",
+            409,
+        )
+    if (
+        _normalized_identity_email(identity) is None
+        or _normalized_identity_email(identity) != invitation.invited_email
+    ):
+        session.rollback()
+        raise DomainError(
+            "INVITATION_INVALID",
+            "The verified identity does not match this invitation.",
+            403,
+        )
+    return _accept_invitation_record(invitation, identity, session)
 
 
 def _context_for_organization(

@@ -532,6 +532,11 @@ td code { color: #075e67; font-size: .78rem; }
 .onboarding-section .stack-form { margin-top: 12px; }
 .onboarding-section .alert { margin-top: 4px; padding: .8rem .9rem; }
 .onboarding-section .alert p { margin: 0; }
+.onboarding-section--join { border: 1px solid #b7ded8; border-left: 4px solid #059669; border-radius: 4px; margin-top: 2px; padding: 16px; }
+.pending-invitation-list { display: grid; gap: 8px; margin: 12px 0; }
+.pending-invitation { align-items: center; background: #f4fbf9; border: 1px solid #cce7e1; border-radius: 4px; display: flex; gap: 12px; justify-content: space-between; padding: 10px 12px; }
+.pending-invitation div { display: grid; gap: 3px; text-align: left; }
+.pending-invitation span { color: #526e80; font-size: .78rem; }
 .auth-state { align-items: center; background: #f8f9ff; color: #334155; display: flex; flex-direction: column; gap: 16px; justify-content: center; min-height: 100vh; padding: 32px; text-align: center; }
 .alert--success { border-left: 4px solid #059669; }
 
