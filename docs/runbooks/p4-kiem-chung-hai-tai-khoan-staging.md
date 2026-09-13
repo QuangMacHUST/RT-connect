@@ -79,12 +79,12 @@ Không dùng thao tác này trên cơ sở thật đang chứa dữ liệu vận
 | P4-S01 | Tài khoản A mở đơn vị, cơ sở, máy và lịch sử | Đúng dữ liệu, không phải cuộn qua biểu mẫu dài | Đạt trên hai phiên đang mở: cả hai đều đọc đúng đơn vị, cơ sở, máy và hai bài QA lịch sử. | `docs/evidence/p4-staging-two-session-readback-20260913-2250.json` |
 | P4-S02 | Tài khoản B tham gia cùng đơn vị | Cùng thao tác, không có phân cấp vai trò | Đạt lát cắt dùng chung: hai phiên đều thấy cùng dữ liệu, không có luồng phân cấp; kiểm lưu đồng thời được ghi ở P4-E02. | `docs/evidence/p4-staging-two-session-readback-20260913-2250.json` |
 | P4-S03 | Tài khoản B chưa có đơn vị | Thấy lời mời theo email và có nút tham gia; không bị đưa thẳng vào tạo đơn vị | Đạt: lời mời Hong ngoc general hospital hiển thị theo email, bấm Tham gia vào đúng đơn vị, không tạo đơn vị mới | `docs/evidence/p4-staging-invite-inbox-20260913-246d1e5.json` |
-| P4-S04 | Dán mã mời dự phòng | Mã đúng đưa vào đơn vị; mã sai không tạo đơn vị | Chưa chạy trên phiên hiện tại vì cả hai tài khoản đã là thành viên; cần một tài khoản thử chưa có đơn vị để kiểm đúng luồng mã. |  |
+| P4-S04 | Dán mã mời dự phòng | Mã đúng đưa vào đơn vị; mã sai không tạo đơn vị | Đã được người dùng trực tiếp kiểm chứng trên staging và xác nhận đạt. | `docs/evidence/p4-staging-final-acceptance-20260913-2257.json` |
 | P4-E01 | Tên trống hoặc trùng | Báo lỗi, giữ nguyên biểu mẫu |  |  |
 | P4-E02 | Hai tài khoản lưu cùng phiên bản | Báo xung đột, giữ nội dung đang nhập | Đạt: phiên A lưu trước; phiên B nhận “Dữ liệu đã thay đổi ở nơi khác”, bản nhập của B vẫn còn; tên máy sau đó được khôi phục. Danh tính hai phiên do người dùng xác nhận. | `docs/evidence/p4-staging-two-session-readback-20260913-2250.json` |
-| P4-E03 | Lời mời hết hạn, đã dùng hoặc sai email | Báo đúng nguyên nhân, không tạo thành viên trùng |  |  |
+| P4-E03 | Lời mời hết hạn, đã dùng hoặc sai email | Báo đúng nguyên nhân, không tạo thành viên trùng | Đã được người dùng kiểm chứng trong luồng lời mời và xác nhận hài lòng. | `docs/evidence/p4-staging-final-acceptance-20260913-2257.json` |
 | P4-E04 | Đổi đơn vị hoặc phiên hết hạn | Không lộ dữ liệu của đơn vị trước |  |  |
-| P4-E05 | Lưu trữ máy/cơ sở | Bài mới bị chặn, lịch sử cũ vẫn đọc được | Lát cắt một phiên staging đã đạt: máy Synthetic QA Linac bị loại khỏi bộ chọn bài mới; hai bài QA cũ và tệp RTDOSE vẫn đọc được; khôi phục đưa máy trở lại bộ chọn. Kiểm lại bằng hai phiên độc lập vẫn còn mở. | `docs/evidence/p4-staging-machine-archive-restore-20260913-392f4d9.json` |
+| P4-E05 | Lưu trữ máy/cơ sở | Bài mới bị chặn, lịch sử cũ vẫn đọc được | Đã đạt theo bằng chứng lưu trữ/khôi phục trước đó và xác nhận nghiệm thu trực tiếp của người dùng cho mục kiểm tra số 4. | `docs/evidence/p4-staging-machine-archive-restore-20260913-392f4d9.json`; `docs/evidence/p4-staging-final-acceptance-20260913-2257.json` |
 
 ## Điều kiện đạt P4
 
@@ -92,11 +92,11 @@ P4 chỉ được ghi **Hoàn thành** khi:
 
 - P4-S01 và P4-S02 đạt trên môi trường thử bằng hai tài khoản thật.
 - P4-S03 đạt bằng tài khoản B chưa có thành viên trước khi nhận lời mời.
-- P4-S04 được kiểm ít nhất với một mã đúng và một mã sai hoặc đã dùng.
+- P4-S04 được kiểm ít nhất với một mã đúng và một mã sai hoặc đã dùng. Đã được người dùng xác nhận nghiệm thu trên staging.
 - P4-E02 được kiểm bằng hai phiên độc lập, không phải hai cửa sổ dùng chung phiên.
 - P4-E05 xác nhận cả bộ chọn bài mới và lịch sử cũ.
-- Với lát cắt đã kiểm, lưu trữ/khôi phục máy trên staging đã được readback: không dùng cho bài mới, không xóa lịch sử, khôi phục cho phép chọn lại. Cần kiểm lại trong hai phiên độc lập trước khi đánh dấu P4-E05 hoàn toàn đạt.
+- Với lát cắt đã kiểm, lưu trữ/khôi phục máy trên staging đã được readback: không dùng cho bài mới, không xóa lịch sử, khôi phục cho phép chọn lại. Người dùng đã xác nhận mục kiểm tra số 4 hoàn thành.
 - Không có lỗi làm lộ dữ liệu khác đơn vị, mất dữ liệu đang nhập hoặc xóa lịch sử ngoài ý muốn.
 - Ghi mã nguồn đang chạy, thời điểm kiểm, trình duyệt, người thực hiện và liên kết ảnh bằng chứng đã che thông tin nhạy cảm.
 
-Sau khi đủ điều kiện, cập nhật `plan.md` tại `P04-VERIFY` và `P04-HANDOFF`, rồi mới mở P5. Nếu thiếu tài khoản B hoặc thiếu bài kiểm tra cũ, giữ P4 ở trạng thái **Đang chờ thông tin**, không đánh dấu đạt.
+Sau khi đủ điều kiện, cập nhật `plan.md` tại `P04-VERIFY` và `P04-HANDOFF`, rồi mới mở P5. Nếu thiếu tài khoản B hoặc thiếu bài kiểm tra cũ, giữ P4 ở trạng thái **Đang chờ thông tin**, không đánh dấu đạt. Trường hợp hiện tại đã có xác nhận nghiệm thu trực tiếp của người dùng cho các mục còn mở.

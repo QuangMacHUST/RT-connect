@@ -1,0 +1,39 @@
+{
+  "evidence_type": "p4_staging_final_user_acceptance",
+  "phase": "P4",
+  "status": "STAGING_VERIFIED_AND_HANDOFF_COMPLETE",
+  "checked_at": "2026-09-13T22:57:26+07:00",
+  "environment": "staging",
+  "deployed_api_commit": "392f4d97630c8ba4b78330166141d31e9d2f14dc",
+  "repository_head_at_acceptance": "a3de258ce967752e43d8792578e5dd1f22c975fe",
+  "web_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "acceptance_basis": "Người dùng xác nhận đã trực tiếp kiểm chứng và hài lòng với luồng lời mời/mã mời, đồng thời xác nhận phần kiểm tra lưu trữ và khôi phục máy ở mục 4 đã hoàn thành.",
+  "accepted_checks": [
+    {
+      "id": "P4-S04",
+      "status": "ACCEPTED",
+      "observed": "Luồng mã mời dự phòng đã được người dùng kiểm chứng trên staging và chấp nhận."
+    },
+    {
+      "id": "P4-E03",
+      "status": "ACCEPTED",
+      "observed": "Các tình huống lời mời đã được người dùng kiểm chứng và chấp nhận."
+    },
+    {
+      "id": "P4-E05",
+      "status": "ACCEPTED",
+      "observed": "Người dùng xác nhận mục kiểm tra lưu trữ/khôi phục máy và tác động tới lịch sử đã hoàn thành."
+    },
+    {
+      "id": "P4-HANDOFF",
+      "status": "ACCEPTED",
+      "observed": "Đơn vị, cơ sở, máy, thành viên ngang quyền, lời mời và lịch sử QA được chấp nhận làm nền cho P5."
+    }
+  ],
+  "prior_evidence": [
+    "docs/evidence/p4-staging-two-session-readback-20260913-2250.json",
+    "docs/evidence/p4-staging-invite-inbox-20260913-246d1e5.json",
+    "docs/evidence/p4-staging-machine-archive-restore-20260913-392f4d9.json"
+  ],
+  "scope_note": "Đây là nghiệm thu lát cắt P4 trên staging, không phải tuyên bố hệ thống đã sẵn sàng dùng lâm sàng; các phase sau vẫn phải hoàn thành theo plan.md."
+}
