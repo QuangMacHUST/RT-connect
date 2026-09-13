@@ -1,6 +1,10 @@
 from datetime import datetime
 from uuid import uuid4
 
+from rt_connect_api.api.artifacts import _storage as artifact_storage
+from rt_connect_api.api.gamma import _storage as gamma_storage
+from rt_connect_api.services.object_storage import InMemoryObjectStorage
+from test_gamma import _measurement_bytes
 from test_workspace import _workspace_client
 
 
@@ -335,5 +339,77 @@ def test_qa_case_purge_requires_archive_and_rejects_referenced_history() -> None
     assert referenced_purge.json()["code"] == "QA_CASE_REFERENCED"
     assert referenced_purge.json()["details"][0]["source"] == "machine_qa_runs"
     assert referenced_purge.json()["details"][0]["count"] == 1
+    assert still_present.status_code == 200
+    assert still_present.json()["is_archived"] is True
+
+
+def test_qa_case_purge_rejects_case_with_queued_gamma_job() -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[artifact_storage] = lambda: storage
+        client.app.dependency_overrides[gamma_storage] = lambda: storage
+        site = client.get(f"/api/v1/organizations/{organization.id}/sites").json()["items"][0]
+        machine = client.get(
+            f"/api/v1/organizations/{organization.id}/sites/{site['id']}/machines"
+        ).json()["items"][0]
+        folder = client.post(
+            f"/api/v1/organizations/{organization.id}/folders",
+            json={"name": "P5 worker guard"},
+        ).json()
+        case = client.post(
+            f"/api/v1/organizations/{organization.id}/qa-cases",
+            json={
+                "site_id": site["id"],
+                "machine_id": machine["id"],
+                "primary_folder_id": folder["id"],
+                "qa_definition_key": "PSQA_GAMMA_2D",
+                "qa_cycle": "CUSTOM",
+                "performed_at": "2026-09-14T08:00:00Z",
+                "title": "Hồ sơ có tác vụ Gamma đang chờ",
+            },
+        )
+        assert case.status_code == 201, case.text
+        case_id = case.json()["id"]
+
+        artifact_ids = []
+        for logical_role, dataset_id in (("REFERENCE", "reference"), ("EVALUATION", "evaluation")):
+            uploaded = client.post(
+                f"/api/v1/qa-cases/{case_id}/artifacts",
+                files={
+                    "file": (
+                        f"{dataset_id}.json",
+                        _measurement_bytes(dataset_id, [1, 2, 3, 4]),
+                        "application/json",
+                    )
+                },
+                data={"artifact_type": "MEASUREMENT", "logical_role": logical_role},
+            )
+            assert uploaded.status_code == 201, uploaded.text
+            artifact_ids.append(uploaded.json()["id"])
+        for artifact_id in artifact_ids:
+            validation = client.post(f"/api/v1/artifacts/{artifact_id}/validate")
+            assert validation.status_code == 200, validation.text
+
+        queued = client.post(
+            f"/api/v1/qa-cases/{case_id}/gamma-runs",
+            json={
+                "reference_artifact_id": artifact_ids[0],
+                "evaluation_artifact_id": artifact_ids[1],
+                "idempotency_key": "p5-queued-worker-guard-001",
+                "workflow_profile": "ENGINE_TEST",
+                "configuration": {"dose_threshold_percent": 0},
+            },
+        )
+        assert queued.status_code == 201, queued.text
+        assert queued.json()["status"] == "QUEUED"
+        archived = client.delete(f"/api/v1/qa-cases/{case_id}")
+        rejected = client.post(f"/api/v1/qa-cases/{case_id}/purge")
+        still_present = client.get(f"/api/v1/qa-cases/{case_id}")
+
+    assert archived.status_code == 200
+    assert rejected.status_code == 409
+    assert rejected.json()["code"] == "QA_CASE_REFERENCED"
+    references = {item["source"]: item["count"] for item in rejected.json()["details"]}
+    assert references["gamma_analysis_runs"] == 1
     assert still_present.status_code == 200
     assert still_present.json()["is_archived"] is True

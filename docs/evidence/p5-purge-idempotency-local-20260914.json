@@ -10,10 +10,11 @@
     "repeated_purge": "HTTP 200; status=PURGED",
     "tenant_scope": "Audit event chỉ được tra trong đơn vị của phiên hiện tại",
     "referenced_case": "Tiếp tục từ chối trước khi xóa nếu còn kết quả, tệp, báo cáo hoặc xu hướng liên quan",
+    "queued_gamma_job": "HTTP 409; hồ sơ còn tác vụ Gamma đang chờ thì không bị xóa",
     "unrelated_data": "Không cascade và không xóa dữ liệu liên quan"
   },
   "local_checks": {
-    "qa_archive_focused": "PASS",
+    "qa_archive_focused": "PASS; 8 tests",
     "api_full_suite": "PASS",
     "ruff": "PASS",
     "mypy": "PASS"
