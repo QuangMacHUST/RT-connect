@@ -1,0 +1,29 @@
+{
+  "schema_version": "rt-connect.p5-staging-public-recheck.v2",
+  "captured_at_utc": "2026-09-14",
+  "phase": "P5",
+  "status": "STAGING_PUBLIC_UI_RECHECK",
+  "scope": "Kiểm tra công khai sau triển khai; không tạo, sửa, tải lên hoặc xóa dữ liệu nghiệp vụ.",
+  "api": {
+    "source_revision": "df4210bfb0d1c55197dffc7856b383ccffdb92cf",
+    "health": "HTTP 200; status=ok",
+    "readiness": "HTTP 200; status=ready; schema_revision=20260913_0022",
+    "version": "HTTP 200; environment=staging"
+  },
+  "web": {
+    "source_revision": "84ad0dc",
+    "index": "HTTP 200",
+    "markers": {
+      "qa_catalog_direct_selection": true,
+      "purge_confirmation": true,
+      "purge_cancellation_message": true,
+      "old_primary_dropdown": false
+    }
+  },
+  "not_yet_verified": [
+    "Thao tác xóa vĩnh viễn trên một hồ sơ thử nghiệm riêng trong phiên xác thực.",
+    "Từ chối xóa hồ sơ có kết quả, tệp hoặc báo cáo tham chiếu.",
+    "Hành vi khi tiến trình nền đang chạy hoặc khi mất mạng.",
+    "Không dùng bằng chứng công khai này để đóng P5 hoặc suy ra sẵn sàng lâm sàng."
+  ]
+}
