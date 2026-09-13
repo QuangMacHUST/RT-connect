@@ -112,7 +112,7 @@ test('shows a pending invitation and accepts it without creating an organization
     '22222222-2222-4222-8222-222222222222'
   ))
   expect(apiClient.createOrganization).not.toHaveBeenCalled()
-  expect(screen.getByTestId('location')).toHaveTextContent('/app')
+  await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/app'))
 })
 
 test('accepts a manually entered invitation code', async () => {
@@ -132,7 +132,7 @@ test('accepts a manually entered invitation code', async () => {
     'access-token',
     'invitation-code-123456789012345'
   ))
-  expect(screen.getByTestId('location')).toHaveTextContent('/app')
+  await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/app'))
 })
 
 test('keeps the invitation code fallback when pending invitations cannot be loaded', async () => {

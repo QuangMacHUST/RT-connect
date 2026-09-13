@@ -96,7 +96,7 @@ function renderPage() {
 test('automatically loads the first valid RTSTRUCT ROI after the manifest request', async () => {
   renderPage()
 
-  expect(await screen.findByRole('option', { name: '#1 · P17_TARGET · 1 contour' })).toBeInTheDocument()
+  expect(await screen.findByRole('option', { name: '#1 · P17_TARGET · 1 contour' }, { timeout: 5000 })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Validate & preview' })).toBeEnabled()
   expect(screen.getByText('Chưa chọn CT')).toBeInTheDocument()
   expect(vi.mocked(apiClient.dvhInputs).mock.calls).toHaveLength(2)

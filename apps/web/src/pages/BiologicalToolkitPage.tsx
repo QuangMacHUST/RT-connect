@@ -110,8 +110,15 @@ function statusLabel(value: string): string {
 }
 
 function scenarioTypeLabel(value: string): string {
-  if (value === 'GENERAL') return 'Tổng quát'
-  return value
+  const labels: Record<string, string> = {
+    GENERAL: 'Tổng quát',
+    BED_EQD2: 'BED và EQD2',
+    PLAN_COMPARISON: 'So sánh phác đồ',
+    RE_IRRADIATION: 'Tái xạ',
+    FRACTION_COMPENSATION: 'Bù phân liều',
+    DOSE_LIMITS_PROTOCOLS: 'Giới hạn liều và phác đồ'
+  }
+  return labels[value] ?? 'Kịch bản khác'
 }
 
 function toolClass(tool: BiologicalToolResource): string {

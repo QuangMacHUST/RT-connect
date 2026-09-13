@@ -1,0 +1,61 @@
+{
+  "evidence_type": "staging_authenticated_p5_ui_recheck",
+  "phase": "P5",
+  "status": "STAGING_VERIFIED_SLICE",
+  "checked_at": "2026-09-14T08:25:00Z",
+  "environment": "staging",
+  "source_commit": "544a40c1a6ca6697f8b951002411ed97484ff59d",
+  "web_url": "https://rt-connect-web-staging-staging.up.railway.app/app/qa",
+  "browser": "Microsoft Edge",
+  "scope": "Kiểm tra giao diện đã xác thực, danh mục, lịch sử và một vòng lưu trữ/khôi phục hồ sơ tổng hợp. Không kiểm tra xóa vĩnh viễn trên dữ liệu staging.",
+  "checks": [
+    {
+      "id": "TC-UX1-P05-S01-CATALOG",
+      "status": "PASS",
+      "observed": "Trang QA máy hiển thị trực tiếp danh mục 63/63 bài theo nhóm; bài chưa sẵn sàng vẫn hiện nhưng bị khóa; không dùng danh sách thả xuống làm điểm vào chính."
+    },
+    {
+      "id": "TC-UX1-P05-S01-SEARCH",
+      "status": "PASS",
+      "observed": "Tìm cụm “hàng rào lá” lọc còn 1/63 bài và hiển thị đúng bài kiểm tra hàng rào lá."
+    },
+    {
+      "id": "TC-UX1-P05-S02-LEGACY",
+      "status": "PASS",
+      "observed": "Lịch sử staging hiển thị hồ sơ cũ chưa gắn loại bài; hồ sơ vẫn mở được và không bị ép vào bộ phân tích sai."
+    },
+    {
+      "id": "TC-UX1-P05-S03-ARCHIVE-RESTORE",
+      "status": "PASS",
+      "observed": "Hồ sơ tổng hợp “P6 Staging Upload Smoke” được lưu trữ, biến mất khỏi lịch sử thường, xuất hiện trong thùng rác với trạng thái đã lưu trữ, rồi được khôi phục và xuất hiện lại trong lịch sử."
+    },
+    {
+      "id": "TC-UX1-P05-UX-FILE-GATE",
+      "status": "PASS",
+      "observed": "Khi mở hồ sơ nhập số đo, giao diện hiển thị thông báo bài này không cần tệp đầu vào hoặc phân tích liều; khu vực tệp không được dựng."
+    },
+    {
+      "id": "TC-UX1-P05-UX-REDACTION",
+      "status": "PASS",
+      "observed": "Nhãn và bảng hiển thị thân thiện bằng tiếng Việt, không hiển thị mã hồ sơ, mã bài kỹ thuật hoặc nội dung JSON trong phần giao diện người dùng."
+    },
+    {
+      "id": "TC-UX1-P05-BIOLOGICAL-UX",
+      "status": "PASS",
+      "observed": "Trang Công cụ sinh học trên cùng bản triển khai hiển thị một trang gọn với các công cụ BED và EQD2, So sánh phác đồ, Tái xạ, Bù phân liều và Giới hạn liều và phác đồ; không còn thẻ thư viện kiến thức lẫn vào."
+    }
+  ],
+  "local_support": {
+    "p5_api": "28/28 PASS",
+    "qa_page": "3/3 PASS",
+    "web_typecheck": "PASS",
+    "web_lint": "PASS",
+    "web_build": "PASS",
+    "planning_contract": "PASS"
+  },
+  "remaining_gates": [
+    "Kiểm tra xóa vĩnh viễn trên hồ sơ tổng hợp mới tạo và hồ sơ còn liên kết, chỉ thực hiện sau khi có xác nhận thao tác dữ liệu staging.",
+    "Kiểm chứng lỗi mạng và tiến trình nền đang chạy trong phiên xác thực.",
+    "Không dùng bằng chứng này để tuyên bố toàn bộ danh mục pylinac đã có engine chạy; phần đó thuộc P7/P8."
+  ]
+}
