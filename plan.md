@@ -382,6 +382,7 @@ Chức năng đã được người dùng chấp nhận vẫn hoạt động, la
 **Phạm vi:** FR-UX1-P05-01; B05/B08. Thay kho hồ sơ làm điểm bắt đầu bằng danh mục bài.
 **Trạng thái UX1 lúc lập kế hoạch:** yêu cầu mới; chưa được tính là hoàn thành từ evidence cũ.
 **Trạng thái hiện tại:** `LOCAL_VERIFIED_SLICE`; phần mã và giao diện đã kiểm tra cục bộ, nhưng P5 chưa được đóng vì chưa có kiểm chứng staging và chưa mở P6.
+Kiểm tra công khai sau triển khai đã đạt trên ứng viên `a4bed90b79aa0bc758e598c424ac0060379e98c0` với readiness `20260913_0022` và đúng các tuyến P5; bằng chứng: `docs/evidence/p5-staging-public-recheck-20260913.json`. Đây chỉ là kiểm tra nguồn/runtime công khai, chưa là nghiệm thu thao tác xác thực.
 
 Danh mục hiện có 63 bài theo sổ toàn bộ danh mục pylinac và bài nhập số đo. Trong đó bài nhập số đo là bài đầu tiên được phép thực hiện; 62 bài pylinac đã hiện trong danh mục nhưng vẫn khóa nút bắt đầu cho đến khi bộ tích hợp, màn hình nhập và kiểm chứng tương ứng được hoàn thành. Việc hiện đủ danh mục không được hiểu là đã triển khai đủ engine.
 

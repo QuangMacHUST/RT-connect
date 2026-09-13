@@ -1,0 +1,36 @@
+{
+  "schema_version": "rt-connect.p5-staging-public-recheck.v1",
+  "captured_at_utc": "2026-09-13T16:57:31Z",
+  "phase": "P5",
+  "status": "STAGING_PUBLIC_SOURCE_PARITY",
+  "source_revision": "a4bed90b79aa0bc758e598c424ac0060379e98c0",
+  "scope": "Chỉ kiểm tra công khai sau triển khai; không tạo, sửa, tải lên hoặc xóa dữ liệu nghiệp vụ.",
+  "api": {
+    "health": "HTTP 200",
+    "readiness": "HTTP 200; status=ready; schema_revision=20260913_0022",
+    "version": "HTTP 200; version=a4bed90b79aa0bc758e598c424ac0060379e98c0; environment=staging",
+    "openapi_routes": {
+      "qa_test_definitions": true,
+      "qa_case_restore": true,
+      "qa_case_purge": true,
+      "qa_definition_key": true,
+      "idempotency_key": true
+    }
+  },
+  "web": {
+    "index": "HTTP 200; lang=vi",
+    "bundle": "index-CaM-WMFF.js",
+    "markers": {
+      "dang_chuan_bi": true,
+      "bat_dau_bai_kiem_tra": true,
+      "xoa_vinh_vien": true,
+      "qa_test_definitions": true
+    }
+  },
+  "not_yet_verified": [
+    "Thao tác xác thực trên giao diện với thành viên staging.",
+    "Hồ sơ cũ, tệp/kết quả/báo cáo liên quan và thao tác trong thùng rác.",
+    "Hành vi khi tiến trình nền đang chạy hoặc khi mất mạng.",
+    "Không dùng bằng chứng công khai này để đóng P5 hoặc suy ra sẵn sàng lâm sàng."
+  ]
+}
