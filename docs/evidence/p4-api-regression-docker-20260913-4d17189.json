@@ -1,0 +1,19 @@
+{
+  "evidence_type": "api_regression_suite_docker",
+  "phase": "P4",
+  "status": "PASS",
+  "checked_at": "2026-09-13T22:08:00+07:00",
+  "environment": "local Docker test container",
+  "source_commit": "4d171893c199d49e3907efcce6a214adb76f6e41",
+  "command": "python -m pytest -o addopts=-q -p no:cov tests",
+  "result": {
+    "passed": 207,
+    "failed": 0,
+    "warnings": 145
+  },
+  "notes": [
+    "Container có đủ phụ thuộc runtime và Git để nhóm kiểm thử release manifest chạy đúng.",
+    "Kho mã được gắn chỉ đọc; vì vậy lần chạy này tắt plugin bao phủ mã nguồn và không ghi cache vào kho mã.",
+    "Đây là bằng chứng hồi quy cục bộ, không thay cho kiểm thử staging bằng hai danh tính hoặc cổng sẵn sàng lâm sàng."
+  ]
+}
