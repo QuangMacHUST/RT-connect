@@ -1,0 +1,40 @@
+{
+  "evidence_type": "phase_verification",
+  "phase": "P3",
+  "phase_status": "STAGING_VERIFIED",
+  "checked_at": "2026-09-13T07:52:04.4303946Z",
+  "environment": "staging",
+  "source_sha": "d288d669f264747bd0430e9f085255d0910592ab",
+  "deployment_ids": {
+    "api": "5225627b-617c-4d5e-9b60-3fcd1d4e1735",
+    "web": "b4803413-84a5-46fd-bbd5-1efdaea61a06",
+    "worker": "3a7c35d7-e24a-4710-ae1a-e54d8b22fe5c"
+  },
+  "public_verifier": {
+    "status": "PASS",
+    "checks": 17,
+    "failed_check_count": 0,
+    "schema_revision": "20260911_0020",
+    "source": "docs/evidence/p3-staging-public-verifier-20260913-d288d66.json"
+  },
+  "browser_check": {
+    "status": "PASS",
+    "url": "https://rt-connect-web-staging-staging.up.railway.app/app",
+    "authenticated": true,
+    "observed": [
+      "Thanh bên hiển thị đúng năm mục chính bằng tiếng Việt.",
+      "Trang chủ hiển thị đơn vị thật, số cơ sở, máy xạ trị và trạng thái hoạt động.",
+      "Không hiển thị mã mô-đun trong thanh bên hoặc trang chủ."
+    ]
+  },
+  "scope": [
+    "API, web và worker staging đồng bộ cùng source SHA.",
+    "Sức khỏe, sẵn sàng, phiên bản, OpenAPI và ranh giới chưa đăng nhập đạt.",
+    "Giao diện trang chủ và điều hướng năm mục đã được tải trong phiên đăng nhập staging."
+  ],
+  "limitations": [
+    "Production chưa được phát hành; cổng production vẫn thuộc P19.",
+    "Các nhãn và biểu mẫu chuyên sâu của QA, sinh học và thư viện tiếp tục được nghiệm thu ở phase chức năng tương ứng."
+  ],
+  "passed": true
+}

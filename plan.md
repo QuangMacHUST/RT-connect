@@ -216,7 +216,7 @@ Có baseline local/CI tái lập, không thay đổi hành vi hiện có ngoài 
 
 **Đầu vào/phụ thuộc:** P1 đã hoàn thành và có bàn giao; các hợp đồng liên quan xem mục kỹ thuật tương ứng.
 **Phạm vi:** FR-UX1-P02-01; B04. Tận dụng cấu hình đã có, kiểm khi triển khai thay đổi liên quan.
-**Trạng thái UX1 hiện tại:** `LOCAL_VERIFIED_SLICE`; chưa đóng phase vì chưa có bản source ứng viên đồng bộ lên staging.
+**Trạng thái UX1 hiện tại:** `STAGING_VERIFIED`; P3 đã đủ điều kiện bàn giao và mở P4.
 
 **Trạng thái thực thi 2026-09-13:** `STAGING_VERIFIED`, P2 đóng cho chuỗi phát triển.
 Staging đã có cấu hình hiệu lực, health/readiness, phiên Supabase thật, trang tổ chức đọc dữ
@@ -297,8 +297,8 @@ mở rộng dịch vụ có phí trước P19.
 - [x] P03-W02 — Dịch nhãn chung và luồng đăng nhập sang tiếng Việt, bỏ MOD/Pxx/ID/API/JSON khỏi giao diện điều hướng và trạng thái nền tảng. Nhãn nghiệp vụ của từng mô-đun tiếp tục được kiểm tại phase tương ứng; `LOCAL_VERIFIED_SLICE`.
 - [x] P03-W03 — Giữ auth flow; phân biệt chưa vào đơn vị, hết phiên, mất mạng; đưa trạng thái dịch vụ vào menu tài khoản. `LOCAL_VERIFIED_SLICE`.
 - [x] P03-W04 — Tạo đúng năm mục, trang chủ gọn và chuyển hướng URL cũ; kiểm keyboard, back/forward, deep link. `LOCAL_VERIFIED_SLICE`.
-- [ ] P03-VERIFY — Chạy các TC-UX1 dưới đây và nhóm lỗi dùng chung có liên quan; lưu actual/evidence theo SHA.
-- [ ] P03-HANDOFF — Cập nhật tiến độ, dữ liệu/migration/tuyến bị tác động, giới hạn hỗ trợ và bước tiếp theo.
+- [x] P03-VERIFY — Kiểm local đạt lint, typecheck, Vitest 22/22, production build và Playwright 9/9 ở hai kích thước 1366×768/1440×900 cùng ba cấu hình trình duyệt; kiểm staging công khai đạt 17/17 và trình duyệt staging tải đúng trang chủ/điều hướng năm mục. Evidence: `docs/evidence/p3-local-ui-20260913.json`, `docs/evidence/p3-staging-public-20260913-d288d66.json`, `docs/evidence/p3-staging-public-verifier-20260913-d288d66.json`.
+- [x] P03-HANDOFF — Cập nhật `implementation-progress.md`, route registry và trạng thái bàn giao; không thay dữ liệu nghiệp vụ, không phát hành production. Bước kế tiếp duy nhất là P4.
 
 ### Trường hợp chạy đúng P3
 
@@ -317,9 +317,9 @@ mở rộng dịch vụ có phí trước P19.
 
 ### Bất biến và điều kiện đóng P3
 
-Ảnh/AX kiểm thử giao diện đăng nhập, kiểm hai viewport, route/auth tests và bộ kiểm local đạt B01–B03 trong bằng chứng
-`docs/evidence/p3-local-ui-20260913.json`. Đây mới là `LOCAL_VERIFIED_SLICE`; chỉ đóng P3 sau khi source candidate đã commit,
-đồng bộ staging và kiểm lại giao diện công khai. Chưa mở P4 trước điểm đó.
+Ảnh/AX kiểm thử giao diện đăng nhập, hai viewport, route/auth tests, bộ kiểm local và kiểm công khai staging đạt B01–B03 trong
+các bằng chứng P3. Source ứng viên `d288d669f264747bd0430e9f085255d0910592ab` đã đồng bộ API/web/worker staging và được kiểm lại.
+P3 được đóng ở mức `STAGING_VERIFIED`; production vẫn là cổng riêng của P19.
 
 ## P4 — Đơn vị, cơ sở, thiết bị và thành viên gọn
 
