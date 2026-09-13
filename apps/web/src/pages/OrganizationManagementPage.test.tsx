@@ -54,6 +54,7 @@ test('hiển thị cơ cấu gọn bằng tiếng Việt và không đưa mã m�
   expect(screen.getAllByText('Cơ sở trung tâm')).not.toHaveLength(0)
   expect(await screen.findByDisplayValue('Máy xạ trị 01')).toBeInTheDocument()
   expect(screen.getAllByText('Đang sử dụng')).not.toHaveLength(0)
+  expect(screen.getByText('Mã máy được hệ thống tạo tự động.')).toBeInTheDocument()
   expect(screen.getByText('Thành viên ngang quyền')).toBeInTheDocument()
   expect(screen.getByText('Mời đồng nghiệp')).toBeInTheDocument()
   expect(screen.queryByText('LINAC-01')).not.toBeInTheDocument()

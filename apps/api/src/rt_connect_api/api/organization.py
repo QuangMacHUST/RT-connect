@@ -12,7 +12,7 @@ import re
 import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Literal
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field, field_validator
@@ -60,7 +60,7 @@ class SitePatchRequest(BaseModel):
 
 
 class MachineCreateRequest(BaseModel):
-    stable_machine_id: str = Field(min_length=1, max_length=100)
+    stable_machine_id: str | None = Field(default=None, min_length=1, max_length=100)
     display_name: str = Field(min_length=1, max_length=200)
     manufacturer: str | None = Field(default=None, max_length=200)
     model: str | None = Field(default=None, max_length=200)
@@ -1080,14 +1080,21 @@ def create_machine(
             "The site is archived and cannot accept machine mutations.",
             409,
         )
+    stable_machine_id = request.stable_machine_id or f"RTCONNECT-{uuid4().hex}"
     if (
-        session.scalar(
+        request.stable_machine_id is not None
+        and session.scalar(
             select(Machine).where(Machine.stable_machine_id == request.stable_machine_id)
         )
         is not None
     ):
         raise DomainError("MACHINE_ID_CONFLICT", "Stable machine ID already exists.", 409)
-    machine = Machine(organization_id=organization_id, site_id=site_id, **request.model_dump())
+    machine = Machine(
+        organization_id=organization_id,
+        site_id=site_id,
+        stable_machine_id=stable_machine_id,
+        **request.model_dump(exclude={"stable_machine_id"}),
+    )
     session.add(machine)
     session.flush()
     _audit(session, context, "MACHINE_CREATED", "Machine", machine.id, request.model_dump())

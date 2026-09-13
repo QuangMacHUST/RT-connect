@@ -1421,7 +1421,7 @@ export class ApiClient {
   }
 
   createMachine(accessToken: string, organizationId: string, siteId: string, body: {
-    stable_machine_id: string; display_name: string; manufacturer?: string; model?: string; status?: string
+    stable_machine_id?: string; display_name: string; manufacturer?: string; model?: string; status?: string
   }): Promise<MachineResource> {
     return this.request(`/organizations/${organizationId}/sites/${siteId}/machines`, z.object({
       id: z.string().uuid(), organization_id: z.string().uuid(), site_id: z.string().uuid(),

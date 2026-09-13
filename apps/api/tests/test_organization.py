@@ -307,6 +307,19 @@ def test_machine_stable_identifier_conflict_is_explicit() -> None:
     assert response.json()["code"] == "MACHINE_ID_CONFLICT"
 
 
+def test_machine_stable_identifier_is_generated_when_omitted() -> None:
+    with _workspace_client() as (client, organization):
+        site = client.get(f"/api/v1/organizations/{organization.id}/sites").json()["items"][0]
+        response = client.post(
+            f"/api/v1/organizations/{organization.id}/sites/{site['id']}/machines",
+            json={"display_name": "Máy xạ trị tự tạo mã"},
+        )
+
+    assert response.status_code == 201, response.text
+    assert response.json()["display_name"] == "Máy xạ trị tự tạo mã"
+    assert response.json()["stable_machine_id"].startswith("RTCONNECT-")
+
+
 def test_member_invitation_is_email_bound_one_time_and_idempotent() -> None:
     with _workspace_client() as (client, organization):
         created = client.post(
