@@ -1,0 +1,35 @@
+{
+  "evidence_type": "phase_verification",
+  "phase": "P4",
+  "phase_status": "LOCAL_VERIFIED_SLICE",
+  "checked_at": "2026-09-13T08:25:00Z",
+  "environment": "local-development",
+  "source_sha": "a923ee90203b3bd4c820ecc716f947a69a0268d6",
+  "working_tree_dirty": true,
+  "scope": [
+    "phạm vi truy cập theo đơn vị",
+    "sửa đồng thời bằng phiên bản lạc hậu",
+    "ngừng dùng và khôi phục đơn vị, cơ sở, máy",
+    "thành viên ngang quyền",
+    "lời mời một lần, đúng email, thu hồi, hết hạn và cấp lại"
+  ],
+  "checks": {
+    "command": "apps/api/.venv/Scripts/python.exe -m pytest -q tests/test_organization.py",
+    "status": "PASS",
+    "test_files": 1,
+    "tests": 15,
+    "warnings": "chỉ có cảnh báo ngừng dùng trong TestClient/httpx, không có lỗi kiểm thử"
+  },
+  "observations": [
+    "Mọi tuyến đơn vị đều kiểm phạm vi trước khi truy vấn tài nguyên.",
+    "Phiên bản lạc hậu trả xung đột và không ghi đè dữ liệu mới.",
+    "Đơn vị/cơ sở đã ngừng dùng chặn thao tác con; khôi phục phải là thao tác rõ ràng.",
+    "Thành viên nhận lời mời dùng được cùng nhóm thao tác với thành viên ban đầu, không có nhánh quyền hành động riêng."
+  ],
+  "limitations": [
+    "Kiểm này dùng danh tính giả lập và cơ sở dữ liệu kiểm thử cục bộ.",
+    "Chưa thay cho kiểm hai tài khoản Supabase thật trên staging hoặc đọc đối chiếu PostgreSQL staging.",
+    "Chưa xác nhận đầy đủ tác động tới bộ chọn bài QA và lịch sử trên trình duyệt staging."
+  ],
+  "passed": true
+}
