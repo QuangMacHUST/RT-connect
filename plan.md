@@ -415,7 +415,7 @@ Danh mục hiện có 63 bài theo sổ toàn bộ danh mục pylinac và bài n
 - [ ] P05-VERIFY — Chạy các TC-UX1 dưới đây và nhóm lỗi dùng chung có liên quan; lưu actual/evidence theo SHA.
 - [ ] P05-HANDOFF — Cập nhật tiến độ, dữ liệu/migration/tuyến bị tác động, giới hạn hỗ trợ và bước tiếp theo.
 
-**Đã kiểm tra cục bộ:** migration `20260913_0021` và `20260913_0022` nâng thành công; nhóm kiểm thử P5 đạt 28/28; toàn bộ kiểm thử máy chủ đạt; ruff và mypy nghiêm ngặt đạt; giao diện đạt typecheck, lint, bản dựng sản xuất và toàn bộ kiểm thử **12/12 tệp, 31/31 bài**. Kiểm chứng staging danh mục/lịch sử/lưu trữ/khôi phục: [evidence P5](docs/evidence/p5-staging-authenticated-ui-20260914.json). Xóa vĩnh viễn staging và lỗi mạng/tiến trình nền vẫn mở.
+**Đã kiểm tra cục bộ:** migration `20260913_0021` và `20260913_0022` nâng thành công; nhóm kiểm thử P5 đạt 28/28; toàn bộ kiểm thử máy chủ đạt; ruff và mypy nghiêm ngặt đạt; giao diện đạt typecheck, lint, bản dựng sản xuất và toàn bộ kiểm thử **12/12 tệp, 32/32 bài**. Kiểm chứng staging danh mục/lịch sử/lưu trữ/khôi phục: [evidence P5](docs/evidence/p5-staging-authenticated-ui-20260914.json). Xóa vĩnh viễn staging và lỗi mạng/tiến trình nền vẫn mở.
 
 ### Trường hợp chạy đúng P5
 

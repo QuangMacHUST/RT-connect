@@ -16,7 +16,7 @@
     "api_full_suite": "PASS",
     "api_ruff": "PASS",
     "api_mypy": "PASS",
-    "web_tests": "12 files / 31 tests PASS",
+    "web_tests": "12 files / 32 tests PASS",
     "web_typecheck": "PASS",
     "web_lint": "PASS",
     "web_build": "PASS",
