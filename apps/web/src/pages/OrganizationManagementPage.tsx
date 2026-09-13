@@ -10,7 +10,31 @@ type MachineStatus = (typeof machineStatuses)[number]
 type MachinePatchFields = Partial<Pick<MachineResource, 'display_name' | 'manufacturer' | 'model' | 'status' | 'is_archived'>>
 
 function errorMessage(error: unknown): string {
-  if (error instanceof ApiClientError) return error.message
+  if (error instanceof ApiClientError) {
+    const messages: Record<string, string> = {
+      NETWORK_ERROR: 'Không thể kết nối với dịch vụ. Hãy kiểm tra mạng rồi thử lại.',
+      INVALID_API_RESPONSE: 'Dịch vụ trả về dữ liệu không hợp lệ. Hãy thử lại sau.',
+      ORGANIZATION_NOT_FOUND: 'Không tìm thấy đơn vị đang chọn.',
+      ORGANIZATION_SCOPE_MISMATCH: 'Bạn không có quyền truy cập đơn vị này.',
+      ORGANIZATION_NAME_CONFLICT: 'Tên đơn vị đã được sử dụng trong phạm vi này.',
+      SITE_NOT_FOUND: 'Không tìm thấy cơ sở đang chọn.',
+      SITE_NAME_CONFLICT: 'Tên cơ sở đã được sử dụng trong đơn vị này.',
+      MACHINE_NOT_FOUND: 'Không tìm thấy máy đang chọn.',
+      MACHINE_ID_CONFLICT: 'Máy này đã tồn tại trong hệ thống.',
+      PARENT_NOT_AVAILABLE: 'Đơn vị hoặc cơ sở đã ngừng sử dụng nên chưa thể thao tác.',
+      RESOURCE_ARCHIVED: 'Mục này đã được lưu trữ. Hãy khôi phục trước khi sửa.',
+      REVISION_CONFLICT: 'Dữ liệu đã thay đổi ở nơi khác. Hãy tải lại rồi thực hiện lại thao tác.',
+      MEMBERSHIP_NOT_FOUND: 'Không tìm thấy thành viên đang chọn.',
+      MEMBERSHIP_CONFLICT: 'Trạng thái thành viên đã thay đổi. Hãy tải lại rồi thử lại.',
+      LAST_MEMBERSHIP_CONFLICT: 'Không thể tạm ngưng thành viên cuối cùng của đơn vị.',
+      INVITATION_ALREADY_PENDING: 'Email này đã có một lời mời đang chờ.',
+      INVITATION_ALREADY_MEMBER: 'Email này đã là thành viên của đơn vị.',
+      INVITATION_INVALID: 'Mã mời không hợp lệ, đã dùng hoặc đã hết hạn.',
+      INVITATION_NOT_FOUND: 'Không tìm thấy lời mời đang chọn.',
+      INVITATION_CONFLICT: 'Lời mời đã thay đổi. Hãy tải lại rồi thử lại.'
+    }
+    return messages[error.code] ?? 'Không thể hoàn tất thao tác. Hãy thử lại và kiểm tra kết nối.'
+  }
   return 'Không thể hoàn tất thao tác. Hãy thử lại và kiểm tra kết nối.'
 }
 
@@ -21,7 +45,7 @@ function machineStatusLabel(status: string): string {
     MAINTENANCE: 'Đang bảo trì',
     RETIRED: 'Ngừng sử dụng'
   }
-  return labels[status as MachineStatus] ?? status
+  return labels[status as MachineStatus] ?? 'Chưa xác định'
 }
 
 function lifecycleLabel(archived: boolean): string {
@@ -35,7 +59,7 @@ function invitationStatusLabel(status: string): string {
     REVOKED: 'Đã thu hồi',
     EXPIRED: 'Đã hết hạn'
   }
-  return labels[status] ?? status
+  return labels[status] ?? 'Chưa xác định'
 }
 
 function MachineRow({

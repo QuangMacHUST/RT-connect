@@ -1,15 +1,20 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import { beforeEach, expect, test, vi } from 'vitest'
 
-import { apiClient } from '../api/client'
+import { ApiClientError, apiClient } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { OrganizationManagementPage } from './OrganizationManagementPage'
 
 vi.mock('../api/client', () => ({
   ApiClientError: class ApiClientError extends Error {
-    readonly code = 'API_ERROR'
+    readonly code: string
+
+    constructor(message = 'API error', code = 'API_ERROR') {
+      super(message)
+      this.code = code
+    }
   },
   apiClient: {
     bootstrap: vi.fn(),
@@ -17,7 +22,8 @@ vi.mock('../api/client', () => ({
     sites: vi.fn(),
     machines: vi.fn(),
     organizationMembers: vi.fn(),
-    organizationInvitations: vi.fn()
+    organizationInvitations: vi.fn(),
+    updateOrganization: vi.fn()
   }
 }))
 
@@ -60,4 +66,14 @@ test('hiển thị cơ cấu gọn bằng tiếng Việt và không đưa mã m�
   expect(screen.queryByText('LINAC-01')).not.toBeInTheDocument()
   expect(document.body).not.toHaveTextContent('MOD-')
   expect(document.body).not.toHaveTextContent('API THẬT')
+})
+
+test('dịch lỗi xung đột dữ liệu sang tiếng Việt', async () => {
+  vi.mocked(apiClient.updateOrganization).mockRejectedValue(new ApiClientError('Revision conflict', 'REVISION_CONFLICT'))
+  renderPage()
+
+  await screen.findByRole('heading', { name: 'Đơn vị và thiết bị' })
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu tên' }))
+
+  expect(await screen.findByText('Dữ liệu đã thay đổi ở nơi khác. Hãy tải lại rồi thực hiện lại thao tác.')).toBeInTheDocument()
 })
