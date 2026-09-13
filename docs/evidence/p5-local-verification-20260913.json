@@ -3,7 +3,7 @@
   "captured_at_utc": "2026-09-13T16:50:00Z",
   "phase": "P5",
   "status": "LOCAL_VERIFIED_SLICE",
-  "source_revision": "working-tree-p5-candidate",
+  "source_revision": "479288fc96860e9676b3c81d4340546ccbbb227a",
   "base_commit": "53268f577abff77f3970a1ad88828cfcdc703b80",
   "scope": "Danh mục QA, bắt đầu bài, lịch sử, lưu trữ/khôi phục và xóa có kiểm tra liên kết.",
   "catalogue": {
