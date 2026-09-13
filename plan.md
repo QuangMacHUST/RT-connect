@@ -348,7 +348,7 @@ Evidence hiện tại: `docs/evidence/p4-local-organization-ui-20260913.json`, `
 
 - [x] P04-W01 — Đưa biểu mẫu dài thành các thẻ và khung sửa gọn; giảm tiêu đề/khoảng trắng. `STAGING_VERIFIED_SLICE`.
 - [x] P04-W02 — Dịch nhãn, trạng thái, lời mời và lỗi; mã kỹ thuật vẫn được giữ ở lớp dữ liệu nhưng không hiển thị trong bảng và thông tin thường dùng. `STAGING_VERIFIED_SLICE`.
-- [x] P04-W03 — Giữ tính ngang quyền và scope; kiểm sửa đồng thời theo revision. `LOCAL_VERIFIED_SLICE`; 15/15 kiểm thử API P4 đạt với danh tính giả lập.
+- [x] P04-W03 — Giữ tính ngang quyền và scope; kiểm sửa đồng thời theo revision. `LOCAL_VERIFIED_SLICE`; 16/16 kiểm thử API P4 đạt với danh tính giả lập.
 - [x] P04-W04 — Kiểm ngừng dùng/khôi phục máy, chuyển đơn vị và tác động tới bộ chọn máy/QA lịch sử. `LOCAL_VERIFIED_SLICE` cho vòng đời API; kiểm bộ chọn/lịch sử trên staging vẫn mở.
 - [ ] P04-VERIFY — Chạy các TC-UX1 dưới đây và nhóm lỗi dùng chung có liên quan; lưu actual/evidence theo SHA.
 - [ ] P04-HANDOFF — Cập nhật tiến độ, dữ liệu/migration/tuyến bị tác động, giới hạn hỗ trợ và bước tiếp theo.
