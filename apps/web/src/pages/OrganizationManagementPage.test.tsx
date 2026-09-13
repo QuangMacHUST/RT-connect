@@ -23,7 +23,10 @@ vi.mock('../api/client', () => ({
     machines: vi.fn(),
     organizationMembers: vi.fn(),
     organizationInvitations: vi.fn(),
-    updateOrganization: vi.fn()
+    updateOrganization: vi.fn(),
+    createSite: vi.fn(),
+    createMachine: vi.fn(),
+    createOrganizationInvitation: vi.fn()
   }
 }))
 
@@ -76,4 +79,17 @@ test('dịch lỗi xung đột dữ liệu sang tiếng Việt', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Lưu tên' }))
 
   expect(await screen.findByText('Dữ liệu đã thay đổi ở nơi khác. Hãy tải lại rồi thực hiện lại thao tác.')).toBeInTheDocument()
+})
+
+test('giữ nội dung biểu mẫu khi tạo cơ sở thất bại', async () => {
+  vi.mocked(apiClient.createSite).mockRejectedValue(new ApiClientError('Duplicate site', 'SITE_NAME_CONFLICT'))
+  renderPage()
+
+  await screen.findByRole('heading', { name: 'Đơn vị và thiết bị' })
+  const siteInput = screen.getByPlaceholderText('Ví dụ: Cơ sở trung tâm')
+  fireEvent.change(siteInput, { target: { value: 'Cơ sở mới' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Thêm cơ sở' }))
+
+  expect(await screen.findByText('Tên cơ sở đã được sử dụng trong đơn vị này.')).toBeInTheDocument()
+  expect(screen.getByDisplayValue('Cơ sở mới')).toBeInTheDocument()
 })

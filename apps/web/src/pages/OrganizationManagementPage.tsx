@@ -167,22 +167,19 @@ export function OrganizationManagementPage() {
   const submitSite = () => {
     const name = newSiteName.trim()
     if (!name) return setMessage('Tên cơ sở không được để trống.')
-    mutation.mutate(() => apiClient.createSite(accessToken!, organizationId, name))
-    setNewSiteName('')
+    mutation.mutate(() => apiClient.createSite(accessToken!, organizationId, name), { onSuccess: () => setNewSiteName('') })
   }
   const submitMachine = () => {
     if (!selectedSite) return setMessage('Hãy chọn cơ sở trước khi thêm máy.')
     const displayName = newMachineName.trim()
     if (!displayName) return setMessage('Tên hiển thị của máy không được để trống.')
-    mutation.mutate(() => apiClient.createMachine(accessToken!, organizationId, selectedSite.id, { display_name: displayName }))
-    setNewMachineName('')
+    mutation.mutate(() => apiClient.createMachine(accessToken!, organizationId, selectedSite.id, { display_name: displayName }), { onSuccess: () => setNewMachineName('') })
   }
   const submitInvitation = () => {
     const email = inviteEmail.trim()
     if (!email || !email.includes('@')) return setMessage('Hãy nhập email hợp lệ của đồng nghiệp.')
     setCreatedInvitationToken(undefined)
-    mutation.mutate(() => apiClient.createOrganizationInvitation(accessToken!, organizationId, email))
-    setInviteEmail('')
+    mutation.mutate(() => apiClient.createOrganizationInvitation(accessToken!, organizationId, email), { onSuccess: () => setInviteEmail('') })
   }
 
   return (
