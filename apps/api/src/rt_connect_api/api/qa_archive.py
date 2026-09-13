@@ -756,6 +756,16 @@ def purge_qa_case(
         )
     )
     if case is None:
+        already_purged = session.scalar(
+            select(AuditEvent).where(
+                AuditEvent.organization_id == context.organization_id,
+                AuditEvent.event_type == "QA_CASE_PURGED",
+                AuditEvent.entity_type == "QACase",
+                AuditEvent.entity_id == case_id,
+            )
+        )
+        if already_purged is not None:
+            return {"status": "PURGED", "case_id": case_id}
         raise DomainError("QA_CASE_NOT_FOUND", "QA case was not found in this organization.", 404)
     if not case.is_archived:
         raise DomainError(
