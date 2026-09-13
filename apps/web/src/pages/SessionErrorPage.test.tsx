@@ -135,6 +135,30 @@ test('accepts a manually entered invitation code', async () => {
   expect(screen.getByTestId('location')).toHaveTextContent('/app')
 })
 
+test('keeps the invitation code fallback when pending invitations cannot be loaded', async () => {
+  vi.mocked(apiClient.pendingOrganizationInvitations).mockRejectedValue(new Error('network unavailable'))
+
+  renderPage()
+
+  expect(await screen.findByText('Chưa kiểm tra được lời mời đang chờ. Anh vẫn có thể nhập mã mời bên dưới.')).toBeInTheDocument()
+  expect(screen.getByLabelText('Mã mời')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Tham gia bằng mã mời' })).toBeInTheDocument()
+})
+
+test('shows an invalid invitation code error and does not create an organization', async () => {
+  vi.mocked(apiClient.acceptOrganizationInvitation).mockRejectedValue(
+    new ApiClientError('Mã mời không hợp lệ hoặc đã hết hạn.', 'INVITATION_INVALID')
+  )
+
+  renderPage()
+  fireEvent.change(screen.getByLabelText('Mã mời'), { target: { value: 'invalid-invitation-code-123456' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Tham gia bằng mã mời' }))
+
+  expect(await screen.findByText('Mã mời không hợp lệ hoặc đã hết hạn.')).toBeInTheDocument()
+  expect(screen.getByTestId('location')).toHaveTextContent('/auth/session-error')
+  expect(apiClient.createOrganization).not.toHaveBeenCalled()
+})
+
 test('shows the API error and stays on onboarding when creation is rejected', async () => {
   vi.mocked(apiClient.createOrganization).mockRejectedValue(new ApiClientError('Đơn vị đã tồn tại.', 'ORGANIZATION_NAME_CONFLICT'))
 

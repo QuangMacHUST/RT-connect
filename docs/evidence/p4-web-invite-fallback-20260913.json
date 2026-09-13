@@ -1,0 +1,28 @@
+{
+  "evidence_type": "web_invitation_fallback_regression",
+  "phase": "P4",
+  "status": "PASS",
+  "checked_at": "2026-09-13T22:25:00+07:00",
+  "environment": "local web test environment",
+  "source_commit": "pending-next-commit",
+  "commands": [
+    "npm.cmd run test -- --run",
+    "npm.cmd run lint",
+    "npm.cmd run typecheck"
+  ],
+  "result": {
+    "test_files_passed": 12,
+    "tests_passed": 31,
+    "tests_failed": 0,
+    "lint": "PASS",
+    "typecheck": "PASS"
+  },
+  "covered_behaviors": [
+    "Khi không tải được danh sách lời mời, người dùng vẫn thấy luồng nhập mã mời.",
+    "Khi mã mời không hợp lệ hoặc hết hạn, lỗi được hiển thị và không tạo đơn vị mới.",
+    "Lời mời đang chờ vẫn có thể được tham gia trực tiếp mà không tạo đơn vị."
+  ],
+  "notes": [
+    "Đây là kiểm thử giao diện cục bộ; chưa thay cho kiểm tra staging bằng hai danh tính thật."
+  ]
+}
