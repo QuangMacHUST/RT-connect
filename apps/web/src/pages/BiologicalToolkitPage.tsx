@@ -17,17 +17,43 @@ type ScenarioForm = BiologicalScenarioCreateInput & { assumptions_text: string; 
 
 const sourceTypes: SourceType[] = ['USER_DEFINED', 'REFERENCE', 'INTERNAL', 'SITE_APPROVED']
 
+const sourceTypeLabels: Record<SourceType, string> = {
+  USER_DEFINED: 'Tự nhập',
+  REFERENCE: 'Tài liệu tham khảo',
+  INTERNAL: 'Tài liệu nội bộ',
+  SITE_APPROVED: 'Đã được đơn vị phê duyệt'
+}
+
+const statusLabels: Record<StatusFilter, string> = {
+  ALL: 'Tất cả',
+  DRAFT: 'Đang soạn',
+  SAVED: 'Đã lưu',
+  ARCHIVED: 'Đã lưu trữ'
+}
+
+const toolLabels: Record<string, { name: string; description: string }> = {
+  BED_EQD2: { name: 'BED và EQD2', description: 'Tính liều sinh học tương đương và xem đường biểu diễn theo tổng liều.' },
+  PLAN_COMPARISON: { name: 'So sánh phác đồ', description: 'Đặt nhiều phương án cạnh nhau trong cùng một bối cảnh điều trị.' },
+  RE_IRRADIATION: { name: 'Tái xạ', description: 'Đánh giá nhiều đợt điều trị, khả năng hồi phục và liều tích lũy.' },
+  FRACTION_COMPENSATION: { name: 'Bù phân liều', description: 'So sánh các phương án bù phân liều và giữ nguyên phần đã thực hiện.' },
+  DOSE_LIMITS_PROTOCOLS: { name: 'Giới hạn liều và phác đồ', description: 'Tra cứu giới hạn liều, phác đồ điều trị và nguồn tham khảo theo bối cảnh.' }
+}
+
+function toolCopy(tool: BiologicalToolResource): { name: string; description: string } {
+  return toolLabels[tool.tool_key] ?? { name: 'Công cụ khác', description: 'Công cụ này đang được bổ sung nội dung hiển thị.' }
+}
+
 function emptyForm(): ScenarioForm {
   return {
-    scenario_key: 'NEW_SCENARIO',
-    name: 'New biological scenario',
+    scenario_key: `SCENARIO_${Date.now()}`,
+    name: '',
     scenario_type: 'GENERAL',
     tissue_context: 'Chưa xác định mô',
     clinical_context: '',
     source_type: 'USER_DEFINED',
     source_reference: '',
     assumptions: {},
-    assumptions_text: '{}'
+    assumptions_text: ''
   }
 }
 
@@ -44,12 +70,26 @@ function formFromScenario(scenario: BiologicalScenarioResource): ScenarioForm {
     source_type: source,
     source_reference: scenario.source_reference ?? '',
     assumptions: scenario.assumptions,
-    assumptions_text: JSON.stringify(scenario.assumptions, null, 2)
+    assumptions_text: Object.entries(scenario.assumptions)
+      .map(([key, value]) => `${key}: ${typeof value === 'object' ? 'Nội dung đã lưu' : String(value)}`)
+      .join('\n')
   }
 }
 
+function assumptionsFromText(value: string): Record<string, unknown> {
+  const lines = value.split('\n').map((line) => line.trim()).filter(Boolean)
+  if (!lines.length) return {}
+  return lines.reduce<Record<string, unknown>>((result, line, index) => {
+    const separator = line.indexOf(':')
+    const key = separator > 0 ? line.slice(0, separator).trim() : `ghi_chu_${index + 1}`
+    const rawValue = separator > 0 ? line.slice(separator + 1).trim() : line
+    result[key] = rawValue
+    return result
+  }, {})
+}
+
 function errorMessage(error: unknown): string {
-  if (error instanceof ApiClientError) return `${error.message} (${error.code})`
+  if (error instanceof ApiClientError) return error.message
   return 'Không thể hoàn tất thao tác. Hãy thử lại và kiểm tra kết nối API.'
 }
 
@@ -61,6 +101,17 @@ function statusClass(value: string): string {
   if (value === 'SAVED') return 'status-badge'
   if (value === 'ARCHIVED') return 'status-badge machine-status--fail'
   return 'status-badge machine-status--draft'
+}
+
+function statusLabel(value: string): string {
+  if (value === 'SAVED') return 'Đã lưu'
+  if (value === 'ARCHIVED') return 'Đã lưu trữ'
+  return 'Đang soạn'
+}
+
+function scenarioTypeLabel(value: string): string {
+  if (value === 'GENERAL') return 'Tổng quát'
+  return value
 }
 
 function toolClass(tool: BiologicalToolResource): string {
@@ -148,17 +199,7 @@ export function BiologicalToolkitPage() {
   }
 
   const buildBody = (): BiologicalScenarioCreateInput | undefined => {
-    let assumptions: Record<string, unknown>
-    try {
-      const parsed: unknown = JSON.parse(form.assumptions_text || '{}')
-      if (parsed === null || Array.isArray(parsed) || typeof parsed !== 'object') {
-        throw new Error('Assumptions phải là một JSON object.')
-      }
-      assumptions = parsed as Record<string, unknown>
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Assumptions JSON không hợp lệ.')
-      return undefined
-    }
+    const assumptions = assumptionsFromText(form.assumptions_text)
     return {
       scenario_key: form.scenario_key,
       name: form.name,
@@ -177,7 +218,7 @@ export function BiologicalToolkitPage() {
       setSelectedId(scenario.id)
       setShowForm(false)
       setForm(formFromScenario(scenario))
-      setMessage(`Đã tạo scenario ${scenario.scenario_key} ở trạng thái DRAFT.`)
+      setMessage('Đã tạo kịch bản ở trạng thái đang soạn.')
       refresh()
     },
     onError: (error) => setMessage(errorMessage(error))
@@ -186,41 +227,41 @@ export function BiologicalToolkitPage() {
     mutationFn: (body: Parameters<typeof apiClient.updateBiologicalScenario>[3]) => apiClient.updateBiologicalScenario(accessToken!, organizationId!, selected!.id, body),
     onSuccess: (scenario) => {
       setForm(formFromScenario(scenario))
-      setMessage(`Đã lưu revision ${scenario.revision} của scenario.`)
+      setMessage(`Đã lưu bản cập nhật lần ${scenario.revision} của kịch bản.`)
       refresh()
     },
     onError: (error) => setMessage(errorMessage(error))
   })
   const validateMutation = useMutation({
     mutationFn: (body: BiologicalScenarioCreateInput) => apiClient.validateBiologicalScenario(accessToken!, organizationId!, body),
-    onSuccess: (result) => setValidationMessage(result.valid ? 'Scenario hợp lệ; chưa ghi vào database.' : result.errors.map((item) => `${item.field ?? 'scenario'}: ${item.message} (${item.code})`).join(' | ')),
+    onSuccess: (result) => setValidationMessage(result.valid ? 'Kịch bản hợp lệ; chưa ghi vào cơ sở dữ liệu.' : result.errors.map((item) => `${item.field ?? 'kịch bản'}: ${item.message}`).join(' | ')),
     onError: (error) => setValidationMessage(errorMessage(error))
   })
   const saveMutation = useMutation({
     mutationFn: () => apiClient.saveBiologicalScenario(accessToken!, organizationId!, selected!.id, selected!.revision),
-    onSuccess: (scenario) => { setForm(formFromScenario(scenario)); setMessage(`Đã lưu scenario revision ${scenario.revision}.`); refresh() },
+    onSuccess: (scenario) => { setForm(formFromScenario(scenario)); setMessage(`Đã lưu bản cập nhật lần ${scenario.revision} của kịch bản.`); refresh() },
     onError: (error) => setMessage(errorMessage(error))
   })
   const cloneMutation = useMutation({
     mutationFn: (scenarioId: string) => apiClient.cloneBiologicalScenario(accessToken!, organizationId!, scenarioId),
-    onSuccess: (scenario) => { setSelectedId(scenario.id); setShowForm(false); setForm(formFromScenario(scenario)); setMessage(`Đã clone thành ${scenario.scenario_key}.`); refresh() },
+    onSuccess: (scenario) => { setSelectedId(scenario.id); setShowForm(false); setForm(formFromScenario(scenario)); setMessage('Đã tạo một bản sao để chỉnh sửa độc lập.'); refresh() },
     onError: (error) => setMessage(errorMessage(error))
   })
   const archiveMutation = useMutation({
     mutationFn: () => apiClient.archiveBiologicalScenario(accessToken!, organizationId!, selected!.id, selected!.revision),
-    onSuccess: (scenario) => { setForm(formFromScenario(scenario)); setMessage(`Đã archive ${scenario.scenario_key}; lịch sử vẫn đọc được.`); refresh() },
+    onSuccess: (scenario) => { setForm(formFromScenario(scenario)); setMessage('Đã lưu trữ kịch bản; lịch sử vẫn có thể xem lại.'); refresh() },
     onError: (error) => setMessage(errorMessage(error))
   })
   const reportMutation = useMutation({
     mutationFn: (scenario: BiologicalScenarioResource) => apiClient.createReport(accessToken!, organizationId!, {
       source_type: 'BIOLOGICAL',
       source_id: scenario.id,
-      title: `${scenario.name} · Biological report`,
+      title: `${scenario.name} · Báo cáo công cụ sinh học`,
       blocks: [
         {
           stable_block_id: 'scenario-summary',
           block_type: 'BIOLOGICAL',
-          label: 'Biological scenario và assumptions',
+          label: 'Tóm tắt kịch bản và giả định',
           sort_order: 0,
           is_visible: true,
           config: {},
@@ -229,7 +270,7 @@ export function BiologicalToolkitPage() {
         {
           stable_block_id: 'provenance',
           block_type: 'PROVENANCE',
-          label: 'Nguồn và provenance',
+          label: 'Nguồn và dấu vết kiểm tra',
           sort_order: 1,
           is_visible: true,
           config: {},
@@ -238,15 +279,15 @@ export function BiologicalToolkitPage() {
       ]
     }),
     onSuccess: (revision) => {
-      setMessage(`Đã tạo report độc lập từ scenario (revision ${revision.revision_number}).`)
+      setMessage(`Đã tạo báo cáo độc lập từ kịch bản (bản cập nhật lần ${revision.revision_number}).`)
       navigate(`/app/reports?reportKey=${revision.report_key}`)
     },
     onError: (error) => setMessage(errorMessage(error))
   })
   const busy = createMutation.isPending || updateMutation.isPending || validateMutation.isPending || saveMutation.isPending || cloneMutation.isPending || archiveMutation.isPending || reportMutation.isPending
 
-  if (bootstrap.isPending) return <main className="auth-state">Đang tải Biological Toolkit…</main>
-  if (bootstrap.error || !organizationId) return <div className="page"><section className="alert alert--error"><h1>Không thể mở Biological Toolkit</h1><p>{errorMessage(bootstrap.error)}</p><button onClick={() => void bootstrap.refetch()}>Thử lại</button></section></div>
+  if (bootstrap.isPending) return <main className="auth-state">Đang tải công cụ sinh học…</main>
+  if (bootstrap.error || !organizationId) return <div className="page"><section className="alert alert--error"><h1>Không thể mở công cụ sinh học</h1><p>{errorMessage(bootstrap.error)}</p><button onClick={() => void bootstrap.refetch()}>Thử lại</button></section></div>
 
   const submit = () => {
     const body = buildBody()
@@ -259,27 +300,27 @@ export function BiologicalToolkitPage() {
 
   return <div className="page biological-page">
     <header className="page-header">
-      <div><p className="eyebrow">P12 · MOD-10</p><h1>Biological Toolkit</h1><p>Không gian tính toán và kịch bản độc lập; không tự động liên kết với hồ sơ QA hoặc ca lâm sàng.</p></div>
-      <div className="page-header__actions"><button onClick={() => { setSelectedId(undefined); setShowForm(true); setForm(emptyForm()); setMessage(undefined); setValidationMessage(undefined) }}>+ Tạo scenario</button><button className="button-secondary" onClick={() => setShowHistory(!showHistory)}>Lịch sử tính toán</button></div>
+      <div><p className="eyebrow">CÔNG CỤ TÍNH TOÁN SINH HỌC</p><h1>Công cụ sinh học</h1><p>Tính toán và lưu kịch bản độc lập; không tự động liên kết với hồ sơ kiểm tra máy hoặc hồ sơ người bệnh.</p></div>
+      <div className="page-header__actions"><button onClick={() => { setSelectedId(undefined); setShowForm(true); setForm(emptyForm()); setMessage(undefined); setValidationMessage(undefined) }}>+ Tạo kịch bản</button><button className="button-secondary" onClick={() => setShowHistory(!showHistory)}>Lịch sử tính toán</button></div>
     </header>
     {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
-    {validationMessage && <section className={validationMessage.startsWith('Scenario hợp lệ') ? 'alert alert--success' : 'alert alert--warning'} role="status"><p>{validationMessage}</p></section>}
-    {(tools.error || summary.error || scenarios.error) && <section className="alert alert--error" role="alert"><h2>Không thể tải dữ liệu Biological Toolkit</h2><p>{errorMessage(tools.error ?? summary.error ?? scenarios.error)}</p><button onClick={() => void Promise.all([tools.refetch(), summary.refetch(), scenarios.refetch()])}>Thử lại</button></section>}
+    {validationMessage && <section className={validationMessage.startsWith('Kịch bản hợp lệ') ? 'alert alert--success' : 'alert alert--warning'} role="status"><p>{validationMessage}</p></section>}
+    {(tools.error || summary.error || scenarios.error) && <section className="alert alert--error" role="alert"><h2>Không thể tải dữ liệu công cụ sinh học</h2><p>{errorMessage(tools.error ?? summary.error ?? scenarios.error)}</p><button onClick={() => void Promise.all([tools.refetch(), summary.refetch(), scenarios.refetch()])}>Thử lại</button></section>}
 
-    <section className="biological-notice" role="note"><strong>Independent Calculation Workspace</strong><span>Kết quả chỉ là estimate/scenario tham khảo. Mọi calculation sẽ đi kèm model, source, assumptions, revision và timestamp; không tạo prescription và không gửi dữ liệu sang TPS/PACS.</span></section>
+    <section className="biological-notice" role="note"><strong>Không gian tính toán độc lập</strong><span>Kết quả chỉ là ước tính tham khảo. Mỗi phép tính lưu kèm mô hình, nguồn, giả định, bản cập nhật và thời điểm; không tạo chỉ định điều trị và không gửi dữ liệu sang hệ thống lập kế hoạch hoặc lưu trữ ảnh.</span></section>
 
-    <section className="metric-grid biological-metrics"><section className="metric-card"><p>Kịch bản đã lưu</p><strong>{summary.data?.saved_scenarios ?? '—'}</strong><small>Scenario SAVED trong organization</small></section><section className="metric-card"><p>Phép tính hoàn tất</p><strong>{summary.data?.completed_calculations ?? '—'}</strong><small>Calculation snapshot từ các module</small></section><section className="metric-card"><p>Báo cáo độc lập</p><strong>{summary.data?.exported_reports ?? '—'}</strong><small>Export thành công từ Biological source</small></section><section className="metric-card biological-metric-card--info"><p>Draft đang soạn</p><strong>{summary.data?.draft_scenarios ?? '—'}</strong><small>Chỉ DRAFT mới có thể sửa trực tiếp</small></section></section>
+    <section className="metric-grid biological-metrics"><section className="metric-card"><p>Kịch bản đã lưu</p><strong>{summary.data?.saved_scenarios ?? '—'}</strong><small>Kịch bản đã lưu trong đơn vị</small></section><section className="metric-card"><p>Phép tính hoàn tất</p><strong>{summary.data?.completed_calculations ?? '—'}</strong><small>Kết quả đã ghi nhận từ các công cụ</small></section><section className="metric-card"><p>Báo cáo độc lập</p><strong>{summary.data?.exported_reports ?? '—'}</strong><small>Báo cáo đã xuất thành công</small></section><section className="metric-card biological-metric-card--info"><p>Bản nháp đang soạn</p><strong>{summary.data?.draft_scenarios ?? '—'}</strong><small>Chỉ bản nháp mới có thể sửa trực tiếp</small></section></section>
 
-    <section className="panel biological-tools-panel"><div className="panel-heading"><div><p className="eyebrow">MODULE EXPLORER</p><h2>Công cụ Biological</h2></div><span className="status-badge">SCENARIO ONLY</span></div><div className="biological-tool-grid">{toolItems.map((tool) => <article className={toolClass(tool)} key={tool.tool_key}><div className="biological-tool-card__top"><span className="biological-tool-icon" aria-hidden="true">◇</span><span className={tool.available ? 'status-badge' : 'status-badge status-badge--warning'}>{tool.available ? 'AVAILABLE' : `${tool.phase} · PLANNED`}</span></div><h3>{tool.label}</h3><p>{tool.description}</p>{tool.available ? <Link className="button-link" to={tool.route}>Mở công cụ</Link> : <button className="button-secondary" disabled title={`Tính năng sẽ được triển khai ở ${tool.phase}`}>Sắp triển khai</button>}</article>)}</div></section>
+    <section className="panel biological-tools-panel"><div className="panel-heading"><div><p className="eyebrow">DANH SÁCH CÔNG CỤ</p><h2>Công cụ sinh học</h2></div><span className="status-badge">KỊCH BẢN ĐỘC LẬP</span></div><div className="biological-tool-grid">{toolItems.filter((tool) => tool.tool_key !== 'KNOWLEDGE_LIBRARY').map((tool) => { const copy = toolCopy(tool); return <article className={toolClass(tool)} key={tool.tool_key}><div className="biological-tool-card__top"><span className="biological-tool-icon" aria-hidden="true">◇</span><span className={tool.available ? 'status-badge' : 'status-badge status-badge--warning'}>{tool.available ? 'Sẵn sàng' : 'Đang chuẩn bị'}</span></div><h3>{copy.name}</h3><p>{copy.description}</p>{tool.available ? <Link className="button-link" to={tool.route}>Mở công cụ</Link> : <button className="button-secondary" disabled title="Công cụ đang được chuẩn bị">Sắp triển khai</button>}</article> })}</div></section>
 
     <div className="biological-workspace-grid">
-      <section className="panel biological-scenarios-panel"><div className="panel-heading"><div><p className="eyebrow">SCENARIO LIBRARY</p><h2>Scenarios gần đây</h2></div><strong>{scenarios.data?.total ?? '—'}</strong></div><div className="biological-filter-row"><label>Tìm kiếm<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="key, tên, loại, mô" /></label><label>Trạng thái<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}><option value="ALL">Tất cả</option><option value="DRAFT">DRAFT</option><option value="SAVED">SAVED</option><option value="ARCHIVED">ARCHIVED</option></select></label><label className="checkbox-row"><input type="checkbox" checked={includeArchived} onChange={(event) => setIncludeArchived(event.target.checked)} /> Hiện archived</label></div>{scenarios.isPending ? <p>Đang tải scenarios…</p> : <div className="table-wrap"><table className="biological-scenario-table"><thead><tr><th>Tên kịch bản</th><th>Loại</th><th>Mô / context</th><th>Revision</th><th>Trạng thái</th><th>Cập nhật</th><th>Thao tác</th></tr></thead><tbody>{scenarios.data?.items.map((scenario) => <tr key={scenario.id}><td><strong>{scenario.name}</strong><span className="table-subtitle">{scenario.scenario_key}</span></td><td>{scenario.scenario_type}</td><td>{scenario.tissue_context}</td><td>{scenario.revision}</td><td><span className={statusClass(scenario.status)}>{scenario.status}</span></td><td>{dateLabel(scenario.updated_at)}</td><td><div className="table-actions"><button className="button-secondary" onClick={() => choose(scenario)}>Mở</button><button className="button-secondary" disabled={busy} onClick={() => { choose(scenario); cloneMutation.mutate(scenario.id) }}>Clone</button><button className="button-secondary" disabled={busy} onClick={() => reportMutation.mutate(scenario)}>Tạo report</button></div></td></tr>)}</tbody></table></div>}{!scenarios.isPending && !scenarios.data?.items.length && <div className="empty-state biological-empty-state"><strong>Chưa có scenario</strong><p>Tạo scenario đầu tiên để lưu context và giả định độc lập. Không cần tạo QA case.</p><button onClick={() => { setSelectedId(undefined); setShowForm(true); setForm(emptyForm()) }}>+ Tạo scenario đầu tiên</button></div>}</section>
+      <section className="panel biological-scenarios-panel"><div className="panel-heading"><div><p className="eyebrow">THƯ VIỆN KỊCH BẢN</p><h2>Kịch bản gần đây</h2></div><strong>{scenarios.data?.total ?? '—'}</strong></div><div className="biological-filter-row"><label>Tìm kiếm<input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Tên, loại hoặc mô" /></label><label>Trạng thái<select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}>{(Object.keys(statusLabels) as StatusFilter[]).map((item) => <option key={item} value={item}>{statusLabels[item]}</option>)}</select></label><label className="checkbox-row"><input type="checkbox" checked={includeArchived} onChange={(event) => setIncludeArchived(event.target.checked)} /> Hiện mục đã lưu trữ</label></div>{scenarios.isPending ? <p>Đang tải kịch bản…</p> : <div className="table-wrap"><table className="biological-scenario-table"><thead><tr><th>Tên kịch bản</th><th>Loại</th><th>Mô</th><th>Bản cập nhật</th><th>Trạng thái</th><th>Cập nhật lúc</th><th>Thao tác</th></tr></thead><tbody>{scenarios.data?.items.map((scenario) => <tr key={scenario.id}><td><strong>{scenario.name}</strong></td><td>{scenarioTypeLabel(scenario.scenario_type)}</td><td>{scenario.tissue_context}</td><td>{scenario.revision}</td><td><span className={statusClass(scenario.status)}>{statusLabel(scenario.status)}</span></td><td>{dateLabel(scenario.updated_at)}</td><td><div className="table-actions"><button className="button-secondary" onClick={() => choose(scenario)}>Mở</button><button className="button-secondary" disabled={busy} onClick={() => { choose(scenario); cloneMutation.mutate(scenario.id) }}>Sao chép</button><button className="button-secondary" disabled={busy} onClick={() => reportMutation.mutate(scenario)}>Tạo báo cáo</button></div></td></tr>)}</tbody></table></div>}{!scenarios.isPending && !scenarios.data?.items.length && <div className="empty-state biological-empty-state"><strong>Chưa có kịch bản</strong><p>Tạo kịch bản đầu tiên để lưu bối cảnh và giả định độc lập. Không cần tạo bài kiểm tra máy.</p><button onClick={() => { setSelectedId(undefined); setShowForm(true); setForm(emptyForm()) }}>+ Tạo kịch bản đầu tiên</button></div>}</section>
 
-      <aside className="biological-side-column"><section className="panel biological-provenance-panel"><div className="panel-heading"><div><p className="eyebrow">PROVENANCE</p><h2>Mỗi kết quả phải truy lại được</h2></div></div><ul><li><strong>Model</strong><span>engine key và version</span></li><li><strong>Source</strong><span>citation hoặc user-defined note</span></li><li><strong>Assumptions</strong><span>JSON context snapshot</span></li><li><strong>Revision</strong><span>input revision + timestamp</span></li></ul><p className="form-hint">Scenario là namespace riêng. QA case, patient record và treatment plan không được tự động kéo vào đây.</p></section><section className="panel biological-workflow-panel"><div className="panel-heading"><div><p className="eyebrow">WORKFLOW</p><h2>Quy trình làm việc</h2></div></div><ol><li>Chọn công cụ</li><li>Nhập scenario/context</li><li>Lưu revision</li><li>Tính toán</li><li>Kiểm tra giả định</li><li>Xuất báo cáo độc lập</li></ol><p className="form-hint">Scenario ≠ QA Case. Mỗi module chỉ mở khi capability và test tương ứng đã sẵn sàng.</p></section></aside>
+      <aside className="biological-side-column"><section className="panel biological-provenance-panel"><div className="panel-heading"><div><p className="eyebrow">NGUỒN VÀ DẤU VẾT</p><h2>Mỗi kết quả đều truy lại được</h2></div></div><ul><li><strong>Mô hình</strong><span>Tên và phiên bản phép tính</span></li><li><strong>Nguồn</strong><span>Tài liệu hoặc ghi chú do người dùng nhập</span></li><li><strong>Giả định</strong><span>Các điều kiện dùng trong phép tính</span></li><li><strong>Bản cập nhật</strong><span>Thời điểm và nội dung đã lưu</span></li></ul><p className="form-hint">Kịch bản là vùng dữ liệu độc lập. Hồ sơ kiểm tra máy và hồ sơ người bệnh không tự động được đưa vào đây.</p></section><section className="panel biological-workflow-panel"><div className="panel-heading"><div><p className="eyebrow">QUY TRÌNH</p><h2>Cách sử dụng</h2></div></div><ol><li>Chọn công cụ</li><li>Nhập bối cảnh và giả định</li><li>Lưu bản cập nhật</li><li>Thực hiện tính toán</li><li>Kiểm tra lại giả định</li><li>Xuất báo cáo độc lập</li></ol><p className="form-hint">Mỗi công cụ chỉ mở khi phần tính toán và kiểm thử tương ứng đã sẵn sàng.</p></section></aside>
     </div>
 
-    {(showForm || current) && <section className="panel biological-editor-panel"><div className="panel-heading"><div><p className="eyebrow">{showForm ? 'NEW SCENARIO' : 'SCENARIO REVISION'}</p><h2>{showForm ? 'Tạo scenario mới' : current?.name}</h2></div>{current && <span className={statusClass(current.status)}>{current.status} · rev {current.revision}</span>}</div>{current && !showForm && <div className="protocol-meta"><span><strong>{current.scenario_key}</strong></span><span>Cập nhật {dateLabel(current.updated_at)}</span>{current.source_scenario_revision_id && <span>Clone từ <code>{current.source_scenario_revision_id.slice(0, 8)}…</code></span>}</div>}<div className="biological-form-grid"><label>Scenario key<input disabled={!showForm} value={form.scenario_key} onChange={(event) => setForm({ ...form, scenario_key: event.target.value.toUpperCase() })} /></label><label>Tên hiển thị<input disabled={!editable} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label><label>Scenario type<input disabled={!editable} value={form.scenario_type} onChange={(event) => setForm({ ...form, scenario_type: event.target.value })} /></label><label>Tissue / context<input disabled={!editable} value={form.tissue_context} onChange={(event) => setForm({ ...form, tissue_context: event.target.value })} /></label><label>Source type<select disabled={!editable} value={form.source_type} onChange={(event) => setForm({ ...form, source_type: event.target.value as SourceType })}>{sourceTypes.map((item) => <option key={item} value={item}>{item}</option>)}</select></label><label>Source reference<input disabled={!editable} value={form.source_reference ?? ''} onChange={(event) => setForm({ ...form, source_reference: event.target.value })} placeholder="DOI, guideline, local document…" /></label><label className="biological-form-grid__wide">Clinical / working context<textarea disabled={!editable} value={form.clinical_context ?? ''} onChange={(event) => setForm({ ...form, clinical_context: event.target.value })} placeholder="Không nhập patient identifier hoặc dữ liệu nhận diện." /></label><label className="biological-form-grid__wide">Assumptions JSON<textarea disabled={!editable} value={form.assumptions_text} onChange={(event) => setForm({ ...form, assumptions_text: event.target.value })} /></label></div><div className="biological-editor-actions">{editable && <><button disabled={busy} onClick={() => { const body = buildBody(); if (body) validateMutation.mutate(body) }}>Kiểm tra scenario</button><button disabled={busy} onClick={submit}>{showForm ? 'Tạo bản nháp' : 'Lưu revision'}</button></>}{current && <><button className="button-secondary" disabled={busy} onClick={() => cloneMutation.mutate(current.id)}>Clone scenario</button>{current.status === 'DRAFT' && <button disabled={busy} onClick={() => saveMutation.mutate()}>Lưu scenario</button>}{current.status !== 'ARCHIVED' && <button className="button-secondary" disabled={busy} onClick={() => archiveMutation.mutate()}>Archive</button>}</>}</div>{current && <p className="form-hint">Scenario {current.status} là snapshot đã lưu; muốn thử giả định mới hãy clone để tạo revision độc lập. Các nút tính toán sẽ xuất hiện khi module P13–P15 đạt capability tương ứng.</p>}</section>}
+    {(showForm || current) && <section className="panel biological-editor-panel"><div className="panel-heading"><div><p className="eyebrow">{showForm ? 'TẠO KỊCH BẢN' : 'CHỈNH SỬA KỊCH BẢN'}</p><h2>{showForm ? 'Tạo kịch bản mới' : current?.name}</h2></div>{current && <span className={statusClass(current.status)}>{statusLabel(current.status)} · bản {current.revision}</span>}</div>{current && !showForm && <div className="protocol-meta"><span>Cập nhật {dateLabel(current.updated_at)}</span></div>}<div className="biological-form-grid"><label>Tên hiển thị<input required disabled={!editable} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Ví dụ: Phác đồ vùng đầu cổ" /></label><label>Loại kịch bản<input disabled={!editable} value={scenarioTypeLabel(form.scenario_type)} onChange={(event) => setForm({ ...form, scenario_type: event.target.value })} /></label><label>Mô hoặc cơ quan<input disabled={!editable} value={form.tissue_context} onChange={(event) => setForm({ ...form, tissue_context: event.target.value })} placeholder="Ví dụ: Vú, phổi, tủy sống" /></label><label>Nguồn thông tin<select disabled={!editable} value={form.source_type} onChange={(event) => setForm({ ...form, source_type: event.target.value as SourceType })}>{sourceTypes.map((item) => <option key={item} value={item}>{sourceTypeLabels[item]}</option>)}</select></label><label className="biological-form-grid__wide">Tài liệu tham khảo<input disabled={!editable} value={form.source_reference ?? ''} onChange={(event) => setForm({ ...form, source_reference: event.target.value })} placeholder="Tên tài liệu, đường dẫn hoặc ghi chú nguồn" /></label><label className="biological-form-grid__wide">Bối cảnh sử dụng<textarea disabled={!editable} value={form.clinical_context ?? ''} onChange={(event) => setForm({ ...form, clinical_context: event.target.value })} placeholder="Mô tả ngắn mục đích sử dụng; không nhập thông tin nhận diện người bệnh." /></label><label className="biological-form-grid__wide">Giả định và ghi chú<textarea disabled={!editable} value={form.assumptions_text} onChange={(event) => setForm({ ...form, assumptions_text: event.target.value })} placeholder="Mỗi dòng một nội dung, có thể viết theo mẫu: Tên thông tin: Giá trị" /></label></div><div className="biological-editor-actions">{editable && <><button disabled={busy} onClick={() => { const body = buildBody(); if (body) validateMutation.mutate(body) }}>Kiểm tra thông tin</button><button disabled={busy} onClick={submit}>{showForm ? 'Tạo bản nháp' : 'Lưu bản cập nhật'}</button></>}{current && <><button className="button-secondary" disabled={busy} onClick={() => cloneMutation.mutate(current.id)}>Tạo bản sao</button>{current.status === 'DRAFT' && <button disabled={busy} onClick={() => saveMutation.mutate()}>Xác nhận lưu</button>}{current.status !== 'ARCHIVED' && <button className="button-secondary" disabled={busy} onClick={() => archiveMutation.mutate()}>Lưu trữ</button>}</>}</div>{current && <p className="form-hint">Kịch bản đã lưu là bản chụp cố định; nếu muốn thử giả định mới, hãy tạo bản sao để chỉnh sửa độc lập.</p>}</section>}
 
-    {showHistory && <section className="panel biological-history-panel"><div className="panel-heading"><div><p className="eyebrow">HISTORY</p><h2>Calculation history</h2></div></div>{!selectedId ? <p className="empty-state">Chọn một scenario để xem input revisions. Chưa có calculation nào được tạo ở P12.</p> : history.isPending ? <p>Đang tải revision history…</p> : history.error ? <div className="alert alert--error"><p>{errorMessage(history.error)}</p><button onClick={() => void history.refetch()}>Thử lại</button></div> : <><p className="form-hint">Lịch sử scenario là append-only snapshot; calculation thực tế sẽ được thêm bởi P13–P15.</p><div className="table-wrap"><table><thead><tr><th>Revision</th><th>Status</th><th>Snapshot</th><th>Created</th></tr></thead><tbody>{history.data?.map((revision) => <tr key={revision.id}><td>{revision.revision_number}</td><td>{revision.status}</td><td><code>{JSON.stringify(revision.snapshot)}</code></td><td>{dateLabel(revision.created_at)}</td></tr>)}</tbody></table></div></>}</section>}
+    {showHistory && <section className="panel biological-history-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ</p><h2>Lịch sử cập nhật</h2></div></div>{!selectedId ? <p className="empty-state">Chọn một kịch bản để xem lịch sử cập nhật. Chưa có phép tính nào được tạo ở khu vực này.</p> : history.isPending ? <p>Đang tải lịch sử…</p> : history.error ? <div className="alert alert--error"><p>{errorMessage(history.error)}</p><button onClick={() => void history.refetch()}>Thử lại</button></div> : <><p className="form-hint">Lịch sử được lưu theo từng bản cập nhật và không tự ý thay đổi.</p><div className="table-wrap"><table><thead><tr><th>Bản cập nhật</th><th>Trạng thái</th><th>Thời điểm lưu</th></tr></thead><tbody>{history.data?.map((revision) => <tr key={revision.id}><td>Lần {revision.revision_number}</td><td>{statusLabel(revision.status)}</td><td>{dateLabel(revision.created_at)}</td></tr>)}</tbody></table></div></>}</section>}
   </div>
 }

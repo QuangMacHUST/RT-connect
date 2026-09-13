@@ -386,6 +386,8 @@ Kiểm tra công khai sau triển khai đã đạt trên ứng viên `a4bed90b79
 
 Danh mục hiện có 63 bài theo sổ toàn bộ danh mục pylinac và bài nhập số đo. Trong đó bài nhập số đo là bài đầu tiên được phép thực hiện; 62 bài pylinac đã hiện trong danh mục nhưng vẫn khóa nút bắt đầu cho đến khi bộ tích hợp, màn hình nhập và kiểm chứng tương ứng được hoàn thành. Việc hiện đủ danh mục không được hiểu là đã triển khai đủ engine.
 
+**Bổ sung UX sau đánh giá thực tế 2026-09-14:** danh mục 63 bài phải hiện trực tiếp theo nhóm trên trang QA máy, có tìm nhanh nhưng không dùng danh sách thả xuống làm điểm vào chính. Khu vực tệp đầu vào chỉ được dựng khi bài đã chọn có đầu vào dạng tệp; bài chỉ nhập số đo không được hiện khu vực tải tệp. Nút mở phân tích liều chỉ hiện với bài có đầu vào liều hoặc hồ sơ đã có RTDOSE/RTSTRUCT hợp lệ. Khu vực thư mục, lịch sử và chi tiết dùng toàn bộ chiều ngang khả dụng; không để một cột hẹp bên cạnh khoảng trắng lớn. Đây là yêu cầu giao diện của P5/P6, không thay đổi điều kiện phải có bộ tích hợp pylinac thật ở P7/P8.
+
 ### Trình tự triển khai P5
 
 1. Lập danh mục toàn bộ bài pylinac và bài nhập số liệu, loại tệp và trạng thái khả dụng chính xác.
@@ -397,9 +399,9 @@ Danh mục hiện có 63 bài theo sổ toàn bộ danh mục pylinac và bài n
 
 ### Luồng thao tác P5
 
-1. Chọn QA máy → Danh mục; lọc bài và máy, thấy rõ loại đầu vào.
-2. Bấm thực hiện để tự tạo lượt làm việc; đặt tên tự nhiên tùy chọn, không nhập ID.
-3. Lưu/mở lại từ Lịch sử; lọc, xếp thư mục tùy chọn, xóa/khôi phục hoặc xóa vĩnh viễn có xác nhận.
+1. Chọn QA máy → nhìn thấy toàn bộ danh mục theo nhóm; tìm nhanh theo tên/nhóm khi cần, thấy rõ loại đầu vào và trạng thái sẵn sàng.
+2. Chọn một thẻ bài kiểm tra sẵn sàng rồi bắt đầu lượt làm việc; đặt tên tự nhiên tùy chọn, không nhập ID.
+3. Chỉ khi bài cần tệp mới hiện vùng tải tệp; chỉ khi bài liên quan đến liều mới hiện lối tắt phân tích liều. Lưu/mở lại từ Lịch sử; lọc, xếp thư mục tùy chọn, xóa/khôi phục hoặc xóa vĩnh viễn có xác nhận.
 
 ### Gói công việc P5
 
@@ -410,7 +412,7 @@ Danh mục hiện có 63 bài theo sổ toàn bộ danh mục pylinac và bài n
 - [ ] P05-VERIFY — Chạy các TC-UX1 dưới đây và nhóm lỗi dùng chung có liên quan; lưu actual/evidence theo SHA.
 - [ ] P05-HANDOFF — Cập nhật tiến độ, dữ liệu/migration/tuyến bị tác động, giới hạn hỗ trợ và bước tiếp theo.
 
-**Đã kiểm tra cục bộ:** migration `20260913_0021` và `20260913_0022` nâng thành công; nhóm kiểm thử P5 đạt 28/28; toàn bộ kiểm thử máy chủ đạt 209 bài, thêm 3 bài bản kê phát hành không chạy trong ảnh Docker vì ảnh không có Git; ruff đạt; giao diện đạt typecheck, lint, 31/31 kiểm thử và bản dựng sản xuất. Đây là bằng chứng cục bộ, chưa phải nghiệm thu staging.
+**Đã kiểm tra cục bộ:** migration `20260913_0021` và `20260913_0022` nâng thành công; nhóm kiểm thử P5 đạt 28/28; toàn bộ kiểm thử máy chủ đạt 209 bài, thêm 3 bài bản kê phát hành không chạy trong ảnh Docker vì ảnh không có Git; ruff đạt; giao diện đạt typecheck, lint, kiểm tra riêng trang QA 3/3 và bản dựng sản xuất. Toàn bộ bộ kiểm thử giao diện hiện có 29/31 bài đạt; 2 bài lời mời tổ chức lỗi điều hướng và không thuộc thay đổi P5 lần này. Đây là bằng chứng cục bộ, chưa phải nghiệm thu staging.
 
 ### Trường hợp chạy đúng P5
 

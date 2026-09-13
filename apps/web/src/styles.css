@@ -30,7 +30,8 @@ input:focus-visible { border-color: #0d9488; outline: 3px solid rgb(13 148 136 /
 .sidebar__footer { color: #82a0b2; font-size: .66rem; margin-top: .75rem; padding: .6rem .5rem 0; }
 .sidebar__signout { background: transparent; border-color: #4c687d; color: #dce7ee; font-size: .78rem; margin-top: .4rem; text-align: left; width: 100%; }
 .workspace { min-width: 0; padding: clamp(.9rem, 2vw, 1.6rem); }
-.page { margin: 0 auto; max-width: 1160px; }
+.page { margin: 0 auto; max-width: 1500px; }
+.page--wide { max-width: 1680px; }
 .page-header { align-items: flex-start; border-bottom: 1px solid #c8d5de; display: flex; gap: .75rem; justify-content: space-between; padding-bottom: .9rem; }
 h1, h2, p { margin-top: 0; }
 h1 { color: #102a43; font-size: clamp(1.5rem, 2.6vw, 2.1rem); letter-spacing: -.025em; margin-bottom: .4rem; }
@@ -95,8 +96,9 @@ td { color: #334e68; font-size: .84rem; }
 td code { color: #075e67; font-size: .78rem; }
 .table-actions { display: flex; gap: 6px; }
 .table-actions button { font-size: .76rem; padding: .45rem .55rem; }
-.archive-layout { display: grid; gap: 12px; grid-template-columns: minmax(240px, .7fr) minmax(0, 1.8fr); margin-top: 24px; }
+.archive-layout { display: grid; gap: 16px; grid-template-columns: minmax(250px, .62fr) minmax(0, 2.38fr); margin-top: 24px; }
 .folder-panel, .archive-content { min-width: 0; }
+.folder-panel { position: sticky; top: 16px; align-self: start; }
 .folder-tree { display: grid; gap: 3px; margin-top: 18px; }
 .folder-row { align-items: center; display: flex; gap: 8px; min-height: 38px; }
 .folder-link { align-items: center; background: transparent; border-color: transparent; color: #18344d; display: flex; flex: 1; gap: 8px; justify-content: flex-start; padding: 7px 8px; text-align: left; }
@@ -107,6 +109,32 @@ td code { color: #075e67; font-size: .78rem; }
 .folder-editor input, .filter-row input, .filter-row select { border: 1px solid #c8d5de; border-radius: 4px; color: #0f172a; font: inherit; min-height: 38px; padding: 8px 10px; }
 .filter-row { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 16px; }
 .case-form { border-top: 1px solid #dce5ea; margin-top: 18px; padding-top: 16px; }
+.qa-catalog-panel { background: #f8fbfc; border: 1px solid #d4e0e6; margin-top: 18px; padding: 14px; }
+.qa-catalog-toolbar { align-items: end; display: grid; gap: 14px; grid-template-columns: minmax(240px, .75fr) minmax(0, 1.25fr); margin-top: 12px; }
+.qa-catalog-toolbar label { color: #334155; display: grid; font-size: .8rem; font-weight: 600; gap: 6px; }
+.qa-catalog-toolbar input { border: 1px solid #c8d5de; border-radius: 4px; color: #0f172a; font: inherit; min-height: 36px; padding: 7px 9px; }
+.qa-catalog-toolbar p { color: #617787; font-size: .78rem; line-height: 1.45; margin: 0 0 3px; }
+.qa-catalog-groups { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 14px; }
+.qa-catalog-family { background: #fff; border: 1px solid #dce5ea; padding: 10px; }
+.qa-catalog-family h3 { border-bottom: 1px solid #e5edf1; color: #173c5d; font-size: .82rem; margin: 0 0 8px; padding-bottom: 7px; }
+.qa-test-grid { display: grid; gap: 7px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.qa-test-card { align-items: flex-start; background: #f8fbfc; border: 1px solid #cfdee5; border-left: 3px solid #0d9488; color: #173c5d; display: grid; gap: 4px; min-height: 84px; padding: 9px 10px; text-align: left; }
+.qa-test-card:hover:not(:disabled), .qa-test-card--selected { background: #e7f6f3; border-color: #0d9488; }
+.qa-test-card--planned { background: #f5f7f8; border-left-color: #aabcc8; color: #607787; }
+.qa-test-card__name { font-size: .78rem; font-weight: 700; line-height: 1.3; }
+.qa-test-card__meta { color: #617787; font-size: .68rem; line-height: 1.35; }
+.qa-test-card__status { color: #0b756c; font-size: .66rem; font-weight: 700; }
+.qa-test-card__status--planned { color: #8a671f; }
+.case-form__selected { background: #f2fbf9; border: 1px solid #b8dfd8; border-left: 3px solid #0d9488; display: grid; gap: 4px; padding: 10px 12px; }
+.case-form__selected .eyebrow { margin: 0; }
+.case-form__selected strong { color: #173c5d; font-size: .95rem; }
+.case-form__selected p, .case-form__selected small { color: #526e80; font-size: .78rem; line-height: 1.45; margin: 0; }
+.case-form__action { align-self: end; display: flex; }
+.case-form__action button { width: 100%; }
+.selected-case-note { background: #f8fbfc; border: 1px dashed #c8d5de; color: #526e80; font-size: .8rem; line-height: 1.5; margin: 18px 0 0; padding: 11px 12px; }
+.archive-content > .table-wrap { margin-top: 20px; }
+.archive-content table { min-width: 940px; }
+.archive-content .table-actions { flex-wrap: wrap; }
 .table-subtitle { color: #718596; display: block; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .64rem; margin-top: 4px; }
 .empty-state { color: #617787; font-style: italic; padding: 18px 0; }
 .artifact-panel { border-top: 1px solid #dce5ea; margin-top: 24px; padding-top: 18px; }
@@ -231,7 +259,7 @@ td code { color: #075e67; font-size: .78rem; }
 .diff-grid { display: grid; gap: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 16px; }
 .diff-grid p { color: #526e80; font-size: .78rem; overflow-wrap: anywhere; }
 .diff-grid code { color: #075e67; }
-.biological-page { max-width: 1240px; }
+.biological-page { max-width: 1500px; }
 .biological-notice { align-items: flex-start; background: #eaf7f5; border: 1px solid #9bd8cf; border-left: 4px solid #0d9488; border-radius: 4px; color: #194e4a; display: flex; flex-direction: column; gap: 5px; line-height: 1.5; margin-top: 18px; padding: 13px 16px; }
 .biological-notice strong { color: #075e67; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; }
 .biological-notice span { color: #3d6470; font-size: .86rem; }
@@ -239,7 +267,7 @@ td code { color: #075e67; font-size: .78rem; }
 .biological-metric-card--info { border-left-color: #6b7db3; }
 .biological-tools-panel { margin-top: 18px; }
 .biological-tool-grid { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 14px; }
-.biological-tool-card { background: #f8fbfc; border: 1px solid #d4e0e6; border-top: 3px solid #aabcc8; display: flex; flex-direction: column; min-height: 182px; padding: 14px; }
+.biological-tool-card { background: #f8fbfc; border: 1px solid #d4e0e6; border-top: 3px solid #aabcc8; display: flex; flex-direction: column; min-height: 160px; padding: 13px; }
 .biological-tool-card--available { border-top-color: #0d9488; }
 .biological-tool-card h3 { color: #173c5d; font-size: .98rem; margin: 14px 0 7px; }
 .biological-tool-card p { color: #526e80; font-size: .8rem; line-height: 1.5; margin-bottom: 14px; }
@@ -551,6 +579,8 @@ td code { color: #075e67; font-size: .78rem; }
   .management-grid, .report-layout, .trend-admin-grid, .protocol-layout, .biological-workspace-grid, .bed-workspace-grid, .comparison-workspace-grid, .library-workspace-grid, .library-use-grid, .dvh-result-grid, .split-pane { grid-template-columns: 1fr; }
   .biological-tool-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .archive-layout { grid-template-columns: 1fr; }
+  .folder-panel { position: static; }
+  .qa-catalog-groups { grid-template-columns: 1fr; }
   .auth-layout { grid-template-columns: 1fr; }
   .auth-brand { min-height: auto; padding: 32px; }
 }
@@ -563,6 +593,8 @@ td code { color: #075e67; font-size: .78rem; }
   .metric-grid, .dashboard-grid, .split-pane { grid-template-columns: 1fr; }
   .inline-form { align-items: stretch; flex-direction: column; }
   .filter-row { grid-template-columns: 1fr; }
+  .qa-catalog-toolbar { grid-template-columns: 1fr; }
+  .qa-test-grid { grid-template-columns: 1fr; }
   .artifact-upload { grid-template-columns: 1fr; }
   .machine-qa-protocol-controls, .gamma-input-grid, .gamma-config-grid, .report-form-grid, .report-json-grid, .trend-filter-grid, .form-grid, .protocol-form-grid, .diff-grid, .biological-filter-row, .biological-form-grid, .bed-form-grid, .bed-form-grid--three, .p15-form-grid, .p15-form-grid--course, .p15-form-grid--tissue, .library-filter-grid, .library-form-grid, .library-use-form, .library-detail-grid, .dvh-input-grid, .dvh-config-grid { grid-template-columns: 1fr; }
   .biological-tool-grid { grid-template-columns: 1fr; }

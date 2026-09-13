@@ -180,6 +180,8 @@ Trong khi mô hình đích `QAAttempt` chưa được tách thành bảng riêng
 
 Danh mục runtime hiện có 63 mục. Chỉ mục có `implementation_status=READY` được phép bắt đầu; mục `PLANNED` vẫn được giữ trong danh mục để bảo toàn phạm vi toàn bộ pylinac nhưng giao diện phải khóa nút thực hiện cho đến khi P6/P7 hoàn tất đầu vào và bộ tích hợp. Đây là trạng thái triển khai, không phải loại bỏ capability.
 
+**Hợp đồng hiển thị P5/P6 sau đánh giá giao diện:** giao diện tải toàn bộ 63 mục theo nhóm và cho phép tìm nhanh; danh sách thả xuống không còn là điểm vào chính. `input_kind=MEASUREMENT` không được dựng vùng tệp khi người dùng mở hồ sơ. Các loại đầu vào còn lại được dựng vùng tệp theo bài; `PSQA_*`, loại có đầu vào liều, hoặc hồ sơ đã có RTDOSE/RTSTRUCT hợp lệ mới được dựng lối tắt phân tích liều. Các khóa kỹ thuật, mã hồ sơ, mã tệp và nội dung JSON chỉ tồn tại trong hợp đồng máy chủ, không được đưa vào nhãn hay bảng hiển thị cho người dùng.
+
 ### 5.2. Hợp đồng operation tối thiểu
 
 Mỗi operation ghi rõ: actor đã xác thực; scope; input/miền giá trị; precondition; thay đổi trong transaction; postcondition; idempotency; xung đột revision; side effect; timeout; lỗi có thể thử lại; cách phục hồi; thử nghiệm thành công và thất bại.
