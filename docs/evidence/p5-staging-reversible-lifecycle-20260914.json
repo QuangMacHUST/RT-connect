@@ -1,0 +1,42 @@
+{
+  "schema_version": "rt-connect.p5-staging-reversible-lifecycle.v1",
+  "captured_at_utc": "2026-09-14",
+  "phase": "P5",
+  "status": "STAGING_VERIFIED_SLICE",
+  "environment": "staging",
+  "web_revision": "84ad0dc",
+  "scope": "Kiểm tra vòng đời có thể hoàn tác trên hồ sơ tổng hợp đã có liên kết; không thực hiện xóa vĩnh viễn.",
+  "case_label": "P6 Staging Upload Smoke",
+  "checks": [
+    {
+      "name": "archive",
+      "status": "PASS",
+      "observed": "Hồ sơ biến mất khỏi danh sách chính và xuất hiện trong thùng rác với trạng thái đã lưu trữ."
+    },
+    {
+      "name": "trash_readback",
+      "status": "PASS",
+      "observed": "Hồ sơ và lịch sử của hồ sơ vẫn đọc được trong thùng rác; dữ liệu liên kết không bị dọn."
+    },
+    {
+      "name": "restore",
+      "status": "PASS",
+      "observed": "Khôi phục thành công; hồ sơ trở lại danh sách chính và giữ nguyên tên, loại, chu kỳ, thời điểm, cơ sở và máy."
+    },
+    {
+      "name": "input_integrity",
+      "status": "PASS",
+      "observed": "Hồ sơ vẫn giữ các liên kết đầu vào đã có sau vòng lưu trữ và khôi phục."
+    }
+  ],
+  "permanent_delete": {
+    "status": "NOT_RUN",
+    "reason": "Thao tác xóa dữ liệu staging cần xác nhận ngay trước khi thực hiện; bằng chứng này cố ý không bấm xóa vĩnh viễn."
+  },
+  "remaining_gates": [
+    "Từ chối xóa vĩnh viễn hồ sơ còn kết quả, tệp, báo cáo hoặc tác vụ nền liên kết trên staging",
+    "Xóa vĩnh viễn một hồ sơ tổng hợp riêng, không liên kết, trên staging sau khi được cho phép rõ ràng",
+    "Kiểm chứng lỗi mạng, thử lại và tiến trình nền đang chạy trong phiên xác thực",
+    "Đối chiếu không mất tệp, kết quả, báo cáo hoặc xu hướng sau toàn bộ vòng đời"
+  ]
+}

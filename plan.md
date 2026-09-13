@@ -381,7 +381,7 @@ Chức năng đã được người dùng chấp nhận vẫn hoạt động, la
 **Đầu vào/phụ thuộc:** P4 đã hoàn thành và có bàn giao; các hợp đồng liên quan xem mục kỹ thuật tương ứng.
 **Phạm vi:** FR-UX1-P05-01; B05/B08. Thay kho hồ sơ làm điểm bắt đầu bằng danh mục bài.
 **Trạng thái UX1 lúc lập kế hoạch:** yêu cầu mới; chưa được tính là hoàn thành từ evidence cũ.
-**Trạng thái hiện tại:** `STAGING_VERIFIED_SLICE`; danh mục, lịch sử, hồ sơ cũ chưa phân loại và vòng lưu trữ/khôi phục đã được kiểm chứng trên staging ở bản `544a40c1a6ca6697f8b951002411ed97484ff59d`. P5 chưa đóng vì còn cổng xóa vĩnh viễn có kiểm soát, lỗi mạng và tiến trình nền trên staging.
+**Trạng thái hiện tại:** `STAGING_VERIFIED_SLICE`; danh mục, lịch sử, hồ sơ cũ chưa phân loại và vòng lưu trữ/khôi phục đã được kiểm chứng trên staging ở bản `544a40c1a6ca6697f8b951002411ed97484ff59d`. Vòng kiểm tra hoàn tác bổ sung ngày 2026-09-14 đã lưu trữ rồi khôi phục lại hồ sơ tổng hợp có liên kết, xác nhận dữ liệu đầu vào vẫn còn; bằng chứng: `docs/evidence/p5-staging-reversible-lifecycle-20260914.json`. P5 chưa đóng vì còn cổng xóa vĩnh viễn có kiểm soát, lỗi mạng và tiến trình nền trên staging.
 Kiểm tra công khai sau triển khai đã đạt trên ứng viên `a4bed90b79aa0bc758e598c424ac0060379e98c0` với readiness `20260913_0022` và đúng các tuyến P5; bằng chứng: `docs/evidence/p5-staging-public-recheck-20260913.json`. Đây chỉ là kiểm tra nguồn/runtime công khai, chưa là nghiệm thu thao tác xác thực.
 Kiểm tra công khai mới nhất sau chốt xác nhận xóa đã đạt: web hiển thị đúng danh mục trực tiếp, có hộp xác nhận xóa vĩnh viễn và thông báo hủy; API vẫn `200 READY`. Bằng chứng: `docs/evidence/p5-staging-public-recheck-20260914-84ad0dc.json`; đây vẫn không thay cho kiểm tra xác thực và vòng đời dữ liệu.
 

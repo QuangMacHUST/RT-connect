@@ -1,4 +1,5 @@
 import { beforeEach, expect, test, vi } from 'vitest'
+import { z } from 'zod'
 
 import { ApiClient, ApiClientError } from './client'
 
@@ -45,4 +46,14 @@ test('requires confirmation before permanently purging a QA case', async () => {
   })
   expect(confirm).toHaveBeenCalledWith(expect.stringContaining('không thể khôi phục'))
   expect(fetchMock).not.toHaveBeenCalled()
+})
+
+test('translates a network failure into a retryable localized client error', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+
+  const client = new ApiClient('http://api.test/api/v1')
+  await expect(client.get('/health', z.object({ status: z.string() }))).rejects.toMatchObject({
+    code: 'NETWORK_ERROR',
+    message: 'Không thể kết nối tới RT-CONNECT API.'
+  } satisfies Partial<ApiClientError>)
 })
