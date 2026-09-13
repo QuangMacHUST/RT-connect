@@ -33,8 +33,9 @@ P5 chỉ được đóng sau khi có bằng chứng staging. Việc danh mục h
 1. Lưu trữ một hồ sơ không có kết quả/tệp/báo cáo liên quan; hồ sơ biến mất khỏi danh sách thường và xuất hiện trong thùng rác.
 2. Khôi phục hồ sơ; hồ sơ xuất hiện lại trong lịch sử.
 3. Lưu trữ rồi xóa vĩnh viễn hồ sơ không có liên kết; giao diện báo đã xóa và hồ sơ không còn trong thùng rác.
-4. Với hồ sơ có kết quả, tệp, báo cáo hoặc xu hướng, thử xóa vĩnh viễn; hệ thống phải từ chối, nêu lý do dễ hiểu và không xóa dữ liệu liên quan.
-5. Thử bấm lưu trữ, khôi phục và xóa vĩnh viễn hai lần; lần sau phải an toàn, không tạo bản ghi hoặc thông báo sai.
+4. Khi bấm **Xóa vĩnh viễn**, hộp xác nhận phải nói rõ thao tác không thể khôi phục; bấm hủy không được gửi yêu cầu lên máy chủ và phải báo đã hủy.
+5. Với hồ sơ có kết quả, tệp, báo cáo hoặc xu hướng, thử xóa vĩnh viễn; hệ thống phải từ chối, nêu lý do dễ hiểu và không xóa dữ liệu liên quan.
+6. Thử bấm lưu trữ, khôi phục và xóa vĩnh viễn hai lần; lần sau phải an toàn, không tạo bản ghi hoặc thông báo sai.
 
 ## Kiểm tra lỗi bắt buộc
 
