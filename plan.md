@@ -385,6 +385,7 @@ Chức năng đã được người dùng chấp nhận vẫn hoạt động, la
 Kiểm tra công khai sau triển khai đã đạt trên ứng viên `a4bed90b79aa0bc758e598c424ac0060379e98c0` với readiness `20260913_0022` và đúng các tuyến P5; bằng chứng: `docs/evidence/p5-staging-public-recheck-20260913.json`. Đây chỉ là kiểm tra nguồn/runtime công khai, chưa là nghiệm thu thao tác xác thực.
 
 **Cập nhật phụ thuộc 2026-09-14:** `pylinac==3.47.0` đã được thêm vào cấu hình API và khóa cài đặt. Vì phiên bản engine này yêu cầu `pydicom<3`, dự án đã đồng bộ `pydicom==2.4.5`; khóa phụ thuộc chạy kiểm tra cài đặt thử, `pip check`, import pylinac và toàn bộ kiểm thử API đều đạt. Đây chỉ là cổng chuẩn bị dependency cho P7, chưa được tính là đã triển khai adapter hay bất kỳ bài pylinac nào.
+Bằng chứng nguồn/runtime tương ứng: `docs/evidence/p5-pylinac-dependency-recheck-20260914.json`; API staging đã nhận `df4210bfb0d1c55197dffc7856b383ccffdb92cf` và readiness vẫn đạt.
 
 Danh mục hiện có 63 bài theo sổ toàn bộ danh mục pylinac và bài nhập số đo. Trong đó bài nhập số đo là bài đầu tiên được phép thực hiện; 62 bài pylinac đã hiện trong danh mục nhưng vẫn khóa nút bắt đầu cho đến khi bộ tích hợp, màn hình nhập và kiểm chứng tương ứng được hoàn thành. Việc hiện đủ danh mục không được hiểu là đã triển khai đủ engine.
 

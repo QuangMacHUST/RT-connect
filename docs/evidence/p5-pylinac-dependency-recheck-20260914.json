@@ -1,0 +1,36 @@
+{
+  "schema_version": "rt-connect.p5-pylinac-dependency-recheck.v1",
+  "captured_at_utc": "2026-09-14",
+  "phase": "P5",
+  "status": "DEPENDENCY_READY_P7_NOT_STARTED",
+  "source_commit": "df4210bfb0d1c55197dffc7856b383ccffdb92cf",
+  "scope": "Kiểm tra khóa phụ thuộc, khả năng dựng Docker và source parity staging; không tuyên bố adapter hoặc bài pylinac đã chạy.",
+  "dependency": {
+    "pylinac": "3.47.0",
+    "pydicom": "2.4.5",
+    "pip_check": "PASS",
+    "lock_install_dry_run": "PASS",
+    "import_check": "PASS"
+  },
+  "local": {
+    "api_full_suite": "PASS",
+    "api_ruff": "PASS",
+    "api_mypy": "PASS",
+    "web_tests": "12 files / 31 tests PASS",
+    "web_typecheck": "PASS",
+    "web_lint": "PASS",
+    "web_build": "PASS",
+    "docker_api_build": "PASS"
+  },
+  "staging": {
+    "api_version": "df4210bfb0d1c55197dffc7856b383ccffdb92cf",
+    "health": "HTTP 200; status=ok",
+    "readiness": "HTTP 200; status=ready; schema_revision=20260913_0022",
+    "environment": "staging"
+  },
+  "remaining_gates": [
+    "P5: xóa vĩnh viễn có kiểm soát trên dữ liệu thử riêng, lỗi mạng và tiến trình nền.",
+    "P6: hợp đồng đầu vào theo từng bài và kiểm tra tệp.",
+    "P7: registry, adapter, biểu mẫu tham số, thao tác tay và contract test cho toàn bộ danh mục pylinac."
+  ]
+}
