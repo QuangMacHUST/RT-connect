@@ -1,0 +1,39 @@
+{
+  "evidence_type": "phase_verification",
+  "phase": "P4",
+  "phase_status": "LOCAL_VERIFIED_SLICE",
+  "checked_at": "2026-09-13T08:17:45.2347611Z",
+  "environment": "local-development",
+  "source_sha": "dcf463c28dd64dcfa68a6fdf8c17cf40e623a2dc",
+  "working_tree_dirty": true,
+  "scope": [
+    "bố cục gọn cho đơn vị, cơ sở và máy xạ trị",
+    "thành viên ngang quyền và lời mời được đặt trong khung mở rộng",
+    "nhãn trạng thái hiển thị bằng tiếng Việt, ẩn mã máy kỹ thuật khỏi bảng",
+    "kiểm thử giao diện trang Đơn vị và thiết bị"
+  ],
+  "checks": {
+    "lint": "PASS",
+    "typecheck": "PASS",
+    "unit_tests": {
+      "status": "PASS",
+      "test_files": 12,
+      "tests": 23
+    },
+    "production_build": "PASS",
+    "organization_page_component_check": "PASS"
+  },
+  "observations": [
+    "Thông tin đơn vị nằm ở một thẻ đầu trang; cơ sở và máy xạ trị nằm cạnh nhau trong khu vực chính.",
+    "Thành viên và lời mời mặc định thu gọn, người dùng chỉ mở khi cần nên không phải cuộn qua toàn bộ biểu mẫu.",
+    "Bảng máy chỉ hiển thị tên máy, hãng/kiểu máy, trạng thái và thao tác; mã kỹ thuật vẫn được gửi nội bộ khi tạo máy nhưng không hiện trong giao diện thường dùng.",
+    "Bản kiểm này mới xác nhận lát cắt giao diện và dữ liệu giả lập tại máy phát triển; chưa chứng minh hai danh tính thật, xung đột đồng thời, vòng đời lưu trữ/khôi phục hoặc trạng thái staging."
+  ],
+  "remaining_for_phase_close": [
+    "Kiểm hai thành viên thật cùng cập nhật một bản ghi và xác nhận xử lý xung đột phiên bản.",
+    "Kiểm ngừng dùng/khôi phục cơ sở và máy, đồng thời xác nhận lịch sử QA vẫn truy cập được nhưng bộ chọn bài mới loại bản ghi ngừng dùng.",
+    "Commit source, triển khai đúng mã nguồn lên staging và kiểm lại trang bằng trình duyệt đã xác thực.",
+    "Chỉ mở P5 sau khi P04-VERIFY và P04-HANDOFF hoàn tất."
+  ],
+  "passed": true
+}

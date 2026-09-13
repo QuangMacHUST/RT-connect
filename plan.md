@@ -325,7 +325,9 @@ P3 được đóng ở mức `STAGING_VERIFIED`; production vẫn là cổng ri�
 
 **Đầu vào/phụ thuộc:** P3 đã hoàn thành và có bàn giao; các hợp đồng liên quan xem mục kỹ thuật tương ứng.
 **Phạm vi:** FR-UX1-P04-01; B02/B03/B04. Không thiết kế lại phân quyền.
-**Trạng thái UX1 lúc lập kế hoạch:** yêu cầu mới; chưa được tính là hoàn thành từ evidence cũ.
+**Trạng thái hiện tại:** `LOCAL_VERIFIED_SLICE`; mới đóng lát cắt giao diện tại máy phát triển, chưa đóng P4.
+
+Evidence hiện tại: `docs/evidence/p4-local-organization-ui-20260913.json`. Lát cắt này không thay cho kiểm xung đột hai danh tính, vòng đời lưu trữ/khôi phục, kiểm staging hoặc bàn giao P4.
 
 ### Trình tự triển khai P4
 
@@ -344,8 +346,8 @@ P3 được đóng ở mức `STAGING_VERIFIED`; production vẫn là cổng ri�
 
 ### Gói công việc P4
 
-- [ ] P04-W01 — Đưa biểu mẫu dài thành các thẻ và khung sửa gọn; giảm tiêu đề/khoảng trắng.
-- [ ] P04-W02 — Dịch nhãn, trạng thái, lời mời và lỗi; không để stable ID/code làm thông tin bắt nhập nếu có thể tự tạo.
+- [x] P04-W01 — Đưa biểu mẫu dài thành các thẻ và khung sửa gọn; giảm tiêu đề/khoảng trắng. `LOCAL_VERIFIED_SLICE`.
+- [x] P04-W02 — Dịch nhãn, trạng thái, lời mời và lỗi; mã kỹ thuật vẫn được giữ ở lớp dữ liệu nhưng không hiển thị trong bảng và thông tin thường dùng. `LOCAL_VERIFIED_SLICE`.
 - [ ] P04-W03 — Giữ tính ngang quyền và scope; kiểm sửa đồng thời theo revision.
 - [ ] P04-W04 — Kiểm ngừng dùng/khôi phục máy, chuyển đơn vị và tác động tới bộ chọn máy/QA lịch sử.
 - [ ] P04-VERIFY — Chạy các TC-UX1 dưới đây và nhóm lỗi dùng chung có liên quan; lưu actual/evidence theo SHA.

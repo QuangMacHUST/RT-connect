@@ -62,6 +62,19 @@ h2 { font-size: 1rem; margin-bottom: .4rem; }
 .panel h2 { color: #102a43; margin-bottom: 10px; }
 .management-grid { display: grid; gap: 12px; grid-template-columns: minmax(250px, .75fr) minmax(0, 1.75fr); margin-top: 12px; }
 .management-panel { margin-top: 24px; }
+.organization-summary-panel { margin-top: 12px; }
+.organization-primary-grid .panel { min-height: 0; }
+.organization-secondary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.compact-details { min-height: 0; }
+.compact-details summary { align-items: center; color: #102a43; cursor: pointer; display: flex; justify-content: space-between; list-style: none; }
+.compact-details summary::-webkit-details-marker { display: none; }
+.compact-details summary::after { color: #087785; content: '＋'; font-size: 1.1rem; }
+.compact-details[open] summary::after { content: '−'; }
+.compact-details summary > span { display: grid; gap: 2px; }
+.compact-details summary .eyebrow { margin: 0; }
+.compact-details summary strong { font-size: 1rem; }
+.compact-details summary b { color: #087785; font-size: 1.2rem; }
+.compact-details[open] summary { border-bottom: 1px solid #dce5ea; padding-bottom: 10px; }
 .panel-heading { align-items: flex-start; display: flex; justify-content: space-between; gap: 16px; }
 .panel-heading h2 { margin-bottom: 0; }
 .inline-form, .stack-form { align-items: end; display: flex; gap: 10px; margin-top: 16px; }
