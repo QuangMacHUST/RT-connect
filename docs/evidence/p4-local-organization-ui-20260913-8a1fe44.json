@@ -1,0 +1,34 @@
+{
+  "evidence_type": "phase_verification",
+  "phase": "P4",
+  "phase_status": "LOCAL_VERIFIED_SLICE",
+  "checked_at": "2026-09-13T08:47:00Z",
+  "environment": "local-development",
+  "source_sha": "8a1fe44f68b81855ba81bb3c77e920fcbf7867c9",
+  "working_tree_dirty": false,
+  "scope": [
+    "trang Đơn vị và thiết bị gọn",
+    "mã máy tự tạo và không hiển thị trong giao diện",
+    "thông báo lỗi nghiệp vụ P4 bằng tiếng Việt"
+  ],
+  "checks": {
+    "lint": "PASS",
+    "typecheck": "PASS",
+    "unit_tests": {
+      "status": "PASS",
+      "test_files": 12,
+      "tests": 24
+    },
+    "production_build": "PASS",
+    "translated_revision_conflict_message": "PASS"
+  },
+  "observations": [
+    "Lỗi xung đột dữ liệu được hiển thị bằng tiếng Việt thay vì thông báo thô từ máy chủ.",
+    "Các mã lỗi nghiệp vụ còn lại của đơn vị, cơ sở, máy, thành viên và lời mời đều có ánh xạ tiếng Việt; mã chưa biết dùng câu dự phòng tiếng Việt.",
+    "Không thay đổi dữ liệu staging trong kiểm tra này."
+  ],
+  "limitations": [
+    "Chưa thay cho kiểm hai tài khoản Supabase thật hoặc kiểm hồi quy thao tác lưu trữ/khôi phục trên trình duyệt."
+  ],
+  "passed": true
+}

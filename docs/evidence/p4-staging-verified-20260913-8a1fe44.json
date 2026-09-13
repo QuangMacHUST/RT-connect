@@ -1,0 +1,41 @@
+{
+  "evidence_type": "phase_verification",
+  "phase": "P4",
+  "phase_status": "STAGING_VERIFIED_SLICE",
+  "checked_at": "2026-09-13T08:49:00Z",
+  "environment": "railway-staging",
+  "source_sha": "8a1fe44f68b81855ba81bb3c77e920fcbf7867c9",
+  "services": {
+    "api": {
+      "name": "Railway-API-staging",
+      "deployment_id": "3a4a6a20-e9e7-45ee-a6e0-ba1dc1a9b4b1",
+      "status": "SUCCESS"
+    },
+    "web": {
+      "name": "RT-connect-web-staging",
+      "deployment_id": "a74e9399-c425-4a60-85e8-77a9db64ac8c",
+      "status": "SUCCESS"
+    },
+    "worker": {
+      "name": "RT-connect-gamma-worker-staging",
+      "deployment_id": "9d848fdf-82b6-4ba3-a8a1-f7f84b4bcfbd",
+      "status": "SUCCESS"
+    }
+  },
+  "public_verifier": {
+    "status": "PASS",
+    "checks": 17,
+    "failed_checks": 0,
+    "evidence": "docs/evidence/p4-staging-public-verifier-20260913-8a1fe44.json"
+  },
+  "observations": [
+    "API health/readiness và phiên bản trả về đúng mã nguồn mới.",
+    "Web bundle mới có các tuyến thành viên/lời mời và nội dung P4 đã triển khai.",
+    "Không triển khai production trong lần kiểm này."
+  ],
+  "limitations": [
+    "Chưa kiểm hai tài khoản Supabase thật cùng sửa một bản ghi.",
+    "Chưa kiểm lưu trữ/khôi phục và tác động tới bộ chọn bài QA/lịch sử bằng dữ liệu staging."
+  ],
+  "passed": true
+}
