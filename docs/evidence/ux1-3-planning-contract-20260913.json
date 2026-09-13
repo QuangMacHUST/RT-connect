@@ -1,6 +1,6 @@
 {
   "schema_version": "rt-connect.planning-contract-verification.v2",
-  "captured_at_utc": "2026-09-13T09:33:38.686271+00:00",
+  "captured_at_utc": "2026-09-13T09:43:38.530581+00:00",
   "repository": "E:\\hoctap\\2026\\RT-connect",
   "document_versions": {
     "business": "1.3",
@@ -2406,6 +2406,16 @@
     },
     {
       "name": "link.plan.docs/evidence/p1-foundation-recheck-20260913-7a7e4ec.json",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.plan.docs/runbooks/p4-kiem-chung-hai-tai-khoan-staging.md",
+      "ok": true,
+      "details": "local link target exists"
+    },
+    {
+      "name": "link.plan.docs/runbooks/p4-kiem-chung-hai-tai-khoan-staging.md",
       "ok": true,
       "details": "local link target exists"
     },
