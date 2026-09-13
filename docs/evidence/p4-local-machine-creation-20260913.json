@@ -1,0 +1,41 @@
+{
+  "evidence_type": "phase_verification",
+  "phase": "P4",
+  "phase_status": "LOCAL_VERIFIED_SLICE",
+  "checked_at": "2026-09-13T08:32:00Z",
+  "environment": "local-development",
+  "source_sha": "916082605362dccf57b76770d961f5edbc2ed625",
+  "working_tree_dirty": true,
+  "scope": [
+    "tạo máy không cần người dùng nhập mã kỹ thuật",
+    "tương thích với mã máy cũ do ứng dụng tích hợp gửi lên",
+    "mã nội bộ tự tạo duy nhất và vẫn được giữ trong dữ liệu máy"
+  ],
+  "checks": {
+    "api_ruff": "PASS",
+    "api_mypy": "PASS",
+    "api_organization_tests": {
+      "status": "PASS",
+      "test_files": 1,
+      "tests": 16
+    },
+    "web_lint": "PASS",
+    "web_typecheck": "PASS",
+    "web_unit_tests": {
+      "status": "PASS",
+      "test_files": 12,
+      "tests": 23
+    },
+    "web_production_build": "PASS"
+  },
+  "observations": [
+    "Yêu cầu tạo máy có thể bỏ qua mã kỹ thuật; máy chủ tạo mã bắt đầu bằng tiền tố nội bộ và bảo đảm không trùng trong điều kiện bình thường.",
+    "Lời gọi cũ có mã máy tường minh vẫn được chấp nhận và kiểm tra trùng như trước.",
+    "Giao diện chỉ hiển thị tên máy và thông tin chuyên môn dễ nhận biết, không hiển thị mã nội bộ."
+  ],
+  "limitations": [
+    "Kiểm dùng cơ sở dữ liệu và danh tính giả lập cục bộ.",
+    "Chưa thay cho kiểm hai tài khoản Supabase thật hoặc kiểm hồi quy chọn máy trên staging."
+  ],
+  "passed": true
+}

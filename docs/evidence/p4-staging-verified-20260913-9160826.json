@@ -1,0 +1,49 @@
+{
+  "evidence_type": "phase_verification",
+  "phase": "P4",
+  "phase_status": "STAGING_VERIFIED_SLICE",
+  "checked_at": "2026-09-13T08:36:00Z",
+  "environment": "railway-staging",
+  "source_sha": "916082605362dccf57b76770d961f5edbc2ed625",
+  "services": {
+    "api": {
+      "name": "Railway-API-staging",
+      "deployment_id": "3ee7332b-f6fb-4b74-ab5b-0455f15f4fb8",
+      "status": "SUCCESS"
+    },
+    "web": {
+      "name": "RT-connect-web-staging",
+      "deployment_id": "d3e264f8-7030-4cf2-a67f-559fce095b50",
+      "status": "SUCCESS"
+    },
+    "worker": {
+      "name": "RT-connect-gamma-worker-staging",
+      "deployment_id": "12e8e534-b242-4390-9e74-8fa569e66c34",
+      "status": "SUCCESS"
+    }
+  },
+  "public_verifier": {
+    "status": "PASS",
+    "checks": 17,
+    "failed_checks": 0,
+    "evidence": "docs/evidence/p4-staging-public-verifier-20260913-9160826.json"
+  },
+  "browser_check": {
+    "status": "PASS",
+    "url": "https://rt-connect-web-staging-staging.up.railway.app/app/organization?release=9160826",
+    "authenticated": true,
+    "observed": [
+      "trang Đơn vị và thiết bị mở được với đơn vị, cơ sở và máy thật từ API",
+      "biểu mẫu tạo máy chỉ yêu cầu tên hiển thị",
+      "mã máy được hệ thống tạo tự động được giải thích bằng tiếng Việt",
+      "thành viên và lời mời mặc định thu gọn",
+      "bảng máy không hiển thị mã máy kỹ thuật"
+    ]
+  },
+  "limitations": [
+    "Chưa kiểm hai danh tính thật cùng sửa một bản ghi và phản hồi xung đột phiên bản.",
+    "Chưa kiểm đầy đủ ngừng dùng/khôi phục và tác động tới bộ chọn bài QA/lịch sử.",
+    "Đây là lát cắt staging của P4, chưa phải điều kiện đóng P4 và không mở P5."
+  ],
+  "passed": true
+}
