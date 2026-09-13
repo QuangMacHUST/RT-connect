@@ -84,7 +84,7 @@ Không dùng thao tác này trên cơ sở thật đang chứa dữ liệu vận
 | P4-E02 | Hai tài khoản lưu cùng phiên bản | Báo xung đột, giữ nội dung đang nhập |  |  |
 | P4-E03 | Lời mời hết hạn, đã dùng hoặc sai email | Báo đúng nguyên nhân, không tạo thành viên trùng |  |  |
 | P4-E04 | Đổi đơn vị hoặc phiên hết hạn | Không lộ dữ liệu của đơn vị trước |  |  |
-| P4-E05 | Lưu trữ máy/cơ sở | Bài mới bị chặn, lịch sử cũ vẫn đọc được |  |  |
+| P4-E05 | Lưu trữ máy/cơ sở | Bài mới bị chặn, lịch sử cũ vẫn đọc được | Lát cắt một phiên staging đạt: máy Synthetic QA Linac bị loại khỏi bộ chọn bài mới; hai bài QA cũ và tệp RTDOSE vẫn đọc được; khôi phục đưa máy trở lại bộ chọn. Kiểm bằng tài khoản B và cơ sở riêng vẫn mở. | `docs/evidence/p4-staging-machine-archive-restore-20260913-392f4d9.json` |
 
 ## Điều kiện đạt P4
 
@@ -95,6 +95,7 @@ P4 chỉ được ghi **Hoàn thành** khi:
 - P4-S04 được kiểm ít nhất với một mã đúng và một mã sai hoặc đã dùng.
 - P4-E02 được kiểm bằng hai phiên độc lập, không phải hai cửa sổ dùng chung phiên.
 - P4-E05 xác nhận cả bộ chọn bài mới và lịch sử cũ.
+- Với lát cắt đã kiểm, lưu trữ/khôi phục máy trên staging đã được readback: không dùng cho bài mới, không xóa lịch sử, khôi phục cho phép chọn lại. Cần kiểm lại trong hai phiên độc lập trước khi đánh dấu P4-E05 hoàn toàn đạt.
 - Không có lỗi làm lộ dữ liệu khác đơn vị, mất dữ liệu đang nhập hoặc xóa lịch sử ngoài ý muốn.
 - Ghi mã nguồn đang chạy, thời điểm kiểm, trình duyệt, người thực hiện và liên kết ảnh bằng chứng đã che thông tin nhạy cảm.
 

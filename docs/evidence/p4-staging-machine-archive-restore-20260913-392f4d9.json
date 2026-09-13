@@ -1,0 +1,32 @@
+{
+  "evidence_type": "staging_authenticated_machine_archive_restore_readback",
+  "phase": "P4",
+  "status": "PASS_FOR_SINGLE_SESSION_LIFECYCLE_SLICE",
+  "checked_at": "2026-09-13T21:57:10+07:00",
+  "environment": "staging",
+  "source_commit": "392f4d97630c8ba4b78330166141d31e9d2f14dc",
+  "web_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "browser": "Microsoft Edge",
+  "checks": [
+    {
+      "id": "P4-E05-ARCHIVE-SELECTOR",
+      "status": "PASS",
+      "observed": "Sau khi lưu trữ Synthetic QA Linac, bộ chọn Máy trong trang QA không còn máy hoạt động để bắt đầu bài mới; giao diện vẫn giữ đúng cơ sở Staging Synthetic Site."
+    },
+    {
+      "id": "P4-E05-HISTORY-PRESERVED",
+      "status": "PASS",
+      "observed": "Hai bài QA lịch sử P11 E2E Synthetic QA 20260910 B7C3 và P6 Staging Upload Smoke vẫn hiển thị; bài cũ vẫn có liên kết mở bài, phân tích Gamma và tệp RTDOSE hợp lệ."
+    },
+    {
+      "id": "P4-E05-RESTORE",
+      "status": "PASS",
+      "observed": "Sau khi khôi phục Synthetic QA Linac, bộ chọn Máy trong trang QA hiển thị lại Synthetic QA Linac và hai bài QA lịch sử vẫn giữ nguyên."
+    }
+  ],
+  "not_proven": [
+    "Hai phiên độc lập cùng thao tác trên tài nguyên",
+    "Tài khoản B thực hiện riêng toàn bộ vòng đời lưu trữ/khôi phục",
+    "Mã mời đúng, sai hoặc đã dùng"
+  ]
+}
