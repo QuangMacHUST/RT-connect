@@ -327,7 +327,7 @@ P3 được đóng ở mức `STAGING_VERIFIED`; production vẫn là cổng ri�
 **Phạm vi:** FR-UX1-P04-01; B02/B03/B04. Không thiết kế lại phân quyền.
 **Trạng thái hiện tại:** `STAGING_VERIFIED_SLICE`; lát cắt giao diện đã được kiểm trên staging, chưa đóng P4.
 
-Evidence hiện tại: `docs/evidence/p4-local-organization-ui-20260913-8a1fe44.json`, `docs/evidence/p4-local-machine-creation-20260913.json`, `docs/evidence/p4-local-organization-api-20260913.json`, `docs/evidence/p4-staging-verified-20260913-8a1fe44.json`, `docs/evidence/p4-staging-public-verifier-20260913-8a1fe44.json` và `docs/evidence/p4-staging-public-verifier-20260913-e8c4323.json`. Bằng chứng mới xác nhận bản sửa biểu mẫu và source parity trên staging; lát cắt này không thay cho kiểm xung đột hai danh tính, vòng đời lưu trữ/khôi phục hoặc bàn giao P4.
+Evidence hiện tại: `docs/evidence/p4-local-organization-ui-20260913-8a1fe44.json`, `docs/evidence/p4-local-machine-creation-20260913.json`, `docs/evidence/p4-local-organization-api-20260913.json`, `docs/evidence/p4-staging-verified-20260913-8a1fe44.json`, `docs/evidence/p4-staging-public-verifier-20260913-e8c4323.json` và `docs/evidence/p4-staging-public-verifier-20260913-9d95f89.json`. Bằng chứng mới nhất xác nhận bản sửa biểu mẫu, source parity và triển khai đồng bộ ba dịch vụ trên staging; lát cắt này không thay cho kiểm xung đột hai danh tính, vòng đời lưu trữ/khôi phục hoặc bàn giao P4.
 
 ### Trình tự triển khai P4
 
