@@ -3,7 +3,7 @@
   "captured_at_utc": "2026-09-14",
   "phase": "P5",
   "status": "LOCAL_VERIFIED_NOT_STAGING",
-  "source_commit": "57c08e7",
+  "source_commit": "e2ff4fc",
   "scope": "Kiểm tra yêu cầu xóa vĩnh viễn lặp lại an toàn; không thay cho kiểm thử lỗi mạng, tiến trình nền hoặc xóa có kiểm soát trên staging.",
   "behavior": {
     "first_purge": "HTTP 200; status=PURGED",
