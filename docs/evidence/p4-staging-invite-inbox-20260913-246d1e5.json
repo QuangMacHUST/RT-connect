@@ -1,0 +1,36 @@
+{
+  "evidence_type": "staging_authenticated_invitation_inbox",
+  "phase": "P4",
+  "status": "PASS_FOR_P4_S03",
+  "checked_at": "2026-09-13T19:20:37+07:00",
+  "environment": "staging",
+  "source_commit": "246d1e5260f7c5d48bef6aeb7a75b60c09a7150e",
+  "web_url": "https://rt-connect-web-staging-staging.up.railway.app",
+  "api_url": "https://gleaming-cooperation-staging.up.railway.app",
+  "browser": "Microsoft Edge",
+  "checks": [
+    {
+      "id": "P4-S03",
+      "status": "PASS",
+      "observed": "Tài khoản đã xác thực nhưng chưa có đơn vị nhìn thấy lời mời đang chờ theo email, tên Hong ngoc general hospital, hạn đến 20/9/2026 và nút Tham gia; màn hình không buộc tạo đơn vị mới."
+    },
+    {
+      "id": "P4-S03-JOIN",
+      "status": "PASS",
+      "observed": "Bấm Tham gia đưa tài khoản vào trang chủ đúng đơn vị; không đi qua luồng tạo đơn vị."
+    },
+    {
+      "id": "P4-MEMBERSHIP-READBACK",
+      "status": "PASS",
+      "observed": "Trang Đơn vị và thiết bị hiển thị Hong ngoc general hospital với 2 thành viên sau khi tham gia."
+    }
+  ],
+  "remaining_p4_gates": [
+    "P4-S01",
+    "P4-S02 full shared-operation check",
+    "P4-S04",
+    "P4-E02",
+    "P4-E05",
+    "P04-HANDOFF"
+  ]
+}
