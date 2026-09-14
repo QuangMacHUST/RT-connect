@@ -1,0 +1,70 @@
+{
+  "evidence_id": "p7-local-picket-starshot-20260914",
+  "phase": "P7",
+  "status": "LOCAL_VERIFIED_SLICE",
+  "source_commit": "5f89646d5ad9b983a6e6b2717c48143963660467",
+  "engine": {
+    "name": "pylinac",
+    "version": "3.47.0",
+    "wheel_sha256": "7a99ec70a0242fa645882152fb5aa012f176b943a78339a3a18c15c953331b68",
+    "package_fingerprint": "19a8da65c321f709e700417fe629e4275052c646701fc8b1a146291df9e13e32",
+    "catalogue_version": "pylinac-3.47.0-rt-connect-1.0"
+  },
+  "runtime_inventory": {
+    "container_image": "rt-connect-api:p7-starshot-20260914",
+    "runtime_available": 62,
+    "registry_total": 62,
+    "wheel_hash_check": "PASS",
+    "version_check": "PASS"
+  },
+  "executed_capabilities": [
+    {
+      "catalog_key": "PICKET_FENCE",
+      "fixture": "AS1200.dcm",
+      "engine_passed": true,
+      "percent_leaves_passing": 100.0,
+      "overlay_byte_size": 162086
+    },
+    {
+      "catalog_key": "STARSHOT",
+      "fixture": "starshot.tif",
+      "parameters": {
+        "sid_mm": 1000,
+        "tolerance_mm": 1.0,
+        "manual_start_point_supported": true
+      },
+      "engine_passed": true,
+      "circle_diameter_mm": 0.3290274995693128,
+      "overlay_byte_size": 54560
+    }
+  ],
+  "persisted_contract": {
+    "migration": "20260914_0023",
+    "stores_input_snapshot": true,
+    "stores_result_snapshot": true,
+    "stores_separate_user_assessment": true,
+    "stores_derived_overlay": true,
+    "preserves_old_runs": true,
+    "tenant_scope_is_first_lookup": true
+  },
+  "tests": {
+    "api_pylinac_tests": "4 passed",
+    "api_registry_tests": "PASS",
+    "ruff": "PASS",
+    "mypy": "PASS",
+    "web_lint": "PASS",
+    "web_typecheck": "PASS",
+    "web_tests": "39 passed",
+    "web_build": "PASS",
+    "docker_build": "PASS",
+    "docker_runtime_inventory": "PASS",
+    "planning_contract": "PASS"
+  },
+  "not_closed": [
+    "60 capability pylinac còn lại chưa có adapter và fixture/contract test riêng",
+    "canvas dùng chung và thao tác click/drag trên ảnh chưa hoàn tất",
+    "P07-VERIFY và P07-HANDOFF chưa hoàn tất",
+    "chưa triển khai hoặc kiểm chứng lát cắt này trên staging"
+  ],
+  "secrets_or_patient_data": "none"
+}

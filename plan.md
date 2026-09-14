@@ -515,6 +515,8 @@ Input contract cho từng bài, fixture hợp lệ/lỗi và giới hạn tài n
 **Phạm vi:** FR-UX1-P07-01; B05/B06/B07. P7 cũ chỉ có checklist/rule và ba ví dụ ảnh không đủ đóng P7 UX1.3.
 **Trạng thái hiện tại:** `ACTIVE_AFTER_P06_HANDOFF`; P6 đã hoàn tất VERIFY/HANDOFF ở source `6615820`, P7 bắt đầu bằng W01/W02/W03. Đã có lát cắt local thực thi thật cho P07-PF và P07-STAR bằng wheel đã khóa; đây chưa phải nghiệm thu P7 vì 60 capability còn lại, khung kết quả dùng chung và ma trận fixture chưa hoàn tất.
 
+Bằng chứng lát cắt hiện hành: [P7 local Picket Fence và Starshot](docs/evidence/p7-local-picket-starshot-20260914.json). Bằng chứng này chỉ xác nhận hai capability đã gọi Pylinac thật, lưu kết quả/overlay và vượt cổng local; không cấp trạng thái hoàn thành cho các gói P7 còn lại.
+
 Pylinac là engine đã chọn, không còn bước so sánh để quyết định có dùng hay không. Kiểm tương thích chỉ quyết định đặt dependency trong API hay `qa-image-worker`. P7 chỉ hoàn thành khi registry runtime bao phủ đủ 16 họ mô-đun chính, toàn bộ class/biến thể và các bài QA `contrib/One-Offs` công khai của wheel đã khóa.
 
 ### Trình tự triển khai P7
