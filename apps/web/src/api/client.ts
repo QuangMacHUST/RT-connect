@@ -2369,6 +2369,10 @@ export class ApiClient {
     return this.request(`/gamma-runs/${runId}/retry`, gammaRunSchema, accessToken, { method: 'POST' })
   }
 
+  cancelGammaRun(accessToken: string, runId: string): Promise<GammaRunResource> {
+    return this.request(`/gamma-runs/${runId}/cancel`, gammaRunSchema, accessToken, { method: 'POST' })
+  }
+
   gammaQueueMetrics(accessToken: string): Promise<GammaQueueMetrics> {
     return this.get('/gamma/queue-metrics', gammaQueueMetricsSchema, accessToken)
   }

@@ -31,6 +31,7 @@ function errorMessage(error: unknown): string {
       GAMMA_QUEUE_UNAVAILABLE: 'Dịch vụ xử lý đang tạm thời không sẵn sàng. Hãy thử lại sau.',
       GAMMA_IDEMPOTENCY_CONFLICT: 'Lượt phân tích này đã tồn tại với dữ liệu khác. Hãy tải lại trang.',
       GAMMA_RETRY_NOT_ALLOWED: 'Chỉ có thể phân tích lại một lượt đã xảy ra lỗi.',
+      GAMMA_CANCEL_NOT_ALLOWED: 'Chỉ có thể hủy bài phân tích khi bài vẫn đang chờ bắt đầu.',
       GAMMA_PYLINAC_EXECUTION_FAILED: 'Pylinac không thể phân tích hai dữ liệu đã chọn.',
       GAMMA_CONFIGURATION_INVALID: 'Một hoặc nhiều tham số phân tích chưa hợp lệ.'
     }
@@ -64,6 +65,7 @@ function statusLabel(status: unknown): string {
     RETRYING: 'Đang thử lại',
     FAILED: 'Lỗi',
     COMPLETED: 'Đã hoàn tất',
+    CANCELLED: 'Đã hủy',
     PASS: 'Đạt',
     FAIL: 'Không đạt',
     INVALID: 'Không hợp lệ',
@@ -75,7 +77,7 @@ function statusLabel(status: unknown): string {
 
 function statusClass(status: string | null | undefined): string {
   if (status === 'FAIL' || status === 'FAILED' || status === 'INVALID') return 'status-badge machine-status--fail'
-  if (status === 'WARNING' || status === 'RETRYING') return 'status-badge status-badge--warning'
+  if (status === 'WARNING' || status === 'RETRYING' || status === 'CANCELLED') return 'status-badge status-badge--warning'
   if (status === 'PASS' || status === 'COMPLETED') return 'status-badge'
   return 'status-badge machine-status--draft'
 }
@@ -238,6 +240,15 @@ export function GammaPage() {
     },
     onError: (error) => setMessage(errorMessage(error))
   })
+  const cancelMutation = useMutation({
+    mutationFn: (runId: string) => apiClient.cancelGammaRun(accessToken!, runId),
+    onSuccess: (run) => {
+      setSelectedRunId(run.id)
+      setMessage('Đã hủy bài phân tích đang chờ. Không có phép tính nào được thực hiện.')
+      void queryClient.invalidateQueries({ queryKey: ['gamma-runs', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
 
   if (bootstrap.isPending || cases.isPending) return <main className="auth-state">Đang tải trang phân tích…</main>
   const initialFailure = bootstrap.error ?? cases.error
@@ -279,7 +290,7 @@ export function GammaPage() {
     ? snapshotConfiguration.max_gamma
     : undefined
   const comparisonRows = comparison.data?.items.filter((item) => comparisonLabel(item.key)) ?? []
-  const busy = createMutation.isPending || retryMutation.isPending
+  const busy = createMutation.isPending || retryMutation.isPending || cancelMutation.isPending
   const selectedReference = eligibleArtifacts.find((item) => item.id === selectedReferenceId)
   const selectedEvaluation = eligibleArtifacts.find((item) => item.id === selectedEvaluationId)
   const profileReady = selectedReference?.artifact_type === 'DICOM' && selectedReference.modality === 'RTDOSE' && (
@@ -323,8 +334,11 @@ export function GammaPage() {
           <label>Chuẩn hóa<select value={configuration.normalization} onChange={(event) => setConfiguration((current) => ({ ...current, normalization: event.target.value as GammaConfiguration['normalization'] }))}><option value="GLOBAL">Toàn cục</option><option value="LOCAL">Cục bộ</option></select></label>
           <label>Phạm vi so sánh<select value={configuration.coverage_policy} onChange={(event) => setConfiguration((current) => ({ ...current, coverage_policy: event.target.value as GammaConfiguration['coverage_policy'] }))}><option value="FULL_ROI">Toàn bộ vùng</option><option value="OVERLAP_ONLY">Chỉ vùng chồng lấp</option></select></label>
           <label>Giới hạn Gamma<input type="number" min="1" max="10" step="0.5" value={configuration.max_gamma} onChange={(event) => updateNumber('max_gamma', event.target.value)} /></label>
+          <label>Phép nội suy<select value={configuration.interpolation} disabled><option value="GRID">Trên lưới đã kiểm tra</option></select></label>
+          <label>Số khoảng biểu đồ<input type="number" min="2" max="100" step="1" value={configuration.histogram_bins} onChange={(event) => updateNumber('histogram_bins', event.target.value)} /></label>
+          <label>Hệ số tinh chỉnh một chiều<input type="number" min="1" max="10" step="1" value={configuration.resolution_factor} onChange={(event) => updateNumber('resolution_factor', event.target.value)} /></label>
         </div>
-        <p className="form-hint">Phép tính mới sử dụng Pylinac với chênh lệch liều tương đối và phép tìm trên lưới. Mọi tiêu chí được lưu cùng kết quả, không thay đổi các lần phân tích trước.</p>
+        <p className="form-hint">Phép tính mới sử dụng Pylinac với chênh lệch liều tương đối và phép tìm trên lưới. Hệ số tinh chỉnh chỉ áp dụng cho Gamma một chiều; số khoảng biểu đồ chỉ thay đổi cách hiển thị kết quả. Mọi tiêu chí được lưu cùng kết quả, không thay đổi các lần phân tích trước.</p>
         <button disabled={busy || !profileReady || selectedReferenceId === selectedEvaluationId} onClick={() => createMutation.mutate()}>Bắt đầu phân tích</button>
       </section>
 
@@ -333,7 +347,7 @@ export function GammaPage() {
         {runs.isPending ? <p>Đang tải lịch sử phân tích…</p> : runs.error ? <div className="alert alert--error"><p>{errorMessage(runs.error)}</p><button onClick={() => void runs.refetch()}>Thử lại</button></div> : !activeRun ? <p className="empty-state">Chưa có kết quả. Chọn dữ liệu và bắt đầu phân tích.</p> : <>
           <div className="gamma-run-meta"><span>Loại dữ liệu <strong>{dimensionalityLabel(snapshotDimensionality)}</strong></span><span>Phạm vi <strong>{coverageLabel(snapshotCoveragePolicy)}</strong></span><span>Giới hạn Gamma <strong>{numberValue(snapshotMaxGamma)}</strong></span><span>Trạng thái <strong className={statusClass(activeRun.status)}>{statusLabel(activeRun.status)}</strong></span><span>Tiến độ {activeRun.progress_percent}%</span><span>Lần thực hiện {activeRun.attempt_count}</span></div>
           {snapshotDimensionality === '3D' && <div className="alert alert--warning"><strong>Kết quả cũ chỉ được xem</strong><p>Phép Gamma ba chiều này được tạo bởi bộ tính trước đây. Hệ thống không tính lại bằng Pylinac và không cho tạo phép tính ba chiều mới.</p></div>}
-          {isActiveJob(activeRun) && <div className="gamma-progress"><div style={{ width: `${activeRun.progress_percent}%` }} /><p>Bài phân tích đang được xử lý; trang sẽ tự cập nhật sau mỗi vài giây.</p></div>}
+          {isActiveJob(activeRun) && <div className="gamma-progress"><div style={{ width: `${activeRun.progress_percent}%` }} /><div className="gamma-progress__footer"><p>Bài phân tích đang được xử lý; trang sẽ tự cập nhật sau mỗi vài giây.</p>{(activeRun.status === 'QUEUED' || activeRun.status === 'RETRYING') && <button className="button-secondary" disabled={busy} onClick={() => cancelMutation.mutate(activeRun.id)}>Hủy phân tích</button>}</div></div>}
           {activeRun.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Phân tích chưa hoàn tất</h3><ul>{activeRun.error_snapshot.map((item, index) => <li key={index}>{scalarValue(item.message, 'Đã xảy ra lỗi khi phân tích dữ liệu.')}</li>)}</ul><button disabled={busy} onClick={() => retryMutation.mutate(activeRun.id)}>Phân tích lại</button></div>}
           {activeRun.result_snapshot.overall_status && <div className="gamma-result-banner"><span className={statusClass(String(activeRun.result_snapshot.overall_status))}>{statusLabel(activeRun.result_snapshot.overall_status)}</span><strong>{numberValue(resultMetrics?.pass_rate_percent)}%</strong><span>Tỷ lệ đạt · yêu cầu {numberValue(snapshotPassTarget)}%</span></div>}
           {resultMetrics && <div className="metric-grid gamma-metrics"><article><span>Điểm được phân tích</span><strong>{numberValue(resultMetrics.evaluated_points)}</strong></article><article><span>Điểm đạt</span><strong>{numberValue(resultMetrics.passing_points)}</strong></article><article><span>Điểm không đạt</span><strong>{numberValue(resultMetrics.nonpassing_points)}</strong></article><article><span>Điểm loại khỏi tính toán</span><strong>{numberValue(resultMetrics.excluded_points)}</strong></article><article><span>Mức bao phủ</span><strong>{numberValue(resultMetrics.coverage_fraction)}</strong></article><article><span>Gamma P95</span><strong>{numberValue(percentiles?.p95)}</strong></article></div>}

@@ -105,6 +105,29 @@ test('allows a confirmed batch purge helper to send one request without promptin
   expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(`/qa-cases/${caseId}/purge`), expect.objectContaining({ method: 'POST' }))
 })
 
+test('sends a Gamma cancellation request to the run endpoint', async () => {
+  const runId = '123e4567-e89b-42d3-a456-426614174000'
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: false,
+    json: async () => ({
+      code: 'GAMMA_CANCEL_NOT_ALLOWED',
+      message: 'Only a queued Gamma analysis can be cancelled before it starts.',
+      correlation_id: 'corr-gamma-cancel',
+      details: []
+    })
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  const client = new ApiClient('http://api.test/api/v1')
+
+  await expect(client.cancelGammaRun('token', runId)).rejects.toMatchObject({
+    code: 'GAMMA_CANCEL_NOT_ALLOWED'
+  })
+  expect(fetchMock).toHaveBeenCalledWith(
+    expect.stringContaining(`/gamma-runs/${runId}/cancel`),
+    expect.objectContaining({ method: 'POST' })
+  )
+})
+
 test('translates a network failure into a retryable localized client error', async () => {
   vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
 

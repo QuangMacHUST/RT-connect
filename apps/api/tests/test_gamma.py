@@ -518,9 +518,21 @@ def test_gamma_enqueue_requires_valid_inputs_and_is_idempotent() -> None:
         queued = client.post(f"/api/v1/qa-cases/{case_id}/gamma-runs", json=request)
         assert queued.status_code == 201, queued.text
         assert queued.json()["status"] == "QUEUED"
+
+        cancelled = client.post(f"/api/v1/gamma-runs/{queued.json()['id']}/cancel")
+        assert cancelled.status_code == 200, cancelled.text
+        assert cancelled.json()["status"] == "CANCELLED"
+        assert cancelled.json()["completed_at"] is not None
+        assert cancelled.json()["warning_snapshot"][0]["code"] == "GAMMA_CANCELLED"
+
+        repeated_cancel = client.post(f"/api/v1/gamma-runs/{queued.json()['id']}/cancel")
+        assert repeated_cancel.status_code == 200, repeated_cancel.text
+        assert repeated_cancel.json()["status"] == "CANCELLED"
+
         repeated = client.post(f"/api/v1/qa-cases/{case_id}/gamma-runs", json=request)
         assert repeated.status_code == 200, repeated.text
         assert repeated.json()["id"] == queued.json()["id"]
+        assert repeated.json()["status"] == "CANCELLED"
 
         conflict = {**request, "evaluation_artifact_id": reference_id}
         conflicted = client.post(f"/api/v1/qa-cases/{case_id}/gamma-runs", json=conflict)

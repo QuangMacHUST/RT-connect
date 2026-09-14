@@ -25,6 +25,7 @@ from sqlalchemy.orm import Session
 from rt_connect_api.core.errors import DomainError
 from rt_connect_api.db.models import (
     Artifact,
+    AuditEvent,
     GammaAnalysisRun,
     GammaDispatchOutbox,
     GammaRunAttempt,
@@ -828,6 +829,83 @@ def retry_gamma_run(
     session.commit()
     session.refresh(run)
     _dispatch_gamma_run(request, session, run)
+    return _run_response(run)
+
+
+@router.post("/gamma-runs/{run_id}/cancel", response_model=GammaRunResponse)
+def cancel_gamma_run(
+    run_id: UUID,
+    identity: AuthenticatedIdentity = Depends(require_identity),
+    session: Session = Depends(get_session),
+) -> GammaRunResponse:
+    """Cancel a queued Gamma run without allowing a worker to start it later.
+
+    A running analysis is deliberately not force-stopped here: the worker may
+    already be inside the deterministic Pylinac call and its lease must remain
+    fenced by the existing execution protocol.  Cancelling is therefore only
+    available before a worker has acquired the run.
+    """
+
+    context = _context(identity, session)
+    run = session.scalar(
+        select(GammaAnalysisRun)
+        .where(
+            GammaAnalysisRun.id == run_id,
+            GammaAnalysisRun.organization_id == context.organization_id,
+        )
+        .with_for_update()
+    )
+    if run is None:
+        raise DomainError("GAMMA_RUN_NOT_FOUND", "Gamma analysis run was not found.", 404)
+    if run.status == "CANCELLED":
+        return _run_response(run)
+    if run.status not in {"QUEUED", "RETRYING"}:
+        raise DomainError(
+            "GAMMA_CANCEL_NOT_ALLOWED",
+            "Only a queued Gamma analysis can be cancelled before it starts.",
+            409,
+        )
+
+    previous_status = run.status
+    now = datetime.now(UTC)
+    run.status = "CANCELLED"
+    run.completed_at = now
+    run.heartbeat_at = None
+    run.worker_id = None
+    run.lease_token = None
+    run.lease_expires_at = None
+    run.error_snapshot = []
+    run.warning_snapshot = [
+        {
+            "code": "GAMMA_CANCELLED",
+            "message": "Người dùng đã hủy bài phân tích trước khi bắt đầu.",
+        }
+    ]
+
+    outboxes = list(
+        session.scalars(
+            select(GammaDispatchOutbox).where(
+                GammaDispatchOutbox.organization_id == context.organization_id,
+                GammaDispatchOutbox.gamma_run_id == run.id,
+                GammaDispatchOutbox.status.in_(["PENDING", "PUBLISHED"]),
+            )
+        )
+    )
+    for outbox in outboxes:
+        outbox.status = "CANCELLED"
+        outbox.last_error = "GAMMA_CANCELLED"
+    session.add(
+        AuditEvent(
+            organization_id=context.organization_id,
+            actor_user_identity_id=_actor_id(session, context),
+            event_type="GAMMA_RUN_CANCELLED",
+            entity_type="GammaAnalysisRun",
+            entity_id=run.id,
+            payload={"previous_status": previous_status},
+        )
+    )
+    session.commit()
+    session.refresh(run)
     return _run_response(run)
 
 

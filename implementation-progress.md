@@ -1,5 +1,13 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P8-W02/W03 — cấu hình Gamma và hủy hàng chờ — lát cắt cục bộ — 2026-09-15
+
+- API bổ sung tuyến hủy Gamma theo phạm vi đơn vị. Chỉ lượt `QUEUED` hoặc `RETRYING` mới được hủy; lượt đang chạy không bị dừng cưỡng bức để giữ nguyên cơ chế thuê và rào chắn worker. Hủy được ghi thành trạng thái kết thúc `CANCELLED`, lưu cảnh báo cho người dùng, đánh dấu các ý định gửi tương ứng là đã hủy và ghi nhật ký thao tác.
+- Worker kiểm tra trạng thái trước khi nhận thông điệp, vì vậy thông điệp Redis cũ của lượt đã hủy được xác nhận an toàn mà không tạo lượt chạy, kết quả hoặc lần thử mới. Lượt đã hủy được trả lại ổn định khi người dùng mở lại lịch sử.
+- Biểu mẫu Gamma hiển thị thêm phép nội suy đang được khóa ở “trên lưới đã kiểm tra”, số khoảng biểu đồ và hệ số tinh chỉnh một chiều. Hệ số chỉ truyền vào Pylinac Gamma 1D; biểu đồ dùng số khoảng đã chọn; không bật nội suy hoặc đổi lưới âm thầm.
+- Cổng local đạt: kiểm thử API Gamma và worker tập trung **26/26**, Ruff, kiểm tra kiểu, lint giao diện, kiểm thử giao diện **40/40**, kiểm tra kiểu và bản dựng sản xuất. Cảnh báo kích thước gói JavaScript vẫn là cảnh báo đã biết.
+- Đây là `LOCAL_VERIFIED_SLICE`; P08-W02, P08-W03, P08-VERIFY và P08-HANDOFF vẫn mở vì chưa có kiểm chứng hàng đợi thật trên staging, chạy lại sau lỗi, hủy đồng thời với worker và đối chiếu độc lập toàn bộ kết quả.
+
 ## P7-W01 — QA nhập số đo — lát cắt cục bộ — 2026-09-15
 
 - Đã hoàn thiện bảng nhập số đo theo quy trình: giữ các tiêu chí `RANGE`, `MAX`, `MIN`, `ABSOLUTE_DEVIATION`, `PERCENT_DEVIATION` và `NA`; cho phép đánh dấu không áp dụng kèm lý do; thêm ghi chú riêng cho từng số đo; kết luận của bộ tiêu chí vẫn tách khỏi đánh giá của người thực hiện.

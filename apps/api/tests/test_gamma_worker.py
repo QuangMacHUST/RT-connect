@@ -403,3 +403,26 @@ def test_redelivered_message_after_commit_does_not_create_a_second_result() -> N
         assert len(attempts) == 1
     finally:
         session.close()
+
+
+def test_cancelled_gamma_message_is_ack_safe_and_never_executes() -> None:
+    session, storage, run = _run_fixture()
+    message = GammaQueueMessage(
+        message_id="cancelled-1-0",
+        run_id=run.id,
+        organization_id=run.organization_id,
+        attempt=run.attempt_count,
+    )
+    try:
+        run.status = "CANCELLED"
+        run.completed_at = datetime.now(UTC)
+        session.commit()
+
+        assert process_gamma_queue_message(session, storage, message) is False
+        session.refresh(run)
+        assert run.status == "CANCELLED"
+        assert session.scalar(
+            select(GammaRunAttempt).where(GammaRunAttempt.gamma_run_id == run.id)
+        ) is None
+    finally:
+        session.close()
