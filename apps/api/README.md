@@ -182,3 +182,7 @@ without invoking permanent deletion. Rebuild API, worker and web together.
 P5 linked-case preview evidence (2026-09-14): staging verification confirms
 the read-only preview reports linked results and trend points without issuing
 a purge request. Rebuild all services from this repository revision.
+
+P5 public recheck checkpoint (2026-09-14): API, web and worker staging were
+redeployed together and the public verifier passed 16/16 for revision 27e89f2.
+Rebuild all services again when this root evidence packet is committed.
