@@ -1,0 +1,38 @@
+{
+  "schema_version": "rt-connect.p5-staging-worker-observation.v1",
+  "captured_at_utc": "2026-09-14T05:19:49.9128237Z",
+  "phase": "P5",
+  "status": "STAGING_VERIFIED_SLICE",
+  "environment": "staging",
+  "source_revision": "a04e2ec",
+  "scope": "Quan sát chỉ đọc tiến trình nền sau triển khai staging; không tạo lượt phân tích mới và không thay đổi hồ sơ.",
+  "checks": [
+    {
+      "name": "worker_deployment_success",
+      "status": "PASS",
+      "observed": "Tiến trình nền staging triển khai thành công cùng bản mã nguồn với API và giao diện."
+    },
+    {
+      "name": "worker_startup",
+      "status": "PASS",
+      "observed": "Nhật ký cho thấy Gamma worker đã khởi động và sử dụng hàng đợi Redis Streams."
+    },
+    {
+      "name": "worker_startup_errors",
+      "status": "PASS",
+      "observed": "Không thấy Traceback, lỗi nghiêm trọng hoặc lỗi khởi động trong nhật ký triển khai."
+    },
+    {
+      "name": "running_job_behavior",
+      "status": "NOT_RUN",
+      "observed": "Chưa chạy lượt phân tích mới trong staging; chưa có bằng chứng worker xử lý trạng thái đang chạy đối với một hồ sơ cụ thể."
+    }
+  ],
+  "data_mutation": false,
+  "patient_data": false,
+  "contains_secret_values": false,
+  "remaining_gates": [
+    "P5: kiểm chứng hồ sơ bị giữ lại khi tiến trình nền đang chạy hoặc đang giữ khóa.",
+    "P5: đối chiếu toàn vẹn tệp, kết quả, báo cáo và xu hướng sau toàn bộ vòng đời trên staging."
+  ]
+}

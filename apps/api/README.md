@@ -191,3 +191,8 @@ P5 staging network retry evidence (2026-09-14): the web was checked with the
 staging API temporarily blocked, showed a localized retry state, and recovered
 after the connection was restored without mutating QA data. Rebuild all
 services from this repository revision.
+
+P5 staging worker observation (2026-09-14): the worker deployment started with
+Redis Streams and no startup errors were observed; no new analysis job was
+created, so running-job behavior remains unverified. Rebuild all services from
+this repository revision.

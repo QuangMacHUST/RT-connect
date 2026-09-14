@@ -391,6 +391,8 @@ Kiểm tra xem trước xóa chỉ đọc trên ứng viên `21b98ec` xác nhậ
 
 Kiểm tra lỗi mạng trên staging ở bản `667e94d` đạt: khi API bị chặn, giao diện hiển thị thông báo kết nối lỗi và nút “Thử lại”; sau khi khôi phục kết nối, thao tác thử lại tải đủ danh mục 63 bài và lịch sử, không ghi dữ liệu. Bằng chứng: `docs/evidence/p5-staging-network-retry-20260914.json`. Cổng lỗi mạng đã đạt cho lát cắt đọc; P5 vẫn còn kiểm tra tiến trình nền đang chạy và toàn vẹn dữ liệu sau toàn bộ vòng đời.
 
+Quan sát tiến trình nền staging ở bản `a04e2ec` cho thấy triển khai thành công, worker khởi động bằng Redis Streams và không có lỗi khởi động. Chưa tạo lượt phân tích mới nên trường hợp worker đang xử lý một hồ sơ vẫn là `NOT_RUN`; không dùng quan sát khởi động để đóng cổng này. Bằng chứng: `docs/evidence/p5-staging-worker-observation-20260914.json`.
+
 Sau commit `27e89f2`, cả API, giao diện và tiến trình nền staging đã được triển khai thành công với cùng mã nguồn; bộ kiểm tra công khai đạt **16/16**, phiên bản API khớp đầy đủ và lược đồ `20260913_0022`. Bằng chứng: `docs/evidence/p5-staging-public-recheck-20260914-27e89f2.json`. Đây là cổng parity/runtime; P5 vẫn chưa đóng vì còn lỗi mạng, tiến trình nền khi thao tác thật và đối chiếu toàn vẹn dữ liệu sau toàn bộ vòng đời.
 
 Kiểm tra công khai lại ứng viên `860c9f7` sau khi dựng mốc parity tài liệu đạt **15/15**, không có lỗi; API và giao diện cùng nhận đúng bản phát hành, lược đồ `20260913_0022`, health/readiness/OpenAPI và bảo vệ truy cập chưa xác thực đều đạt. Bằng chứng: `docs/evidence/p5-staging-public-recheck-20260914-860c9f7.json`. Đây là kiểm tra parity/runtime, không thay thế các ca xác thực xóa hồ sơ có liên kết, lỗi mạng và tiến trình nền.
