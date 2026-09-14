@@ -46,6 +46,27 @@
 | Dynalog | `AQA.dlg` + `BQA.dlg` | `Dynalog` | 10 | 9221 byte |
 | Trajectory Log 2.1 | `Tlog.bin` | `TrajectoryLog` | 13 | 8500 byte |
 
+## Kiểm tra thật chín bài hạt nhân bằng dữ liệu tổng hợp
+
+Để kiểm tra đường chạy trong thời gian chưa có đủ tệp mẫu hạt nhân chính thức
+ở môi trường cục bộ, kiểm thử hồi quy đã dựng các tệp DICOM hạt nhân tổng hợp
+không chứa dữ liệu bệnh nhân. Chín tệp/luồng được đưa qua đúng
+`execute_pylinac` và đúng wheel `3.47.0`, không thay thế bằng bộ tính tự viết:
+
+| Bài | Kết quả | Ảnh minh họa | Ghi chú |
+|---|---|---:|---|
+| Tốc độ đếm cực đại | Đạt | Không có | 7 nhóm chỉ số |
+| Độ đồng nhất phẳng | Đạt | Có | 16 nhóm chỉ số |
+| Tâm quay | Đạt | Có | 5 nhóm chỉ số |
+| Độ phân giải cắt lớp | Đạt, có cảnh báo từ thư viện | Không có | 9 nhóm chỉ số |
+| Độ nhạy đơn giản | Đạt | Không có | 10 nhóm chỉ số; đồng vị Tc-99m |
+| Độ phân giải bốn vạch | Đạt | Có | 11 nhóm chỉ số |
+| Độ phân giải bốn góc | Đạt | Có | 4 nhóm chỉ số |
+| Độ đồng nhất cắt lớp | Đạt, có cảnh báo từ thư viện | Không có | 10 nhóm chỉ số |
+| Độ tương phản cắt lớp | Đạt | Có | 5 nhóm chỉ số |
+
+Lệnh kiểm tra: `python -m pytest apps/api/tests/test_pylinac_nuclear_engine.py --no-cov -q` → **1 passed**. Đây là bằng chứng bộ điều hợp đã gọi được đủ chín lớp Pylinac và giữ được hợp đồng kết quả; dữ liệu tổng hợp không thay thế cho kiểm định bằng dữ liệu chạy máy đại diện, đối chiếu độc lập từng chỉ số hoặc nghiệm thu staging.
+
 ## Mã kiểm tra
 
 - Luồng dùng thư mục tạm để giải nén các gói ZIP; dữ liệu tạm được dọn sau khi chạy.
@@ -93,5 +114,5 @@ Các tên lớp trong danh mục đã được đối chiếu với tên biểu 
 ## Phạm vi còn mở
 
 - CatPhan 700 chưa có tệp mẫu chính thức tương thích trong bộ tệp cục bộ.
-- ACR CT/MRI, CIRS 062M, GE Helios, CatPhan 700, chín bài hạt nhân và bài đóng góp Jaw cần fixture riêng. Toàn bộ 19 biến thể ảnh phẳng đã chạy qua đúng bộ chuyển đổi bằng tệp mẫu chính thức của Pylinac; vẫn cần đối chiếu staging riêng. Nhãn HyperSight đã có đường chạy tương thích local bằng `QuartDVT`, nhưng vẫn cần kiểm tra hiển thị và staging riêng.
+- ACR CT/MRI, CIRS 062M, GE Helios, CatPhan 700 và bài đóng góp Jaw cần fixture riêng. Chín bài hạt nhân đã chạy qua đúng bộ chuyển đổi bằng dữ liệu tổng hợp hợp lệ, nhưng vẫn cần tệp mẫu đại diện/commissioning, đối chiếu từng chỉ số, kiểm lỗi đặc trưng và staging. Toàn bộ 19 biến thể ảnh phẳng đã chạy qua đúng bộ chuyển đổi bằng tệp mẫu chính thức của Pylinac; vẫn cần đối chiếu staging riêng. Nhãn HyperSight đã có đường chạy tương thích local bằng `QuartDVT`, nhưng vẫn cần kiểm tra hiển thị và staging riêng.
 - Cần đối chiếu từng chỉ số với kỳ vọng của bộ kiểm thử Pylinac, kiểm lỗi đầu vào, kiểm tài nguyên và chạy lại trên staging trước khi đóng gói tương ứng.

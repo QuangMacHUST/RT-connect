@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-NUCLEAR — đủ chín bài hạt nhân gọi engine thật bằng fixture tổng hợp — lát cắt cục bộ — 2026-09-15
+
+- Đã bổ sung kiểm thử hồi quy `apps/api/tests/test_pylinac_nuclear_engine.py`, dựng DICOM hạt nhân tổng hợp không có dữ liệu bệnh nhân và đưa đủ chín bài trong registry qua đúng `execute_pylinac`: tốc độ đếm cực đại, độ đồng nhất phẳng, tâm quay, độ phân giải cắt lớp, độ nhạy đơn giản, độ phân giải bốn vạch, độ phân giải bốn góc, độ đồng nhất cắt lớp và độ tương phản cắt lớp.
+- Kiểm thử thật đạt **1/1**, trong đó cả chín lần gọi bộ tính đều trả structured result không rỗng; các lớp có khả năng vẽ đã tạo ảnh minh họa. Một số cảnh báo phụ thuộc hiện hành của Pylinac vẫn được giữ trong kết quả, không bị biến thành lỗi và không bị che giấu.
+- Đây là `LOCAL_VERIFIED_SLICE`: đã chứng minh đường gọi engine và hợp đồng kết quả cho toàn bộ chín lớp, nhưng fixture tổng hợp không thay thế dữ liệu mẫu đại diện/commissioning. Còn mở: tệp mẫu chính thức hoặc dữ liệu được phê duyệt, đối chiếu từng chỉ số với kỳ vọng độc lập, ma trận lỗi, kiểm thử giao diện đầy đủ và staging.
+- Bằng chứng: [ma trận Pylinac P7](docs/evidence/p7-local-pylinac-demo-matrix-20260915.md). Cổng tiếp theo vẫn là hoàn thiện các nhóm P7 còn thiếu fixture, sau đó chạy P07-VERIFY/HANDOFF.
+
 ## P7-PLANAR — ma trận 19 biến thể ảnh phẳng — lát cắt cục bộ — 2026-09-15
 
 - Đã tải tệp mẫu chính thức từ kho `pylinac_demo_files` cho toàn bộ 19 biến thể ảnh phẳng và chạy từng bài qua đúng `execute_pylinac` của RT-CONNECT. Cả 19 bài đều trả structured result và ảnh overlay: Leeds TOR/Blue, Standard Imaging QC-3/QC-kV, Las Vegas/Elekta, Doselab MC2 MV/kV, SNC MV/MV12510/kV, SNC kV, PTW EPID QC, IBA Primus A, Standard Imaging FC-2, IMT L-RAD, Doselab RLf, PTW Iso-Align, SNC FSQA và ACR Digital Mammography.
@@ -63,12 +70,12 @@ Tài liệu hiện hành: `business-analysis.md` v1.3,
 `technical-specification.md` v2.3 và `plan.md` v5.3 — mốc UX1.3.
 `docs/history/pre-ux-20260912/specification.md` v1.29 là hợp đồng kế thừa, không ghi đè yêu cầu mới.
 
-## P7-W03 — chín bài Nuclear của Pylinac — lát cắt hợp đồng local — 2026-09-15
+## P7-W03 — chín bài Nuclear của Pylinac — lát cắt hợp đồng và engine local — 2026-09-15
 
 - Commit `dad50d9593f5a4fcdd22140d6892a5716691ec00` đã bổ sung đủ chín lớp Nuclear công khai vào bộ điều hợp và giao diện: tốc độ đếm cực đại, độ đồng nhất phẳng, tâm quay, độ phân giải cắt lớp, độ nhạy đơn giản, độ phân giải bốn vạch, độ phân giải bốn góc, độ đồng nhất cắt lớp và độ tương phản cắt lớp.
 - Mỗi bài có biểu mẫu riêng, kiểm tệp DICOM, kiểm số lượng tệp, kiểm miền tham số và ánh xạ kết quả từ `results_data()` của đúng lớp Pylinac. `SimpleSensitivity` nhận ảnh phantom và ảnh nền tùy chọn; không dùng ảnh nền ngầm. Các bài có ảnh minh họa gọi phương thức vẽ công khai của Pylinac; lỗi riêng ở bước vẽ được lưu thành cảnh báo, không làm mất kết quả đo.
 - Cổng local đạt: 26/26 kiểm thử API nhóm Pylinac, ruff trên các tệp thay đổi, mypy 52/52 tệp nguồn, lint giao diện, kiểm tra kiểu và bản dựng sản xuất. Bằng chứng: [P7 hợp đồng chín bài hạt nhân](docs/evidence/p7-local-nuclear-contract-20260915.json).
-- Đây là `LOCAL_VERIFIED_SLICE` cho adapter/biểu mẫu/hợp đồng, chưa phải chạy engine thật: hiện chưa có fixture DICOM Nuclear chuẩn, chưa có đối chiếu từng lớp trên dữ liệu chuẩn và chưa có kiểm chứng staging. P7-W03, P07-NUCLEAR, P07-VERIFY và P07-HANDOFF vẫn mở.
+- Kiểm thử hồi quy mới `apps/api/tests/test_pylinac_nuclear_engine.py` đã dựng fixture DICOM tổng hợp không có dữ liệu bệnh nhân và gọi thật đủ chín lớp qua `execute_pylinac`, đạt **1/1**; các lớp có khả năng vẽ đã tạo ảnh minh họa. Đây là `LOCAL_VERIFIED_SLICE` cho đường chạy engine và hợp đồng kết quả, chưa phải nghiệm thu bằng dữ liệu máy: fixture DICOM chuẩn/commissioning, đối chiếu từng lớp, ma trận lỗi, kiểm thử giao diện và staging vẫn mở. P7-W03, P07-NUCLEAR, P07-VERIFY và P07-HANDOFF vẫn mở.
 
 ## P7-W03 — hai bài One-Offs/Contrib của Pylinac — lát cắt hợp đồng local — 2026-09-15
 
