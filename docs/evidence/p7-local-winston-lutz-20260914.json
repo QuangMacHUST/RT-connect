@@ -1,0 +1,63 @@
+{
+  "evidence_id": "p7-local-winston-lutz-20260914",
+  "phase": "P7",
+  "status": "LOCAL_VERIFIED_SLICE",
+  "source_commit": "67c95571b754c53dd2616a6723764392c8f63eb3",
+  "engine": {
+    "name": "pylinac",
+    "version": "3.47.0",
+    "wheel_sha256": "7a99ec70a0242fa645882152fb5aa012f176b943a78339a3a18c15c953331b68",
+    "package_fingerprint": "19a8da65c321f709e700417fe629e4275052c646701fc8b1a146291df9e13e32",
+    "catalogue_version": "pylinac-3.47.0-rt-connect-1.0"
+  },
+  "executed_capability": {
+    "catalog_key": "WINSTON_LUTZ",
+    "fixture": "pylinac/demo_files/winston_lutz.zip",
+    "image_count": 17,
+    "parameters": {
+      "sid_mm": 1000,
+      "bb_size_mm": 5,
+      "snap_tolerance_mm": 3,
+      "use_filenames": false
+    },
+    "max_2d_cax_to_bb_mm": 1.2351661807567378,
+    "overlay_byte_size": 224167,
+    "overlay_filename": "winston-lutz-phan-tich.png"
+  },
+  "negative_cases": [
+    {
+      "case": "Bật đọc góc từ tên tệp với bộ ảnh không chứa góc trong tên",
+      "result": "bộ phân tích báo lỗi có kiểm soát; giao diện mặc định tắt tùy chọn này"
+    },
+    {
+      "case": "Tệp đầu vào không phải ZIP",
+      "result": "PYLINAC_INPUT_FORMAT_INVALID trước khi gọi engine"
+    }
+  ],
+  "persisted_contract": {
+    "migration": "20260914_0023",
+    "stores_input_snapshot": true,
+    "stores_result_snapshot": true,
+    "stores_separate_user_assessment": true,
+    "stores_derived_overlay": true,
+    "preserves_old_runs": true,
+    "tenant_scope_is_first_lookup": true
+  },
+  "tests": {
+    "api_pylinac_tests": "6 passed",
+    "ruff": "PASS",
+    "mypy": "PASS",
+    "web_lint": "PASS",
+    "web_typecheck": "PASS",
+    "web_build": "PASS",
+    "planning_contract": "PASS"
+  },
+  "not_closed": [
+    "59 capability pylinac còn lại chưa có adapter và fixture/contract test riêng",
+    "canvas dùng chung và thao tác click/drag trên ảnh chưa hoàn tất",
+    "P07-WL chưa có ma trận fixture đầy đủ và kiểm chứng staging",
+    "P07-VERIFY và P07-HANDOFF chưa hoàn tất",
+    "chưa triển khai hoặc kiểm chứng lát cắt này trên staging"
+  ],
+  "secrets_or_patient_data": "none"
+}
