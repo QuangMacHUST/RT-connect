@@ -68,7 +68,7 @@ def verify(root: Path) -> dict[str, object]:
         "specification": (r"version \*\*([0-9]+\.[0-9]+)\*\*", "1.29"),
         "technical": (r"\*\*Phiên bản:\*\*\s*([0-9]+\.[0-9]+)", "2.3"),
         "plan": (r"Phiên bản:\s*\*\*([0-9]+\.[0-9]+)\*\*", "5.3"),
-        "pylinac_catalog": (r"\*\*Phiên bản danh mục:\*\*\s*([0-9]+\.[0-9]+)", "1.1"),
+        "pylinac_catalog": (r"\*\*Phiên bản danh mục:\*\*\s*([0-9]+\.[0-9]+)", "1.2"),
     }
     for name, (pattern, expected) in expected_versions.items():
         observed = _version(pattern, texts.get(name, ""))

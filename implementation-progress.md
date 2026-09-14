@@ -4,7 +4,7 @@
 
 - Đối chiếu các lớp phân tích công khai của mô-đun CT trong wheel `pylinac 3.47.0` phát hiện `CatPhan700` chưa có trong danh mục dù là một biến thể phantom cụ thể. Đã bổ sung bài này vào danh mục, runtime registry, adapter CatPhan, kiểm tra đầu vào ZIP, tuyến giao diện và điều hướng.
 - Danh mục hiện hành **1.2** là **64 bài**: 1 bài nhập số đo và 63 bài Pylinac. CatPhan hiện gồm 503, 504, 600, 604 và 700. Đây là bổ sung phạm vi; chưa có fixture CatPhan700 để tuyên bố engine đã chạy thật.
-- Kiểm tra local đã xác nhận registry phân giải **63/63** liên kết Pylinac, danh mục không trùng khóa và giao diện vẫn dựng được. P7-W03/P07-CT/P07-VERIFY vẫn mở cho đến khi có fixture, đối chiếu kết quả từng mô-đun và kiểm chứng staging.
+- Kiểm tra local đã xác nhận registry phân giải **63/63** liên kết Pylinac, danh mục không trùng khóa và giao diện vẫn dựng được. Cổng hợp đồng tài liệu đạt `passed=true`, 0 lỗi; kiểm thử phủ định đạt 15/15; hồi quy máy chủ đầy đủ đạt 100%. P7-W03/P07-CT/P07-VERIFY vẫn mở cho đến khi có fixture, đối chiếu kết quả từng mô-đun và kiểm chứng staging.
 
 ## P7-W04 — canvas thao tác tâm dùng chung — lát cắt cục bộ — 2026-09-15
 
