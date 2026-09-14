@@ -1,0 +1,37 @@
+{
+  "schema_version": "rt-connect.p5-staging-linked-case-purge-preview.v1",
+  "captured_at_utc": "2026-09-14T05:58:00Z",
+  "phase": "P5",
+  "status": "STAGING_VERIFIED_SLICE",
+  "environment": "staging",
+  "source_revision": "21b98ec",
+  "scope": "Xem trước chỉ đọc một hồ sơ đã lưu trữ nhưng còn dữ liệu liên kết; không gửi lệnh xóa và không thay đổi dữ liệu.",
+  "checks": [
+    {
+      "name": "linked_case_visible_in_trash",
+      "status": "PASS",
+      "observed": "Hồ sơ đã lưu trữ xuất hiện trong thùng rác staging."
+    },
+    {
+      "name": "read_only_purge_preview",
+      "status": "PASS",
+      "observed": "Xem trước trả đúng trạng thái chưa thể xóa vĩnh viễn và hiển thị 2 kết quả kiểm tra máy cùng 6 điểm xu hướng liên quan."
+    },
+    {
+      "name": "preservation_message",
+      "status": "PASS",
+      "observed": "Giao diện xác nhận hồ sơ và toàn bộ dữ liệu liên quan vẫn được giữ nguyên."
+    },
+    {
+      "name": "no_purge_request",
+      "status": "PASS",
+      "observed": "Chỉ gọi xem trước; không bấm nút xóa vĩnh viễn và không có hộp xác nhận xóa."
+    }
+  ],
+  "patient_data": false,
+  "contains_secret_values": false,
+  "remaining_gates": [
+    "P5: kiểm chứng thao tác lặp sau lỗi mạng và phản hồi khi tiến trình nền đang chạy trong phiên staging được cho phép.",
+    "P5: đối chiếu toàn vẹn tệp, kết quả, báo cáo và xu hướng sau toàn bộ vòng đời trên staging."
+  ]
+}

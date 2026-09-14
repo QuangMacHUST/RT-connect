@@ -178,3 +178,7 @@ from the final repository revision before release review.
 P5 read-only purge preview UI (2026-09-14): the web exposes a separate
 preview action for archived cases so linked-data protection can be checked
 without invoking permanent deletion. Rebuild API, worker and web together.
+
+P5 linked-case preview evidence (2026-09-14): staging verification confirms
+the read-only preview reports linked results and trend points without issuing
+a purge request. Rebuild all services from this repository revision.

@@ -125,3 +125,7 @@ P5 read-only purge preview UI (2026-09-14): the web exposes a separate
 preview action for archived cases so linked-data protection can be checked
 without invoking permanent deletion. Keep this marker aligned with the API
 service so all three services are rebuilt from the same revision.
+
+P5 linked-case preview evidence (2026-09-14): staging verification confirms
+the read-only preview reports linked results and trend points without issuing
+a purge request. Keep this marker aligned with the API service revision.
