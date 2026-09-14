@@ -2267,6 +2267,127 @@ def _execute_log(
         ) from exc
 
 
+_CONTRIB_KEYS = {
+    "CONTRIB_QUASAR_LIGHT_RAD_SCALING",
+    "CONTRIB_JAW_ORTHOGONALITY",
+}
+
+
+def _contrib_parameters(
+    catalog_key: str, parameters: dict[str, object]
+) -> tuple[dict[str, object], dict[str, object]]:
+    if catalog_key == "CONTRIB_JAW_ORTHOGONALITY":
+        if parameters:
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_UNSUPPORTED",
+                "Bài kiểm tra vuông góc hàm không nhận tham số bổ sung.",
+            )
+        return {}, {}
+    allowed = {"normalize", "invert", "fwxm", "bb_edge_threshold_mm"}
+    unknown = set(parameters) - allowed
+    if unknown:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_UNSUPPORTED",
+            "Có tham số không được hỗ trợ cho mô-đun đóng góp Quasar.",
+        )
+    constructor: dict[str, object] = {
+        "normalize": _bool(parameters, "normalize", True),
+    }
+    analysis: dict[str, object] = {
+        "invert": _bool(parameters, "invert", False),
+        "fwxm": _integer(parameters, "fwxm", minimum=1),
+        "bb_edge_threshold_mm": _number(
+            parameters, "bb_edge_threshold_mm", minimum=0.000001
+        ),
+    }
+    return constructor, analysis
+
+
+def _contrib_overlay(engine: Any) -> tuple[bytes | None, list[dict[str, object]]]:
+    try:
+        if hasattr(engine, "plot_analyzed_image"):
+            plotted = engine.plot_analyzed_image(show=False)
+            candidates: list[Any] = []
+            if isinstance(plotted, tuple) and plotted:
+                first = plotted[0]
+                candidates.extend(first if isinstance(first, (list, tuple)) else [first])
+            elif isinstance(plotted, (list, tuple)):
+                candidates.extend(plotted)
+            if candidates:
+                return _save_figure(candidates[0]), []
+            from matplotlib import pyplot as plt
+
+            figure = plt.gcf()
+            if figure.axes:
+                return _save_figure(figure), []
+        return None, []
+    except Exception:
+        return None, [
+            {
+                "code": "PYLINAC_OVERLAY_UNAVAILABLE",
+                "message": "Pylinac đã trả kết quả nhưng không tạo được ảnh minh họa "
+                "cho mô-đun đóng góp.",
+            }
+        ]
+    finally:
+        from matplotlib import pyplot as plt
+
+        plt.close("all")
+
+
+def _execute_contrib(
+    catalog_key: str, source_path: Path, parameters: dict[str, object]
+) -> PylinacExecutionResult:
+    symbol, _ = resolve_runtime_symbol(catalog_key)
+    if symbol is None:
+        raise PylinacAdapterError(
+            "PYLINAC_RUNTIME_UNAVAILABLE", "Mô-đun đóng góp chưa sẵn sàng trên máy chủ."
+        )
+    constructor, analysis = _contrib_parameters(catalog_key, parameters)
+    try:
+        engine = symbol(str(source_path), **constructor)
+        engine.analyze(**analysis)
+        if catalog_key == "CONTRIB_JAW_ORTHOGONALITY":
+            raw_result = engine.results()
+            result_source = "results"
+        else:
+            raw_result = engine.results_data(as_dict=True)
+            result_source = "results_data"
+        result = _json_safe(raw_result)
+        if not isinstance(result, dict):
+            raise PylinacAdapterError(
+                "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả mô-đun đóng góp không hợp lệ."
+            )
+        overlay_bytes, overlay_warnings = _contrib_overlay(engine)
+        return PylinacExecutionResult(
+            catalog_key=catalog_key,
+            engine_class=type(engine).__name__,
+            engine_version=PYLINAC_VERSION,
+            package_fingerprint=package_fingerprint(),
+            result_snapshot={
+                "schema_version": "p7.pylinac-contrib-result.v1",
+                "engine": "pylinac",
+                "engine_class": type(engine).__name__,
+                "source_tier": "PYLINAC_CONTRIB",
+                "result_source": result_source,
+                "metrics": result,
+                "engine_passed": None,
+                "parameters": _json_safe(parameters),
+            },
+            warnings=overlay_warnings,
+            overlay_bytes=overlay_bytes,
+            overlay_media_type="image/png" if overlay_bytes else None,
+            overlay_filename=f"{catalog_key.lower()}-phan-tich.png" if overlay_bytes else None,
+        )
+    except PylinacAdapterError:
+        raise
+    except Exception as exc:
+        raise PylinacAdapterError(
+            "PYLINAC_EXECUTION_FAILED",
+            "Pylinac không thể phân tích mô-đun đóng góp. Hãy kiểm tra ảnh và tham số rồi thử lại.",
+        ) from exc
+
+
 _NUCLEAR_KEYS = {
     "NUCLEAR_MCR",
     "NUCLEAR_PU",
@@ -2537,6 +2658,8 @@ def execute_pylinac(
         return _execute_log(catalog_key, source_path, parameters)
     if catalog_key in _NUCLEAR_KEYS:
         return _execute_nuclear(catalog_key, source_path, parameters)
+    if catalog_key in _CONTRIB_KEYS:
+        return _execute_contrib(catalog_key, source_path, parameters)
     if catalog_key == "PICKET_FENCE":
         return _execute_picket_fence(source_path, parameters)
     if catalog_key == "STARSHOT":

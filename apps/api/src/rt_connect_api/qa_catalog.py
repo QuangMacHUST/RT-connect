@@ -530,6 +530,7 @@ def _build_catalog() -> tuple[dict[str, object], ...]:
                 ("Đảo ảnh", "FWXM", "Ngưỡng biên bi"),
                 engine_class="QuasarLightRadScaling",
                 source_tier="PYLINAC_CONTRIB",
+                implementation_status="READY",
                 supports_manual_adjustment=True,
             ),
             _item(
@@ -542,6 +543,7 @@ def _build_catalog() -> tuple[dict[str, object], ...]:
                 ("Ngưỡng cạnh", "Chọn bốn cạnh", "Hiển thị góc"),
                 engine_class="JawOrthogonality",
                 source_tier="PYLINAC_CONTRIB",
+                implementation_status="READY",
                 supports_manual_adjustment=True,
             ),
             _item(

@@ -973,6 +973,88 @@ def test_nuclear_registry_resolves_all_protocol_classes() -> None:
         assert capability.has_results_data is True
 
 
+def test_contrib_adapters_use_public_results_and_overlay_methods(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "contrib.dcm"
+    source.write_bytes(b"image")
+
+    class FakeFigure:
+        def savefig(self, stream, **kwargs: object) -> None:
+            assert kwargs == {"format": "png", "dpi": 120}
+            stream.write(b"contrib-overlay")
+
+        def clf(self) -> None:
+            return None
+
+    class FakeQuasar:
+        def __init__(self, path: str, **kwargs: object) -> None:
+            assert path.endswith("contrib.dcm")
+            assert kwargs == {"normalize": True}
+
+        def analyze(self, **kwargs: object) -> None:
+            assert kwargs == {"invert": True, "fwxm": 70, "bb_edge_threshold_mm": 11.0}
+
+        def results_data(self, *, as_dict: bool) -> dict[str, object]:
+            assert as_dict is True
+            return {"field_width_x": 200.0, "warnings": []}
+
+        def plot_analyzed_image(self, *, show: bool) -> tuple[list[object], list[str]]:
+            assert show is False
+            return [FakeFigure()], ["Image"]
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (
+            FakeQuasar if key == "CONTRIB_QUASAR_LIGHT_RAD_SCALING" else None,
+            None,
+        ),
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.package_fingerprint", lambda: "f" * 64
+    )
+    quasar = execute_pylinac(
+        "CONTRIB_QUASAR_LIGHT_RAD_SCALING",
+        source,
+        {"normalize": True, "invert": True, "fwxm": 70, "bb_edge_threshold_mm": 11},
+    )
+    assert quasar.result_snapshot["source_tier"] == "PYLINAC_CONTRIB"
+    assert quasar.result_snapshot["result_source"] == "results_data"
+    assert quasar.overlay_bytes == b"contrib-overlay"
+
+    class FakeJaw:
+        def __init__(self, path: str) -> None:
+            assert path.endswith("contrib.dcm")
+
+        def analyze(self) -> None:
+            return None
+
+        def results(self) -> dict[str, object]:
+            return {"top_left": 90.0, "warnings": []}
+
+        def plot_analyzed_image(self, *, show: bool) -> None:
+            assert show is False
+            from matplotlib import pyplot as plt
+
+            figure = plt.figure()
+            figure.add_subplot(111)
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (FakeJaw, None) if key == "CONTRIB_JAW_ORTHOGONALITY" else (None, "missing"),
+    )
+    jaw = execute_pylinac("CONTRIB_JAW_ORTHOGONALITY", source, {})
+    assert jaw.result_snapshot["result_source"] == "results"
+    assert jaw.result_snapshot["metrics"]["top_left"] == 90.0
+    assert jaw.overlay_bytes is not None
+
+
+def test_contrib_registry_resolves_both_public_classes() -> None:
+    capabilities = {item.catalog_key: item for item in resolve_capabilities()}
+    for key in ("CONTRIB_QUASAR_LIGHT_RAD_SCALING", "CONTRIB_JAW_ORTHOGONALITY"):
+        capability = capabilities[key]
+        assert capability.runtime_available is True
+        assert capability.has_analyze is True
+
+
 def test_planar_adapter_uses_common_pylinac_image_controls(tmp_path, monkeypatch) -> None:
     source = tmp_path / "planar.dcm"
     source.write_bytes(b"planar")

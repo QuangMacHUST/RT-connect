@@ -61,6 +61,8 @@ Với Log Analyzer, giao diện không yêu cầu người dùng sửa tệp c�
 
 Với Nuclear, danh mục đã ánh xạ đủ chín lớp công khai vào chín biểu mẫu riêng. Các bài dùng ảnh/chuỗi DICOM phải qua kiểm tra đúng số tệp, phần mở rộng và khả năng đọc trước khi chạy. `SimpleSensitivity` nhận ảnh phantom và cho phép thêm ảnh nền; người dùng phải nhập hoạt độ và nuclide, không dùng giá trị ngầm. Adapter chỉ đọc `results_data()` sau khi gọi `analyze()` của Pylinac. Ảnh minh họa được tạo bằng phương thức công khai của lớp; nếu lớp có lỗi riêng ở phần vẽ, kết quả đo vẫn được giữ và giao diện hiển thị cảnh báo thiếu ảnh minh họa. Lát cắt hiện đã có hợp đồng, adapter, biểu mẫu và kiểm thử cục bộ giả lập; chưa có fixture DICOM Nuclear nên chưa được xem là chạy engine thật hay nghiệm thu staging.
 
+Với hai bài đóng góp công khai, `QuasarLightRadScaling` có biểu mẫu chuẩn hóa/đảo ảnh, FWXM và ngưỡng cạnh biên; adapter gọi đúng `analyze()` rồi lấy `results_data()`. `JawOrthogonality` chỉ cần ảnh trường; adapter gọi `analyze()` rồi lấy `results()` theo đúng API upstream, sau đó tạo ảnh minh họa từ `plot_analyzed_image()`. Cả hai bài đều gắn nhãn mô-đun đóng góp, không tự đặt kết luận Đạt/Không đạt và không dùng thuật toán thay thế. Lát cắt hiện đã có adapter, giao diện, kiểm thử hợp đồng và kiểm tra registry; chưa có fixture ảnh chuẩn hoặc kiểm chứng staging.
+
 ## 4. Toàn bộ biến thể Planar Imaging
 
 Registry Planar Imaging phải chứa mọi class công khai sau nếu class đó tồn tại trong wheel đã khóa:

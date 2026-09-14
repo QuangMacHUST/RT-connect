@@ -310,6 +310,8 @@ def create_pylinac_run(
         "GE_HELIOS",
         "QUART_DVT",
         "QUART_HYPERSIGHT",
+        "CONTRIB_QUASAR_LIGHT_RAD_SCALING",
+        "CONTRIB_JAW_ORTHOGONALITY",
     } and len(artifacts) != 1:
         raise DomainError(
             "PYLINAC_INPUT_COUNT_INVALID", "Bài QA này yêu cầu đúng một tệp đầu vào.", 422

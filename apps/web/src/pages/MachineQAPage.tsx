@@ -1226,6 +1226,59 @@ function NuclearPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
   </div>
 }
 
+type ContribCatalogKey = 'CONTRIB_QUASAR_LIGHT_RAD_SCALING' | 'CONTRIB_JAW_ORTHOGONALITY'
+
+const contribNames: Record<ContribCatalogKey, string> = {
+  CONTRIB_QUASAR_LIGHT_RAD_SCALING: 'Quasar Light và Rad Scaling',
+  CONTRIB_JAW_ORTHOGONALITY: 'Độ vuông góc của jaw'
+}
+
+function ContribPage({ caseId, accessToken, title, catalogKey }: { caseId: string; accessToken: string; title: string; catalogKey: ContribCatalogKey }) {
+  const queryClient = useQueryClient()
+  const [selectedArtifactId, setSelectedArtifactId] = useState<string>()
+  const [normalize, setNormalize] = useState(true)
+  const [invert, setInvert] = useState(false)
+  const [fwxm, setFwxm] = useState('50')
+  const [bbEdgeThreshold, setBbEdgeThreshold] = useState('10')
+  const [message, setMessage] = useState<string>()
+  const artifacts = useQuery({ queryKey: ['pylinac-artifacts', caseId, accessToken], queryFn: () => apiClient.artifacts(accessToken, caseId), retry: false })
+  const runs = useQuery({ queryKey: ['pylinac-runs', caseId, accessToken], queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false })
+  const upload = useMutation({
+    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'IMAGE', 'EVALUATION'),
+    onSuccess: (artifact) => { setSelectedArtifactId(artifact.id); setMessage('Đã tải ảnh lên; có thể bắt đầu phân tích.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-artifacts', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const analyze = useMutation({
+    mutationFn: () => apiClient.createPylinacQARun(accessToken, caseId, {
+      catalog_key: catalogKey,
+      artifact_ids: [selectedArtifactId!],
+      parameters: catalogKey === 'CONTRIB_QUASAR_LIGHT_RAD_SCALING' ? { normalize, invert, fwxm: Number(fwxm), bb_edge_threshold_mm: Number(bbEdgeThreshold) } : {}
+    }),
+    onSuccess: (run) => { setMessage(run.status === 'COMPLETED' ? 'Đã phân tích bằng Pylinac.' : 'Pylinac không thể hoàn tất phân tích; hãy xem thông báo lỗi bên dưới.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const assess = useMutation({
+    mutationFn: ({ runId, value }: { runId: string; value: 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' }) => apiClient.assessPylinacQARun(accessToken, runId, value),
+    onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const imageArtifacts = (artifacts.data?.items ?? []).filter((item) => ['IMAGE', 'DICOM', 'OTHER'].includes(item.artifact_type))
+  const history = (runs.data?.items ?? []).filter((run) => run.catalog_key === catalogKey)
+  const latest = history[0]
+  const metrics = Object.entries(objectValue(latest?.result_snapshot.metrics) ?? {}).filter(([, value]) => typeof value === 'number' || typeof value === 'string')
+  const isBusy = upload.isPending || analyze.isPending || assess.isPending
+  const canAnalyze = Boolean(selectedArtifactId) && !isBusy
+
+  return <div className="page">
+    <header className="page-header"><div><p className="eyebrow">KIỂM TRA CHẤT LƯỢNG MÁY · PYLİNAC ĐÓNG GÓP</p><h1>{contribNames[catalogKey]}</h1><p>{title} · mô-đun đóng góp của Pylinac, kết quả được lưu độc lập theo từng lần chạy.</p></div><div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">Quay lại kho QA</Link><span className="status-badge">BỘ TÍNH PYLİNAC 3.47.0</span></div></header>
+    {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">TỆP ĐẦU VÀO</p><h2>Ảnh kiểm tra</h2></div><strong>{selectedArtifactId ? '1' : '0'}</strong></div><p>Chọn một ảnh phantom hoặc ảnh trường phù hợp với bài đang thực hiện. Mô-đun đóng góp dùng trực tiếp bộ tính Pylinac.</p><div className="machine-qa-actions"><label className="button-link">Chọn ảnh<input type="file" accept=".dcm,.dicom,.tif,.tiff,.png,.jpg,.jpeg" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>{imageArtifacts.length > 0 && <div className="table-wrap"><table><thead><tr><th>Chọn</th><th>Tên ảnh</th><th>Dung lượng</th></tr></thead><tbody>{imageArtifacts.map((artifact) => <tr key={artifact.id}><td><input type="radio" name="contrib-input" aria-label={`Chọn ${artifact.original_filename}`} checked={selectedArtifactId === artifact.id} onChange={() => setSelectedArtifactId(artifact.id)} /></td><td>{artifact.original_filename}</td><td>{artifact.byte_size.toLocaleString('vi-VN')} byte</td></tr>)}</tbody></table></div>}</section>
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">THAM SỐ BÀI KIỂM TRA</p><h2>Thiết lập phân tích</h2></div></div>{catalogKey === 'CONTRIB_QUASAR_LIGHT_RAD_SCALING' ? <div className="machine-qa-protocol-controls"><label><input type="checkbox" checked={normalize} onChange={(event) => setNormalize(event.target.checked)} /> Chuẩn hóa ảnh</label><label><input type="checkbox" checked={invert} onChange={(event) => setInvert(event.target.checked)} /> Đảo ảnh</label><label>Phần trăm FWXM<input type="number" min="1" max="100" value={fwxm} onChange={(event) => setFwxm(event.target.value)} /></label><label>Ngưỡng cạnh biên (mm)<input type="number" min="0.01" step="0.01" value={bbEdgeThreshold} onChange={(event) => setBbEdgeThreshold(event.target.value)} /></label></div> : <p>Pylinac tự phát hiện bốn cạnh hàm trên ảnh. Không có tham số kỹ thuật ẩn; đánh giá Đạt, Cảnh báo hoặc Không đạt do người thực hiện chọn sau khi xem kết quả.</p>}<div className="machine-qa-actions"><button disabled={!canAnalyze} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div></section>
+    {latest && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">KẾT QUẢ MỚI NHẤT</p><h2>{latest.name}</h2></div><span className={statusClass(latest.status)}>{statusLabel(latest.status)}</span></div>{latest.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích</h3><ul>{latest.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{latest.status === 'COMPLETED' && <><div className="machine-qa-metric-grid">{metrics.length === 0 ? <p>Kết quả chi tiết đã được lưu; hãy mở ảnh phân tích để xem đầy đủ.</p> : metrics.map(([key, value]) => <div className="machine-qa-metric" key={key}><span>{key.replaceAll('_', ' ')}</span><strong>{textValue(value)}</strong></div>)}</div>{latest.overlay_artifact_id && <button className="button-secondary" onClick={() => { void apiClient.downloadArtifact(accessToken, latest.overlay_artifact_id!).then((download) => window.open(download.url, '_blank', 'noopener,noreferrer')).catch((error) => setMessage(errorMessage(error))) }}>Mở ảnh phân tích</button>}<label>Đánh giá của người dùng<select value={latest.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => assess.mutate({ runId: latest.id, value: event.target.value as 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' })}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">Chưa có kết quả phân tích.</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td></tr>)}</tbody></table></div>}</section>
+  </div>
+}
+
 type PlanarCatalogKey = typeof planarCatalogKeys[number]
 
 function PlanarImagingPage({ caseId, accessToken, title, catalogKey }: { caseId: string; accessToken: string; title: string; catalogKey: PlanarCatalogKey }) {
@@ -1463,6 +1516,9 @@ export function MachineQAPage() {
   }
   if (selectedCase.qa_definition_key?.startsWith('NUCLEAR_') && accessToken) {
     return <NuclearPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key as NuclearCatalogKey} />
+  }
+  if ((selectedCase.qa_definition_key === 'CONTRIB_QUASAR_LIGHT_RAD_SCALING' || selectedCase.qa_definition_key === 'CONTRIB_JAW_ORTHOGONALITY') && accessToken) {
+    return <ContribPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key} />
   }
   if (planarCatalogKeys.includes(selectedCase.qa_definition_key as PlanarCatalogKey) && accessToken) {
     return <PlanarImagingPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key as PlanarCatalogKey} />
