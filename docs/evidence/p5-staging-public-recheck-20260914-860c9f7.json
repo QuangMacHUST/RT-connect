@@ -1,0 +1,28 @@
+{
+  "schema_version": "rt-connect.p5-staging-public-recheck.v1",
+  "captured_at_utc": "2026-09-14T04:45:33Z",
+  "phase": "P5",
+  "status": "STAGING_RUNTIME_VERIFIED",
+  "environment": "staging",
+  "source_revision": "860c9f7",
+  "observed_schema_revision": "20260913_0022",
+  "checks": {
+    "total": 15,
+    "passed": 15,
+    "failed": 0,
+    "api_health": "PASS",
+    "api_readiness": "PASS",
+    "api_version_parity": "PASS",
+    "openapi_routes": "PASS",
+    "unauthenticated_access_guards": "PASS",
+    "web_index_and_bundle": "PASS",
+    "web_feature_markers": "PASS"
+  },
+  "scope": "Kiểm tra công khai sau khi dựng lại mốc tài liệu và hồi quy bảo vệ tệp đầu vào; không thực hiện thao tác ghi dữ liệu staging.",
+  "patient_data": false,
+  "contains_secret_values": false,
+  "remaining_gates": [
+    "P5: kiểm chứng xác thực lỗi mạng, tác vụ nền và từ chối hồ sơ có liên kết trong phiên được cho phép.",
+    "P5: đối chiếu toàn vẹn dữ liệu sau toàn bộ vòng đời trên staging."
+  ]
+}
