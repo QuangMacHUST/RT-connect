@@ -1,0 +1,57 @@
+{
+  "evidence_id": "P06-STAGING-STORAGE-FAULT-RETRY-20260914",
+  "phase": "P06",
+  "status": "STAGING_VERIFIED_QUEUE_FAULT_RETRY",
+  "captured_at": "2026-09-14T21:03:00+07:00",
+  "environment": "Railway staging",
+  "web_url": "https://rt-connect-web-staging-staging.up.railway.app/app/qa",
+  "api_service_scope": "Railway-API-staging only",
+  "fault_injection": {
+    "method": "Temporarily replaced the staging API S3_BUCKET variable with a unique nonexistent bucket name, redeployed only the staging API, then restored the original variable and redeployed the API again.",
+    "fault_deployment": "1c1e99f5-69d5-4f16-91dc-c56a62503a1d",
+    "restore_deployment": "5ef47ecc-23c9-4bac-b693-0a9237a62610",
+    "production_touched": false,
+    "original_bucket_restored": true,
+    "readiness_after_restore": "ready",
+    "schema_revision_after_restore": "20260913_0022"
+  },
+  "case_display_name": "P6 Staging Upload Smoke",
+  "queue_flow": [
+    {
+      "step": "before_fault_upload",
+      "observed": "2/2 earlier synthetic queue items were already uploaded and retained"
+    },
+    {
+      "step": "fault_upload",
+      "file": "p17-ct-v1-smoke.dcm",
+      "declared_type": "Tệp khác",
+      "logical_role": "Tệp tham chiếu",
+      "observed": "Tải lên lỗi; Không thể hoàn tất thao tác. Hãy thử lại và kiểm tra kết nối.",
+      "retry_button_visible": true
+    },
+    {
+      "step": "restore_and_isolated_retry",
+      "observed": "Chỉ mục p17-ct-v1-smoke.dcm được thử lại; các mục đã thành công không bị gửi lại"
+    },
+    {
+      "step": "after_retry",
+      "observed": "Hàng đợi 3/3 đã tải lên; bảng tệp hiển thị p17-ct-v1-smoke.dcm, Tệp khác, Đã tải lên"
+    }
+  ],
+  "assertions": {
+    "successful_items_preserved_during_fault": true,
+    "failed_item_isolated": true,
+    "retry_isolated_to_failed_item": true,
+    "no_analysis_created": true,
+    "no_report_created": true,
+    "patient_data_used": false,
+    "synthetic_only": true
+  },
+  "script": "scripts/verify-staging-artifact-storage-fault.ps1",
+  "remaining_p6_gates": [
+    "Provider-side orphan reconciliation after a failure window following object write",
+    "Signed-download final filename and Content-Disposition header readback",
+    "Full P06 S/E/C and release handoff evidence"
+  ],
+  "result": "PASS_STAGING_QUEUE_FAILURE_ISOLATED_RETRY"
+}
