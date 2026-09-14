@@ -1,4 +1,4 @@
-import { type ReactNode, useMemo, useState } from 'react'
+import { type PointerEvent, type ReactNode, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 
@@ -173,6 +173,50 @@ function PylinacResultPanel({ latest, history, accessToken, emptyHistoryLabel, m
   </>
 }
 
+type PylinacAdjustmentCanvasProps = {
+  accessToken: string
+  artifactId: string | undefined
+  x: string
+  y: string
+  disabled?: boolean
+  onPointChange: (x: string, y: string) => void
+}
+
+function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, disabled = false, onPointChange }: PylinacAdjustmentCanvasProps) {
+  const imageRef = useRef<HTMLImageElement>(null)
+  const dragging = useRef(false)
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 })
+  const preview = useQuery({
+    queryKey: ['pylinac-adjustment-preview', accessToken, artifactId],
+    queryFn: () => apiClient.downloadArtifact(accessToken, artifactId!),
+    enabled: Boolean(accessToken && artifactId), retry: false
+  })
+  const updatePoint = (clientX: number, clientY: number) => {
+    const image = imageRef.current
+    if (!image || disabled) return
+    const bounds = image.getBoundingClientRect()
+    if (!bounds.width || !bounds.height) return
+    const pointX = Math.max(0, Math.min(image.naturalWidth, (clientX - bounds.left) * image.naturalWidth / bounds.width))
+    const pointY = Math.max(0, Math.min(image.naturalHeight, (clientY - bounds.top) * image.naturalHeight / bounds.height))
+    onPointChange(pointX.toFixed(1), pointY.toFixed(1))
+  }
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (disabled || !imageRef.current) return
+    dragging.current = true
+    event.currentTarget.setPointerCapture(event.pointerId)
+    updatePoint(event.clientX, event.clientY)
+  }
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (dragging.current) updatePoint(event.clientX, event.clientY)
+  }
+  const releasePointer = (event: PointerEvent<HTMLDivElement>) => {
+    dragging.current = false
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
+  }
+  const hasPoint = x.trim() !== '' && y.trim() !== ''
+  return <div className="qa-adjustment-panel"><div className="panel-heading"><div><p className="eyebrow">ĐIỀU CHỈNH TRÊN ẢNH</p><h3>Chọn tâm bắt đầu</h3></div><span className="status-badge">NHẤN VÀ KÉO</span></div><p className="form-hint">Nhấn hoặc kéo trên ảnh để đặt tâm bắt đầu. Tọa độ được quy đổi theo kích thước ảnh gốc và gửi cho Pylinac.</p>{preview.data?.url ? <div className={disabled ? 'qa-adjustment-canvas qa-adjustment-canvas--disabled' : 'qa-adjustment-canvas'} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={releasePointer} onPointerCancel={releasePointer}><img ref={imageRef} src={preview.data.url} alt="Ảnh đầu vào để chọn tâm" draggable={false} onLoad={(event) => setImageDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />{hasPoint && imageDimensions.width > 0 && imageDimensions.height > 0 && <span className="qa-adjustment-point" style={{ left: `${Number(x) / imageDimensions.width * 100}%`, top: `${Number(y) / imageDimensions.height * 100}%` }} />}</div> : <div className="qa-adjustment-canvas qa-adjustment-canvas--empty">{preview.isPending ? 'Đang tải ảnh xem trước…' : artifactId ? 'Không thể tải ảnh xem trước. Vẫn có thể nhập tọa độ bên dưới.' : 'Chọn ảnh để bật vùng điều chỉnh.'}</div>}</div>
+}
+
 function PicketFencePage({ caseId, accessToken, title }: { caseId: string; accessToken: string; title: string }) {
   const queryClient = useQueryClient()
   const [selectedArtifactId, setSelectedArtifactId] = useState<string>()
@@ -309,6 +353,7 @@ function StarshotPage({ caseId, accessToken, title }: { caseId: string; accessTo
       <p>Khu vực tệp chỉ hiện vì bài này cần ảnh. Có thể để Pylinac tự tìm tâm hoặc nhập tâm bắt đầu đã chọn trên ảnh để chạy lại một phiên bản mới.</p>
       <div className="machine-qa-actions"><label className="button-link">Chọn ảnh DICOM hoặc ảnh đo<input type="file" accept=".dcm,.tif,.tiff,.png,.jpg,.jpeg,application/dicom,image/*" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>
       {imageArtifacts.length > 0 && <label>Ảnh đang dùng<select value={selected?.id ?? ''} onChange={(event) => setSelectedArtifactId(event.target.value)}>{imageArtifacts.map((artifact, index) => <option key={artifact.id} value={artifact.id}>Ảnh {index + 1} · {artifact.original_filename}</option>)}</select></label>}
+      <PylinacAdjustmentCanvas accessToken={accessToken} artifactId={selected?.id} x={startX} y={startY} disabled={isBusy} onPointChange={(x, y) => { setStartX(x); setStartY(y) }} />
       <div className="machine-qa-protocol-controls">
         <label>Khoảng cách nguồn–ảnh (mm)<input type="number" min="0" step="0.1" value={sid} onChange={(event) => setSid(event.target.value)} /></label>
         <label>Mật độ điểm ảnh (dpi, nếu ảnh thiếu thang đo)<input type="number" min="0" step="0.1" value={dpi} onChange={(event) => setDpi(event.target.value)} placeholder="Tự đọc từ ảnh" /></label>
