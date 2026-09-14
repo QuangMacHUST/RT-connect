@@ -3,7 +3,7 @@
 **Phiên bản:** 2.3
 **Ngày:** 2026-09-13
 **Mốc yêu cầu:** UX1.3.
-**Nguồn:** business-analysis.md v1.3; **kế hoạch:** plan.md v5.3; **danh mục bộ tính:** [docs/pylinac-qa-catalog.md](docs/pylinac-qa-catalog.md) v1.1.
+**Nguồn:** business-analysis.md v1.3; **kế hoạch:** plan.md v5.3; **danh mục bộ tính:** [docs/pylinac-qa-catalog.md](docs/pylinac-qa-catalog.md) v1.2.
 
 ## 1. Hiệu lực, hiện trạng và phạm vi thay đổi
 

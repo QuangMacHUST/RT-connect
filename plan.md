@@ -5,7 +5,7 @@ Ngày: **2026-09-13**
 Mốc yêu cầu: **UX1.3**.
 Nguồn duy nhất của phạm vi: [business-analysis.md](business-analysis.md) v1.3.
 Hợp đồng kỹ thuật: [technical-specification.md](technical-specification.md) v2.3.
-Danh mục engine bắt buộc: [docs/pylinac-qa-catalog.md](docs/pylinac-qa-catalog.md) v1.1.
+Danh mục engine bắt buộc: [docs/pylinac-qa-catalog.md](docs/pylinac-qa-catalog.md) v1.2.
 
 ## 1. Cách dùng kế hoạch này
 
@@ -142,7 +142,7 @@ Không cam kết danh sách hữu hạn là tất cả lỗi có thể có. Lỗ
 
 ### Gói công việc P0
 
-- [x] P00-W01 — Viết nghiệp vụ 1.3, đặc tả 2.3, kế hoạch 5.3; giữ đủ danh mục pylinac 1.1 và bổ sung thư viện hai phạm vi.
+- [x] P00-W01 — Viết nghiệp vụ 1.3, đặc tả 2.3, kế hoạch 5.3; giữ đủ danh mục pylinac 1.2 và bổ sung thư viện hai phạm vi.
 - [x] P00-W02 — Đánh dấu specification/registry cũ; bổ sung bộ kiểm tra cấu trúc và test phủ định cho tài liệu/danh mục pylinac.
 - [x] P00-W03 — Chốt đủ 16 họ mô-đun chính/biến thể và QA contrib công khai của pylinac, UI thao tác tay và ranh giới Gamma; tách công việc nội dung thư viện khỏi phát triển chức năng.
 - [x] P00-W04 — Chốt chuỗi P0–P20 tuần tự, đối chiếu Stitch, lưu yêu cầu thiết kế và sổ dọn tệp; bảo toàn lịch sử và liên kết.

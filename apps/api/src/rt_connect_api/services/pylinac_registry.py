@@ -341,7 +341,7 @@ def registry_summary() -> RegistrySummary:
         for item in capabilities
     ]
     return {
-        "catalogue_version": "pylinac-3.47.0-rt-connect-1.0",
+        "catalogue_version": "pylinac-3.47.0-rt-connect-1.1",
         "pylinac_version": installed_pylinac_version(),
         "wheel_sha256": PYLINAC_WHEEL_SHA256,
         "package_fingerprint": package_fingerprint(),

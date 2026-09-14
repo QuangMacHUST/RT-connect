@@ -31,6 +31,7 @@ def test_registry_summary_contains_provenance_without_raw_error() -> None:
     summary = registry_summary()
 
     assert summary["pylinac_version"] == "3.47.0"
+    assert summary["catalogue_version"] == "pylinac-3.47.0-rt-connect-1.1"
     assert summary["wheel_sha256"] == PYLINAC_WHEEL_SHA256
     assert summary["total_bindings"] == 63
     assert summary["runtime_available"] == 63

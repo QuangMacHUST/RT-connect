@@ -3,7 +3,7 @@
 **Phiên bản tài liệu:** 1.3
 **Ngày cập nhật:** 2026-09-13
 **Mốc yêu cầu:** UX1.3 — thư viện nội bộ/cộng đồng, giao diện tiếng Việt và triển khai tuần tự.
-**Tài liệu triển khai:** technical-specification.md v2.3; plan.md v5.3; [danh mục pylinac](docs/pylinac-qa-catalog.md) v1.1.
+**Tài liệu triển khai:** technical-specification.md v2.3; plan.md v5.3; [danh mục pylinac](docs/pylinac-qa-catalog.md) v1.2.
 
 ## 1. Mục đích và hiệu lực
 
@@ -11,7 +11,7 @@ RT-CONNECT là ứng dụng web phục vụ bác sĩ và kỹ sư xạ trị: th
 
 Bản này thay thế toàn bộ cách tổ chức sản phẩm ở bản 0.27. Bản trước được giữ tại [lịch sử tài liệu](docs/history/pre-ux-20260912/business-analysis.md). Lịch sử kiểm thử là bằng chứng cho phiên bản được thử, không tự động chứng minh các yêu cầu mới đã hoàn thành.
 
-Thứ tự giải quyết mâu thuẫn: yêu cầu mới của người dùng → bản nghiệp vụ này → đặc tả kỹ thuật 2.3 → kế hoạch 5.3 → danh mục pylinac 1.1. Đây là yêu cầu sản phẩm; trạng thái phần mềm đã làm được đến đâu ghi riêng trong sổ tiến độ.
+Thứ tự giải quyết mâu thuẫn: yêu cầu mới của người dùng → bản nghiệp vụ này → đặc tả kỹ thuật 2.3 → kế hoạch 5.3 → danh mục pylinac 1.2. Đây là yêu cầu sản phẩm; trạng thái phần mềm đã làm được đến đâu ghi riêng trong sổ tiến độ.
 
 ### 1.1. Những quyết định đã chốt
 
