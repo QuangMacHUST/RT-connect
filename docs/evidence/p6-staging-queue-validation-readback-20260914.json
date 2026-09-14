@@ -1,0 +1,49 @@
+{
+  "evidence_id": "P06-STAGING-QUEUE-VALIDATION-READBACK-20260914",
+  "phase": "P06",
+  "status": "STAGING_PARTIAL_QUEUE_READBACK",
+  "captured_at": "2026-09-14T20:46:06+07:00",
+  "environment": "Railway staging",
+  "web_url": "https://rt-connect-web-staging-staging.up.railway.app/app/qa",
+  "case_display_name": "P6 Staging Upload Smoke",
+  "scope": "Authenticated browser verification with synthetic fixtures only; no analysis or report was created.",
+  "selected_files": [
+    {
+      "name": "p17-ct-v1-smoke.dcm",
+      "declared_type": "Tệp DICOM",
+      "logical_role": "Tệp tham chiếu",
+      "queue_status": "Đã tải lên",
+      "result": "Tệp đã tồn tại; máy chủ trả về kết quả trùng hợp lệ và không tạo bản sao"
+    },
+    {
+      "name": "gamma-measurement-v1-smoke.json",
+      "declared_type": "Tệp DICOM",
+      "logical_role": "Tệp tham chiếu",
+      "queue_status": "Đã tải lên",
+      "validation_after_upload": "Không hợp lệ",
+      "result": "Nội dung là JSON nhưng loại khai báo là DICOM; giao diện hiển thị lỗi để sửa"
+    }
+  ],
+  "queue_readback": {
+    "initial": "2 tệp đã được thêm vào hàng đợi tải lên; 0/2 đã hoàn tất",
+    "final": "Đã xử lý 2 tệp; 2/2 mục hiển thị Đã tải lên",
+    "successful_item_preserved": true,
+    "invalid_item_remains_visible_for_correction": true,
+    "isolated_retry_control_exposed": false,
+    "reason_retry_was_not_exercised": "Cả hai yêu cầu tải lên đều hoàn tất ở lớp lưu trữ; lỗi loại nội dung chỉ xuất hiện ở bước kiểm tra dữ liệu sau tải lên."
+  },
+  "safety": {
+    "synthetic_only": true,
+    "patient_data_used": false,
+    "analysis_created": false,
+    "report_created": false,
+    "production_touched": false
+  },
+  "remaining_p6_gates": [
+    "Staging transport/storage fault that produces a FAILED queue item, followed by retry of that item only",
+    "Provider storage fault and orphan reconciliation evidence",
+    "Signed-download final filename and Content-Disposition header readback",
+    "Full P06 S/E/C and release handoff evidence"
+  ],
+  "result": "PARTIAL_PASS_UPLOAD_AND_VALIDATION; P06_VERIFY_REMAINS_OPEN"
+}
