@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-PLANAR — ma trận 19 biến thể ảnh phẳng — lát cắt cục bộ — 2026-09-15
+
+- Đã tải tệp mẫu chính thức từ kho `pylinac_demo_files` cho toàn bộ 19 biến thể ảnh phẳng và chạy từng bài qua đúng `execute_pylinac` của RT-CONNECT. Cả 19 bài đều trả structured result và ảnh overlay: Leeds TOR/Blue, Standard Imaging QC-3/QC-kV, Las Vegas/Elekta, Doselab MC2 MV/kV, SNC MV/MV12510/kV, SNC kV, PTW EPID QC, IBA Primus A, Standard Imaging FC-2, IMT L-RAD, Doselab RLf, PTW Iso-Align, SNC FSQA và ACR Digital Mammography.
+- Bài IBA Primus A cần tham số `SSD = 1395 mm` theo tệp mẫu; thông tin này đã được ghi vào hợp đồng kiểm thử, không đặt làm mặc định im lặng cho dữ liệu người dùng. Kết quả/engine/overlay và số cảnh báo từng bài đã được ghi trong [ma trận tệp mẫu Pylinac](docs/evidence/p7-local-pylinac-demo-matrix-20260915.md).
+- Trong cùng lát cắt, danh mục được đồng bộ tên lớp runtime thật cho ACR, CIRS, GE Helios, ảnh phẳng và hàm Gamma; phiên bản danh mục tăng lên `pylinac-3.47.0-rt-connect-1.3`, và kiểm thử registry buộc mọi tên lớp/hàm khớp symbol trong wheel đã khóa.
+- Đây là `LOCAL_VERIFIED_SLICE`; P07-PLANAR vẫn mở cho đối chiếu từng module theo kỳ vọng upstream, kiểm lỗi riêng, kiểm giao diện trên staging và kiểm các nhóm P7 còn thiếu fixture.
+
 ## P7-W03 — xử lý tương thích nhãn HyperSight — lát cắt cục bộ — 2026-09-15
 
 - Khi chạy thử trực tiếp, lớp HyperSight cũ của Pylinac không nhận đường dẫn tệp theo hợp đồng hiện hành. Vì Pylinac đã chuyển phần xử lý tương ứng sang `QuartDVT`, danh mục và bộ đăng ký nay giữ nhãn HyperSight cho người dùng nhưng gọi đúng bộ tính `QuartDVT` được hỗ trợ; không tự viết công thức thay thế và không tạo hai loại lịch sử phân tích.

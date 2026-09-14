@@ -1,9 +1,9 @@
 # RT-CONNECT — Danh mục QA sử dụng pylinac
 
-**Phiên bản danh mục:** 1.2
+**Phiên bản danh mục:** 1.3
 
 **Ngày đối chiếu:** 2026-09-15
-**Phạm vi:** toàn bộ 16 họ mô-đun QA chính, các phép QA trong `contrib/One-Offs` và Gamma 1D/2D được tài liệu pylinac công bố; dùng làm hợp đồng cho `business-analysis.md` v1.3, `technical-specification.md` v2.3 và `plan.md` v5.3. Bản 1.2 bổ sung biến thể CatPhan 700 trong danh mục và bộ điều hợp của wheel pylinac 3.47.0.
+**Phạm vi:** toàn bộ 16 họ mô-đun QA chính, các phép QA trong `contrib/One-Offs` và Gamma 1D/2D được tài liệu pylinac công bố; dùng làm hợp đồng cho `business-analysis.md` v1.3, `technical-specification.md` v2.3 và `plan.md` v5.3. Bản 1.3 đồng bộ tên lớp/hàm trong danh mục với đúng biểu tượng runtime của wheel pylinac 3.47.0 và ghi nhận ma trận chạy thật cho 19 biến thể ảnh phẳng.
 
 ## 1. Quyết định nền tảng
 

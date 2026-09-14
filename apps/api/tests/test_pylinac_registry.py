@@ -6,6 +6,8 @@ from rt_connect_api.services.pylinac_registry import (
     PYLINAC_WHEEL_SHA256,
     registry_summary,
     resolve_capabilities,
+    resolve_runtime_symbol,
+    runtime_binding,
     unresolved_catalog_keys,
 )
 from test_workspace import _workspace_client
@@ -25,6 +27,19 @@ def test_registry_resolves_every_pylinac_catalogue_entry() -> None:
     assert {item.catalog_key for item in capabilities} == pylinac_keys
     assert all(item.runtime_available for item in capabilities)
     assert unresolved_catalog_keys() == ()
+
+
+def test_catalogue_engine_names_match_the_locked_runtime_symbols() -> None:
+    definitions = {definition.key: definition for definition in QA_TEST_CATALOG}
+
+    for capability in resolve_capabilities():
+        definition = definitions[capability.catalog_key]
+        binding = runtime_binding(capability.catalog_key)
+        symbol, error = resolve_runtime_symbol(capability.catalog_key)
+
+        assert binding is not None
+        assert symbol is not None, error
+        assert definition.engine_class == getattr(symbol, "__name__", None)
 
 
 def test_registry_summary_contains_provenance_without_raw_error() -> None:

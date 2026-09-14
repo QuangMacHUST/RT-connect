@@ -253,7 +253,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         "DICOM_SERIES",
         ("Chuỗi DICOM CT",),
         ("Chọn lát", "Tâm phantom", "Vùng quan tâm"),
-        engine_class="ACRCT464",
+        engine_class="ACRCT",
         implementation_status="READY",
         supports_manual_adjustment=True,
     ),
@@ -265,7 +265,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         "DICOM_SERIES",
         ("Chuỗi DICOM MRI",),
         ("Chọn lát", "Tâm phantom", "Vùng quan tâm"),
-        engine_class="ACRMriLarge",
+        engine_class="ACRMRILarge",
         implementation_status="READY",
         supports_manual_adjustment=True,
     ),
@@ -277,7 +277,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         "DICOM_SERIES",
         ("Chuỗi DICOM MRI",),
         ("Chọn lát", "Tâm phantom", "Vùng quan tâm"),
-        engine_class="ACRMriMedium",
+        engine_class="ACRMRIMedium",
         implementation_status="READY",
         supports_manual_adjustment=True,
     ),
@@ -301,7 +301,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         "DICOM_SERIES",
         ("Chuỗi DICOM phantom",),
         ("Chọn lát", "Điều chỉnh vùng quan tâm", "Giá trị tham chiếu"),
-        engine_class="Cirs062M",
+        engine_class="CIRS062M",
         implementation_status="READY",
         supports_manual_adjustment=True,
     ),
@@ -313,7 +313,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         "DICOM_SERIES",
         ("Chuỗi DICOM phantom",),
         ("Chọn lát", "Điều chỉnh vùng quan tâm", "Ngưỡng"),
-        engine_class="GECatPhan",
+        engine_class="GEHeliosCTDaily",
         implementation_status="READY",
         supports_manual_adjustment=True,
     ),
@@ -429,23 +429,23 @@ _CATALOG: tuple[dict[str, object], ...] = (
 
 
 _PLANAR_VARIANTS: tuple[tuple[str, str, str], ...] = (
-    ("LEEDS_TOR_18", "Leeds TOR 18", "Leeds TOR 18"),
-    ("LEEDS_TOR_BLUE", "Leeds TOR Blue", "Leeds TOR Blue"),
+    ("LEEDS_TOR_18", "Leeds TOR 18", "LeedsTOR"),
+    ("LEEDS_TOR_BLUE", "Leeds TOR Blue", "LeedsTORBlue"),
     ("STANDARD_IMAGING_QC3", "Standard Imaging QC-3", "StandardImagingQC3"),
-    ("STANDARD_IMAGING_QC_KV", "Standard Imaging QC-kV", "StandardImagingQCKV"),
+    ("STANDARD_IMAGING_QC_KV", "Standard Imaging QC-kV", "StandardImagingQCkV"),
     ("LAS_VEGAS", "Las Vegas", "LasVegas"),
     ("ELEKTA_LAS_VEGAS", "Elekta Las Vegas", "ElektaLasVegas"),
     ("DOSELAB_MC2_MV", "Doselab MC2 MV", "DoselabMC2MV"),
-    ("DOSELAB_MC2_KV", "Doselab MC2 kV", "DoselabMC2KV"),
-    ("SNC_MV", "SNC MV", "SNCVMV"),
-    ("SNC_MV_12510", "SNC MV 12510", "SNCVMV12510"),
-    ("SNC_KV", "SNC kV", "SNCVKv"),
+    ("DOSELAB_MC2_KV", "Doselab MC2 kV", "DoselabMC2kV"),
+    ("SNC_MV", "SNC MV", "SNCMV"),
+    ("SNC_MV_12510", "SNC MV 12510", "SNCMV12510"),
+    ("SNC_KV", "SNC kV", "SNCkV"),
     ("PTW_EPID_QC", "PTW EPID QC", "PTWEPIDQC"),
     ("IBA_PRIMUS_A", "IBA Primus A", "IBAPrimusA"),
     ("STANDARD_IMAGING_FC2", "Standard Imaging FC-2", "StandardImagingFC2"),
-    ("IMT_LRAD", "IMT L-RAD", "IMTLRAD"),
+    ("IMT_LRAD", "IMT L-RAD", "IMTLRad"),
     ("DOSELAB_RLF", "Doselab RLf", "DoselabRLf"),
-    ("PTW_ISO_ALIGN", "PTW Iso-Align", "PTWIsoAlign"),
+    ("PTW_ISO_ALIGN", "PTW Iso-Align", "IsoAlign"),
     ("SNC_FSQA", "SNC FSQA", "SNCFSQA"),
     ("ACR_DIGITAL_MAMMOGRAPHY", "ACR Digital Mammography", "ACRDigitalMammography"),
 )
@@ -567,7 +567,7 @@ def _build_catalog() -> tuple[dict[str, object], ...]:
                 "PROFILE_PAIR",
                 ("Biên dạng liều tham chiếu", "Biên dạng liều đo", "Chênh lệch liều", "DTA"),
                 ("Chuẩn hóa", "Ngưỡng liều thấp", "Vùng tính"),
-                engine_class="pylinac.core.gamma.gamma_1d",
+                engine_class="gamma_1d",
                 supports_manual_adjustment=True,
             ),
             _item(
@@ -579,7 +579,7 @@ def _build_catalog() -> tuple[dict[str, object], ...]:
                 "IMAGE_PAIR",
                 ("Ảnh liều tham chiếu", "Ảnh liều đo", "Chênh lệch liều", "DTA"),
                 ("Chuẩn hóa", "Ngưỡng liều thấp", "Vùng tính", "Nội suy"),
-                engine_class="pylinac.core.gamma.gamma_2d",
+                engine_class="gamma_2d",
                 supports_manual_adjustment=True,
             ),
         ]
@@ -590,7 +590,7 @@ def _build_catalog() -> tuple[dict[str, object], ...]:
 QA_TEST_CATALOG: Final[tuple[QATestDefinition, ...]] = tuple(
     QATestDefinition.model_validate(item) for item in _build_catalog()
 )
-CATALOGUE_VERSION: Final[str] = "pylinac-3.47.0-rt-connect-1.2"
+CATALOGUE_VERSION: Final[str] = "pylinac-3.47.0-rt-connect-1.3"
 
 
 def get_qa_test_definition(key: str) -> QATestDefinition | None:

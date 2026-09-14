@@ -23,7 +23,24 @@
 | Quart DVT | `quart.zip` | `QuartDVT` | 10 | 73206 byte |
 | Nhãn Quart HyperSight | `quart.zip` | `QuartDVT` | 10 | 73206 byte |
 | Leeds TOR | `leeds.dcm` | `LeedsTOR` | 12 | 73719 byte |
+| Leeds TOR Blue | `leeds.dcm` | `LeedsTORBlue` | 12 | 80677 byte |
+| Standard Imaging QC-3 | `qc3.dcm` | `StandardImagingQC3` | 12 | 72539 byte |
+| Standard Imaging QC-kV | `SI-QC-kV.dcm` | `StandardImagingQCkV` | 12 | 81471 byte |
+| Las Vegas | `lasvegas.dcm` | `LasVegas` | 12 | 90038 byte |
+| Elekta Las Vegas | `elekta_las_vegas.dcm` | `ElektaLasVegas` | 12 | 91113 byte |
+| Doselab MC2 MV | `Doselab_MV.dcm` | `DoselabMC2MV` | 12 | 67273 byte |
+| Doselab MC2 kV | `Doselab_kV.dcm` | `DoselabMC2kV` | 12 | 61789 byte |
+| SNC MV | `SNC-MV.dcm` | `SNCMV` | 12 | 67448 byte |
+| SNC MV 12510 | `SNC_MV_12510.dcm` | `SNCMV12510` | 12 | 70421 byte |
+| SNC kV | `SNC-kV.dcm` | `SNCkV` | 12 | 68084 byte |
+| PTW EPID QC | `PTW-EPID-QC.dcm` | `PTWEPIDQC` | 12 | 71460 byte |
+| IBA Primus A | `iba_primus.dcm` | `IBAPrimusA` | 12 | 69332 byte |
 | Standard Imaging FC-2 | `fc2.dcm` | `StandardImagingFC2` | 9 | 69586 byte |
+| IMT L-RAD | `imtlrad.dcm` | `IMTLRad` | 9 | 62609 byte |
+| Doselab RLf | `Doselab_RLf.dcm` | `DoselabRLf` | 9 | 74041 byte |
+| PTW Iso-Align | `ptw_isoalign.dcm` | `IsoAlign` | 9 | 70908 byte |
+| SNC FSQA | `FSQA_15x15.dcm` | `SNCFSQA` | 9 | 93852 byte |
+| ACR Digital Mammography | `ACRDigitalMammography.dcm` | `ACRDigitalMammography` | 12 | 130576 byte |
 | Field Profile Analysis | `AS1200.dcm` | `FieldProfileAnalysis` | 9 | 54772 byte |
 | Field Analysis legacy | `AS1200.dcm` | `FieldAnalysis` | 42 | 57977 byte |
 | Dynalog | `AQA.dlg` + `BQA.dlg` | `Dynalog` | 10 | 9221 byte |
@@ -52,9 +69,29 @@
   - `quart.zip`: `037181977F6B98E86DEAE3D4D08B79B242A7989F0438F050DD289FD38FD3CDC5`
   - `leeds.dcm`: `663A46369619A3A25FC5C99A8B29189F2FA19BF86183318233846AFFD7C3B306`
   - `fc2.dcm`: `5F9D991930849D7D50C04E4E82F1374766B6767A01B9C0AA5DD55945A417D89D`
+  - `qc3.dcm`: `32EB20446EC6589EE7C7541C0E4809413358A9D6B2DE857B144286A8D57D9BE3`
+  - `SI-QC-kV.dcm`: `60CB788BC64DF5A996E06A34339ADDB512BE86D42D9DFB8F48546786B5BE430E`
+  - `lasvegas.dcm`: `C7889A36348ED58891F01C31B59A34BACDA380E3B854C94E1691A311BD462A78`
+  - `elekta_las_vegas.dcm`: `753F6ABED670D60BE21C859EFDE00BE42CFD6710B4BC0C5AD0668C07181A2BC5`
+  - `Doselab_MV.dcm`: `B940FA17209E48CD5A38E9F72AED2F2AA5C97E894F496BC6E0476D1B49B0E228`
+  - `Doselab_kV.dcm`: `F8CF7C1F432A0DBF5CD9063E6F36D9E9F4E40E0D9A60C1BC857E4C9E00D82399`
+  - `SNC-MV.dcm`: `F6CA0887918AFCEB9A861C9CB361810A5E8CAC29EB664A66932F0B3B4E6822D6`
+  - `SNC_MV_12510.dcm`: `41BE005358A99076E1C43C5B83CA1524C7E487AB967A41669B555D937C4BC917`
+  - `SNC-kV.dcm`: `F2ED3138B2C62F290198867F5AC463F1BF0436C7CFF25E5F4B3A2CD8492D77A4`
+  - `PTW-EPID-QC.dcm`: `550316EA117ACBCA2C95A58B0F2FF172CC979AA923A0EE5917C2FB590E8E3563`
+  - `iba_primus.dcm`: `0315FE36AA94C7CFAC2C45125EAF6B506B89E5FE6B4C67FC0E302D5CD678C65B`
+  - `imtlrad.dcm`: `F1F6B08B270B96A3E61682538832020C7FABA026ABCDA3DAE1571C1818B617E7`
+  - `Doselab_RLf.dcm`: `1C293EA17620820EC924C7B234A8C59842CE2B7BA316E059299A336E00C34686`
+  - `ptw_isoalign.dcm`: `096E15E5C55BB0E2F29C0CF99ACBC2DA13A0E6713766ED8753C0FAD1393D53F2`
+  - `FSQA_15x15.dcm`: `79808BC765E8832D450648C305CC0005A10819FBFD84416713F2D589DD7426FC`
+  - `ACRDigitalMammography.dcm`: `894ACFA0EDC90E7C665973906FCE7F7E146BD32F8CE0AFC086DDED35665A60A0`
+
+## Đối chiếu tên lớp danh mục
+
+Các tên lớp trong danh mục đã được đối chiếu với tên biểu tượng runtime của registry. Lần đối chiếu này phát hiện và sửa các tên hiển thị nội bộ bị lệch ở ACR, CIRS, GE Helios, các bài ảnh phẳng và hàm Gamma; phiên bản danh mục tăng lên `pylinac-3.47.0-rt-connect-1.3`. Kiểm thử registry hiện buộc mọi tên lớp/hàm trong danh mục phải khớp biểu tượng của wheel đã khóa.
 
 ## Phạm vi còn mở
 
 - CatPhan 700 chưa có tệp mẫu chính thức tương thích trong bộ tệp cục bộ.
-- ACR CT/MRI, CIRS 062M, GE Helios, 17 biến thể ảnh phẳng còn lại, chín bài hạt nhân và hai bài đóng góp cần fixture riêng. Nhãn HyperSight đã có đường chạy tương thích local bằng `QuartDVT`, nhưng vẫn cần kiểm tra hiển thị và staging riêng.
+- ACR CT/MRI, CIRS 062M, GE Helios, CatPhan 700, chín bài hạt nhân và bài đóng góp Jaw cần fixture riêng. Toàn bộ 19 biến thể ảnh phẳng đã chạy qua đúng bộ chuyển đổi bằng tệp mẫu chính thức của Pylinac; vẫn cần đối chiếu staging riêng. Nhãn HyperSight đã có đường chạy tương thích local bằng `QuartDVT`, nhưng vẫn cần kiểm tra hiển thị và staging riêng.
 - Cần đối chiếu từng chỉ số với kỳ vọng của bộ kiểm thử Pylinac, kiểm lỗi đầu vào, kiểm tài nguyên và chạy lại trên staging trước khi đóng gói tương ứng.
