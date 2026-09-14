@@ -1559,6 +1559,11 @@ export class ApiClient {
     if (typeof window !== 'undefined' && !window.confirm('Xóa vĩnh viễn bài kiểm tra này? Thao tác này không thể khôi phục; chỉ tiếp tục nếu bài không còn dữ liệu liên quan.')) {
       return Promise.reject(new ApiClientError('Đã hủy thao tác xóa vĩnh viễn.', 'ACTION_CANCELLED'))
     }
+    return this.purgeQACaseConfirmed(accessToken, caseId)
+  }
+
+  /** Chỉ gọi sau khi giao diện đã hỏi xác nhận một lần cho thao tác nhiều mục. */
+  purgeQACaseConfirmed(accessToken: string, caseId: string): Promise<{ status: string; case_id: string }> {
     return this.request(`/qa-cases/${caseId}/purge`, z.object({ status: z.string(), case_id: z.string().uuid() }), accessToken, { method: 'POST' })
   }
 

@@ -1,12 +1,19 @@
 import { expect, test } from 'vitest'
 
 import { dvhArtifactStatusLabel, summarizeDvhArtifacts } from './dvhArtifactSummary'
-import { isCaseInArchiveView } from './qaArchiveView'
+import { isCaseInArchiveView, toggleAllVisibleCaseSelection, toggleCaseSelection } from './qaArchiveView'
 
 test('thùng rác chỉ hiển thị hồ sơ đã lưu trữ', () => {
   expect(isCaseInArchiveView(true, true)).toBe(true)
   expect(isCaseInArchiveView(false, true)).toBe(false)
   expect(isCaseInArchiveView(false, false)).toBe(true)
+})
+
+test('chọn nhiều chỉ thay đổi các bài đang hiển thị và không tạo mục trùng', () => {
+  expect(toggleCaseSelection(['case-a'], 'case-a')).toEqual([])
+  expect(toggleCaseSelection(['case-a'], 'case-b')).toEqual(['case-a', 'case-b'])
+  expect(toggleAllVisibleCaseSelection(['case-old'], ['case-a', 'case-b'])).toEqual(['case-old', 'case-a', 'case-b'])
+  expect(toggleAllVisibleCaseSelection(['case-old', 'case-a', 'case-b'], ['case-a', 'case-b'])).toEqual(['case-old'])
 })
 
 test('summarizes only valid DICOM inputs for the DVH preflight', () => {

@@ -108,6 +108,10 @@ td code { color: #075e67; font-size: .78rem; }
 .folder-editor label, .filter-row label { color: #334155; display: grid; font-size: .82rem; font-weight: 600; gap: 6px; }
 .folder-editor input, .filter-row input, .filter-row select { border: 1px solid #c8d5de; border-radius: 4px; color: #0f172a; font: inherit; min-height: 38px; padding: 8px 10px; }
 .filter-row { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 16px; }
+.case-selection-toolbar { align-items: center; background: #f2fbf9; border: 1px solid #b8dfd8; display: flex; flex-wrap: wrap; gap: 9px 12px; margin-top: 14px; padding: 9px 10px; }
+.case-selection-toolbar .checkbox-row { margin: 0; }
+.case-selection-toolbar > span { color: #526e80; font-size: .78rem; font-weight: 600; margin-right: auto; }
+.visually-hidden { border: 0; clip: rect(0 0 0 0); clip-path: inset(50%); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; white-space: nowrap; width: 1px; }
 .case-form { border-top: 1px solid #dce5ea; margin-top: 18px; padding-top: 16px; }
 .qa-catalog-panel { background: #f8fbfc; border: 1px solid #d4e0e6; margin-top: 18px; padding: 14px; }
 .qa-catalog-toolbar { align-items: end; display: grid; gap: 14px; grid-template-columns: minmax(240px, .75fr) minmax(0, 1.25fr); margin-top: 12px; }
