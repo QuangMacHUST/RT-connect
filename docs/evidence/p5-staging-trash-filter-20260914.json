@@ -1,0 +1,34 @@
+{
+  "schema_version": "rt-connect.p5-staging-trash-filter.v1",
+  "captured_at_utc": "2026-09-14T02:56:24Z",
+  "phase": "P5",
+  "status": "STAGING_VERIFIED_SLICE",
+  "environment": "staging",
+  "checks": [
+    {
+      "name": "active_history",
+      "status": "PASS",
+      "observed": "Danh sách chính vẫn hiển thị các hồ sơ đang mở."
+    },
+    {
+      "name": "trash_scope",
+      "status": "PASS",
+      "observed": "Sau khi mở thùng rác, chỉ hồ sơ đã lưu trữ được hiển thị; số lượng hiển thị là 1."
+    },
+    {
+      "name": "preserved_linked_case",
+      "status": "PASS",
+      "observed": "dailyQA vẫn xuất hiện trong thùng rác để xử lý theo điều kiện liên kết."
+    },
+    {
+      "name": "exclude_active_cases",
+      "status": "PASS",
+      "observed": "P6 Staging Upload Smoke và P11 E2E Synthetic QA 20260910 B7C3 không xuất hiện trong thùng rác vì vẫn đang mở."
+    }
+  ],
+  "remaining_gates": [
+    "Từ chối xóa vĩnh viễn hồ sơ còn kết quả, tệp, báo cáo hoặc tác vụ nền liên kết trên staging.",
+    "Kiểm thao tác lặp sau lỗi mạng và phản hồi khi tiến trình nền đang chạy trên staging.",
+    "Đối chiếu không mất tệp, kết quả, báo cáo hoặc xu hướng sau toàn bộ vòng đời."
+  ]
+}
