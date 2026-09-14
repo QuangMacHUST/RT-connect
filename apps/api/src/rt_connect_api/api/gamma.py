@@ -312,11 +312,11 @@ def _coordinate_frame_summary(artifact: Artifact) -> Mapping[str, object] | None
     """Return the validated frame summary used for dataset-level preflight."""
 
     raw = artifact.metadata_snapshot.get("coordinate_frame")
-    if isinstance(raw, Mapping):
-        return raw
-    # Artifacts validated before the frame metadata addendum can still expose
-    # the DICOM FrameOfReferenceUID on the Artifact row.  Reconstruct only this
-    # unambiguous DICOM identity; never invent a frame for a JSON measurement.
+    # RTDOSE validation records the native patient frame, while the artifact
+    # itself does not carry a user-supplied transform.  Normalize that record
+    # to the explicit identity transform used by the Gamma engine.  Returning
+    # the raw DICOM block here would make a freshly revalidated RTDOSE fail at
+    # enqueue because its frame has no transform_to_reference field.
     if (
         artifact.artifact_type == "DICOM"
         and artifact.modality == "RTDOSE"
@@ -334,14 +334,12 @@ def _coordinate_frame_summary(artifact: Artifact) -> Mapping[str, object] | None
             "basis": "PATIENT_LPS",
             "frame_id": artifact.frame_of_reference_uid.strip(),
             "axis_order": axis_order,
-            # A validated RTDOSE has native patient coordinates.  Make that
-            # identity explicit so it can be compared with a measurement
-            # carrying the same identity transform.
             "transform_to_reference": {
                 "direction": "SOURCE_TO_REFERENCE",
                 "units": "mm",
                 "matrix": [
-                    list(IDENTITY_TRANSFORM[index : index + 4]) for index in range(0, 16, 4)
+                    list(IDENTITY_TRANSFORM[index : index + 4])
+                    for index in range(0, 16, 4)
                 ],
                 "source": {
                     "type": "dicom-native",
@@ -350,6 +348,8 @@ def _coordinate_frame_summary(artifact: Artifact) -> Mapping[str, object] | None
                 },
             },
         }
+    if isinstance(raw, Mapping):
+        return raw
     return None
 
 

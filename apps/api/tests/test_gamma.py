@@ -213,6 +213,49 @@ def test_gamma_api_rejects_missing_measurement_transform() -> None:
     assert error.value.code == "GAMMA_COORDINATE_FRAME_INVALID"
 
 
+def test_gamma_api_normalizes_validated_rtdose_native_frame() -> None:
+    frame_uid = "1.2.826.0.1.3680043.8.498.999.4"
+    reference = SimpleNamespace(
+        artifact_type="DICOM",
+        modality="RTDOSE",
+        frame_of_reference_uid=frame_uid,
+        sha256="a" * 64,
+        metadata_snapshot={
+            "coordinate_frame": {
+                "basis": "PATIENT_LPS",
+                "frame_id": frame_uid,
+                "axis_order": ["z", "y", "x"],
+            },
+            "grid": {"frames": 2},
+        },
+    )
+    evaluation = SimpleNamespace(
+        artifact_type="MEASUREMENT",
+        modality=None,
+        frame_of_reference_uid=None,
+        sha256="b" * 64,
+        metadata_snapshot={
+            "coordinate_frame": {
+                "basis": "PATIENT_LPS",
+                "frame_id": frame_uid,
+                "axis_order": ["z", "y", "x"],
+                "transform_to_reference": {
+                    "direction": "SOURCE_TO_REFERENCE",
+                    "units": "mm",
+                    "matrix": [
+                        [1.0, 0.0, 0.0, 0.0],
+                        [0.0, 1.0, 0.0, 0.0],
+                        [0.0, 0.0, 1.0, 0.0],
+                        [0.0, 0.0, 0.0, 1.0],
+                    ],
+                },
+            }
+        },
+    )
+
+    _validate_coordinate_frames(reference, evaluation)
+
+
 def test_gamma_engine_rejects_non_hex_transform_provenance(tmp_path: Path) -> None:
     payload = json.loads(_measurement_bytes("invalid-provenance", [1.0, 2.0, 3.0, 4.0]))
     payload["coordinate_frame"]["transform_to_reference"]["source"]["sha256"] = "g" * 64
