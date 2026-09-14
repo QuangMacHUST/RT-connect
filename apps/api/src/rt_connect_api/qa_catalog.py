@@ -189,6 +189,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Chuỗi DICOM CT hoặc CBCT",),
         ("Chọn lát", "Tâm phantom", "Góc", "Kích thước vùng quan tâm", "Giá trị HU tham chiếu"),
         engine_class="CatPhan503",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(
@@ -200,6 +201,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Chuỗi DICOM CT hoặc CBCT",),
         ("Chọn lát", "Tâm phantom", "Góc", "Kích thước vùng quan tâm"),
         engine_class="CatPhan504",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(
@@ -211,6 +213,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Chuỗi DICOM CT hoặc CBCT",),
         ("Chọn lát", "Tâm phantom", "Góc", "Kích thước vùng quan tâm"),
         engine_class="CatPhan600",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(
@@ -222,6 +225,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Chuỗi DICOM CT hoặc CBCT",),
         ("Chọn lát", "Tâm phantom", "Góc", "Kích thước vùng quan tâm"),
         engine_class="CatPhan604",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(

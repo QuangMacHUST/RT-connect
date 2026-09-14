@@ -910,6 +910,173 @@ def _save_figure(figure: Any) -> bytes:
     return overlay.getvalue()
 
 
+def _catphan_parameters(
+    source_path: Path, parameters: dict[str, object]
+) -> tuple[dict[str, object], dict[str, object]]:
+    constructor_keys = {"check_uid", "memory_efficient_mode", "is_zip"}
+    analysis_keys = {
+        "hu_tolerance",
+        "scaling_tolerance",
+        "thickness_tolerance",
+        "low_contrast_tolerance",
+        "cnr_threshold",
+        "zip_after",
+        "contrast_method",
+        "visibility_threshold",
+        "thickness_slice_straddle",
+        "expected_hu_values",
+        "x_adjustment",
+        "y_adjustment",
+        "angle_adjustment",
+        "roi_size_factor",
+        "scaling_factor",
+        "origin_slice",
+        "roll_slice_offset",
+    }
+    unknown = set(parameters) - constructor_keys - analysis_keys
+    if unknown:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_UNSUPPORTED", "Có tham số không được hỗ trợ cho bài CatPhan."
+        )
+    constructor: dict[str, object] = {
+        "check_uid": _bool(parameters, "check_uid", True),
+        "memory_efficient_mode": _bool(parameters, "memory_efficient_mode", False),
+        "is_zip": _bool(parameters, "is_zip", source_path.suffix.lower() == ".zip"),
+    }
+    analysis: dict[str, object] = {}
+    for key in (
+        "hu_tolerance",
+        "scaling_tolerance",
+        "thickness_tolerance",
+        "low_contrast_tolerance",
+        "cnr_threshold",
+    ):
+        if key in parameters:
+            analysis[key] = _number(parameters, key, minimum=0)
+    for key in (
+        "x_adjustment",
+        "y_adjustment",
+        "angle_adjustment",
+        "roi_size_factor",
+        "scaling_factor",
+        "roll_slice_offset",
+    ):
+        if key in parameters:
+            minimum = (
+                0 if key in {"roi_size_factor", "scaling_factor"} else None
+            )
+            analysis[key] = _number(parameters, key, minimum=minimum)
+    if "visibility_threshold" in parameters:
+        visibility_threshold = _number(parameters, "visibility_threshold", minimum=0)
+        if visibility_threshold > 1:
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID", "Ngưỡng nhìn thấy phải nằm trong khoảng 0 đến 1."
+            )
+        analysis["visibility_threshold"] = visibility_threshold
+    if "origin_slice" in parameters:
+        value = parameters["origin_slice"]
+        if value is not None:
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise PylinacAdapterError(
+                    "PYLINAC_PARAMETER_INVALID", "Lát gốc phải là số nguyên hoặc để trống."
+                )
+            analysis["origin_slice"] = value
+    if "zip_after" in parameters:
+        analysis["zip_after"] = _bool(parameters, "zip_after")
+    if "contrast_method" in parameters:
+        value = parameters["contrast_method"]
+        if not isinstance(value, str) or not value.strip():
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID", "Phương pháp tương phản không hợp lệ."
+            )
+        analysis["contrast_method"] = value.strip()
+    if "thickness_slice_straddle" in parameters:
+        value = parameters["thickness_slice_straddle"]
+        if not isinstance(value, (str, int)) or isinstance(value, bool):
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID", "Cách chọn lát độ dày không hợp lệ."
+            )
+        analysis["thickness_slice_straddle"] = value
+    if "expected_hu_values" in parameters:
+        value = parameters["expected_hu_values"]
+        if not isinstance(value, dict) or any(
+            isinstance(item, bool) or not isinstance(item, int | float) for item in value.values()
+        ):
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID", "Bảng giá trị HU kỳ vọng không hợp lệ."
+            )
+        analysis["expected_hu_values"] = value
+    return constructor, analysis
+
+
+def _execute_catphan(
+    catalog_key: str, source_path: Path, parameters: dict[str, object]
+) -> PylinacExecutionResult:
+    symbol, _ = resolve_runtime_symbol(catalog_key)
+    if symbol is None:
+        raise PylinacAdapterError(
+            "PYLINAC_RUNTIME_UNAVAILABLE", "Bộ phân tích CatPhan chưa sẵn sàng."
+        )
+    if not source_path.is_file():
+        raise PylinacAdapterError(
+            "PYLINAC_INPUT_FORMAT_INVALID", "Bài CatPhan cần một tệp ZIP DICOM."
+        )
+    constructor, analysis = _catphan_parameters(source_path, parameters)
+    try:
+        engine = symbol(str(source_path), **constructor)
+        engine.analyze(**analysis)
+        raw_result = engine.results_data(as_dict=True)
+        result = _json_safe(raw_result)
+        if not isinstance(result, dict):
+            raise PylinacAdapterError(
+                "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả CatPhan không hợp lệ."
+            )
+        from matplotlib import pyplot as plt  # type: ignore[import-untyped]
+
+        engine.plot_analyzed_image(show=False)
+        figure = plt.gcf()
+        overlay_bytes = _save_figure(figure)
+        plt.close(figure)
+        engine_class = {
+            "CATPHAN_503": "CatPhan503",
+            "CATPHAN_504": "CatPhan504",
+            "CATPHAN_600": "CatPhan600",
+            "CATPHAN_604": "CatPhan604",
+        }[catalog_key]
+        warnings = result.get("warnings", [])
+        warning_items = warnings if isinstance(warnings, list) else [warnings]
+        return PylinacExecutionResult(
+            catalog_key=catalog_key,
+            engine_class=engine_class,
+            engine_version=PYLINAC_VERSION,
+            package_fingerprint=package_fingerprint(),
+            result_snapshot={
+                "schema_version": "p7.pylinac-result.v1",
+                "engine": "pylinac",
+                "engine_class": engine_class,
+                "metrics": result,
+                "engine_passed": result.get("passed"),
+                "parameters": _json_safe(parameters),
+            },
+            warnings=[
+                {"code": "PYLINAC_ENGINE_WARNING", "message": str(item)}
+                for item in warning_items
+                if item
+            ],
+            overlay_bytes=overlay_bytes,
+            overlay_media_type="image/png",
+            overlay_filename=f"{catalog_key.lower()}-phan-tich.png",
+        )
+    except PylinacAdapterError:
+        raise
+    except Exception as exc:
+        raise PylinacAdapterError(
+            "PYLINAC_EXECUTION_FAILED",
+            "Pylinac không thể phân tích bộ ảnh CatPhan. Hãy kiểm tra tệp ZIP và tham số "
+            "rồi thử lại.",
+        ) from exc
+
+
 def _execute_field_profile(
     catalog_key: str, source_path: Path, parameters: dict[str, object]
 ) -> PylinacExecutionResult:
@@ -1024,6 +1191,8 @@ def execute_pylinac(
         return _execute_vmat(catalog_key, source_path, parameters)
     if catalog_key in {"FIELD_PROFILE_ANALYSIS", "FIELD_ANALYSIS_LEGACY"}:
         return _execute_field_profile(catalog_key, source_path, parameters)
+    if catalog_key in {"CATPHAN_503", "CATPHAN_504", "CATPHAN_600", "CATPHAN_604"}:
+        return _execute_catphan(catalog_key, source_path, parameters)
     raise PylinacAdapterError(
         "PYLINAC_ADAPTER_NOT_READY",
         "Bộ giao diện cho bài QA này chưa được mở; chưa chạy bằng bộ tính khác.",

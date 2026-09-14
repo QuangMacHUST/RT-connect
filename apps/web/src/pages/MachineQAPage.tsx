@@ -693,6 +693,94 @@ function FieldAnalysisPage({ caseId, accessToken, title, catalogKey }: { caseId:
   </div>
 }
 
+type CatPhanCatalogKey = 'CATPHAN_503' | 'CATPHAN_504' | 'CATPHAN_600' | 'CATPHAN_604'
+
+function CatPhanPage({ caseId, accessToken, title, catalogKey }: { caseId: string; accessToken: string; title: string; catalogKey: CatPhanCatalogKey }) {
+  const queryClient = useQueryClient()
+  const [selectedArtifactId, setSelectedArtifactId] = useState<string>()
+  const [huTolerance, setHuTolerance] = useState('40')
+  const [cnrThreshold, setCnrThreshold] = useState('15')
+  const [thicknessTolerance, setThicknessTolerance] = useState('0.2')
+  const [originSlice, setOriginSlice] = useState('')
+  const [xAdjustment, setXAdjustment] = useState('0')
+  const [yAdjustment, setYAdjustment] = useState('0')
+  const [angleAdjustment, setAngleAdjustment] = useState('0')
+  const [roiSizeFactor, setRoiSizeFactor] = useState('1')
+  const [message, setMessage] = useState<string>()
+  const artifacts = useQuery({
+    queryKey: ['pylinac-artifacts', caseId, accessToken],
+    queryFn: () => apiClient.artifacts(accessToken, caseId), retry: false
+  })
+  const runs = useQuery({
+    queryKey: ['pylinac-runs', caseId, accessToken],
+    queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
+  })
+  const upload = useMutation({
+    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
+    onSuccess: (artifact) => {
+      setSelectedArtifactId(artifact.id)
+      setMessage('Đã tải bộ ảnh CatPhan lên; có thể bắt đầu phân tích.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-artifacts', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const imageArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' || item.artifact_type === 'IMAGE')
+  const selectedInput = selectedArtifactId ?? imageArtifacts[0]?.id
+  const analyze = useMutation({
+    mutationFn: () => apiClient.createPylinacQARun(accessToken, caseId, {
+      catalog_key: catalogKey,
+      artifact_ids: [selectedInput!],
+      parameters: {
+        check_uid: true, is_zip: true, hu_tolerance: Number(huTolerance), cnr_threshold: Number(cnrThreshold), thickness_tolerance: Number(thicknessTolerance),
+        origin_slice: originSlice.trim() === '' ? null : Number(originSlice), x_adjustment: Number(xAdjustment), y_adjustment: Number(yAdjustment), angle_adjustment: Number(angleAdjustment), roi_size_factor: Number(roiSizeFactor)
+      }
+    }),
+    onSuccess: (run) => {
+      setMessage(run.status === 'COMPLETED' ? `Đã phân tích ${catalogKey.replace('CATPHAN_', 'CatPhan ')} bằng Pylinac.` : 'Pylinac không thể hoàn tất phân tích; hãy xem thông báo lỗi bên dưới.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const assess = useMutation({
+    mutationFn: ({ runId, value }: { runId: string; value: 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' }) => apiClient.assessPylinacQARun(accessToken, runId, value),
+    onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const history = runs.data?.items ?? []
+  const latest = history[0]
+  const isBusy = upload.isPending || analyze.isPending || assess.isPending
+  const displayName = catalogKey.replace('CATPHAN_', 'CatPhan ')
+
+  return <div className="page">
+    <header className="page-header">
+      <div><p className="eyebrow">KIỂM TRA CHẤT LƯỢNG MÁY · Pylinac</p><h1>{displayName}</h1><p>{title} · phân tích chuỗi DICOM bằng bộ tính CatPhan của Pylinac.</p></div>
+      <div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">Quay lại kho QA</Link><span className="status-badge">BỘ TÍNH Pylinac 3.47.0</span></div>
+    </header>
+    {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
+    <section className="panel machine-qa-panel">
+      <div className="panel-heading"><div><p className="eyebrow">BỘ ẢNH ĐẦU VÀO</p><h2>Chuỗi DICOM trong tệp ZIP</h2></div><strong>{imageArtifacts.length}</strong></div>
+      <p>CatPhan cần đúng một tệp ZIP chứa chuỗi DICOM cùng bộ phantom. Pylinac chịu trách nhiệm phân tích HU, độ dày, độ đồng nhất, độ phân giải và độ tương phản thấp.</p>
+      <div className="machine-qa-actions"><label className="button-link">Chọn tệp ZIP DICOM<input type="file" accept=".zip,application/zip" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>
+      {imageArtifacts.length > 0 && <label>Tệp đang chọn<select value={selectedInput ?? ''} onChange={(event) => setSelectedArtifactId(event.target.value)}>{imageArtifacts.map((artifact, index) => <option key={artifact.id} value={artifact.id}>Bộ ảnh {index + 1} · {artifact.original_filename}</option>)}</select></label>}
+      <div className="machine-qa-protocol-controls">
+        <label>Dung sai HU<input type="number" min="0" step="1" value={huTolerance} onChange={(event) => setHuTolerance(event.target.value)} /></label>
+        <label>Ngưỡng CNR<input type="number" min="0" step="0.1" value={cnrThreshold} onChange={(event) => setCnrThreshold(event.target.value)} /></label>
+        <label>Dung sai độ dày (mm)<input type="number" min="0" step="0.01" value={thicknessTolerance} onChange={(event) => setThicknessTolerance(event.target.value)} /></label>
+        <label>Lát gốc tùy chọn<input type="number" min="0" step="1" placeholder="Tự động" value={originSlice} onChange={(event) => setOriginSlice(event.target.value)} /></label>
+      </div>
+      <div className="machine-qa-protocol-controls">
+        <label>Điều chỉnh ngang (mm)<input type="number" step="0.1" value={xAdjustment} onChange={(event) => setXAdjustment(event.target.value)} /></label>
+        <label>Điều chỉnh dọc (mm)<input type="number" step="0.1" value={yAdjustment} onChange={(event) => setYAdjustment(event.target.value)} /></label>
+        <label>Điều chỉnh góc (độ)<input type="number" step="0.1" value={angleAdjustment} onChange={(event) => setAngleAdjustment(event.target.value)} /></label>
+        <label>Hệ số kích thước vùng<input type="number" min="0" step="0.01" value={roiSizeFactor} onChange={(event) => setRoiSizeFactor(event.target.value)} /></label>
+      </div>
+      <div className="machine-qa-actions"><button disabled={!selectedInput || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+    </section>
+    {latest && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">KẾT QUẢ MỚI NHẤT</p><h2>{latest.name}</h2></div><span className={statusClass(latest.status)}>{statusLabel(latest.status)}</span></div>{latest.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích</h3><ul>{latest.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{latest.status === 'COMPLETED' && <><p>Kết quả đã được lưu từ Pylinac, gồm các mô-đun HU, độ dày, độ đồng nhất, độ phân giải và độ tương phản thấp theo loại phantom.</p>{latest.overlay_artifact_id && <button className="button-secondary" onClick={() => { void apiClient.downloadArtifact(accessToken, latest.overlay_artifact_id!).then((download) => window.open(download.url, '_blank', 'noopener,noreferrer')).catch((error) => setMessage(errorMessage(error))) }}>Mở ảnh phân tích</button>}<label>Đánh giá của người dùng<select value={latest.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => assess.mutate({ runId: latest.id, value: event.target.value as 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' })}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">Chưa có kết quả {displayName}.</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td></tr>)}</tbody></table></div>}</section>
+  </div>
+}
+
 export function MachineQAPage() {
   const { caseId } = useParams<{ caseId: string }>()
   const { session } = useAuth()
@@ -822,6 +910,9 @@ export function MachineQAPage() {
   }
   if ((selectedCase.qa_definition_key === 'FIELD_PROFILE_ANALYSIS' || selectedCase.qa_definition_key === 'FIELD_ANALYSIS_LEGACY') && accessToken) {
     return <FieldAnalysisPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key} />
+  }
+  if ((selectedCase.qa_definition_key === 'CATPHAN_503' || selectedCase.qa_definition_key === 'CATPHAN_504' || selectedCase.qa_definition_key === 'CATPHAN_600' || selectedCase.qa_definition_key === 'CATPHAN_604') && accessToken) {
+    return <CatPhanPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key} />
   }
 
   const metrics = records(activeRun?.result_snapshot.metrics)

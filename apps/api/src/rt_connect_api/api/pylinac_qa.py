@@ -287,6 +287,10 @@ def create_pylinac_run(
         "STARSHOT",
         "WINSTON_LUTZ",
         "WINSTON_LUTZ_MULTI_TARGET",
+        "CATPHAN_503",
+        "CATPHAN_504",
+        "CATPHAN_600",
+        "CATPHAN_604",
     } and len(artifacts) != 1:
         raise DomainError(
             "PYLINAC_INPUT_COUNT_INVALID", "Bài QA này yêu cầu đúng một tệp đầu vào.", 422
@@ -302,6 +306,15 @@ def create_pylinac_run(
         raise DomainError(
             "PYLINAC_INPUT_FORMAT_INVALID",
             "Bài Winston–Lutz yêu cầu một tệp ZIP chứa bộ ảnh.",
+            422,
+        )
+    if (
+        definition.key in {"CATPHAN_503", "CATPHAN_504", "CATPHAN_600", "CATPHAN_604"}
+        and Path(artifacts[0].original_filename).suffix.lower() != ".zip"
+    ):
+        raise DomainError(
+            "PYLINAC_INPUT_FORMAT_INVALID",
+            "Bài CatPhan yêu cầu một tệp ZIP chứa chuỗi DICOM.",
             422,
         )
     binding = runtime_binding(definition.key)

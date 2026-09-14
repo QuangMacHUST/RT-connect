@@ -494,3 +494,47 @@ def test_legacy_field_analysis_adapter_passes_protocol_controls(tmp_path, monkey
     assert result.engine_class == "FieldAnalysis"
     assert result.overlay_filename == "field-analysis-phan-tich.png"
     assert len(result.overlay_bytes or b"") > 0
+
+
+def test_catphan_adapter_passes_zip_and_analysis_controls(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "catphan.zip"
+    source.write_bytes(b"dicom-zip")
+
+    from matplotlib import pyplot as plt
+
+    class FakeCatPhan:
+        def __init__(self, path: str, **kwargs: object) -> None:
+            assert path.endswith("catphan.zip")
+            assert kwargs["check_uid"] is True
+            assert kwargs["is_zip"] is True
+
+        def analyze(self, **kwargs: object) -> None:
+            assert kwargs["hu_tolerance"] == 40.0
+            assert kwargs["cnr_threshold"] == 15.0
+            assert kwargs["origin_slice"] == 12
+            assert kwargs["x_adjustment"] == 1.5
+
+        def results_data(self, *, as_dict: bool) -> dict[str, object]:
+            assert as_dict is True
+            return {"passed": True, "ctp404": {"hu": 3.2}, "warnings": []}
+
+        def plot_analyzed_image(self, *, show: bool) -> None:
+            assert show is False
+            plt.figure()
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (FakeCatPhan, None) if key == "CATPHAN_503" else (None, "missing"),
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.package_fingerprint", lambda: "f" * 64
+    )
+    result = execute_pylinac(
+        "CATPHAN_503",
+        source,
+        {"hu_tolerance": 40, "cnr_threshold": 15, "origin_slice": 12, "x_adjustment": 1.5},
+    )
+    assert result.engine_class == "CatPhan503"
+    assert result.result_snapshot["engine_passed"] is True
+    assert result.overlay_filename == "catphan_503-phan-tich.png"
+    assert len(result.overlay_bytes or b"") > 0
