@@ -221,7 +221,11 @@ export function QAArchivePage() {
   const validationMutation = useMutation({
     mutationFn: (artifactId: string) => apiClient.validateArtifact(accessToken!, artifactId, true),
     onSuccess: (validation) => {
-      setMessage(`Kết quả kiểm tra: ${labelOf(artifactStatusLabels, validation.result)}; ${validation.errors.length} lỗi, ${validation.warnings.length} cảnh báo.`)
+      const details = [...validation.errors, ...validation.warnings]
+        .map((item) => typeof item.message === 'string' ? `${item.field ? `${item.field}: ` : ''}${item.message}` : '')
+        .filter(Boolean)
+        .join(' | ')
+      setMessage(`Kết quả kiểm tra: ${labelOf(artifactStatusLabels, validation.result)}; ${validation.errors.length} lỗi, ${validation.warnings.length} cảnh báo.${details ? ` ${details}` : ''}`)
       void queryClient.invalidateQueries({ queryKey: ['artifacts', selectedCase?.id] })
     },
     onError: (error) => setMessage(errorMessage(error))
