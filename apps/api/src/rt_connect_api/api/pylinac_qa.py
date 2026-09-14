@@ -299,6 +299,10 @@ def create_pylinac_run(
         raise DomainError(
             "PYLINAC_INPUT_COUNT_INVALID", "Bài VMAT yêu cầu đúng hai ảnh đầu vào.", 422
         )
+    if definition.key.startswith("PLANAR_") and len(artifacts) != 1:
+        raise DomainError(
+            "PYLINAC_INPUT_COUNT_INVALID", "Bài ảnh phẳng yêu cầu đúng một tệp đầu vào.", 422
+        )
     if (
         definition.key in {"WINSTON_LUTZ", "WINSTON_LUTZ_MULTI_TARGET"}
         and Path(artifacts[0].original_filename).suffix.lower() != ".zip"

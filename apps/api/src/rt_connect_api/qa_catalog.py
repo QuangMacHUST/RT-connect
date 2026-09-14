@@ -453,6 +453,7 @@ def _build_catalog() -> tuple[dict[str, object], ...]:
                 ("Ảnh DICOM hoặc định dạng được hỗ trợ",),
                 ("Tâm phantom", "Góc", "Vùng quan tâm", "Thang đo", "Đảo ảnh"),
                 engine_class=engine_class,
+                implementation_status="READY",
                 supports_manual_adjustment=True,
             )
         )

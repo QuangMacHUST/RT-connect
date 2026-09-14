@@ -781,6 +781,99 @@ function CatPhanPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
   </div>
 }
 
+const planarCatalogKeys = [
+  'PLANAR_LEEDS_TOR_18', 'PLANAR_LEEDS_TOR_BLUE', 'PLANAR_STANDARD_IMAGING_QC3', 'PLANAR_STANDARD_IMAGING_QC_KV', 'PLANAR_LAS_VEGAS', 'PLANAR_ELEKTA_LAS_VEGAS', 'PLANAR_DOSELAB_MC2_MV', 'PLANAR_DOSELAB_MC2_KV', 'PLANAR_SNC_MV', 'PLANAR_SNC_MV_12510', 'PLANAR_SNC_KV', 'PLANAR_PTW_EPID_QC', 'PLANAR_IBA_PRIMUS_A', 'PLANAR_STANDARD_IMAGING_FC2', 'PLANAR_IMT_LRAD', 'PLANAR_DOSELAB_RLF', 'PLANAR_PTW_ISO_ALIGN', 'PLANAR_SNC_FSQA', 'PLANAR_ACR_DIGITAL_MAMMOGRAPHY'
+] as const
+type PlanarCatalogKey = typeof planarCatalogKeys[number]
+
+function PlanarImagingPage({ caseId, accessToken, title, catalogKey }: { caseId: string; accessToken: string; title: string; catalogKey: PlanarCatalogKey }) {
+  const queryClient = useQueryClient()
+  const [selectedArtifactId, setSelectedArtifactId] = useState<string>()
+  const [lowContrast, setLowContrast] = useState('0.05')
+  const [highContrast, setHighContrast] = useState('0.5')
+  const [centerX, setCenterX] = useState('')
+  const [centerY, setCenterY] = useState('')
+  const [angle, setAngle] = useState('0')
+  const [roiSize, setRoiSize] = useState('1')
+  const [scaling, setScaling] = useState('1')
+  const [invert, setInvert] = useState(false)
+  const [message, setMessage] = useState<string>()
+  const artifacts = useQuery({
+    queryKey: ['pylinac-artifacts', caseId, accessToken],
+    queryFn: () => apiClient.artifacts(accessToken, caseId), retry: false
+  })
+  const runs = useQuery({
+    queryKey: ['pylinac-runs', caseId, accessToken],
+    queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
+  })
+  const upload = useMutation({
+    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'IMAGE', 'EVALUATION'),
+    onSuccess: (artifact) => {
+      setSelectedArtifactId(artifact.id)
+      setMessage('Đã tải ảnh phẳng lên; có thể bắt đầu phân tích.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-artifacts', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const imageArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' || item.artifact_type === 'IMAGE')
+  const selectedInput = selectedArtifactId ?? imageArtifacts[0]?.id
+  const isFieldVariant = catalogKey === 'PLANAR_STANDARD_IMAGING_FC2' || catalogKey === 'PLANAR_IMT_LRAD' || catalogKey === 'PLANAR_DOSELAB_RLF' || catalogKey === 'PLANAR_PTW_ISO_ALIGN' || catalogKey === 'PLANAR_SNC_FSQA'
+  const isMammography = catalogKey === 'PLANAR_ACR_DIGITAL_MAMMOGRAPHY'
+  const analyze = useMutation({
+    mutationFn: () => {
+      const parameters: Record<string, unknown> = { low_contrast_threshold: Number(lowContrast), invert, x_adjustment: Number(centerX || 0), y_adjustment: Number(centerY || 0), angle_adjustment: Number(angle), roi_size_factor: Number(roiSize), scaling_factor: Number(scaling) }
+      if (isFieldVariant) Object.assign(parameters, { high_contrast_threshold: Number(highContrast), fwxm: 50, bb_edge_threshold_mm: 10, kernel_size_multiplier: 2 })
+      else if (!isMammography) Object.assign(parameters, { high_contrast_threshold: Number(highContrast), visibility_threshold: 100, low_contrast_method: 'Michelson' })
+      else Object.assign(parameters, { low_contrast_visibility_threshold: 20, speck_group_contrast_method: 'Weber', speck_group_visibility_threshold: 50, speck_group_half_thresh: 2, speck_group_full_thresh: 4, fiber_sigmas_ratio: [0.75, 1], fiber_max_gap: 4, fiber_len_half_thresh: 5, fiber_len_full_thresh: 8, fiber_orientation_tolerance: 5 })
+      if (centerX.trim() !== '' && centerY.trim() !== '') parameters.center_override = [Number(centerX), Number(centerY)]
+      return apiClient.createPylinacQARun(accessToken, caseId, { catalog_key: catalogKey, artifact_ids: [selectedInput!], parameters })
+    },
+    onSuccess: (run) => {
+      setMessage(run.status === 'COMPLETED' ? 'Đã phân tích ảnh phẳng bằng Pylinac.' : 'Pylinac không thể hoàn tất phân tích; hãy xem thông báo lỗi bên dưới.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const assess = useMutation({
+    mutationFn: ({ runId, value }: { runId: string; value: 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' }) => apiClient.assessPylinacQARun(accessToken, runId, value),
+    onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const history = runs.data?.items ?? []
+  const latest = history[0]
+  const isBusy = upload.isPending || analyze.isPending || assess.isPending
+  const displayName = title || 'Bài kiểm tra ảnh phẳng'
+
+  return <div className="page">
+    <header className="page-header">
+      <div><p className="eyebrow">KIỂM TRA CHẤT LƯỢNG MÁY · Pylinac</p><h1>{displayName}</h1><p>Phân tích ảnh phẳng bằng đúng biến thể Pylinac đã chọn.</p></div>
+      <div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">Quay lại kho QA</Link><span className="status-badge">BỘ TÍNH Pylinac 3.47.0</span></div>
+    </header>
+    {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
+    <section className="panel machine-qa-panel">
+      <div className="panel-heading"><div><p className="eyebrow">TỆP ĐẦU VÀO</p><h2>Ảnh phantom hoặc ảnh kiểm tra</h2></div><strong>{imageArtifacts.length}</strong></div>
+      <p>Chọn một ảnh được chụp theo đúng phantom và lớp Pylinac. Có thể điều chỉnh tâm, góc, vùng quan tâm và đảo ảnh trước mỗi lần phân tích.</p>
+      <div className="machine-qa-actions"><label className="button-link">Chọn ảnh<input type="file" accept=".dcm,.tif,.tiff,.png,.jpg,.jpeg" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>
+      {imageArtifacts.length > 0 && <label>Ảnh đang chọn<select value={selectedInput ?? ''} onChange={(event) => setSelectedArtifactId(event.target.value)}>{imageArtifacts.map((artifact, index) => <option key={artifact.id} value={artifact.id}>Ảnh {index + 1} · {artifact.original_filename}</option>)}</select></label>}
+      <div className="machine-qa-protocol-controls">
+        <label>Ngưỡng tương phản thấp<input type="number" min="0" step="0.01" value={lowContrast} onChange={(event) => setLowContrast(event.target.value)} /></label>
+        {!isMammography && <label>Ngưỡng tương phản cao<input type="number" min="0" step="0.01" value={highContrast} onChange={(event) => setHighContrast(event.target.value)} /></label>}
+        <label>Tâm ngang tùy chọn<input type="number" step="0.1" placeholder="Tự động" value={centerX} onChange={(event) => setCenterX(event.target.value)} /></label>
+        <label>Tâm dọc tùy chọn<input type="number" step="0.1" placeholder="Tự động" value={centerY} onChange={(event) => setCenterY(event.target.value)} /></label>
+      </div>
+      <div className="machine-qa-protocol-controls">
+        <label>Điều chỉnh góc (độ)<input type="number" step="0.1" value={angle} onChange={(event) => setAngle(event.target.value)} /></label>
+        <label>Hệ số vùng quan tâm<input type="number" min="0" step="0.01" value={roiSize} onChange={(event) => setRoiSize(event.target.value)} /></label>
+        <label>Hệ số thang đo<input type="number" min="0" step="0.01" value={scaling} onChange={(event) => setScaling(event.target.value)} /></label>
+        <label className="checkbox-label"><input type="checkbox" checked={invert} onChange={(event) => setInvert(event.target.checked)} /> Đảo ảnh</label>
+      </div>
+      <div className="machine-qa-actions"><button disabled={!selectedInput || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+    </section>
+    {latest && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">KẾT QUẢ MỚI NHẤT</p><h2>{latest.name}</h2></div><span className={statusClass(latest.status)}>{statusLabel(latest.status)}</span></div>{latest.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích</h3><ul>{latest.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{latest.status === 'COMPLETED' && <><p>Kết quả structured của Pylinac đã được lưu, cùng với ảnh phantom và các chỉ số của đúng biến thể đã chọn.</p>{latest.overlay_artifact_id && <button className="button-secondary" onClick={() => { void apiClient.downloadArtifact(accessToken, latest.overlay_artifact_id!).then((download) => window.open(download.url, '_blank', 'noopener,noreferrer')).catch((error) => setMessage(errorMessage(error))) }}>Mở ảnh phân tích</button>}<label>Đánh giá của người dùng<select value={latest.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => assess.mutate({ runId: latest.id, value: event.target.value as 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' })}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">Chưa có kết quả ảnh phẳng.</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td></tr>)}</tbody></table></div>}</section>
+  </div>
+}
+
 export function MachineQAPage() {
   const { caseId } = useParams<{ caseId: string }>()
   const { session } = useAuth()
@@ -913,6 +1006,9 @@ export function MachineQAPage() {
   }
   if ((selectedCase.qa_definition_key === 'CATPHAN_503' || selectedCase.qa_definition_key === 'CATPHAN_504' || selectedCase.qa_definition_key === 'CATPHAN_600' || selectedCase.qa_definition_key === 'CATPHAN_604') && accessToken) {
     return <CatPhanPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key} />
+  }
+  if (planarCatalogKeys.includes(selectedCase.qa_definition_key as PlanarCatalogKey) && accessToken) {
+    return <PlanarImagingPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key as PlanarCatalogKey} />
   }
 
   const metrics = records(activeRun?.result_snapshot.metrics)

@@ -1077,6 +1077,241 @@ def _execute_catphan(
         ) from exc
 
 
+_PLANAR_PROFILE_KEYS = {
+    "PLANAR_LEEDS_TOR_18",
+    "PLANAR_LEEDS_TOR_BLUE",
+    "PLANAR_STANDARD_IMAGING_QC3",
+    "PLANAR_STANDARD_IMAGING_QC_KV",
+    "PLANAR_LAS_VEGAS",
+    "PLANAR_ELEKTA_LAS_VEGAS",
+    "PLANAR_DOSELAB_MC2_MV",
+    "PLANAR_DOSELAB_MC2_KV",
+    "PLANAR_SNC_MV",
+    "PLANAR_SNC_MV_12510",
+    "PLANAR_SNC_KV",
+    "PLANAR_PTW_EPID_QC",
+    "PLANAR_IBA_PRIMUS_A",
+}
+_PLANAR_FIELD_KEYS = {
+    "PLANAR_STANDARD_IMAGING_FC2",
+    "PLANAR_IMT_LRAD",
+    "PLANAR_DOSELAB_RLF",
+    "PLANAR_PTW_ISO_ALIGN",
+    "PLANAR_SNC_FSQA",
+}
+
+
+def _optional_planar_number(
+    parameters: dict[str, object], key: str, *, minimum: float | None = None
+) -> float | None:
+    value = parameters.get(key)
+    if value is None:
+        return None
+    return _number(parameters, key, minimum=minimum)
+
+
+def _planar_point(parameters: dict[str, object], key: str) -> tuple[float, float] | None:
+    if parameters.get(key) is None:
+        return None
+    return _pair_of_numbers(parameters, key)
+
+
+def _planar_parameters(
+    catalog_key: str, parameters: dict[str, object]
+) -> tuple[dict[str, object], dict[str, object]]:
+    constructor_keys = {"normalize"}
+    common_keys = {
+        "low_contrast_threshold",
+        "high_contrast_threshold",
+        "invert",
+        "angle_override",
+        "center_override",
+        "size_override",
+        "ssd",
+        "low_contrast_method",
+        "visibility_threshold",
+        "x_adjustment",
+        "y_adjustment",
+        "angle_adjustment",
+        "roi_size_factor",
+        "scaling_factor",
+    }
+    field_keys = {"fwxm", "bb_edge_threshold_mm", "kernel_size_multiplier"}
+    acr_keys = {
+        "low_contrast_visibility_threshold",
+        "speck_group_contrast_method",
+        "speck_group_visibility_threshold",
+        "speck_group_half_thresh",
+        "speck_group_full_thresh",
+        "fiber_sigmas_ratio",
+        "fiber_max_gap",
+        "fiber_len_half_thresh",
+        "fiber_len_full_thresh",
+        "fiber_orientation_tolerance",
+    }
+    allowed = constructor_keys | common_keys
+    if catalog_key in _PLANAR_FIELD_KEYS:
+        allowed |= field_keys
+    elif catalog_key == "PLANAR_ACR_DIGITAL_MAMMOGRAPHY":
+        allowed = constructor_keys | {
+            "low_contrast_threshold",
+            "invert",
+            "angle_override",
+            "center_override",
+            "size_override",
+            "ssd",
+            "low_contrast_method",
+            "x_adjustment",
+            "y_adjustment",
+            "angle_adjustment",
+            "roi_size_factor",
+            "scaling_factor",
+        } | acr_keys
+    unknown = set(parameters) - allowed
+    if unknown:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_UNSUPPORTED", "Có tham số không được hỗ trợ cho bài ảnh phẳng."
+        )
+    constructor: dict[str, object] = {"normalize": _bool(parameters, "normalize", True)}
+    analysis: dict[str, object] = {}
+    for key in ("low_contrast_threshold", "high_contrast_threshold", "visibility_threshold"):
+        if key in parameters:
+            analysis[key] = _number(parameters, key, minimum=0)
+    if "low_contrast_threshold" in parameters and "high_contrast_threshold" in parameters:
+        low_threshold = _number(parameters, "low_contrast_threshold", minimum=0)
+        high_threshold = _number(parameters, "high_contrast_threshold", minimum=0)
+        if high_threshold < low_threshold:
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID", "Ngưỡng tương phản cao phải lớn hơn ngưỡng thấp."
+            )
+    if "invert" in parameters:
+        analysis["invert"] = _bool(parameters, "invert")
+    for key in (
+        "angle_override",
+        "size_override",
+        "x_adjustment",
+        "y_adjustment",
+        "angle_adjustment",
+    ):
+        numeric_value = _optional_planar_number(parameters, key)
+        if numeric_value is not None:
+            analysis[key] = numeric_value
+    point = _planar_point(parameters, "center_override")
+    if point is not None:
+        analysis["center_override"] = point
+    if "ssd" in parameters:
+        ssd_value = parameters["ssd"]
+        if ssd_value != "auto" and (
+            isinstance(ssd_value, bool) or not isinstance(ssd_value, int | float)
+        ):
+            raise PylinacAdapterError("PYLINAC_PARAMETER_INVALID", "SSD không hợp lệ.")
+        analysis["ssd"] = ssd_value
+    for key in ("low_contrast_method", "speck_group_contrast_method"):
+        if key in parameters:
+            method_value = parameters[key]
+            if not isinstance(method_value, str) or not method_value.strip():
+                raise PylinacAdapterError(
+                    "PYLINAC_PARAMETER_INVALID", f"Tham số {key} không hợp lệ."
+                )
+            analysis[key] = method_value.strip()
+    for key in ("roi_size_factor", "scaling_factor"):
+        if key in parameters:
+            analysis[key] = _number(parameters, key, minimum=0)
+    if catalog_key in _PLANAR_FIELD_KEYS:
+        analysis["fwxm"] = _integer(parameters, "fwxm", minimum=1) if "fwxm" in parameters else 50
+        for key in ("bb_edge_threshold_mm", "kernel_size_multiplier"):
+            if key in parameters:
+                analysis[key] = _number(parameters, key, minimum=0)
+    if catalog_key == "PLANAR_ACR_DIGITAL_MAMMOGRAPHY":
+        for key in (
+            "low_contrast_visibility_threshold",
+            "speck_group_visibility_threshold",
+            "fiber_max_gap",
+            "fiber_len_half_thresh",
+            "fiber_len_full_thresh",
+            "fiber_orientation_tolerance",
+        ):
+            if key in parameters:
+                analysis[key] = _number(parameters, key, minimum=0)
+        for key in ("speck_group_half_thresh", "speck_group_full_thresh"):
+            if key in parameters:
+                analysis[key] = _integer(parameters, key, minimum=1)
+        if "fiber_sigmas_ratio" in parameters:
+            first, second = _pair_of_numbers(parameters, "fiber_sigmas_ratio")
+            if first <= 0 or second <= 0:
+                raise PylinacAdapterError(
+                    "PYLINAC_PARAMETER_INVALID", "Tỷ lệ sigma của sợi không hợp lệ."
+                )
+            analysis["fiber_sigmas_ratio"] = (first, second)
+    return constructor, analysis
+
+
+def _execute_planar(
+    catalog_key: str, source_path: Path, parameters: dict[str, object]
+) -> PylinacExecutionResult:
+    symbol, _ = resolve_runtime_symbol(catalog_key)
+    if symbol is None:
+        raise PylinacAdapterError(
+            "PYLINAC_RUNTIME_UNAVAILABLE", "Bộ phân tích ảnh phẳng chưa sẵn sàng."
+        )
+    if not source_path.is_file():
+        raise PylinacAdapterError(
+            "PYLINAC_INPUT_FORMAT_INVALID", "Bài ảnh phẳng cần một tệp ảnh đầu vào."
+        )
+    constructor, analysis = _planar_parameters(catalog_key, parameters)
+    try:
+        engine = symbol(str(source_path), **constructor)
+        engine.analyze(**analysis)
+        raw_result = engine.results_data(as_dict=True)
+        result = _json_safe(raw_result)
+        if not isinstance(result, dict):
+            raise PylinacAdapterError(
+                "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả ảnh phẳng không hợp lệ."
+            )
+        plotted = engine.plot(show=False)
+        from matplotlib import pyplot as plt  # type: ignore[import-untyped]
+
+        figures = plotted[0] if isinstance(plotted, tuple) and plotted else []
+        figure = figures[0] if figures else plt.gcf()
+        overlay_bytes = _save_figure(figure)
+        for plotted_figure in figures:
+            plt.close(plotted_figure)
+        binding = runtime_binding(catalog_key)
+        engine_class = binding.import_path.rsplit(".", 1)[-1] if binding else catalog_key
+        warnings = result.get("warnings", [])
+        warning_items = warnings if isinstance(warnings, list) else [warnings]
+        return PylinacExecutionResult(
+            catalog_key=catalog_key,
+            engine_class=engine_class,
+            engine_version=PYLINAC_VERSION,
+            package_fingerprint=package_fingerprint(),
+            result_snapshot={
+                "schema_version": "p7.pylinac-result.v1",
+                "engine": "pylinac",
+                "engine_class": engine_class,
+                "metrics": result,
+                "engine_passed": result.get("passed"),
+                "parameters": _json_safe(parameters),
+            },
+            warnings=[
+                {"code": "PYLINAC_ENGINE_WARNING", "message": str(item)}
+                for item in warning_items
+                if item
+            ],
+            overlay_bytes=overlay_bytes,
+            overlay_media_type="image/png",
+            overlay_filename=f"{catalog_key.lower()}-phan-tich.png",
+        )
+    except PylinacAdapterError:
+        raise
+    except Exception as exc:
+        raise PylinacAdapterError(
+            "PYLINAC_EXECUTION_FAILED",
+            "Pylinac không thể phân tích ảnh phẳng. Hãy kiểm tra đúng phantom, ảnh và tham số "
+            "rồi thử lại.",
+        ) from exc
+
+
 def _execute_field_profile(
     catalog_key: str, source_path: Path, parameters: dict[str, object]
 ) -> PylinacExecutionResult:
@@ -1193,6 +1428,8 @@ def execute_pylinac(
         return _execute_field_profile(catalog_key, source_path, parameters)
     if catalog_key in {"CATPHAN_503", "CATPHAN_504", "CATPHAN_600", "CATPHAN_604"}:
         return _execute_catphan(catalog_key, source_path, parameters)
+    if catalog_key.startswith("PLANAR_"):
+        return _execute_planar(catalog_key, source_path, parameters)
     raise PylinacAdapterError(
         "PYLINAC_ADAPTER_NOT_READY",
         "Bộ giao diện cho bài QA này chưa được mở; chưa chạy bằng bộ tính khác.",

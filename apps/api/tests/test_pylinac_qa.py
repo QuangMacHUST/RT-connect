@@ -538,3 +538,52 @@ def test_catphan_adapter_passes_zip_and_analysis_controls(tmp_path, monkeypatch)
     assert result.result_snapshot["engine_passed"] is True
     assert result.overlay_filename == "catphan_503-phan-tich.png"
     assert len(result.overlay_bytes or b"") > 0
+
+
+def test_planar_adapter_uses_common_pylinac_image_controls(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "planar.dcm"
+    source.write_bytes(b"planar")
+
+    from matplotlib import pyplot as plt
+
+    class FakePlanar:
+        def __init__(self, path: str, **kwargs: object) -> None:
+            assert path.endswith("planar.dcm")
+            assert kwargs == {"normalize": True}
+
+        def analyze(self, **kwargs: object) -> None:
+            assert kwargs["low_contrast_threshold"] == 0.05
+            assert kwargs["high_contrast_threshold"] == 0.5
+            assert kwargs["center_override"] == (100.0, 120.0)
+            assert kwargs["invert"] is False
+
+        def results_data(self, *, as_dict: bool) -> dict[str, object]:
+            assert as_dict is True
+            return {"low_contrast": {"visibility": 90}, "warnings": []}
+
+        def plot(self, *, show: bool) -> tuple[list[object], list[str]]:
+            assert show is False
+            return [plt.figure()], ["Image"]
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (FakePlanar, None) if key == "PLANAR_LEEDS_TOR_18" else (None, "missing"),
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.package_fingerprint", lambda: "f" * 64
+    )
+    result = execute_pylinac(
+        "PLANAR_LEEDS_TOR_18",
+        source,
+        {
+            "normalize": True,
+            "low_contrast_threshold": 0.05,
+            "high_contrast_threshold": 0.5,
+            "center_override": [100, 120],
+            "invert": False,
+        },
+    )
+    assert result.engine_class == "LeedsTOR"
+    assert result.result_snapshot["engine_passed"] is None
+    assert result.overlay_filename == "planar_leeds_tor_18-phan-tich.png"
+    assert len(result.overlay_bytes or b"") > 0
