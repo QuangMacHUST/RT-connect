@@ -1,0 +1,28 @@
+{
+  "evidence": "P5 upload queue metadata regression",
+  "captured_at": "2026-09-14T14:36:06+07:00",
+  "scope": "local web application",
+  "commit": "d6980d9",
+  "change": "Pending upload items now follow the selected artifact type and logical role before upload; uploaded items and items in other cases remain unchanged.",
+  "tests": {
+    "files": [
+      "src/pages/QAArchivePage.test.tsx",
+      "src/pages/uploadQueue.test.ts"
+    ],
+    "passed": 9,
+    "failed": 0,
+    "cases": [
+      "pending item in selected case receives new metadata",
+      "uploaded item is not changed",
+      "pending item in another case is not changed",
+      "already-current metadata does not allocate a new queue state"
+    ]
+  },
+  "quality_gates": {
+    "lint": "PASS",
+    "production_build": "PASS",
+    "git_diff_check": "PASS",
+    "staging_asset_contains_fix": true
+  },
+  "remaining_p5_gate": "Authenticated staging purge request for linked archived case dailyQA remains intentionally unsubmitted pending action-time confirmation; expected server behavior is rejection with preservation of 2 machine-QA results and 6 trend points."
+}
