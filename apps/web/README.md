@@ -107,3 +107,8 @@ P5 purge-guard regression marker (2026-09-14): the API archive contract now
 has an independent regression for a stored input artifact that blocks
 permanent purge. Keep this marker aligned with `/apps/api` so all three
 services are rebuilt from the same source commit before staging verification.
+
+P5 input-artifact evidence checkpoint (2026-09-14): the repository evidence
+records the independent stored-input purge guard and the 218-test API
+regression. Keep this watched marker aligned with `/apps/api` so all three
+services are rebuilt from the same source commit before staging verification.

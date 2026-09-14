@@ -161,3 +161,8 @@ also verifies that a stored input artifact by itself blocks permanent purge and
 that the archived case remains readable. This marker has no runtime behavior;
 rebuild API, worker and web from the same commit before reusing a staging
 candidate.
+
+P5 input-artifact evidence checkpoint (2026-09-14): the repository evidence
+records the independent stored-input purge guard and the 218-test API
+regression. Keep this watched marker in the next staging rebuild so a root
+documentation commit cannot leave API, worker and web on different revisions.
