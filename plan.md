@@ -454,7 +454,7 @@ Danh mục hiện có 63 bài theo sổ toàn bộ danh mục pylinac và bài n
 
 Danh mục đúng đầu vào, dữ liệu cũ mở được, trash/restore/purge và liên kết lịch sử có test DB/worker/storage; không coi chỉ xóa hàng trên UI là đạt.
 
-**Các điều kiện còn mở trước P5-VERIFY:** trường hợp staging hồ sơ có liên kết phải bị từ chối và giữ nguyên; kiểm thao tác lặp sau lỗi mạng; kiểm phản hồi khi tiến trình nền đang chạy; xác nhận không mất tệp, kết quả, báo cáo hoặc xu hướng sau toàn bộ vòng đời. Lát cắt hồ sơ thử nghiệm không liên kết đã có evidence staging. Danh mục, lịch sử, hồ sơ cũ và lưu trữ/khôi phục đã có evidence staging. Chỉ sau khi các kiểm tra còn lại có bằng chứng mới được mở P6.
+**Các điều kiện còn mở trước P5-VERIFY:** trường hợp staging hồ sơ có liên kết phải bị từ chối và giữ nguyên khi gửi yêu cầu xóa thật; kiểm phản hồi khi tiến trình nền đang xử lý một lượt Gamma thật; xác nhận không mất tệp, kết quả, báo cáo hoặc xu hướng sau toàn bộ vòng đời. Lát cắt hồ sơ thử nghiệm không liên kết đã có bằng chứng staging. Lỗi mạng ở lát cắt đọc đã đạt. Danh mục, lịch sử, hồ sơ cũ và lưu trữ/khôi phục đã có bằng chứng staging. Chỉ sau khi các kiểm tra còn lại có bằng chứng mới được mở P6.
 
 ## P6 — Đầu vào theo bài và kiểm tra dữ liệu
 
