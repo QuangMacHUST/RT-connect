@@ -465,6 +465,7 @@ def list_qa_cases(
     performed_from: datetime | None = None,
     performed_to: datetime | None = None,
     include_archived: bool = Query(default=False),
+    archived_only: bool = Query(default=False),
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=100),
     identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
@@ -472,7 +473,9 @@ def list_qa_cases(
 ) -> QACaseCollectionResponse:
     _context_for_organization(organization_id, identity, session)
     conditions = [QACase.organization_id == organization_id]
-    if not include_archived:
+    if archived_only:
+        conditions.append(QACase.is_archived.is_(True))
+    elif not include_archived:
         conditions.append(QACase.is_archived.is_(False))
     if q:
         pattern = f"%{q}%"

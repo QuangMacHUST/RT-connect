@@ -233,6 +233,10 @@ def test_qa_case_archive_restore_and_purge_are_idempotent_and_recoverable() -> N
             f"/api/v1/organizations/{organization.id}/qa-cases",
             params={"include_archived": True},
         )
+        trash_only = client.get(
+            f"/api/v1/organizations/{organization.id}/qa-cases",
+            params={"include_archived": True, "archived_only": True},
+        )
         restored = client.post(f"/api/v1/qa-cases/{case_id}/restore")
         repeated_restore = client.post(f"/api/v1/qa-cases/{case_id}/restore")
         archived_again = client.delete(f"/api/v1/qa-cases/{case_id}")
@@ -248,6 +252,8 @@ def test_qa_case_archive_restore_and_purge_are_idempotent_and_recoverable() -> N
     assert repeated_archive.status_code == 200
     assert hidden.json()["total"] == 0
     assert trash.json()["total"] == 1
+    assert trash_only.json()["total"] == 1
+    assert all(item["is_archived"] for item in trash_only.json()["items"])
     assert restored.status_code == 200
     assert restored.json()["is_archived"] is False
     assert repeated_restore.status_code == 200

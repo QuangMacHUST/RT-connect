@@ -1504,11 +1504,12 @@ export class ApiClient {
     }), accessToken)
   }
 
-  qaCases(accessToken: string, organizationId: string, params: { q?: string; folder_id?: string; include_archived?: boolean } = {}): Promise<Collection<QACaseResource> & { include_archived: boolean }> {
+  qaCases(accessToken: string, organizationId: string, params: { q?: string; folder_id?: string; include_archived?: boolean; archived_only?: boolean } = {}): Promise<Collection<QACaseResource> & { include_archived: boolean }> {
     const query = new URLSearchParams()
     if (params.q) query.set('q', params.q)
     if (params.folder_id) query.set('folder_id', params.folder_id)
     if (params.include_archived) query.set('include_archived', 'true')
+    if (params.archived_only) query.set('archived_only', 'true')
     const suffix = query.toString() ? `?${query.toString()}` : ''
     return this.get(`/organizations/${organizationId}/qa-cases${suffix}`, z.object({
       items: z.array(z.object({

@@ -139,7 +139,7 @@ export function QAArchivePage() {
   const selectedMachine = useMemo(() => machines.data?.items.find((item) => item.id === selectedMachineId) ?? machines.data?.items[0], [machines.data, selectedMachineId])
   const cases = useQuery({
     queryKey: ['qa-cases', organizationId, selectedFolder?.id, accessToken, showTrash],
-    queryFn: () => apiClient.qaCases(accessToken!, organizationId!, { folder_id: selectedFolder?.id, include_archived: showTrash }),
+    queryFn: () => apiClient.qaCases(accessToken!, organizationId!, { folder_id: selectedFolder?.id, include_archived: showTrash, archived_only: showTrash }),
     enabled: Boolean(accessToken && organizationId), retry: false
   })
   const [selectedCaseId, setSelectedCaseId] = useState<string>()
