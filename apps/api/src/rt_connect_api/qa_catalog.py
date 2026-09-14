@@ -374,6 +374,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Bộ ảnh Winston–Lutz",),
         ("Ánh xạ góc", "Hệ tọa độ", "Nhận diện bi", "Nhận diện trường"),
         engine_class="WinstonLutz",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(

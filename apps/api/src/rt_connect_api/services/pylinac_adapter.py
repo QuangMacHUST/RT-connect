@@ -359,6 +359,116 @@ def _execute_starshot(
         ) from exc
 
 
+def _winston_lutz_parameters(
+    parameters: dict[str, object],
+) -> tuple[dict[str, object], dict[str, object]]:
+    """Validate and split ZIP loading and Winston–Lutz analysis options."""
+
+    constructor_keys = {"use_filenames", "dpi", "sid"}
+    analysis_keys = {
+        "bb_size_mm",
+        "low_density_bb",
+        "open_field",
+        "apply_virtual_shift",
+        "snap_tolerance",
+        "gantry_reference",
+        "collimator_reference",
+        "couch_reference",
+        "bb_proximity_mm",
+    }
+    unknown = set(parameters) - constructor_keys - analysis_keys
+    if unknown:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_UNSUPPORTED",
+            "Có tham số không được hỗ trợ cho bài Winston–Lutz.",
+        )
+
+    constructor: dict[str, object] = {}
+    if "use_filenames" in parameters:
+        constructor["use_filenames"] = _bool(parameters, "use_filenames")
+    for key in ("dpi", "sid"):
+        if key in parameters and parameters[key] is not None:
+            constructor[key] = _number(parameters, key, minimum=0)
+
+    analysis: dict[str, object] = {}
+    if "bb_size_mm" in parameters:
+        analysis["bb_size_mm"] = _number(parameters, "bb_size_mm", minimum=0)
+    for key in ("snap_tolerance", "gantry_reference", "collimator_reference", "couch_reference"):
+        if key in parameters:
+            analysis[key] = _number(parameters, key)
+    if "bb_proximity_mm" in parameters:
+        analysis["bb_proximity_mm"] = _number(parameters, "bb_proximity_mm", minimum=0)
+    for key in ("low_density_bb", "open_field", "apply_virtual_shift"):
+        if key in parameters:
+            analysis[key] = _bool(parameters, key)
+    return constructor, analysis
+
+
+def _execute_winston_lutz(
+    source_path: Path, parameters: dict[str, object]
+) -> PylinacExecutionResult:
+    symbol, _ = resolve_runtime_symbol("WINSTON_LUTZ")
+    if symbol is None:
+        raise PylinacAdapterError(
+            "PYLINAC_RUNTIME_UNAVAILABLE", "Bộ phân tích Winston–Lutz chưa sẵn sàng."
+        )
+    if source_path.suffix.lower() != ".zip":
+        raise PylinacAdapterError(
+            "PYLINAC_INPUT_FORMAT_INVALID",
+            "Winston–Lutz yêu cầu một tệp ZIP chứa bộ ảnh theo các góc máy.",
+        )
+    constructor, analysis = _winston_lutz_parameters(parameters)
+    try:
+        engine = symbol.from_zip(str(source_path), **constructor)
+        engine.analyze(**analysis)
+        raw_result = engine.results_data(as_dict=True)
+        result = _json_safe(raw_result)
+        if not isinstance(result, dict):
+            raise PylinacAdapterError(
+                "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả không hợp lệ."
+            )
+        figures, _ = engine.plot_images(show=False, split=False)
+        overlay_bytes: bytes | None = None
+        if figures:
+            overlay = BytesIO()
+            figures[0].savefig(overlay, format="png", dpi=120)
+            overlay_bytes = overlay.getvalue()
+            for figure in figures:
+                figure.clf()
+        warnings = result.get("warnings", [])
+        warning_items = warnings if isinstance(warnings, list) else [warnings]
+        return PylinacExecutionResult(
+            catalog_key="WINSTON_LUTZ",
+            engine_class="WinstonLutz",
+            engine_version=PYLINAC_VERSION,
+            package_fingerprint=package_fingerprint(),
+            result_snapshot={
+                "schema_version": "p7.pylinac-result.v1",
+                "engine": "pylinac",
+                "engine_class": "WinstonLutz",
+                "metrics": result,
+                "engine_passed": result.get("passed"),
+                "parameters": _json_safe(parameters),
+            },
+            warnings=[
+                {"code": "PYLINAC_ENGINE_WARNING", "message": str(item)}
+                for item in warning_items
+                if item
+            ],
+            overlay_bytes=overlay_bytes,
+            overlay_media_type="image/png" if overlay_bytes is not None else None,
+            overlay_filename="winston-lutz-phan-tich.png" if overlay_bytes is not None else None,
+        )
+    except PylinacAdapterError:
+        raise
+    except Exception as exc:
+        raise PylinacAdapterError(
+            "PYLINAC_EXECUTION_FAILED",
+            "Pylinac không thể phân tích bộ ảnh Winston–Lutz. Hãy kiểm tra tệp ZIP, "
+            "tên góc máy và các tham số rồi thử lại.",
+        ) from exc
+
+
 def execute_pylinac(
     catalog_key: str, source_path: Path, parameters: dict[str, object]
 ) -> PylinacExecutionResult:
@@ -371,6 +481,8 @@ def execute_pylinac(
         return _execute_picket_fence(source_path, parameters)
     if catalog_key == "STARSHOT":
         return _execute_starshot(source_path, parameters)
+    if catalog_key == "WINSTON_LUTZ":
+        return _execute_winston_lutz(source_path, parameters)
     raise PylinacAdapterError(
         "PYLINAC_ADAPTER_NOT_READY",
         "Bộ giao diện cho bài QA này chưa được mở; chưa chạy bằng bộ tính khác.",

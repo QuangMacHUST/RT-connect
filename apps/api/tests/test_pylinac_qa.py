@@ -178,3 +178,64 @@ def test_starshot_adapter_rejects_invalid_manual_center() -> None:
         assert exc.code == "PYLINAC_PARAMETER_INVALID"
     else:
         raise AssertionError("Tâm thủ công không hợp lệ phải bị từ chối")
+
+
+def test_winston_lutz_adapter_uses_zip_loader_and_pylinac_overlay(monkeypatch) -> None:
+    class FakeFigure:
+        def savefig(self, stream, **kwargs: object) -> None:
+            assert kwargs == {"format": "png", "dpi": 120}
+            stream.write(b"winston-lutz-png")
+
+        def clf(self) -> None:
+            return None
+
+    class FakeWinstonLutz:
+        @classmethod
+        def from_zip(cls, path: str, **kwargs: object):
+            assert path.endswith("winston-lutz.zip")
+            assert kwargs == {"sid": 1000.0}
+            return cls()
+
+        def analyze(self, **kwargs: object) -> None:
+            assert kwargs["bb_size_mm"] == 5.0
+            assert kwargs["snap_tolerance"] == 3.0
+            assert kwargs["open_field"] is False
+
+        def results_data(self, *, as_dict: bool) -> dict[str, object]:
+            assert as_dict is True
+            return {
+                "max_2d_cax_to_bb_mm": 0.31,
+                "gantry_3d_iso_diameter_mm": 0.48,
+                "warnings": [],
+            }
+
+        def plot_images(self, *, show: bool, split: bool):
+            assert show is False
+            assert split is False
+            return [FakeFigure()], ["image"]
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (FakeWinstonLutz, None) if key == "WINSTON_LUTZ" else (None, "missing"),
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.package_fingerprint", lambda: "f" * 64
+    )
+    result = execute_pylinac(
+        "WINSTON_LUTZ",
+        Path("winston-lutz.zip"),
+        {"sid": 1000, "bb_size_mm": 5, "snap_tolerance": 3, "open_field": False},
+    )
+    assert result.catalog_key == "WINSTON_LUTZ"
+    assert result.result_snapshot["engine_class"] == "WinstonLutz"
+    assert result.overlay_filename == "winston-lutz-phan-tich.png"
+    assert result.overlay_bytes == b"winston-lutz-png"
+
+
+def test_winston_lutz_adapter_requires_zip_input() -> None:
+    try:
+        execute_pylinac("WINSTON_LUTZ", Path("winston-lutz.dcm"), {})
+    except PylinacAdapterError as exc:
+        assert exc.code == "PYLINAC_INPUT_FORMAT_INVALID"
+    else:
+        raise AssertionError("Winston–Lutz phải yêu cầu bộ ảnh ZIP")

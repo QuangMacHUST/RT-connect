@@ -513,7 +513,7 @@ Input contract cho từng bài, fixture hợp lệ/lỗi và giới hạn tài n
 
 **Đầu vào/phụ thuộc:** P6 đã hoàn thành và có bàn giao; các hợp đồng liên quan xem mục kỹ thuật tương ứng.
 **Phạm vi:** FR-UX1-P07-01; B05/B06/B07. P7 cũ chỉ có checklist/rule và ba ví dụ ảnh không đủ đóng P7 UX1.3.
-**Trạng thái hiện tại:** `ACTIVE_AFTER_P06_HANDOFF`; P6 đã hoàn tất VERIFY/HANDOFF ở source `6615820`, P7 bắt đầu bằng W01/W02/W03. Đã có lát cắt local thực thi thật cho P07-PF và P07-STAR bằng wheel đã khóa; đây chưa phải nghiệm thu P7 vì 60 capability còn lại, khung kết quả dùng chung và ma trận fixture chưa hoàn tất.
+**Trạng thái hiện tại:** `ACTIVE_AFTER_P06_HANDOFF`; P6 đã hoàn tất VERIFY/HANDOFF ở source `6615820`, P7 bắt đầu bằng W01/W02/W03. Đã có lát cắt local thực thi thật cho P07-PF, P07-WL và P07-STAR bằng wheel đã khóa; đây chưa phải nghiệm thu P7 vì 59 capability còn lại, khung kết quả dùng chung và ma trận fixture chưa hoàn tất.
 
 Bằng chứng lát cắt hiện hành: [P7 local Picket Fence và Starshot](docs/evidence/p7-local-picket-starshot-20260914.json). Bằng chứng này chỉ xác nhận hai capability đã gọi Pylinac thật, lưu kết quả/overlay và vượt cổng local; không cấp trạng thái hoàn thành cho các gói P7 còn lại.
 
@@ -541,8 +541,8 @@ Pylinac là engine đã chọn, không còn bước so sánh để quyết đị
 
 - [ ] P07-W01 — QA nhập tay: bảng nhiều giá trị, checklist/NA, công thức có kiểu, chuẩn/ngưỡng trực quan và kết luận riêng; không yêu cầu DICOM khi bài không cần.
 - [x] P07-W02 — Khóa wheel pylinac 3.47.0 và SHA-256 trong lock/image; xác minh runtime/dependency. Nếu API Python 3.14 không tương thích, tạo `qa-image-worker` với Python tương thích; không đổi sang engine khác. Lát cắt local đã dựng ảnh, kiểm hash wheel và xác nhận runtime 3.47.0.
-- [ ] P07-W03 — Phát triển `PylinacCapabilityRegistry` + `PylinacAdapter`; inventory wheel phải khớp registry đủ 16 họ chính, QA contrib công khai, class/variant, input profile, parameter schema, result mapping, overlay, error và fixture. Lát cắt local hiện đã có API, migration, lưu input/result/overlay và adapter thật cho Picket Fence và Starshot; chưa tính là hoàn thành W03 khi các capability còn lại chưa có adapter/fixture/contract test riêng.
-- [ ] P07-W04 — Xây result viewer/canvas chung: auto run, điều chỉnh bằng click/drag hoặc form, parameter diff, run mới, lớp ảnh/biểu đồ, đánh giá và persist history. Hiện Picket Fence và Starshot có màn hình riêng với biểu mẫu, lịch sử, đánh giá và mở overlay; canvas dùng chung cùng thao tác click/drag trên ảnh vẫn chưa đóng.
+- [ ] P07-W03 — Phát triển `PylinacCapabilityRegistry` + `PylinacAdapter`; inventory wheel phải khớp registry đủ 16 họ chính, QA contrib công khai, class/variant, input profile, parameter schema, result mapping, overlay, error và fixture. Lát cắt local hiện đã có API, migration, lưu input/result/overlay và adapter thật cho Picket Fence, Winston–Lutz và Starshot; chưa tính là hoàn thành W03 khi các capability còn lại chưa có adapter/fixture/contract test riêng.
+- [ ] P07-W04 — Xây result viewer/canvas chung: auto run, điều chỉnh bằng click/drag hoặc form, parameter diff, run mới, lớp ảnh/biểu đồ, đánh giá và persist history. Hiện Picket Fence, Winston–Lutz và Starshot có màn hình riêng với biểu mẫu, lịch sử, đánh giá và mở overlay; canvas dùng chung cùng thao tác click/drag trên ảnh vẫn chưa đóng.
 - [ ] P07-CAL — Calibration: TG-51 photon/electron legacy/electron modern và TRS-398 photon/electron; form theo protocol, factors/dose; ghi rõ pylinac chưa nhận revision TRS-398 2024 nếu bản khóa chưa có.
 - [ ] P07-STAR — Starshot: gantry/collimator/MLC/couch; UI chọn `start_point`, radius, peak/tolerance/FWHM/recursive/invert; tâm/tia/wobble overlay. Lát cắt local đã chạy bằng `Starshot`, hỗ trợ SID/DPI, tâm X/Y nhập từ giao diện, lưu chỉ số/đánh giá/lịch sử và ảnh chú thích; còn thiếu canvas click/drag và ma trận fixture đầy đủ.
 - [ ] P07-VMAT — VMAT: DRGS, DRMLC, DRCS; cặp ảnh open/dynamic, tolerance, segment/ROI/offset và deviation overlay.
@@ -553,7 +553,7 @@ Pylinac là engine đã chọn, không còn bước so sánh để quyết đị
 - [ ] P07-QUART — Quart DVT và alias/biến thể HyperSight còn public trong wheel; HU/geometry/uniformity/CNR/SNR và module controls.
 - [ ] P07-LOG — Dynalog và Trajectory Log 2.1/3.0/4.0, `.bin`/`.txt` theo class; axis/MLC/hold/fluence/Gamma log và rule đánh giá do đơn vị chọn.
 - [ ] P07-PF — Picket Fence: MLC/profile registry, orientation/crop/sag/offset/tolerance/action tolerance, leaf/picket metrics, histogram và overlay.
-- [ ] P07-WL — Winston–Lutz một target: angle/coordinate mapping, BB/CAX từng ảnh, isocenter/axis plots và couch shift khi phù hợp.
+- [ ] P07-WL — Winston–Lutz một target: bộ ảnh ZIP, đọc góc từ siêu dữ liệu DICOM hoặc tùy chọn tên tệp, SID/DPI, kích thước bi, ngưỡng nhận diện, góc tham chiếu, BB/CAX từng ảnh, isocenter/axis plots và dịch chuyển bàn khi phù hợp. Lát cắt local đã gọi `WinstonLutz.from_zip()`/`analyze()` thật, lưu metrics và ảnh phân tích, có giao diện tham số và lịch sử; còn thiếu ma trận fixture đầy đủ, ánh xạ trực quan từng ảnh và kiểm chứng staging.
 - [ ] P07-WLMT — Winston–Lutz Multi-Target/Multi-Field: form cấu hình BB/field/tọa độ/mapping và ghép cặp/overlay; không bắt tệp cấu hình thô.
 - [ ] P07-PLANAR — Toàn bộ Planar Imaging: Leeds/Blue, SI QC-3/QC-kV, Las Vegas/Elekta, Doselab MC2 MV/kV, SNC MV/MV12510/kV, PTW EPID QC, IBA Primus A, SI FC-2, IMT L-RAD, Doselab RLf, IsoAlign, SNC FSQA, ACR Digital Mammography.
 - [ ] P07-FPA — Field Profile Analysis: manual/beam/geometric center, click position, x/y width, normalization, edge type và toàn bộ profile metrics công khai.
