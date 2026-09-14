@@ -1,0 +1,38 @@
+{
+  "schema_version": "rt-connect.local-regression.v1",
+  "captured_at": "2026-09-14T11:06:05.6872535+07:00",
+  "source_commit": "99d68f6",
+  "scope": "P5 QA archive, purge guards, worker and full application regression",
+  "checks": [
+    {
+      "name": "api.full_pytest",
+      "command": "apps/api/.venv/Scripts/python.exe -m pytest -q",
+      "passed": true,
+      "result": "217 passed, 2 warnings"
+    },
+    {
+      "name": "web.full_vitest",
+      "command": "npm.cmd run test -- --run",
+      "passed": true,
+      "result": "12 test files passed, 37 tests passed"
+    },
+    {
+      "name": "qa_archive_and_worker_focused",
+      "command": "apps/api/.venv/Scripts/python.exe -m pytest -q tests/test_qa_archive.py tests/test_gamma_worker.py",
+      "passed": true,
+      "result": "17 tests passed"
+    },
+    {
+      "name": "qa_archive_ruff",
+      "command": "apps/api/.venv/Scripts/ruff.exe check tests/test_qa_archive.py",
+      "passed": true,
+      "result": "All checks passed"
+    }
+  ],
+  "warnings": [
+    "Starlette test client deprecation warning for the current httpx integration",
+    "Resource warnings from the existing test harness during selected API tests"
+  ],
+  "contains_secret_values": false,
+  "contains_patient_data": false
+}
