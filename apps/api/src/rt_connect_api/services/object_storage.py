@@ -32,6 +32,8 @@ class ObjectStorage(Protocol):
 
     def delete_object(self, key: str) -> None: ...
 
+    def list_object_keys(self, prefix: str) -> list[str]: ...
+
     def download_to_path(self, key: str, destination: Path) -> None: ...
 
     def presigned_get(
@@ -98,6 +100,15 @@ class MinioObjectStorage:
         except Exception as exc:
             raise ObjectStorageError("Could not remove the unreferenced artifact object") from exc
 
+    def list_object_keys(self, prefix: str) -> list[str]:
+        try:
+            return [
+                item.object_name
+                for item in self.client.list_objects(self.bucket, prefix=prefix, recursive=True)
+            ]
+        except Exception as exc:
+            raise ObjectStorageError("Could not inspect the configured artifact bucket") from exc
+
     def download_to_path(self, key: str, destination: Path) -> None:
         response = None
         try:
@@ -146,6 +157,9 @@ class InMemoryObjectStorage:
 
     def delete_object(self, key: str) -> None:
         self.objects.pop(key, None)
+
+    def list_object_keys(self, prefix: str) -> list[str]:
+        return sorted(key for key in self.objects if key.startswith(prefix))
 
     def download_to_path(self, key: str, destination: Path) -> None:
         try:

@@ -20,6 +20,7 @@ from rt_connect_api.core.errors import DomainError
 from rt_connect_api.db.models import (
     Artifact,
     AuditEvent,
+    ExportJob,
     InputManifest,
     QACase,
     UserIdentity,
@@ -83,6 +84,17 @@ class DownloadResponse(BaseModel):
     url: str
     expires_at: datetime
     filename: str
+
+
+class StorageIntegrityResponse(BaseModel):
+    checked_at: datetime
+    provider_object_count: int = Field(ge=0)
+    referenced_artifact_count: int = Field(ge=0)
+    referenced_export_count: int = Field(ge=0)
+    referenced_object_count: int = Field(ge=0)
+    orphan_object_count: int = Field(ge=0)
+    missing_object_count: int = Field(ge=0)
+    status: Literal["CLEAN", "DRIFT"]
 
 
 class ValidationRunResponse(BaseModel):
@@ -233,6 +245,19 @@ def _artifact_roles(
         if logical_role not in roles[artifact_id]:
             roles[artifact_id].append(logical_role)
     return roles
+
+
+def _storage_integrity_context(
+    organization_id: UUID, identity: AuthenticatedIdentity, session: Session
+) -> SessionContext:
+    context = _context(identity, session)
+    if context.organization_id != organization_id:
+        raise DomainError(
+            "ORGANIZATION_SCOPE_MISMATCH",
+            "The requested organization is outside the authenticated membership scope.",
+            403,
+        )
+    return context
 
 
 def _validation_response(run: ValidationRun) -> ValidationRunResponse:
@@ -523,6 +548,68 @@ def list_artifacts(
         total=total,
         offset=offset,
         limit=limit,
+    )
+
+
+@router.get(
+    "/organizations/{organization_id}/storage/integrity",
+    response_model=StorageIntegrityResponse,
+)
+def inspect_storage_integrity(
+    organization_id: UUID,
+    identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
+    session: Session = Depends(get_session),  # noqa: B008
+    storage: ObjectStorage = Depends(_storage),  # noqa: B008
+) -> StorageIntegrityResponse:
+    """Read-only reconciliation of provider objects against durable references.
+
+    Artifact uploads and report exports share the private bucket.  Counting
+    only one table would incorrectly report the other namespace as orphaned,
+    so this probe compares both reference tables in one organization scope.
+    It intentionally returns counts only; object keys never enter the UI.
+    """
+
+    context = _storage_integrity_context(organization_id, identity, session)
+    prefix = f"organizations/{context.organization_id}/"
+    try:
+        provider_keys = {
+            key for key in storage.list_object_keys(prefix) if key.startswith(prefix)
+        }
+    except ObjectStorageError as exc:
+        raise DomainError(
+            "OBJECT_STORAGE_UNAVAILABLE",
+            "Artifact storage is temporarily unavailable.",
+            503,
+        ) from exc
+    artifact_keys = {
+        key
+        for key in session.scalars(
+            select(Artifact.object_key).where(Artifact.organization_id == context.organization_id)
+        ).all()
+        if key is not None
+    }
+    export_keys = {
+        key
+        for key in session.scalars(
+            select(ExportJob.object_key).where(
+                ExportJob.organization_id == context.organization_id,
+                ExportJob.object_key.is_not(None),
+            )
+        ).all()
+        if key is not None
+    }
+    referenced_keys = {key for key in artifact_keys | export_keys if key.startswith(prefix)}
+    orphan_count = len(provider_keys - referenced_keys)
+    missing_count = len(referenced_keys - provider_keys)
+    return StorageIntegrityResponse(
+        checked_at=datetime.now(UTC),
+        provider_object_count=len(provider_keys),
+        referenced_artifact_count=len(artifact_keys),
+        referenced_export_count=len(export_keys),
+        referenced_object_count=len(referenced_keys),
+        orphan_object_count=orphan_count,
+        missing_object_count=missing_count,
+        status="CLEAN" if orphan_count == 0 and missing_count == 0 else "DRIFT",
     )
 
 

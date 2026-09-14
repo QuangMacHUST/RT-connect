@@ -324,3 +324,39 @@ def test_upload_cleanup_failure_returns_reconciliation_error(monkeypatch) -> Non
         assert response.json()["code"] == "ARTIFACT_PERSISTENCE_FAILED"
         assert len(storage.objects) == 1
         assert client.get(f"/api/v1/qa-cases/{case_id}/artifacts").json()["total"] == 0
+
+
+def test_storage_integrity_probe_counts_artifacts_and_orphans() -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+        uploaded = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={"file": ("synthetic-ct.dcm", _ct_bytes(), "application/dicom")},
+            data={"artifact_type": "DICOM", "logical_role": "CT"},
+        )
+        assert uploaded.status_code == 201, uploaded.text
+
+        prefix = f"organizations/{organization.id}/"
+        storage.objects[f"{prefix}reports/synthetic/export.pdf"] = b"report"
+        probe = client.get(f"/api/v1/organizations/{organization.id}/storage/integrity")
+
+        assert probe.status_code == 200, probe.text
+        probe_body = probe.json()
+        assert probe_body == {
+            "checked_at": probe_body["checked_at"],
+            "provider_object_count": 2,
+            "referenced_artifact_count": 1,
+            "referenced_export_count": 0,
+            "referenced_object_count": 1,
+            "orphan_object_count": 1,
+            "missing_object_count": 0,
+            "status": "DRIFT",
+        }
+
+        storage.objects.pop(f"{prefix}reports/synthetic/export.pdf")
+        clean = client.get(f"/api/v1/organizations/{organization.id}/storage/integrity")
+        assert clean.status_code == 200, clean.text
+        assert clean.json()["status"] == "CLEAN"
+        assert clean.json()["provider_object_count"] == 1
