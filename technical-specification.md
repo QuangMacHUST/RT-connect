@@ -250,13 +250,14 @@ Tại ngày 2026-09-12, PyPI công bố pylinac 3.47.0 và Python từ 3.10, tro
 
 RT-CONNECT dùng Anti-Corruption Layer để không lưu trực tiếp object/JSON riêng của pylinac:
 
-- `PylinacAdapter` nhận input manifest + machine/test profile + điều chỉnh người dùng, gọi đúng class/`analyze` của registry và chuyển `results_data()` sang `AnalysisRun` chung; riêng Calibration gọi constructor số đo rồi ánh xạ thuộc tính kết quả công khai vào cùng snapshot.
+- `PylinacAdapter` nhận input manifest + machine/test profile + điều chỉnh người dùng, gọi đúng class/`analyze` của registry và chuyển `results_data()` sang `AnalysisRun` chung; riêng Calibration gọi constructor số đo rồi ánh xạ thuộc tính kết quả công khai, còn Log Analyzer lấy dữ liệu công khai Axis/MLC/Fluence sau khi loader của Pylinac đọc đúng tệp.
 - Adapter không tự tính lại metric pylinac. Các phép tính bổ sung chỉ được phép nếu là capability pylinac mức thấp được gọi rõ ràng và snapshot ghi đúng hàm/module/version.
 - `engine_name=pylinac`, `pylinac_version`, wheel hash, adapter version, module/class, tham số analyze và hash input được lưu trong snapshot. Kết quả cũ không bị tính lại khi nâng phiên bản.
 - Lỗi/thông báo của pylinac được ánh xạ sang error code ổn định và tiếng Việt; stack trace chỉ ở log đã khử dữ liệu.
 - PDF/PNG do pylinac tạo có thể dùng cho chẩn đoán phát triển, không dùng làm báo cáo chính. Renderer RT-CONNECT dựng từ structured metrics và overlay đã chuẩn hóa.
 - `PylinacCapabilityRegistry` phải bao phủ mọi class/capability công khai thuộc 16 họ mô-đun chính và các bài QA `contrib/One-Offs` trong wheel đã khóa. Build fail nếu inventory runtime khác registry mà chưa có quyết định migration.
 - Capability đã có trong pylinac nhưng adapter/UI chưa xong mang trạng thái kỹ thuật `NOT_IMPLEMENTED`; nó không biến mất khỏi phạm vi và P7 không được đóng.
+- Log Analyzer không tự có kết luận Đạt/Không đạt từ Pylinac. Adapter lưu các chỉ số actual/expected/difference, MLC, beam-hold và Gamma fluence nếu được yêu cầu; đánh giá cuối cùng của người thực hiện là trường độc lập. Dynalog giữ nguyên tên A/B và bắt buộc đủ hai tệp, còn Trajectory Log kiểm phiên bản 2.1/3/4 trước khi chấp nhận.
 
 ### 7.2. Ma trận engine bắt buộc
 

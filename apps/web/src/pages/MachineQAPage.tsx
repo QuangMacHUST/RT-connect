@@ -1068,6 +1068,53 @@ function CalibrationPage({ caseId, accessToken, title, catalogKey }: { caseId: s
   </div>
 }
 
+type LogCatalogKey = 'LOG_DYNALOG' | 'LOG_TRAJECTORY_2_1' | 'LOG_TRAJECTORY_3' | 'LOG_TRAJECTORY_4'
+
+function LogAnalyzerPage({ caseId, accessToken, title, catalogKey }: { caseId: string; accessToken: string; title: string; catalogKey: LogCatalogKey }) {
+  const queryClient = useQueryClient()
+  const [selectedArtifactIds, setSelectedArtifactIds] = useState<string[]>([])
+  const [excludeBeamOff, setExcludeBeamOff] = useState(true)
+  const [calcGamma, setCalcGamma] = useState(false)
+  const [doseTolerance, setDoseTolerance] = useState('1')
+  const [distanceTolerance, setDistanceTolerance] = useState('1')
+  const [message, setMessage] = useState<string>()
+  const artifacts = useQuery({ queryKey: ['pylinac-artifacts', caseId, accessToken], queryFn: () => apiClient.artifacts(accessToken, caseId), retry: false })
+  const runs = useQuery({ queryKey: ['pylinac-runs', caseId, accessToken], queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false })
+  const upload = useMutation({
+    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'OTHER', 'REFERENCE'),
+    onSuccess: (artifact) => { setSelectedArtifactIds((current) => current.includes(artifact.id) ? current : [...current, artifact.id]); setMessage('Đã tải tệp nhật ký lên.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-artifacts', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const logArtifacts = (artifacts.data?.items ?? []).filter((item) => ['.dlg', '.bin', '.tlog', '.txt'].some((suffix) => item.original_filename.toLowerCase().endsWith(suffix)))
+  const selected = logArtifacts.filter((item) => selectedArtifactIds.includes(item.id))
+  const isDynalog = catalogKey === 'LOG_DYNALOG'
+  const canAnalyze = isDynalog ? selected.length === 2 : selected.length >= 1 && selected.length <= 2
+  const analyze = useMutation({
+    mutationFn: () => apiClient.createPylinacQARun(accessToken, caseId, { catalog_key: catalogKey, artifact_ids: selected.map((item) => item.id), parameters: { exclude_beam_off: excludeBeamOff, calc_gamma: calcGamma, ...(calcGamma ? { dose_tolerance: Number(doseTolerance), distance_tolerance: Number(distanceTolerance) } : {}) } }),
+    onSuccess: (run) => { setMessage(run.status === 'COMPLETED' ? 'Đã phân tích nhật ký bằng Pylinac.' : 'Pylinac không thể hoàn tất phân tích; hãy xem thông báo lỗi bên dưới.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const assess = useMutation({
+    mutationFn: ({ runId, value }: { runId: string; value: 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' }) => apiClient.assessPylinacQARun(accessToken, runId, value),
+    onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const history = (runs.data?.items ?? []).filter((run) => run.catalog_key === catalogKey)
+  const latest = history[0]
+  const isBusy = upload.isPending || analyze.isPending || assess.isPending
+  const displayName = isDynalog ? 'Phân tích Dynalog' : `Phân tích Trajectory Log ${catalogKey.replace('LOG_TRAJECTORY_', '')}`
+  const metricLabels: Record<string, string> = { log_version: 'Phiên bản nhật ký', snapshot_count: 'Số mẫu ghi nhận', beam_hold_count: 'Số lần dừng tia', mlc_leaf_count: 'Số lá MLC', mlc_moving_leaf_count: 'Số lá đang chuyển động', mlc_rms_average: 'RMS MLC trung bình', mlc_rms_maximum: 'RMS MLC lớn nhất', mlc_error_percentile: 'Sai số MLC theo phân vị', mlc_rms_percentile: 'RMS MLC theo phân vị', gantry_difference_maximum: 'Sai lệch gantry lớn nhất', collimator_difference_maximum: 'Sai lệch chuẩn trực lớn nhất', mu_difference_maximum: 'Sai lệch MU lớn nhất', beam_hold_difference_maximum: 'Sai lệch dừng tia lớn nhất', gamma_map_shape: 'Kích thước bản đồ Gamma', gamma_valid_count: 'Số điểm Gamma hợp lệ', gamma_maximum: 'Gamma lớn nhất', gamma_mean: 'Gamma trung bình' }
+  return <div className="page">
+    <header className="page-header"><div><p className="eyebrow">KIỂM TRA CHẤT LƯỢNG MÁY · PYLİNAC</p><h1>{displayName}</h1><p>{title} · đọc trục máy, MLC, dừng tia và fluence từ nhật ký thực tế.</p></div><div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">Quay lại kho QA</Link><span className="status-badge">BỘ TÍNH PYLINAC 3.47.0</span></div></header>
+    {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">TỆP NHẬT KÝ</p><h2>{isDynalog ? 'Cặp tệp A và B' : 'Tệp Trajectory Log'}</h2></div><strong>{selected.length}</strong></div><p>{isDynalog ? 'Tải cả hai tệp DLG bắt đầu bằng A và B. Không đổi tên tệp để Pylinac tự ghép đúng cặp.' : 'Tải tệp BIN hoặc TLOG; có thể tải thêm tệp TXT cùng tên để bổ sung thông tin mô tả.'}</p><div className="machine-qa-actions"><label className="button-link">Chọn tệp nhật ký<input type="file" accept=".dlg,.bin,.tlog,.txt" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>{logArtifacts.length > 0 && <div className="table-wrap"><table><thead><tr><th>Chọn</th><th>Tệp</th><th>Loại</th><th>Dung lượng</th></tr></thead><tbody>{logArtifacts.map((artifact) => <tr key={artifact.id}><td><input type="checkbox" aria-label={`Chọn ${artifact.original_filename}`} checked={selectedArtifactIds.includes(artifact.id)} onChange={(event) => setSelectedArtifactIds((current) => event.target.checked ? [...current, artifact.id] : current.filter((id) => id !== artifact.id))} /></td><td>{artifact.original_filename}</td><td>{artifact.original_filename.toLowerCase().endsWith('.dlg') ? 'Dynalog' : 'Trajectory Log'}</td><td>{artifact.byte_size.toLocaleString('vi-VN')} byte</td></tr>)}</tbody></table></div>}
+      <div className="machine-qa-protocol-controls"><label><input type="checkbox" checked={excludeBeamOff} onChange={(event) => setExcludeBeamOff(event.target.checked)} /> Loại các mẫu khi tia tắt</label><label><input type="checkbox" checked={calcGamma} onChange={(event) => setCalcGamma(event.target.checked)} /> Tạo bản đồ Gamma fluence</label>{calcGamma && <><label>Dung sai liều (%)<input type="number" min="0.01" step="0.01" value={doseTolerance} onChange={(event) => setDoseTolerance(event.target.value)} /></label><label>Dung sai khoảng cách (mm)<input type="number" min="0.01" step="0.01" value={distanceTolerance} onChange={(event) => setDistanceTolerance(event.target.value)} /></label></>}</div><div className="machine-qa-actions"><button disabled={!canAnalyze || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+    </section>
+    {latest && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">KẾT QUẢ MỚI NHẤT</p><h2>{latest.name}</h2></div><span className={statusClass(latest.status)}>{statusLabel(latest.status)}</span></div>{latest.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích nhật ký</h3><ul>{latest.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{latest.status === 'COMPLETED' && <><div className="machine-qa-metric-grid">{Object.entries(objectValue(latest.result_snapshot.metrics) ?? {}).map(([key, value]) => <div className="machine-qa-metric" key={key}><span>{metricLabels[key] ?? key}</span><strong>{textValue(value)}</strong></div>)}</div>{latest.overlay_artifact_id && <button className="button-secondary" onClick={() => { void apiClient.downloadArtifact(accessToken, latest.overlay_artifact_id!).then((download) => window.open(download.url, '_blank', 'noopener,noreferrer')).catch((error) => setMessage(errorMessage(error))) }}>Mở biểu đồ MLC</button>}<label>Đánh giá của người dùng<select value={latest.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => assess.mutate({ runId: latest.id, value: event.target.value as 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' })}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">Chưa có kết quả nhật ký.</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td></tr>)}</tbody></table></div>}</section>
+  </div>
+}
+
 type PlanarCatalogKey = typeof planarCatalogKeys[number]
 
 function PlanarImagingPage({ caseId, accessToken, title, catalogKey }: { caseId: string; accessToken: string; title: string; catalogKey: PlanarCatalogKey }) {
@@ -1299,6 +1346,9 @@ export function MachineQAPage() {
   }
   if (selectedCase.qa_definition_key?.startsWith('CALIBRATION_') && accessToken) {
     return <CalibrationPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key as CalibrationCatalogKey} />
+  }
+  if ((selectedCase.qa_definition_key === 'LOG_DYNALOG' || selectedCase.qa_definition_key === 'LOG_TRAJECTORY_2_1' || selectedCase.qa_definition_key === 'LOG_TRAJECTORY_3' || selectedCase.qa_definition_key === 'LOG_TRAJECTORY_4') && accessToken) {
+    return <LogAnalyzerPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key} />
   }
   if (planarCatalogKeys.includes(selectedCase.qa_definition_key as PlanarCatalogKey) && accessToken) {
     return <PlanarImagingPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key as PlanarCatalogKey} />

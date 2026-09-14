@@ -339,6 +339,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Ngưỡng sai lệch", "Lọc chùm tia", "Chọn biểu đồ"),
         engine_class="Dynalog",
         supports_manual_adjustment=True,
+        implementation_status="READY",
     ),
     _item(
         "LOG_TRAJECTORY_2_1",
@@ -350,6 +351,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Ngưỡng sai lệch", "Chọn chùm tia", "Chọn biểu đồ"),
         engine_class="TrajectoryLog",
         supports_manual_adjustment=True,
+        implementation_status="READY",
     ),
     _item(
         "LOG_TRAJECTORY_3",
@@ -361,6 +363,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Ngưỡng sai lệch", "Chọn chùm tia", "Chọn biểu đồ"),
         engine_class="TrajectoryLog",
         supports_manual_adjustment=True,
+        implementation_status="READY",
     ),
     _item(
         "LOG_TRAJECTORY_4",
@@ -372,6 +375,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Ngưỡng sai lệch", "Chọn chùm tia", "Chọn biểu đồ"),
         engine_class="TrajectoryLog",
         supports_manual_adjustment=True,
+        implementation_status="READY",
     ),
     _item(
         "PICKET_FENCE",

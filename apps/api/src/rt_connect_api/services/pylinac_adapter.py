@@ -9,6 +9,7 @@ does not reimplement pylinac metrics or silently fall back to another engine.
 from __future__ import annotations
 
 import json
+import tempfile
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
@@ -2072,6 +2073,200 @@ def _execute_calibration(
         ) from exc
 
 
+_LOG_KEYS = {
+    "LOG_DYNALOG",
+    "LOG_TRAJECTORY_2_1",
+    "LOG_TRAJECTORY_3",
+    "LOG_TRAJECTORY_4",
+}
+
+
+def _log_parameters(parameters: dict[str, object]) -> dict[str, object]:
+    allowed = {
+        "exclude_beam_off",
+        "calc_gamma",
+        "dose_tolerance",
+        "distance_tolerance",
+        "threshold",
+        "resolution",
+        "calc_individual_maps",
+        "rms_percentile",
+        "error_percentile",
+    }
+    unknown = set(parameters) - allowed
+    if unknown:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_UNSUPPORTED",
+            "Có tham số không được hỗ trợ cho bài phân tích nhật ký.",
+        )
+    normalized: dict[str, object] = {
+        "exclude_beam_off": _bool(parameters, "exclude_beam_off", True),
+        "calc_gamma": _bool(parameters, "calc_gamma", False),
+        "calc_individual_maps": _bool(parameters, "calc_individual_maps", False),
+    }
+    for key in ("dose_tolerance", "distance_tolerance", "threshold", "resolution"):
+        if key in parameters:
+            normalized[key] = _number(parameters, key, minimum=0)
+    for key in ("rms_percentile", "error_percentile"):
+        if key in parameters:
+            value = _number(parameters, key, minimum=0)
+            if value > 100:
+                raise PylinacAdapterError(
+                    "PYLINAC_PARAMETER_INVALID", f"Tham số {key} phải nằm trong khoảng 0 đến 100."
+                )
+            normalized[key] = value
+    if normalized["calc_gamma"]:
+        for key in ("dose_tolerance", "distance_tolerance"):
+            gamma_value = normalized.get(key)
+            if not isinstance(gamma_value, (int, float)) or gamma_value <= 0:
+                raise PylinacAdapterError(
+                    "PYLINAC_PARAMETER_INVALID",
+                    "Muốn tạo bản đồ Gamma cần nhập dung sai liều và khoảng cách lớn hơn 0.",
+                )
+        normalized.setdefault("threshold", 0.1)
+        normalized.setdefault("resolution", 0.1)
+    return normalized
+
+
+def _log_source_file(source_path: Path, catalog_key: str) -> Path:
+    if not source_path.is_dir():
+        return source_path
+    candidates = sorted(source_path.iterdir())
+    if catalog_key == "LOG_DYNALOG":
+        dynalogs = [item for item in candidates if item.suffix.lower() == ".dlg"]
+        if len(dynalogs) != 2:
+            raise PylinacAdapterError(
+                "PYLINAC_INPUT_COUNT_INVALID", "Dynalog cần đúng cặp tệp A và B có đuôi DLG."
+            )
+        selected = next(
+            (item for item in dynalogs if item.name.upper().startswith("A")), dynalogs[0]
+        )
+    else:
+        binaries = [item for item in candidates if item.suffix.lower() in {".bin", ".tlog"}]
+        if not binaries:
+            raise PylinacAdapterError(
+                "PYLINAC_INPUT_FORMAT_INVALID", "Trajectory Log cần tệp nhị phân BIN hoặc TLOG."
+            )
+        selected = binaries[0]
+    return selected
+
+
+def _axis_difference_summary(axis: object) -> float | None:
+    expected = getattr(axis, "expected", None)
+    if expected is None:
+        return None
+    import numpy as np
+
+    difference = getattr(axis, "difference", None)
+    if difference is None:
+        return None
+    values = np.asarray(difference, dtype=float)
+    if values.size == 0:
+        return None
+    return float(np.nanmax(np.abs(values)))
+
+
+def _execute_log(
+    catalog_key: str, source_path: Path, parameters: dict[str, object]
+) -> PylinacExecutionResult:
+    symbol, _ = resolve_runtime_symbol(catalog_key)
+    if symbol is None:
+        raise PylinacAdapterError(
+            "PYLINAC_RUNTIME_UNAVAILABLE", "Bộ phân tích nhật ký chưa sẵn sàng trên máy chủ."
+        )
+    options = _log_parameters(parameters)
+    log_path = _log_source_file(source_path, catalog_key)
+    try:
+        engine = symbol(str(log_path), exclude_beam_off=options["exclude_beam_off"])
+        if catalog_key != "LOG_DYNALOG":
+            expected_version = {
+                "LOG_TRAJECTORY_2_1": 2.1,
+                "LOG_TRAJECTORY_3": 3.0,
+                "LOG_TRAJECTORY_4": 4.0,
+            }[catalog_key]
+            actual_version = float(engine.header.version)
+            if abs(actual_version - expected_version) > 0.001:
+                raise PylinacAdapterError(
+                    "PYLINAC_INPUT_FORMAT_INVALID",
+                    f"Tệp Trajectory Log là phiên bản {actual_version:g}, không khớp bài đã chọn.",
+                )
+        import numpy as np
+
+        axis_data = engine.axis_data
+        mlc = axis_data.mlc
+        snapshot_count = getattr(axis_data, "num_snapshots", None)
+        if snapshot_count is None:
+            snapshot_count = getattr(engine.header, "num_snapshots", None)
+        metrics: dict[str, object] = {
+            "log_version": _json_safe(engine.header.version),
+            "snapshot_count": _json_safe(snapshot_count),
+            "beam_hold_count": _json_safe(engine.num_beamholds),
+            "mlc_leaf_count": _json_safe(mlc.num_leaves),
+            "mlc_moving_leaf_count": _json_safe(mlc.num_moving_leaves),
+            "mlc_rms_average": _json_safe(mlc.get_RMS_avg()),
+            "mlc_rms_maximum": _json_safe(mlc.get_RMS_max()),
+            "mlc_error_percentile": _json_safe(
+                mlc.get_error_percentile(options.get("error_percentile", 95))
+            ),
+            "mlc_rms_percentile": _json_safe(
+                mlc.get_RMS_percentile(options.get("rms_percentile", 95))
+            ),
+        }
+        for axis_name in ("gantry", "collimator", "mu", "beam_hold"):
+            axis = getattr(axis_data, axis_name, None)
+            if axis is not None:
+                summary = _axis_difference_summary(axis)
+                if summary is not None:
+                    metrics[f"{axis_name}_difference_maximum"] = _json_safe(summary)
+        if options["calc_gamma"]:
+            gamma = engine.fluence.gamma
+            gamma_map = gamma.calc_map(
+                doseTA=options["dose_tolerance"],
+                distTA=options["distance_tolerance"],
+                threshold=options["threshold"],
+                resolution=options["resolution"],
+                calc_individual_maps=options["calc_individual_maps"],
+            )
+            gamma_array = np.asarray(gamma_map, dtype=float)
+            valid = gamma_array[np.isfinite(gamma_array)]
+            metrics["gamma_map_shape"] = list(gamma_array.shape)
+            metrics["gamma_valid_count"] = int(valid.size)
+            metrics["gamma_maximum"] = _json_safe(float(np.max(valid))) if valid.size else None
+            metrics["gamma_mean"] = _json_safe(float(np.mean(valid))) if valid.size else None
+        overlay_bytes: bytes | None = None
+        with tempfile.TemporaryDirectory(prefix="rt-connect-log-overlay-") as directory:
+            overlay_path = Path(directory) / "log-mlc-phan-tich.png"
+            mlc.save_mlc_error_hist(str(overlay_path))
+            if overlay_path.exists():
+                overlay_bytes = overlay_path.read_bytes()
+        return PylinacExecutionResult(
+            catalog_key=catalog_key,
+            engine_class=type(engine).__name__,
+            engine_version=PYLINAC_VERSION,
+            package_fingerprint=package_fingerprint(),
+            result_snapshot={
+                "schema_version": "p7.pylinac-log-result.v1",
+                "engine": "pylinac",
+                "engine_class": type(engine).__name__,
+                "metrics": metrics,
+                "engine_passed": None,
+                "parameters": _json_safe(parameters),
+            },
+            warnings=[],
+            overlay_bytes=overlay_bytes,
+            overlay_media_type="image/png" if overlay_bytes else None,
+            overlay_filename="log-mlc-phan-tich.png" if overlay_bytes else None,
+        )
+    except PylinacAdapterError:
+        raise
+    except Exception as exc:
+        raise PylinacAdapterError(
+            "PYLINAC_EXECUTION_FAILED",
+            "Pylinac không thể đọc nhật ký máy. Hãy kiểm tra đúng cặp tệp, phiên bản "
+            "và dữ liệu rồi thử lại.",
+        ) from exc
+
+
 def execute_pylinac(
     catalog_key: str, source_path: Path, parameters: dict[str, object]
 ) -> PylinacExecutionResult:
@@ -2082,6 +2277,8 @@ def execute_pylinac(
         raise PylinacAdapterError("PYLINAC_CAPABILITY_NOT_FOUND", "Không tìm thấy bài QA đã chọn.")
     if catalog_key in _CALIBRATION_KEYS:
         return _execute_calibration(catalog_key, parameters)
+    if catalog_key in _LOG_KEYS:
+        return _execute_log(catalog_key, source_path, parameters)
     if catalog_key == "PICKET_FENCE":
         return _execute_picket_fence(source_path, parameters)
     if catalog_key == "STARSHOT":

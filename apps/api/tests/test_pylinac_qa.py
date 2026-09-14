@@ -787,6 +787,101 @@ def test_calibration_registry_resolves_all_protocol_classes() -> None:
         assert capability.has_results_data is False
 
 
+def test_log_adapter_preserves_dynalog_pair_and_maps_pylinac_metrics(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "logs"
+    source.mkdir()
+    (source / "AQA.dlg").write_bytes(b"a")
+    (source / "BQA.dlg").write_bytes(b"b")
+
+    class FakeHeader:
+        version = "['B']"
+
+    class FakeAxis:
+        actual = [1.0, 2.0]
+        expected = [1.0, 1.5]
+        difference = [0.0, 0.5]
+
+    class FakeMLC:
+        num_leaves = 120
+        num_moving_leaves = 60
+
+        def get_RMS_avg(self):
+            return 0.04
+
+        def get_RMS_max(self):
+            return 0.08
+
+        def get_error_percentile(self, percentile):
+            assert percentile == 95
+            return 0.07
+
+        def get_RMS_percentile(self, percentile):
+            assert percentile == 95
+            return 0.05
+
+        def save_mlc_error_hist(self, filename: str) -> None:
+            Path(filename).write_bytes(b"log-overlay")
+
+    class FakeAxisData:
+        num_snapshots = 99
+        mlc = FakeMLC()
+        gantry = FakeAxis()
+        collimator = FakeAxis()
+        mu = FakeAxis()
+        beam_hold = FakeAxis()
+
+    class FakeLog:
+        header = FakeHeader()
+        axis_data = FakeAxisData()
+        num_beamholds = 2
+
+        def __init__(self, path: str, **kwargs: object) -> None:
+            assert path.endswith("AQA.dlg")
+            assert kwargs == {"exclude_beam_off": True}
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (FakeLog, None) if key == "LOG_DYNALOG" else (None, "missing"),
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.package_fingerprint", lambda: "f" * 64
+    )
+    result = execute_pylinac("LOG_DYNALOG", source, {})
+    assert result.result_snapshot["engine_passed"] is None
+    metrics = result.result_snapshot["metrics"]
+    assert isinstance(metrics, dict)
+    assert metrics["beam_hold_count"] == 2
+    assert metrics["mlc_rms_maximum"] == 0.08
+    assert metrics["gantry_difference_maximum"] == 0.5
+    assert result.overlay_bytes == b"log-overlay"
+
+
+def test_log_adapter_rejects_wrong_trajectory_version(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "logs"
+    source.mkdir()
+    (source / "Tlog.bin").write_bytes(b"bin")
+
+    class FakeHeader:
+        version = 2.1
+
+    class FakeLog:
+        header = FakeHeader()
+
+        def __init__(self, path: str, **kwargs: object) -> None:
+            assert path.endswith("Tlog.bin")
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (FakeLog, None) if key == "LOG_TRAJECTORY_3" else (None, "missing"),
+    )
+    try:
+        execute_pylinac("LOG_TRAJECTORY_3", source, {})
+    except PylinacAdapterError as exc:
+        assert exc.code == "PYLINAC_INPUT_FORMAT_INVALID"
+    else:
+        raise AssertionError("Phiên bản Trajectory Log không khớp phải bị từ chối")
+
+
 def test_planar_adapter_uses_common_pylinac_image_controls(tmp_path, monkeypatch) -> None:
     source = tmp_path / "planar.dcm"
     source.write_bytes(b"planar")

@@ -318,6 +318,29 @@ def create_pylinac_run(
         raise DomainError(
             "PYLINAC_INPUT_COUNT_INVALID", "Bài VMAT yêu cầu đúng hai ảnh đầu vào.", 422
         )
+    if definition.key == "LOG_DYNALOG" and len(artifacts) != 2:
+        raise DomainError(
+            "PYLINAC_INPUT_COUNT_INVALID", "Dynalog yêu cầu đúng hai tệp A và B.", 422
+        )
+    if definition.key.startswith("LOG_TRAJECTORY_") and len(artifacts) not in {1, 2}:
+        raise DomainError(
+            "PYLINAC_INPUT_COUNT_INVALID",
+            "Trajectory Log cần một tệp BIN, có thể kèm tệp TXT.",
+            422,
+        )
+    if definition.key == "LOG_DYNALOG" and any(
+        Path(artifact.original_filename).suffix.lower() != ".dlg" for artifact in artifacts
+    ):
+        raise DomainError(
+            "PYLINAC_INPUT_FORMAT_INVALID", "Dynalog chỉ nhận hai tệp có đuôi DLG.", 422
+        )
+    if definition.key.startswith("LOG_TRAJECTORY_") and not any(
+        Path(artifact.original_filename).suffix.lower() in {".bin", ".tlog"}
+        for artifact in artifacts
+    ):
+        raise DomainError(
+            "PYLINAC_INPUT_FORMAT_INVALID", "Trajectory Log cần ít nhất một tệp BIN hoặc TLOG.", 422
+        )
     if definition.key.startswith("PLANAR_") and len(artifacts) != 1:
         raise DomainError(
             "PYLINAC_INPUT_COUNT_INVALID", "Bài ảnh phẳng yêu cầu đúng một tệp đầu vào.", 422
@@ -414,7 +437,17 @@ def create_pylinac_run(
     overlay_key: str | None = None
     try:
         with tempfile.TemporaryDirectory(prefix="rt-connect-pylinac-") as directory:
-            if len(artifacts) == 1:
+            if definition.key.startswith("LOG_"):
+                source_path = Path(directory)
+                for artifact in artifacts:
+                    safe_filename = (
+                        Path(artifact.original_filename).name.strip() or "input.log"
+                    )
+                    destination = source_path / safe_filename
+                    if destination.exists():
+                        destination = source_path / f"{artifact.id.hex}-{safe_filename}"
+                    storage.download_to_path(artifact.object_key, destination)
+            elif len(artifacts) == 1:
                 safe_filename = Path(artifacts[0].original_filename).name.strip() or "input.dcm"
                 source_path = Path(directory) / safe_filename
                 storage.download_to_path(artifacts[0].object_key, source_path)
