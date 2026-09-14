@@ -1,0 +1,49 @@
+{
+  "evidence": "P6 staging input contract and conditional UI readback",
+  "captured_at": "2026-09-14T15:08:00+07:00",
+  "environment": "Railway staging",
+  "web_url": "https://rt-connect-web-staging-staging.up.railway.app/app/qa",
+  "scope": "Read-only authenticated browser verification after P5 handoff",
+  "catalogue": {
+    "visible_items": 63,
+    "searchable": true,
+    "grouped": true,
+    "manual_measurement_item_is_available": true,
+    "pylinac_items_without_adapter_are_visible_but_locked": true
+  },
+  "case": {
+    "display_name": "P6 Staging Upload Smoke",
+    "input_panel_visible": true,
+    "input_controls": ["Loại", "Vai trò của tệp", "Tệp cần phân tích"],
+    "dose_analysis_shortcut": "Visible only after the case reports valid dose/structure inputs",
+    "preflight": "2 RTDOSE · 1 RTSTRUCT · 1 CT hợp lệ",
+    "valid_artifacts_read": [
+      {"name": "gamma-measurement-3d-v1-smoke.json", "type": "Số đo", "status": "Hợp lệ", "bytes": 1416},
+      {"name": "gamma-rtdose-v1-smoke.dcm", "type": "Tệp DICOM", "status": "Hợp lệ", "bytes": 898},
+      {"name": "p17-rtstruct-v1-smoke.dcm", "type": "Tệp DICOM", "status": "Hợp lệ", "bytes": 866},
+      {"name": "p17-ct-v1-smoke.dcm", "type": "Tệp DICOM", "status": "Hợp lệ", "bytes": 842
+      }
+    ],
+    "invalid_artifact_remains_visible_for_correction": true
+  },
+  "local_checks_at_current_head": {
+    "api_artifact_tests": "7 passed",
+    "api_qa_archive_tests": "11 passed",
+    "web_upload_queue_and_qa_tests": "9 passed",
+    "web_lint": "PASS",
+    "web_production_build": "PASS with known chunk-size advisory"
+  },
+  "mutation_boundary": {
+    "additional_upload": false,
+    "additional_analysis": false,
+    "additional_report": false,
+    "production_touched": false
+  },
+  "remaining_p6_gates": [
+    "Staging browser queue with an intentionally failing item and isolated retry",
+    "Provider storage fault/reconciliation evidence",
+    "Final filename/header readback through the signed download path",
+    "Full P06 S/E/C and release handoff evidence"
+  ],
+  "result": "STAGING_VERIFIED_SLICE"
+}

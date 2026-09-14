@@ -463,6 +463,7 @@ Danh mục đúng đầu vào, dữ liệu cũ mở được, trash/restore/purg
 **Đầu vào/phụ thuộc:** P5 đã hoàn thành và có bàn giao; các hợp đồng liên quan xem mục kỹ thuật tương ứng.
 **Phạm vi:** FR-UX1-P06-01; B05/B06. Không dùng một upload form chung cho mọi bài.
 **Trạng thái UX1 lúc lập kế hoạch:** yêu cầu mới; chưa được tính là hoàn thành từ evidence cũ.
+**Trạng thái hiện tại:** `STAGING_VERIFIED_SLICE`; danh mục 63 bài, vùng đầu vào có điều kiện, kiểm tra loại/vai trò, tệp DICOM hợp lệ và preflight `2 RTDOSE · 1 RTSTRUCT · 1 CT hợp lệ` đã được đọc lại trên staging sau bàn giao P5. Kiểm thử cục bộ artifact, hàng đợi và QA Archive đạt; bằng chứng staging mới: `docs/evidence/p6-staging-input-readback-20260914.json`. P6 chưa đóng vì còn hàng đợi có lỗi và thử lại cô lập trên staging, đối soát kho lưu trữ khi lỗi, đọc lại tên tệp/header tải xuống và gói VERIFY/HANDOFF đầy đủ.
 
 ### Trình tự triển khai P6
 
@@ -481,10 +482,10 @@ Danh mục đúng đầu vào, dữ liệu cũ mở được, trash/restore/purg
 
 ### Gói công việc P6
 
-- [ ] P06-W01 — Typed input schemas theo test/input_mode và trình dựng form không JSON.
-- [ ] P06-W02 — Upload có progress/retry, manifest nội bộ, checksum/type/size và signed URL đúng scope.
-- [ ] P06-W03 — Validation DICOM/hình học/thang đo/vai trò và bộ đọc measurement registry; wizard ghép cột nếu hỗ trợ bảng.
-- [ ] P06-W04 — Giới hạn tài nguyên parse và dọn upload dở; lỗi localized theo trường/tệp.
+- [x] P06-W01 — Typed input schemas theo test/input_mode và trình dựng form không JSON. `LOCAL_VERIFIED_SLICE`; staging đã đọc lại biểu mẫu theo loại/vai trò, không hiển thị manifest thô.
+- [x] P06-W02 — Upload có progress/retry, manifest nội bộ, checksum/type/size và signed URL đúng scope. `LOCAL_VERIFIED_SLICE` và staging verified slice với fixture DICOM tổng hợp; evidence lịch sử: `docs/evidence/p06-staging-rtdose-upload-20260911.json`.
+- [x] P06-W03 — Validation DICOM/hình học/thang đo/vai trò và bộ đọc measurement registry; wizard ghép cột nếu hỗ trợ bảng. `LOCAL_VERIFIED_SLICE` và staging readback `VALID`/preflight; evidence hiện hành: `docs/evidence/p6-staging-input-readback-20260914.json`.
+- [x] P06-W04 — Giới hạn tài nguyên parse và dọn upload dở; lỗi localized theo trường/tệp. `LOCAL_VERIFIED_SLICE`; queue compensation/retry và kiểm thử type/manifest đã đạt cục bộ, nhưng lỗi kho lưu trữ và thử lại một mục trên staging vẫn thuộc P06-VERIFY.
 - [ ] P06-VERIFY — Chạy các TC-UX1 dưới đây và nhóm lỗi dùng chung có liên quan; lưu actual/evidence theo SHA.
 - [ ] P06-HANDOFF — Cập nhật tiến độ, dữ liệu/migration/tuyến bị tác động, giới hạn hỗ trợ và bước tiếp theo.
 
@@ -506,7 +507,7 @@ Danh mục đúng đầu vào, dữ liệu cũ mở được, trash/restore/purg
 
 ### Bất biến và điều kiện đóng P6
 
-Input contract cho từng bài, fixture hợp lệ/lỗi và giới hạn tài nguyên đã thử; manifest không xuất hiện thô trong giao diện.
+Input contract cho từng bài, fixture hợp lệ/lỗi và giới hạn tài nguyên đã thử; manifest không xuất hiện thô trong giao diện. Chỉ đóng P6 sau khi hàng đợi staging chứng minh được một mục lỗi không làm mất các mục thành công, thử lại đúng mục lỗi, kho lưu trữ không để lại vật mồ côi sau lỗi, tải xuống đối chiếu đúng byte/tên tệp và toàn bộ S/E/C có evidence theo source SHA.
 
 ## P7 — QA nhập tay và toàn bộ danh mục pylinac
 
