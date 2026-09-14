@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 
-import { processUploadQueue, type UploadQueueItem } from './uploadQueue'
+import { processUploadQueue, type UploadQueueItem, updatePendingUploadMetadata } from './uploadQueue'
 
 function item(id: string, caseId = 'case-a', status: UploadQueueItem['status'] = 'PENDING'): UploadQueueItem {
   return {
@@ -51,4 +51,18 @@ test('retry mode processes only failed items in the selected case', async () => 
   expect(updates['still-pending']).toBeUndefined()
   expect(updates['failed-other-case']).toBeUndefined()
   expect(updates['failed-target']).toMatchObject({ status: 'UPLOADED', duplicate: false })
+})
+
+test('updates only pending metadata in the selected case', () => {
+  const items = [item('pending'), item('uploaded', 'case-a', 'UPLOADED'), item('other-case', 'case-b')]
+  const updated = updatePendingUploadMetadata(items, 'case-a', 'MEASUREMENT', 'MEASUREMENT')
+
+  expect(updated[0]).toMatchObject({ artifactType: 'MEASUREMENT', logicalRole: 'MEASUREMENT', status: 'PENDING' })
+  expect(updated[1]).toMatchObject({ artifactType: 'DICOM', logicalRole: 'REFERENCE', status: 'UPLOADED' })
+  expect(updated[2]).toMatchObject({ artifactType: 'DICOM', logicalRole: 'REFERENCE', status: 'PENDING' })
+})
+
+test('does not create a new queue array when metadata is already current', () => {
+  const items = [item('pending')]
+  expect(updatePendingUploadMetadata(items, 'case-a', 'DICOM', 'REFERENCE')).toBe(items)
 })

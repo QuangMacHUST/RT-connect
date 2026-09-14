@@ -6,7 +6,7 @@ import { ApiClientError, apiClient, type FolderResource, type QACasePurgePreview
 import { useAuth } from '../auth/AuthProvider'
 import { dvhArtifactStatusLabel, summarizeDvhArtifacts } from './dvhArtifactSummary'
 import { isCaseInArchiveView, toggleAllVisibleCaseSelection, toggleCaseSelection } from './qaArchiveView'
-import { processUploadQueue, type UploadQueueItem } from './uploadQueue'
+import { processUploadQueue, type UploadQueueItem, updatePendingUploadMetadata } from './uploadQueue'
 
 type BatchCaseItem = { id: string; title: string }
 type BatchSkippedItem = BatchCaseItem & { reason: string }
@@ -188,25 +188,17 @@ export function QAArchivePage() {
   const caseCreateKeyRef = useRef<string | undefined>(undefined)
   const currentUploadQueue = selectedCase ? uploadQueue.filter((item) => item.caseId === selectedCase.id) : []
 
-  const updatePendingUploadMetadata = (nextArtifactType: string, nextLogicalRole: string) => {
+  const syncPendingUploadMetadata = (nextArtifactType: string, nextLogicalRole: string) => {
     if (!selectedCase) return
-    setUploadQueue((current) => {
-      let changed = false
-      const next = current.map((item) => {
-        if (item.caseId !== selectedCase.id || item.status !== 'PENDING' || (item.artifactType === nextArtifactType && item.logicalRole === nextLogicalRole)) return item
-        changed = true
-        return { ...item, artifactType: nextArtifactType, logicalRole: nextLogicalRole }
-      })
-      return changed ? next : current
-    })
+    setUploadQueue((current) => updatePendingUploadMetadata(current, selectedCase.id, nextArtifactType, nextLogicalRole))
   }
   const handleArtifactTypeChange = (nextArtifactType: string) => {
     setArtifactType(nextArtifactType)
-    updatePendingUploadMetadata(nextArtifactType, logicalRole)
+    syncPendingUploadMetadata(nextArtifactType, logicalRole)
   }
   const handleLogicalRoleChange = (nextLogicalRole: string) => {
     setLogicalRole(nextLogicalRole)
-    updatePendingUploadMetadata(artifactType, nextLogicalRole)
+    syncPendingUploadMetadata(artifactType, nextLogicalRole)
   }
 
   const refresh = () => {

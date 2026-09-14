@@ -11,6 +11,22 @@ export type UploadQueueItem = {
   duplicate?: boolean
 }
 
+/** Updates metadata only for pending items in one selected case. */
+export function updatePendingUploadMetadata(
+  items: UploadQueueItem[],
+  caseId: string,
+  artifactType: string,
+  logicalRole: string
+): UploadQueueItem[] {
+  let changed = false
+  const next = items.map((item) => {
+    if (item.caseId !== caseId || item.status !== 'PENDING' || (item.artifactType === artifactType && item.logicalRole === logicalRole)) return item
+    changed = true
+    return { ...item, artifactType, logicalRole }
+  })
+  return changed ? next : items
+}
+
 type UploadResult = { duplicate?: boolean }
 
 type ProcessUploadQueueOptions = {
