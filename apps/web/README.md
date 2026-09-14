@@ -120,3 +120,8 @@ web together with API and worker from the same revision before staging review.
 P5 current staging verification checkpoint (2026-09-14): the recorded public
 verification belongs to the preceding source revision; rebuild web, API and
 worker from the final repository revision before release review.
+
+P5 read-only purge preview UI (2026-09-14): the web exposes a separate
+preview action for archived cases so linked-data protection can be checked
+without invoking permanent deletion. Keep this marker aligned with the API
+service so all three services are rebuilt from the same revision.
