@@ -385,6 +385,8 @@ Chức năng đã được người dùng chấp nhận vẫn hoạt động, la
 Kiểm tra công khai sau triển khai đã đạt trên ứng viên `a4bed90b79aa0bc758e598c424ac0060379e98c0` với readiness `20260913_0022` và đúng các tuyến P5; bằng chứng: `docs/evidence/p5-staging-public-recheck-20260913.json`. Đây chỉ là kiểm tra nguồn/runtime công khai, chưa là nghiệm thu thao tác xác thực.
 Kiểm tra công khai mới nhất sau chốt xác nhận xóa đã đạt: web hiển thị đúng danh mục trực tiếp, có hộp xác nhận xóa vĩnh viễn và thông báo hủy; API vẫn `200 READY`. Bằng chứng: `docs/evidence/p5-staging-public-recheck-20260914-84ad0dc.json`; đây vẫn không thay cho kiểm tra xác thực và vòng đời dữ liệu.
 
+Kiểm tra công khai ứng viên `2d6b7c8` sau khi ghi nhận hồi quy bảo vệ tệp đầu vào đạt **15/15**, API và giao diện cùng nhận đúng bản phát hành, lược đồ `20260913_0022`, các tuyến health/readiness/version/OpenAPI và bảo vệ truy cập chưa xác thực đều đạt. Bằng chứng: `docs/evidence/p5-staging-public-recheck-20260914-2d6b7c8.json`. Đây là kiểm tra parity/runtime, không thay thế các ca xác thực xóa hồ sơ có liên kết, lỗi mạng và tiến trình nền.
+
 **Cập nhật phụ thuộc 2026-09-14:** `pylinac==3.47.0` đã được thêm vào cấu hình API và khóa cài đặt. Vì phiên bản engine này yêu cầu `pydicom<3`, dự án đã đồng bộ `pydicom==2.4.5`; khóa phụ thuộc chạy kiểm tra cài đặt thử, `pip check`, import pylinac và toàn bộ kiểm thử API đều đạt. Đây chỉ là cổng chuẩn bị dependency cho P7, chưa được tính là đã triển khai adapter hay bất kỳ bài pylinac nào.
 Bằng chứng nguồn/runtime tương ứng: `docs/evidence/p5-pylinac-dependency-recheck-20260914.json`; API staging đã nhận `df4210bfb0d1c55197dffc7856b383ccffdb92cf` và readiness vẫn đạt.
 
