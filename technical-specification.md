@@ -242,7 +242,7 @@ CT không thay cho ảnh cổng chụp của Picket Fence. RTSTRUCT không thay 
 
 ### 7.1. Adapter chung
 
-Hợp đồng adapter gồm `validate_inputs → prepare_supported_input → invoke_pylinac → map_results_data → build_overlay → summarize`. `prepare_supported_input` chỉ chuẩn hóa định dạng/đơn vị/hình học theo contract đã công bố; không thay thuật toán phân tích. `map_results_data` chỉ ánh xạ tên và cấu trúc; không tính lại metric mà pylinac đã trả. Kết quả chứa `metric_key`, `definition_version`, value, unit, calculability, suggested status, warnings, geometry, input/config snapshot và tài nguyên minh họa.
+Hợp đồng adapter gồm `validate_inputs → prepare_supported_input → invoke_pylinac → map_results_data → build_overlay → summarize`. `prepare_supported_input` chỉ chuẩn hóa định dạng/đơn vị/hình học theo contract đã công bố; không thay thuật toán phân tích. `map_results_data` chỉ ánh xạ tên và cấu trúc; không tính lại metric mà pylinac đã trả. Với nhóm hiệu chuẩn không có `results_data()`/overlay, adapter đọc đúng các thuộc tính kết quả công khai sau khi gọi constructor và trả hợp đồng kết quả không có tệp minh họa; RT-CONNECT không tự tính lại hệ số hoặc liều. Kết quả chứa `metric_key`, `definition_version`, value, unit, calculability, suggested status, warnings, geometry, input/config snapshot và tài nguyên minh họa nếu engine cung cấp.
 
 Pylinac là engine bắt buộc cho toàn bộ capability mà bản runtime đã khóa cung cấp. Việc kiểm dependency xác định pylinac chạy chung process hay trong `qa-image-worker`; không phải vòng tuyển chọn lại engine. Tài liệu chính thức hiện liệt kê 16 mô-đun chính và nhóm `contrib/One-Offs`; [trang PyPI](https://pypi.org/project/pylinac/) là nguồn gói phát hành, [tài liệu pylinac](https://pylinac.readthedocs.io/en/latest/) là nguồn API và [tài liệu contrib](https://pylinac.readthedocs.io/en/latest/contrib.html) là nguồn hai bài đóng góp.
 
@@ -250,7 +250,7 @@ Tại ngày 2026-09-12, PyPI công bố pylinac 3.47.0 và Python từ 3.10, tro
 
 RT-CONNECT dùng Anti-Corruption Layer để không lưu trực tiếp object/JSON riêng của pylinac:
 
-- `PylinacAdapter` nhận input manifest + machine/test profile + điều chỉnh người dùng, gọi đúng class/`analyze` của registry và chuyển `results_data()` sang `AnalysisRun` chung.
+- `PylinacAdapter` nhận input manifest + machine/test profile + điều chỉnh người dùng, gọi đúng class/`analyze` của registry và chuyển `results_data()` sang `AnalysisRun` chung; riêng Calibration gọi constructor số đo rồi ánh xạ thuộc tính kết quả công khai vào cùng snapshot.
 - Adapter không tự tính lại metric pylinac. Các phép tính bổ sung chỉ được phép nếu là capability pylinac mức thấp được gọi rõ ràng và snapshot ghi đúng hàm/module/version.
 - `engine_name=pylinac`, `pylinac_version`, wheel hash, adapter version, module/class, tham số analyze và hash input được lưu trong snapshot. Kết quả cũ không bị tính lại khi nâng phiên bản.
 - Lỗi/thông báo của pylinac được ánh xạ sang error code ổn định và tiếng Việt; stack trace chỉ ở log đã khử dữ liệu.

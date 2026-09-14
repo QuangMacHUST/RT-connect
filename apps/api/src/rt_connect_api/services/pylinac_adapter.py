@@ -88,6 +88,55 @@ def _optional_number(
     return _number(parameters, key, minimum=minimum)
 
 
+def _number_or_array(
+    parameters: dict[str, object], key: str, *, minimum: float | None = None
+) -> float | tuple[float, ...]:
+    value = parameters.get(key)
+    if isinstance(value, bool):
+        raise PylinacAdapterError("PYLINAC_PARAMETER_INVALID", f"Tham số {key} phải là số.")
+    if isinstance(value, int | float):
+        result = float(value)
+        if minimum is not None and result < minimum:
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID", f"Tham số {key} phải lớn hơn hoặc bằng {minimum}."
+            )
+        return result
+    if isinstance(value, (list, tuple)) and value:
+        values: list[float] = []
+        for item in value:
+            if isinstance(item, bool) or not isinstance(item, int | float):
+                raise PylinacAdapterError(
+                    "PYLINAC_PARAMETER_INVALID", f"Tham số {key} phải là số hoặc dãy số."
+                )
+            number = float(item)
+            if minimum is not None and number < minimum:
+                raise PylinacAdapterError(
+                    "PYLINAC_PARAMETER_INVALID", f"Tham số {key} phải lớn hơn hoặc bằng {minimum}."
+                )
+            values.append(number)
+        return tuple(values)
+    raise PylinacAdapterError(
+        "PYLINAC_PARAMETER_INVALID", f"Tham số {key} phải là số hoặc dãy số không rỗng."
+    )
+
+
+def _optional_number_or_array(
+    parameters: dict[str, object], key: str, *, minimum: float | None = None
+) -> float | tuple[float, ...] | None:
+    if parameters.get(key) is None:
+        return None
+    return _number_or_array(parameters, key, minimum=minimum)
+
+
+def _required_text(parameters: dict[str, object], key: str) -> str:
+    value = parameters.get(key)
+    if not isinstance(value, str) or not value.strip():
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_INVALID", f"Tham số {key} không được để trống."
+        )
+    return value.strip()
+
+
 def _integer(parameters: dict[str, object], key: str, *, minimum: int | None = None) -> int:
     value = parameters.get(key)
     if isinstance(value, bool) or not isinstance(value, int):
@@ -695,7 +744,7 @@ def _execute_vmat(
             raise PylinacAdapterError(
                 "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả không hợp lệ."
             )
-        from matplotlib import pyplot as plt  # type: ignore[import-untyped]
+        from matplotlib import pyplot as plt
 
         engine.plot_analyzed_image(show=False, show_text=True)
         figure = plt.gcf()
@@ -1031,7 +1080,7 @@ def _execute_catphan(
             raise PylinacAdapterError(
                 "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả CatPhan không hợp lệ."
             )
-        from matplotlib import pyplot as plt  # type: ignore[import-untyped]
+        from matplotlib import pyplot as plt
 
         engine.plot_analyzed_image(show=False)
         figure = plt.gcf()
@@ -1161,7 +1210,7 @@ def _execute_acr(
             raise PylinacAdapterError(
                 "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả ACR không hợp lệ."
             )
-        from matplotlib import pyplot as plt  # type: ignore[import-untyped]
+        from matplotlib import pyplot as plt
 
         figure = engine.plot_analyzed_image(show=False)
         overlay_bytes = _save_figure(figure)
@@ -1201,6 +1250,253 @@ def _execute_acr(
         raise PylinacAdapterError(
             "PYLINAC_EXECUTION_FAILED",
             "Pylinac không thể phân tích bộ ảnh ACR. Hãy kiểm tra tệp ZIP và tham số rồi thử lại.",
+        ) from exc
+
+
+_CHEESE_KEYS = {"CHEESE_TOMO", "CHEESE_CIRS_062M"}
+
+
+def _cheese_parameters(
+    source_path: Path, parameters: dict[str, object]
+) -> tuple[dict[str, object], dict[str, object]]:
+    constructor_keys = {"check_uid", "memory_efficient_mode", "is_zip"}
+    analysis_keys = {
+        "roi_config",
+        "x_adjustment",
+        "y_adjustment",
+        "angle_adjustment",
+        "roi_size_factor",
+        "scaling_factor",
+        "origin_slice",
+    }
+    unknown = set(parameters) - constructor_keys - analysis_keys
+    if unknown:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_UNSUPPORTED", "Có tham số không được hỗ trợ cho bài phantom đo liều."
+        )
+    constructor: dict[str, object] = {
+        "check_uid": _bool(parameters, "check_uid", True),
+        "memory_efficient_mode": _bool(parameters, "memory_efficient_mode", False),
+        "is_zip": _bool(parameters, "is_zip", source_path.suffix.lower() == ".zip"),
+    }
+    analysis: dict[str, object] = {}
+    if "roi_config" in parameters:
+        roi_config = parameters["roi_config"]
+        if not isinstance(roi_config, dict):
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID", "Bảng mật độ tham chiếu của ROI không hợp lệ."
+            )
+        normalized_config: dict[str, dict[str, float]] = {}
+        for roi_number, roi_data in roi_config.items():
+            if not isinstance(roi_number, str) or not roi_number.isdigit():
+                raise PylinacAdapterError(
+                    "PYLINAC_PARAMETER_INVALID", "Số ROI tham chiếu không hợp lệ."
+                )
+            if not isinstance(roi_data, dict) or set(roi_data) != {"density"}:
+                raise PylinacAdapterError(
+                    "PYLINAC_PARAMETER_INVALID",
+                    "Mỗi ROI tham chiếu phải có đúng một giá trị mật độ.",
+                )
+            density = roi_data["density"]
+            if isinstance(density, bool) or not isinstance(density, int | float):
+                raise PylinacAdapterError(
+                    "PYLINAC_PARAMETER_INVALID", "Mật độ tham chiếu phải là số."
+                )
+            normalized_config[roi_number] = {"density": float(density)}
+        analysis["roi_config"] = normalized_config
+    for key in ("x_adjustment", "y_adjustment", "angle_adjustment"):
+        if key in parameters:
+            analysis[key] = _number(parameters, key)
+    for key in ("roi_size_factor", "scaling_factor"):
+        if key in parameters:
+            analysis[key] = _number(parameters, key, minimum=0)
+    if "origin_slice" in parameters and parameters["origin_slice"] is not None:
+        analysis["origin_slice"] = _integer(parameters, "origin_slice", minimum=0)
+    return constructor, analysis
+
+
+def _execute_cheese(
+    catalog_key: str, source_path: Path, parameters: dict[str, object]
+) -> PylinacExecutionResult:
+    symbol, _ = resolve_runtime_symbol(catalog_key)
+    if symbol is None:
+        raise PylinacAdapterError(
+            "PYLINAC_RUNTIME_UNAVAILABLE", "Bộ phân tích phantom đo liều chưa sẵn sàng."
+        )
+    if not source_path.is_file() or source_path.suffix.lower() != ".zip":
+        raise PylinacAdapterError(
+            "PYLINAC_INPUT_FORMAT_INVALID", "Bài phantom đo liều cần một tệp ZIP chứa chuỗi DICOM."
+        )
+    constructor, analysis = _cheese_parameters(source_path, parameters)
+    try:
+        engine = symbol(str(source_path), **constructor)
+        engine.analyze(**analysis)
+        raw_result = engine.results_data(as_dict=True)
+        result = _json_safe(raw_result)
+        if not isinstance(result, dict):
+            raise PylinacAdapterError(
+                "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả phantom đo liều không hợp lệ."
+            )
+        from matplotlib import pyplot as plt
+
+        engine.plot_analyzed_image(show=False)
+        figure = plt.gcf()
+        overlay_bytes = _save_figure(figure)
+        plt.close(figure)
+        engine_class = {
+            "CHEESE_TOMO": "TomoCheese",
+            "CHEESE_CIRS_062M": "CIRS062M",
+        }[catalog_key]
+        warnings = result.get("warnings", [])
+        warning_items = warnings if isinstance(warnings, list) else [warnings]
+        return PylinacExecutionResult(
+            catalog_key=catalog_key,
+            engine_class=engine_class,
+            engine_version=PYLINAC_VERSION,
+            package_fingerprint=package_fingerprint(),
+            result_snapshot={
+                "schema_version": "p7.pylinac-result.v1",
+                "engine": "pylinac",
+                "engine_class": engine_class,
+                "metrics": result,
+                "engine_passed": result.get("passed"),
+                "parameters": _json_safe(parameters),
+            },
+            warnings=[
+                {"code": "PYLINAC_ENGINE_WARNING", "message": str(item)}
+                for item in warning_items
+                if item
+            ],
+            overlay_bytes=overlay_bytes,
+            overlay_media_type="image/png",
+            overlay_filename=f"{catalog_key.lower()}-phan-tich.png",
+        )
+    except PylinacAdapterError:
+        raise
+    except Exception as exc:
+        raise PylinacAdapterError(
+            "PYLINAC_EXECUTION_FAILED",
+            "Pylinac không thể phân tích phantom đo liều. Hãy kiểm tra tệp ZIP và tham số "
+            "rồi thử lại.",
+        ) from exc
+
+
+_CT_PHANTOM_KEYS = {"GE_HELIOS", "QUART_DVT", "QUART_HYPERSIGHT"}
+
+
+def _ct_phantom_parameters(
+    catalog_key: str, source_path: Path, parameters: dict[str, object]
+) -> tuple[dict[str, object], dict[str, object]]:
+    constructor_keys = {"check_uid", "memory_efficient_mode", "is_zip"}
+    common_analysis_keys = {
+        "x_adjustment",
+        "y_adjustment",
+        "angle_adjustment",
+        "roi_size_factor",
+        "scaling_factor",
+        "origin_slice",
+    }
+    quart_analysis_keys = {
+        "hu_tolerance",
+        "scaling_tolerance",
+        "thickness_tolerance",
+        "cnr_threshold",
+        "roll_slice_offset",
+    }
+    allowed = constructor_keys | common_analysis_keys
+    if catalog_key in {"QUART_DVT", "QUART_HYPERSIGHT"}:
+        allowed |= quart_analysis_keys
+    unknown = set(parameters) - allowed
+    if unknown:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_UNSUPPORTED", "Có tham số không được hỗ trợ cho bài phantom CT."
+        )
+    constructor: dict[str, object] = {
+        "check_uid": _bool(parameters, "check_uid", True),
+        "memory_efficient_mode": _bool(parameters, "memory_efficient_mode", False),
+        "is_zip": _bool(parameters, "is_zip", source_path.suffix.lower() == ".zip"),
+    }
+    analysis: dict[str, object] = {}
+    for key in ("x_adjustment", "y_adjustment", "angle_adjustment"):
+        if key in parameters:
+            analysis[key] = _number(parameters, key)
+    for key in ("roi_size_factor", "scaling_factor"):
+        if key in parameters:
+            analysis[key] = _number(parameters, key, minimum=0)
+    if "origin_slice" in parameters and parameters["origin_slice"] is not None:
+        analysis["origin_slice"] = _integer(parameters, "origin_slice", minimum=0)
+    if catalog_key in {"QUART_DVT", "QUART_HYPERSIGHT"}:
+        for key in ("hu_tolerance", "scaling_tolerance", "thickness_tolerance", "cnr_threshold"):
+            if key in parameters:
+                analysis[key] = _number(parameters, key, minimum=0)
+        if "roll_slice_offset" in parameters:
+            analysis["roll_slice_offset"] = _number(parameters, "roll_slice_offset")
+    return constructor, analysis
+
+
+def _execute_ct_phantom(
+    catalog_key: str, source_path: Path, parameters: dict[str, object]
+) -> PylinacExecutionResult:
+    symbol, _ = resolve_runtime_symbol(catalog_key)
+    if symbol is None:
+        raise PylinacAdapterError(
+            "PYLINAC_RUNTIME_UNAVAILABLE", "Bộ phân tích phantom CT chưa sẵn sàng."
+        )
+    if not source_path.is_file() or source_path.suffix.lower() != ".zip":
+        raise PylinacAdapterError(
+            "PYLINAC_INPUT_FORMAT_INVALID", "Bài phantom CT cần một tệp ZIP chứa chuỗi DICOM."
+        )
+    constructor, analysis = _ct_phantom_parameters(catalog_key, source_path, parameters)
+    try:
+        engine = symbol(str(source_path), **constructor)
+        engine.analyze(**analysis)
+        raw_result = engine.results_data(as_dict=True)
+        result = _json_safe(raw_result)
+        if not isinstance(result, dict):
+            raise PylinacAdapterError(
+                "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả phantom CT không hợp lệ."
+            )
+        from matplotlib import pyplot as plt
+
+        plotted = engine.plot_analyzed_image(show=False)
+        figure = plotted if hasattr(plotted, "savefig") else plt.gcf()
+        overlay_bytes = _save_figure(figure)
+        plt.close(figure)
+        engine_class = {
+            "GE_HELIOS": "GEHeliosCTDaily",
+            "QUART_DVT": "QuartDVT",
+            "QUART_HYPERSIGHT": "HypersightQuartDVT",
+        }[catalog_key]
+        warnings = result.get("warnings", [])
+        warning_items = warnings if isinstance(warnings, list) else [warnings]
+        return PylinacExecutionResult(
+            catalog_key=catalog_key,
+            engine_class=engine_class,
+            engine_version=PYLINAC_VERSION,
+            package_fingerprint=package_fingerprint(),
+            result_snapshot={
+                "schema_version": "p7.pylinac-result.v1",
+                "engine": "pylinac",
+                "engine_class": engine_class,
+                "metrics": result,
+                "engine_passed": result.get("passed"),
+                "parameters": _json_safe(parameters),
+            },
+            warnings=[
+                {"code": "PYLINAC_ENGINE_WARNING", "message": str(item)}
+                for item in warning_items
+                if item
+            ],
+            overlay_bytes=overlay_bytes,
+            overlay_media_type="image/png",
+            overlay_filename=f"{catalog_key.lower()}-phan-tich.png",
+        )
+    except PylinacAdapterError:
+        raise
+    except Exception as exc:
+        raise PylinacAdapterError(
+            "PYLINAC_EXECUTION_FAILED",
+            "Pylinac không thể phân tích phantom CT. Hãy kiểm tra tệp ZIP và tham số rồi thử lại.",
         ) from exc
 
 
@@ -1396,7 +1692,7 @@ def _execute_planar(
                 "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả ảnh phẳng không hợp lệ."
             )
         plotted = engine.plot(show=False)
-        from matplotlib import pyplot as plt  # type: ignore[import-untyped]
+        from matplotlib import pyplot as plt
 
         figures = plotted[0] if isinstance(plotted, tuple) and plotted else []
         figure = figures[0] if figures else plt.gcf()
@@ -1495,7 +1791,7 @@ def _execute_field_profile(
                 "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả biên dạng không hợp lệ."
             )
         overlay_bytes = _save_figure(figure)
-        from matplotlib import pyplot as plt  # type: ignore[import-untyped]
+        from matplotlib import pyplot as plt
 
         for plotted in result_figures:
             plt.close(plotted)
@@ -1533,6 +1829,249 @@ def _execute_field_profile(
         ) from exc
 
 
+_CALIBRATION_KEYS = {
+    "CALIBRATION_TG51_PHOTON",
+    "CALIBRATION_TG51_ELECTRON_LEGACY",
+    "CALIBRATION_TG51_ELECTRON_MODERN",
+    "CALIBRATION_TRS398_PHOTON",
+    "CALIBRATION_TRS398_ELECTRON",
+}
+_CALIBRATION_COMMON_KEYS = {
+    "institution",
+    "physicist",
+    "unit",
+    "measurement_date",
+    "electrometer",
+    "temp",
+    "press",
+    "chamber",
+    "n_dw",
+    "p_elec",
+    "k_elec",
+    "energy",
+    "voltage_reference",
+    "voltage_reduced",
+    "m_reference",
+    "m_opposite",
+    "m_reduced",
+    "mu",
+    "tissue_correction",
+    "m_reference_adjusted",
+}
+
+
+def _calibration_parameters(
+    catalog_key: str, parameters: dict[str, object]
+) -> dict[str, object]:
+    if catalog_key == "CALIBRATION_TG51_PHOTON":
+        specific_keys = {"measured_pdd10", "lead_foil", "clinical_pdd10", "fff"}
+    elif catalog_key == "CALIBRATION_TG51_ELECTRON_LEGACY":
+        specific_keys = {"k_ecal", "clinical_pdd", "m_gradient", "cone", "i_50"}
+    elif catalog_key == "CALIBRATION_TG51_ELECTRON_MODERN":
+        specific_keys = {"clinical_pdd", "cone", "i_50"}
+    elif catalog_key == "CALIBRATION_TRS398_PHOTON":
+        specific_keys = {
+            "setup",
+            "tpr2010",
+            "fff",
+            "clinical_pdd_zref",
+            "clinical_tmr_zref",
+        }
+    elif catalog_key == "CALIBRATION_TRS398_ELECTRON":
+        specific_keys = {"cone", "i_50", "clinical_pdd_zref"}
+    else:
+        raise PylinacAdapterError("PYLINAC_CAPABILITY_NOT_FOUND", "Không tìm thấy bài hiệu chuẩn.")
+
+    allowed_common_keys = _CALIBRATION_COMMON_KEYS - {
+        "p_elec",
+        "k_elec",
+        "m_reference_adjusted",
+    }
+    if catalog_key.startswith("CALIBRATION_TG51_"):
+        allowed_common_keys |= {"p_elec", "m_reference_adjusted"}
+    else:
+        allowed_common_keys.add("k_elec")
+    unknown = set(parameters) - allowed_common_keys - specific_keys
+    if unknown:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_UNSUPPORTED",
+            "Có tham số không được hỗ trợ cho bài hiệu chuẩn đã chọn.",
+        )
+
+    constructor: dict[str, object] = {}
+    for key in ("institution", "physicist", "unit", "measurement_date", "electrometer"):
+        if key in parameters:
+            constructor[key] = _required_text(parameters, key)
+    for key in ("temp", "press", "n_dw", "p_elec", "k_elec", "tissue_correction"):
+        if key in parameters:
+            constructor[key] = _number(parameters, key)
+    for key in ("m_reference", "m_opposite", "m_reduced"):
+        if key in parameters:
+            constructor[key] = _number_or_array(parameters, key)
+    if catalog_key == "CALIBRATION_TG51_ELECTRON_LEGACY":
+        constructor["m_gradient"] = _number_or_array(parameters, "m_gradient")
+    if "m_reference_adjusted" in parameters:
+        constructor["m_reference_adjusted"] = _optional_number_or_array(
+            parameters, "m_reference_adjusted"
+        )
+    for key in ("voltage_reference", "voltage_reduced", "mu"):
+        if key in parameters:
+            constructor[key] = _integer(parameters, key, minimum=1)
+
+    if catalog_key.startswith("CALIBRATION_TG51_"):
+        constructor["energy"] = _integer(parameters, "energy", minimum=1)
+    else:
+        constructor["energy"] = _required_text(parameters, "energy")
+    for key in ("chamber", "cone"):
+        if key in parameters:
+            constructor[key] = _required_text(parameters, key)
+
+    if catalog_key == "CALIBRATION_TG51_PHOTON":
+        if parameters.get("lead_foil") is not None:
+            constructor["lead_foil"] = _required_text(parameters, "lead_foil")
+        constructor["measured_pdd10"] = _optional_number(parameters, "measured_pdd10", minimum=0)
+        constructor["clinical_pdd10"] = _number(parameters, "clinical_pdd10", minimum=0)
+        constructor["fff"] = _bool(parameters, "fff", False)
+    elif catalog_key == "CALIBRATION_TG51_ELECTRON_LEGACY":
+        constructor["k_ecal"] = _number(parameters, "k_ecal", minimum=0)
+        constructor["clinical_pdd"] = _number(parameters, "clinical_pdd", minimum=0)
+        constructor["i_50"] = _number(parameters, "i_50", minimum=0)
+        constructor["cone"] = _required_text(parameters, "cone")
+    elif catalog_key == "CALIBRATION_TG51_ELECTRON_MODERN":
+        constructor["clinical_pdd"] = _number(parameters, "clinical_pdd", minimum=0)
+        constructor["i_50"] = _number(parameters, "i_50", minimum=0)
+        constructor["cone"] = _required_text(parameters, "cone")
+        constructor["tissue_correction"] = _number(parameters, "tissue_correction", minimum=0)
+    elif catalog_key == "CALIBRATION_TRS398_PHOTON":
+        constructor["setup"] = _required_text(parameters, "setup")
+        constructor["tpr2010"] = _number(parameters, "tpr2010", minimum=0)
+        constructor["fff"] = _bool(parameters, "fff")
+        pdd = _optional_number(parameters, "clinical_pdd_zref", minimum=0)
+        tmr = _optional_number(parameters, "clinical_tmr_zref", minimum=0)
+        if pdd is None and tmr is None:
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID", "Cần nhập PDD hoặc TMR tại độ sâu tham chiếu."
+            )
+        constructor["clinical_pdd_zref"] = pdd
+        constructor["clinical_tmr_zref"] = tmr
+    else:
+        constructor["i_50"] = _number(parameters, "i_50", minimum=0)
+        constructor["clinical_pdd_zref"] = _number(parameters, "clinical_pdd_zref", minimum=0)
+        constructor["tissue_correction"] = _number(parameters, "tissue_correction", minimum=0)
+        constructor["cone"] = _required_text(parameters, "cone")
+    return constructor
+
+
+_CALIBRATION_RESULT_PROPERTIES: dict[str, tuple[str, ...]] = {
+    "CALIBRATION_TG51_PHOTON": (
+        "p_tp",
+        "p_ion",
+        "p_pol",
+        "m_corrected",
+        "pddx",
+        "kq",
+        "dose_mu_10",
+        "dose_mu_dmax",
+    ),
+    "CALIBRATION_TG51_ELECTRON_LEGACY": (
+        "p_tp",
+        "p_ion",
+        "p_pol",
+        "m_corrected",
+        "r_50",
+        "dref",
+        "pq_gr",
+        "kq",
+        "dose_mu_dref",
+        "dose_mu_dmax",
+    ),
+    "CALIBRATION_TG51_ELECTRON_MODERN": (
+        "p_tp",
+        "p_ion",
+        "p_pol",
+        "m_corrected",
+        "r_50",
+        "dref",
+        "kq",
+        "dose_mu_dref",
+        "dose_mu_dmax",
+    ),
+    "CALIBRATION_TRS398_PHOTON": (
+        "k_tp",
+        "k_s",
+        "k_pol",
+        "m_corrected",
+        "kq",
+        "dose_mu_zref",
+        "dose_mu_zmax",
+    ),
+    "CALIBRATION_TRS398_ELECTRON": (
+        "k_tp",
+        "k_s",
+        "k_pol",
+        "m_corrected",
+        "r_50",
+        "zref",
+        "kq",
+        "dose_mu_zref",
+        "dose_mu_zmax",
+    ),
+}
+
+
+def _execute_calibration(
+    catalog_key: str, parameters: dict[str, object]
+) -> PylinacExecutionResult:
+    symbol, _ = resolve_runtime_symbol(catalog_key)
+    if symbol is None:
+        raise PylinacAdapterError(
+            "PYLINAC_RUNTIME_UNAVAILABLE", "Bộ tính hiệu chuẩn chưa sẵn sàng trên máy chủ."
+        )
+    constructor = _calibration_parameters(catalog_key, parameters)
+    try:
+        engine = symbol(**constructor)
+        metrics: dict[str, object] = {}
+        for property_name in _CALIBRATION_RESULT_PROPERTIES[catalog_key]:
+            metrics[property_name] = _json_safe(getattr(engine, property_name))
+        metrics["output_was_adjusted"] = _json_safe(engine.output_was_adjusted)
+        if bool(metrics["output_was_adjusted"]):
+            for property_name in (
+                "m_corrected_adjustment",
+                "dose_mu_10_adjusted",
+                "dose_mu_dmax_adjusted",
+                "dose_mu_dref_adjusted",
+                "dose_mu_zref_adjusted",
+                "dose_mu_zmax_adjusted",
+            ):
+                if hasattr(type(engine), property_name):
+                    metrics[property_name] = _json_safe(getattr(engine, property_name))
+        return PylinacExecutionResult(
+            catalog_key=catalog_key,
+            engine_class=type(engine).__name__,
+            engine_version=PYLINAC_VERSION,
+            package_fingerprint=package_fingerprint(),
+            result_snapshot={
+                "schema_version": "p7.pylinac-calibration-result.v1",
+                "engine": "pylinac",
+                "engine_class": type(engine).__name__,
+                "metrics": metrics,
+                "engine_passed": None,
+                "parameters": _json_safe(parameters),
+            },
+            warnings=[],
+            overlay_bytes=None,
+            overlay_media_type=None,
+            overlay_filename=None,
+        )
+    except PylinacAdapterError:
+        raise
+    except Exception as exc:
+        raise PylinacAdapterError(
+            "PYLINAC_EXECUTION_FAILED",
+            "Pylinac không thể tính hiệu chuẩn. Hãy kiểm tra số đo, đơn vị và tham số rồi thử lại.",
+        ) from exc
+
+
 def execute_pylinac(
     catalog_key: str, source_path: Path, parameters: dict[str, object]
 ) -> PylinacExecutionResult:
@@ -1541,6 +2080,8 @@ def execute_pylinac(
     binding = runtime_binding(catalog_key)
     if binding is None:
         raise PylinacAdapterError("PYLINAC_CAPABILITY_NOT_FOUND", "Không tìm thấy bài QA đã chọn.")
+    if catalog_key in _CALIBRATION_KEYS:
+        return _execute_calibration(catalog_key, parameters)
     if catalog_key == "PICKET_FENCE":
         return _execute_picket_fence(source_path, parameters)
     if catalog_key == "STARSHOT":
@@ -1557,6 +2098,10 @@ def execute_pylinac(
         return _execute_catphan(catalog_key, source_path, parameters)
     if catalog_key in _ACR_KEYS:
         return _execute_acr(catalog_key, source_path, parameters)
+    if catalog_key in _CHEESE_KEYS:
+        return _execute_cheese(catalog_key, source_path, parameters)
+    if catalog_key in _CT_PHANTOM_KEYS:
+        return _execute_ct_phantom(catalog_key, source_path, parameters)
     if catalog_key.startswith("PLANAR_"):
         return _execute_planar(catalog_key, source_path, parameters)
     raise PylinacAdapterError(

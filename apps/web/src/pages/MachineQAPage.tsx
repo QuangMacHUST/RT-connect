@@ -884,9 +884,190 @@ function AcrPage({ caseId, accessToken, title, catalogKey }: { caseId: string; a
   </div>
 }
 
+type CtPylinacCatalogKey = 'CHEESE_TOMO' | 'CHEESE_CIRS_062M' | 'GE_HELIOS' | 'QUART_DVT' | 'QUART_HYPERSIGHT'
+
+function CtPylinacPage({ caseId, accessToken, title, catalogKey }: { caseId: string; accessToken: string; title: string; catalogKey: CtPylinacCatalogKey }) {
+  const queryClient = useQueryClient()
+  const [selectedArtifactId, setSelectedArtifactId] = useState<string>()
+  const [originSlice, setOriginSlice] = useState('')
+  const [xAdjustment, setXAdjustment] = useState('0')
+  const [yAdjustment, setYAdjustment] = useState('0')
+  const [angleAdjustment, setAngleAdjustment] = useState('0')
+  const [roiSizeFactor, setRoiSizeFactor] = useState('1')
+  const [scalingFactor, setScalingFactor] = useState('1')
+  const [roiOneDensity, setRoiOneDensity] = useState('')
+  const [roiTwoDensity, setRoiTwoDensity] = useState('')
+  const [huTolerance, setHuTolerance] = useState('40')
+  const [scalingTolerance, setScalingTolerance] = useState('1')
+  const [thicknessTolerance, setThicknessTolerance] = useState('0.2')
+  const [cnrThreshold, setCnrThreshold] = useState('5')
+  const [rollSliceOffset, setRollSliceOffset] = useState('-8')
+  const [message, setMessage] = useState<string>()
+  const isCheese = catalogKey === 'CHEESE_TOMO' || catalogKey === 'CHEESE_CIRS_062M'
+  const isQuart = catalogKey === 'QUART_DVT' || catalogKey === 'QUART_HYPERSIGHT'
+  const artifacts = useQuery({
+    queryKey: ['pylinac-artifacts', caseId, accessToken],
+    queryFn: () => apiClient.artifacts(accessToken, caseId), retry: false
+  })
+  const runs = useQuery({
+    queryKey: ['pylinac-runs', caseId, accessToken],
+    queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
+  })
+  const upload = useMutation({
+    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
+    onSuccess: (artifact) => {
+      setSelectedArtifactId(artifact.id)
+      setMessage('Đã tải bộ ảnh lên; có thể bắt đầu phân tích.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-artifacts', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const imageArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' || item.artifact_type === 'IMAGE')
+  const selectedInput = selectedArtifactId ?? imageArtifacts[0]?.id
+  const analyze = useMutation({
+    mutationFn: () => {
+      const parameters: Record<string, unknown> = {
+        check_uid: true,
+        is_zip: true,
+        x_adjustment: Number(xAdjustment),
+        y_adjustment: Number(yAdjustment),
+        angle_adjustment: Number(angleAdjustment),
+        roi_size_factor: Number(roiSizeFactor),
+        scaling_factor: Number(scalingFactor),
+        origin_slice: originSlice.trim() === '' ? null : Number(originSlice)
+      }
+      if (isCheese) {
+        const roiConfig: Record<string, { density: number }> = {}
+        if (roiOneDensity.trim() !== '') roiConfig['1'] = { density: Number(roiOneDensity) }
+        if (roiTwoDensity.trim() !== '') roiConfig['2'] = { density: Number(roiTwoDensity) }
+        if (Object.keys(roiConfig).length > 0) parameters.roi_config = roiConfig
+      }
+      if (isQuart) Object.assign(parameters, { hu_tolerance: Number(huTolerance), scaling_tolerance: Number(scalingTolerance), thickness_tolerance: Number(thicknessTolerance), cnr_threshold: Number(cnrThreshold), roll_slice_offset: Number(rollSliceOffset) })
+      return apiClient.createPylinacQARun(accessToken, caseId, { catalog_key: catalogKey, artifact_ids: [selectedInput!], parameters })
+    },
+    onSuccess: (run) => {
+      setMessage(run.status === 'COMPLETED' ? 'Đã phân tích bằng Pylinac.' : 'Pylinac không thể hoàn tất phân tích; hãy xem thông báo lỗi bên dưới.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const assess = useMutation({
+    mutationFn: ({ runId, value }: { runId: string; value: 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' }) => apiClient.assessPylinacQARun(accessToken, runId, value),
+    onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const history = runs.data?.items ?? []
+  const latest = history[0]
+  const isBusy = upload.isPending || analyze.isPending || assess.isPending
+  const displayName = catalogKey === 'CHEESE_TOMO' ? 'Phantom TomoCheese' : catalogKey === 'CHEESE_CIRS_062M' ? 'Phantom CIRS 062M' : catalogKey === 'GE_HELIOS' ? 'Phantom GE Helios CT hằng ngày' : catalogKey === 'QUART_DVT' ? 'Phantom Quart DVT' : 'Phantom Quart HyperSight'
+
+  return <div className="page">
+    <header className="page-header">
+      <div><p className="eyebrow">KIỂM TRA CHẤT LƯỢNG MÁY · Pylinac</p><h1>{displayName}</h1><p>{title} · phân tích chuỗi DICOM bằng bộ tính Pylinac tương ứng.</p></div>
+      <div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">Quay lại kho QA</Link><span className="status-badge">BỘ TÍNH Pylinac 3.47.0</span></div>
+    </header>
+    {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
+    <section className="panel machine-qa-panel">
+      <div className="panel-heading"><div><p className="eyebrow">BỘ ẢNH ĐẦU VÀO</p><h2>Chuỗi DICOM trong tệp ZIP</h2></div><strong>{imageArtifacts.length}</strong></div>
+      <p>Chọn đúng một tệp ZIP của phantom. Pylinac phân tích và trả về các chỉ số chuyên môn; các điều chỉnh bên dưới chỉ áp dụng cho lần chạy mới.</p>
+      <div className="machine-qa-actions"><label className="button-link">Chọn tệp ZIP DICOM<input type="file" accept=".zip,application/zip" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>
+      {imageArtifacts.length > 0 && <label>Tệp đang chọn<select value={selectedInput ?? ''} onChange={(event) => setSelectedArtifactId(event.target.value)}>{imageArtifacts.map((artifact, index) => <option key={artifact.id} value={artifact.id}>Bộ ảnh {index + 1} · {artifact.original_filename}</option>)}</select></label>}
+      <div className="machine-qa-protocol-controls">
+        <label>Lát gốc tùy chọn<input type="number" min="0" step="1" placeholder="Tự động" value={originSlice} onChange={(event) => setOriginSlice(event.target.value)} /></label>
+        <label>Điều chỉnh ngang (mm)<input type="number" step="0.1" value={xAdjustment} onChange={(event) => setXAdjustment(event.target.value)} /></label>
+        <label>Điều chỉnh dọc (mm)<input type="number" step="0.1" value={yAdjustment} onChange={(event) => setYAdjustment(event.target.value)} /></label>
+        <label>Điều chỉnh góc (độ)<input type="number" step="0.1" value={angleAdjustment} onChange={(event) => setAngleAdjustment(event.target.value)} /></label>
+      </div>
+      <div className="machine-qa-protocol-controls">
+        <label>Hệ số kích thước vùng<input type="number" min="0" step="0.01" value={roiSizeFactor} onChange={(event) => setRoiSizeFactor(event.target.value)} /></label>
+        <label>Hệ số thang đo<input type="number" min="0" step="0.01" value={scalingFactor} onChange={(event) => setScalingFactor(event.target.value)} /></label>
+        {isQuart && <label>Dung sai HU<input type="number" min="0" step="1" value={huTolerance} onChange={(event) => setHuTolerance(event.target.value)} /></label>}
+        {isQuart && <label>Ngưỡng CNR<input type="number" min="0" step="0.1" value={cnrThreshold} onChange={(event) => setCnrThreshold(event.target.value)} /></label>}
+      </div>
+      {isCheese && <div className="machine-qa-protocol-controls"><label>Mật độ tham chiếu ROI 1 (g/cc)<input type="number" step="0.001" placeholder="Tùy chọn" value={roiOneDensity} onChange={(event) => setRoiOneDensity(event.target.value)} /></label><label>Mật độ tham chiếu ROI 2 (g/cc)<input type="number" step="0.001" placeholder="Tùy chọn" value={roiTwoDensity} onChange={(event) => setRoiTwoDensity(event.target.value)} /></label></div>}
+      {isQuart && <div className="machine-qa-protocol-controls"><label>Dung sai thang đo (mm)<input type="number" min="0" step="0.1" value={scalingTolerance} onChange={(event) => setScalingTolerance(event.target.value)} /></label><label>Dung sai độ dày (mm)<input type="number" min="0" step="0.01" value={thicknessTolerance} onChange={(event) => setThicknessTolerance(event.target.value)} /></label><label>Dịch lát tìm góc (mm)<input type="number" step="0.1" value={rollSliceOffset} onChange={(event) => setRollSliceOffset(event.target.value)} /></label></div>}
+      <div className="machine-qa-actions"><button disabled={!selectedInput || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+    </section>
+    {latest && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">KẾT QUẢ MỚI NHẤT</p><h2>{latest.name}</h2></div><span className={statusClass(latest.status)}>{statusLabel(latest.status)}</span></div>{latest.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích</h3><ul>{latest.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{latest.status === 'COMPLETED' && <><p>Kết quả và thông số của đúng phiên bản Pylinac đã được lưu cùng với bộ ảnh đầu vào.</p>{latest.overlay_artifact_id && <button className="button-secondary" onClick={() => { void apiClient.downloadArtifact(accessToken, latest.overlay_artifact_id!).then((download) => window.open(download.url, '_blank', 'noopener,noreferrer')).catch((error) => setMessage(errorMessage(error))) }}>Mở ảnh phân tích</button>}<label>Đánh giá của người dùng<select value={latest.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => assess.mutate({ runId: latest.id, value: event.target.value as 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' })}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">Chưa có kết quả {displayName}.</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td></tr>)}</tbody></table></div>}</section>
+  </div>
+}
+
 const planarCatalogKeys = [
   'PLANAR_LEEDS_TOR_18', 'PLANAR_LEEDS_TOR_BLUE', 'PLANAR_STANDARD_IMAGING_QC3', 'PLANAR_STANDARD_IMAGING_QC_KV', 'PLANAR_LAS_VEGAS', 'PLANAR_ELEKTA_LAS_VEGAS', 'PLANAR_DOSELAB_MC2_MV', 'PLANAR_DOSELAB_MC2_KV', 'PLANAR_SNC_MV', 'PLANAR_SNC_MV_12510', 'PLANAR_SNC_KV', 'PLANAR_PTW_EPID_QC', 'PLANAR_IBA_PRIMUS_A', 'PLANAR_STANDARD_IMAGING_FC2', 'PLANAR_IMT_LRAD', 'PLANAR_DOSELAB_RLF', 'PLANAR_PTW_ISO_ALIGN', 'PLANAR_SNC_FSQA', 'PLANAR_ACR_DIGITAL_MAMMOGRAPHY'
 ] as const
+type CalibrationCatalogKey = 'CALIBRATION_TG51_PHOTON' | 'CALIBRATION_TG51_ELECTRON_LEGACY' | 'CALIBRATION_TG51_ELECTRON_MODERN' | 'CALIBRATION_TRS398_PHOTON' | 'CALIBRATION_TRS398_ELECTRON'
+
+function CalibrationPage({ caseId, accessToken, title, catalogKey }: { caseId: string; accessToken: string; title: string; catalogKey: CalibrationCatalogKey }) {
+  const queryClient = useQueryClient()
+  const isTg = catalogKey.startsWith('CALIBRATION_TG51_')
+  const isPhoton = catalogKey.endsWith('PHOTON')
+  const isTrsPhoton = catalogKey === 'CALIBRATION_TRS398_PHOTON'
+  const isLegacyElectron = catalogKey === 'CALIBRATION_TG51_ELECTRON_LEGACY'
+  const [values, setValues] = useState<Record<string, string>>(() => ({
+    institution: '', physicist: '', unit: 'LINAC-01', measurement_date: '', electrometer: '',
+    energy: isPhoton ? '6' : '6', temp: '22', press: '101.3', chamber: 'A12',
+    n_dw: '5.0', p_elec: '1.0', k_elec: '1.0', voltage_reference: '300', voltage_reduced: '150',
+    m_reference: '10.0, 10.2', m_opposite: '10.1', m_reduced: '9.8', mu: '200',
+    tissue_correction: '1.0', clinical_pdd10: '66.7', measured_pdd10: '66.7',
+    clinical_pdd: '66.7', clinical_pdd_zref: '66.7', clinical_tmr_zref: '',
+    tpr2010: '0.7', i_50: '5.0', k_ecal: '0.9', m_gradient: '10.0, 10.1', cone: '10x10',
+    setup: 'SSD', lead_foil: 'None', fff: 'false'
+  }))
+  const [message, setMessage] = useState<string>()
+  const runs = useQuery({ queryKey: ['pylinac-runs', caseId, accessToken], queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false })
+  const analyze = useMutation({
+    mutationFn: () => {
+      const parameters: Record<string, unknown> = {}
+      const textKeys = ['institution', 'physicist', 'unit', 'measurement_date', 'electrometer', 'chamber', 'cone', 'setup']
+      for (const key of textKeys) if (values[key]?.trim()) parameters[key] = values[key].trim()
+      const numberKeys = ['temp', 'press', 'n_dw', 'p_elec', 'k_elec', 'energy', 'voltage_reference', 'voltage_reduced', 'mu', 'tissue_correction', 'clinical_pdd10', 'measured_pdd10', 'clinical_pdd', 'clinical_pdd_zref', 'clinical_tmr_zref', 'tpr2010', 'i_50', 'k_ecal']
+      for (const key of numberKeys) {
+        if (values[key]?.trim() !== '') {
+          const number = Number(values[key])
+          if (Number.isFinite(number)) parameters[key] = number
+        }
+      }
+      for (const key of ['m_reference', 'm_opposite', 'm_reduced', 'm_gradient']) {
+        if (!values[key]?.trim()) continue
+        const parsed = values[key].split(',').map((item) => Number(item.trim())).filter((item) => Number.isFinite(item))
+        if (parsed.length === 1) parameters[key] = parsed[0]
+        else if (parsed.length > 1) parameters[key] = parsed
+      }
+      if (isPhoton || isTrsPhoton) parameters.fff = values.fff === 'true'
+      if (isTg && isPhoton && values.lead_foil !== 'None') parameters.lead_foil = values.lead_foil
+      return apiClient.createPylinacQARun(accessToken, caseId, { catalog_key: catalogKey, artifact_ids: [], parameters })
+    },
+    onSuccess: (run) => { setMessage(run.status === 'COMPLETED' ? 'Đã tính hiệu chuẩn bằng Pylinac.' : 'Pylinac không thể hoàn tất phép tính; hãy xem thông báo lỗi bên dưới.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const assess = useMutation({
+    mutationFn: ({ runId, value }: { runId: string; value: 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' }) => apiClient.assessPylinacQARun(accessToken, runId, value),
+    onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const history = (runs.data?.items ?? []).filter((run) => run.catalog_key === catalogKey)
+  const latest = history[0]
+  const isBusy = analyze.isPending || assess.isPending
+  const setValue = (key: string, value: string) => setValues((current) => ({ ...current, [key]: value }))
+  const field = (key: string, label: string, type: 'text' | 'number' = 'number', hint?: string) => <label key={key}>{label}{hint && <small className="table-subtitle">{hint}</small>}<input type={type} step={type === 'number' ? 'any' : undefined} value={values[key] ?? ''} onChange={(event) => setValue(key, event.target.value)} /></label>
+  const displayName = catalogKey.replace('CALIBRATION_', '').replaceAll('_', ' ')
+  const metricLabels: Record<string, string> = { p_tp: 'Hệ số nhiệt độ và áp suất', p_ion: 'Hệ số thu ion', p_pol: 'Hệ số phân cực', k_tp: 'Hệ số nhiệt độ và áp suất', k_s: 'Hệ số thu ion', k_pol: 'Hệ số phân cực', m_corrected: 'Số đọc đã hiệu chỉnh', pddx: 'PDDx(10)', r_50: 'R50', dref: 'Độ sâu tham chiếu', zref: 'Độ sâu tham chiếu', pq_gr: 'Hệ số gradient', kq: 'Hệ số chất lượng chùm', dose_mu_10: 'Liều trên MU tại 10 cm', dose_mu_dref: 'Liều trên MU tại Dref', dose_mu_zref: 'Liều trên MU tại zref', dose_mu_dmax: 'Liều trên MU tại dmax', dose_mu_zmax: 'Liều trên MU tại zmax' }
+  return <div className="page">
+    <header className="page-header"><div><p className="eyebrow">KIỂM TRA CHẤT LƯỢNG MÁY · PYLİNAC</p><h1>{displayName}</h1><p>{title} · nhập số đo hiệu chuẩn, Pylinac thực hiện phép tính và lưu nguyên vẹn kết quả.</p></div><div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">Quay lại kho QA</Link><span className="status-badge">BỘ TÍNH PYLINAC 3.47.0</span></div></header>
+    {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">BIỂU MẪU SỐ ĐO</p><h2>Thông tin hiệu chuẩn</h2></div><span className="status-badge">KHÔNG CẦN TỆP</span></div><p>Bài hiệu chuẩn nhận số đo từ giao diện, không yêu cầu ảnh DICOM. Các giá trị cách nhau bằng dấu phẩy được gửi như nhiều lần đọc; đơn vị hiển thị ngay cạnh trường nhập.</p><div className="machine-qa-protocol-controls">{field('unit', 'Tên máy', 'text')}{field('physicist', 'Người thực hiện', 'text')}{field('measurement_date', 'Ngày đo', 'text')}{field('electrometer', 'Điện kế', 'text')}</div><div className="machine-qa-protocol-controls">{field('energy', 'Năng lượng')}{field('temp', 'Nhiệt độ (°C)')}{field('press', 'Áp suất (kPa)')}{field('chamber', 'Buồng ion hóa', 'text')}</div><div className="machine-qa-protocol-controls">{field('n_dw', 'Hệ số NDW')}{field(isTrsPhoton ? 'k_elec' : 'p_elec', isTrsPhoton ? 'Hệ số điện kế' : 'Hệ số điện kế')}{field('voltage_reference', 'Điện áp tham chiếu')}{field('voltage_reduced', 'Điện áp giảm')}</div><div className="machine-qa-protocol-controls">{field('m_reference', 'Số đọc tham chiếu', 'text', 'Một hoặc nhiều giá trị, cách nhau bằng dấu phẩy')}{field('m_opposite', 'Số đọc ngược cực', 'text')}{field('m_reduced', 'Số đọc điện áp giảm', 'text')}{field('mu', 'Số MU')}</div>
+      {isPhoton && <div className="machine-qa-protocol-controls">{isTg ? field('measured_pdd10', 'PDD đo tại 10 cm') : field('tpr2010', 'TPR(20)/TPR(10)')} {isTg ? field('clinical_pdd10', 'PDD lâm sàng tại 10 cm') : <><label>Thiết lập<select value={values.setup} onChange={(event) => setValue('setup', event.target.value)}><option value="SSD">SSD</option><option value="SAD">SAD</option></select></label>{field('clinical_pdd_zref', 'PDD tại độ sâu tham chiếu')}{field('clinical_tmr_zref', 'TMR tại độ sâu tham chiếu')}</>} {isTg && <label>Miền điện áp<select value={values.fff} onChange={(event) => setValue('fff', event.target.value)}><option value="false">Phẳng</option><option value="true">FFF</option></select></label>}</div>}
+      {!isPhoton && <div className="machine-qa-protocol-controls">{field('i_50', 'Độ sâu I50 (cm)')}{field('clinical_pdd', isLegacyElectron ? 'PDD lâm sàng' : 'PDD lâm sàng tại Dref')}{field('cone', 'Kích thước nón', 'text')}{field('tissue_correction', 'Hiệu chỉnh mô')}</div>}
+      {isLegacyElectron && <div className="machine-qa-protocol-controls">{field('k_ecal', 'Hệ số kecal')}{field('m_gradient', 'Số đọc gradient', 'text')}</div>}
+      {isTg && isPhoton && <div className="machine-qa-protocol-controls"><label>Miếng lọc chì<select value={values.lead_foil} onChange={(event) => setValue('lead_foil', event.target.value)}><option value="None">Không dùng</option><option value="30cm">30 cm</option><option value="50cm">50 cm</option></select></label></div>}
+      <div className="machine-qa-actions"><button disabled={isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang tính…' : 'Tính hiệu chuẩn'}</button></div>
+    </section>
+    {latest && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">KẾT QUẢ MỚI NHẤT</p><h2>{latest.name}</h2></div><span className={statusClass(latest.status)}>{statusLabel(latest.status)}</span></div>{latest.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể tính hiệu chuẩn</h3><ul>{latest.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{latest.status === 'COMPLETED' && <><div className="machine-qa-metric-grid">{Object.entries(objectValue(latest.result_snapshot.metrics) ?? {}).filter(([key]) => key !== 'output_was_adjusted').map(([key, value]) => <div className="machine-qa-metric" key={key}><span>{metricLabels[key] ?? key}</span><strong>{textValue(value)}</strong></div>)}</div><label>Đánh giá của người dùng<select value={latest.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => assess.mutate({ runId: latest.id, value: event.target.value as 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' })}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ TÍNH TOÁN</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">Chưa có kết quả hiệu chuẩn.</p> : <div className="table-wrap"><table><thead><tr><th>Lần tính</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td></tr>)}</tbody></table></div>}</section>
+  </div>
+}
+
 type PlanarCatalogKey = typeof planarCatalogKeys[number]
 
 function PlanarImagingPage({ caseId, accessToken, title, catalogKey }: { caseId: string; accessToken: string; title: string; catalogKey: PlanarCatalogKey }) {
@@ -1112,6 +1293,12 @@ export function MachineQAPage() {
   }
   if ((selectedCase.qa_definition_key === 'ACR_CT_464' || selectedCase.qa_definition_key === 'ACR_MRI_LARGE' || selectedCase.qa_definition_key === 'ACR_MRI_MEDIUM') && accessToken) {
     return <AcrPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key} />
+  }
+  if ((selectedCase.qa_definition_key === 'CHEESE_TOMO' || selectedCase.qa_definition_key === 'CHEESE_CIRS_062M' || selectedCase.qa_definition_key === 'GE_HELIOS' || selectedCase.qa_definition_key === 'QUART_DVT' || selectedCase.qa_definition_key === 'QUART_HYPERSIGHT') && accessToken) {
+    return <CtPylinacPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key} />
+  }
+  if (selectedCase.qa_definition_key?.startsWith('CALIBRATION_') && accessToken) {
+    return <CalibrationPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key as CalibrationCatalogKey} />
   }
   if (planarCatalogKeys.includes(selectedCase.qa_definition_key as PlanarCatalogKey) && accessToken) {
     return <PlanarImagingPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key as PlanarCatalogKey} />

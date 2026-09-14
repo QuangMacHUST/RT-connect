@@ -45,7 +45,7 @@ AssessmentStatus = Literal["PASS", "WARNING", "FAIL", "REVIEW", "NOT_ASSESSED"]
 
 class PylinacQARunCreateRequest(BaseModel):
     catalog_key: str = Field(min_length=1, max_length=120)
-    artifact_ids: list[UUID] = Field(min_length=1, max_length=8)
+    artifact_ids: list[UUID] = Field(min_length=0, max_length=8)
     parameters: dict[str, object] = Field(default_factory=dict)
 
 
@@ -281,7 +281,18 @@ def create_pylinac_run(
     context = resolve_session_context(session, identity)
     case = _case_or_error(session, context, case_id)
     definition, import_path = _definition_or_error(payload.catalog_key)
-    artifacts = _artifact_inputs(session, context, case, payload.artifact_ids)
+    calibration_run = definition.key.startswith("CALIBRATION_")
+    artifacts = (
+        []
+        if calibration_run
+        else _artifact_inputs(session, context, case, payload.artifact_ids)
+    )
+    if calibration_run and payload.artifact_ids:
+        raise DomainError(
+            "PYLINAC_INPUT_COUNT_INVALID",
+            "Bài hiệu chuẩn chỉ nhận số đo, không cần tệp đầu vào.",
+            422,
+        )
     if definition.key in {
         "PICKET_FENCE",
         "STARSHOT",
@@ -294,6 +305,11 @@ def create_pylinac_run(
         "ACR_CT_464",
         "ACR_MRI_LARGE",
         "ACR_MRI_MEDIUM",
+        "CHEESE_TOMO",
+        "CHEESE_CIRS_062M",
+        "GE_HELIOS",
+        "QUART_DVT",
+        "QUART_HYPERSIGHT",
     } and len(artifacts) != 1:
         raise DomainError(
             "PYLINAC_INPUT_COUNT_INVALID", "Bài QA này yêu cầu đúng một tệp đầu vào.", 422
@@ -316,7 +332,20 @@ def create_pylinac_run(
             422,
         )
     if (
-        definition.key in {"CATPHAN_503", "CATPHAN_504", "CATPHAN_600", "CATPHAN_604"}
+        definition.key in {
+            "CATPHAN_503",
+            "CATPHAN_504",
+            "CATPHAN_600",
+            "CATPHAN_604",
+            "ACR_CT_464",
+            "ACR_MRI_LARGE",
+            "ACR_MRI_MEDIUM",
+            "CHEESE_TOMO",
+            "CHEESE_CIRS_062M",
+            "GE_HELIOS",
+            "QUART_DVT",
+            "QUART_HYPERSIGHT",
+        }
         and Path(artifacts[0].original_filename).suffix.lower() != ".zip"
     ):
         raise DomainError(

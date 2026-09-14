@@ -91,6 +91,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Số đo buồng ion hóa", "Điều kiện môi trường", "Hệ số hiệu chuẩn"),
         ("Nhiệt độ", "Áp suất", "Điện áp", "PDD hoặc TPR"),
         engine_class="TG51Photon",
+        implementation_status="READY",
     ),
     _item(
         "CALIBRATION_TG51_ELECTRON_LEGACY",
@@ -101,6 +102,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Số đo buồng ion hóa", "Điều kiện môi trường", "Hệ số hiệu chuẩn"),
         ("Năng lượng", "Độ sâu", "Điện áp"),
         engine_class="TG51ElectronLegacy",
+        implementation_status="READY",
     ),
     _item(
         "CALIBRATION_TG51_ELECTRON_MODERN",
@@ -111,6 +113,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Số đo buồng ion hóa", "Điều kiện môi trường", "Hệ số hiệu chuẩn"),
         ("Năng lượng", "Độ sâu", "Điện áp"),
         engine_class="TG51ElectronModern",
+        implementation_status="READY",
     ),
     _item(
         "CALIBRATION_TRS398_PHOTON",
@@ -121,6 +124,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Số đo buồng ion hóa", "Điều kiện môi trường", "Hệ số hiệu chuẩn"),
         ("Năng lượng", "Độ sâu", "Điện áp"),
         engine_class="TRS398Photon",
+        implementation_status="READY",
     ),
     _item(
         "CALIBRATION_TRS398_ELECTRON",
@@ -131,6 +135,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Số đo buồng ion hóa", "Điều kiện môi trường", "Hệ số hiệu chuẩn"),
         ("Năng lượng", "Độ sâu", "Điện áp"),
         engine_class="TRS398Electron",
+        implementation_status="READY",
     ),
     _item(
         "STARSHOT",
@@ -273,6 +278,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Chuỗi DICOM phantom",),
         ("Chọn lát", "Điều chỉnh vùng quan tâm", "Giá trị tham chiếu"),
         engine_class="TomoCheese",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(
@@ -284,6 +290,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Chuỗi DICOM phantom",),
         ("Chọn lát", "Điều chỉnh vùng quan tâm", "Giá trị tham chiếu"),
         engine_class="Cirs062M",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(
@@ -295,6 +302,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Chuỗi DICOM phantom",),
         ("Chọn lát", "Điều chỉnh vùng quan tâm", "Ngưỡng"),
         engine_class="GECatPhan",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(
@@ -306,6 +314,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Chuỗi DICOM CT hoặc CBCT",),
         ("Chọn lát", "Tâm phantom", "Vùng quan tâm"),
         engine_class="QuartDVT",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(
@@ -317,6 +326,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Chuỗi DICOM CT hoặc CBCT",),
         ("Chọn lát", "Tâm phantom", "Vùng quan tâm"),
         engine_class="QuartHyperSight",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(

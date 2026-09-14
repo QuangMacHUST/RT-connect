@@ -16,6 +16,7 @@ from rt_connect_api.services.pylinac_adapter import (
     PylinacExecutionResult,
     execute_pylinac,
 )
+from rt_connect_api.services.pylinac_registry import resolve_capabilities
 from test_workspace import _workspace_client
 
 
@@ -108,6 +109,42 @@ def test_pylinac_run_persists_input_result_overlay_and_separate_assessment(monke
         assert assessment.status_code == 200, assessment.text
         assert assessment.json()["assessment_status"] == "WARNING"
         assert assessment.json()["result_snapshot"]["metrics"]["passed"] is True
+
+
+def test_calibration_run_accepts_measurements_without_artifacts(monkeypatch) -> None:
+    storage = InMemoryObjectStorage()
+    fake_result = PylinacExecutionResult(
+        catalog_key="CALIBRATION_TG51_PHOTON",
+        engine_class="TG51Photon",
+        engine_version="3.47.0",
+        package_fingerprint="f" * 64,
+        result_snapshot={
+            "schema_version": "p7.pylinac-calibration-result.v1",
+            "engine": "pylinac",
+            "engine_class": "TG51Photon",
+            "metrics": {"dose_mu_10": 1.0},
+            "engine_passed": None,
+            "parameters": {},
+        },
+        warnings=[],
+        overlay_bytes=None,
+        overlay_media_type=None,
+        overlay_filename=None,
+    )
+
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[_storage] = lambda: storage
+        monkeypatch.setattr(
+            "rt_connect_api.api.pylinac_qa.execute_pylinac", lambda *_args: fake_result
+        )
+        case_id = _case(client, str(organization.id), "Hiệu chuẩn TG-51 photon")
+        created = client.post(
+            f"/api/v1/qa-cases/{case_id}/pylinac-runs",
+            json={"catalog_key": "CALIBRATION_TG51_PHOTON", "artifact_ids": []},
+        )
+        assert created.status_code == 201, created.text
+        assert created.json()["input_files"] == []
+        assert created.json()["result_snapshot"]["metrics"]["dose_mu_10"] == 1.0
 
 
 def test_pylinac_run_rejects_input_from_another_case() -> None:
@@ -543,7 +580,7 @@ def test_catphan_adapter_passes_zip_and_analysis_controls(tmp_path, monkeypatch)
     assert len(result.overlay_bytes or b"") > 0
 
 
-def test_acr_adapter_supports_ct_and_mri_controls(tmp_path, monkeypatch) -> None:
+def test_acr_adapter_supports_mri_controls(tmp_path, monkeypatch) -> None:
     source = tmp_path / "acr.zip"
     source.write_bytes(b"dicom-zip")
 
@@ -606,6 +643,148 @@ def test_acr_adapter_rejects_non_zip_input(tmp_path, monkeypatch) -> None:
         assert exc.code == "PYLINAC_INPUT_FORMAT_INVALID"
     else:
         raise AssertionError("Bài ACR phải từ chối tệp không phải ZIP")
+
+
+def test_ct_phantom_adapter_supports_quart_controls(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "phantom.zip"
+    source.write_bytes(b"dicom-zip")
+
+    from matplotlib import pyplot as plt
+
+    class FakeCT:
+        def __init__(self, path: str, **kwargs: object) -> None:
+            assert path.endswith("phantom.zip")
+            assert kwargs["is_zip"] is True
+
+        def analyze(self, **kwargs: object) -> None:
+            assert kwargs["x_adjustment"] == 1.0
+            assert kwargs["origin_slice"] == 5
+            assert kwargs["hu_tolerance"] == 40.0
+            assert kwargs["roll_slice_offset"] == -8.0
+
+        def results_data(self, *, as_dict: bool) -> dict[str, object]:
+            assert as_dict is True
+            return {"passed": True, "uniformity": {"center": 1.2}, "warnings": []}
+
+        def plot_analyzed_image(self, *, show: bool) -> None:
+            assert show is False
+            plt.figure()
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (FakeCT, None) if key == "QUART_DVT" else (None, "missing"),
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.package_fingerprint", lambda: "f" * 64
+    )
+    result = execute_pylinac(
+        "QUART_DVT",
+        source,
+        {
+            "is_zip": True,
+            "x_adjustment": 1,
+            "origin_slice": 5,
+            "hu_tolerance": 40,
+            "roll_slice_offset": -8,
+        },
+    )
+    assert result.engine_class == "QuartDVT"
+    assert result.result_snapshot["engine_passed"] is True
+    assert len(result.overlay_bytes or b"") > 0
+
+
+def test_ct_family_registry_resolves_all_registered_classes() -> None:
+    capabilities = {item.catalog_key: item for item in resolve_capabilities()}
+    for key in (
+        "CHEESE_TOMO",
+        "CHEESE_CIRS_062M",
+        "GE_HELIOS",
+        "QUART_DVT",
+        "QUART_HYPERSIGHT",
+    ):
+        capability = capabilities[key]
+        assert capability.runtime_available is True
+        assert capability.has_analyze is True
+        assert capability.has_results_data is True
+
+
+def test_calibration_adapter_uses_pylinac_properties_without_input_file(
+    tmp_path, monkeypatch
+) -> None:
+    source = tmp_path / "no-input"
+    source.mkdir()
+
+    class FakeCalibration:
+        output_was_adjusted = False
+
+        def __init__(self, **kwargs: object) -> None:
+            assert kwargs["energy"] == 6
+            assert kwargs["m_reference"] == (10.0, 10.2)
+            assert kwargs["m_opposite"] == 10.1
+            assert kwargs["m_reduced"] == 9.8
+            assert kwargs["clinical_pdd10"] == 66.7
+            assert kwargs["fff"] is False
+
+        p_tp = 1.01
+        p_ion = 1.002
+        p_pol = 0.999
+        m_corrected = 10.0
+        pddx = 66.7
+        kq = 0.992
+        dose_mu_10 = 1.0
+        dose_mu_dmax = 1.5
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (FakeCalibration, None)
+        if key == "CALIBRATION_TG51_PHOTON"
+        else (None, "missing"),
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.package_fingerprint", lambda: "f" * 64
+    )
+    result = execute_pylinac(
+        "CALIBRATION_TG51_PHOTON",
+        source,
+        {
+            "energy": 6,
+            "unit": "LINAC-01",
+            "temp": 22,
+            "press": 101.3,
+            "chamber": "30013",
+            "n_dw": 5.1,
+            "p_elec": 1.0,
+            "clinical_pdd10": 66.7,
+            "voltage_reference": 300,
+            "voltage_reduced": 150,
+            "m_reference": [10, 10.2],
+            "m_opposite": 10.1,
+            "m_reduced": 9.8,
+            "mu": 200,
+            "fff": False,
+        },
+    )
+    assert result.engine_class == "FakeCalibration"
+    assert result.result_snapshot["engine_passed"] is None
+    metrics = result.result_snapshot["metrics"]
+    assert isinstance(metrics, dict)
+    assert metrics["dose_mu_dmax"] == 1.5
+    assert result.overlay_bytes is None
+
+
+def test_calibration_registry_resolves_all_protocol_classes() -> None:
+    capabilities = {item.catalog_key: item for item in resolve_capabilities()}
+    for key in (
+        "CALIBRATION_TG51_PHOTON",
+        "CALIBRATION_TG51_ELECTRON_LEGACY",
+        "CALIBRATION_TG51_ELECTRON_MODERN",
+        "CALIBRATION_TRS398_PHOTON",
+        "CALIBRATION_TRS398_ELECTRON",
+    ):
+        capability = capabilities[key]
+        assert capability.runtime_available is True
+        assert capability.has_analyze is False
+        assert capability.has_results_data is False
 
 
 def test_planar_adapter_uses_common_pylinac_image_controls(tmp_path, monkeypatch) -> None:

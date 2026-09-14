@@ -14,7 +14,7 @@ RT-CONNECT chịu trách nhiệm:
 - nhận tệp/số liệu, kiểm tra định dạng, đơn vị, hình học và giới hạn tài nguyên trước khi gọi engine;
 - giao diện ảnh để người dùng chọn tâm, vị trí profile, vùng quan tâm, lát cắt, góc, kích thước hoặc tham số khác mà API pylinac cho phép;
 - chuyển tham số có đơn vị của người dùng sang đúng contract của pylinac và lưu lại phép chuyển đổi;
-- chuẩn hóa `results_data()` hoặc kết quả có cấu trúc sang bảng chỉ số, lớp hình học và biểu đồ của RT-CONNECT;
+- chuẩn hóa `results_data()` hoặc thuộc tính kết quả công khai của nhóm hiệu chuẩn sang bảng chỉ số, lớp hình học và biểu đồ của RT-CONNECT;
 - lưu lịch sử, đánh giá Đạt/Cảnh báo/Không đạt của người thực hiện, xu hướng và PDF tùy chỉnh.
 
 Không đưa tên class, JSON, traceback hoặc mã nội bộ lên giao diện. Tự động nhận dạng là mặc định; thao tác tay nằm trong mục “Điều chỉnh”. Mỗi lần thay đổi điều chỉnh và bấm phân tích tạo một run mới; tệp gốc và kết quả cũ không bị sửa.
@@ -28,7 +28,7 @@ Danh mục triển khai không được duy trì bằng trí nhớ. Khi thêm ho
 1. cài đúng wheel/hash trong image dựng lại được;
 2. lấy inventory class/module công khai từ phiên bản đã cài và so với registry đã kiểm soát trong source;
 3. fail build nếu pylinac thêm/bỏ/đổi capability nhưng chưa có quyết định ánh xạ giao diện;
-4. chạy contract test cho input, tham số, `results_data()`, hình minh họa và lỗi của từng capability;
+4. chạy contract test cho input, tham số, `results_data()` hoặc thuộc tính kết quả, hình minh họa nếu có và lỗi của từng capability;
 5. lưu `pylinac_version`, wheel hash, module/class, adapter version và tham số phân tích trong snapshot của run.
 
 Như vậy “đầy đủ” nghĩa là không bỏ sót capability công khai của **phiên bản runtime đã khóa**, không phải tự động bật code chưa được ánh xạ khi tài liệu `latest` thay đổi.
@@ -135,7 +135,7 @@ Nhóm điều khiển tối thiểu:
 ## 8. Kết quả, đánh giá và PDF
 
 - Giá trị do pylinac tính là kết quả engine, không bị sửa theo đánh giá người dùng.
-- `results_data()` có cấu trúc là nguồn ánh xạ chính; chuỗi `results()` hoặc PDF pylinac không phải dữ liệu máy chuẩn của RT-CONNECT.
+- `results_data()` có cấu trúc là nguồn ánh xạ chính; riêng Calibration dùng các thuộc tính kết quả công khai sau constructor. Chuỗi `results()` hoặc PDF pylinac không phải dữ liệu máy chuẩn của RT-CONNECT.
 - Kết luận gợi ý theo tolerance/configuration và đánh giá Đạt/Cảnh báo/Không đạt của người dùng là hai trường riêng.
 - Mỗi metric có key ổn định của RT-CONNECT, nhãn tiếng Việt, định nghĩa, đơn vị, module/class pylinac và version.
 - Overlay/biểu đồ có thể ẩn/hiện trong UI và chọn đưa vào PDF; PDF RT-CONNECT không bị giới hạn bởi layout `publish_pdf()` của pylinac.
