@@ -139,6 +139,15 @@ td code { color: #075e67; font-size: .78rem; }
 .archive-content > .table-wrap { margin-top: 20px; }
 .archive-content table { min-width: 940px; }
 .archive-content .table-actions { flex-wrap: wrap; }
+.purge-preview-panel { background: #f8fbfc; border: 1px solid #c8d5de; margin-top: 18px; padding: 14px; }
+.purge-preview-panel .panel-heading { align-items: center; }
+.purge-preview-panel .panel-heading h2 { font-size: 1rem; }
+.purge-preview-panel p { color: #526e80; font-size: .82rem; line-height: 1.45; margin: 8px 0 0; }
+.purge-preview-panel .form-hint { margin: 2px 0 0; }
+.preview-status { border-left: 4px solid #0d9488; margin-top: 12px !important; padding: 9px 11px; }
+.preview-status--allowed { background: #effaf7; color: #075e67 !important; }
+.preview-status--blocked { background: #fff8eb; border-left-color: #d49a22; }
+.preview-status--blocked p { margin-top: 5px; }
 .table-subtitle { color: #718596; display: block; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .64rem; margin-top: 4px; }
 .empty-state { color: #617787; font-style: italic; padding: 18px 0; }
 .artifact-panel { border-top: 1px solid #dce5ea; margin-top: 24px; padding-top: 18px; }
