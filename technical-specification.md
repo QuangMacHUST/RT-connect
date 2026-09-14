@@ -355,6 +355,8 @@ Restore bỏ dấu xóa một lần và rebuild projection idempotent. Nếu má
 
 Purge hiển thị trước phạm vi run/report/tệp, yêu cầu xác nhận trực tiếp. Kiểm tra references, hủy job, bỏ quyền cấp signed URL mới, dọn dữ liệu/tệp theo tiến trình retry; chỉ báo xóa vĩnh viễn xong khi phần bắt buộc đã dọn. Signed URL đã cấp có thể còn hiệu lực tới hết TTL; không hứa thu hồi tức thì nếu hạ tầng không hỗ trợ. PDF đã tải ra ngoài không thu hồi được.
 
+Ở lịch sử QA và thùng rác, giao diện hỗ trợ chọn từng mục hoặc chọn tất cả mục đang hiển thị. Thao tác nhiều mục không dùng xác nhận lặp theo từng dòng: với lưu trữ/khôi phục, gửi từng yêu cầu có cùng phạm vi đã chọn; với xóa vĩnh viễn, hiển thị một hộp xác nhận gồm số lượng và tên từng bài rồi mới gửi yêu cầu. Máy chủ xử lý từng bài trong phạm vi độc lập, kiểm tra liên kết và trả kết quả từng bài; giao diện phải nêu rõ danh sách thành công, chưa thành công và lý do để người dùng có thể tiếp tục phần còn lại. Không được báo thành công toàn bộ khi chỉ một phần hoàn tất, không gửi lại bài đã hoàn tất ngoài cơ chế lặp an toàn và không xóa tệp dùng chung.
+
 Giữ tombstone tối thiểu cho sự kiện và chống retry tái tạo; không giữ toàn bộ nội dung đã purge trong audit. Backup theo lịch có chính sách lưu giữ riêng được công bố; restore backup phải áp dụng deletion ledger để tránh phục hồi dữ liệu đã xóa không có chủ đích.
 
 ### 8.3. Overlay ảnh

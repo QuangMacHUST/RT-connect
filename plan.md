@@ -381,7 +381,7 @@ Chức năng đã được người dùng chấp nhận vẫn hoạt động, la
 **Đầu vào/phụ thuộc:** P4 đã hoàn thành và có bàn giao; các hợp đồng liên quan xem mục kỹ thuật tương ứng.
 **Phạm vi:** FR-UX1-P05-01; B05/B08. Thay kho hồ sơ làm điểm bắt đầu bằng danh mục bài.
 **Trạng thái UX1 lúc lập kế hoạch:** yêu cầu mới; chưa được tính là hoàn thành từ evidence cũ.
-**Trạng thái hiện tại:** `STAGING_VERIFIED_SLICE`; danh mục, lịch sử, hồ sơ cũ chưa phân loại và vòng lưu trữ/khôi phục đã được kiểm chứng trên staging ở bản `544a40c1a6ca6697f8b951002411ed97484ff59d`. Vòng kiểm tra hoàn tác bổ sung ngày 2026-09-14 đã lưu trữ rồi khôi phục lại hồ sơ tổng hợp có liên kết, xác nhận dữ liệu đầu vào vẫn còn; bằng chứng: `docs/evidence/p5-staging-reversible-lifecycle-20260914.json`. Ngày 2026-09-14 đã xóa vĩnh viễn thành công đúng một hồ sơ thử nghiệm tổng hợp mới tạo, không có tệp đầu vào và không có liên kết dữ liệu; bằng chứng: `docs/evidence/p5-staging-unreferenced-purge-20260914.json`. Hồ sơ `dailyQA` có liên kết vẫn được giữ nguyên vì máy chủ từ chối xóa đúng. Bản sửa phạm vi thùng rác đã triển khai và kiểm chứng trên staging: hồ sơ đang mở không còn lẫn trong danh sách đã lưu trữ; bằng chứng: `docs/evidence/p5-staging-trash-filter-20260914.json`. P5 chưa đóng vì còn cổng từ chối hồ sơ có liên kết, lỗi mạng và tiến trình nền trên staging.
+**Trạng thái hiện tại:** `STAGING_VERIFIED_SLICE`; danh mục, lịch sử, hồ sơ cũ chưa phân loại và vòng lưu trữ/khôi phục đã được kiểm chứng trên staging ở bản `544a40c1a6ca6697f8b951002411ed97484ff59d`. Vòng kiểm tra hoàn tác bổ sung ngày 2026-09-14 đã lưu trữ rồi khôi phục lại hồ sơ tổng hợp có liên kết, xác nhận dữ liệu đầu vào vẫn còn; bằng chứng: `docs/evidence/p5-staging-reversible-lifecycle-20260914.json`. Ngày 2026-09-14 đã xóa vĩnh viễn thành công đúng một hồ sơ thử nghiệm tổng hợp mới tạo, không có tệp đầu vào và không có liên kết dữ liệu; bằng chứng: `docs/evidence/p5-staging-unreferenced-purge-20260914.json`. Hồ sơ `dailyQA` có liên kết vẫn được giữ nguyên vì máy chủ từ chối xóa đúng. Bản sửa phạm vi thùng rác đã triển khai và kiểm chứng trên staging: hồ sơ đang mở không còn lẫn trong danh sách đã lưu trữ; bằng chứng: `docs/evidence/p5-staging-trash-filter-20260914.json`. Bản web mới `75f86df` bổ sung chọn nhiều, đưa vào thùng rác, khôi phục và xóa vĩnh viễn nhiều mục; đã kiểm chứng cục bộ với báo cáo riêng từng mục, chưa thao tác nhiều mục trên staging. P5 chưa đóng vì còn cổng từ chối hồ sơ có liên kết, lỗi mạng và tiến trình nền trên staging.
 Kiểm tra công khai sau triển khai đã đạt trên ứng viên `a4bed90b79aa0bc758e598c424ac0060379e98c0` với readiness `20260913_0022` và đúng các tuyến P5; bằng chứng: `docs/evidence/p5-staging-public-recheck-20260913.json`. Đây chỉ là kiểm tra nguồn/runtime công khai, chưa là nghiệm thu thao tác xác thực.
 Kiểm tra công khai mới nhất sau chốt xác nhận xóa đã đạt: web hiển thị đúng danh mục trực tiếp, có hộp xác nhận xóa vĩnh viễn và thông báo hủy; API vẫn `200 READY`. Bằng chứng: `docs/evidence/p5-staging-public-recheck-20260914-84ad0dc.json`; đây vẫn không thay cho kiểm tra xác thực và vòng đời dữ liệu.
 
@@ -413,6 +413,7 @@ Danh mục hiện có 63 bài theo sổ toàn bộ danh mục pylinac và bài n
 - [x] P05-W02 — Làm danh mục, bắt đầu bài, lưu hồ sơ và lịch sử; giữ thư mục lồng nhau nhưng không bắt người dùng phải tạo thư mục. Khóa chống gửi lại yêu cầu đã được thêm cho thao tác bắt đầu bài.
 - [x] P05-W03 — Đã có lưu trữ có thể khôi phục, thùng rác, khôi phục và xóa vĩnh viễn có kiểm tra liên kết kết quả/tệp/báo cáo. Lát cắt staging đã kiểm chứng lưu trữ/khôi phục trên hồ sơ tổng hợp; đã xóa vĩnh viễn thành công một hồ sơ tổng hợp riêng không liên kết sau khi xác nhận đúng phạm vi. Hồ sơ có liên kết vẫn bị từ chối và được giữ nguyên.
 - [x] P05-W04 — Đã giữ tương thích hồ sơ cũ bằng trường phân loại có thể để trống; hồ sơ cũ vẫn mở được và có thể gắn bài phù hợp từ giao diện. Không tự đoán loại bài để tránh gắn nhầm engine; liên kết tệp, kết quả và báo cáo không bị đổi.
+- [x] P05-W05 — Đã bổ sung chọn nhiều trong lịch sử và thùng rác: chọn từng bài, chọn tất cả bài đang hiển thị, đưa vào thùng rác, khôi phục và xóa vĩnh viễn. Xóa nhiều chỉ hỏi xác nhận một lần với tên từng bài; máy chủ vẫn xử lý từng bài độc lập và giao diện báo rõ bài thành công/chưa thành công. Kiểm chứng cục bộ: [evidence chọn nhiều](docs/evidence/p5-local-batch-history-actions-20260914.json).
 - [ ] P05-VERIFY — Chạy các TC-UX1 dưới đây và nhóm lỗi dùng chung có liên quan; lưu actual/evidence theo SHA. Lát cắt xóa hồ sơ không liên kết trên staging đã PASS; các trường hợp hồ sơ có liên kết, lỗi mạng và tiến trình nền trên staging vẫn mở.
 - [ ] P05-HANDOFF — Cập nhật tiến độ, dữ liệu/migration/tuyến bị tác động, giới hạn hỗ trợ và bước tiếp theo.
 
@@ -422,7 +423,7 @@ Danh mục hiện có 63 bài theo sổ toàn bộ danh mục pylinac và bài n
 
 - TC-UX1-P05-S01 — Bắt đầu một bài trong tối đa ba lựa chọn chính từ QA máy sau khi đã chọn đơn vị; không có form mã hồ sơ.
 - TC-UX1-P05-S02 — Lọc/mở đúng bài và lần tính cũ; đổi tên/di chuyển thư mục không làm mất tệp/kết quả.
-- TC-UX1-P05-S03 — Xóa loại khỏi lịch sử và xu hướng; khôi phục đúng một lần; chọn nhiều có kết quả từng mục.
+- TC-UX1-P05-S03 — Xóa loại khỏi lịch sử và xu hướng; khôi phục đúng một lần; chọn nhiều có xác nhận một lần và kết quả từng mục.
 - TC-UX1-P05-S04 — Purge chỉ dọn dữ liệu/tệp thuộc phạm vi đã xác nhận và không còn dùng chung.
 - TC-UX1-P05-S05 — Hồ sơ thử nghiệm tổng hợp mới, đã lưu trữ và không có dữ liệu liên quan được xóa vĩnh viễn sau một lần xác nhận; tải lại thùng rác không còn hồ sơ đó và các hồ sơ khác vẫn nguyên vẹn.
 
@@ -433,7 +434,7 @@ Danh mục hiện có 63 bài theo sổ toàn bộ danh mục pylinac và bài n
 - TC-UX1-P05-E03 — Xóa khi worker chạy → dừng hoặc từ chối publication sau xóa, không tự hồi sinh bài.
 - TC-UX1-P05-E04 — Storage purge lỗi → giữ trạng thái đang dọn/có thể thử lại, không báo đã xóa vĩnh viễn.
 - TC-UX1-P05-E05 — Tệp còn dùng bởi bài khác → không dọn tệp chung; xác nhận nêu phạm vi.
-- TC-UX1-P05-E06 — Mất mạng/409 khi xóa nhiều → hiển thị từng mục đã xóa/chưa xóa, không yêu cầu người dùng đoán.
+- TC-UX1-P05-E06 — Mất mạng/409 khi xóa nhiều → hiển thị tên từng mục đã xóa/chưa xóa cùng lý do, không yêu cầu người dùng đoán.
 
 ### Bất biến và điều kiện đóng P5
 

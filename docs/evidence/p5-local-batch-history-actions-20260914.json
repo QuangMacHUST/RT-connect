@@ -1,0 +1,38 @@
+{
+  "schema_version": "rt-connect.p5-local-batch-history-actions.v1",
+  "captured_at_utc": "2026-09-14T03:12:00Z",
+  "phase": "P5",
+  "status": "LOCAL_VERIFIED_SLICE",
+  "environment": "local",
+  "source_revision": "75f86df",
+  "scope": "Thao tác nhiều mục trong lịch sử QA và thùng rác.",
+  "behavior": {
+    "selection": "Có thể chọn từng bài hoặc chọn tất cả bài đang hiển thị; thay đổi bộ lọc không làm tạo mục chọn trùng.",
+    "active_history": "Có thể đưa các bài đã chọn vào thùng rác.",
+    "trash": "Có thể khôi phục hoặc xóa vĩnh viễn các bài đã chọn.",
+    "permanent_delete_confirmation": "Xóa vĩnh viễn nhiều bài chỉ hỏi xác nhận một lần và hiển thị tên từng bài trong phạm vi xác nhận.",
+    "partial_failure": "Mỗi bài được xử lý độc lập; giao diện liệt kê bài đã xử lý và từng bài chưa xử lý cùng lý do thân thiện."
+  },
+  "checks": [
+    {
+      "name": "qa_archive_focused_tests",
+      "result": "PASS",
+      "details": "5/5 bài kiểm thử, gồm chọn từng bài, chọn tất cả, bỏ chọn và chống mục trùng."
+    },
+    {
+      "name": "web_full_tests",
+      "result": "PASS",
+      "details": "12/12 tệp, 35/35 bài kiểm thử giao diện."
+    },
+    {
+      "name": "web_quality_gates",
+      "result": "PASS",
+      "details": "Typecheck, lint và bản dựng sản xuất đạt; bản dựng chỉ còn cảnh báo kích thước gói JavaScript đã biết."
+    }
+  ],
+  "not_yet_verified": [
+    "Chưa bấm thao tác nhiều mục trên staging; chưa có hồ sơ nào bị xóa thêm.",
+    "Chưa kiểm chứng lỗi mạng hoặc xung đột đồng thời của thao tác nhiều mục trên staging.",
+    "Chưa đóng P5-VERIFY/P5-HANDOFF và chưa mở P6."
+  ]
+}
