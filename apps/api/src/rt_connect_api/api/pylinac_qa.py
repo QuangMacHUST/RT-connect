@@ -282,17 +282,22 @@ def create_pylinac_run(
     case = _case_or_error(session, context, case_id)
     definition, import_path = _definition_or_error(payload.catalog_key)
     artifacts = _artifact_inputs(session, context, case, payload.artifact_ids)
-    if definition.key in {"PICKET_FENCE", "STARSHOT", "WINSTON_LUTZ"} and len(artifacts) != 1:
+    if definition.key in {
+        "PICKET_FENCE",
+        "STARSHOT",
+        "WINSTON_LUTZ",
+        "WINSTON_LUTZ_MULTI_TARGET",
+    } and len(artifacts) != 1:
         raise DomainError(
             "PYLINAC_INPUT_COUNT_INVALID", "Bài QA này yêu cầu đúng một tệp đầu vào.", 422
         )
     if (
-        definition.key == "WINSTON_LUTZ"
+        definition.key in {"WINSTON_LUTZ", "WINSTON_LUTZ_MULTI_TARGET"}
         and Path(artifacts[0].original_filename).suffix.lower() != ".zip"
     ):
         raise DomainError(
             "PYLINAC_INPUT_FORMAT_INVALID",
-            "Winston–Lutz yêu cầu một tệp ZIP chứa bộ ảnh theo các góc máy.",
+            "Bài Winston–Lutz yêu cầu một tệp ZIP chứa bộ ảnh.",
             422,
         )
     binding = runtime_binding(definition.key)

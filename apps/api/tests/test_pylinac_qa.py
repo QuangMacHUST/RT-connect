@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import cast
 
 from pylinac.core.geometry import Point
+from pylinac.winston_lutz import BBConfig
 
 from rt_connect_api.api.artifacts import _storage
 from rt_connect_api.services.object_storage import InMemoryObjectStorage
@@ -239,3 +240,96 @@ def test_winston_lutz_adapter_requires_zip_input() -> None:
         assert exc.code == "PYLINAC_INPUT_FORMAT_INVALID"
     else:
         raise AssertionError("Winston–Lutz phải yêu cầu bộ ảnh ZIP")
+
+
+def test_winston_lutz_multi_target_adapter_maps_bb_arrangement(monkeypatch) -> None:
+    class FakeFigure:
+        def savefig(self, stream, **kwargs: object) -> None:
+            assert kwargs == {"format": "png", "dpi": 120}
+            stream.write(b"winston-lutz-multi-png")
+
+        def clf(self) -> None:
+            return None
+
+    class FakeMultiTarget:
+        @classmethod
+        def from_zip(cls, path: str, **kwargs: object):
+            assert path.endswith("winston-lutz-multi.zip")
+            assert kwargs == {"sid": 1000.0, "use_filenames": False}
+            return cls()
+
+        def analyze(self, **kwargs: object) -> None:
+            arrangement = cast(tuple[BBConfig, ...], kwargs["bb_arrangement"])
+            assert len(arrangement) == 2
+            assert arrangement[0].name == "Iso"
+            assert arrangement[1].offset_in_mm == 30.0
+            assert kwargs["is_open_field"] is False
+            assert kwargs["bb_proximity_mm"] == 10.0
+
+        def results_data(self, *, as_dict: bool) -> dict[str, object]:
+            assert as_dict is True
+            return {
+                "num_total_images": 19,
+                "max_2d_field_to_bb_mm": 0.94,
+                "bb_shift_vector": {"x": 0.1, "y": 0.2, "z": 0.3},
+                "warnings": [],
+            }
+
+        def plot_images(self, **kwargs: object):
+            assert kwargs == {"show": False, "zoomed": False, "legend": True}
+            return [FakeFigure()], ["RT000001.dcm"]
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (
+            (FakeMultiTarget, None) if key == "WINSTON_LUTZ_MULTI_TARGET" else (None, "missing")
+        ),
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.package_fingerprint", lambda: "f" * 64
+    )
+    result = execute_pylinac(
+        "WINSTON_LUTZ_MULTI_TARGET",
+        Path("winston-lutz-multi.zip"),
+        {
+            "sid": 1000,
+            "use_filenames": False,
+            "bb_proximity_mm": 10,
+            "is_open_field": False,
+            "bb_arrangement": [
+                {
+                    "name": "Iso",
+                    "offset_left_mm": 0,
+                    "offset_up_mm": 0,
+                    "offset_in_mm": 0,
+                    "bb_size_mm": 5,
+                    "rad_size_mm": 20,
+                },
+                {
+                    "name": "1",
+                    "offset_left_mm": 0,
+                    "offset_up_mm": 0,
+                    "offset_in_mm": 30,
+                    "bb_size_mm": 5,
+                    "rad_size_mm": 20,
+                },
+            ],
+        },
+    )
+    assert result.catalog_key == "WINSTON_LUTZ_MULTI_TARGET"
+    assert result.result_snapshot["engine_class"] == "WinstonLutzMultiTargetMultiField"
+    assert result.overlay_filename == "winston-lutz-nhieu-bi-phan-tich.png"
+    assert result.overlay_bytes == b"winston-lutz-multi-png"
+
+
+def test_winston_lutz_multi_target_rejects_invalid_arrangement() -> None:
+    try:
+        execute_pylinac(
+            "WINSTON_LUTZ_MULTI_TARGET",
+            Path("winston-lutz-multi.zip"),
+            {"bb_arrangement": [{"name": "Iso"}]},
+        )
+    except PylinacAdapterError as exc:
+        assert exc.code == "PYLINAC_PARAMETER_INVALID"
+    else:
+        raise AssertionError("Cấu hình bi thiếu trường phải bị từ chối")

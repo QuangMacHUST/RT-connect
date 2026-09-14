@@ -469,6 +469,146 @@ def _execute_winston_lutz(
         ) from exc
 
 
+def _winston_lutz_multi_target_parameters(
+    parameters: dict[str, object],
+) -> tuple[dict[str, object], dict[str, object], tuple[object, ...]]:
+    """Validate MT/MF loading options and build Pylinac BBConfig objects."""
+
+    constructor_keys = {"use_filenames", "dpi", "sid", "axes_precision"}
+    analysis_keys = {"bb_arrangement", "is_open_field", "is_low_density", "bb_proximity_mm"}
+    unknown = set(parameters) - constructor_keys - analysis_keys
+    if unknown:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_UNSUPPORTED",
+            "Có tham số không được hỗ trợ cho bài Winston–Lutz nhiều bi.",
+        )
+
+    constructor: dict[str, object] = {}
+    if "use_filenames" in parameters:
+        constructor["use_filenames"] = _bool(parameters, "use_filenames")
+    for key in ("dpi", "sid"):
+        if key in parameters and parameters[key] is not None:
+            constructor[key] = _number(parameters, key, minimum=0)
+    if "axes_precision" in parameters:
+        constructor["axes_precision"] = _integer(parameters, "axes_precision", minimum=0)
+
+    arrangement = parameters.get("bb_arrangement")
+    if not isinstance(arrangement, list) or not arrangement:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_INVALID", "Cần khai báo ít nhất một bi chuẩn cho bài kiểm tra."
+        )
+    if len(arrangement) > 32:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_INVALID", "Số bi chuẩn vượt quá giới hạn cho phép."
+        )
+    try:
+        from pylinac.winston_lutz import BBConfig  # type: ignore[import-untyped]
+
+        bb_configs: list[object] = []
+        for item in arrangement:
+            if not isinstance(item, dict):
+                raise TypeError
+            name = item.get("name")
+            if not isinstance(name, str) or not name.strip():
+                raise ValueError("name")
+            values = {
+                key: _number(item, key)
+                for key in (
+                    "offset_left_mm",
+                    "offset_up_mm",
+                    "offset_in_mm",
+                    "bb_size_mm",
+                    "rad_size_mm",
+                )
+            }
+            if values["bb_size_mm"] <= 0 or values["rad_size_mm"] <= 0:
+                raise ValueError("size")
+            bb_configs.append(BBConfig(name=name.strip(), **values))
+    except PylinacAdapterError:
+        raise
+    except (TypeError, ValueError, KeyError) as exc:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_INVALID",
+            "Cấu hình vị trí bi chuẩn chưa đầy đủ hoặc có giá trị không hợp lệ.",
+        ) from exc
+
+    analysis: dict[str, object] = {"bb_arrangement": tuple(bb_configs)}
+    for key in ("is_open_field", "is_low_density"):
+        if key in parameters:
+            analysis[key] = _bool(parameters, key)
+    if "bb_proximity_mm" in parameters:
+        analysis["bb_proximity_mm"] = _number(parameters, "bb_proximity_mm", minimum=0)
+    return constructor, analysis, tuple(bb_configs)
+
+
+def _execute_winston_lutz_multi_target(
+    source_path: Path, parameters: dict[str, object]
+) -> PylinacExecutionResult:
+    symbol, _ = resolve_runtime_symbol("WINSTON_LUTZ_MULTI_TARGET")
+    if symbol is None:
+        raise PylinacAdapterError(
+            "PYLINAC_RUNTIME_UNAVAILABLE",
+            "Bộ phân tích Winston–Lutz nhiều bi chưa sẵn sàng.",
+        )
+    if source_path.suffix.lower() != ".zip":
+        raise PylinacAdapterError(
+            "PYLINAC_INPUT_FORMAT_INVALID",
+            "Winston–Lutz nhiều bi yêu cầu một tệp ZIP chứa bộ ảnh.",
+        )
+    constructor, analysis, _ = _winston_lutz_multi_target_parameters(parameters)
+    try:
+        engine = symbol.from_zip(str(source_path), **constructor)
+        engine.analyze(**analysis)
+        raw_result = engine.results_data(as_dict=True)
+        result = _json_safe(raw_result)
+        if not isinstance(result, dict):
+            raise PylinacAdapterError(
+                "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả không hợp lệ."
+            )
+        figures, _ = engine.plot_images(show=False, zoomed=False, legend=True)
+        overlay_bytes: bytes | None = None
+        if figures:
+            overlay = BytesIO()
+            figures[0].savefig(overlay, format="png", dpi=120)
+            overlay_bytes = overlay.getvalue()
+            for figure in figures:
+                figure.clf()
+        warnings = result.get("warnings", [])
+        warning_items = warnings if isinstance(warnings, list) else [warnings]
+        return PylinacExecutionResult(
+            catalog_key="WINSTON_LUTZ_MULTI_TARGET",
+            engine_class="WinstonLutzMultiTargetMultiField",
+            engine_version=PYLINAC_VERSION,
+            package_fingerprint=package_fingerprint(),
+            result_snapshot={
+                "schema_version": "p7.pylinac-result.v1",
+                "engine": "pylinac",
+                "engine_class": "WinstonLutzMultiTargetMultiField",
+                "metrics": result,
+                "engine_passed": result.get("passed"),
+                "parameters": _json_safe(parameters),
+            },
+            warnings=[
+                {"code": "PYLINAC_ENGINE_WARNING", "message": str(item)}
+                for item in warning_items
+                if item
+            ],
+            overlay_bytes=overlay_bytes,
+            overlay_media_type="image/png" if overlay_bytes is not None else None,
+            overlay_filename=(
+                "winston-lutz-nhieu-bi-phan-tich.png" if overlay_bytes is not None else None
+            ),
+        )
+    except PylinacAdapterError:
+        raise
+    except Exception as exc:
+        raise PylinacAdapterError(
+            "PYLINAC_EXECUTION_FAILED",
+            "Pylinac không thể phân tích bộ ảnh Winston–Lutz nhiều bi. Hãy kiểm tra tệp ZIP, "
+            "cấu hình bi chuẩn và các tham số rồi thử lại.",
+        ) from exc
+
+
 def execute_pylinac(
     catalog_key: str, source_path: Path, parameters: dict[str, object]
 ) -> PylinacExecutionResult:
@@ -483,6 +623,8 @@ def execute_pylinac(
         return _execute_starshot(source_path, parameters)
     if catalog_key == "WINSTON_LUTZ":
         return _execute_winston_lutz(source_path, parameters)
+    if catalog_key == "WINSTON_LUTZ_MULTI_TARGET":
+        return _execute_winston_lutz_multi_target(source_path, parameters)
     raise PylinacAdapterError(
         "PYLINAC_ADAPTER_NOT_READY",
         "Bộ giao diện cho bài QA này chưa được mở; chưa chạy bằng bộ tính khác.",

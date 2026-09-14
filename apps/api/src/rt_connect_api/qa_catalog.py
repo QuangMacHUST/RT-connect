@@ -386,6 +386,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Bộ ảnh nhiều bi và nhiều trường",),
         ("Ghép bi với trường", "Ánh xạ góc", "Hệ tọa độ", "Ngưỡng nhận diện"),
         engine_class="WinstonLutzMultiTargetMultiField",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
 )

@@ -396,6 +396,115 @@ function WinstonLutzPage({ caseId, accessToken, title }: { caseId: string; acces
   </div>
 }
 
+type WinstonLutzBBRow = {
+  name: string
+  offset_left_mm: string
+  offset_up_mm: string
+  offset_in_mm: string
+  bb_size_mm: string
+  rad_size_mm: string
+}
+
+function WinstonLutzMultiTargetPage({ caseId, accessToken, title }: { caseId: string; accessToken: string; title: string }) {
+  const queryClient = useQueryClient()
+  const [selectedArtifactId, setSelectedArtifactId] = useState<string>()
+  const [sid, setSid] = useState('1000')
+  const [dpi, setDpi] = useState('')
+  const [bbProximity, setBbProximity] = useState('10')
+  const [useFilenames, setUseFilenames] = useState(false)
+  const [isLowDensity, setIsLowDensity] = useState(false)
+  const [isOpenField, setIsOpenField] = useState(false)
+  const [message, setMessage] = useState<string>()
+  const [arrangement, setArrangement] = useState<WinstonLutzBBRow[]>([
+    { name: 'Iso', offset_left_mm: '0', offset_up_mm: '0', offset_in_mm: '0', bb_size_mm: '5', rad_size_mm: '20' },
+    { name: '1', offset_left_mm: '0', offset_up_mm: '0', offset_in_mm: '30', bb_size_mm: '5', rad_size_mm: '20' },
+    { name: '2', offset_left_mm: '-30', offset_up_mm: '0', offset_in_mm: '15', bb_size_mm: '5', rad_size_mm: '20' },
+    { name: '3', offset_left_mm: '0', offset_up_mm: '0', offset_in_mm: '-30', bb_size_mm: '5', rad_size_mm: '20' },
+    { name: '4', offset_left_mm: '30', offset_up_mm: '0', offset_in_mm: '-50', bb_size_mm: '5', rad_size_mm: '20' },
+    { name: '5', offset_left_mm: '0', offset_up_mm: '0', offset_in_mm: '-70', bb_size_mm: '5', rad_size_mm: '20' }
+  ])
+  const artifacts = useQuery({
+    queryKey: ['pylinac-artifacts', caseId, accessToken],
+    queryFn: () => apiClient.artifacts(accessToken, caseId), retry: false
+  })
+  const runs = useQuery({
+    queryKey: ['pylinac-runs', caseId, accessToken],
+    queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
+  })
+  const upload = useMutation({
+    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'OTHER', 'EVALUATION'),
+    onSuccess: (artifact) => {
+      setSelectedArtifactId(artifact.id)
+      setMessage('Đã tải bộ ảnh nhiều bi lên; có thể bắt đầu phân tích.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-artifacts', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const analyze = useMutation({
+    mutationFn: () => {
+      const parameters: Record<string, unknown> = {
+        sid: Number(sid), bb_proximity_mm: Number(bbProximity), use_filenames: useFilenames,
+        is_low_density: isLowDensity, is_open_field: isOpenField,
+        bb_arrangement: arrangement.map((row) => ({
+          name: row.name, offset_left_mm: Number(row.offset_left_mm), offset_up_mm: Number(row.offset_up_mm),
+          offset_in_mm: Number(row.offset_in_mm), bb_size_mm: Number(row.bb_size_mm), rad_size_mm: Number(row.rad_size_mm)
+        }))
+      }
+      if (dpi.trim()) parameters.dpi = Number(dpi)
+      return apiClient.createPylinacQARun(accessToken, caseId, {
+        catalog_key: 'WINSTON_LUTZ_MULTI_TARGET', artifact_ids: [selectedArtifactId!], parameters
+      })
+    },
+    onSuccess: (run) => {
+      setMessage(run.status === 'COMPLETED' ? 'Đã phân tích Winston–Lutz nhiều bi bằng Pylinac.' : 'Pylinac không thể hoàn tất phân tích; hãy xem thông báo lỗi bên dưới.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const assess = useMutation({
+    mutationFn: ({ runId, value }: { runId: string; value: 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' }) => apiClient.assessPylinacQARun(accessToken, runId, value),
+    onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const updateBB = (index: number, key: keyof WinstonLutzBBRow, value: string) => {
+    setArrangement((current) => current.map((row, rowIndex) => rowIndex === index ? { ...row, [key]: value } : row))
+  }
+  const zipArtifacts = (artifacts.data?.items ?? []).filter((item) => item.original_filename.toLowerCase().endsWith('.zip'))
+  const selected = zipArtifacts.find((item) => item.id === selectedArtifactId) ?? zipArtifacts[0]
+  const history = runs.data?.items ?? []
+  const latest = history[0]
+  const isBusy = upload.isPending || analyze.isPending || assess.isPending
+  const metric = (key: string) => textValue(pylinacMetric(latest, key))
+
+  return <div className="page">
+    <header className="page-header">
+      <div><p className="eyebrow">KIỂM TRA CHẤT LƯỢNG MÁY · Pylinac</p><h1>Winston–Lutz nhiều bi</h1><p>{title} · ghép nhiều bi chuẩn và trường chiếu để đánh giá hình học từng mục tiêu.</p></div>
+      <div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">Quay lại kho QA</Link><span className="status-badge">BỘ TÍNH Pylinac 3.47.0</span></div>
+    </header>
+    {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
+    <section className="panel machine-qa-panel">
+      <div className="panel-heading"><div><p className="eyebrow">TỆP ĐẦU VÀO</p><h2>Bộ ảnh nhiều bi, nhiều trường</h2></div><strong>{zipArtifacts.length}</strong></div>
+      <p>Chọn một tệp ZIP chứa bộ ảnh DICOM. Bảng bên dưới là cấu hình vị trí bi chuẩn; không cần tạo tệp cấu hình riêng.</p>
+      <div className="machine-qa-actions"><label className="button-link">Chọn tệp ZIP<input type="file" accept=".zip,application/zip" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>
+      {zipArtifacts.length > 0 && <label>Tệp đang dùng<select value={selected?.id ?? ''} onChange={(event) => setSelectedArtifactId(event.target.value)}>{zipArtifacts.map((artifact, index) => <option key={artifact.id} value={artifact.id}>Bộ ảnh {index + 1} · {artifact.original_filename}</option>)}</select></label>}
+      <div className="machine-qa-protocol-controls">
+        <label>Khoảng cách nguồn–ảnh (mm)<input type="number" min="0" step="0.1" value={sid} onChange={(event) => setSid(event.target.value)} /></label>
+        <label>Mật độ điểm ảnh (dpi, nếu cần)<input type="number" min="0" step="0.1" value={dpi} onChange={(event) => setDpi(event.target.value)} placeholder="Tự đọc từ ảnh" /></label>
+        <label>Khoảng cách nhận diện bi (mm)<input type="number" min="0" step="0.1" value={bbProximity} onChange={(event) => setBbProximity(event.target.value)} /></label>
+      </div>
+      <div className="table-wrap"><table><thead><tr><th>Tên bi</th><th>Lệch trái/phải (mm)</th><th>Lệch lên/xuống (mm)</th><th>Lệch trong/ngoài (mm)</th><th>Kích thước bi (mm)</th><th>Bán kính trường (mm)</th></tr></thead><tbody>{arrangement.map((row, index) => <tr key={`${row.name}-${index}`}><td><input aria-label={`Tên bi ${index + 1}`} value={row.name} onChange={(event) => updateBB(index, 'name', event.target.value)} /></td><td><input aria-label={`Lệch trái phải ${index + 1}`} type="number" step="0.1" value={row.offset_left_mm} onChange={(event) => updateBB(index, 'offset_left_mm', event.target.value)} /></td><td><input aria-label={`Lệch lên xuống ${index + 1}`} type="number" step="0.1" value={row.offset_up_mm} onChange={(event) => updateBB(index, 'offset_up_mm', event.target.value)} /></td><td><input aria-label={`Lệch trong ngoài ${index + 1}`} type="number" step="0.1" value={row.offset_in_mm} onChange={(event) => updateBB(index, 'offset_in_mm', event.target.value)} /></td><td><input aria-label={`Kích thước bi ${index + 1}`} type="number" min="0" step="0.1" value={row.bb_size_mm} onChange={(event) => updateBB(index, 'bb_size_mm', event.target.value)} /></td><td><input aria-label={`Bán kính trường ${index + 1}`} type="number" min="0" step="0.1" value={row.rad_size_mm} onChange={(event) => updateBB(index, 'rad_size_mm', event.target.value)} /></td></tr>)}</tbody></table></div>
+      <div className="machine-qa-checks">
+        <label><input type="checkbox" checked={useFilenames} onChange={(event) => setUseFilenames(event.target.checked)} /> Ưu tiên đọc góc máy từ tên tệp</label>
+        <label><input type="checkbox" checked={isLowDensity} onChange={(event) => setIsLowDensity(event.target.checked)} /> Bi chuẩn có mật độ thấp</label>
+        <label><input type="checkbox" checked={isOpenField} onChange={(event) => setIsOpenField(event.target.checked)} /> Trường chiếu mở</label>
+      </div>
+      <div className="machine-qa-actions"><button disabled={!selected || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+    </section>
+    {latest && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">KẾT QUẢ MỚI NHẤT</p><h2>{latest.name}</h2></div><span className={statusClass(latest.status)}>{statusLabel(latest.status)}</span></div>{latest.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích</h3><ul>{latest.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{latest.status === 'COMPLETED' && <><div className="machine-qa-run-meta"><span>Sai lệch trường–bi lớn nhất: {metric('max_2d_field_to_bb_mm')} mm</span><span>Sai lệch trường–bi trung vị: {metric('median_2d_field_to_bb_mm')} mm</span><span>Số ảnh: {metric('num_total_images')}</span><span>Số bi: {Array.isArray(pylinacMetric(latest, 'bb_arrangement')) ? (pylinacMetric(latest, 'bb_arrangement') as unknown[]).length : '—'}</span></div>{latest.overlay_artifact_id && <button className="button-secondary" onClick={() => { void apiClient.downloadArtifact(accessToken, latest.overlay_artifact_id!).then((download) => window.open(download.url, '_blank', 'noopener,noreferrer')).catch((error) => setMessage(errorMessage(error))) }}>Mở ảnh phân tích</button>}<label>Đánh giá của người dùng<select value={latest.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => assess.mutate({ runId: latest.id, value: event.target.value as 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' })}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">Chưa có kết quả Winston–Lutz nhiều bi.</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td></tr>)}</tbody></table></div>}</section>
+  </div>
+}
+
 export function MachineQAPage() {
   const { caseId } = useParams<{ caseId: string }>()
   const { session } = useAuth()
@@ -516,6 +625,9 @@ export function MachineQAPage() {
   }
   if (selectedCase.qa_definition_key === 'WINSTON_LUTZ' && accessToken) {
     return <WinstonLutzPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} />
+  }
+  if (selectedCase.qa_definition_key === 'WINSTON_LUTZ_MULTI_TARGET' && accessToken) {
+    return <WinstonLutzMultiTargetPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} />
   }
 
   const metrics = records(activeRun?.result_snapshot.metrics)
