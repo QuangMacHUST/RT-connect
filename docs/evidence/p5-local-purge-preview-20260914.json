@@ -1,0 +1,38 @@
+{
+  "schema_version": "rt-connect.p5-local-purge-preview.v1",
+  "captured_at_utc": "2026-09-14T03:46:00Z",
+  "phase": "P5",
+  "status": "LOCAL_VERIFIED_SLICE",
+  "environment": "local",
+  "source_revision": "a2245f1",
+  "scope": "Xem trước điều kiện xóa vĩnh viễn trước khi hỏi xác nhận.",
+  "behavior": {
+    "read_only_preview": "GET purge-preview trả tên bài, cơ sở, máy, thời điểm, trạng thái lưu trữ, khả năng xóa và nhóm liên kết.",
+    "linked_case": "Hồ sơ còn báo cáo được báo không đủ điều kiện; máy khách không hiện xác nhận và không gửi yêu cầu purge.",
+    "eligible_case": "Hồ sơ đã lưu trữ, không có liên kết được đưa vào hộp xác nhận có tên bài, cơ sở, máy và thời điểm; hủy xác nhận không gửi yêu cầu purge.",
+    "server_recheck": "Yêu cầu purge vẫn kiểm tra lại trạng thái và mọi liên kết trong giao dịch máy chủ."
+  },
+  "checks": [
+    {
+      "name": "qa_archive_focused_tests",
+      "result": "PASS",
+      "details": "9/9 bài kiểm thử, gồm xem trước hồ sơ có báo cáo và từ chối purge giữ nguyên hồ sơ."
+    },
+    {
+      "name": "web_full_tests",
+      "result": "PASS",
+      "details": "12/12 tệp, 37/37 bài kiểm thử giao diện."
+    },
+    {
+      "name": "quality_gates",
+      "result": "PASS",
+      "details": "Typecheck, lint, bản dựng sản xuất, Ruff và mypy theo cấu hình dự án đều đạt."
+    }
+  ],
+  "remaining_gates": [
+    "Chưa triển khai bản a2245f1 lên staging và chưa kiểm tra giao diện xem trước với dữ liệu thật.",
+    "Chưa thực hiện yêu cầu xóa hồ sơ staging có liên kết vì đây là thao tác cần xác nhận ngay trước hành động.",
+    "Lỗi mạng, tác vụ nền và toàn vẹn dữ liệu sau vòng đời trên staging vẫn mở.",
+    "Chưa đóng P5-VERIFY/P5-HANDOFF và chưa mở P6."
+  ]
+}

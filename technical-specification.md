@@ -174,7 +174,8 @@ Trong khi mô hình đích `QAAttempt` chưa được tách thành bảng riêng
 | `PATCH /qa-cases/{case_id}` | Sửa tên, phân loại hoặc trạng thái | Kiểm tra phạm vi tổ chức; cho gắn lại bài cho hồ sơ cũ chưa phân loại; không tự đoán loại bài |
 | `DELETE /qa-cases/{case_id}` | Lưu trữ có thể khôi phục | Chỉ đổi trạng thái lưu trữ, không dọn tệp/kết quả |
 | `POST /qa-cases/{case_id}/restore` | Khôi phục | Có tính lặp; đưa hồ sơ về lịch sử, không chạy lại phân tích |
-| `POST /qa-cases/{case_id}/purge` | Xóa vĩnh viễn hồ sơ không còn liên kết | Chỉ nhận hồ sơ đã lưu trữ; từ chối nếu còn lần tính, điểm xu hướng, tệp hoặc báo cáo tham chiếu |
+| `GET /qa-cases/{case_id}/purge-preview` | Xem trước điều kiện xóa vĩnh viễn | Chỉ đọc; trả tên bài, cơ sở, máy, thời điểm, trạng thái lưu trữ và các nhóm liên kết đang chặn |
+| `POST /qa-cases/{case_id}/purge` | Xóa vĩnh viễn hồ sơ không còn liên kết | Chỉ nhận hồ sơ đã lưu trữ; kiểm tra lại lần cuối và từ chối nếu còn lần tính, điểm xu hướng, tệp hoặc báo cáo tham chiếu |
 
 `QACase.qa_definition_key` có thể để trống cho dữ liệu cũ. `QACase.idempotency_key` và `QACase.idempotency_fingerprint` được dùng cho thao tác bắt đầu bài; cùng khóa và cùng nội dung trả lại hồ sơ cũ, cùng khóa nhưng khác nội dung trả lỗi xung đột. Migration `20260913_0021` thêm liên kết danh mục; migration `20260913_0022` thêm tính lặp an toàn. Hai migration đều không xóa dữ liệu cũ.
 
@@ -353,7 +354,7 @@ DELETE đánh dấu deleted_at và ghi deletion record trong transaction, đồn
 
 Restore bỏ dấu xóa một lần và rebuild projection idempotent. Nếu máy/thư mục cũ ngừng hoạt động, vẫn khôi phục được bài lịch sử; không tự kích hoạt lại máy.
 
-Purge hiển thị trước phạm vi run/report/tệp, yêu cầu xác nhận trực tiếp. Kiểm tra references, hủy job, bỏ quyền cấp signed URL mới, dọn dữ liệu/tệp theo tiến trình retry; chỉ báo xóa vĩnh viễn xong khi phần bắt buộc đã dọn. Signed URL đã cấp có thể còn hiệu lực tới hết TTL; không hứa thu hồi tức thì nếu hạ tầng không hỗ trợ. PDF đã tải ra ngoài không thu hồi được.
+Purge có bước xem trước chỉ đọc để hiển thị phạm vi run/report/tệp, tên cơ sở, tên máy và thời điểm. Chỉ khi hồ sơ đã lưu trữ và không còn liên kết mới yêu cầu xác nhận trực tiếp. Máy chủ vẫn kiểm tra references lần cuối, hủy job, bỏ quyền cấp signed URL mới, dọn dữ liệu/tệp theo tiến trình retry; chỉ báo xóa vĩnh viễn xong khi phần bắt buộc đã dọn. Signed URL đã cấp có thể còn hiệu lực tới hết TTL; không hứa thu hồi tức thì nếu hạ tầng không hỗ trợ. PDF đã tải ra ngoài không thu hồi được.
 
 Ở lịch sử QA và thùng rác, giao diện hỗ trợ chọn từng mục hoặc chọn tất cả mục đang hiển thị. Thao tác nhiều mục không dùng xác nhận lặp theo từng dòng: với lưu trữ/khôi phục, gửi từng yêu cầu có cùng phạm vi đã chọn; với xóa vĩnh viễn, hiển thị một hộp xác nhận gồm số lượng và tên từng bài rồi mới gửi yêu cầu. Máy chủ xử lý từng bài trong phạm vi độc lập, kiểm tra liên kết và trả kết quả từng bài; giao diện phải nêu rõ danh sách thành công, chưa thành công và lý do để người dùng có thể tiếp tục phần còn lại. Không được báo thành công toàn bộ khi chỉ một phần hoàn tất, không gửi lại bài đã hoàn tất ngoài cơ chế lặp an toàn và không xóa tệp dùng chung.
 
