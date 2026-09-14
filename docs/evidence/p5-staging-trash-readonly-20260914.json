@@ -1,0 +1,24 @@
+{
+  "schema_version": "rt-connect.p5-staging-trash-readonly.v1",
+  "captured_at": "2026-09-14T11:08:27.4540693+07:00",
+  "environment": "staging",
+  "url": "https://rt-connect-web-staging-staging.up.railway.app/app/qa",
+  "observed": {
+    "catalog_visible_count": 63,
+    "catalog_total_count": 63,
+    "open_history_count": 2,
+    "trash_count": 1,
+    "trash_item_titles": ["dailyQA"],
+    "trash_items_are_archived": true,
+    "open_items_mixed_into_trash": false
+  },
+  "actions": {
+    "read_only": true,
+    "archive": false,
+    "restore": false,
+    "permanent_purge": false
+  },
+  "passed": true,
+  "contains_secret_values": false,
+  "contains_patient_data": false
+}
