@@ -21,6 +21,10 @@ marker exists to keep the web rebuild coupled to the API and Gamma worker
 candidate. Do not record a new staging release until the web bundle, API and
 worker report the same source SHA and schema.
 
+P5 parity follow-up marker: the commit carrying the next root-level evidence
+update must change this file together with the API service marker, then rerun the
+public exact-SHA verifier after all three services settle.
+
 P17 release marker: DVH exposes explicit P16/P11 source binding against the
 same API contract; validate the selected source and result provenance in staging.
 
