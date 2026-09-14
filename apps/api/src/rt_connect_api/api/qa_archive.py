@@ -126,6 +126,22 @@ class QACaseCollectionResponse(BaseModel):
     include_archived: bool
 
 
+class QACasePurgeReferenceResponse(BaseModel):
+    source: str
+    count: int = Field(ge=1)
+
+
+class QACasePurgePreviewResponse(BaseModel):
+    case_id: UUID
+    title: str
+    site_name: str
+    machine_name: str
+    performed_at: datetime
+    is_archived: bool
+    can_purge: bool
+    references: list[QACasePurgeReferenceResponse]
+
+
 def _context_for_organization(
     organization_id: UUID, identity: AuthenticatedIdentity, session: Session
 ) -> SessionContext:
@@ -737,6 +753,51 @@ def _case_reference_counts(session: Session, case_id: UUID) -> dict[str, int]:
         or 0
     )
     return {name: count for name, count in counts.items() if count}
+
+
+@router.get(
+    "/qa-cases/{case_id}/purge-preview",
+    response_model=QACasePurgePreviewResponse,
+)
+def preview_qa_case_purge(
+    case_id: UUID,
+    identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
+    session: Session = Depends(get_session),  # noqa: B008
+) -> QACasePurgePreviewResponse:
+    """Return a user-facing, read-only eligibility check before permanent purge."""
+
+    context = resolve_session_context(session, identity)
+    case = session.scalar(
+        select(QACase).where(
+            QACase.id == case_id, QACase.organization_id == context.organization_id
+        )
+    )
+    if case is None:
+        raise DomainError("QA_CASE_NOT_FOUND", "QA case was not found in this organization.", 404)
+    site_name = session.scalar(
+        select(Site.name).where(
+            Site.id == case.site_id, Site.organization_id == context.organization_id
+        )
+    ) or "Cơ sở không còn hoạt động"
+    machine_name = session.scalar(
+        select(Machine.display_name).where(
+            Machine.id == case.machine_id, Machine.organization_id == context.organization_id
+        )
+    ) or "Máy không còn hoạt động"
+    references = _case_reference_counts(session, case.id)
+    return QACasePurgePreviewResponse(
+        case_id=case.id,
+        title=case.title,
+        site_name=site_name,
+        machine_name=machine_name,
+        performed_at=case.performed_at,
+        is_archived=case.is_archived,
+        can_purge=case.is_archived and not references,
+        references=[
+            QACasePurgeReferenceResponse(source=name, count=count)
+            for name, count in references.items()
+        ],
+    )
 
 
 @router.post("/qa-cases/{case_id}/purge", response_model=dict[str, object])

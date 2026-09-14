@@ -9,6 +9,16 @@ import { isCaseInArchiveView, toggleAllVisibleCaseSelection, toggleCaseSelection
 import { processUploadQueue, type UploadQueueItem } from './uploadQueue'
 
 type BatchCaseItem = { id: string; title: string }
+type BatchSkippedItem = BatchCaseItem & { reason: string }
+
+const purgeReferenceLabels: Record<string, string> = {
+  machine_qa_runs: 'kết quả kiểm tra máy',
+  gamma_analysis_runs: 'lần phân tích Gamma',
+  dvh_analysis_runs: 'lần phân tích liều',
+  trend_points: 'điểm xu hướng',
+  artifacts: 'tệp đầu vào',
+  reports: 'báo cáo'
+}
 
 const cycles = ['DAILY', 'MONTHLY', 'ANNUAL', 'CUSTOM'] as const
 const cycleLabels: Record<(typeof cycles)[number], string> = {
@@ -60,6 +70,10 @@ function uploadQueueStatusLabel(status: UploadQueueItem['status']): string {
 
 function labelOf(labels: Record<string, string>, value: string): string {
   return labels[value] ?? value
+}
+
+function purgeReferenceSummary(references: Array<{ source: string; count: number }>): string {
+  return references.map((reference) => `${reference.count} ${purgeReferenceLabels[reference.source] ?? 'dữ liệu liên quan'}`).join(', ')
 }
 
 function definitionNeedsInputFile(definition: QATestDefinitionResource | undefined): boolean {
@@ -176,22 +190,23 @@ export function QAArchivePage() {
     void queryClient.invalidateQueries({ queryKey: ['folders', organizationId] })
     void queryClient.invalidateQueries({ queryKey: ['qa-cases', organizationId] })
   }
-  const runBatch = async (items: BatchCaseItem[], action: (caseId: string) => Promise<unknown>, actionLabel: string) => {
-    if (!items.length || batchProcessing) return
-    setBatchProcessing(true)
+  const runBatch = async (items: BatchCaseItem[], action: (caseId: string) => Promise<unknown>, actionLabel: string, skipped: BatchSkippedItem[] = [], alreadyProcessing = false) => {
+    if (!items.length || (batchProcessing && !alreadyProcessing)) return
+    if (!alreadyProcessing) setBatchProcessing(true)
     const results = await Promise.allSettled(items.map((item) => action(item.id)))
     const completed = items.filter((_, index) => results[index]?.status === 'fulfilled')
     const failed = items.filter((_, index) => results[index]?.status === 'rejected')
-    setSelectedCaseIds([])
+    setSelectedCaseIds([...skipped.map((item) => item.id), ...failed.map((item) => item.id)])
     setBatchProcessing(false)
     refresh()
-    if (failed.length) {
+    if (failed.length || skipped.length) {
       const completedNames = completed.map((item) => item.title).join(', ') || 'Không có bài nào'
       const failedDetails = items.flatMap((item, index) => {
         const result = results[index]
         return result?.status === 'rejected' ? [`${item.title}: ${errorMessage(result.reason)}`] : []
       })
-      setMessage(`${actionLabel}. Đã xử lý: ${completedNames}. Chưa xử lý: ${failedDetails.join('; ')}.`)
+      const skippedDetails = skipped.map((item) => `${item.title}: ${item.reason}`)
+      setMessage(`${actionLabel}. Đã xử lý: ${completedNames}. Chưa xử lý: ${[...failedDetails, ...skippedDetails].join('; ')}.`)
     } else {
       setMessage(`${actionLabel}. Đã xử lý: ${completed.map((item) => item.title).join(', ')}.`)
     }
@@ -245,14 +260,59 @@ export function QAArchivePage() {
   }
   const archiveSelectedCases = () => void runBatch(selectedCases, (caseId) => apiClient.updateQACase(accessToken!, caseId, { is_archived: true }), 'Đưa vào thùng rác')
   const restoreSelectedCases = () => void runBatch(selectedCases, (caseId) => apiClient.restoreQACase(accessToken!, caseId), 'Khôi phục')
-  const purgeSelectedCases = () => {
+  const purgeSelectedCases = async () => {
     if (!selectedCases.length || batchProcessing) return
-    const summary = selectedCases.map((item) => `• ${item.title}`).join('\n')
-    if (!window.confirm(`Xóa vĩnh viễn ${selectedCases.length} bài kiểm tra sau?\n\n${summary}\n\nThao tác này không thể khôi phục.`)) {
+    const items = [...selectedCases]
+    setBatchProcessing(true)
+    const previews = await Promise.allSettled(items.map((item) => apiClient.purgeQACasePreview(accessToken!, item.id)))
+    const previewFailures = items.filter((_, index) => previews[index]?.status === 'rejected')
+    if (previewFailures.length) {
+      setSelectedCaseIds(previewFailures.map((item) => item.id))
+      setBatchProcessing(false)
+      const reasons = items.flatMap((item, index) => {
+        const result = previews[index]
+        return result?.status === 'rejected' ? [`${item.title}: ${errorMessage(result.reason)}`] : []
+      })
+      setMessage(`Chưa thể chuẩn bị xóa. ${reasons.join('; ')}`)
+      return
+    }
+    const successfulPreviews = previews.map((result) => result.status === 'fulfilled' ? result.value : undefined)
+    const blocked = items.filter((_, index) => !successfulPreviews[index]?.can_purge)
+    const eligible = items.filter((_, index) => successfulPreviews[index]?.can_purge)
+    if (!eligible.length) {
+      setSelectedCaseIds(blocked.map((item) => item.id))
+      setBatchProcessing(false)
+      const reasons = items.map((item, index) => {
+        const preview = successfulPreviews[index]
+        if (!preview?.is_archived) return `${item.title}: Hãy lưu trữ bài trước khi xóa vĩnh viễn.`
+        return `${item.title}: còn ${purgeReferenceSummary(preview.references)}`
+      })
+      setMessage(`Chưa có bài nào đủ điều kiện xóa. ${reasons.join('; ')}`)
+      return
+    }
+    const summary = items.map((item, index) => {
+      const preview = successfulPreviews[index]!
+      const date = new Date(preview.performed_at).toLocaleString('vi-VN')
+      const status = preview.can_purge
+        ? `${preview.site_name} · ${preview.machine_name} · ${date}`
+        : `Chưa thể xóa: ${preview.is_archived ? `còn ${purgeReferenceSummary(preview.references)}` : 'bài chưa được lưu trữ'}`
+      return `• ${item.title} — ${status}`
+    }).join('\n')
+    if (!window.confirm(`Xóa vĩnh viễn các bài đủ điều kiện sau?\n\n${summary}\n\nCác bài còn liên kết sẽ được giữ nguyên. Thao tác này không thể khôi phục.`)) {
+      setBatchProcessing(false)
       setMessage('Đã hủy thao tác xóa vĩnh viễn.')
       return
     }
-    void runBatch(selectedCases, (caseId) => apiClient.purgeQACaseConfirmed(accessToken!, caseId), 'Xóa vĩnh viễn')
+    const skipped = blocked.map((item) => {
+      const preview = successfulPreviews[items.indexOf(item)]!
+      return {
+        ...item,
+        reason: preview.is_archived
+          ? `còn ${purgeReferenceSummary(preview.references)}`
+          : 'bài chưa được lưu trữ'
+      }
+    })
+    void runBatch(eligible, (caseId) => apiClient.purgeQACaseConfirmed(accessToken!, caseId), 'Xóa vĩnh viễn', skipped, true)
   }
   const createFolder = () => {
     const name = newFolderName.trim()

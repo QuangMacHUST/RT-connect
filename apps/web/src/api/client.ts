@@ -121,6 +121,16 @@ export type QACaseResource = {
   case_status: string
   is_archived: boolean
 }
+export type QACasePurgePreviewResource = {
+  case_id: string
+  title: string
+  site_name: string
+  machine_name: string
+  performed_at: string
+  is_archived: boolean
+  can_purge: boolean
+  references: Array<{ source: string; count: number }>
+}
 export type QATestDefinitionResource = {
   key: string
   name: string
@@ -1555,8 +1565,42 @@ export class ApiClient {
     }), accessToken, { method: 'POST' })
   }
 
-  purgeQACase(accessToken: string, caseId: string): Promise<{ status: string; case_id: string }> {
-    if (typeof window !== 'undefined' && !window.confirm('Xóa vĩnh viễn bài kiểm tra này? Thao tác này không thể khôi phục; chỉ tiếp tục nếu bài không còn dữ liệu liên quan.')) {
+  purgeQACasePreview(accessToken: string, caseId: string): Promise<QACasePurgePreviewResource> {
+    return this.get(`/qa-cases/${caseId}/purge-preview`, z.object({
+      case_id: z.string().uuid(), title: z.string(), site_name: z.string(), machine_name: z.string(),
+      performed_at: z.string(), is_archived: z.boolean(), can_purge: z.boolean(),
+      references: z.array(z.object({ source: z.string(), count: z.number().int().positive() }))
+    }), accessToken)
+  }
+
+  async purgeQACase(accessToken: string, caseId: string): Promise<{ status: string; case_id: string }> {
+    const preview = await this.purgeQACasePreview(accessToken, caseId)
+    if (!preview.is_archived) {
+      throw new ApiClientError('Hãy lưu trữ bài trước khi xóa vĩnh viễn.', 'QA_CASE_PURGE_REQUIRES_ARCHIVE')
+    }
+    if (!preview.can_purge || preview.references.length > 0) {
+      throw new ApiClientError(
+        'Bài vẫn còn dữ liệu liên quan nên chưa thể xóa vĩnh viễn.',
+        'QA_CASE_REFERENCED',
+        undefined,
+        preview.references.map((reference) => ({
+          source: reference.source,
+          count: reference.count,
+          message: `Còn ${reference.count} liên kết ${reference.source}.`
+        }))
+      )
+    }
+    const performedAt = new Date(preview.performed_at).toLocaleString('vi-VN')
+    const confirmation = [
+      `Xóa vĩnh viễn bài “${preview.title}”?`,
+      '',
+      `Cơ sở: ${preview.site_name}`,
+      `Máy: ${preview.machine_name}`,
+      `Thời điểm: ${performedAt}`,
+      '',
+      'Thao tác này không thể khôi phục.'
+    ].join('\n')
+    if (typeof window !== 'undefined' && !window.confirm(confirmation)) {
       return Promise.reject(new ApiClientError('Đã hủy thao tác xóa vĩnh viễn.', 'ACTION_CANCELLED'))
     }
     return this.purgeQACaseConfirmed(accessToken, caseId)

@@ -36,16 +36,58 @@ test('preserves structured error details for bounded trend queries', async () =>
 
 test('requires confirmation before permanently purging a QA case', async () => {
   const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
-  const fetchMock = vi.fn()
+  const caseId = '123e4567-e89b-42d3-a456-426614174000'
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      case_id: caseId,
+      title: 'Kiểm tra đầu ngày',
+      site_name: 'Cơ sở trung tâm',
+      machine_name: 'Máy xạ trị 01',
+      performed_at: '2026-09-14T08:00:00Z',
+      is_archived: true,
+      can_purge: true,
+      references: []
+    })
+  })
   vi.stubGlobal('fetch', fetchMock)
   const client = new ApiClient('http://api.test/api/v1')
 
-  await expect(client.purgeQACase('token', '00000000-0000-0000-0000-000000000001')).rejects.toMatchObject({
+  await expect(client.purgeQACase('token', caseId)).rejects.toMatchObject({
     code: 'ACTION_CANCELLED',
     message: 'Đã hủy thao tác xóa vĩnh viễn.'
   })
+  expect(confirm).toHaveBeenCalledWith(expect.stringContaining('Máy: Máy xạ trị 01'))
   expect(confirm).toHaveBeenCalledWith(expect.stringContaining('không thể khôi phục'))
-  expect(fetchMock).not.toHaveBeenCalled()
+  expect(fetchMock).toHaveBeenCalledTimes(1)
+  expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(`/qa-cases/${caseId}/purge-preview`), expect.anything())
+})
+
+test('does not send a purge request when the preview finds linked data', async () => {
+  const confirm = vi.spyOn(window, 'confirm')
+  const caseId = '123e4567-e89b-42d3-a456-426614174000'
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      case_id: caseId,
+      title: 'Bài có báo cáo',
+      site_name: 'Cơ sở trung tâm',
+      machine_name: 'Máy xạ trị 01',
+      performed_at: '2026-09-14T08:00:00Z',
+      is_archived: true,
+      can_purge: false,
+      references: [{ source: 'reports', count: 1 }]
+    })
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  const client = new ApiClient('http://api.test/api/v1')
+
+  await expect(client.purgeQACase('token', caseId)).rejects.toMatchObject({
+    code: 'QA_CASE_REFERENCED',
+    message: 'Bài vẫn còn dữ liệu liên quan nên chưa thể xóa vĩnh viễn.'
+  })
+  expect(confirm).not.toHaveBeenCalled()
+  expect(fetchMock).toHaveBeenCalledTimes(1)
 })
 
 test('allows a confirmed batch purge helper to send one request without prompting again', async () => {

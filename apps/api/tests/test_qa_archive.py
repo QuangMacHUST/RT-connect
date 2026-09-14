@@ -384,10 +384,16 @@ def test_qa_case_purge_rejects_a_report_source_reference() -> None:
         )
         assert report.status_code == 201, report.text
         archived = client.delete(f"/api/v1/qa-cases/{case_id}")
+        preview = client.get(f"/api/v1/qa-cases/{case_id}/purge-preview")
         rejected = client.post(f"/api/v1/qa-cases/{case_id}/purge")
         still_present = client.get(f"/api/v1/qa-cases/{case_id}")
 
     assert archived.status_code == 200
+    assert preview.status_code == 200
+    assert preview.json()["title"] == "Hồ sơ có báo cáo tham chiếu"
+    assert preview.json()["is_archived"] is True
+    assert preview.json()["can_purge"] is False
+    assert preview.json()["references"] == [{"source": "reports", "count": 1}]
     assert rejected.status_code == 409
     assert rejected.json()["code"] == "QA_CASE_REFERENCED"
     references = {item["source"]: item["count"] for item in rejected.json()["details"]}
