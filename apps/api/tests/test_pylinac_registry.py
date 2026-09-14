@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from rt_connect_api.qa_catalog import QA_TEST_CATALOG
+from rt_connect_api.qa_catalog import CATALOGUE_VERSION, QA_TEST_CATALOG
 from rt_connect_api.services.pylinac_registry import (
     PYLINAC_VERSION,
     PYLINAC_WHEEL_SHA256,
@@ -31,7 +31,7 @@ def test_registry_summary_contains_provenance_without_raw_error() -> None:
     summary = registry_summary()
 
     assert summary["pylinac_version"] == "3.47.0"
-    assert summary["catalogue_version"] == "pylinac-3.47.0-rt-connect-1.1"
+    assert summary["catalogue_version"] == CATALOGUE_VERSION
     assert summary["wheel_sha256"] == PYLINAC_WHEEL_SHA256
     assert summary["total_bindings"] == 63
     assert summary["runtime_available"] == 63
@@ -54,6 +54,7 @@ def test_capability_endpoint_is_organization_scoped() -> None:
     body = response.json()
     assert body["pylinac_version"] == "3.47.0"
     assert body["wheel_sha256"] == PYLINAC_WHEEL_SHA256
+    assert body["catalogue_version"] == CATALOGUE_VERSION
     assert body["package_fingerprint"]
     assert body["total_bindings"] == 63
     assert body["runtime_available"] == 63

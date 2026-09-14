@@ -590,7 +590,7 @@ def _build_catalog() -> tuple[dict[str, object], ...]:
 QA_TEST_CATALOG: Final[tuple[QATestDefinition, ...]] = tuple(
     QATestDefinition.model_validate(item) for item in _build_catalog()
 )
-CATALOGUE_VERSION: Final[str] = "pylinac-3.47.0-rt-connect-1.1"
+CATALOGUE_VERSION: Final[str] = "pylinac-3.47.0-rt-connect-1.2"
 
 
 def get_qa_test_definition(key: str) -> QATestDefinition | None:

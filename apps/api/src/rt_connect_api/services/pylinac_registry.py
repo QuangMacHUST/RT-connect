@@ -15,7 +15,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Final, TypedDict
 
-from rt_connect_api.qa_catalog import QA_TEST_CATALOG, QATestDefinition
+from rt_connect_api.qa_catalog import CATALOGUE_VERSION, QA_TEST_CATALOG, QATestDefinition
 
 PYLINAC_VERSION: Final[str] = "3.47.0"
 PYLINAC_WHEEL_SHA256: Final[str] = (
@@ -341,7 +341,7 @@ def registry_summary() -> RegistrySummary:
         for item in capabilities
     ]
     return {
-        "catalogue_version": "pylinac-3.47.0-rt-connect-1.1",
+        "catalogue_version": CATALOGUE_VERSION,
         "pylinac_version": installed_pylinac_version(),
         "wheel_sha256": PYLINAC_WHEEL_SHA256,
         "package_fingerprint": package_fingerprint(),

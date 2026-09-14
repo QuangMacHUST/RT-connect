@@ -1,5 +1,11 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W03 — đồng bộ phiên bản danh mục trong API — lát cắt cục bộ — 2026-09-15
+
+- API registry nay lấy trực tiếp hằng phiên bản từ danh mục thay vì lặp lại một chuỗi riêng. Sau khi CatPhan700 nâng danh mục lên 1.2, tuyến khả năng Pylinac và bản tóm tắt phát hành cùng trả đúng `pylinac-3.47.0-rt-connect-1.2`.
+- Kiểm thử registry đã xác nhận phiên bản API khớp hằng danh mục; không thay đổi số bài, phép tính hoặc dữ liệu staging.
+- Đây là sửa đồng bộ hợp đồng `LOCAL_VERIFIED_SLICE`; P7-W03 vẫn mở vì còn ma trận fixture và đối chiếu engine thật cho các nhóm chưa có dữ liệu.
+
 ## P7-W03 — bổ sung CatPhan700 theo inventory Pylinac 3.47.0 — lát cắt cục bộ — 2026-09-15
 
 - Đối chiếu các lớp phân tích công khai của mô-đun CT trong wheel `pylinac 3.47.0` phát hiện `CatPhan700` chưa có trong danh mục dù là một biến thể phantom cụ thể. Đã bổ sung bài này vào danh mục, runtime registry, adapter CatPhan, kiểm tra đầu vào ZIP, tuyến giao diện và điều hướng.
