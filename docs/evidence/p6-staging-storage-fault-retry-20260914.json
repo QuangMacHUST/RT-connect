@@ -27,7 +27,8 @@
       "declared_type": "Tệp khác",
       "logical_role": "Tệp tham chiếu",
       "observed": "Tải lên lỗi; Không thể hoàn tất thao tác. Hãy thử lại và kiểm tra kết nối.",
-      "retry_button_visible": true
+      "retry_button_visible": true,
+      "artifact_table_after_failed_request": "13 tệp; không có hàng mới cho p17-ct-v1-smoke.dcm"
     },
     {
       "step": "restore_and_isolated_retry",
@@ -42,6 +43,8 @@
     "successful_items_preserved_during_fault": true,
     "failed_item_isolated": true,
     "retry_isolated_to_failed_item": true,
+    "no_artifact_record_created_by_failed_request": true,
+    "provider_orphan_inventory_after_object_write": "NOT_VERIFIED",
     "no_analysis_created": true,
     "no_report_created": true,
     "patient_data_used": false,
