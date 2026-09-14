@@ -11,6 +11,13 @@ Tài liệu hiện hành: `business-analysis.md` v1.3,
 - Cổng local đạt: 26/26 kiểm thử API nhóm Pylinac, ruff trên các tệp thay đổi, mypy 52/52 tệp nguồn, lint giao diện, kiểm tra kiểu và bản dựng sản xuất. Bằng chứng: [P7 hợp đồng chín bài hạt nhân](docs/evidence/p7-local-nuclear-contract-20260915.json).
 - Đây là `LOCAL_VERIFIED_SLICE` cho adapter/biểu mẫu/hợp đồng, chưa phải chạy engine thật: hiện chưa có fixture DICOM Nuclear chuẩn, chưa có đối chiếu từng lớp trên dữ liệu chuẩn và chưa có kiểm chứng staging. P7-W03, P07-NUCLEAR, P07-VERIFY và P07-HANDOFF vẫn mở.
 
+## P7-W03 — hai bài One-Offs/Contrib của Pylinac — lát cắt hợp đồng local — 2026-09-15
+
+- Commit `2a46f67cf60f28cda541d1d513f95403a15c4509` đã bổ sung hai bài đóng góp công khai: `QuasarLightRadScaling` và `JawOrthogonality`. Cả hai được mở trực tiếp từ danh mục QA, nhận một ảnh, lưu lịch sử và cho phép người thực hiện đánh giá riêng.
+- Quasar có biểu mẫu `normalize`, đảo ảnh, FWXM và ngưỡng cạnh biên; adapter gọi đúng `analyze()` và `results_data()`. Jaw không có `results_data()` trong Pylinac 3.47.0 nên adapter gọi đúng `analyze()` và `results()`, sau đó lấy ảnh từ `plot_analyzed_image()`. Không có logic thay thế hoặc kết luận tự động ngoài kết quả engine.
+- Cổng local đạt: 28/28 kiểm thử API nhóm Pylinac, ruff trên các tệp thay đổi, mypy 52/52 tệp nguồn, lint giao diện, kiểm tra kiểu và bản dựng sản xuất. Bằng chứng: [P7 hợp đồng hai bài đóng góp](docs/evidence/p7-local-contrib-contract-20260915.json).
+- Đây là `LOCAL_VERIFIED_SLICE` cho adapter/biểu mẫu/hợp đồng, chưa phải chạy engine thật: chưa có fixture ảnh chuẩn cho hai bài, chưa có đối chiếu kết quả trên fixture và chưa có kiểm chứng staging. P07-CONTRIB, P7-W03, P07-VERIFY và P07-HANDOFF vẫn mở.
+
 ## UX1.3 — Thư viện nội bộ/cộng đồng và triển khai tuần tự — 2026-09-13
 
 - Phạm vi đợt: hoàn thiện nền giao diện UX1.3 theo kế hoạch tuần tự; tài liệu, thiết kế Google Stitch và dọn tệp thừa được giữ làm đầu vào, không thay dữ liệu Railway/Supabase trong slice này.

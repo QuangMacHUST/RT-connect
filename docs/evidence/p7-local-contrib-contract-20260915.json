@@ -1,0 +1,52 @@
+{
+  "evidence_id": "p7-local-contrib-contract-20260915",
+  "phase": "P7",
+  "status": "LOCAL_VERIFIED_SLICE",
+  "source_commit": "2a46f67cf60f28cda541d1d513f95403a15c4509",
+  "engine": {
+    "name": "pylinac",
+    "version": "3.47.0",
+    "wheel_sha256": "7a99ec70a0242fa645882152fb5aa012f176b943a78339a3a18c15c953331b68",
+    "catalogue_version": "pylinac-3.47.0-rt-connect-1.0"
+  },
+  "covered_capabilities": [
+    {
+      "catalog_key": "CONTRIB_QUASAR_LIGHT_RAD_SCALING",
+      "engine_class": "QuasarLightRadScaling",
+      "result_source": "results_data",
+      "parameters": ["normalize", "invert", "fwxm", "bb_edge_threshold_mm"],
+      "overlay_method": "plot_analyzed_image"
+    },
+    {
+      "catalog_key": "CONTRIB_JAW_ORTHOGONALITY",
+      "engine_class": "JawOrthogonality",
+      "result_source": "results",
+      "parameters": [],
+      "overlay_method": "plot_analyzed_image"
+    }
+  ],
+  "verified_contract": {
+    "catalogue_bindings": 2,
+    "single_image_preflight": true,
+    "source_tier_is_pylinac_contrib": true,
+    "user_assessment_is_separate_from_engine_result": true,
+    "raw_json_and_internal_ids_are_hidden_from_ui": true,
+    "tenant_scope_is_first_lookup": true
+  },
+  "tests": {
+    "api_pylinac_tests": "28 passed",
+    "ruff_changed_files": "PASS",
+    "mypy": "PASS",
+    "web_lint": "PASS",
+    "web_typecheck": "PASS",
+    "web_build": "PASS",
+    "planning_contract_tests": "15 passed"
+  },
+  "not_closed": [
+    "Chưa có fixture ảnh chuẩn cho Quasar Light/Rad Scaling và Jaw Orthogonality",
+    "Chưa đối chiếu kết quả từng bài với lần gọi trực tiếp trên fixture chuẩn",
+    "Chưa có ma trận lỗi đặc trưng và kiểm thử staging",
+    "P07-VERIFY và P07-HANDOFF chưa hoàn tất"
+  ],
+  "secrets_or_patient_data": "none"
+}
