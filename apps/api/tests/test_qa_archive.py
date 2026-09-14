@@ -300,6 +300,60 @@ def test_qa_case_creation_retries_are_idempotent_and_key_reuse_is_rejected() -> 
     assert cases.json()["total"] == 1
 
 
+def test_qa_case_purge_keeps_sibling_case_and_parent_folder_intact() -> None:
+    with _workspace_client() as (client, organization):
+        site = client.get(f"/api/v1/organizations/{organization.id}/sites").json()["items"][0]
+        machine = client.get(
+            f"/api/v1/organizations/{organization.id}/sites/{site['id']}/machines"
+        ).json()["items"][0]
+        folder = client.post(
+            f"/api/v1/organizations/{organization.id}/folders",
+            json={"name": "P5 purge integrity"},
+        )
+        assert folder.status_code == 201, folder.text
+        folder_id = folder.json()["id"]
+
+        def create_case(title: str) -> str:
+            created = client.post(
+                f"/api/v1/organizations/{organization.id}/qa-cases",
+                json={
+                    "site_id": site["id"],
+                    "machine_id": machine["id"],
+                    "primary_folder_id": folder_id,
+                    "qa_definition_key": "MANUAL_MACHINE_QA",
+                    "qa_cycle": "DAILY",
+                    "performed_at": "2026-09-14T08:00:00Z",
+                    "title": title,
+                },
+            )
+            assert created.status_code == 201, created.text
+            return created.json()["id"]
+
+        purged_case_id = create_case("Hồ sơ được phép xóa")
+        sibling_case_id = create_case("Hồ sơ bên cạnh phải giữ lại")
+
+        archived = client.delete(f"/api/v1/qa-cases/{purged_case_id}")
+        purged = client.post(f"/api/v1/qa-cases/{purged_case_id}/purge")
+        sibling = client.get(f"/api/v1/qa-cases/{sibling_case_id}")
+        remaining = client.get(
+            f"/api/v1/organizations/{organization.id}/qa-cases",
+            params={"include_archived": True},
+        )
+        retained_folder = client.get(f"/api/v1/folders/{folder_id}")
+
+    assert archived.status_code == 200
+    assert purged.status_code == 200
+    assert sibling.status_code == 200
+    assert sibling.json()["title"] == "Hồ sơ bên cạnh phải giữ lại"
+    assert sibling.json()["primary_folder_id"] == folder_id
+    assert remaining.status_code == 200
+    assert remaining.json()["total"] == 1
+    assert remaining.json()["items"][0]["id"] == sibling_case_id
+    assert retained_folder.status_code == 200
+    assert retained_folder.json()["id"] == folder_id
+    assert retained_folder.json()["is_archived"] is False
+
+
 def test_qa_case_purge_requires_archive_and_rejects_referenced_history() -> None:
     with _workspace_client() as (client, organization):
         site = client.get(f"/api/v1/organizations/{organization.id}/sites").json()["items"][0]
