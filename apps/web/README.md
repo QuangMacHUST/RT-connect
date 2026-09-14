@@ -15,6 +15,12 @@ Keep the parity marker in this service root as well; the API and web staging
 deployments must advance from the same release commit before public recheck.
 The verifier result is a release gate, not just a visual browser check.
 
+P5 parity rebuild marker (2026-09-14): root-level P5 implementation progress and
+evidence updates must be accompanied by a change under this service root. This
+marker exists to keep the web rebuild coupled to the API and Gamma worker
+candidate. Do not record a new staging release until the web bundle, API and
+worker report the same source SHA and schema.
+
 P17 release marker: DVH exposes explicit P16/P11 source binding against the
 same API contract; validate the selected source and result provenance in staging.
 

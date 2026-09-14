@@ -19,6 +19,12 @@ web-only documentation commit cannot leave the API on an older candidate.
 Every staging release must run the exact-SHA public verifier after both
 service deployments settle.
 
+P5 parity rebuild marker (2026-09-14): root-level P5 implementation progress and
+evidence updates must be accompanied by a change under this service root. This
+marker exists to prevent Railway path filters from leaving the API and Gamma
+worker on an older candidate while the web service advances. Do not record a new
+staging release until API, worker and web report the same source SHA and schema.
+
 P17 release marker: DVH explicit P16/P11 binding UI is released against the
 same API contract; validate the selected source and result provenance in staging.
 
