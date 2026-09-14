@@ -349,6 +349,53 @@ def test_qa_case_purge_requires_archive_and_rejects_referenced_history() -> None
     assert still_present.json()["is_archived"] is True
 
 
+def test_qa_case_purge_rejects_a_report_source_reference() -> None:
+    with _workspace_client() as (client, organization):
+        site = client.get(f"/api/v1/organizations/{organization.id}/sites").json()["items"][0]
+        machine = client.get(
+            f"/api/v1/organizations/{organization.id}/sites/{site['id']}/machines"
+        ).json()["items"][0]
+        folder = client.post(
+            f"/api/v1/organizations/{organization.id}/folders",
+            json={"name": "P5 report purge guard"},
+        ).json()
+        case = client.post(
+            f"/api/v1/organizations/{organization.id}/qa-cases",
+            json={
+                "site_id": site["id"],
+                "machine_id": machine["id"],
+                "primary_folder_id": folder["id"],
+                "qa_definition_key": "MANUAL_MACHINE_QA",
+                "qa_cycle": "DAILY",
+                "performed_at": "2026-09-14T08:00:00Z",
+                "title": "Hồ sơ có báo cáo tham chiếu",
+            },
+        )
+        assert case.status_code == 201, case.text
+        case_id = case.json()["id"]
+
+        report = client.post(
+            f"/api/v1/organizations/{organization.id}/reports",
+            json={
+                "source_type": "QA_CASE",
+                "source_id": case_id,
+                "title": "Báo cáo tham chiếu hồ sơ QA",
+            },
+        )
+        assert report.status_code == 201, report.text
+        archived = client.delete(f"/api/v1/qa-cases/{case_id}")
+        rejected = client.post(f"/api/v1/qa-cases/{case_id}/purge")
+        still_present = client.get(f"/api/v1/qa-cases/{case_id}")
+
+    assert archived.status_code == 200
+    assert rejected.status_code == 409
+    assert rejected.json()["code"] == "QA_CASE_REFERENCED"
+    references = {item["source"]: item["count"] for item in rejected.json()["details"]}
+    assert references == {"reports": 1}
+    assert still_present.status_code == 200
+    assert still_present.json()["is_archived"] is True
+
+
 def test_qa_case_purge_rejects_case_with_queued_gamma_job() -> None:
     storage = InMemoryObjectStorage()
     with _workspace_client() as (client, organization):
