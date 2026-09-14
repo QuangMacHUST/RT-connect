@@ -4,6 +4,7 @@
   "phase": "P5",
   "status": "STAGING_VERIFIED_SLICE",
   "environment": "staging",
+  "source_revision": "336be85",
   "checks": [
     {
       "name": "active_history",
