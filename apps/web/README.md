@@ -112,3 +112,7 @@ P5 input-artifact evidence checkpoint (2026-09-14): the repository evidence
 records the independent stored-input purge guard and the 218-test API
 regression. Keep this watched marker aligned with `/apps/api` so all three
 services are rebuilt from the same source commit before staging verification.
+
+P5 staging parity evidence commit (2026-09-14): the public recheck evidence
+for the artifact-guard candidate is committed at repository root. Rebuild the
+web together with API and worker from the same revision before staging review.
