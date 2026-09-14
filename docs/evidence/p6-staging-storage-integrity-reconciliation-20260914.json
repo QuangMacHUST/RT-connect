@@ -1,0 +1,44 @@
+{
+  "evidence_id": "P06-STAGING-STORAGE-INTEGRITY-RECONCILIATION-20260914",
+  "phase": "P06",
+  "status": "STAGING_VERIFIED_PROVIDER_RECONCILIATION",
+  "captured_at": "2026-09-14T21:25:24+07:00",
+  "source_commit": "661582095dccb112af2a9c6bd541b1e4992f0568",
+  "environment": "Railway staging",
+  "scope": "Authenticated read-only verification for one staging organization; synthetic fixtures only.",
+  "api_url": "https://gleaming-cooperation-staging.up.railway.app",
+  "integrity_probe": {
+    "endpoint": "GET /api/v1/organizations/{organization_id}/storage/integrity",
+    "http_status": 200,
+    "provider_object_count": 27,
+    "provider_namespace_counts": {
+      "qa_cases": 15,
+      "reports": 12
+    },
+    "referenced_artifact_count": 15,
+    "referenced_export_count": 12,
+    "referenced_object_count": 27,
+    "orphan_object_count": 0,
+    "missing_object_count": 0,
+    "status": "CLEAN"
+  },
+  "signed_download_readback": {
+    "display_filename": "p17-ct-v1-smoke.dcm",
+    "http_status": 200,
+    "byte_size": 842,
+    "content_type": "application/octet-stream",
+    "content_disposition": "attachment; filename=\"p17-ct-v1-smoke.dcm\"",
+    "sha256_matches_local_fixture": true,
+    "signed_url_recorded": false
+  },
+  "safety": {
+    "synthetic_only": true,
+    "patient_data_used": false,
+    "analysis_created": false,
+    "report_created": false,
+    "production_touched": false,
+    "raw_object_keys_recorded": false,
+    "credentials_recorded": false
+  },
+  "result": "PASS_PROVIDER_RECONCILIATION_AND_SIGNED_DOWNLOAD"
+}

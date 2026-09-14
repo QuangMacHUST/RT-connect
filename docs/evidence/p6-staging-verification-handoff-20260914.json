@@ -1,0 +1,52 @@
+{
+  "evidence_id": "P06-STAGING-VERIFY-HANDOFF-20260914",
+  "phase": "P06",
+  "status": "STAGING_VERIFIED_AND_HANDOFF_COMPLETE",
+  "captured_at": "2026-09-14T21:28:07+07:00",
+  "source_commit": "661582095dccb112af2a9c6bd541b1e4992f0568",
+  "scope": "P6 input contracts, conditional input UI, queue retry, provider reconciliation and signed download on staging; synthetic data only.",
+  "verification": {
+    "catalogue_readback": "63/63 bài hiển thị trực tiếp theo danh mục",
+    "conditional_input_controls": "Bài nhập tay không hiện vùng tệp; bài liều chỉ mở phân tích liều khi có đầu vào phù hợp",
+    "valid_preflight": "2 RTDOSE · 1 RTSTRUCT · 1 CT hợp lệ",
+    "queue_failure_retry": "Mục lỗi bị cô lập, hai mục thành công được giữ nguyên, thử lại riêng đạt 3/3",
+    "provider_reconciliation": "CLEAN; 27 vật lưu trữ, 27 tham chiếu, 0 vật mồ côi, 0 tham chiếu thiếu",
+    "signed_download": "HTTP 200; đúng 842 byte; đúng tên tệp và Content-Disposition; khớp hàm băm fixture"
+  },
+  "local_gates": {
+    "api_ruff": "PASS",
+    "api_mypy": "PASS",
+    "api_artifact_and_archive_tests": "14 PASS",
+    "web_lint": "PASS",
+    "web_typecheck": "PASS",
+    "web_tests": "39 PASS",
+    "web_build": "PASS; chỉ còn cảnh báo kích thước gói đã biết"
+  },
+  "public_staging_gate": {
+    "checks": "16/16 PASS",
+    "version_matches_source_commit": true,
+    "schema_revision": "20260913_0022",
+    "production_touched": false
+  },
+  "handoff": {
+    "next_phase": "P07",
+    "received_contracts": [
+      "Danh mục bài và input profile",
+      "Vai trò RTDOSE/RTSTRUCT/CT và tham số đo",
+      "Kết quả validation, lỗi theo tệp và retry cô lập",
+      "Hợp đồng tên tệp tải xuống và provenance"
+    ],
+    "raw_manifest_or_object_keys_in_ui": false,
+    "patient_data_used": false,
+    "analysis_created": false,
+    "report_created": false
+  },
+  "evidence_refs": [
+    "docs/evidence/p6-staging-input-readback-20260914.json",
+    "docs/evidence/p6-staging-queue-validation-readback-20260914.json",
+    "docs/evidence/p6-staging-storage-fault-retry-20260914.json",
+    "docs/evidence/p6-staging-storage-integrity-reconciliation-20260914.json",
+    "docs/evidence/p6-staging-public-recheck-20260914-6615820.json"
+  ],
+  "result": "PASS_P06_VERIFY_AND_HANDOFF"
+}

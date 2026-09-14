@@ -463,7 +463,7 @@ Danh mục đúng đầu vào, dữ liệu cũ mở được, trash/restore/purg
 **Đầu vào/phụ thuộc:** P5 đã hoàn thành và có bàn giao; các hợp đồng liên quan xem mục kỹ thuật tương ứng.
 **Phạm vi:** FR-UX1-P06-01; B05/B06. Không dùng một upload form chung cho mọi bài.
 **Trạng thái UX1 lúc lập kế hoạch:** yêu cầu mới; chưa được tính là hoàn thành từ evidence cũ.
-**Trạng thái hiện tại:** `STAGING_VERIFIED_SLICE`; danh mục 63 bài, vùng đầu vào có điều kiện, kiểm tra loại/vai trò, tệp DICOM hợp lệ và preflight `2 RTDOSE · 1 RTSTRUCT · 1 CT hợp lệ` đã được đọc lại trên staging sau bàn giao P5. Hàng đợi staging đã được kiểm chứng cả lỗi kho lưu trữ có chủ ý và thử lại cô lập: một mục bị lỗi vẫn giữ hai mục thành công, sau khi khôi phục cấu hình chỉ mục lỗi được thử lại và đạt `3/3`. Kiểm thử cục bộ artifact, hàng đợi và QA Archive đạt; bằng chứng staging: `docs/evidence/p6-staging-input-readback-20260914.json`, `docs/evidence/p6-staging-queue-validation-readback-20260914.json` và `docs/evidence/p6-staging-storage-fault-retry-20260914.json`. P6 chưa đóng vì còn đối soát vật mồ côi sau lỗi ghi kho lưu trữ, đọc lại tên tệp/header tải xuống và gói VERIFY/HANDOFF đầy đủ.
+**Trạng thái hiện tại:** `STAGING_VERIFIED_AND_HANDOFF_COMPLETE`; danh mục 63 bài, vùng đầu vào có điều kiện, kiểm tra loại/vai trò, tệp DICOM hợp lệ và preflight `2 RTDOSE · 1 RTSTRUCT · 1 CT hợp lệ` đã được đọc lại trên staging sau bàn giao P5. Hàng đợi staging đã được kiểm chứng cả lỗi kho lưu trữ có chủ ý và thử lại cô lập: một mục bị lỗi vẫn giữ hai mục thành công, sau khi khôi phục cấu hình chỉ mục lỗi được thử lại và đạt `3/3`. Đối soát provider sau failure window đạt `CLEAN` với 27 vật lưu trữ, 27 tham chiếu, không có vật mồ côi hoặc tham chiếu thiếu; tải xuống đọc lại đúng tên tệp, header và byte. Cổng công khai staging đạt `16/16`; kiểm thử cục bộ API/web đạt. Bằng chứng đầy đủ: `docs/evidence/p6-staging-input-readback-20260914.json`, `docs/evidence/p6-staging-queue-validation-readback-20260914.json`, `docs/evidence/p6-staging-storage-fault-retry-20260914.json`, `docs/evidence/p6-staging-storage-integrity-reconciliation-20260914.json` và `docs/evidence/p6-staging-verification-handoff-20260914.json`.
 
 ### Trình tự triển khai P6
 
@@ -485,9 +485,9 @@ Danh mục đúng đầu vào, dữ liệu cũ mở được, trash/restore/purg
 - [x] P06-W01 — Typed input schemas theo test/input_mode và trình dựng form không JSON. `LOCAL_VERIFIED_SLICE`; staging đã đọc lại biểu mẫu theo loại/vai trò, không hiển thị manifest thô.
 - [x] P06-W02 — Upload có progress/retry, manifest nội bộ, checksum/type/size và signed URL đúng scope. `LOCAL_VERIFIED_SLICE`; staging đã chứng minh lỗi kho lưu trữ tạo mục `Tải lên lỗi`, giữ các mục thành công và thử lại riêng mục lỗi sau khôi phục. Evidence: `docs/evidence/p06-staging-rtdose-upload-20260911.json`, `docs/evidence/p6-staging-queue-validation-readback-20260914.json`, `docs/evidence/p6-staging-storage-fault-retry-20260914.json`.
 - [x] P06-W03 — Validation DICOM/hình học/thang đo/vai trò và bộ đọc measurement registry; wizard ghép cột nếu hỗ trợ bảng. `LOCAL_VERIFIED_SLICE` và staging readback `VALID`/preflight; evidence hiện hành: `docs/evidence/p6-staging-input-readback-20260914.json`.
-- [x] P06-W04 — Giới hạn tài nguyên parse và dọn upload dở; lỗi localized theo trường/tệp. `LOCAL_VERIFIED_SLICE`; staging đã chứng minh lỗi kho lưu trữ được hiển thị theo từng mục và retry không gửi lại mục đã thành công. Đối soát vật mồ côi sau failure window vẫn thuộc P06-VERIFY.
-- [ ] P06-VERIFY — Chạy các TC-UX1 dưới đây và nhóm lỗi dùng chung có liên quan; lưu actual/evidence theo SHA.
-- [ ] P06-HANDOFF — Cập nhật tiến độ, dữ liệu/migration/tuyến bị tác động, giới hạn hỗ trợ và bước tiếp theo.
+- [x] P06-W04 — Giới hạn tài nguyên parse và dọn upload dở; lỗi localized theo trường/tệp. `LOCAL_VERIFIED_SLICE`; staging đã chứng minh lỗi kho lưu trữ được hiển thị theo từng mục, retry không gửi lại mục đã thành công, provider reconciliation `CLEAN` và signed download đúng header/byte. Evidence: `docs/evidence/p6-staging-storage-integrity-reconciliation-20260914.json`.
+- [x] P06-VERIFY — Đã chạy các TC-UX1 và nhóm lỗi dùng chung trong phạm vi P6; actual/evidence theo source SHA đã lưu tại `docs/evidence/p6-staging-verification-handoff-20260914.json` cùng các evidence readback/queue/storage/public được dẫn chiếu.
+- [x] P06-HANDOFF — Đã bàn giao input profile, vai trò tệp, validation/retry, provenance tải xuống và giới hạn hỗ trợ cho P7; không tác động production. Bản bàn giao: `docs/evidence/p6-staging-verification-handoff-20260914.json`.
 
 ### Trường hợp chạy đúng P6
 
@@ -513,7 +513,7 @@ Input contract cho từng bài, fixture hợp lệ/lỗi và giới hạn tài n
 
 **Đầu vào/phụ thuộc:** P6 đã hoàn thành và có bàn giao; các hợp đồng liên quan xem mục kỹ thuật tương ứng.
 **Phạm vi:** FR-UX1-P07-01; B05/B06/B07. P7 cũ chỉ có checklist/rule và ba ví dụ ảnh không đủ đóng P7 UX1.3.
-**Trạng thái UX1.3 lúc lập kế hoạch:** yêu cầu mới; toàn bộ gói dưới đây ở trạng thái Chưa bắt đầu cho đến khi có evidence mới đúng phiên bản pylinac đã khóa.
+**Trạng thái hiện tại:** `ACTIVE_AFTER_P06_HANDOFF`; P6 đã hoàn tất VERIFY/HANDOFF ở source `6615820`, P7 bắt đầu bằng W01/W02/W03. Toàn bộ gói phân tích pylinac vẫn ở trạng thái Chưa bắt đầu cho đến khi có evidence mới đúng phiên bản đã khóa.
 
 Pylinac là engine đã chọn, không còn bước so sánh để quyết định có dùng hay không. Kiểm tương thích chỉ quyết định đặt dependency trong API hay `qa-image-worker`. P7 chỉ hoàn thành khi registry runtime bao phủ đủ 16 họ mô-đun chính, toàn bộ class/biến thể và các bài QA `contrib/One-Offs` công khai của wheel đã khóa.
 
