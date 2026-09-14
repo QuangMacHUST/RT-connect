@@ -1,0 +1,62 @@
+{
+  "evidence": "P5 staging Gamma worker execution",
+  "captured_at": "2026-09-14T14:28:42+07:00",
+  "environment": "staging",
+  "service_urls": {
+    "api": "https://gleaming-cooperation-staging.up.railway.app",
+    "web": "https://rt-connect-web-staging-staging.up.railway.app"
+  },
+  "release": {
+    "api_version": "b0a512ddaf643c613350c6646628240f141028ec",
+    "web_asset": "/assets/index-Bu2SfLWd.js",
+    "schema_revision": "20260913_0022",
+    "ready_status": "ready"
+  },
+  "case": {
+    "title": "P6 Staging Upload Smoke",
+    "case_id": "8bc86303-c7e9-4e1a-b012-cfbe2a07ba24",
+    "workflow_profile": "PSQA_GAMMA"
+  },
+  "input_repair": {
+    "reason": "The previously uploaded measurement artifact had no coordinate_frame and was rejected by forced revalidation.",
+    "local_fixture": "docs/fixtures/gamma-measurement-3d-v1-smoke.json",
+    "local_validation": "VALID",
+    "local_sha256": "99C9AC1CA38E3D3E83BE72B8851F73BCD9AF0B0C3D7A31A6FF8E6A3E2D2FE8A4",
+    "staging_action": "Uploaded a fresh copy as MEASUREMENT with logical role MEASUREMENT, then forced validation.",
+    "staging_validation": "VALID",
+    "staging_validation_errors": 0,
+    "staging_validation_warnings": 0
+  },
+  "gamma_run": {
+    "run_id": "aa563fac-239c-4928-8173-9addf054559f",
+    "dimensionality": "3D",
+    "reference": "gamma-rtdose-v1-smoke.dcm",
+    "evaluation": "gamma-measurement-3d-v1-smoke.json",
+    "dose_difference_percent": 3,
+    "distance_to_agreement_mm": 3,
+    "dose_threshold_percent": 10,
+    "pass_rate_target_percent": 95,
+    "dose_difference_mode": "RELATIVE",
+    "normalization": "GLOBAL",
+    "interpolation": "GRID",
+    "coverage_policy": "FULL_ROI",
+    "max_gamma": 2,
+    "status": "COMPLETED",
+    "result": "PASS",
+    "progress_percent": 100,
+    "attempt": 1,
+    "engine": "gamma-nd-p8.2",
+    "evaluated_points": 8,
+    "passing_points": 8,
+    "non_passing_points": 0,
+    "excluded_points": 0,
+    "coverage": 1,
+    "gamma_p95": 0,
+    "observed_via": "Authenticated staging Gamma workspace after enqueue; worker completion and persisted result were visible in the run history."
+  },
+  "interpretation": {
+    "passed": true,
+    "scope": "This closes the P5 staging background-processing Gamma smoke gate for the synthetic case. It does not claim clinical commissioning or close the later P8 reliability/resource/release gates.",
+    "remaining_p5_gate": "Send the real purge request for linked archived case dailyQA and verify the server rejects it while preserving its 2 machine-QA results and 6 trend points; this requires action-time confirmation because it is a destructive UI request even though rejection is expected."
+  }
+}
