@@ -307,15 +307,15 @@ Schema giao diện cơ bản:
 | Gamma tối đa | `gamma_cap_value` | Nâng cao; không được dùng để biến điểm fail thành pass |
 | Ngưỡng tỷ lệ đạt (%) | `pass_rate_target_percent` | Rule đánh giá RT-CONNECT, không phải input thay đổi map Gamma |
 
-Pylinac `gamma_2d` nhận DTA theo số phần tử/pixel, không nhận trực tiếp mm. `PylinacPsqaAdapter` phải:
+Pylinac `gamma_2d` nhận DTA theo số phần tử/pixel, không nhận trực tiếp mm. Ở bản triển khai hiện tại, `PylinacPsqaAdapter` không tự nội suy hoặc thay đổi lưới hai chiều; nó chỉ chấp nhận hai lưới đã tương thích. Adapter phải:
 
 1. kiểm hai dataset có cùng đại lượng, orientation và vùng chồng lấp;
-2. resample về `analysis_spacing_mm` được profile công bố;
-3. tính `distance_elements = distance_to_agreement_mm / analysis_spacing_mm`;
-4. chỉ gọi pylinac khi giá trị này biểu diễn được bằng số phần tử mà API nhận trong tolerance đã định; nếu không thì trả `GAMMA_DTA_GRID_INCOMPATIBLE`, không làm tròn âm thầm;
-5. lưu spacing trước/sau, transform/resampling, DTA mm và giá trị phần tử đã truyền vào snapshot.
+2. kiểm hai lưới có cùng shape, spacing, origin và pixel vuông; nếu không thì trả lỗi tương thích lưới;
+3. tính `distance_elements = distance_to_agreement_mm / pixel_spacing_mm`;
+4. chỉ gọi pylinac khi giá trị này là số nguyên dương mà API nhận; nếu không thì trả `GAMMA_DTA_GRID_INCOMPATIBLE`, không làm tròn âm thầm;
+5. lưu spacing, origin, DTA mm và giá trị phần tử đã truyền vào snapshot. Nội suy/resampling là capability nâng cao riêng, chỉ được mở sau khi có hợp đồng hình học, phép biến đổi được kiểm thử và bằng chứng không làm thay đổi tệp gốc.
 
-Lưu normalization, threshold denominator, per-field/composite, detector/phantom, thời điểm đo, transform, resampling và phạm vi chồng lấp. Không tự đăng ký dịch ảnh để làm đẹp tỷ lệ; mọi transform phải được người dùng chọn hoặc profile khai báo và hiện thông tin.
+Lưu normalization, threshold denominator, per-field/composite, detector/phantom, thời điểm đo, transform nếu có và phạm vi chồng lấp. Không tự đăng ký dịch ảnh để làm đẹp tỷ lệ; mọi transform hoặc resampling phải được người dùng chọn hoặc profile khai báo và hiện thông tin.
 
 Tài liệu pylinac hiện công bố Gamma 1D và 2D, không công bố Gamma 3D. Do đó:
 

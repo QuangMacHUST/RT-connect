@@ -618,7 +618,7 @@ P7 chỉ đóng khi mọi gói P07-CAL…P07-CONTRIB và bài nhập tay có b�
 
 ### Trình tự triển khai P8
 
-1. Nhận dữ liệu liều/vai trò P6 và bộ tích hợp pylinac P7; ánh xạ Gamma 1D/2D và chuyển DTA từ mm.
+1. Nhận dữ liệu liều/vai trò P6 và bộ tích hợp pylinac P7; ánh xạ Gamma 1D/2D và chuyển DTA từ mm theo lưới tương thích.
 2. Làm biểu mẫu Chênh lệch liều (%), DTA (mm), chuẩn hóa, ngưỡng liều thấp và xem trước vùng tính.
 3. Chạy tác vụ, hủy/thử lại, xem bản đồ/biểu đồ và vùng không tính được; kết quả Gamma 3D cũ chỉ đọc.
 4. Bàn giao kết quả PSQA và dữ liệu báo cáo/xu hướng; P9/P10 hoàn thiện hai giao diện sử dụng dữ liệu này.
@@ -628,14 +628,14 @@ P7 chỉ đóng khi mọi gói P07-CAL…P07-CONTRIB và bài nhập tay có b�
 ### Luồng thao tác P8
 
 1. Chọn PSQA, máy, liều tham chiếu và dữ liệu đo/đối chiếu; kiểm vai trò, đơn vị, dimension, spacing và hình học.
-2. Điền “Chênh lệch liều (%)”, “Khoảng cách DTA (mm)”, chuẩn hóa, ngưỡng liều thấp và ngưỡng tỷ lệ đạt; ROI/resampling/gamma cap nằm trong “Điều chỉnh”.
-3. RT-CONNECT chuyển DTA mm sang contract phần tử của pylinac theo profile spacing công bố; hiển thị tóm tắt trước khi enqueue.
+2. Điền “Chênh lệch liều (%)”, “Khoảng cách DTA (mm)”, chuẩn hóa, ngưỡng liều thấp và ngưỡng tỷ lệ đạt; ROI/gamma cap nằm trong “Điều chỉnh”. Resampling chưa mở ở bản hiện tại và không được thực hiện ngầm.
+3. RT-CONNECT kiểm tra hai lưới tương thích rồi chuyển DTA mm sang contract phần tử của pylinac theo spacing đã xác nhận; hiển thị tóm tắt trước khi enqueue.
 4. Chạy `gamma_1d` hoặc `gamma_2d`, theo dõi tiến độ, xem tỷ lệ/map/profile/phân bố, chọn đánh giá và lưu.
 
 ### Gói công việc P8
 
-- [x] P08-W01 — `PylinacPsqaAdapter` gọi đúng `pylinac.core.gamma.gamma_1d`/`pylinac.core.gamma.gamma_2d`; giữ input gốc, kiểm tra hình học, đổi DTA mm sang lưới hai chiều và provenance. Đã có kiểm thử thực thi thật trên Pylinac 3.47.0; còn cổng staging end-to-end ở P8-VERIFY.
-- [ ] P08-W02 — Form luôn hiện ΔD (%), DTA (mm), global/local, low-dose threshold và pass-rate target; nâng cao có ROI/resampling/gamma cap và profile định dạng đo.
+- [x] P08-W01 — `PylinacPsqaAdapter` gọi đúng `pylinac.core.gamma.gamma_1d`/`pylinac.core.gamma.gamma_2d`; giữ input gốc, kiểm tra hình học, đổi DTA mm sang lưới hai chiều tương thích và provenance. Đã có kiểm thử thực thi thật trên Pylinac 3.47.0; còn cổng staging end-to-end ở P8-VERIFY.
+- [ ] P08-W02 — Form luôn hiện ΔD (%), DTA (mm), global/local, low-dose threshold và pass-rate target; nâng cao có ROI/gamma cap và profile định dạng đo. Resampling chỉ được đánh dấu hoàn thành sau khi có capability, kiểm thử và bằng chứng riêng; không coi việc kiểm lưới hiện tại là resampling.
 - [ ] P08-W03 — Queue status/retry/cancel và kết quả 1D/2D gồm map/profile, histogram, pass rate, evaluated/excluded/invalid counts và cảnh báo vùng không đánh giá.
 - [ ] P08-W04 — Lịch sử/tính lại và dữ liệu cho PDF P9, xu hướng P10; kết quả nhập từ phần mềm khác có nhãn riêng; Gamma 3D cũ chỉ đọc với nguồn bộ tính, API mới từ chối 3D.
 - [ ] P08-VERIFY — Chạy các TC-UX1 dưới đây và nhóm lỗi dùng chung có liên quan; lưu actual/evidence theo SHA.
@@ -647,7 +647,7 @@ P7 chỉ đóng khi mọi gói P07-CAL…P07-CONTRIB và bài nhập tay có b�
 - TC-UX1-P08-S02 — Profile Gamma 1D hợp lệ trả vector Gamma/pass rate khớp gọi `gamma_1d` trực tiếp cùng input/tham số/version.
 - TC-UX1-P08-S03 — Hai plane 2D hợp lệ trả map/pass rate khớp `gamma_2d`; DTA mm được chuyển thành số phần tử đúng theo spacing snapshot.
 - TC-UX1-P08-S04 — Global/local và low-dose threshold đúng mẫu số; evaluated/excluded/invalid counts hiển thị và cộng đúng tổng.
-- TC-UX1-P08-S05 — Resampling được người dùng/profile chọn tạo grid chung, lưu spacing/transform và không thay file gốc.
+- TC-UX1-P08-S05 — Hai lưới tương thích được chấp nhận, DTA mm đổi thành số phần tử nguyên; lưới khác shape/origin/spacing bị dừng rõ ràng. Resampling chưa mở và không được chạy ngầm.
 - TC-UX1-P08-S06 — Mất trang rồi mở lại vẫn theo dõi đúng run; nhấn chạy lặp cùng idempotency không nhân đôi job.
 - TC-UX1-P08-S07 — Nhập tỷ lệ Gamma từ phần mềm khác lưu như số liệu nhập, không sinh map hoặc gắn nhãn pylinac.
 - TC-UX1-P08-S08 — Mở kết quả Gamma 3D lịch sử vẫn thấy đúng engine `gamma-nd-p8.2`, cấu hình và ảnh cũ; không tự tính lại bằng pylinac.

@@ -103,13 +103,13 @@ Danh mục thường dùng lọc theo loại thiết bị đang chọn. Ví dụ
 - “Ngưỡng chấp nhận tỷ lệ đạt (%)” của đơn vị;
 - nút “Kiểm tra dữ liệu” và “Phân tích”.
 
-Vùng “Điều chỉnh” chứa absolute/relative khi profile thực sự hỗ trợ, ROI, nội suy/resampling, gamma cap, hướng/plane và thông tin hiệu chuẩn. Không để hai tham số dose difference và DTA ẩn trong JSON hoặc cài đặt kỹ thuật.
+Vùng “Điều chỉnh” chứa absolute/relative khi profile thực sự hỗ trợ, ROI, gamma cap, hướng/plane và thông tin hiệu chuẩn. Nội suy/resampling chỉ xuất hiện sau khi capability này được kiểm thử và có hợp đồng hình học riêng; bản hiện tại không tự nội suy lưới hai chiều. Không để hai tham số dose difference và DTA ẩn trong JSON hoặc cài đặt kỹ thuật.
 
 ### 6.2. Ranh giới engine hiện hành
 
 Pylinac công bố `pylinac.core.gamma.gamma_1d` và `pylinac.core.gamma.gamma_2d`; danh mục công khai hiện không có Gamma 3D. Vì quyết định sản phẩm là pylinac chịu trách nhiệm engine, run PSQA mới chỉ được công bố cho 1D/2D đã ánh xạ. Không dùng engine 3D tự viết của RT-CONNECT để gắn nhãn “pylinac”.
 
-Đối với Gamma 2D, pylinac nhận khoảng cách theo số phần tử/pixel. RT-CONNECT phải kiểm spacing, đưa hai grid về cùng không gian đã công bố và chuyển DTA từ mm sang số phần tử theo một profile xác định. Nếu không biểu diễn đúng tiêu chí mm bằng grid/step đã chọn thì dừng trước khi chạy, không làm tròn âm thầm. Snapshot lưu DTA người dùng nhập, spacing trước/sau, phép resampling và giá trị truyền cho pylinac.
+Đối với Gamma 2D, pylinac nhận khoảng cách theo số phần tử/pixel. Bản hiện tại của RT-CONNECT chỉ nhận hai grid có cùng shape, origin, spacing và orientation; sau khi kiểm tra, hệ thống chuyển DTA từ mm sang số phần tử nguyên theo spacing đó. Nếu không biểu diễn đúng tiêu chí mm bằng grid/step đã chọn thì dừng trước khi chạy, không làm tròn âm thầm. Snapshot lưu DTA người dùng nhập, spacing/origin đã kiểm tra và giá trị truyền cho pylinac. Resampling là phạm vi nâng cao chưa mở, không được hiểu là hệ thống đã âm thầm thực hiện bước này.
 
 Kết quả Gamma 3D đã lưu từ engine RT-CONNECT cũ vẫn được mở ở chế độ chỉ đọc với nhãn nguồn engine thật. Mở lại không tính lại; tạo run 3D mới bị vô hiệu hóa cho đến khi pylinac phát hành capability tương ứng hoặc người dùng thay đổi quyết định engine bằng một revision tài liệu mới.
 
