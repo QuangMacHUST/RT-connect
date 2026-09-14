@@ -7,7 +7,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 COPY requirements.lock ./
+COPY requirements.pylinac-wheel.lock ./
 RUN python -m pip install --no-cache-dir --upgrade pip && python -m pip install --no-cache-dir -r requirements.lock
+RUN python -m pip install --no-cache-dir --force-reinstall --no-deps --require-hashes \
+    -r requirements.pylinac-wheel.lock \
+    && python -c "import pylinac; assert pylinac.__version__ == '3.47.0'"
 COPY alembic ./alembic
 COPY alembic.ini ./
 COPY src ./src
