@@ -24,6 +24,7 @@ from rt_connect_api.db.models import (
     GammaAnalysisRun,
     Machine,
     MachineQARun,
+    PylinacQARun,
     QACase,
     ReportRevision,
     Site,
@@ -736,6 +737,7 @@ def _case_reference_counts(session: Session, case_id: UUID) -> dict[str, int]:
     counts: dict[str, int] = {}
     for name, model, column in (
         ("machine_qa_runs", MachineQARun, MachineQARun.qa_case_id),
+        ("pylinac_qa_runs", PylinacQARun, PylinacQARun.qa_case_id),
         ("gamma_analysis_runs", GammaAnalysisRun, GammaAnalysisRun.qa_case_id),
         ("dvh_analysis_runs", DVHAnalysisRun, DVHAnalysisRun.qa_case_id),
         ("trend_points", TrendPoint, TrendPoint.qa_case_id),

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 
-import { ApiClientError, apiClient, type MachineQAMeasurement, type MachineQARunResource, type QAProtocolResource } from '../api/client'
+import { ApiClientError, apiClient, type MachineQAMeasurement, type MachineQARunResource, type PylinacQARunResource, type QAProtocolResource } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 
 type JsonRecord = Record<string, unknown>
@@ -18,7 +18,15 @@ function errorMessage(error: unknown): string {
       MACHINE_QA_PROTOCOL_NOT_FOUND: 'Không tìm thấy quy trình đánh giá đang chọn.',
       MACHINE_QA_PROTOCOL_INACTIVE: 'Quy trình đánh giá này chưa được kích hoạt.',
       MACHINE_QA_MEASUREMENT_INVALID: 'Số đo chưa hợp lệ. Hãy kiểm tra lại các trường bắt buộc.',
-      MACHINE_QA_EVALUATION_FAILED: 'Không thể đánh giá lượt kiểm tra. Hãy kiểm tra số đo rồi thử lại.'
+      MACHINE_QA_EVALUATION_FAILED: 'Không thể đánh giá lượt kiểm tra. Hãy kiểm tra số đo rồi thử lại.',
+      PYLINAC_INPUT_NOT_FOUND: 'Không tìm thấy tệp đầu vào trong bài kiểm tra này.',
+      PYLINAC_INPUT_COUNT_INVALID: 'Số lượng tệp đầu vào chưa đúng với bài kiểm tra.',
+      PYLINAC_EXECUTION_FAILED: 'Bộ tính Pylinac không thể phân tích tệp này. Hãy kiểm tra tệp rồi thử lại.',
+      PYLINAC_INPUT_NOT_AVAILABLE: 'Không thể đọc tệp từ kho lưu trữ. Hãy thử lại sau.',
+      PYLINAC_PARAMETER_INVALID: 'Tham số chưa hợp lệ. Hãy kiểm tra lại các trường nhập.',
+      PYLINAC_PARAMETER_UNSUPPORTED: 'Bài QA này không hỗ trợ một trong các tham số đã chọn.',
+      PYLINAC_RUNTIME_UNAVAILABLE: 'Bộ tính Pylinac hiện chưa sẵn sàng trên máy chủ.',
+      PYLINAC_ADAPTER_NOT_READY: 'Bài QA này đang được hoàn thiện giao diện phân tích.',
     }
     return messages[error.code] ?? 'Không thể hoàn tất thao tác. Hãy thử lại và kiểm tra kết nối.'
   }
@@ -129,6 +137,161 @@ function ruleDescription(rule: QAProtocolResource['rules'][number]): string {
   if (rule.rule_type === 'MAX') return `≤ ${textValue(rule.upper_limit ?? rule.tolerance)} ${rule.unit}`
   if (rule.rule_type === 'MIN') return `≥ ${textValue(rule.lower_limit ?? rule.tolerance)} ${rule.unit}`
   return rule.rule_type
+}
+
+function pylinacMetric(value: PylinacQARunResource | undefined, key: string): unknown {
+  const metrics = objectValue(value?.result_snapshot.metrics)
+  return metrics?.[key]
+}
+
+function PicketFencePage({ caseId, accessToken, title }: { caseId: string; accessToken: string; title: string }) {
+  const queryClient = useQueryClient()
+  const [selectedArtifactId, setSelectedArtifactId] = useState<string>()
+  const [tolerance, setTolerance] = useState('0.5')
+  const [cropMm, setCropMm] = useState('3')
+  const [mlc, setMlc] = useState('Millennium')
+  const [message, setMessage] = useState<string>()
+  const artifacts = useQuery({
+    queryKey: ['pylinac-artifacts', caseId, accessToken],
+    queryFn: () => apiClient.artifacts(accessToken, caseId), retry: false
+  })
+  const runs = useQuery({
+    queryKey: ['pylinac-runs', caseId, accessToken],
+    queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
+  })
+  const upload = useMutation({
+    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
+    onSuccess: (artifact) => {
+      setSelectedArtifactId(artifact.id)
+      setMessage('Đã tải tệp ảnh lên; có thể bắt đầu phân tích.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-artifacts', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const analyze = useMutation({
+    mutationFn: () => apiClient.createPylinacQARun(accessToken, caseId, {
+      catalog_key: 'PICKET_FENCE',
+      artifact_ids: [selectedArtifactId!],
+      parameters: { tolerance: Number(tolerance), crop_mm: Number(cropMm), mlc }
+    }),
+    onSuccess: (run) => {
+      setMessage(run.status === 'COMPLETED' ? 'Đã phân tích Picket Fence bằng Pylinac.' : 'Pylinac không thể hoàn tất phân tích; hãy xem thông báo lỗi bên dưới.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const assess = useMutation({
+    mutationFn: ({ runId, value }: { runId: string; value: 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' }) => apiClient.assessPylinacQARun(accessToken, runId, value),
+    onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const imageArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' || item.artifact_type === 'IMAGE')
+  const selected = imageArtifacts.find((item) => item.id === selectedArtifactId) ?? imageArtifacts[0]
+  const history = runs.data?.items ?? []
+  const latest = history[0]
+  const isBusy = upload.isPending || analyze.isPending || assess.isPending
+
+  return <div className="page">
+    <header className="page-header">
+      <div><p className="eyebrow">KIỂM TRA CHẤT LƯỢNG MÁY · PYLİNAC</p><h1>Kiểm tra hàng rào lá</h1><p>{title} · tải ảnh lên, chọn tham số và lưu kết quả phân tích.</p></div>
+      <div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">Quay lại kho QA</Link><span className="status-badge">BỘ TÍNH PYLINAC 3.47.0</span></div>
+    </header>
+    {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
+    <section className="panel machine-qa-panel">
+      <div className="panel-heading"><div><p className="eyebrow">TỆP ĐẦU VÀO</p><h2>Ảnh Picket Fence</h2></div><strong>{imageArtifacts.length}</strong></div>
+      <p>Chỉ phần bài QA cần ảnh mới hiện khu vực tải tệp. Ảnh gốc được giữ nguyên; Pylinac chịu trách nhiệm toàn bộ phép phân tích.</p>
+      <div className="machine-qa-actions"><label className="button-link">Chọn ảnh DICOM<input type="file" accept=".dcm,application/dicom" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>
+      {imageArtifacts.length > 0 && <label>Ảnh đang dùng<select value={selected?.id ?? ''} onChange={(event) => setSelectedArtifactId(event.target.value)}>{imageArtifacts.map((artifact, index) => <option key={artifact.id} value={artifact.id}>Ảnh {index + 1} · {artifact.original_filename}</option>)}</select></label>}
+      <div className="machine-qa-protocol-controls"><label>Dung sai (mm)<input type="number" min="0" step="0.01" value={tolerance} onChange={(event) => setTolerance(event.target.value)} /></label><label>Mẫu MLC<select value={mlc} onChange={(event) => setMlc(event.target.value)}><option value="Millennium">Millennium</option><option value="HD120">HD120</option><option value="Agility">Agility</option><option value="Halcyon">Halcyon</option></select></label><label>Cắt ảnh (mm)<input type="number" min="0" step="1" value={cropMm} onChange={(event) => setCropMm(event.target.value)} /></label></div>
+      <div className="machine-qa-actions"><button disabled={!selected || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+    </section>
+    {latest && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">KẾT QUẢ MỚI NHẤT</p><h2>{latest.name}</h2></div><span className={statusClass(latest.status)}>{statusLabel(latest.status)}</span></div>{latest.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích</h3><ul>{latest.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{latest.status === 'COMPLETED' && <><div className="machine-qa-run-meta"><span>Độ chính xác lá đạt: {textValue(pylinacMetric(latest, 'percent_leaves_passing'))}%</span><span>Số vạch: {textValue(pylinacMetric(latest, 'number_of_pickets'))}</span><span>Sai lệch lớn nhất: {textValue(pylinacMetric(latest, 'max_error_mm'))} mm</span></div>{latest.overlay_artifact_id && <button className="button-secondary" onClick={() => { void apiClient.downloadArtifact(accessToken, latest.overlay_artifact_id!).then((download) => window.open(download.url, '_blank', 'noopener,noreferrer')).catch((error) => setMessage(errorMessage(error))) }}>Mở ảnh phân tích</button>}<label>Đánh giá của người dùng<select value={latest.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => assess.mutate({ runId: latest.id, value: event.target.value as 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' })}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">Chưa có kết quả Picket Fence.</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td></tr>)}</tbody></table></div>}</section>
+  </div>
+}
+
+function StarshotPage({ caseId, accessToken, title }: { caseId: string; accessToken: string; title: string }) {
+  const queryClient = useQueryClient()
+  const [selectedArtifactId, setSelectedArtifactId] = useState<string>()
+  const [sid, setSid] = useState('1000')
+  const [dpi, setDpi] = useState('')
+  const [radius, setRadius] = useState('0.85')
+  const [tolerance, setTolerance] = useState('1')
+  const [startX, setStartX] = useState('')
+  const [startY, setStartY] = useState('')
+  const [message, setMessage] = useState<string>()
+  const artifacts = useQuery({
+    queryKey: ['pylinac-artifacts', caseId, accessToken],
+    queryFn: () => apiClient.artifacts(accessToken, caseId), retry: false
+  })
+  const runs = useQuery({
+    queryKey: ['pylinac-runs', caseId, accessToken],
+    queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
+  })
+  const upload = useMutation({
+    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'IMAGE', 'EVALUATION'),
+    onSuccess: (artifact) => {
+      setSelectedArtifactId(artifact.id)
+      setMessage('Đã tải ảnh kiểm tra sao lên; có thể bắt đầu phân tích.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-artifacts', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const analyze = useMutation({
+    mutationFn: () => {
+      const parameters: Record<string, unknown> = {
+        sid: Number(sid), radius: Number(radius), tolerance: Number(tolerance)
+      }
+      if (dpi.trim()) parameters.dpi = Number(dpi)
+      if (startX.trim() || startY.trim()) parameters.start_point = { x: Number(startX), y: Number(startY) }
+      return apiClient.createPylinacQARun(accessToken, caseId, {
+        catalog_key: 'STARSHOT', artifact_ids: [selectedArtifactId!], parameters
+      })
+    },
+    onSuccess: (run) => {
+      setMessage(run.status === 'COMPLETED' ? 'Đã phân tích kiểm tra sao bằng Pylinac.' : 'Pylinac không thể hoàn tất phân tích; hãy xem thông báo lỗi bên dưới.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const assess = useMutation({
+    mutationFn: ({ runId, value }: { runId: string; value: 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' }) => apiClient.assessPylinacQARun(accessToken, runId, value),
+    onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const imageArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' || item.artifact_type === 'IMAGE')
+  const selected = imageArtifacts.find((item) => item.id === selectedArtifactId) ?? imageArtifacts[0]
+  const history = runs.data?.items ?? []
+  const latest = history[0]
+  const isBusy = upload.isPending || analyze.isPending || assess.isPending
+  const center = pylinacMetric(latest, 'circle_center_x_y')
+
+  return <div className="page">
+    <header className="page-header">
+      <div><p className="eyebrow">KIỂM TRA CHẤT LƯỢNG MÁY · PYLİNAC</p><h1>Kiểm tra sao</h1><p>{title} · chọn tâm phân tích, theo dõi độ lệch và lưu lịch sử kết quả.</p></div>
+      <div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">Quay lại kho QA</Link><span className="status-badge">BỘ TÍNH PYLİNAC 3.47.0</span></div>
+    </header>
+    {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
+    <section className="panel machine-qa-panel">
+      <div className="panel-heading"><div><p className="eyebrow">TỆP ĐẦU VÀO</p><h2>Ảnh kiểm tra sao</h2></div><strong>{imageArtifacts.length}</strong></div>
+      <p>Khu vực tệp chỉ hiện vì bài này cần ảnh. Có thể để Pylinac tự tìm tâm hoặc nhập tâm bắt đầu đã chọn trên ảnh để chạy lại một phiên bản mới.</p>
+      <div className="machine-qa-actions"><label className="button-link">Chọn ảnh DICOM hoặc ảnh đo<input type="file" accept=".dcm,.tif,.tiff,.png,.jpg,.jpeg,application/dicom,image/*" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>
+      {imageArtifacts.length > 0 && <label>Ảnh đang dùng<select value={selected?.id ?? ''} onChange={(event) => setSelectedArtifactId(event.target.value)}>{imageArtifacts.map((artifact, index) => <option key={artifact.id} value={artifact.id}>Ảnh {index + 1} · {artifact.original_filename}</option>)}</select></label>}
+      <div className="machine-qa-protocol-controls">
+        <label>Khoảng cách nguồn–ảnh (mm)<input type="number" min="0" step="0.1" value={sid} onChange={(event) => setSid(event.target.value)} /></label>
+        <label>Mật độ điểm ảnh (dpi, nếu ảnh thiếu thang đo)<input type="number" min="0" step="0.1" value={dpi} onChange={(event) => setDpi(event.target.value)} placeholder="Tự đọc từ ảnh" /></label>
+        <label>Bán kính phân tích<input type="number" min="0.2" max="0.95" step="0.01" value={radius} onChange={(event) => setRadius(event.target.value)} /></label>
+        <label>Dung sai (mm)<input type="number" min="0" step="0.01" value={tolerance} onChange={(event) => setTolerance(event.target.value)} /></label>
+      </div>
+      <div className="machine-qa-protocol-controls">
+        <label>Tâm bắt đầu X (pixel, tùy chọn)<input type="number" step="0.1" value={startX} onChange={(event) => setStartX(event.target.value)} /></label>
+        <label>Tâm bắt đầu Y (pixel, tùy chọn)<input type="number" step="0.1" value={startY} onChange={(event) => setStartY(event.target.value)} /></label>
+      </div>
+      <div className="machine-qa-actions"><button disabled={!selected || isBusy || ((startX.trim() === '') !== (startY.trim() === ''))} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+    </section>
+    {latest && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">KẾT QUẢ MỚI NHẤT</p><h2>{latest.name}</h2></div><span className={statusClass(latest.status)}>{statusLabel(latest.status)}</span></div>{latest.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích</h3><ul>{latest.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{latest.status === 'COMPLETED' && <><div className="machine-qa-run-meta"><span>Độ lệch đường kính: {textValue(pylinacMetric(latest, 'circle_diameter_mm'))} mm</span><span>Tâm phân tích: {Array.isArray(center) ? `${textValue(center[0])}, ${textValue(center[1])}` : 'Tự động'}</span><span>Số tia: {Array.isArray(pylinacMetric(latest, 'angles')) ? (pylinacMetric(latest, 'angles') as unknown[]).length : '—'}</span></div>{latest.overlay_artifact_id && <button className="button-secondary" onClick={() => { void apiClient.downloadArtifact(accessToken, latest.overlay_artifact_id!).then((download) => window.open(download.url, '_blank', 'noopener,noreferrer')).catch((error) => setMessage(errorMessage(error))) }}>Mở ảnh phân tích</button>}<label>Đánh giá của người dùng<select value={latest.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => assess.mutate({ runId: latest.id, value: event.target.value as 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' })}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">Chưa có kết quả kiểm tra sao.</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td></tr>)}</tbody></table></div>}</section>
+  </div>
 }
 
 export function MachineQAPage() {
@@ -242,6 +405,12 @@ export function MachineQAPage() {
   }
   if (!selectedCase) {
     return <div className="page"><section className="alert alert--error"><h1>Không tìm thấy bài kiểm tra</h1><p>Bài này không thuộc đơn vị hiện tại hoặc đã bị lưu trữ.</p><Link className="button-link" to="/app/qa">Quay lại kho QA</Link></section></div>
+  }
+  if (selectedCase.qa_definition_key === 'PICKET_FENCE' && accessToken) {
+    return <PicketFencePage caseId={caseId} accessToken={accessToken} title={selectedCase.title} />
+  }
+  if (selectedCase.qa_definition_key === 'STARSHOT' && accessToken) {
+    return <StarshotPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} />
   }
 
   const metrics = records(activeRun?.result_snapshot.metrics)

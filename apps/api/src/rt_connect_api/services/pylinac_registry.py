@@ -305,6 +305,21 @@ def unresolved_catalog_keys() -> tuple[str, ...]:
     )
 
 
+def runtime_binding(catalog_key: str) -> RuntimeBinding | None:
+    """Return the execution binding for a catalogue key, if it is registered."""
+
+    return _BINDINGS_BY_KEY.get(catalog_key)
+
+
+def resolve_runtime_symbol(catalog_key: str) -> tuple[Any | None, str | None]:
+    """Resolve one registered symbol without exposing import details to callers."""
+
+    binding = runtime_binding(catalog_key)
+    if binding is None:
+        return None, f"No runtime binding is registered for {catalog_key}."
+    return _resolve(binding.import_path)
+
+
 def registry_summary() -> RegistrySummary:
     capabilities = resolve_capabilities()
     unresolved = unresolved_catalog_keys()

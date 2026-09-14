@@ -141,6 +141,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Ảnh DICOM hoặc ảnh có thang đo",),
         ("Chọn tâm", "Bán kính", "Ngưỡng tìm đỉnh", "Độ rộng nửa cực đại", "Dung sai"),
         engine_class="Starshot",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(
@@ -359,10 +360,11 @@ _CATALOG: tuple[dict[str, object], ...] = (
         "Phân tích vị trí lá và vạch trên ảnh trường Picket Fence.",
         "IMAGE",
         ("Ảnh DICOM EPID hoặc ảnh có thang đo",),
-        ("Hướng ảnh", "Cắt ảnh", "Mẫu MLC", "Dung sai", "Dung sai hành động", "Độ võng"),
-        engine_class="PicketFence",
-        supports_manual_adjustment=True,
-    ),
+         ("Hướng ảnh", "Cắt ảnh", "Mẫu MLC", "Dung sai", "Dung sai hành động", "Độ võng"),
+         engine_class="PicketFence",
+         supports_manual_adjustment=True,
+         implementation_status="READY",
+     ),
     _item(
         "WINSTON_LUTZ",
         "Kiểm tra Winston–Lutz",

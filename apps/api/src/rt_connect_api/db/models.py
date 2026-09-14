@@ -707,6 +707,51 @@ class MachineQARun(TimestampedIdMixin, Base):
     )
 
 
+class PylinacQARun(TimestampedIdMixin, Base):
+    """A durable execution snapshot produced by a locked pylinac capability."""
+
+    __tablename__ = "pylinac_qa_runs"
+    __table_args__ = (
+        Index("ix_pylinac_qa_runs_organization_case", "organization_id", "qa_case_id"),
+        Index("ix_pylinac_qa_runs_organization_status", "organization_id", "status"),
+        Index("ix_pylinac_qa_runs_organization_catalog", "organization_id", "catalog_key"),
+    )
+
+    organization_id: Mapped[UUID] = mapped_column(
+        ForeignKey("organizations.id"), nullable=False, index=True
+    )
+    qa_case_id: Mapped[UUID] = mapped_column(ForeignKey("qa_cases.id"), nullable=False, index=True)
+    machine_id: Mapped[UUID] = mapped_column(ForeignKey("machines.id"), nullable=False, index=True)
+    catalog_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    engine_class: Mapped[str] = mapped_column(String(160), nullable=False)
+    engine_version: Mapped[str] = mapped_column(String(80), nullable=False)
+    package_fingerprint: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="RUNNING")
+    assessment_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    parameters_snapshot: Mapped[dict[str, object]] = mapped_column(
+        JSON, nullable=False, default=dict
+    )
+    input_snapshot: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    result_snapshot: Mapped[dict[str, object]] = mapped_column(JSON, nullable=False, default=dict)
+    warning_snapshot: Mapped[list[dict[str, object]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    error_snapshot: Mapped[list[dict[str, object]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    overlay_artifact_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("artifacts.id"), nullable=True, index=True
+    )
+    supersedes_run_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("pylinac_qa_runs.id"), nullable=True, index=True
+    )
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by_user_identity_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("user_identities.id"), nullable=True, index=True
+    )
+
+
 class TrendPoint(TimestampedIdMixin, Base):
     """Small read-model projection pointing back to a completed QA run."""
 

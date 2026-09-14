@@ -271,6 +271,34 @@ export type MachineQARunResource = {
   updated_at: string
   protocol: QAProtocolResource
 }
+export type PylinacQARunResource = {
+  id: string
+  catalog_key: string
+  name: string
+  family: string
+  status: string
+  assessment_status: string | null
+  engine_class: string
+  engine_version: string
+  package_fingerprint: string
+  parameters: Record<string, unknown>
+  input_files: Array<{
+    filename: string
+    artifact_type: string
+    modality: string | null
+    byte_size: number
+    sha256: string
+    logical_role: string
+  }>
+  result_snapshot: Record<string, unknown>
+  warning_snapshot: Array<Record<string, unknown>>
+  error_snapshot: Array<Record<string, unknown>>
+  overlay_artifact_id: string | null
+  started_at: string | null
+  completed_at: string | null
+  created_at: string
+  updated_at: string
+}
 export type MachineQACompareResource = {
   left_run_id: string
   right_run_id: string
@@ -1012,6 +1040,18 @@ const machineQARunSchema = z.object({
   error_snapshot: z.array(z.record(z.string(), z.unknown())),
   supersedes_run_id: z.string().uuid().nullable(), started_at: z.string().nullable(),
   completed_at: z.string().nullable(), created_at: z.string(), updated_at: z.string(), protocol: qaProtocolSchema
+})
+const pylinacQARunSchema = z.object({
+  id: z.string().uuid(), catalog_key: z.string(), name: z.string(), family: z.string(), status: z.string(),
+  assessment_status: z.string().nullable(), engine_class: z.string(), engine_version: z.string(),
+  package_fingerprint: z.string(), parameters: z.record(z.string(), z.unknown()),
+  input_files: z.array(z.object({
+    filename: z.string(), artifact_type: z.string(), modality: z.string().nullable(),
+    byte_size: z.number().int().nonnegative(), sha256: z.string(), logical_role: z.string()
+  })),
+  result_snapshot: z.record(z.string(), z.unknown()), warning_snapshot: z.array(z.record(z.string(), z.unknown())),
+  error_snapshot: z.array(z.record(z.string(), z.unknown())), overlay_artifact_id: z.string().uuid().nullable(),
+  started_at: z.string().nullable(), completed_at: z.string().nullable(), created_at: z.string(), updated_at: z.string()
 })
 const gammaRunSchema = z.object({
   id: z.string().uuid(), organization_id: z.string().uuid(), qa_case_id: z.string().uuid(),
@@ -2162,6 +2202,26 @@ export class ApiClient {
 
   rerunMachineQARun(accessToken: string, runId: string): Promise<MachineQARunResource> {
     return this.request(`/machine-qa-runs/${runId}/rerun`, machineQARunSchema, accessToken, { method: 'POST' })
+  }
+
+  createPylinacQARun(accessToken: string, caseId: string, body: {
+    catalog_key: string; artifact_ids: string[]; parameters?: Record<string, unknown>
+  }): Promise<PylinacQARunResource> {
+    return this.request(`/qa-cases/${caseId}/pylinac-runs`, pylinacQARunSchema, accessToken, {
+      method: 'POST', body: JSON.stringify(body)
+    })
+  }
+
+  pylinacQARuns(accessToken: string, caseId: string): Promise<{ items: PylinacQARunResource[]; total: number }> {
+    return this.get(`/qa-cases/${caseId}/pylinac-runs`, z.object({
+      items: z.array(pylinacQARunSchema), total: z.number().int()
+    }), accessToken)
+  }
+
+  assessPylinacQARun(accessToken: string, runId: string, assessmentStatus: 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED', note?: string): Promise<PylinacQARunResource> {
+    return this.request(`/pylinac-qa-runs/${runId}/assessment`, pylinacQARunSchema, accessToken, {
+      method: 'POST', body: JSON.stringify({ assessment_status: assessmentStatus, note: note ?? null })
+    })
   }
 
   compareMachineQARuns(accessToken: string, runId: string, otherRunId: string): Promise<MachineQACompareResource> {
