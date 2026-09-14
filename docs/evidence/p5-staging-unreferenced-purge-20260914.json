@@ -1,0 +1,42 @@
+{
+  "schema_version": "rt-connect.p5-staging-unreferenced-purge.v1",
+  "captured_at_utc": "2026-09-14T02:44:04Z",
+  "phase": "P5",
+  "status": "STAGING_VERIFIED_SLICE",
+  "environment": "staging",
+  "case_label": "Staging Purge Verification 20260914",
+  "scope": "Xóa vĩnh viễn duy nhất một hồ sơ thử nghiệm tổng hợp đã lưu trữ, không có liên kết dữ liệu.",
+  "checks": [
+    {
+      "name": "precondition",
+      "status": "PASS",
+      "observed": "Hồ sơ mới tạo trên staging, không có tệp đầu vào, chưa chạy phân tích và đã được lưu trữ trước khi xóa."
+    },
+    {
+      "name": "confirmation",
+      "status": "PASS",
+      "observed": "Hộp xác nhận xóa vĩnh viễn đúng hồ sơ đã được chấp nhận; không thao tác trên hồ sơ có liên kết."
+    },
+    {
+      "name": "purge",
+      "status": "PASS",
+      "observed": "Sau khi tải lại trang và mở lại thùng rác, hồ sơ tạm không còn xuất hiện."
+    },
+    {
+      "name": "unrelated_data",
+      "status": "PASS",
+      "observed": "Hồ sơ dailyQA vẫn còn trong thùng rác; P6 Staging Upload Smoke và P11 E2E Synthetic QA 20260910 B7C3 vẫn còn. Không có dữ liệu bệnh nhân bị tác động."
+    }
+  ],
+  "not_deleted": [
+    {
+      "case_label": "dailyQA",
+      "reason": "Máy chủ từ chối đúng vì còn kết quả hoặc dữ liệu liên quan."
+    }
+  ],
+  "remaining_gates": [
+    "Từ chối xóa vĩnh viễn hồ sơ còn kết quả, tệp, báo cáo hoặc tác vụ nền liên kết trên staging.",
+    "Kiểm thao tác lặp sau lỗi mạng và phản hồi khi tiến trình nền đang chạy trên staging.",
+    "Đối chiếu không mất tệp, kết quả, báo cáo hoặc xu hướng sau toàn bộ vòng đời."
+  ]
+}

@@ -381,7 +381,7 @@ Chức năng đã được người dùng chấp nhận vẫn hoạt động, la
 **Đầu vào/phụ thuộc:** P4 đã hoàn thành và có bàn giao; các hợp đồng liên quan xem mục kỹ thuật tương ứng.
 **Phạm vi:** FR-UX1-P05-01; B05/B08. Thay kho hồ sơ làm điểm bắt đầu bằng danh mục bài.
 **Trạng thái UX1 lúc lập kế hoạch:** yêu cầu mới; chưa được tính là hoàn thành từ evidence cũ.
-**Trạng thái hiện tại:** `STAGING_VERIFIED_SLICE`; danh mục, lịch sử, hồ sơ cũ chưa phân loại và vòng lưu trữ/khôi phục đã được kiểm chứng trên staging ở bản `544a40c1a6ca6697f8b951002411ed97484ff59d`. Vòng kiểm tra hoàn tác bổ sung ngày 2026-09-14 đã lưu trữ rồi khôi phục lại hồ sơ tổng hợp có liên kết, xác nhận dữ liệu đầu vào vẫn còn; bằng chứng: `docs/evidence/p5-staging-reversible-lifecycle-20260914.json`. P5 chưa đóng vì còn cổng xóa vĩnh viễn có kiểm soát, lỗi mạng và tiến trình nền trên staging.
+**Trạng thái hiện tại:** `STAGING_VERIFIED_SLICE`; danh mục, lịch sử, hồ sơ cũ chưa phân loại và vòng lưu trữ/khôi phục đã được kiểm chứng trên staging ở bản `544a40c1a6ca6697f8b951002411ed97484ff59d`. Vòng kiểm tra hoàn tác bổ sung ngày 2026-09-14 đã lưu trữ rồi khôi phục lại hồ sơ tổng hợp có liên kết, xác nhận dữ liệu đầu vào vẫn còn; bằng chứng: `docs/evidence/p5-staging-reversible-lifecycle-20260914.json`. Ngày 2026-09-14 đã xóa vĩnh viễn thành công đúng một hồ sơ thử nghiệm tổng hợp mới tạo, không có tệp đầu vào và không có liên kết dữ liệu; bằng chứng: `docs/evidence/p5-staging-unreferenced-purge-20260914.json`. Hồ sơ `dailyQA` có liên kết vẫn được giữ nguyên vì máy chủ từ chối xóa đúng. P5 chưa đóng vì còn cổng từ chối hồ sơ có liên kết, lỗi mạng và tiến trình nền trên staging.
 Kiểm tra công khai sau triển khai đã đạt trên ứng viên `a4bed90b79aa0bc758e598c424ac0060379e98c0` với readiness `20260913_0022` và đúng các tuyến P5; bằng chứng: `docs/evidence/p5-staging-public-recheck-20260913.json`. Đây chỉ là kiểm tra nguồn/runtime công khai, chưa là nghiệm thu thao tác xác thực.
 Kiểm tra công khai mới nhất sau chốt xác nhận xóa đã đạt: web hiển thị đúng danh mục trực tiếp, có hộp xác nhận xóa vĩnh viễn và thông báo hủy; API vẫn `200 READY`. Bằng chứng: `docs/evidence/p5-staging-public-recheck-20260914-84ad0dc.json`; đây vẫn không thay cho kiểm tra xác thực và vòng đời dữ liệu.
 
@@ -411,12 +411,12 @@ Danh mục hiện có 63 bài theo sổ toàn bộ danh mục pylinac và bài n
 
 - [x] P05-W01 — Tạo danh mục có phiên bản và khóa bài; đã đưa đủ 63 mục từ sổ pylinac vào lớp dữ liệu, phân biệt bài nhập số đo, bài dùng hình ảnh, bài dùng liều và bài có điều khiển tay. Khóa bài chưa có bộ tích hợp để không tạo cảm giác đã sẵn sàng.
 - [x] P05-W02 — Làm danh mục, bắt đầu bài, lưu hồ sơ và lịch sử; giữ thư mục lồng nhau nhưng không bắt người dùng phải tạo thư mục. Khóa chống gửi lại yêu cầu đã được thêm cho thao tác bắt đầu bài.
-- [x] P05-W03 — Đã có lưu trữ có thể khôi phục, thùng rác, khôi phục và xóa vĩnh viễn có kiểm tra liên kết kết quả/tệp/báo cáo. Lát cắt staging đã kiểm chứng lưu trữ/khôi phục trên hồ sơ tổng hợp; xóa vĩnh viễn trên staging chỉ thực hiện sau khi xác nhận dữ liệu thử riêng.
+- [x] P05-W03 — Đã có lưu trữ có thể khôi phục, thùng rác, khôi phục và xóa vĩnh viễn có kiểm tra liên kết kết quả/tệp/báo cáo. Lát cắt staging đã kiểm chứng lưu trữ/khôi phục trên hồ sơ tổng hợp; đã xóa vĩnh viễn thành công một hồ sơ tổng hợp riêng không liên kết sau khi xác nhận đúng phạm vi. Hồ sơ có liên kết vẫn bị từ chối và được giữ nguyên.
 - [x] P05-W04 — Đã giữ tương thích hồ sơ cũ bằng trường phân loại có thể để trống; hồ sơ cũ vẫn mở được và có thể gắn bài phù hợp từ giao diện. Không tự đoán loại bài để tránh gắn nhầm engine; liên kết tệp, kết quả và báo cáo không bị đổi.
-- [ ] P05-VERIFY — Chạy các TC-UX1 dưới đây và nhóm lỗi dùng chung có liên quan; lưu actual/evidence theo SHA.
+- [ ] P05-VERIFY — Chạy các TC-UX1 dưới đây và nhóm lỗi dùng chung có liên quan; lưu actual/evidence theo SHA. Lát cắt xóa hồ sơ không liên kết trên staging đã PASS; các trường hợp hồ sơ có liên kết, lỗi mạng và tiến trình nền trên staging vẫn mở.
 - [ ] P05-HANDOFF — Cập nhật tiến độ, dữ liệu/migration/tuyến bị tác động, giới hạn hỗ trợ và bước tiếp theo.
 
-**Đã kiểm tra cục bộ:** migration `20260913_0021` và `20260913_0022` nâng thành công; nhóm kiểm thử P5 đạt 28/28; toàn bộ kiểm thử máy chủ đạt; ruff và mypy nghiêm ngặt đạt; giao diện đạt typecheck, lint, bản dựng sản xuất và toàn bộ kiểm thử **12/12 tệp, 33/33 bài**. Cơ chế xóa vĩnh viễn lặp lại an toàn đã được kiểm ở commit `57c08e7`: lần gửi lại sau khi xóa thành công trả trạng thái đã xóa, không phát sinh lỗi giả và không dọn lan dữ liệu khác. Kiểm thử bổ sung xác nhận hồ sơ có tác vụ Gamma đang chờ hoặc đang chạy đều bị từ chối xóa và giữ nguyên dữ liệu. Trang chi tiết nhập số đo đã được Việt hóa và ẩn mã lượt/chỉ số/cấu hình thô ở commit `aaada4e`. Kiểm chứng staging danh mục/lịch sử/lưu trữ/khôi phục: [evidence P5](docs/evidence/p5-staging-authenticated-ui-20260914.json). Xóa vĩnh viễn staging và lỗi mạng/tiến trình nền vẫn mở.
+**Đã kiểm tra cục bộ:** migration `20260913_0021` và `20260913_0022` nâng thành công; nhóm kiểm thử P5 đạt 28/28; toàn bộ kiểm thử máy chủ đạt; ruff và mypy nghiêm ngặt đạt; giao diện đạt typecheck, lint, bản dựng sản xuất và toàn bộ kiểm thử **12/12 tệp, 33/33 bài**. Cơ chế xóa vĩnh viễn lặp lại an toàn đã được kiểm ở commit `57c08e7`: lần gửi lại sau khi xóa thành công trả trạng thái đã xóa, không phát sinh lỗi giả và không dọn lan dữ liệu khác. Kiểm thử bổ sung xác nhận hồ sơ có tác vụ Gamma đang chờ hoặc đang chạy đều bị từ chối xóa và giữ nguyên dữ liệu. Trang chi tiết nhập số đo đã được Việt hóa và ẩn mã lượt/chỉ số/cấu hình thô ở commit `aaada4e`. Kiểm chứng staging danh mục/lịch sử/lưu trữ/khôi phục: [evidence P5](docs/evidence/p5-staging-authenticated-ui-20260914.json). Lát cắt xóa vĩnh viễn hồ sơ thử nghiệm riêng không liên kết đã PASS: [evidence purge staging](docs/evidence/p5-staging-unreferenced-purge-20260914.json). Các trường hợp từ chối dữ liệu có liên kết, lỗi mạng và tiến trình nền trên staging vẫn mở.
 
 ### Trường hợp chạy đúng P5
 
@@ -424,6 +424,7 @@ Danh mục hiện có 63 bài theo sổ toàn bộ danh mục pylinac và bài n
 - TC-UX1-P05-S02 — Lọc/mở đúng bài và lần tính cũ; đổi tên/di chuyển thư mục không làm mất tệp/kết quả.
 - TC-UX1-P05-S03 — Xóa loại khỏi lịch sử và xu hướng; khôi phục đúng một lần; chọn nhiều có kết quả từng mục.
 - TC-UX1-P05-S04 — Purge chỉ dọn dữ liệu/tệp thuộc phạm vi đã xác nhận và không còn dùng chung.
+- TC-UX1-P05-S05 — Hồ sơ thử nghiệm tổng hợp mới, đã lưu trữ và không có dữ liệu liên quan được xóa vĩnh viễn sau một lần xác nhận; tải lại thùng rác không còn hồ sơ đó và các hồ sơ khác vẫn nguyên vẹn.
 
 ### Trường hợp lỗi và phục hồi P5
 
@@ -438,7 +439,7 @@ Danh mục hiện có 63 bài theo sổ toàn bộ danh mục pylinac và bài n
 
 Danh mục đúng đầu vào, dữ liệu cũ mở được, trash/restore/purge và liên kết lịch sử có test DB/worker/storage; không coi chỉ xóa hàng trên UI là đạt.
 
-**Các điều kiện còn mở trước P5-VERIFY:** xóa vĩnh viễn trên staging với dữ liệu thử không liên kết và trường hợp còn liên kết; kiểm thao tác lặp sau lỗi mạng; kiểm phản hồi khi tiến trình nền đang chạy; xác nhận không mất tệp, kết quả, báo cáo hoặc xu hướng sau toàn bộ vòng đời. Danh mục, lịch sử, hồ sơ cũ và lưu trữ/khôi phục đã có evidence staging. Chỉ sau khi các kiểm tra còn lại có bằng chứng mới được mở P6.
+**Các điều kiện còn mở trước P5-VERIFY:** trường hợp staging hồ sơ có liên kết phải bị từ chối và giữ nguyên; kiểm thao tác lặp sau lỗi mạng; kiểm phản hồi khi tiến trình nền đang chạy; xác nhận không mất tệp, kết quả, báo cáo hoặc xu hướng sau toàn bộ vòng đời. Lát cắt hồ sơ thử nghiệm không liên kết đã có evidence staging. Danh mục, lịch sử, hồ sơ cũ và lưu trữ/khôi phục đã có evidence staging. Chỉ sau khi các kiểm tra còn lại có bằng chứng mới được mở P6.
 
 ## P6 — Đầu vào theo bài và kiểm tra dữ liệu
 
