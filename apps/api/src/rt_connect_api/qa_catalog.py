@@ -153,6 +153,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Ảnh trường mở", "Ảnh trường điều biến"),
         ("Dung sai", "Vùng quan tâm", "Độ lệch"),
         engine_class="DRGS",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(
@@ -164,6 +165,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Ảnh trường mở", "Ảnh trường điều biến"),
         ("Dung sai", "Vùng quan tâm", "Độ lệch"),
         engine_class="DRMLC",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(
@@ -175,6 +177,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Ảnh trường mở", "Ảnh trường điều biến"),
         ("Dung sai", "Vùng quan tâm", "Độ lệch"),
         engine_class="DRCS",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(

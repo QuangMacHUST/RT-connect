@@ -609,6 +609,138 @@ def _execute_winston_lutz_multi_target(
         ) from exc
 
 
+def _pair_of_numbers(parameters: dict[str, object], key: str) -> tuple[float, float]:
+    value = parameters.get(key)
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_INVALID", f"Tham số {key} phải có đúng hai giá trị số."
+        )
+    first, second = value
+    if (
+        isinstance(first, bool)
+        or isinstance(second, bool)
+        or not isinstance(first, int | float)
+        or not isinstance(second, int | float)
+    ):
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_INVALID", f"Tham số {key} phải có đúng hai giá trị số."
+        )
+    return float(first), float(second)
+
+
+def _vmat_parameters(
+    catalog_key: str, parameters: dict[str, object]
+) -> tuple[dict[str, object], dict[str, object]]:
+    constructor_keys = {"ground", "check_inversion"}
+    analysis_keys = {"tolerance", "segment_size_mm", "invert_image_order"}
+    if catalog_key == "VMAT_DRCS":
+        analysis_keys.add("collimator_radial_distances")
+    unknown = set(parameters) - constructor_keys - analysis_keys
+    if unknown:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_UNSUPPORTED", "Có tham số không được hỗ trợ cho bài VMAT đã chọn."
+        )
+
+    constructor: dict[str, object] = {}
+    for key in constructor_keys:
+        if key in parameters:
+            constructor[key] = _bool(parameters, key)
+    analysis: dict[str, object] = {}
+    if "tolerance" in parameters:
+        analysis["tolerance"] = _number(parameters, "tolerance", minimum=0)
+    if "segment_size_mm" in parameters:
+        width, length = _pair_of_numbers(parameters, "segment_size_mm")
+        if width <= 0 or length <= 0:
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID", "Kích thước đoạn phân tích phải lớn hơn 0."
+            )
+        analysis["segment_size_mm"] = (width, length)
+    if "invert_image_order" in parameters:
+        analysis["invert_image_order"] = _bool(parameters, "invert_image_order")
+    if catalog_key == "VMAT_DRCS" and "collimator_radial_distances" in parameters:
+        first, second = _pair_of_numbers(parameters, "collimator_radial_distances")
+        if first < 0 or second < first:
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID",
+                "Khoảng cách xuyên tâm chuẩn trực chưa hợp lệ.",
+            )
+        analysis["collimator_radial_distances"] = (first, second)
+    return constructor, analysis
+
+
+def _execute_vmat(
+    catalog_key: str, source_path: Path, parameters: dict[str, object]
+) -> PylinacExecutionResult:
+    symbol, _ = resolve_runtime_symbol(catalog_key)
+    if symbol is None:
+        raise PylinacAdapterError(
+            "PYLINAC_RUNTIME_UNAVAILABLE", "Bộ phân tích VMAT chưa sẵn sàng trên máy chủ."
+        )
+    if not source_path.is_dir():
+        raise PylinacAdapterError(
+            "PYLINAC_INPUT_COUNT_INVALID", "Bài VMAT yêu cầu một cặp ảnh mở và ảnh động."
+        )
+    image_paths = sorted(path for path in source_path.iterdir() if path.is_file())
+    if len(image_paths) != 2:
+        raise PylinacAdapterError(
+            "PYLINAC_INPUT_COUNT_INVALID", "Bài VMAT yêu cầu đúng hai ảnh đầu vào."
+        )
+    constructor, analysis = _vmat_parameters(catalog_key, parameters)
+    try:
+        engine = symbol(image_paths, **constructor)
+        engine.analyze(**analysis)
+        raw_result = engine.results_data(as_dict=True)
+        result = _json_safe(raw_result)
+        if not isinstance(result, dict):
+            raise PylinacAdapterError(
+                "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả không hợp lệ."
+            )
+        from matplotlib import pyplot as plt  # type: ignore[import-untyped]
+
+        engine.plot_analyzed_image(show=False, show_text=True)
+        figure = plt.gcf()
+        overlay = BytesIO()
+        figure.savefig(overlay, format="png", dpi=120)
+        plt.close(figure)
+        warnings = result.get("warnings", [])
+        warning_items = warnings if isinstance(warnings, list) else [warnings]
+        engine_class = {
+            "VMAT_DRGS": "DRGS",
+            "VMAT_DRMLC": "DRMLC",
+            "VMAT_DRCS": "DRCS",
+        }[catalog_key]
+        return PylinacExecutionResult(
+            catalog_key=catalog_key,
+            engine_class=engine_class,
+            engine_version=PYLINAC_VERSION,
+            package_fingerprint=package_fingerprint(),
+            result_snapshot={
+                "schema_version": "p7.pylinac-result.v1",
+                "engine": "pylinac",
+                "engine_class": engine_class,
+                "metrics": result,
+                "engine_passed": result.get("passed"),
+                "parameters": _json_safe(parameters),
+            },
+            warnings=[
+                {"code": "PYLINAC_ENGINE_WARNING", "message": str(item)}
+                for item in warning_items
+                if item
+            ],
+            overlay_bytes=overlay.getvalue(),
+            overlay_media_type="image/png",
+            overlay_filename=f"{engine_class.lower()}-phan-tich.png",
+        )
+    except PylinacAdapterError:
+        raise
+    except Exception as exc:
+        raise PylinacAdapterError(
+            "PYLINAC_EXECUTION_FAILED",
+            "Pylinac không thể phân tích cặp ảnh VMAT. Hãy kiểm tra ảnh mở, ảnh động "
+            "và các tham số rồi thử lại.",
+        ) from exc
+
+
 def execute_pylinac(
     catalog_key: str, source_path: Path, parameters: dict[str, object]
 ) -> PylinacExecutionResult:
@@ -625,6 +757,8 @@ def execute_pylinac(
         return _execute_winston_lutz(source_path, parameters)
     if catalog_key == "WINSTON_LUTZ_MULTI_TARGET":
         return _execute_winston_lutz_multi_target(source_path, parameters)
+    if catalog_key in {"VMAT_DRGS", "VMAT_DRMLC", "VMAT_DRCS"}:
+        return _execute_vmat(catalog_key, source_path, parameters)
     raise PylinacAdapterError(
         "PYLINAC_ADAPTER_NOT_READY",
         "Bộ giao diện cho bài QA này chưa được mở; chưa chạy bằng bộ tính khác.",

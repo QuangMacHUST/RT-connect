@@ -333,3 +333,65 @@ def test_winston_lutz_multi_target_rejects_invalid_arrangement() -> None:
         assert exc.code == "PYLINAC_PARAMETER_INVALID"
     else:
         raise AssertionError("Cấu hình bi thiếu trường phải bị từ chối")
+
+
+def test_vmat_adapter_uses_two_image_pair_and_drcs_specific_parameters(
+    tmp_path, monkeypatch
+) -> None:
+    first = tmp_path / "open.dcm"
+    second = tmp_path / "dynamic.dcm"
+    first.write_bytes(b"open")
+    second.write_bytes(b"dynamic")
+
+    class FakeVmat:
+        def __init__(self, paths, **kwargs: object) -> None:
+            assert [Path(path).name for path in paths] == ["dynamic.dcm", "open.dcm"]
+            assert kwargs == {"ground": True, "check_inversion": True}
+
+        def analyze(self, **kwargs: object) -> None:
+            assert kwargs["tolerance"] == 1.5
+            assert kwargs["segment_size_mm"] == (5.0, 100.0)
+            assert kwargs["invert_image_order"] is False
+            assert kwargs["collimator_radial_distances"] == (30.0, 70.0)
+
+        def results_data(self, *, as_dict: bool) -> dict[str, object]:
+            assert as_dict is True
+            return {"passed": True, "max_deviation_percent": 0.8, "warnings": []}
+
+        def plot_analyzed_image(self, *, show: bool, show_text: bool) -> None:
+            assert show is False
+            assert show_text is True
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (FakeVmat, None) if key == "VMAT_DRCS" else (None, "missing"),
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.package_fingerprint", lambda: "f" * 64
+    )
+    result = execute_pylinac(
+        "VMAT_DRCS",
+        tmp_path,
+        {
+            "ground": True,
+            "check_inversion": True,
+            "tolerance": 1.5,
+            "segment_size_mm": [5, 100],
+            "invert_image_order": False,
+            "collimator_radial_distances": [30, 70],
+        },
+    )
+    assert result.catalog_key == "VMAT_DRCS"
+    assert result.result_snapshot["engine_passed"] is True
+    assert result.overlay_filename == "drcs-phan-tich.png"
+    assert len(result.overlay_bytes or b"") > 0
+
+
+def test_vmat_adapter_rejects_single_image(tmp_path) -> None:
+    (tmp_path / "only.dcm").write_bytes(b"only")
+    try:
+        execute_pylinac("VMAT_DRGS", tmp_path, {})
+    except PylinacAdapterError as exc:
+        assert exc.code == "PYLINAC_INPUT_COUNT_INVALID"
+    else:
+        raise AssertionError("Bài VMAT phải yêu cầu cặp ảnh")

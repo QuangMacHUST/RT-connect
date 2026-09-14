@@ -505,6 +505,98 @@ function WinstonLutzMultiTargetPage({ caseId, accessToken, title }: { caseId: st
   </div>
 }
 
+type VmatCatalogKey = 'VMAT_DRGS' | 'VMAT_DRMLC' | 'VMAT_DRCS'
+
+function VmatPage({ caseId, accessToken, title, catalogKey }: { caseId: string; accessToken: string; title: string; catalogKey: VmatCatalogKey }) {
+  const queryClient = useQueryClient()
+  const [selectedArtifactIds, setSelectedArtifactIds] = useState<string[]>([])
+  const [tolerance, setTolerance] = useState('1.5')
+  const [segmentWidth, setSegmentWidth] = useState('5')
+  const [segmentLength, setSegmentLength] = useState('100')
+  const [collimatorMin, setCollimatorMin] = useState('30')
+  const [collimatorMax, setCollimatorMax] = useState('70')
+  const [message, setMessage] = useState<string>()
+  const artifacts = useQuery({
+    queryKey: ['pylinac-artifacts', caseId, accessToken],
+    queryFn: () => apiClient.artifacts(accessToken, caseId), retry: false
+  })
+  const runs = useQuery({
+    queryKey: ['pylinac-runs', caseId, accessToken],
+    queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
+  })
+  const upload = useMutation({
+    mutationFn: (files: File[]) => Promise.all(files.slice(0, 2).map((file) => apiClient.uploadArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'))),
+    onSuccess: (uploaded) => {
+      setSelectedArtifactIds(uploaded.map((artifact) => artifact.id))
+      setMessage('Đã tải cặp ảnh VMAT lên; hãy xác nhận ảnh mở và ảnh điều biến rồi bắt đầu phân tích.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-artifacts', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const analyze = useMutation({
+    mutationFn: () => {
+      const parameters: Record<string, unknown> = {
+        ground: true, check_inversion: true, tolerance: Number(tolerance),
+        segment_size_mm: [Number(segmentWidth), Number(segmentLength)], invert_image_order: false
+      }
+      if (catalogKey === 'VMAT_DRCS') parameters.collimator_radial_distances = [Number(collimatorMin), Number(collimatorMax)]
+      return apiClient.createPylinacQARun(accessToken, caseId, {
+        catalog_key: catalogKey, artifact_ids: selectedPair, parameters
+      })
+    },
+    onSuccess: (run) => {
+      setMessage(run.status === 'COMPLETED' ? `Đã phân tích ${catalogKey.replace('VMAT_', '')} bằng Pylinac.` : 'Pylinac không thể hoàn tất phân tích; hãy xem thông báo lỗi bên dưới.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const assess = useMutation({
+    mutationFn: ({ runId, value }: { runId: string; value: 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' }) => apiClient.assessPylinacQARun(accessToken, runId, value),
+    onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const imageArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' || item.artifact_type === 'IMAGE')
+  const selectedPair = selectedArtifactIds.length === 2 ? selectedArtifactIds : imageArtifacts.slice(0, 2).map((artifact) => artifact.id)
+  const history = runs.data?.items ?? []
+  const latest = history[0]
+  const isBusy = upload.isPending || analyze.isPending || assess.isPending
+  const displayName = catalogKey.replace('VMAT_', '')
+
+  const setPairItem = (index: number, value: string) => {
+    setSelectedArtifactIds((current) => {
+      const next = current.length === 2 ? [...current] : imageArtifacts.slice(0, 2).map((artifact) => artifact.id)
+      next[index] = value
+      return next
+    })
+  }
+
+  return <div className="page">
+    <header className="page-header">
+      <div><p className="eyebrow">KIỂM TRA CHẤT LƯỢNG MÁY · Pylinac</p><h1>Kiểm tra VMAT {displayName}</h1><p>{title} · so sánh cặp ảnh trường mở và trường điều biến.</p></div>
+      <div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">Quay lại kho QA</Link><span className="status-badge">BỘ TÍNH Pylinac 3.47.0</span></div>
+    </header>
+    {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
+    <section className="panel machine-qa-panel">
+      <div className="panel-heading"><div><p className="eyebrow">CẶP TỆP ĐẦU VÀO</p><h2>Ảnh trường mở và ảnh trường điều biến</h2></div><strong>{imageArtifacts.length}</strong></div>
+      <p>Bài VMAT luôn cần đúng hai ảnh. Sau khi tải lên, chọn rõ ảnh trường mở và ảnh trường điều biến để giữ đúng thứ tự phân tích.</p>
+      <div className="machine-qa-actions"><label className="button-link">Chọn hai ảnh DICOM<input type="file" accept=".dcm,application/dicom" multiple hidden disabled={isBusy} onChange={(event) => { const files = event.target.files ? Array.from(event.target.files) : []; if (files.length === 2) upload.mutate(files); else if (files.length > 0) setMessage('Hãy chọn đúng hai ảnh DICOM: một ảnh trường mở và một ảnh trường điều biến.'); event.currentTarget.value = '' }} /></label></div>
+      <div className="machine-qa-protocol-controls">
+        <label>Ảnh trường mở<select value={selectedPair[0] ?? ''} onChange={(event) => setPairItem(0, event.target.value)}>{imageArtifacts.map((artifact, index) => <option key={artifact.id} value={artifact.id}>Ảnh {index + 1} · {artifact.original_filename}</option>)}</select></label>
+        <label>Ảnh trường điều biến<select value={selectedPair[1] ?? ''} onChange={(event) => setPairItem(1, event.target.value)}>{imageArtifacts.map((artifact, index) => <option key={artifact.id} value={artifact.id}>Ảnh {index + 1} · {artifact.original_filename}</option>)}</select></label>
+        <label>Dung sai (%)<input type="number" min="0" step="0.1" value={tolerance} onChange={(event) => setTolerance(event.target.value)} /></label>
+      </div>
+      <div className="machine-qa-protocol-controls">
+        <label>Chiều rộng đoạn phân tích (mm)<input type="number" min="0" step="0.1" value={segmentWidth} onChange={(event) => setSegmentWidth(event.target.value)} /></label>
+        <label>Chiều dài đoạn phân tích (mm)<input type="number" min="0" step="0.1" value={segmentLength} onChange={(event) => setSegmentLength(event.target.value)} /></label>
+        {catalogKey === 'VMAT_DRCS' && <><label>Khoảng cách xuyên tâm nhỏ nhất (mm)<input type="number" min="0" step="0.1" value={collimatorMin} onChange={(event) => setCollimatorMin(event.target.value)} /></label><label>Khoảng cách xuyên tâm lớn nhất (mm)<input type="number" min="0" step="0.1" value={collimatorMax} onChange={(event) => setCollimatorMax(event.target.value)} /></label></>}
+      </div>
+      <div className="machine-qa-actions"><button disabled={selectedPair.length !== 2 || selectedPair[0] === selectedPair[1] || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+    </section>
+    {latest && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">KẾT QUẢ MỚI NHẤT</p><h2>{latest.name}</h2></div><span className={statusClass(latest.status)}>{statusLabel(latest.status)}</span></div>{latest.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích</h3><ul>{latest.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{latest.status === 'COMPLETED' && <><div className="machine-qa-run-meta"><span>Sai lệch lớn nhất: {textValue(pylinacMetric(latest, 'max_deviation_percent'))}%</span><span>Sai lệch trung bình tuyệt đối: {textValue(pylinacMetric(latest, 'abs_mean_deviation'))}%</span><span>Dung sai: {textValue(pylinacMetric(latest, 'tolerance_percent'))}%</span><span>Số đoạn: {Array.isArray(pylinacMetric(latest, 'segment_data')) ? (pylinacMetric(latest, 'segment_data') as unknown[]).length : '—'}</span></div>{latest.overlay_artifact_id && <button className="button-secondary" onClick={() => { void apiClient.downloadArtifact(accessToken, latest.overlay_artifact_id!).then((download) => window.open(download.url, '_blank', 'noopener,noreferrer')).catch((error) => setMessage(errorMessage(error))) }}>Mở ảnh phân tích</button>}<label>Đánh giá của người dùng<select value={latest.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => assess.mutate({ runId: latest.id, value: event.target.value as 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' })}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">Chưa có kết quả {displayName}.</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td></tr>)}</tbody></table></div>}</section>
+  </div>
+}
+
 export function MachineQAPage() {
   const { caseId } = useParams<{ caseId: string }>()
   const { session } = useAuth()
@@ -628,6 +720,9 @@ export function MachineQAPage() {
   }
   if (selectedCase.qa_definition_key === 'WINSTON_LUTZ_MULTI_TARGET' && accessToken) {
     return <WinstonLutzMultiTargetPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} />
+  }
+  if ((selectedCase.qa_definition_key === 'VMAT_DRGS' || selectedCase.qa_definition_key === 'VMAT_DRMLC' || selectedCase.qa_definition_key === 'VMAT_DRCS') && accessToken) {
+    return <VmatPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key} />
   }
 
   const metrics = records(activeRun?.result_snapshot.metrics)

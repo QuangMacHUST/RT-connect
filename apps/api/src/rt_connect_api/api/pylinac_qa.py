@@ -291,6 +291,10 @@ def create_pylinac_run(
         raise DomainError(
             "PYLINAC_INPUT_COUNT_INVALID", "Bài QA này yêu cầu đúng một tệp đầu vào.", 422
         )
+    if definition.key in {"VMAT_DRGS", "VMAT_DRMLC", "VMAT_DRCS"} and len(artifacts) != 2:
+        raise DomainError(
+            "PYLINAC_INPUT_COUNT_INVALID", "Bài VMAT yêu cầu đúng hai ảnh đầu vào.", 422
+        )
     if (
         definition.key in {"WINSTON_LUTZ", "WINSTON_LUTZ_MULTI_TARGET"}
         and Path(artifacts[0].original_filename).suffix.lower() != ".zip"
@@ -352,9 +356,18 @@ def create_pylinac_run(
     overlay_key: str | None = None
     try:
         with tempfile.TemporaryDirectory(prefix="rt-connect-pylinac-") as directory:
-            safe_filename = Path(artifacts[0].original_filename).name.strip() or "input.dcm"
-            source_path = Path(directory) / safe_filename
-            storage.download_to_path(artifacts[0].object_key, source_path)
+            if len(artifacts) == 1:
+                safe_filename = Path(artifacts[0].original_filename).name.strip() or "input.dcm"
+                source_path = Path(directory) / safe_filename
+                storage.download_to_path(artifacts[0].object_key, source_path)
+            else:
+                source_path = Path(directory)
+                for index, artifact in enumerate(artifacts):
+                    safe_filename = (
+                        Path(artifact.original_filename).name.strip() or f"input-{index}.dcm"
+                    )
+                    destination = source_path / f"{index:02d}-{safe_filename}"
+                    storage.download_to_path(artifact.object_key, destination)
             execution = execute_pylinac(definition.key, source_path, payload.parameters)
             overlay_artifact_id: UUID | None = None
             if execution.overlay_bytes is not None:
