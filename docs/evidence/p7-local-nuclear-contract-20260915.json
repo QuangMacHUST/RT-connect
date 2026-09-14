@@ -1,0 +1,51 @@
+{
+  "evidence_id": "p7-local-nuclear-contract-20260915",
+  "phase": "P7",
+  "status": "LOCAL_VERIFIED_SLICE",
+  "source_commit": "dad50d9593f5a4fcdd22140d6892a5716691ec00",
+  "engine": {
+    "name": "pylinac",
+    "version": "3.47.0",
+    "wheel_sha256": "7a99ec70a0242fa645882152fb5aa012f176b943a78339a3a18c15c953331b68",
+    "catalogue_version": "pylinac-3.47.0-rt-connect-1.0"
+  },
+  "covered_capabilities": [
+    "MaxCountRate",
+    "PlanarUniformity",
+    "CenterOfRotation",
+    "TomographicResolution",
+    "SimpleSensitivity",
+    "FourBarResolution",
+    "QuadrantResolution",
+    "TomographicUniformity",
+    "TomographicContrast"
+  ],
+  "verified_contract": {
+    "catalogue_bindings": 9,
+    "separate_forms": true,
+    "dicom_preflight": true,
+    "simple_sensitivity_supports_optional_background": true,
+    "class_specific_parameter_validation": true,
+    "results_data_is_the_mapping_source": true,
+    "overlay_failures_are_non_destructive_warnings": true,
+    "user_assessment_is_separate_from_engine_result": true,
+    "raw_json_and_internal_ids_are_hidden_from_ui": true,
+    "tenant_scope_is_first_lookup": true
+  },
+  "tests": {
+    "api_pylinac_tests": "26 passed",
+    "ruff_changed_files": "PASS",
+    "mypy": "PASS",
+    "web_lint": "PASS",
+    "web_typecheck": "PASS",
+    "web_build": "PASS"
+  },
+  "not_closed": [
+    "Chưa có fixture DICOM Nuclear chuẩn để chạy từng lớp bằng dữ liệu engine thật",
+    "Chưa đối chiếu từng trường results_data với lần gọi trực tiếp trên fixture chuẩn",
+    "Chưa có ma trận lỗi và ảnh minh họa thật cho từng lớp Nuclear",
+    "Chưa kiểm chứng lát cắt này trên staging",
+    "P07-VERIFY và P07-HANDOFF chưa hoàn tất"
+  ],
+  "secrets_or_patient_data": "none"
+}

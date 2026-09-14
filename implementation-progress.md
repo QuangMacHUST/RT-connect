@@ -4,6 +4,13 @@ Tài liệu hiện hành: `business-analysis.md` v1.3,
 `technical-specification.md` v2.3 và `plan.md` v5.3 — mốc UX1.3.
 `docs/history/pre-ux-20260912/specification.md` v1.29 là hợp đồng kế thừa, không ghi đè yêu cầu mới.
 
+## P7-W03 — chín bài Nuclear của Pylinac — lát cắt hợp đồng local — 2026-09-15
+
+- Commit `dad50d9593f5a4fcdd22140d6892a5716691ec00` đã bổ sung đủ chín lớp Nuclear công khai vào bộ điều hợp và giao diện: tốc độ đếm cực đại, độ đồng nhất phẳng, tâm quay, độ phân giải cắt lớp, độ nhạy đơn giản, độ phân giải bốn vạch, độ phân giải bốn góc, độ đồng nhất cắt lớp và độ tương phản cắt lớp.
+- Mỗi bài có biểu mẫu riêng, kiểm tệp DICOM, kiểm số lượng tệp, kiểm miền tham số và ánh xạ kết quả từ `results_data()` của đúng lớp Pylinac. `SimpleSensitivity` nhận ảnh phantom và ảnh nền tùy chọn; không dùng ảnh nền ngầm. Các bài có ảnh minh họa gọi phương thức vẽ công khai của Pylinac; lỗi riêng ở bước vẽ được lưu thành cảnh báo, không làm mất kết quả đo.
+- Cổng local đạt: 26/26 kiểm thử API nhóm Pylinac, ruff trên các tệp thay đổi, mypy 52/52 tệp nguồn, lint giao diện, kiểm tra kiểu và bản dựng sản xuất. Bằng chứng: [P7 hợp đồng chín bài hạt nhân](docs/evidence/p7-local-nuclear-contract-20260915.json).
+- Đây là `LOCAL_VERIFIED_SLICE` cho adapter/biểu mẫu/hợp đồng, chưa phải chạy engine thật: hiện chưa có fixture DICOM Nuclear chuẩn, chưa có đối chiếu từng lớp trên dữ liệu chuẩn và chưa có kiểm chứng staging. P7-W03, P07-NUCLEAR, P07-VERIFY và P07-HANDOFF vẫn mở.
+
 ## UX1.3 — Thư viện nội bộ/cộng đồng và triển khai tuần tự — 2026-09-13
 
 - Phạm vi đợt: hoàn thiện nền giao diện UX1.3 theo kế hoạch tuần tự; tài liệu, thiết kế Google Stitch và dọn tệp thừa được giữ làm đầu vào, không thay dữ liệu Railway/Supabase trong slice này.
