@@ -186,3 +186,8 @@ a purge request. Rebuild all services from this repository revision.
 P5 public recheck checkpoint (2026-09-14): API, web and worker staging were
 redeployed together and the public verifier passed 16/16 for revision 27e89f2.
 Rebuild all services again when this root evidence packet is committed.
+
+P5 staging network retry evidence (2026-09-14): the web was checked with the
+staging API temporarily blocked, showed a localized retry state, and recovered
+after the connection was restored without mutating QA data. Rebuild all
+services from this repository revision.

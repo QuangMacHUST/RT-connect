@@ -1,0 +1,38 @@
+{
+  "schema_version": "rt-connect.p5-staging-network-retry.v1",
+  "captured_at_utc": "2026-09-14T05:15:24.6225747Z",
+  "phase": "P5",
+  "status": "STAGING_VERIFIED_SLICE",
+  "environment": "staging",
+  "source_revision": "667e94d",
+  "scope": "Mô phỏng mất kết nối tới API trên phiên trình duyệt staging; không ghi dữ liệu hồ sơ.",
+  "checks": [
+    {
+      "name": "network_failure_message",
+      "status": "PASS",
+      "observed": "Khi API không thể truy cập, giao diện báo không thể mở khu vực kiểm tra chất lượng máy và hiển thị hướng dẫn kiểm tra kết nối."
+    },
+    {
+      "name": "retry_action_visible",
+      "status": "PASS",
+      "observed": "Giao diện hiển thị nút Thử lại thay vì tự tạo, lưu trùng hoặc xóa dữ liệu."
+    },
+    {
+      "name": "retry_after_network_restore",
+      "status": "PASS",
+      "observed": "Sau khi khôi phục kết nối và bấm Thử lại, trang tải đầy đủ danh mục 63 bài cùng lịch sử staging."
+    },
+    {
+      "name": "no_data_mutation",
+      "status": "PASS",
+      "observed": "Chỉ thay đổi trạng thái mạng của phiên kiểm thử rồi khôi phục; không gọi thao tác tạo, lưu trữ, khôi phục hoặc xóa hồ sơ."
+    }
+  ],
+  "browser_network_state_restored": true,
+  "patient_data": false,
+  "contains_secret_values": false,
+  "remaining_gates": [
+    "P5: kiểm chứng phản hồi khi tiến trình nền đang chạy trong phiên staging được cho phép.",
+    "P5: đối chiếu toàn vẹn tệp, kết quả, báo cáo và xu hướng sau toàn bộ vòng đời trên staging."
+  ]
+}
