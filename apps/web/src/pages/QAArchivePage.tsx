@@ -219,7 +219,7 @@ export function QAArchivePage() {
     onError: (error) => setMessage(errorMessage(error))
   })
   const validationMutation = useMutation({
-    mutationFn: (artifactId: string) => apiClient.validateArtifact(accessToken!, artifactId),
+    mutationFn: (artifactId: string) => apiClient.validateArtifact(accessToken!, artifactId, true),
     onSuccess: (validation) => {
       setMessage(`Kết quả kiểm tra: ${labelOf(artifactStatusLabels, validation.result)}; ${validation.errors.length} lỗi, ${validation.warnings.length} cảnh báo.`)
       void queryClient.invalidateQueries({ queryKey: ['artifacts', selectedCase?.id] })
