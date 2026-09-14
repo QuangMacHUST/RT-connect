@@ -7,6 +7,10 @@ param(
   # public edge can stream them slowly even when the service is healthy, so
   # the default must be bounded but longer than the small health probes.
   [int]$RequestTimeoutSec = 45,
+  [ValidateRange(1, 5)]
+  [int]$RequestAttempts = 2,
+  [ValidateRange(0, 30)]
+  [int]$RetryDelaySec = 1,
   [string]$OutputPath = ''
 )
 
@@ -64,20 +68,29 @@ function Invoke-PublicRequest {
   }
   $curlArguments += $Url
 
-  $rawResponse = (& curl.exe @curlArguments 2>&1 | Out-String)
-  if ($LASTEXITCODE -ne 0) {
-    throw $rawResponse.Trim()
+  $lastError = 'Public request did not return a response.'
+  for ($attempt = 1; $attempt -le $RequestAttempts; $attempt++) {
+    $rawResponse = (& curl.exe @curlArguments 2>&1 | Out-String)
+    if ($LASTEXITCODE -eq 0) {
+      $markerIndex = $rawResponse.LastIndexOf($statusMarker)
+      if ($markerIndex -ge 0) {
+        $bodyText = $rawResponse.Substring(0, $markerIndex).TrimEnd("`r", "`n")
+        $statusText = $rawResponse.Substring($markerIndex + $statusMarker.Length).Trim()
+        return [pscustomobject]@{
+          Body = $bodyText
+          StatusCode = [int]$statusText
+        }
+      }
+      $lastError = 'curl did not return an HTTP status marker.'
+    }
+    else {
+      $lastError = $rawResponse.Trim()
+    }
+    if ($attempt -lt $RequestAttempts -and $RetryDelaySec -gt 0) {
+      Start-Sleep -Seconds $RetryDelaySec
+    }
   }
-  $markerIndex = $rawResponse.LastIndexOf($statusMarker)
-  if ($markerIndex -lt 0) {
-    throw 'curl did not return an HTTP status marker.'
-  }
-  $bodyText = $rawResponse.Substring(0, $markerIndex).TrimEnd("`r", "`n")
-  $statusText = $rawResponse.Substring($markerIndex + $statusMarker.Length).Trim()
-  return [pscustomobject]@{
-    Body = $bodyText
-    StatusCode = [int]$statusText
-  }
+  throw $lastError
 }
 
 function Get-JsonEndpoint {
