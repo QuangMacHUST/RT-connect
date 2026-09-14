@@ -42,6 +42,12 @@ def test_machine_qa_protocol_run_evaluate_rerun_and_compare() -> None:
         assert protocol.status_code == 201, protocol.text
         protocol_body = protocol.json()
         assert len(protocol_body["rules"]) == 3
+        assert protocol_body["name"] == "Quy trình kiểm tra máy cơ bản"
+        assert [rule["display_name"] for rule in protocol_body["rules"]] == [
+            "Hệ số đầu ra",
+            "Đối xứng",
+            "Độ phẳng",
+        ]
         seeded_again = client.post(
             f"/api/v1/organizations/{organization.id}/machine-qa/protocols/seed"
         )
@@ -209,6 +215,33 @@ def test_machine_qa_rule_boundary_returns_warning_and_fail() -> None:
         assert failed.status_code == 201, failed.text
         result = client.post(f"/api/v1/machine-qa-runs/{failed.json()['id']}/evaluate")
         assert result.json()["overall_status"] == "FAIL"
+
+
+def test_machine_qa_persists_measurement_note_and_rejects_unknown_metric() -> None:
+    with _workspace_client() as (client, organization):
+        protocol = client.post(
+            f"/api/v1/organizations/{organization.id}/machine-qa/protocols/seed"
+        ).json()
+        case_id = _case(client, str(organization.id), "Machine QA note and unknown")
+        measurements = _measurements()
+        measurements[0]["note"] = "Đo lại sau khi làm nóng máy."
+        measurements.append(
+            {"metric_key": "unknown_metric", "value": 1.0, "unit": "%"}
+        )
+        created = client.post(
+            f"/api/v1/qa-cases/{case_id}/machine-qa-runs",
+            json={"protocol_version_id": protocol["id"], "measurements": measurements},
+        )
+        assert created.status_code == 201, created.text
+        assert created.json()["measurements"][0]["note"] == "Đo lại sau khi làm nóng máy."
+
+        evaluated = client.post(f"/api/v1/machine-qa-runs/{created.json()['id']}/evaluate")
+        assert evaluated.status_code == 200, evaluated.text
+        body = evaluated.json()
+        assert body["status"] == "FAILED"
+        assert {error["code"] for error in body["error_snapshot"]} == {
+            "MACHINE_QA_METRIC_UNSUPPORTED"
+        }
 
 
 def test_machine_qa_explicit_na_keeps_reason_and_excludes_metric_from_trend() -> None:

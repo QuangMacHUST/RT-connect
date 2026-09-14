@@ -19,6 +19,7 @@ function errorMessage(error: unknown): string {
       MACHINE_QA_PROTOCOL_INACTIVE: 'Quy trình đánh giá này chưa được kích hoạt.',
       MACHINE_QA_MEASUREMENT_INVALID: 'Số đo chưa hợp lệ. Hãy kiểm tra lại các trường bắt buộc.',
       MACHINE_QA_EVALUATION_FAILED: 'Không thể đánh giá lượt kiểm tra. Hãy kiểm tra số đo rồi thử lại.',
+      MACHINE_QA_METRIC_UNSUPPORTED: 'Có số đo không thuộc quy trình đang chọn. Hãy xóa dòng thừa rồi thử lại.',
       PYLINAC_INPUT_NOT_FOUND: 'Không tìm thấy tệp đầu vào trong bài kiểm tra này.',
       PYLINAC_INPUT_COUNT_INVALID: 'Số lượng tệp đầu vào chưa đúng với bài kiểm tra.',
       PYLINAC_INPUT_FORMAT_INVALID: 'Định dạng tệp chưa đúng với bài kiểm tra. Hãy chọn đúng tệp được yêu cầu.',
@@ -92,13 +93,15 @@ type DraftMeasurementState = {
   values: Record<string, string>
   naFlags: Record<string, boolean>
   naReasons: Record<string, string>
+  notes: Record<string, string>
 }
 
 function measurementPayload(
   protocol: QAProtocolResource | undefined,
   values: Record<string, string>,
   naFlags: Record<string, boolean>,
-  naReasons: Record<string, string>
+  naReasons: Record<string, string>,
+  notes: Record<string, string>
 ): MachineQAMeasurement[] {
   if (!protocol) return []
   return protocol.rules.map((rule) => {
@@ -110,7 +113,7 @@ function measurementPayload(
       metric_key: rule.metric_key,
       value: parsed !== null && Number.isFinite(parsed) ? parsed : null,
       unit: rule.unit,
-      note: null,
+      note: notes[rule.metric_key]?.trim() || null,
       is_not_applicable: isNotApplicable,
       na_reason: isNotApplicable && reason ? reason : null
     }
@@ -118,7 +121,7 @@ function measurementPayload(
 }
 
 function draftStateFromRun(run: MachineQARunResource | undefined): DraftMeasurementState {
-  const state: DraftMeasurementState = { values: {}, naFlags: {}, naReasons: {} }
+  const state: DraftMeasurementState = { values: {}, naFlags: {}, naReasons: {}, notes: {} }
   for (const measurement of run?.measurements ?? []) {
     const metricKey = measurement.metric_key
     if (typeof metricKey === 'string' && measurement.value !== null && measurement.value !== undefined) {
@@ -126,6 +129,7 @@ function draftStateFromRun(run: MachineQARunResource | undefined): DraftMeasurem
     }
     if (typeof metricKey === 'string' && measurement.is_not_applicable === true) state.naFlags[metricKey] = true
     if (typeof metricKey === 'string' && typeof measurement.na_reason === 'string') state.naReasons[metricKey] = measurement.na_reason
+    if (typeof metricKey === 'string' && typeof measurement.note === 'string') state.notes[metricKey] = measurement.note
   }
   return state
 }
@@ -1519,6 +1523,7 @@ export function MachineQAPage() {
   const [draftValues, setDraftValues] = useState<Record<string, string>>({})
   const [draftNaFlags, setDraftNaFlags] = useState<Record<string, boolean>>({})
   const [draftNaReasons, setDraftNaReasons] = useState<Record<string, string>>({})
+  const [draftNotes, setDraftNotes] = useState<Record<string, string>>({})
   const [comparisonRunId, setComparisonRunId] = useState<string>()
   const [message, setMessage] = useState<string>()
 
@@ -1533,6 +1538,7 @@ export function MachineQAPage() {
       setDraftValues(draft.values)
       setDraftNaFlags(draft.naFlags)
       setDraftNaReasons(draft.naReasons)
+      setDraftNotes(draft.notes)
       setMessage('Đã tạo lượt kiểm tra chất lượng máy ở trạng thái bản nháp.')
       refreshRuns()
     },
@@ -1626,7 +1632,8 @@ export function MachineQAPage() {
   const currentDraftValues = Object.keys(draftValues).length ? draftValues : activeDraft.values
   const currentDraftNaFlags = Object.keys(draftNaFlags).length ? draftNaFlags : activeDraft.naFlags
   const currentDraftNaReasons = Object.keys(draftNaReasons).length ? draftNaReasons : activeDraft.naReasons
-  const currentMeasurements = measurementPayload(runProtocol, currentDraftValues, currentDraftNaFlags, currentDraftNaReasons)
+  const currentDraftNotes = Object.keys(draftNotes).length ? draftNotes : activeDraft.notes
+  const currentMeasurements = measurementPayload(runProtocol, currentDraftValues, currentDraftNaFlags, currentDraftNaReasons, currentDraftNotes)
 
   return (
     <div className="page">
@@ -1646,7 +1653,7 @@ export function MachineQAPage() {
         <div className="panel-heading"><div><p className="eyebrow">NHẬP SỐ ĐO</p><h2>Lượt kiểm tra máy</h2></div>{activeRun && <span className={statusClass(activeRun.overall_status ?? activeRun.status)}>{statusLabel(activeRun.overall_status ?? activeRun.status)}</span>}</div>
         {!selectedProtocol ? <p className="empty-state">Hãy tạo và kích hoạt quy trình trong thư viện quy trình QA trước khi tạo lượt đo.</p> : !activeRun ? <div className="empty-state"><p>Chưa có lượt đo cho bài kiểm tra này.</p><button disabled={createRunMutation.isPending} onClick={() => createRunMutation.mutate(selectedProtocol.id)}>{createRunMutation.isPending ? 'Đang tạo…' : 'Tạo lượt đo nháp'}</button></div> : <>
           <div className="machine-qa-run-meta"><span>Lượt đang mở</span><span>Lần chỉnh sửa {activeRun.measurement_revision}</span><span>Tạo lúc {formatDate(activeRun.created_at)}</span>{activeRun.supersedes_run_id && <span>Được tạo từ kết quả trước</span>}</div>
-          {activeRun.status === 'DRAFT' && <div className="table-wrap"><table className="machine-qa-table"><thead><tr><th>Chỉ số</th><th>Số đo</th><th>Đơn vị</th><th>Giới hạn</th><th>Không áp dụng và lý do</th><th>Ghi chú</th></tr></thead><tbody>{runProtocol?.rules.map((rule) => { const isNotApplicable = currentDraftNaFlags[rule.metric_key] === true; return <tr key={rule.metric_key}><td><strong>{rule.display_name}</strong>{rule.required && <small className="table-subtitle">Bắt buộc</small>}</td><td><input aria-label={rule.display_name} disabled={isNotApplicable} type="number" step="any" value={currentDraftValues[rule.metric_key] ?? ''} onChange={(event) => setDraftValues((current) => ({ ...current, [rule.metric_key]: event.target.value }))} /></td><td>{rule.unit}</td><td>{ruleDescription(rule)}</td><td><label className="machine-qa-na-control"><input type="checkbox" aria-label={`Đánh dấu ${rule.display_name} là không áp dụng`} checked={isNotApplicable} onChange={(event) => { const checked = event.target.checked; setDraftNaFlags((current) => ({ ...current, [rule.metric_key]: checked })); if (checked) setDraftValues((current) => ({ ...current, [rule.metric_key]: '' })); else setDraftNaReasons((current) => ({ ...current, [rule.metric_key]: '' })) }} /><span>Không áp dụng</span></label>{isNotApplicable && <input aria-label={`Lý do không áp dụng cho ${rule.display_name}`} required value={currentDraftNaReasons[rule.metric_key] ?? ''} onChange={(event) => setDraftNaReasons((current) => ({ ...current, [rule.metric_key]: event.target.value }))} placeholder="Nêu lý do" />}</td><td>{rule.note ?? '—'}</td></tr> })}</tbody></table></div>}
+          {activeRun.status === 'DRAFT' && <div className="table-wrap"><table className="machine-qa-table"><thead><tr><th>Chỉ số</th><th>Số đo</th><th>Đơn vị</th><th>Giới hạn</th><th>Không áp dụng và lý do</th><th>Ghi chú lần đo</th></tr></thead><tbody>{runProtocol?.rules.map((rule) => { const isNotApplicable = currentDraftNaFlags[rule.metric_key] === true; return <tr key={rule.metric_key}><td><strong>{rule.display_name}</strong>{rule.required && <small className="table-subtitle">Bắt buộc</small>}</td><td><input aria-label={rule.display_name} disabled={isNotApplicable} type="number" step="any" value={currentDraftValues[rule.metric_key] ?? ''} onChange={(event) => setDraftValues((current) => ({ ...current, [rule.metric_key]: event.target.value }))} /></td><td>{rule.unit}</td><td>{ruleDescription(rule)}</td><td><label className="machine-qa-na-control"><input type="checkbox" aria-label={`Đánh dấu ${rule.display_name} là không áp dụng`} checked={isNotApplicable} onChange={(event) => { const checked = event.target.checked; setDraftNaFlags((current) => ({ ...current, [rule.metric_key]: checked })); if (checked) setDraftValues((current) => ({ ...current, [rule.metric_key]: '' })); else setDraftNaReasons((current) => ({ ...current, [rule.metric_key]: '' })) }} /><span>Không áp dụng</span></label>{isNotApplicable && <input aria-label={`Lý do không áp dụng cho ${rule.display_name}`} required value={currentDraftNaReasons[rule.metric_key] ?? ''} onChange={(event) => setDraftNaReasons((current) => ({ ...current, [rule.metric_key]: event.target.value }))} placeholder="Nêu lý do" />}</td><td><textarea aria-label={`Ghi chú cho ${rule.display_name}`} value={currentDraftNotes[rule.metric_key] ?? ''} onChange={(event) => setDraftNotes((current) => ({ ...current, [rule.metric_key]: event.target.value }))} placeholder="Ghi chú nếu cần" rows={2} /></td></tr> })}</tbody></table></div>}
           {activeRun.status === 'DRAFT' && <div className="machine-qa-actions"><button disabled={isBusy} onClick={() => saveMutation.mutate({ run: activeRun, measurements: currentMeasurements })}>Lưu bản nháp</button><button disabled={isBusy} onClick={() => evaluateMutation.mutate({ run: activeRun, measurements: currentMeasurements })}>Đánh giá lượt kiểm tra</button></div>}
           {activeRun.status !== 'DRAFT' && <div className="machine-qa-actions"><button disabled={isBusy} onClick={() => rerunMutation.mutate(activeRun.id)}>Tạo lượt mới từ kết quả này</button></div>}
           {runErrors.length > 0 && <div className="alert alert--error"><h3>Không thể hoàn tất đánh giá</h3><ul>{runErrors.map((item, index) => <li key={`${String(item.code)}-${index}`}>{textValue(item.message, 'Không có mô tả lỗi.')}</li>)}</ul></div>}
@@ -1657,7 +1664,7 @@ export function MachineQAPage() {
       <section className="panel machine-qa-panel">
         <div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ KẾT QUẢ</p><h2>Lịch sử và so sánh</h2></div><strong>{runs.data?.total ?? '—'}</strong></div>
         {runs.isPending ? <p>Đang tải lịch sử…</p> : runs.error ? <div className="alert alert--error"><p>{errorMessage(runs.error)}</p><button onClick={() => void runs.refetch()}>Thử lại</button></div> : <>
-          {runs.data?.items.length ? <div className="table-wrap"><table><thead><tr><th>Lượt kiểm tra</th><th>Trạng thái</th><th>Kết quả</th><th>Thời điểm</th><th /></tr></thead><tbody>{runs.data.items.map((run, index) => <tr key={run.id}><td><button aria-label={`Mở lượt kiểm tra thứ ${index + 1}`} className={run.id === activeRun?.id ? 'history-button history-button--selected' : 'history-button'} onClick={() => { setSelectedRunId(run.id); const draft = draftStateFromRun(run); setDraftValues(draft.values); setDraftNaFlags(draft.naFlags); setDraftNaReasons(draft.naReasons) }}>Lượt {index + 1}</button></td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td><span className={statusClass(run.overall_status)}>{statusLabel(run.overall_status)}</span></td><td>{formatDate(run.completed_at ?? run.created_at)}</td><td>{run.id !== activeRun?.id && <button className="button-secondary" onClick={() => setComparisonRunId(run.id)}>So sánh</button>}</td></tr>)}</tbody></table></div> : <p className="empty-state">Chưa có lịch sử. Tạo lượt đo đầu tiên ở phần trên.</p>}
+          {runs.data?.items.length ? <div className="table-wrap"><table><thead><tr><th>Lượt kiểm tra</th><th>Trạng thái</th><th>Kết quả</th><th>Thời điểm</th><th /></tr></thead><tbody>{runs.data.items.map((run, index) => <tr key={run.id}><td><button aria-label={`Mở lượt kiểm tra thứ ${index + 1}`} className={run.id === activeRun?.id ? 'history-button history-button--selected' : 'history-button'} onClick={() => { setSelectedRunId(run.id); const draft = draftStateFromRun(run); setDraftValues(draft.values); setDraftNaFlags(draft.naFlags); setDraftNaReasons(draft.naReasons); setDraftNotes(draft.notes) }}>Lượt {index + 1}</button></td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td><span className={statusClass(run.overall_status)}>{statusLabel(run.overall_status)}</span></td><td>{formatDate(run.completed_at ?? run.created_at)}</td><td>{run.id !== activeRun?.id && <button className="button-secondary" onClick={() => setComparisonRunId(run.id)}>So sánh</button>}</td></tr>)}</tbody></table></div> : <p className="empty-state">Chưa có lịch sử. Tạo lượt đo đầu tiên ở phần trên.</p>}
           {runs.data && runs.data.items.length > 1 && activeRun && <div className="compare-controls"><label>So sánh lượt đang chọn với<select value={comparisonRunId ?? ''} onChange={(event) => setComparisonRunId(event.target.value || undefined)}><option value="">Chọn lượt khác</option>{runs.data.items.filter((run) => run.id !== activeRun.id).map((run, index) => <option key={run.id} value={run.id}>Lượt {index + 1} · {statusLabel(run.overall_status ?? run.status)}</option>)}</select></label>{comparisonRunId && comparison.isPending && <p>Đang tải so sánh…</p>}{comparison.error && <p className="error-text">{errorMessage(comparison.error)}</p>}{compareItems.length > 0 && <div className="table-wrap"><table><thead><tr><th>Chỉ số</th><th>Lượt hiện tại</th><th>Lượt đối chiếu</th></tr></thead><tbody>{compareItems.map((item, index) => <tr key={item.metric_key}><td>Chỉ số {index + 1}</td><td>{textValue(item.left?.actual)} {statusLabel(typeof item.left?.status === 'string' ? item.left.status : undefined)}</td><td>{textValue(item.right?.actual)} {statusLabel(typeof item.right?.status === 'string' ? item.right.status : undefined)}</td></tr>)}</tbody></table></div>}</div>}
         </>}
       </section>

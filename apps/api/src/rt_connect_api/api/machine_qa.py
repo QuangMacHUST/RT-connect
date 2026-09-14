@@ -332,11 +332,14 @@ def _seed_protocol(
     protocol = QAProtocolVersion(
         organization_id=context.organization_id,
         protocol_key="MACHINE_QA_BASELINE",
-        name="Machine QA baseline",
-        qa_type="Machine QA",
+        name="Quy trình kiểm tra máy cơ bản",
+        qa_type="Kiểm tra chất lượng máy",
         version_number=1,
         status="ACTIVE",
-        effective_note="Synthetic seed protocol for P7; create governed versions in P11.",
+        effective_note=(
+            "Bộ tiêu chí mẫu để bắt đầu nhập số đo; đơn vị nên thay bằng "
+            "quy trình đã được phê duyệt."
+        ),
         created_by_user_identity_id=actor_id,
     )
     session.add(protocol)
@@ -344,33 +347,33 @@ def _seed_protocol(
     seed_rules = [
         {
             "metric_key": "output_factor",
-            "display_name": "Output factor",
+            "display_name": "Hệ số đầu ra",
             "unit": "%",
             "rule_type": "RANGE",
             "lower_limit": 98.0,
             "upper_limit": 102.0,
             "action_level": 1.0,
-            "note": "Pass band 98–102%; warning band expands by 1%. ",
+            "note": "Khoảng đạt 98–102%; khoảng cảnh báo mở rộng thêm 1%.",
         },
         {
             "metric_key": "symmetry",
-            "display_name": "Symmetry",
+            "display_name": "Đối xứng",
             "unit": "%",
             "rule_type": "ABSOLUTE_DEVIATION",
             "target_value": 0.0,
             "tolerance": 2.0,
             "action_level": 3.0,
-            "note": "Absolute deviation from zero.",
+            "note": "Độ lệch tuyệt đối so với mốc 0.",
         },
         {
             "metric_key": "flatness",
-            "display_name": "Flatness",
+            "display_name": "Độ phẳng",
             "unit": "%",
             "rule_type": "RANGE",
             "lower_limit": 95.0,
             "upper_limit": 105.0,
             "action_level": 2.0,
-            "note": "Synthetic seed rule; replace with site-approved protocol.",
+            "note": "Tiêu chí mẫu; thay bằng quy trình đã được đơn vị phê duyệt.",
         },
     ]
     for order, values in enumerate(seed_rules):
@@ -700,6 +703,15 @@ def _evaluate_run(
     by_key = {str(item.get("metric_key")): item for item in run.measurements}
     errors: list[dict[str, object]] = []
     metrics: list[dict[str, object]] = []
+    rule_keys = {rule.metric_key for rule in rules}
+    for metric_key in sorted(set(by_key) - rule_keys):
+        errors.append(
+            {
+                "code": "MACHINE_QA_METRIC_UNSUPPORTED",
+                "metric_key": metric_key,
+                "message": "Có số đo không thuộc quy trình đánh giá đã chọn.",
+            }
+        )
     for rule in rules:
         measurement = by_key.get(rule.metric_key)
         if measurement is None:
