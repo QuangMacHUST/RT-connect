@@ -6,6 +6,12 @@
 - Tệp mẫu chính thức `quart.zip` đã chạy qua chính `execute_pylinac` với nhãn `QUART_HYPERSIGHT`: engine trả về `QuartDVT`, 10 nhóm chỉ số, ảnh overlay 73.206 byte và 3 cảnh báo tương thích từ thư viện. Cảnh báo được giữ lại trong kết quả, không biến thành lỗi phân tích.
 - Kiểm tra đạt: ruff, mypy 53/53 tệp nguồn và 6 kiểm thử nhóm Quart/registry. Đây là `LOCAL_VERIFIED_SLICE`; vẫn cần đối chiếu từng mô-đun, kiểm thử hiển thị nhãn, kiểm tra lỗi đầu vào và staging trước khi đóng P07-QUART/P7.
 
+## P7-W04 — hiển thị cảnh báo engine trong kết quả — lát cắt cục bộ — 2026-09-15
+
+- Trình xem kết quả QA máy nay đọc `warning_snapshot` của từng lượt Pylinac và hiển thị riêng dưới mục “Cảnh báo từ bộ tính”, kèm nhắc người thực hiện xem xét trước khi đánh giá. Cảnh báo không bị gộp thành lỗi, không bị bỏ qua và không thay đổi kết luận do người thực hiện chọn.
+- Lịch sử vẫn hiển thị cùng một snapshot của lượt đang xem; khi mở lại lượt cũ, cảnh báo đi theo đúng lượt đó. Không hiển thị mã nội bộ hoặc cấu trúc dữ liệu thô cho người dùng.
+- Đây là `LOCAL_VERIFIED_SLICE`; cần bổ sung kiểm thử giao diện có cảnh báo, kiểm thử staging và kiểm tra PDF để đóng P07-W04.
+
 ## P7-W03 — sửa tương thích ảnh phẳng với Pylinac 3.47.0 — lát cắt cục bộ — 2026-09-15
 
 - Bộ chuyển đổi ảnh phẳng đã gọi đúng `plot_analyzed_image(show=False)` của Pylinac 3.47.0. Trước đó nó gọi nhầm `plot()`, khiến `LeedsTOR` phân tích được nhưng bị báo lỗi khi dựng ảnh minh họa vì lớp này không có phương thức đó.
