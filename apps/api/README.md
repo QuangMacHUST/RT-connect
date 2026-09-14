@@ -155,3 +155,9 @@ P11 browser evidence parity packet (2026-09-10): the exact-SHA browser/public pa
 for candidate `4486eb49c9838c8d9fb68be5627e58312626e79b` is stored under
 `docs/evidence/`. Keep this watched-file marker in the next release commit so a
 root evidence update cannot leave the API on an older candidate.
+
+P5 purge-guard regression marker (2026-09-14): the QA archive regression suite
+also verifies that a stored input artifact by itself blocks permanent purge and
+that the archived case remains readable. This marker has no runtime behavior;
+rebuild API, worker and web from the same commit before reusing a staging
+candidate.

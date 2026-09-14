@@ -456,6 +456,62 @@ def test_qa_case_purge_rejects_a_report_source_reference() -> None:
     assert still_present.json()["is_archived"] is True
 
 
+def test_qa_case_purge_rejects_a_stored_input_artifact_without_analysis() -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[artifact_storage] = lambda: storage
+        site = client.get(f"/api/v1/organizations/{organization.id}/sites").json()["items"][0]
+        machine = client.get(
+            f"/api/v1/organizations/{organization.id}/sites/{site['id']}/machines"
+        ).json()["items"][0]
+        folder = client.post(
+            f"/api/v1/organizations/{organization.id}/folders",
+            json={"name": "P5 artifact purge guard"},
+        )
+        assert folder.status_code == 201, folder.text
+        case = client.post(
+            f"/api/v1/organizations/{organization.id}/qa-cases",
+            json={
+                "site_id": site["id"],
+                "machine_id": machine["id"],
+                "primary_folder_id": folder.json()["id"],
+                "qa_definition_key": "PICKET_FENCE",
+                "qa_cycle": "MONTHLY",
+                "performed_at": "2026-09-14T08:00:00Z",
+                "title": "Hồ sơ còn tệp đầu vào",
+            },
+        )
+        assert case.status_code == 201, case.text
+        case_id = case.json()["id"]
+        uploaded = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={
+                "file": (
+                    "picket-fence-input.dat",
+                    b"stored input that has not been analysed",
+                    "application/octet-stream",
+                )
+            },
+            data={"artifact_type": "OTHER", "logical_role": "REFERENCE"},
+        )
+        assert uploaded.status_code == 201, uploaded.text
+        archived = client.delete(f"/api/v1/qa-cases/{case_id}")
+        preview = client.get(f"/api/v1/qa-cases/{case_id}/purge-preview")
+        rejected = client.post(f"/api/v1/qa-cases/{case_id}/purge")
+        still_present = client.get(f"/api/v1/qa-cases/{case_id}")
+
+    assert archived.status_code == 200
+    assert preview.status_code == 200
+    assert preview.json()["can_purge"] is False
+    assert preview.json()["references"] == [{"source": "artifacts", "count": 1}]
+    assert rejected.status_code == 409
+    assert rejected.json()["code"] == "QA_CASE_REFERENCED"
+    assert rejected.json()["details"][0]["source"] == "artifacts"
+    assert rejected.json()["details"][0]["count"] == 1
+    assert still_present.status_code == 200
+    assert still_present.json()["is_archived"] is True
+
+
 def test_qa_case_purge_rejects_case_with_queued_gamma_job() -> None:
     storage = InMemoryObjectStorage()
     with _workspace_client() as (client, organization):

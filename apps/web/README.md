@@ -102,3 +102,8 @@ three services are rebuilt from the same source commit.
 P11 staging parity rebuild marker (2026-09-10): the web is rebuilt together
 with the API and worker after the watched API marker changes; verify exact
 source SHA and the public bundle before reusing the staging candidate.
+
+P5 purge-guard regression marker (2026-09-14): the API archive contract now
+has an independent regression for a stored input artifact that blocks
+permanent purge. Keep this marker aligned with `/apps/api` so all three
+services are rebuilt from the same source commit before staging verification.
