@@ -1115,6 +1115,117 @@ function LogAnalyzerPage({ caseId, accessToken, title, catalogKey }: { caseId: s
   </div>
 }
 
+type NuclearCatalogKey = 'NUCLEAR_MCR' | 'NUCLEAR_PU' | 'NUCLEAR_COR' | 'NUCLEAR_TR' | 'NUCLEAR_SS' | 'NUCLEAR_FBR' | 'NUCLEAR_QR' | 'NUCLEAR_TU' | 'NUCLEAR_TC'
+
+const nuclearNames: Record<NuclearCatalogKey, string> = {
+  NUCLEAR_MCR: 'Tốc độ đếm cực đại',
+  NUCLEAR_PU: 'Độ đồng nhất phẳng',
+  NUCLEAR_COR: 'Tâm quay',
+  NUCLEAR_TR: 'Độ phân giải cắt lớp',
+  NUCLEAR_SS: 'Độ nhạy đơn giản',
+  NUCLEAR_FBR: 'Độ phân giải bốn vạch',
+  NUCLEAR_QR: 'Độ phân giải bốn góc phần tư',
+  NUCLEAR_TU: 'Độ đồng nhất cắt lớp',
+  NUCLEAR_TC: 'Độ tương phản cắt lớp'
+}
+
+const nuclearMetricNames: Record<string, string> = {
+  max_countrate: 'Tốc độ đếm cực đại',
+  max_frame: 'Khung hình cực đại',
+  frame_duration: 'Thời lượng khung hình (giây)',
+  x_deviation_mm: 'Độ lệch tâm quay theo X (mm)',
+  y_deviation_mm: 'Độ lệch tâm quay theo Y (mm)',
+  x_fwhm: 'FWHM trục X (mm)',
+  y_fwhm: 'FWHM trục Y (mm)',
+  z_fwhm: 'FWHM trục Z (mm)',
+  x_fwtm: 'FWTM trục X (mm)',
+  y_fwtm: 'FWTM trục Y (mm)',
+  z_fwtm: 'FWTM trục Z (mm)',
+  phantom_cps: 'Tốc độ đếm phantom',
+  background_cps: 'Tốc độ đếm nền',
+  sensitivity_mbq: 'Độ nhạy (MBq)',
+  sensitivity_uci: 'Độ nhạy (µCi)',
+  decay_correction: 'Hệ số hiệu chỉnh phân rã',
+  x_measured_pixel_size: 'Kích thước điểm đo theo X (mm)',
+  y_measured_pixel_size: 'Kích thước điểm đo theo Y (mm)',
+  x_pixel_size_difference: 'Sai lệch kích thước điểm theo X (mm)',
+  y_pixel_size_difference: 'Sai lệch kích thước điểm theo Y (mm)',
+  center_border_ratio: 'Tỷ số tâm so với biên',
+  uniformity_baseline: 'Mức nền đồng nhất',
+  first_frame: 'Khung hình bắt đầu',
+  last_frame: 'Khung hình kết thúc'
+}
+
+function NuclearPage({ caseId, accessToken, title, catalogKey }: { caseId: string; accessToken: string; title: string; catalogKey: NuclearCatalogKey }) {
+  const queryClient = useQueryClient()
+  const [selectedArtifactIds, setSelectedArtifactIds] = useState<string[]>([])
+  const [values, setValues] = useState<Record<string, string>>({
+    frame_duration: '1', ufov_ratio: '0.95', cfov_ratio: '0.75', window_size: '5', threshold: '0.75',
+    activity_mbq: '25', nuclide: 'Tc99m', separation_mm: '100', roi_width_mm: '10',
+    bar_widths: '10, 10, 10, 10', roi_diameter_mm: '70', distance_from_center_mm: '130',
+    first_frame: '0', last_frame: '-1', center_ratio: '0.4',
+    sphere_diameters_mm: '38, 31.8, 25.4, 19.1, 15.9, 12.7', sphere_angles: '-10, -70, -130, -190, 110, 50',
+    search_window_px: '5', search_slices: '3'
+  })
+  const [message, setMessage] = useState<string>()
+  const artifacts = useQuery({ queryKey: ['pylinac-artifacts', caseId, accessToken], queryFn: () => apiClient.artifacts(accessToken, caseId), retry: false })
+  const runs = useQuery({ queryKey: ['pylinac-runs', caseId, accessToken], queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false })
+  const upload = useMutation({
+    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
+    onSuccess: (artifact) => { setSelectedArtifactIds((current) => current.includes(artifact.id) ? current : [...current, artifact.id]); setMessage('Đã tải tệp DICOM lên.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-artifacts', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const nuclearArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' && item.original_filename.toLowerCase().endsWith('.dcm'))
+  const selected = nuclearArtifacts.filter((item) => selectedArtifactIds.includes(item.id))
+  const needsBackground = catalogKey === 'NUCLEAR_SS'
+  const canAnalyze = needsBackground ? selected.length >= 1 && selected.length <= 2 : selected.length === 1
+  const setValue = (key: string, value: string) => setValues((current) => ({ ...current, [key]: value }))
+  const numbers = (key: string) => values[key].split(',').map((item) => Number(item.trim())).filter((item) => Number.isFinite(item))
+  const parameters = () => {
+    const result: Record<string, unknown> = {}
+    if (catalogKey === 'NUCLEAR_MCR') result.frame_duration = Number(values.frame_duration)
+    if (catalogKey === 'NUCLEAR_PU') Object.assign(result, { ufov_ratio: Number(values.ufov_ratio), cfov_ratio: Number(values.cfov_ratio), window_size: Number(values.window_size), threshold: Number(values.threshold) })
+    if (catalogKey === 'NUCLEAR_SS') Object.assign(result, { activity_mbq: Number(values.activity_mbq), nuclide: values.nuclide })
+    if (catalogKey === 'NUCLEAR_FBR') Object.assign(result, { separation_mm: Number(values.separation_mm), roi_width_mm: Number(values.roi_width_mm) })
+    if (catalogKey === 'NUCLEAR_QR') Object.assign(result, { bar_widths: numbers('bar_widths'), roi_diameter_mm: Number(values.roi_diameter_mm), distance_from_center_mm: Number(values.distance_from_center_mm) })
+    if (catalogKey === 'NUCLEAR_TU') Object.assign(result, { first_frame: Number(values.first_frame), last_frame: Number(values.last_frame), ufov_ratio: Number(values.ufov_ratio), cfov_ratio: Number(values.cfov_ratio), center_ratio: Number(values.center_ratio), threshold: Number(values.threshold), window_size: Number(values.window_size) })
+    if (catalogKey === 'NUCLEAR_TC') Object.assign(result, { sphere_diameters_mm: numbers('sphere_diameters_mm'), sphere_angles: numbers('sphere_angles'), ufov_ratio: Number(values.ufov_ratio), search_window_px: Number(values.search_window_px), search_slices: Number(values.search_slices) })
+    return result
+  }
+  const analyze = useMutation({
+    mutationFn: () => apiClient.createPylinacQARun(accessToken, caseId, { catalog_key: catalogKey, artifact_ids: selected.map((item) => item.id), parameters: parameters() }),
+    onSuccess: (run) => { setMessage(run.status === 'COMPLETED' ? 'Đã phân tích bài kiểm tra hạt nhân bằng Pylinac.' : 'Pylinac không thể hoàn tất phân tích; hãy xem thông báo lỗi bên dưới.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const assess = useMutation({
+    mutationFn: ({ runId, value }: { runId: string; value: 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' }) => apiClient.assessPylinacQARun(accessToken, runId, value),
+    onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const history = (runs.data?.items ?? []).filter((run) => run.catalog_key === catalogKey)
+  const latest = history[0]
+  const isBusy = upload.isPending || analyze.isPending || assess.isPending
+  const metrics = Object.entries(objectValue(latest?.result_snapshot.metrics) ?? {}).filter(([, value]) => typeof value === 'number' || typeof value === 'string')
+  const field = (key: string, label: string, type: 'number' | 'text' = 'number') => <label>{label}<input type={type} value={values[key]} onChange={(event) => setValue(key, event.target.value)} /></label>
+
+  return <div className="page">
+    <header className="page-header"><div><p className="eyebrow">KIỂM TRA CHẤT LƯỢNG MÁY · PYLİNAC</p><h1>{nuclearNames[catalogKey]}</h1><p>{title} · bộ phân tích hạt nhân của Pylinac.</p></div><div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">Quay lại kho QA</Link><span className="status-badge">BỘ TÍNH PYLİNAC 3.47.0</span></div></header>
+    {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">TỆP ĐẦU VÀO</p><h2>{needsBackground ? 'Ảnh mô hình kiểm tra và ảnh nền tùy chọn' : 'Ảnh DICOM của bài kiểm tra'}</h2></div><strong>{selected.length}</strong></div><p>{needsBackground ? 'Chọn ảnh mô hình kiểm tra trước; ảnh thứ hai sẽ được dùng làm nền. Bài không cần ảnh nền có thể chỉ chọn một tệp.' : 'Chọn đúng một tệp DICOM gamma camera hoặc SPECT theo quy trình của bài.'}</p><div className="machine-qa-actions"><label className="button-link">Chọn tệp DICOM<input type="file" accept=".dcm,application/dicom" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>{nuclearArtifacts.length > 0 && <div className="table-wrap"><table><thead><tr><th>Chọn</th><th>Tệp</th><th>Vai trò trong bài</th><th>Dung lượng</th></tr></thead><tbody>{nuclearArtifacts.map((artifact) => <tr key={artifact.id}><td><input type="checkbox" aria-label={`Chọn ${artifact.original_filename}`} checked={selectedArtifactIds.includes(artifact.id)} onChange={(event) => setSelectedArtifactIds((current) => event.target.checked ? [...current, artifact.id] : current.filter((id) => id !== artifact.id))} /></td><td>{artifact.original_filename}</td><td>{needsBackground ? (selected.findIndex((item) => item.id === artifact.id) === 0 ? 'Mô hình kiểm tra' : selected.findIndex((item) => item.id === artifact.id) === 1 ? 'Nền' : 'Chưa chọn') : 'Dữ liệu đánh giá'}</td><td>{artifact.byte_size.toLocaleString('vi-VN')} byte</td></tr>)}</tbody></table></div>}</section>
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">THAM SỐ BÀI KIỂM TRA</p><h2>Thông tin đo</h2></div></div><div className="machine-qa-protocol-controls">
+      {catalogKey === 'NUCLEAR_MCR' && field('frame_duration', 'Thời lượng mỗi khung hình (giây)')}
+      {catalogKey === 'NUCLEAR_PU' && <>{field('ufov_ratio', 'Tỷ lệ vùng nhìn hữu ích')}{field('cfov_ratio', 'Tỷ lệ vùng nhìn trung tâm')}{field('window_size', 'Kích thước cửa sổ (điểm ảnh)')}{field('threshold', 'Ngưỡng loại nền')}</>}
+      {catalogKey === 'NUCLEAR_SS' && <>{field('activity_mbq', 'Hoạt độ (MBq)')}{field('nuclide', 'Đồng vị', 'text')}</>}
+      {catalogKey === 'NUCLEAR_FBR' && <>{field('separation_mm', 'Khoảng cách hai vạch (mm)')}{field('roi_width_mm', 'Bề rộng vùng quan tâm (mm)')}</>}
+      {catalogKey === 'NUCLEAR_QR' && <>{field('bar_widths', 'Bề rộng bốn vạch (mm, cách nhau bằng dấu phẩy)', 'text')}{field('roi_diameter_mm', 'Đường kính vùng quan tâm (mm)')}{field('distance_from_center_mm', 'Khoảng cách đến tâm (mm)')}</>}
+      {catalogKey === 'NUCLEAR_TU' && <>{field('first_frame', 'Khung hình bắt đầu')}{field('last_frame', 'Khung hình kết thúc')}{field('ufov_ratio', 'Tỷ lệ vùng nhìn hữu ích')}{field('cfov_ratio', 'Tỷ lệ vùng nhìn trung tâm')}{field('center_ratio', 'Tỷ lệ vùng tâm')}{field('threshold', 'Ngưỡng loại nền')}{field('window_size', 'Kích thước cửa sổ (điểm ảnh)')}</>}
+      {catalogKey === 'NUCLEAR_TC' && <>{field('sphere_diameters_mm', 'Đường kính sáu cầu (mm, cách nhau bằng dấu phẩy)', 'text')}{field('sphere_angles', 'Góc sáu cầu (độ, cách nhau bằng dấu phẩy)', 'text')}{field('ufov_ratio', 'Tỷ lệ vùng nhìn hữu ích')}{field('search_window_px', 'Cửa sổ tìm kiếm (điểm ảnh)')}{field('search_slices', 'Số lát tìm kiếm')}</>}
+    </div><div className="machine-qa-actions"><button disabled={!canAnalyze || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div></section>
+    {latest && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">KẾT QUẢ MỚI NHẤT</p><h2>{latest.name}</h2></div><span className={statusClass(latest.status)}>{statusLabel(latest.status)}</span></div>{latest.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích</h3><ul>{latest.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{latest.status === 'COMPLETED' && <><div className="machine-qa-metric-grid">{metrics.length === 0 ? <p>Kết quả theo khung hình hoặc vùng đã được lưu; hãy mở ảnh phân tích để xem chi tiết.</p> : metrics.map(([key, value]) => <div className="machine-qa-metric" key={key}><span>{nuclearMetricNames[key] ?? 'Kết quả đo'}</span><strong>{textValue(value)}</strong></div>)}</div>{latest.overlay_artifact_id && <button className="button-secondary" onClick={() => { void apiClient.downloadArtifact(accessToken, latest.overlay_artifact_id!).then((download) => window.open(download.url, '_blank', 'noopener,noreferrer')).catch((error) => setMessage(errorMessage(error))) }}>Mở ảnh phân tích</button>}<label>Đánh giá của người dùng<select value={latest.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => assess.mutate({ runId: latest.id, value: event.target.value as 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' })}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">Chưa có kết quả phân tích.</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td></tr>)}</tbody></table></div>}</section>
+  </div>
+}
+
 type PlanarCatalogKey = typeof planarCatalogKeys[number]
 
 function PlanarImagingPage({ caseId, accessToken, title, catalogKey }: { caseId: string; accessToken: string; title: string; catalogKey: PlanarCatalogKey }) {
@@ -1349,6 +1460,9 @@ export function MachineQAPage() {
   }
   if ((selectedCase.qa_definition_key === 'LOG_DYNALOG' || selectedCase.qa_definition_key === 'LOG_TRAJECTORY_2_1' || selectedCase.qa_definition_key === 'LOG_TRAJECTORY_3' || selectedCase.qa_definition_key === 'LOG_TRAJECTORY_4') && accessToken) {
     return <LogAnalyzerPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key} />
+  }
+  if (selectedCase.qa_definition_key?.startsWith('NUCLEAR_') && accessToken) {
+    return <NuclearPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key as NuclearCatalogKey} />
   }
   if (planarCatalogKeys.includes(selectedCase.qa_definition_key as PlanarCatalogKey) && accessToken) {
     return <PlanarImagingPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key as PlanarCatalogKey} />

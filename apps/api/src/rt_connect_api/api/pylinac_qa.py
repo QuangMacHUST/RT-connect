@@ -314,6 +314,35 @@ def create_pylinac_run(
         raise DomainError(
             "PYLINAC_INPUT_COUNT_INVALID", "Bài QA này yêu cầu đúng một tệp đầu vào.", 422
         )
+    nuclear_keys = {
+        "NUCLEAR_MCR",
+        "NUCLEAR_PU",
+        "NUCLEAR_COR",
+        "NUCLEAR_TR",
+        "NUCLEAR_SS",
+        "NUCLEAR_FBR",
+        "NUCLEAR_QR",
+        "NUCLEAR_TU",
+        "NUCLEAR_TC",
+    }
+    if definition.key in nuclear_keys:
+        expected_counts = {"NUCLEAR_SS": {1, 2}}
+        if len(artifacts) not in expected_counts.get(definition.key, {1}):
+            message = (
+                "Bài độ nhạy đơn giản nhận một ảnh phantom và nền tùy chọn."
+                if definition.key == "NUCLEAR_SS"
+                else "Bài kiểm tra hạt nhân này yêu cầu đúng một tệp DICOM."
+            )
+            raise DomainError("PYLINAC_INPUT_COUNT_INVALID", message, 422)
+        if any(
+            Path(artifact.original_filename).suffix.lower() != ".dcm"
+            for artifact in artifacts
+        ):
+            raise DomainError(
+                "PYLINAC_INPUT_FORMAT_INVALID",
+                "Bài kiểm tra hạt nhân chỉ nhận tệp DICOM có đuôi DCM.",
+                422,
+            )
     if definition.key in {"VMAT_DRGS", "VMAT_DRMLC", "VMAT_DRCS"} and len(artifacts) != 2:
         raise DomainError(
             "PYLINAC_INPUT_COUNT_INVALID", "Bài VMAT yêu cầu đúng hai ảnh đầu vào.", 422

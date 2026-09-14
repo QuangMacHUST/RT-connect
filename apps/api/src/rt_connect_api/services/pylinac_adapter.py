@@ -2267,6 +2267,262 @@ def _execute_log(
         ) from exc
 
 
+_NUCLEAR_KEYS = {
+    "NUCLEAR_MCR",
+    "NUCLEAR_PU",
+    "NUCLEAR_COR",
+    "NUCLEAR_TR",
+    "NUCLEAR_SS",
+    "NUCLEAR_FBR",
+    "NUCLEAR_QR",
+    "NUCLEAR_TU",
+    "NUCLEAR_TC",
+}
+
+
+def _nuclear_ratio(parameters: dict[str, object], key: str) -> float:
+    value = _number(parameters, key, minimum=0)
+    if not 0 < value <= 1:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_INVALID", f"Tham số {key} phải lớn hơn 0 và không vượt quá 1."
+        )
+    return value
+
+
+def _nuclear_parameters(
+    catalog_key: str, parameters: dict[str, object]
+) -> dict[str, object]:
+    allowed_by_key = {
+        "NUCLEAR_MCR": {"frame_duration"},
+        "NUCLEAR_PU": {"ufov_ratio", "cfov_ratio", "window_size", "threshold"},
+        "NUCLEAR_COR": set(),
+        "NUCLEAR_TR": set(),
+        "NUCLEAR_SS": {"activity_mbq", "nuclide"},
+        "NUCLEAR_FBR": {"separation_mm", "roi_width_mm"},
+        "NUCLEAR_QR": {"bar_widths", "roi_diameter_mm", "distance_from_center_mm"},
+        "NUCLEAR_TU": {
+            "first_frame",
+            "last_frame",
+            "ufov_ratio",
+            "cfov_ratio",
+            "center_ratio",
+            "threshold",
+            "window_size",
+        },
+        "NUCLEAR_TC": {
+            "sphere_diameters_mm",
+            "sphere_angles",
+            "ufov_ratio",
+            "search_window_px",
+            "search_slices",
+        },
+    }
+    allowed = allowed_by_key[catalog_key]
+    unknown = set(parameters) - allowed
+    if unknown:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_UNSUPPORTED",
+            "Có tham số không được hỗ trợ cho bài kiểm tra hạt nhân.",
+        )
+    normalized: dict[str, object] = {}
+    if catalog_key == "NUCLEAR_MCR" and "frame_duration" in parameters:
+        normalized["frame_duration"] = _number(parameters, "frame_duration", minimum=0.000001)
+    elif catalog_key == "NUCLEAR_PU":
+        if "ufov_ratio" in parameters:
+            normalized["ufov_ratio"] = _nuclear_ratio(parameters, "ufov_ratio")
+        if "cfov_ratio" in parameters:
+            normalized["cfov_ratio"] = _nuclear_ratio(parameters, "cfov_ratio")
+        if "window_size" in parameters:
+            normalized["window_size"] = _integer(parameters, "window_size", minimum=1)
+        if "threshold" in parameters:
+            normalized["threshold"] = _nuclear_ratio(parameters, "threshold")
+    elif catalog_key == "NUCLEAR_SS":
+        normalized["activity_mbq"] = _number(parameters, "activity_mbq", minimum=0.000001)
+        normalized["nuclide"] = _required_text(parameters, "nuclide")
+        if normalized["nuclide"] not in {
+            "Tc99m",
+            "Y90",
+            "I131",
+            "Ga67",
+            "In111",
+            "Lu177",
+        }:
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID", "Chỉ hỗ trợ các đồng vị có trong danh mục Pylinac."
+            )
+    elif catalog_key == "NUCLEAR_FBR":
+        if "separation_mm" in parameters:
+            normalized["separation_mm"] = _number(
+                parameters, "separation_mm", minimum=0.000001
+            )
+        if "roi_width_mm" in parameters:
+            normalized["roi_width_mm"] = _number(
+                parameters, "roi_width_mm", minimum=0.000001
+            )
+    elif catalog_key == "NUCLEAR_QR":
+        if "bar_widths" not in parameters:
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID", "Bài độ phân giải bốn góc cần bốn kích thước vạch."
+            )
+        bar_widths = _number_or_array(parameters, "bar_widths", minimum=0.000001)
+        if not isinstance(bar_widths, tuple) or len(bar_widths) != 4:
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID",
+                "Bài độ phân giải bốn góc cần đúng bốn kích thước vạch.",
+            )
+        normalized["bar_widths"] = bar_widths
+        if "roi_diameter_mm" in parameters:
+            normalized["roi_diameter_mm"] = _number(
+                parameters, "roi_diameter_mm", minimum=0.000001
+            )
+        if "distance_from_center_mm" in parameters:
+            normalized["distance_from_center_mm"] = _number(
+                parameters, "distance_from_center_mm", minimum=0.000001
+            )
+    elif catalog_key == "NUCLEAR_TU":
+        if "first_frame" in parameters:
+            normalized["first_frame"] = _integer(parameters, "first_frame", minimum=0)
+        if "last_frame" in parameters:
+            normalized["last_frame"] = _integer(parameters, "last_frame", minimum=-1)
+        for key in ("ufov_ratio", "cfov_ratio", "center_ratio", "threshold"):
+            if key in parameters:
+                normalized[key] = _nuclear_ratio(parameters, key)
+        if "window_size" in parameters:
+            normalized["window_size"] = _integer(parameters, "window_size", minimum=1)
+    elif catalog_key == "NUCLEAR_TC":
+        for key, expected_length in (("sphere_diameters_mm", 6), ("sphere_angles", 6)):
+            if key not in parameters:
+                continue
+            values = _number_or_array(parameters, key)
+            if not isinstance(values, tuple) or len(values) != expected_length:
+                raise PylinacAdapterError(
+                    "PYLINAC_PARAMETER_INVALID",
+                    f"Tham số {key} phải có đúng {expected_length} giá trị.",
+                )
+            normalized[key] = values
+        if "ufov_ratio" in parameters:
+            normalized["ufov_ratio"] = _nuclear_ratio(parameters, "ufov_ratio")
+        for key in ("search_window_px", "search_slices"):
+            if key in parameters:
+                normalized[key] = _integer(parameters, key, minimum=1)
+    return normalized
+
+
+def _nuclear_source_paths(source_path: Path) -> list[Path]:
+    if not source_path.is_dir():
+        return [source_path]
+    paths = sorted(item for item in source_path.iterdir() if item.is_file())
+    if not paths:
+        raise PylinacAdapterError(
+            "PYLINAC_INPUT_COUNT_INVALID", "Chưa có tệp dữ liệu hạt nhân để phân tích."
+        )
+    return paths
+
+
+def _nuclear_overlay(engine: Any) -> tuple[bytes | None, list[dict[str, object]]]:
+    if not hasattr(engine, "plot"):
+        return None, []
+    try:
+        plotted = engine.plot(show=False)
+        candidates: list[Any] = []
+        if isinstance(plotted, tuple) and plotted:
+            first = plotted[0]
+            candidates.extend(first if isinstance(first, (list, tuple)) else [first])
+        elif isinstance(plotted, (list, tuple)):
+            candidates.extend(plotted)
+        elif plotted is not None:
+            candidates.append(plotted)
+        if not candidates:
+            return None, []
+        return _save_figure(candidates[0]), []
+    except Exception:
+        return None, [
+            {
+                "code": "PYLINAC_OVERLAY_UNAVAILABLE",
+                "message": "Pylinac đã trả kết quả nhưng không tạo được ảnh minh họa cho bài này.",
+            }
+        ]
+    finally:
+        from matplotlib import pyplot as plt
+
+        plt.close("all")
+
+
+def _execute_nuclear(
+    catalog_key: str, source_path: Path, parameters: dict[str, object]
+) -> PylinacExecutionResult:
+    symbol, _ = resolve_runtime_symbol(catalog_key)
+    if symbol is None:
+        raise PylinacAdapterError(
+            "PYLINAC_RUNTIME_UNAVAILABLE", "Bộ phân tích hạt nhân chưa sẵn sàng trên máy chủ."
+        )
+    options = _nuclear_parameters(catalog_key, parameters)
+    paths = _nuclear_source_paths(source_path)
+    if catalog_key == "NUCLEAR_SS":
+        if len(paths) not in {1, 2}:
+            raise PylinacAdapterError(
+                "PYLINAC_INPUT_COUNT_INVALID",
+                "Bài độ nhạy đơn giản nhận một ảnh phantom và nền tùy chọn.",
+            )
+        engine = symbol(str(paths[0]), str(paths[1]) if len(paths) == 2 else None)
+        nuclear_module = __import__("pylinac.nuclear", fromlist=["Nuclide"])
+        nuclide_name = options["nuclide"]
+        if not isinstance(nuclide_name, str):
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID", "Đồng vị hạt nhân không hợp lệ."
+            )
+        nuclide = getattr(nuclear_module.Nuclide, nuclide_name)
+        engine.analyze(activity_mbq=options["activity_mbq"], nuclide=nuclide)
+    else:
+        if len(paths) != 1:
+            raise PylinacAdapterError(
+                "PYLINAC_INPUT_COUNT_INVALID", "Bài kiểm tra hạt nhân này nhận đúng một tệp ảnh."
+            )
+        engine = symbol(str(paths[0]))
+        engine.analyze(**options)
+    try:
+        raw_result = engine.results_data(as_dict=True)
+        result = _json_safe(raw_result)
+        if not isinstance(result, dict):
+            raise PylinacAdapterError(
+                "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả hạt nhân không hợp lệ."
+            )
+        raw_warnings = result.get("warnings", [])
+        warning_items = raw_warnings if isinstance(raw_warnings, list) else [raw_warnings]
+        overlay_bytes, overlay_warnings = _nuclear_overlay(engine)
+        engine_warnings: list[dict[str, object]] = [
+            {"code": "PYLINAC_ENGINE_WARNING", "message": str(item)}
+            for item in warning_items
+            if item
+        ]
+        return PylinacExecutionResult(
+            catalog_key=catalog_key,
+            engine_class=type(engine).__name__,
+            engine_version=PYLINAC_VERSION,
+            package_fingerprint=package_fingerprint(),
+            result_snapshot={
+                "schema_version": "p7.pylinac-nuclear-result.v1",
+                "engine": "pylinac",
+                "engine_class": type(engine).__name__,
+                "metrics": result,
+                "engine_passed": None,
+                "parameters": _json_safe(parameters),
+            },
+            warnings=engine_warnings + overlay_warnings,
+            overlay_bytes=overlay_bytes,
+            overlay_media_type="image/png" if overlay_bytes else None,
+            overlay_filename=f"{catalog_key.lower()}-phan-tich.png" if overlay_bytes else None,
+        )
+    except PylinacAdapterError:
+        raise
+    except Exception as exc:
+        raise PylinacAdapterError(
+            "PYLINAC_EXECUTION_FAILED",
+            "Pylinac không thể phân tích bài kiểm tra hạt nhân. Hãy kiểm tra tệp "
+            "và tham số rồi thử lại.",
+        ) from exc
+
+
 def execute_pylinac(
     catalog_key: str, source_path: Path, parameters: dict[str, object]
 ) -> PylinacExecutionResult:
@@ -2279,6 +2535,8 @@ def execute_pylinac(
         return _execute_calibration(catalog_key, parameters)
     if catalog_key in _LOG_KEYS:
         return _execute_log(catalog_key, source_path, parameters)
+    if catalog_key in _NUCLEAR_KEYS:
+        return _execute_nuclear(catalog_key, source_path, parameters)
     if catalog_key == "PICKET_FENCE":
         return _execute_picket_fence(source_path, parameters)
     if catalog_key == "STARSHOT":

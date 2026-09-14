@@ -514,6 +514,7 @@ def _build_catalog() -> tuple[dict[str, object], ...]:
                 required_inputs,
                 ("Khung ảnh", "Vùng quan tâm", "Ngưỡng", "Thang đo"),
                 engine_class=engine_class,
+                implementation_status="READY",
                 supports_manual_adjustment=True,
             )
         )

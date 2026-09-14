@@ -882,6 +882,97 @@ def test_log_adapter_rejects_wrong_trajectory_version(tmp_path, monkeypatch) -> 
         raise AssertionError("Phiên bản Trajectory Log không khớp phải bị từ chối")
 
 
+def test_nuclear_adapter_maps_pylinac_results_and_overlay(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "nuclear.dcm"
+    source.write_bytes(b"dicom")
+
+    class FakeNuclear:
+        def __init__(self, path: str) -> None:
+            assert path.endswith("nuclear.dcm")
+
+        def analyze(self, *, frame_duration: float) -> None:
+            assert frame_duration == 2.0
+
+        def results_data(self, *, as_dict: bool) -> dict[str, object]:
+            assert as_dict is True
+            return {"max_countrate": 120.0, "max_frame": 3, "warnings": []}
+
+        def plot(self, *, show: bool) -> tuple[list[object], list[object]]:
+            assert show is False
+            from matplotlib import pyplot as plt
+
+            return [plt.figure()], []
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (FakeNuclear, None) if key == "NUCLEAR_MCR" else (None, "missing"),
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.package_fingerprint", lambda: "f" * 64
+    )
+    result = execute_pylinac("NUCLEAR_MCR", source, {"frame_duration": 2})
+    assert result.engine_class == "FakeNuclear"
+    assert result.result_snapshot["schema_version"] == "p7.pylinac-nuclear-result.v1"
+    metrics = result.result_snapshot["metrics"]
+    assert isinstance(metrics, dict)
+    assert metrics["max_countrate"] == 120.0
+    assert result.overlay_bytes is not None
+
+
+def test_simple_sensitivity_uses_optional_background_and_nuclide(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "nuclear"
+    source.mkdir()
+    (source / "00-phantom.dcm").write_bytes(b"phantom")
+    (source / "01-background.dcm").write_bytes(b"background")
+
+    class FakeSensitivity:
+        def __init__(self, phantom: str, background: str | None) -> None:
+            assert phantom.endswith("00-phantom.dcm")
+            assert background is not None and background.endswith("01-background.dcm")
+
+        def analyze(self, *, activity_mbq: float, nuclide: dict[str, float]) -> None:
+            assert activity_mbq == 25.0
+            assert nuclide["half_life_s"] > 0
+
+        def results_data(self, *, as_dict: bool) -> dict[str, object]:
+            assert as_dict is True
+            return {"sensitivity_mbq": 3.2, "warnings": []}
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (FakeSensitivity, None) if key == "NUCLEAR_SS" else (None, "missing"),
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.package_fingerprint", lambda: "f" * 64
+    )
+    result = execute_pylinac(
+        "NUCLEAR_SS", source, {"activity_mbq": 25, "nuclide": "Tc99m"}
+    )
+    metrics = result.result_snapshot["metrics"]
+    assert isinstance(metrics, dict)
+    assert metrics["sensitivity_mbq"] == 3.2
+    assert result.overlay_bytes is None
+
+
+def test_nuclear_registry_resolves_all_protocol_classes() -> None:
+    capabilities = {item.catalog_key: item for item in resolve_capabilities()}
+    for key in (
+        "NUCLEAR_MCR",
+        "NUCLEAR_PU",
+        "NUCLEAR_COR",
+        "NUCLEAR_TR",
+        "NUCLEAR_SS",
+        "NUCLEAR_FBR",
+        "NUCLEAR_QR",
+        "NUCLEAR_TU",
+        "NUCLEAR_TC",
+    ):
+        capability = capabilities[key]
+        assert capability.runtime_available is True
+        assert capability.has_analyze is True
+        assert capability.has_results_data is True
+
+
 def test_planar_adapter_uses_common_pylinac_image_controls(tmp_path, monkeypatch) -> None:
     source = tmp_path / "planar.dcm"
     source.write_bytes(b"planar")

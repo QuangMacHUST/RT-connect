@@ -59,6 +59,8 @@ Các module phụ `Core`, `Image Generator` và `Plan Generator` không phải b
 
 Với Log Analyzer, giao diện không yêu cầu người dùng sửa tệp cấu hình thô. Dynalog phải có đúng một cặp A/B; Trajectory Log phải có một tệp nhị phân đúng phiên bản bài đã chọn và có thể kèm tệp mô tả TXT cùng tên. Adapter lấy chỉ số từ các thuộc tính công khai Axis/MLC/Fluence của Pylinac, tạo biểu đồ sai lệch MLC khi engine hỗ trợ và để đánh giá Đạt/Cảnh báo/Không đạt cho người thực hiện chọn độc lập. Bản đồ Gamma fluence là tùy chọn nâng cao, chỉ mở khi đã nhập dung sai liều và khoảng cách hợp lệ.
 
+Với Nuclear, danh mục đã ánh xạ đủ chín lớp công khai vào chín biểu mẫu riêng. Các bài dùng ảnh/chuỗi DICOM phải qua kiểm tra đúng số tệp, phần mở rộng và khả năng đọc trước khi chạy. `SimpleSensitivity` nhận ảnh phantom và cho phép thêm ảnh nền; người dùng phải nhập hoạt độ và nuclide, không dùng giá trị ngầm. Adapter chỉ đọc `results_data()` sau khi gọi `analyze()` của Pylinac. Ảnh minh họa được tạo bằng phương thức công khai của lớp; nếu lớp có lỗi riêng ở phần vẽ, kết quả đo vẫn được giữ và giao diện hiển thị cảnh báo thiếu ảnh minh họa. Lát cắt hiện đã có hợp đồng, adapter, biểu mẫu và kiểm thử cục bộ giả lập; chưa có fixture DICOM Nuclear nên chưa được xem là chạy engine thật hay nghiệm thu staging.
+
 ## 4. Toàn bộ biến thể Planar Imaging
 
 Registry Planar Imaging phải chứa mọi class công khai sau nếu class đó tồn tại trong wheel đã khóa:
