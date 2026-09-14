@@ -1,0 +1,32 @@
+{
+  "schema_version": "rt-connect.p5-staging-batch-selection.v1",
+  "captured_at_utc": "2026-09-14T03:18:00Z",
+  "phase": "P5",
+  "status": "STAGING_UI_VERIFIED",
+  "environment": "staging",
+  "source_revision": "75f86df",
+  "repository_tip": "d295bd3",
+  "scope": "Kiểm tra hiển thị và chọn nhiều trong lịch sử QA; không thực hiện thao tác ghi dữ liệu.",
+  "checks": [
+    {
+      "name": "selection_column",
+      "result": "PASS",
+      "details": "Bảng lịch sử hiển thị cột chọn cho từng bài và hộp chọn tất cả bài đang hiển thị."
+    },
+    {
+      "name": "selection_toolbar",
+      "result": "PASS",
+      "details": "Chọn một bài hiển thị số lượng đã chọn, đưa vào thùng rác và bỏ chọn."
+    },
+    {
+      "name": "selection_reset",
+      "result": "PASS",
+      "details": "Bỏ chọn đưa hộp chọn và thanh thao tác về trạng thái không chọn."
+    }
+  ],
+  "not_yet_verified": [
+    "Chưa thực hiện lưu trữ, khôi phục hoặc xóa vĩnh viễn nhiều mục trên staging.",
+    "Chưa kiểm chứng phản hồi từng mục khi mạng lỗi hoặc có xung đột đồng thời trên staging.",
+    "P5-VERIFY/P5-HANDOFF vẫn mở."
+  ]
+}
