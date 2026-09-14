@@ -1,0 +1,81 @@
+{
+  "evidence_id": "p7-local-field-profile-20260914",
+  "phase": "P7",
+  "status": "LOCAL_VERIFIED_SLICE",
+  "source_commit": "53e918f63ac8400db8e10fdad816d1cfafb762eb",
+  "engine": {
+    "name": "pylinac",
+    "version": "3.47.0",
+    "wheel_sha256": "7a99ec70a0242fa645882152fb5aa012f176b943a78339a3a18c15c953331b68",
+    "package_fingerprint": "19a8da65c321f709e700417fe629e4275052c646701fc8b1a146291df9e13e32",
+    "catalogue_version": "pylinac-3.47.0-rt-connect-1.0"
+  },
+  "fixture": "pylinac/demo_files/AS1200.dcm",
+  "executed_capabilities": [
+    {
+      "catalog_key": "FIELD_PROFILE_ANALYSIS",
+      "engine_class": "FieldProfileAnalysis",
+      "parameters": {
+        "centering": "BEAM_CENTER",
+        "position": [0.5, 0.5],
+        "normalization": "NONE",
+        "edge_type": "INFLECTION_DERIVATIVE",
+        "ground": true
+      },
+      "x_flatness_difference_percent": 44.77022249948014,
+      "y_flatness_difference_percent": 26.441515650741355,
+      "overlay_byte_size": 54772,
+      "overlay_filename": "field-profile-analysis-phan-tich.png",
+      "warning_count": 0
+    },
+    {
+      "catalog_key": "FIELD_ANALYSIS_LEGACY",
+      "engine_class": "FieldAnalysis",
+      "parameters": {
+        "protocol": "VARIAN",
+        "centering": "BEAM_CENTER",
+        "interpolation": "LINEAR",
+        "normalization_method": "BEAM_CENTER",
+        "edge_detection_method": "INFLECTION_DERIVATIVE",
+        "ground": true
+      },
+      "flatness_horizontal_percent": 44.78017532604955,
+      "flatness_vertical_percent": 20.294748024265772,
+      "overlay_byte_size": 57977,
+      "overlay_filename": "field-analysis-phan-tich.png",
+      "warning_count": 0
+    }
+  ],
+  "input_contract": {
+    "requires_exactly_one_image": true,
+    "manual_position_is_normalized_to_image_coordinates": true,
+    "legacy_protocol_is_selected_in_ui": true,
+    "legacy_is_explicitly_labelled": true
+  },
+  "persisted_contract": {
+    "migration": "20260914_0023",
+    "stores_input_snapshot": true,
+    "stores_result_snapshot": true,
+    "stores_separate_user_assessment": true,
+    "stores_derived_overlay": true,
+    "preserves_old_runs": true,
+    "tenant_scope_is_first_lookup": true
+  },
+  "tests": {
+    "api_pylinac_tests": "12 passed",
+    "ruff": "PASS",
+    "mypy": "PASS",
+    "web_lint": "PASS",
+    "web_typecheck": "PASS",
+    "web_build": "PASS",
+    "planning_contract": "PASS"
+  },
+  "not_closed": [
+    "53 capability pylinac còn lại chưa có adapter và fixture/contract test riêng",
+    "ma trận fixture đầy đủ và canvas dùng chung chưa hoàn tất",
+    "các bài phantom CT, ảnh phẳng, log, hạt nhân và đóng góp chưa hoàn tất",
+    "P07-VERIFY và P07-HANDOFF chưa hoàn tất",
+    "chưa triển khai hoặc kiểm chứng lát cắt này trên staging"
+  ],
+  "secrets_or_patient_data": "none"
+}
