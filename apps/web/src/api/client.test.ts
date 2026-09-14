@@ -48,6 +48,21 @@ test('requires confirmation before permanently purging a QA case', async () => {
   expect(fetchMock).not.toHaveBeenCalled()
 })
 
+test('allows a confirmed batch purge helper to send one request without prompting again', async () => {
+  const caseId = '123e4567-e89b-42d3-a456-426614174000'
+  const confirm = vi.spyOn(window, 'confirm')
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ status: 'PURGED', case_id: caseId })
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  const client = new ApiClient('http://api.test/api/v1')
+
+  await expect(client.purgeQACaseConfirmed('token', caseId)).resolves.toMatchObject({ status: 'PURGED' })
+  expect(confirm).not.toHaveBeenCalled()
+  expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(`/qa-cases/${caseId}/purge`), expect.objectContaining({ method: 'POST' }))
+})
+
 test('translates a network failure into a retryable localized client error', async () => {
   vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
 

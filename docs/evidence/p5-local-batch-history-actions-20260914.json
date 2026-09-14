@@ -20,9 +20,14 @@
       "details": "5/5 bài kiểm thử, gồm chọn từng bài, chọn tất cả, bỏ chọn và chống mục trùng."
     },
     {
+      "name": "api_client_contract_tests",
+      "result": "PASS",
+      "details": "4/4 bài kiểm thử, gồm xác nhận xóa vĩnh viễn và đường gọi đã xác nhận cho thao tác nhiều mục."
+    },
+    {
       "name": "web_full_tests",
       "result": "PASS",
-      "details": "12/12 tệp, 35/35 bài kiểm thử giao diện."
+      "details": "12/12 tệp, 36/36 bài kiểm thử giao diện."
     },
     {
       "name": "web_quality_gates",
