@@ -1693,10 +1693,15 @@ def _execute_planar(
             raise PylinacAdapterError(
                 "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả ảnh phẳng không hợp lệ."
             )
-        plotted = engine.plot(show=False)
         from matplotlib import pyplot as plt
 
+        # Pylinac 3.47 exposes the Matplotlib result renderer for planar
+        # phantoms as ``plot_analyzed_image``.  ``plot`` belongs to the
+        # Plotly-facing API and is not present on classes such as LeedsTOR.
+        plotted = engine.plot_analyzed_image(show=False)
         figures = plotted[0] if isinstance(plotted, tuple) and plotted else []
+        if not isinstance(figures, (list, tuple)):
+            figures = [figures]
         figure = figures[0] if figures else plt.gcf()
         overlay_bytes = _save_figure(figure)
         for plotted_figure in figures:

@@ -1,5 +1,11 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W03 — sửa tương thích ảnh phẳng với Pylinac 3.47.0 — lát cắt cục bộ — 2026-09-15
+
+- Bộ chuyển đổi ảnh phẳng đã gọi đúng `plot_analyzed_image(show=False)` của Pylinac 3.47.0. Trước đó nó gọi nhầm `plot()`, khiến `LeedsTOR` phân tích được nhưng bị báo lỗi khi dựng ảnh minh họa vì lớp này không có phương thức đó.
+- Kiểm tra engine thật bằng tệp mẫu chính thức đã đạt: `LeedsTOR` với `leeds.dcm` và `StandardImagingFC2` với `fc2.dcm`; cả hai trả structured result và ảnh overlay. Kiểm thử adapter đã được cập nhật để khóa đúng hợp đồng renderer mới.
+- Đây là `LOCAL_VERIFIED_SLICE`; 17 biến thể ảnh phẳng còn lại vẫn cần fixture riêng, đối chiếu kết quả/overlay, kiểm thử lỗi và staging. Cảnh báo tương thích từ dependency không được che khuất lỗi phân tích và không được dùng làm bằng chứng nghiệm thu lâm sàng.
+
 ## P7-W03 — đồng bộ phiên bản danh mục trong API — lát cắt cục bộ — 2026-09-15
 
 - API registry nay lấy trực tiếp hằng phiên bản từ danh mục thay vì lặp lại một chuỗi riêng. Sau khi CatPhan700 nâng danh mục lên 1.2, tuyến khả năng Pylinac và bản tóm tắt phát hành cùng trả đúng `pylinac-3.47.0-rt-connect-1.2`.

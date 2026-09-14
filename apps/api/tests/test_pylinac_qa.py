@@ -1122,7 +1122,7 @@ def test_planar_adapter_uses_common_pylinac_image_controls(tmp_path, monkeypatch
             assert as_dict is True
             return {"low_contrast": {"visibility": 90}, "warnings": []}
 
-        def plot(self, *, show: bool) -> tuple[list[object], list[str]]:
+        def plot_analyzed_image(self, *, show: bool) -> tuple[list[object], list[str]]:
             assert show is False
             return [plt.figure()], ["Image"]
 
