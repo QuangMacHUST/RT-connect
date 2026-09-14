@@ -170,3 +170,7 @@ documentation commit cannot leave API, worker and web on different revisions.
 P5 staging parity evidence commit (2026-09-14): the public recheck evidence
 for the artifact-guard candidate is committed at repository root. Rebuild API,
 worker and web from the same revision before treating the evidence as current.
+
+P5 current staging verification checkpoint (2026-09-14): the recorded public
+verification belongs to the preceding source revision; rebuild all services
+from the final repository revision before release review.

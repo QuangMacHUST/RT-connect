@@ -116,3 +116,7 @@ services are rebuilt from the same source commit before staging verification.
 P5 staging parity evidence commit (2026-09-14): the public recheck evidence
 for the artifact-guard candidate is committed at repository root. Rebuild the
 web together with API and worker from the same revision before staging review.
+
+P5 current staging verification checkpoint (2026-09-14): the recorded public
+verification belongs to the preceding source revision; rebuild web, API and
+worker from the final repository revision before release review.
