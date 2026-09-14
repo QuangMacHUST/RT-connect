@@ -305,11 +305,14 @@ type PylinacAdjustmentCanvasProps = {
   artifactId: string | undefined
   x: string
   y: string
+  coordinateMode?: 'PIXEL' | 'NORMALIZED'
+  heading?: string
+  description?: string
   disabled?: boolean
   onPointChange: (x: string, y: string) => void
 }
 
-function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, disabled = false, onPointChange }: PylinacAdjustmentCanvasProps) {
+function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, coordinateMode = 'PIXEL', heading = 'Chọn tâm bắt đầu', description = 'Nhấn hoặc kéo trên ảnh để đặt tâm bắt đầu. Tọa độ được quy đổi theo kích thước ảnh gốc và gửi cho Pylinac.', disabled = false, onPointChange }: PylinacAdjustmentCanvasProps) {
   const imageRef = useRef<HTMLImageElement>(null)
   const dragging = useRef(false)
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 })
@@ -323,9 +326,13 @@ function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, disabled = fal
     if (!image || disabled) return
     const bounds = image.getBoundingClientRect()
     if (!bounds.width || !bounds.height) return
-    const pointX = Math.max(0, Math.min(image.naturalWidth, (clientX - bounds.left) * image.naturalWidth / bounds.width))
-    const pointY = Math.max(0, Math.min(image.naturalHeight, (clientY - bounds.top) * image.naturalHeight / bounds.height))
-    onPointChange(pointX.toFixed(1), pointY.toFixed(1))
+    const pixelX = Math.max(0, Math.min(image.naturalWidth, (clientX - bounds.left) * image.naturalWidth / bounds.width))
+    const pixelY = Math.max(0, Math.min(image.naturalHeight, (clientY - bounds.top) * image.naturalHeight / bounds.height))
+    if (coordinateMode === 'NORMALIZED') {
+      onPointChange((pixelX / image.naturalWidth).toFixed(4), (pixelY / image.naturalHeight).toFixed(4))
+    } else {
+      onPointChange(pixelX.toFixed(1), pixelY.toFixed(1))
+    }
   }
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (disabled || !imageRef.current) return
@@ -341,7 +348,10 @@ function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, disabled = fal
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId)
   }
   const hasPoint = x.trim() !== '' && y.trim() !== ''
-  return <div className="qa-adjustment-panel"><div className="panel-heading"><div><p className="eyebrow">ĐIỀU CHỈNH TRÊN ẢNH</p><h3>Chọn tâm bắt đầu</h3></div><span className="status-badge">NHẤN VÀ KÉO</span></div><p className="form-hint">Nhấn hoặc kéo trên ảnh để đặt tâm bắt đầu. Tọa độ được quy đổi theo kích thước ảnh gốc và gửi cho Pylinac.</p>{preview.data?.url ? <div className={disabled ? 'qa-adjustment-canvas qa-adjustment-canvas--disabled' : 'qa-adjustment-canvas'} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={releasePointer} onPointerCancel={releasePointer}><img ref={imageRef} src={preview.data.url} alt="Ảnh đầu vào để chọn tâm" draggable={false} onLoad={(event) => setImageDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />{hasPoint && imageDimensions.width > 0 && imageDimensions.height > 0 && <span className="qa-adjustment-point" style={{ left: `${Number(x) / imageDimensions.width * 100}%`, top: `${Number(y) / imageDimensions.height * 100}%` }} />}</div> : <div className="qa-adjustment-canvas qa-adjustment-canvas--empty">{preview.isPending ? 'Đang tải ảnh xem trước…' : artifactId ? 'Không thể tải ảnh xem trước. Vẫn có thể nhập tọa độ bên dưới.' : 'Chọn ảnh để bật vùng điều chỉnh.'}</div>}</div>
+  const pointStyle = coordinateMode === 'NORMALIZED'
+    ? { left: `${Number(x) * 100}%`, top: `${Number(y) * 100}%` }
+    : { left: `${Number(x) / imageDimensions.width * 100}%`, top: `${Number(y) / imageDimensions.height * 100}%` }
+  return <div className="qa-adjustment-panel"><div className="panel-heading"><div><p className="eyebrow">ĐIỀU CHỈNH TRÊN ẢNH</p><h3>{heading}</h3></div><span className="status-badge">NHẤN VÀ KÉO</span></div><p className="form-hint">{description}</p>{preview.data?.url ? <div className={disabled ? 'qa-adjustment-canvas qa-adjustment-canvas--disabled' : 'qa-adjustment-canvas'} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={releasePointer} onPointerCancel={releasePointer} role="application" aria-label={heading}><img ref={imageRef} src={preview.data.url} alt="Ảnh đầu vào để chọn tâm" draggable={false} onLoad={(event) => setImageDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />{hasPoint && imageDimensions.width > 0 && imageDimensions.height > 0 && <span className="qa-adjustment-point" style={pointStyle} />}</div> : <div className="qa-adjustment-canvas qa-adjustment-canvas--empty">{preview.isPending ? 'Đang tải ảnh xem trước…' : artifactId ? 'Không thể tải ảnh xem trước. Vẫn có thể nhập tọa độ bên dưới.' : 'Chọn ảnh để bật vùng điều chỉnh.'}</div>}</div>
 }
 
 function PicketFencePage({ caseId, accessToken, title }: { caseId: string; accessToken: string; title: string }) {
@@ -891,6 +901,7 @@ function FieldAnalysisPage({ caseId, accessToken, title, catalogKey }: { caseId:
       <p>Bài kiểm tra cần một tệp ảnh. Pylinac chịu trách nhiệm phân tích; RT-CONNECT chỉ thu thập lựa chọn và tham số của người thực hiện.</p>
       <div className="machine-qa-actions"><label className="button-link">Chọn ảnh DICOM<input type="file" accept=".dcm,application/dicom" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>
       {imageArtifacts.length > 0 && <label>Tệp đang chọn<select value={selectedInput ?? ''} onChange={(event) => setSelectedArtifactId(event.target.value)}>{imageArtifacts.map((artifact, index) => <option key={artifact.id} value={artifact.id}>Ảnh {index + 1} · {artifact.original_filename}</option>)}</select></label>}
+      {centering === 'MANUAL' && selectedInput && <PylinacAdjustmentCanvas accessToken={accessToken} artifactId={selectedInput} x={positionX} y={positionY} coordinateMode="NORMALIZED" heading="Chọn vị trí biên dạng" description="Nhấn hoặc kéo trên ảnh để đặt vị trí biên dạng. Vị trí được lưu theo tỷ lệ 0–1 của ảnh gốc và gửi đúng theo hợp đồng của Pylinac." disabled={isBusy} onPointChange={(x, y) => { setPositionX(x); setPositionY(y) }} />}
       <div className="machine-qa-protocol-controls">
         <label>Cách xác định tâm<select value={centering} onChange={(event) => setCentering(event.target.value)}><option value="BEAM_CENTER">Tâm chùm tia</option><option value="GEOMETRIC_CENTER">Tâm hình học</option><option value="MANUAL">Chọn thủ công</option></select></label>
         <label>Vị trí ngang (0–1)<input type="number" min="0" max="1" step="0.01" value={positionX} onChange={(event) => setPositionX(event.target.value)} /></label>
@@ -1578,6 +1589,7 @@ function PlanarImagingPage({ caseId, accessToken, title, catalogKey }: { caseId:
         <label>Tâm ngang tùy chọn<input type="number" step="0.1" placeholder="Tự động" value={centerX} onChange={(event) => setCenterX(event.target.value)} /></label>
         <label>Tâm dọc tùy chọn<input type="number" step="0.1" placeholder="Tự động" value={centerY} onChange={(event) => setCenterY(event.target.value)} /></label>
       </div>
+      {selectedInput && <PylinacAdjustmentCanvas accessToken={accessToken} artifactId={selectedInput} x={centerX} y={centerY} heading="Chọn tâm phantom" description="Nhấn hoặc kéo trên ảnh để đặt tâm phantom. Tọa độ điểm ảnh được đồng bộ với hai ô tâm bên dưới và chỉ áp dụng cho lần phân tích mới." disabled={isBusy} onPointChange={(x, y) => { setCenterX(x); setCenterY(y) }} />}
       <div className="machine-qa-protocol-controls">
         <label>Điều chỉnh góc (độ)<input type="number" step="0.1" value={angle} onChange={(event) => setAngle(event.target.value)} /></label>
         <label>Hệ số vùng quan tâm<input type="number" min="0" step="0.01" value={roiSize} onChange={(event) => setRoiSize(event.target.value)} /></label>

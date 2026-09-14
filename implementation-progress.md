@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W04 — canvas thao tác tâm dùng chung — lát cắt cục bộ — 2026-09-15
+
+- Khung điều chỉnh ảnh dùng chung đã nhận thêm chế độ tọa độ chuẩn hóa 0–1 cho Field Profile/Field Analysis và được dùng ở chế độ chọn vị trí thủ công; Planar Imaging dùng cùng khung ở chế độ tọa độ điểm ảnh để chọn tâm phantom. Starshot tiếp tục dùng cùng thành phần cho tâm bắt đầu.
+- Giao diện chỉ mở khung ảnh khi bài có tệp ảnh đã chọn; các bài không cần tệp không xuất hiện vùng tải hoặc vùng chọn ảnh. Mọi điểm chọn được đồng bộ hai chiều với ô nhập và chỉ được đưa vào lần phân tích mới, không sửa kết quả đã lưu.
+- Cổng local đạt: kiểm tra kiểu, lint, 40/40 bài kiểm thử giao diện và bản dựng sản xuất. Cảnh báo kích thước gói JavaScript vẫn là cảnh báo đã biết.
+- Đây là `LOCAL_VERIFIED_SLICE`; P07-W04 vẫn mở vì chưa có canvas cho chuỗi/đa ảnh, ROI/lớp ảnh chuyên biệt và chưa có kiểm chứng thao tác thật trên staging. Không coi đây là nghiệm thu P7.
+
 ## P8-W02/W03 — cấu hình Gamma và hủy hàng chờ — lát cắt cục bộ — 2026-09-15
 
 - API bổ sung tuyến hủy Gamma theo phạm vi đơn vị. Chỉ lượt `QUEUED` hoặc `RETRYING` mới được hủy; lượt đang chạy không bị dừng cưỡng bức để giữ nguyên cơ chế thuê và rào chắn worker. Hủy được ghi thành trạng thái kết thúc `CANCELLED`, lưu cảnh báo cho người dùng, đánh dấu các ý định gửi tương ứng là đã hủy và ghi nhật ký thao tác.
