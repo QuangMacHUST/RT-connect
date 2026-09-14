@@ -814,10 +814,13 @@ def purge_qa_case(
     """
 
     context = resolve_session_context(session, identity)
+    # Keep the reference check and delete in one serialized transaction. On
+    # PostgreSQL this row lock also prevents a new FK-linked child from being
+    # inserted between the check and the purge.
     case = session.scalar(
         select(QACase).where(
             QACase.id == case_id, QACase.organization_id == context.organization_id
-        )
+        ).with_for_update()
     )
     if case is None:
         already_purged = session.scalar(
