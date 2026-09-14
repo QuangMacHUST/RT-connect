@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W01 — QA nhập số đo — lát cắt cục bộ — 2026-09-15
+
+- Đã hoàn thiện bảng nhập số đo theo quy trình: giữ các tiêu chí `RANGE`, `MAX`, `MIN`, `ABSOLUTE_DEVIATION`, `PERCENT_DEVIATION` và `NA`; cho phép đánh dấu không áp dụng kèm lý do; thêm ghi chú riêng cho từng số đo; kết luận của bộ tiêu chí vẫn tách khỏi đánh giá của người thực hiện.
+- Quy trình mẫu và nhãn chính đã được dịch sang tiếng Việt. API từ chối số đo không nằm trong quy trình đang dùng để tránh lưu hoặc đưa dữ liệu ngoài hợp đồng vào kết quả/xu hướng.
+- Cổng local đạt: **9/9** kiểm thử `test_machine_qa.py`, Ruff, kiểm tra kiểu, lint và **39/39** bài kiểm thử giao diện. Bằng chứng: [QA nhập số đo](docs/evidence/p7-local-manual-machine-qa-20260915.md).
+- Đây là `LOCAL_VERIFIED_SLICE`; chưa nghiệm thu staging và không làm thay đổi tình trạng các gói Pylinac còn thiếu fixture chuẩn, canvas dùng chung, ma trận kết quả và P7-VERIFY/HANDOFF.
+
 Tài liệu hiện hành: `business-analysis.md` v1.3,
 `technical-specification.md` v2.3 và `plan.md` v5.3 — mốc UX1.3.
 `docs/history/pre-ux-20260912/specification.md` v1.29 là hợp đồng kế thừa, không ghi đè yêu cầu mới.

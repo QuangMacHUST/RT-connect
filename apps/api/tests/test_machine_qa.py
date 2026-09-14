@@ -244,6 +244,127 @@ def test_machine_qa_persists_measurement_note_and_rejects_unknown_metric() -> No
         }
 
 
+def test_machine_qa_supports_all_published_rule_types_and_explicit_na() -> None:
+    with _workspace_client() as (client, organization):
+        base_url = f"/api/v1/organizations/{organization.id}/qa-protocols"
+        rules = [
+            {
+                "metric_key": "range_value",
+                "display_name": "Giá trị trong khoảng",
+                "unit": "%",
+                "rule_type": "RANGE",
+                "lower_limit": 98,
+                "upper_limit": 102,
+                "action_level": 2,
+                "required": True,
+                "sort_order": 0,
+            },
+            {
+                "metric_key": "maximum_value",
+                "display_name": "Giá trị lớn nhất",
+                "unit": "mm",
+                "rule_type": "MAX",
+                "upper_limit": 2,
+                "action_level": 0.5,
+                "required": True,
+                "sort_order": 1,
+            },
+            {
+                "metric_key": "minimum_value",
+                "display_name": "Giá trị nhỏ nhất",
+                "unit": "mm",
+                "rule_type": "MIN",
+                "lower_limit": 5,
+                "action_level": 0.5,
+                "required": True,
+                "sort_order": 2,
+            },
+            {
+                "metric_key": "absolute_value",
+                "display_name": "Độ lệch tuyệt đối",
+                "unit": "mm",
+                "rule_type": "ABSOLUTE_DEVIATION",
+                "target_value": 10,
+                "tolerance": 2,
+                "action_level": 2,
+                "required": True,
+                "sort_order": 3,
+            },
+            {
+                "metric_key": "percent_value",
+                "display_name": "Độ lệch phần trăm",
+                "unit": "%",
+                "rule_type": "PERCENT_DEVIATION",
+                "target_value": 100,
+                "tolerance": 2,
+                "action_level": 2,
+                "required": True,
+                "sort_order": 4,
+            },
+            {
+                "metric_key": "not_applicable_value",
+                "display_name": "Chỉ số không áp dụng",
+                "unit": "số đo",
+                "rule_type": "NA",
+                "required": True,
+                "sort_order": 5,
+            },
+        ]
+        protocol_response = client.post(
+            base_url,
+            json={
+                "protocol_key": "MACHINE_QA_RULE_MATRIX",
+                "name": "Ma trận tiêu chí kiểm thử",
+                "qa_type": "Kiểm tra chất lượng máy",
+                "source_type": "REFERENCE",
+                "source_reference": "https://example.invalid/rule-matrix",
+                "rules": rules,
+                "activate": True,
+            },
+        )
+        assert protocol_response.status_code == 201, protocol_response.text
+        case_id = _case(client, str(organization.id), "Machine QA rule matrix")
+        measurements = [
+            {"metric_key": "range_value", "value": 100, "unit": "%"},
+            {"metric_key": "maximum_value", "value": 1, "unit": "mm"},
+            {"metric_key": "minimum_value", "value": 6, "unit": "mm"},
+            {"metric_key": "absolute_value", "value": 11, "unit": "mm"},
+            {"metric_key": "percent_value", "value": 101, "unit": "%"},
+            {
+                "metric_key": "not_applicable_value",
+                "value": None,
+                "unit": "số đo",
+                "is_not_applicable": True,
+                "na_reason": "Không áp dụng trong ca đo này.",
+            },
+        ]
+        created = client.post(
+            f"/api/v1/qa-cases/{case_id}/machine-qa-runs",
+            json={
+                "protocol_version_id": protocol_response.json()["id"],
+                "measurements": measurements,
+            },
+        )
+        assert created.status_code == 201, created.text
+        evaluated = client.post(f"/api/v1/machine-qa-runs/{created.json()['id']}/evaluate")
+        assert evaluated.status_code == 200, evaluated.text
+        body = evaluated.json()
+        assert body["status"] == "COMPLETED"
+        assert body["overall_status"] == "NA"
+        statuses = {
+            item["metric_key"]: item["status"]
+            for item in body["result_snapshot"]["metrics"]
+        }
+        assert statuses == {
+            "range_value": "PASS",
+            "maximum_value": "PASS",
+            "minimum_value": "PASS",
+            "absolute_value": "PASS",
+            "percent_value": "PASS",
+            "not_applicable_value": "NA",
+        }
+
+
 def test_machine_qa_explicit_na_keeps_reason_and_excludes_metric_from_trend() -> None:
     with _workspace_client() as (client, organization):
         protocol = client.post(
