@@ -739,6 +739,43 @@ def test_ct_phantom_adapter_supports_quart_controls(tmp_path, monkeypatch) -> No
     assert len(result.overlay_bytes or b"") > 0
 
 
+def test_hypersight_quart_uses_supported_quart_engine(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "hypersight.zip"
+    source.write_bytes(b"dicom-zip")
+
+    from matplotlib import pyplot as plt
+
+    class FakeQuart:
+        def __init__(self, path: str, **kwargs: object) -> None:
+            assert path.endswith("hypersight.zip")
+            assert kwargs["is_zip"] is True
+
+        def analyze(self, **kwargs: object) -> None:
+            assert kwargs["roll_slice_offset"] == -8.0
+
+        def results_data(self, *, as_dict: bool) -> dict[str, object]:
+            assert as_dict is True
+            return {"passed": True, "warnings": []}
+
+        def plot_analyzed_image(self, *, show: bool) -> None:
+            assert show is False
+            plt.figure()
+
+    import pylinac.quart
+
+    monkeypatch.setattr(pylinac.quart, "QuartDVT", FakeQuart)
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.package_fingerprint", lambda: "f" * 64
+    )
+    result = execute_pylinac(
+        "QUART_HYPERSIGHT", source, {"is_zip": True, "roll_slice_offset": -8}
+    )
+
+    assert result.engine_class == "QuartDVT"
+    assert result.result_snapshot["engine_passed"] is True
+    assert len(result.overlay_bytes or b"") > 0
+
+
 def test_ct_family_registry_resolves_all_registered_classes() -> None:
     capabilities = {item.catalog_key: item for item in resolve_capabilities()}
     for key in (

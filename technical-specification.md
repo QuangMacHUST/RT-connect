@@ -277,7 +277,7 @@ Ma trận chi tiết class/biến thể/đầu vào/UI nằm ở [danh mục QA 
 | ACR | `ACRCT`, `ACRMRILarge`, `ACRMRIMedium` | Chuỗi ảnh, slice/module/ROI adjustments |
 | Cheese | `TomoCheese`, `CIRS062M` | Chuỗi ảnh, density/HU ROI |
 | GE Helios | `GEHeliosCTDaily` | Chuỗi ảnh, module/ROI controls |
-| Quart | `QuartDVT`; alias/biến thể HyperSight nếu còn public trong wheel | Chuỗi ảnh, origin/module/ROI controls |
+| Quart | `QuartDVT`; nhãn HyperSight dùng cùng bộ tính được hỗ trợ này vì lớp cũ không còn nhận đúng đường dẫn đầu vào | Chuỗi ảnh, điều chỉnh lát gốc/mô-đun/vùng quan tâm |
 | Log Analyzer | Dynalog và Trajectory Log 2.1/3.0/4.0 qua loader công khai | Upload log, chọn trục/fluence/Gamma log |
 | Picket Fence | `PicketFence` + MLC/profile public | Canvas leaf/picket, tolerance/crop/orientation/sag |
 | Winston–Lutz | `WinstonLutz`, `WinstonLutz2D` khi là kết quả con công khai | Bộ ảnh, góc, BB/field, axis plots |

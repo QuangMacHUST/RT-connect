@@ -337,7 +337,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         "DICOM_SERIES",
         ("Chuỗi DICOM CT hoặc CBCT",),
         ("Chọn lát", "Tâm phantom", "Vùng quan tâm"),
-        engine_class="QuartHyperSight",
+        engine_class="QuartDVT",
         implementation_status="READY",
         supports_manual_adjustment=True,
     ),

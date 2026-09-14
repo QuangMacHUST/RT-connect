@@ -248,7 +248,7 @@ def _execute_picket_fence(
     try:
         engine = symbol(str(source_path), **constructor)
         if "central_axis" in analysis:
-            from pylinac.core.geometry import Point  # type: ignore[import-untyped]
+            from pylinac.core.geometry import Point
 
             point = analysis["central_axis"]
             assert isinstance(point, dict)
@@ -552,7 +552,7 @@ def _winston_lutz_multi_target_parameters(
             "PYLINAC_PARAMETER_INVALID", "Số bi chuẩn vượt quá giới hạn cho phép."
         )
     try:
-        from pylinac.winston_lutz import BBConfig  # type: ignore[import-untyped]
+        from pylinac.winston_lutz import BBConfig
 
         bb_configs: list[object] = []
         for item in arrangement:
@@ -1439,7 +1439,16 @@ def _ct_phantom_parameters(
 def _execute_ct_phantom(
     catalog_key: str, source_path: Path, parameters: dict[str, object]
 ) -> PylinacExecutionResult:
-    symbol, _ = resolve_runtime_symbol(catalog_key)
+    # Pylinac 3.47 keeps HypersightQuartDVT as a deprecated compatibility
+    # class whose constructor no longer accepts the input path.  QuartDVT is
+    # the supported replacement and now handles the same water-vial variant.
+    if catalog_key == "QUART_HYPERSIGHT":
+        try:
+            from pylinac.quart import QuartDVT as symbol
+        except (ImportError, AttributeError):
+            symbol = None
+    else:
+        symbol, _ = resolve_runtime_symbol(catalog_key)
     if symbol is None:
         raise PylinacAdapterError(
             "PYLINAC_RUNTIME_UNAVAILABLE", "Bộ phân tích phantom CT chưa sẵn sàng."
@@ -1467,7 +1476,7 @@ def _execute_ct_phantom(
         engine_class = {
             "GE_HELIOS": "GEHeliosCTDaily",
             "QUART_DVT": "QuartDVT",
-            "QUART_HYPERSIGHT": "HypersightQuartDVT",
+            "QUART_HYPERSIGHT": "QuartDVT",
         }[catalog_key]
         warnings = result.get("warnings", [])
         warning_items = warnings if isinstance(warnings, list) else [warnings]

@@ -17,7 +17,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, Literal
 
-from fontTools.ttLib import TTFont  # type: ignore[import-untyped]
+from fontTools.ttLib import TTFont
 
 RENDERER_VERSION = "report-renderer-0.2"
 ExportFormat = Literal["JSON", "CSV", "PDF", "PNG"]

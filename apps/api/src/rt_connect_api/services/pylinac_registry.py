@@ -127,7 +127,7 @@ RUNTIME_BINDINGS: Final[tuple[RuntimeBinding, ...]] = (
     _class("CHEESE_CIRS_062M", "pylinac.cheese.CIRS062M", "dicom_series", "Cheese"),
     _class("GE_HELIOS", "pylinac.helios.GEHeliosCTDaily", "dicom_series", "GE Helios"),
     _class("QUART_DVT", "pylinac.quart.QuartDVT", "dicom_series", "Quart"),
-    _class("QUART_HYPERSIGHT", "pylinac.quart.HypersightQuartDVT", "dicom_series", "Quart"),
+    _class("QUART_HYPERSIGHT", "pylinac.quart.QuartDVT", "dicom_series", "Quart"),
     _class("LOG_DYNALOG", "pylinac.log_analyzer.Dynalog", "log_pair", "Log Analyzer"),
     _class("LOG_TRAJECTORY_2_1", "pylinac.log_analyzer.TrajectoryLog", "log", "Log Analyzer"),
     _class("LOG_TRAJECTORY_3", "pylinac.log_analyzer.TrajectoryLog", "log", "Log Analyzer"),

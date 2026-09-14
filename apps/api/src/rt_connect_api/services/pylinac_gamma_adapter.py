@@ -330,7 +330,7 @@ def calculate_pylinac_gamma(
     try:
         if dimensionality == "1D":
             _validate_1d_geometry(reference, evaluation)
-            from pylinac.core.gamma import gamma_1d  # type: ignore[import-untyped]
+            from pylinac.core.gamma import gamma_1d
 
             reference_coordinates = _coordinates(reference)
             evaluation_coordinates = _coordinates(evaluation)

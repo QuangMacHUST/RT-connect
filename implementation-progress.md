@@ -1,5 +1,11 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W03 — xử lý tương thích nhãn HyperSight — lát cắt cục bộ — 2026-09-15
+
+- Khi chạy thử trực tiếp, lớp HyperSight cũ của Pylinac không nhận đường dẫn tệp theo hợp đồng hiện hành. Vì Pylinac đã chuyển phần xử lý tương ứng sang `QuartDVT`, danh mục và bộ đăng ký nay giữ nhãn HyperSight cho người dùng nhưng gọi đúng bộ tính `QuartDVT` được hỗ trợ; không tự viết công thức thay thế và không tạo hai loại lịch sử phân tích.
+- Tệp mẫu chính thức `quart.zip` đã chạy qua chính `execute_pylinac` với nhãn `QUART_HYPERSIGHT`: engine trả về `QuartDVT`, 10 nhóm chỉ số, ảnh overlay 73.206 byte và 3 cảnh báo tương thích từ thư viện. Cảnh báo được giữ lại trong kết quả, không biến thành lỗi phân tích.
+- Kiểm tra đạt: ruff, mypy 53/53 tệp nguồn và 6 kiểm thử nhóm Quart/registry. Đây là `LOCAL_VERIFIED_SLICE`; vẫn cần đối chiếu từng mô-đun, kiểm thử hiển thị nhãn, kiểm tra lỗi đầu vào và staging trước khi đóng P07-QUART/P7.
+
 ## P7-W03 — sửa tương thích ảnh phẳng với Pylinac 3.47.0 — lát cắt cục bộ — 2026-09-15
 
 - Bộ chuyển đổi ảnh phẳng đã gọi đúng `plot_analyzed_image(show=False)` của Pylinac 3.47.0. Trước đó nó gọi nhầm `plot()`, khiến `LeedsTOR` phân tích được nhưng bị báo lỗi khi dựng ảnh minh họa vì lớp này không có phương thức đó.

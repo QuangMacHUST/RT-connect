@@ -21,6 +21,7 @@
 | CatPhan 604 | `CatPhan604.zip` | `CatPhan604` | 11 | 87592 byte |
 | TomoCheese | `TomoCheese.zip` | `TomoCheese` | 27 | 204408 byte |
 | Quart DVT | `quart.zip` | `QuartDVT` | 10 | 73206 byte |
+| Nhãn Quart HyperSight | `quart.zip` | `QuartDVT` | 10 | 73206 byte |
 | Leeds TOR | `leeds.dcm` | `LeedsTOR` | 12 | 73719 byte |
 | Standard Imaging FC-2 | `fc2.dcm` | `StandardImagingFC2` | 9 | 69586 byte |
 | Field Profile Analysis | `AS1200.dcm` | `FieldProfileAnalysis` | 9 | 54772 byte |
@@ -35,6 +36,7 @@
 - Kết quả phải có lớp engine đúng với registry, structured result không rỗng và overlay khi lớp Pylinac cung cấp ảnh phân tích.
 - Starshot sử dụng `sid = 1000 mm`, vì tệp TIFF không chứa thẻ khoảng cách nguồn–ảnh.
 - Dynalog không có overlay ảnh; bộ chuyển đổi lưu các chỉ số MLC và biểu đồ lỗi khi Pylinac tạo được tệp biểu đồ.
+- Nhãn Quart HyperSight dùng cùng bộ tính `QuartDVT` vì lớp HyperSight cũ trong Pylinac không còn nhận đúng đường dẫn đầu vào. Đây là một nhãn tương thích, không phải một engine thứ hai; lần chạy thử thực tế có 3 cảnh báo tương thích của thư viện nhưng vẫn trả kết quả và overlay hợp lệ.
 - Các mã băm tệp mẫu dùng để truy nguyên tại máy kiểm tra:
   - `AS1200.dcm`: `37A82228FC7593776DC70A818E12C82F8BC8198EFA98FD4E3E77C5E051AB3CD2`
   - `starshot.tif`: `6DD29760B6E88EDAB1C5C70E38BC2A3D0338B004106B32903B2E869FF25EED70`
@@ -54,5 +56,5 @@
 ## Phạm vi còn mở
 
 - CatPhan 700 chưa có tệp mẫu chính thức tương thích trong bộ tệp cục bộ.
-- ACR CT/MRI, CIRS 062M, GE Helios, Quart HyperSight, 17 biến thể ảnh phẳng còn lại, chín bài hạt nhân và hai bài đóng góp cần fixture riêng.
+- ACR CT/MRI, CIRS 062M, GE Helios, 17 biến thể ảnh phẳng còn lại, chín bài hạt nhân và hai bài đóng góp cần fixture riêng. Nhãn HyperSight đã có đường chạy tương thích local bằng `QuartDVT`, nhưng vẫn cần kiểm tra hiển thị và staging riêng.
 - Cần đối chiếu từng chỉ số với kỳ vọng của bộ kiểm thử Pylinac, kiểm lỗi đầu vào, kiểm tài nguyên và chạy lại trên staging trước khi đóng gói tương ứng.
