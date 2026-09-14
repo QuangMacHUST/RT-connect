@@ -1,0 +1,37 @@
+{
+  "schema_version": "rt-connect.p5-local-input-artifact-purge-guard.v1",
+  "captured_at_utc": "2026-09-14T04:36:00Z",
+  "phase": "P5",
+  "status": "LOCAL_VERIFIED",
+  "environment": "local",
+  "source_revision": "9b95615",
+  "scope": "Hồ sơ đã lưu trữ nhưng còn tệp đầu vào, chưa có kết quả phân tích.",
+  "checks": [
+    {
+      "name": "purge_preview",
+      "status": "PASS",
+      "observed": "Xem trước chỉ đọc trả hồ sơ không đủ điều kiện và nêu đúng một tệp liên quan."
+    },
+    {
+      "name": "purge_rejection",
+      "status": "PASS",
+      "observed": "Yêu cầu xóa vĩnh viễn bị từ chối với mã lỗi hồ sơ còn liên kết."
+    },
+    {
+      "name": "case_preservation",
+      "status": "PASS",
+      "observed": "Hồ sơ vẫn đọc được và vẫn ở trạng thái đã lưu trữ sau khi bị từ chối."
+    }
+  ],
+  "regression": {
+    "api_tests": "218/218",
+    "web_tests": "37/37",
+    "ruff": "PASS",
+    "patient_data": false,
+    "contains_secret_values": false
+  },
+  "remaining_gates": [
+    "Kiểm chứng từ chối hồ sơ có liên kết, lỗi mạng và tác vụ nền trong phiên staging đã xác thực.",
+    "Đối chiếu toàn vẹn tệp, kết quả, báo cáo và xu hướng sau toàn bộ vòng đời trên staging."
+  ]
+}
