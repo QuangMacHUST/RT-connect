@@ -1,6 +1,13 @@
 import { expect, test } from 'vitest'
 
 import { dvhArtifactStatusLabel, summarizeDvhArtifacts } from './dvhArtifactSummary'
+import { isCaseInArchiveView } from './qaArchiveView'
+
+test('thùng rác chỉ hiển thị hồ sơ đã lưu trữ', () => {
+  expect(isCaseInArchiveView(true, true)).toBe(true)
+  expect(isCaseInArchiveView(false, true)).toBe(false)
+  expect(isCaseInArchiveView(false, false)).toBe(true)
+})
 
 test('summarizes only valid DICOM inputs for the DVH preflight', () => {
   expect(summarizeDvhArtifacts([
