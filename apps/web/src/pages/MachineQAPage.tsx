@@ -149,6 +149,119 @@ function pylinacMetric(value: PylinacQARunResource | undefined, key: string): un
   return metrics?.[key]
 }
 
+const parameterLabels: Record<string, string> = {
+  sid: 'Khoảng cách nguồn–ảnh',
+  dpi: 'Mật độ điểm ảnh',
+  radius: 'Bán kính phân tích',
+  tolerance: 'Dung sai',
+  start_point: 'Tâm bắt đầu',
+  bb_size_mm: 'Kích thước bi',
+  snap_tolerance: 'Dung sai bắt điểm',
+  bb_proximity_mm: 'Khoảng cách tìm bi',
+  gantry_reference: 'Góc chuẩn gantry',
+  collimator_reference: 'Góc chuẩn chuẩn trực',
+  couch_reference: 'Góc chuẩn bàn',
+  use_filenames: 'Đọc góc từ tên tệp',
+  low_density_bb: 'Bi mật độ thấp',
+  open_field: 'Trường mở',
+  is_open_field: 'Trường mở',
+  apply_virtual_shift: 'Dịch ảo',
+  segment_size_mm: 'Kích thước đoạn',
+  collimator_radial_distances: 'Khoảng cách xuyên tâm chuẩn trực',
+  invert_image_order: 'Đảo thứ tự ảnh',
+  origin_slice: 'Lát gốc',
+  x_adjustment: 'Điều chỉnh ngang',
+  y_adjustment: 'Điều chỉnh dọc',
+  angle_adjustment: 'Điều chỉnh góc',
+  roi_size_factor: 'Hệ số vùng quan tâm',
+  low_contrast_threshold: 'Ngưỡng tương phản thấp',
+  low_contrast_sanity: 'Kiểm tra tương phản thấp',
+  roi_one_density: 'Mật độ vùng quan tâm 1',
+  roi_two_density: 'Mật độ vùng quan tâm 2',
+  scaling_tolerance: 'Dung sai thang đo',
+  thickness_tolerance: 'Dung sai độ dày',
+  roll_slice_offset: 'Dịch lát tìm góc',
+  protocol: 'Quy trình phân tích',
+  interpolation: 'Nội suy',
+  centering: 'Cách đặt tâm',
+  normalization: 'Chuẩn hóa',
+  edge_type: 'Kiểu biên',
+  position: 'Vị trí biên dạng',
+  width: 'Độ rộng biên dạng',
+  penumbra: 'Vùng chuyển tiếp',
+  exclude_beam_off: 'Loại mẫu khi tia tắt',
+  calculate_gamma: 'Tính Gamma fluence',
+  dose_tolerance_percent: 'Dung sai liều',
+  distance_tolerance_mm: 'Dung sai khoảng cách',
+  normalize: 'Chuẩn hóa ảnh',
+  invert: 'Đảo ảnh',
+  fwxm: 'Phần trăm FWXM',
+  bb_edge_threshold: 'Ngưỡng cạnh biên'
+}
+
+const metricLabels: Record<string, string> = {
+  passed: 'Kết luận của bộ tính',
+  percent_leaves_passing: 'Tỷ lệ lá đạt',
+  number_of_pickets: 'Số vạch',
+  max_error_mm: 'Sai lệch lớn nhất',
+  circle_diameter_mm: 'Đường kính đường tròn',
+  circle_center_x_y: 'Tâm đường tròn',
+  angles: 'Các góc phân tích',
+  max_2d_cax_to_bb_mm: 'Sai lệch CAX–bi lớn nhất',
+  gantry_3d_iso_diameter_mm: 'Đường kính đẳng tâm ba chiều',
+  max_deviation_percent: 'Sai lệch lớn nhất',
+  abs_mean_deviation: 'Sai lệch trung bình tuyệt đối',
+  tolerance_percent: 'Dung sai phần trăm',
+  output_was_adjusted: 'Đã điều chỉnh đầu ra',
+  num_total_images: 'Tổng số ảnh',
+  max_2d_field_to_bb_mm: 'Sai lệch trường–bi lớn nhất',
+  bb_shift_vector: 'Véc-tơ dịch chuyển bi',
+  dose_mu_10: 'Liều tại MU 10',
+  engine_passed: 'Kết luận của bộ tính'
+}
+
+function friendlyDataLabel(key: string, labels = metricLabels): string {
+  if (labels[key]) return labels[key]
+  const words = key.split('_').filter(Boolean).map((word) => {
+    const translated: Record<string, string> = {
+      max: 'lớn nhất', min: 'nhỏ nhất', mean: 'trung bình', average: 'trung bình',
+      percent: 'phần trăm', deviation: 'sai lệch', distance: 'khoảng cách',
+      diameter: 'đường kính', center: 'tâm', count: 'số lượng', number: 'số',
+      total: 'tổng', image: 'ảnh', images: 'ảnh', field: 'trường', leaf: 'lá',
+      leaves: 'lá', passing: 'đạt', error: 'sai số', ratio: 'tỷ lệ',
+      tolerance: 'dung sai', threshold: 'ngưỡng', width: 'độ rộng', height: 'chiều cao',
+      position: 'vị trí', shift: 'dịch chuyển', vector: 'véc-tơ', angle: 'góc',
+      radius: 'bán kính', passed: 'đạt', output: 'đầu ra',
+      adjusted: 'đã điều chỉnh', protocol: 'quy trình', normalization: 'chuẩn hóa'
+    }
+    return translated[word] ?? word.toUpperCase()
+  })
+  return words.join(' ')
+}
+
+function friendlyDataValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') return 'Chưa nhập'
+  if (typeof value === 'boolean') return value ? 'Có' : 'Không'
+  if (typeof value === 'number') return Number.isFinite(value) ? value.toLocaleString('vi-VN', { maximumFractionDigits: 6 }) : 'Không hợp lệ'
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) return value.map((item) => friendlyDataValue(item)).join(', ')
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as JsonRecord).slice(0, 8)
+    return entries.map(([key, item]) => `${friendlyDataLabel(key, parameterLabels)}: ${friendlyDataValue(item)}`).join('; ')
+  }
+  return 'Đã ghi nhận'
+}
+
+function parameterEntries(run: PylinacQARunResource | undefined): Array<[string, unknown]> {
+  return run ? Object.entries(run.parameters).filter(([, value]) => value !== null && value !== undefined) : []
+}
+
+function scalarMetricEntries(run: PylinacQARunResource | undefined): Array<[string, unknown]> {
+  const metrics = objectValue(run?.result_snapshot.metrics)
+  if (!metrics) return []
+  return Object.entries(metrics).filter(([, value]) => value !== null && value !== undefined && typeof value !== 'object')
+}
+
 type AssessmentValue = 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED'
 
 type PylinacResultPanelProps = {
@@ -164,16 +277,26 @@ type PylinacResultPanelProps = {
 }
 
 function PylinacResultPanel({ latest, history, accessToken, emptyHistoryLabel, metrics = [], resultNote, overlayLabel = 'Mở ảnh phân tích', onMessage, onAssess }: PylinacResultPanelProps) {
+  const [selectedRunId, setSelectedRunId] = useState<string>()
+  const selectedRun = history.find((run) => run.id === selectedRunId) ?? latest
+  const selectedIndex = selectedRun ? history.findIndex((run) => run.id === selectedRun.id) : -1
+  const previousRun = selectedIndex >= 0 ? history[selectedIndex + 1] : undefined
+  const selectedIsLatest = selectedRun?.id === latest?.id
+  const selectedParameters = parameterEntries(selectedRun)
+  const previousParameters = new Map(parameterEntries(previousRun))
+  const parameterChanges = selectedParameters.filter(([key, value]) => friendlyDataValue(previousParameters.get(key)) !== friendlyDataValue(value))
+  const historicalMetrics = scalarMetricEntries(selectedRun)
   const openOverlay = () => {
-    if (!latest?.overlay_artifact_id) return
-    void apiClient.downloadArtifact(accessToken, latest.overlay_artifact_id)
+    if (!selectedRun?.overlay_artifact_id) return
+    void apiClient.downloadArtifact(accessToken, selectedRun.overlay_artifact_id)
       .then((download) => window.open(download.url, '_blank', 'noopener,noreferrer'))
       .catch((error) => onMessage(errorMessage(error)))
   }
 
   return <>
-    {latest && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">KẾT QUẢ MỚI NHẤT</p><h2>{latest.name}</h2></div><span className={statusClass(latest.status)}>{statusLabel(latest.status)}</span></div>{latest.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích</h3><ul>{latest.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{latest.status === 'COMPLETED' && <><div className="machine-qa-metric-grid">{resultNote}{metrics.length === 0 && !resultNote ? <p>Kết quả chi tiết đã được lưu; hãy mở ảnh phân tích để xem đầy đủ.</p> : metrics.map((metric) => <div className="machine-qa-metric" key={metric.key}><span>{metric.label}</span><strong>{metric.value}</strong></div>)}</div>{latest.overlay_artifact_id && <button className="button-secondary" onClick={openOverlay}>{overlayLabel}</button>}<label>Đánh giá của người dùng<select value={latest.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => onAssess(latest.id, event.target.value as AssessmentValue)}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
-    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">{emptyHistoryLabel}</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td></tr>)}</tbody></table></div>}</section>
+    {selectedRun && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">{selectedIsLatest ? 'KẾT QUẢ MỚI NHẤT' : 'KẾT QUẢ ĐANG XEM'}</p><h2>{selectedRun.name}</h2></div><span className={statusClass(selectedRun.status)}>{statusLabel(selectedRun.status)}</span></div>{!selectedIsLatest && <p className="form-hint">Đang xem một lượt cũ trong lịch sử. Kết quả gốc không thay đổi khi xem lại hoặc đánh giá.</p>}{selectedRun.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích</h3><ul>{selectedRun.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{selectedRun.status === 'COMPLETED' && <><div className="machine-qa-metric-grid">{selectedIsLatest ? <>{resultNote}{metrics.length === 0 && !resultNote ? <p>Kết quả chi tiết đã được lưu; hãy mở ảnh phân tích để xem đầy đủ.</p> : metrics.map((metric) => <div className="machine-qa-metric" key={metric.key}><span>{metric.label}</span><strong>{metric.value}</strong></div>)}</> : historicalMetrics.length > 0 ? historicalMetrics.map(([key, value]) => <div className="machine-qa-metric" key={key}><span>{friendlyDataLabel(key)}</span><strong>{friendlyDataValue(value)}</strong></div>) : <p>Không có chỉ số dạng số để hiển thị trong lượt này.</p>}</div>{selectedRun.overlay_artifact_id && <button className="button-secondary" onClick={openOverlay}>{overlayLabel}</button>}<label>Đánh giá của người dùng<select value={selectedRun.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => onAssess(selectedRun.id, event.target.value as AssessmentValue)}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
+    {selectedRun && <section className="panel machine-qa-panel machine-qa-parameters"><div className="panel-heading"><div><p className="eyebrow">THÔNG SỐ ĐÃ LƯU</p><h2>Thiết lập của lượt đang xem</h2></div><strong>{selectedParameters.length}</strong></div>{selectedParameters.length === 0 ? <p className="empty-state">Bài này không có thông số nhập thêm.</p> : <div className="machine-qa-parameter-grid">{selectedParameters.map(([key, value]) => <div className="machine-qa-parameter" key={key}><span>{parameterLabels[key] ?? friendlyDataLabel(key, parameterLabels)}</span><strong>{friendlyDataValue(value)}</strong></div>)}</div>}{previousRun && <div className="machine-qa-diff"><h3>Thay đổi so với lượt ngay trước</h3>{parameterChanges.length === 0 ? <p>Không có thay đổi thông số.</p> : <div className="machine-qa-diff-grid">{parameterChanges.map(([key, value]) => <div key={key}><strong>{parameterLabels[key] ?? friendlyDataLabel(key, parameterLabels)}</strong><span>{friendlyDataValue(previousParameters.get(key))} → {friendlyDataValue(value)}</span></div>)}</div>}</div>}</section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">{emptyHistoryLabel}</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th><th>Thao tác</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td><td><button className={run.id === selectedRun?.id ? 'history-button history-button--selected' : 'history-button'} onClick={() => setSelectedRunId(run.id)}>{run.id === selectedRun?.id ? 'Đang xem' : 'Mở'}</button></td></tr>)}</tbody></table></div>}</section>
   </>
 }
 
