@@ -538,7 +538,7 @@ Pylinac là engine đã chọn, không còn bước so sánh để quyết đị
 ### Gói công việc P7
 
 - [ ] P07-W01 — QA nhập tay: bảng nhiều giá trị, checklist/NA, công thức có kiểu, chuẩn/ngưỡng trực quan và kết luận riêng; không yêu cầu DICOM khi bài không cần.
-- [ ] P07-W02 — Khóa wheel pylinac 3.47.0 và SHA-256 trong lock/image; xác minh runtime/dependency. Nếu API Python 3.14 không tương thích, tạo `qa-image-worker` với Python tương thích; không đổi sang engine khác.
+- [x] P07-W02 — Khóa wheel pylinac 3.47.0 và SHA-256 trong lock/image; xác minh runtime/dependency. Nếu API Python 3.14 không tương thích, tạo `qa-image-worker` với Python tương thích; không đổi sang engine khác. Lát cắt local đã dựng ảnh, kiểm hash wheel và xác nhận runtime 3.47.0.
 - [ ] P07-W03 — Phát triển `PylinacCapabilityRegistry` + `PylinacAdapter`; inventory wheel phải khớp registry đủ 16 họ chính, QA contrib công khai, class/variant, input profile, parameter schema, result mapping, overlay, error và fixture.
 - [ ] P07-W04 — Xây result viewer/canvas chung: auto run, điều chỉnh bằng click/drag hoặc form, parameter diff, run mới, lớp ảnh/biểu đồ, đánh giá và persist history.
 - [ ] P07-CAL — Calibration: TG-51 photon/electron legacy/electron modern và TRS-398 photon/electron; form theo protocol, factors/dose; ghi rõ pylinac chưa nhận revision TRS-398 2024 nếu bản khóa chưa có.

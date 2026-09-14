@@ -1,0 +1,44 @@
+{
+  "evidence_id": "p7-local-pylinac-registry-20260914",
+  "phase": "P7",
+  "status": "LOCAL_VERIFIED_SLICE",
+  "source_commit": "ec741a21c7955b9e8fd9f237c316f7a9d6afad36",
+  "engine": {
+    "name": "pylinac",
+    "version": "3.47.0",
+    "wheel_sha256": "7a99ec70a0242fa645882152fb5aa012f176b943a78339a3a18c15c953331b68",
+    "package_fingerprint": "19a8da65c321f709e700417fe629e4275052c646701fc8b1a146291df9e13e32",
+    "catalogue_version": "pylinac-3.47.0-rt-connect-1.0"
+  },
+  "registry": {
+    "total_bindings": 62,
+    "runtime_available": 62,
+    "unresolved_catalog_keys": [],
+    "catalogue_scope": "mọi mục engine pylinac trong danh mục 63 mục, không tính bài nhập số đo"
+  },
+  "image": {
+    "tag": "rt-connect-api:p7-pylinac-20260914",
+    "digest": "sha256:6d1193ac4473a3bc504bbf8465b9a956373d0c71d615c78efd9dc2068eda6578",
+    "wheel_hash_check": "PASS",
+    "version_check": "PASS",
+    "container_inventory_check": "PASS"
+  },
+  "tests": {
+    "ruff": "PASS",
+    "mypy": "PASS",
+    "registry_and_related_api_tests": "29 passed",
+    "compileall": "PASS",
+    "organization_scope_endpoint": "PASS"
+  },
+  "implemented": [
+    "registry ánh xạ class/function thực trong pylinac 3.47.0",
+    "API trạng thái capability có kiểm tra phạm vi tổ chức",
+    "khóa wheel SHA-256 riêng và kiểm tra bắt buộc khi dựng ảnh API"
+  ],
+  "not_closed": [
+    "PylinacAdapter chưa thực thi đủ input/result/overlay/error cho từng capability",
+    "chưa có fixture contract test riêng cho toàn bộ 62 capability",
+    "chưa triển khai lát cắt này lên staging"
+  ],
+  "secrets_or_patient_data": "none"
+}
