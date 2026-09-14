@@ -107,7 +107,7 @@ Vùng “Điều chỉnh” chứa absolute/relative khi profile thực sự h�
 
 ### 6.2. Ranh giới engine hiện hành
 
-Pylinac công bố `profile.gamma_1d` và `image.gamma_2d`; danh mục công khai hiện không có Gamma 3D. Vì quyết định sản phẩm là pylinac chịu trách nhiệm engine, run PSQA mới chỉ được công bố cho 1D/2D đã ánh xạ. Không dùng engine 3D tự viết của RT-CONNECT để gắn nhãn “pylinac”.
+Pylinac công bố `pylinac.core.gamma.gamma_1d` và `pylinac.core.gamma.gamma_2d`; danh mục công khai hiện không có Gamma 3D. Vì quyết định sản phẩm là pylinac chịu trách nhiệm engine, run PSQA mới chỉ được công bố cho 1D/2D đã ánh xạ. Không dùng engine 3D tự viết của RT-CONNECT để gắn nhãn “pylinac”.
 
 Đối với Gamma 2D, pylinac nhận khoảng cách theo số phần tử/pixel. RT-CONNECT phải kiểm spacing, đưa hai grid về cùng không gian đã công bố và chuyển DTA từ mm sang số phần tử theo một profile xác định. Nếu không biểu diễn đúng tiêu chí mm bằng grid/step đã chọn thì dừng trước khi chạy, không làm tròn âm thầm. Snapshot lưu DTA người dùng nhập, spacing trước/sau, phép resampling và giá trị truyền cho pylinac.
 

@@ -41,6 +41,10 @@ from rt_connect_api.services.gamma_engine import (
     calculate_gamma_from_paths,
 )
 from rt_connect_api.services.object_storage import ObjectStorage, ObjectStorageError
+from rt_connect_api.services.pylinac_gamma_adapter import (
+    PYLINAC_GAMMA_ENGINE_VERSION,
+    calculate_pylinac_gamma_from_paths,
+)
 from rt_connect_api.services.redis_queue import RedisQueueError, get_gamma_queue
 from rt_connect_api.services.session_context import SessionContext, resolve_session_context
 
@@ -48,7 +52,7 @@ router = APIRouter(tags=["gamma"])
 
 
 class GammaConfigurationRequest(BaseModel):
-    dimensionality: Literal["2D", "3D"] = "2D"
+    dimensionality: Literal["1D", "2D", "3D"] = "2D"
     dose_difference_percent: float = Field(default=3.0, gt=0, le=100)
     dose_difference_mode: Literal["ABSOLUTE", "RELATIVE"] = "RELATIVE"
     absolute_dose_difference_gy: float | None = Field(default=None, gt=0)
@@ -60,6 +64,7 @@ class GammaConfigurationRequest(BaseModel):
     max_gamma: float = Field(default=2.0, ge=1.0, le=10.0)
     pass_rate_threshold_percent: float = Field(default=95.0, ge=0, le=100)
     histogram_bins: int = Field(default=10, ge=2, le=100)
+    resolution_factor: int = Field(default=3, ge=1, le=10)
 
     @model_validator(mode="after")
     def validate_absolute_mode(self) -> GammaConfigurationRequest:
@@ -326,9 +331,7 @@ def _coordinate_frame_summary(artifact: Artifact) -> Mapping[str, object] | None
         raw_grid = artifact.metadata_snapshot.get("grid")
         frame_count = raw_grid.get("frames") if isinstance(raw_grid, Mapping) else None
         axis_order = (
-            ["z", "y", "x"]
-            if isinstance(frame_count, int) and frame_count > 1
-            else ["y", "x"]
+            ["z", "y", "x"] if isinstance(frame_count, int) and frame_count > 1 else ["y", "x"]
         )
         return {
             "basis": "PATIENT_LPS",
@@ -338,8 +341,7 @@ def _coordinate_frame_summary(artifact: Artifact) -> Mapping[str, object] | None
                 "direction": "SOURCE_TO_REFERENCE",
                 "units": "mm",
                 "matrix": [
-                    list(IDENTITY_TRANSFORM[index : index + 4])
-                    for index in range(0, 16, 4)
+                    list(IDENTITY_TRANSFORM[index : index + 4]) for index in range(0, 16, 4)
                 ],
                 "source": {
                     "type": "dicom-native",
@@ -512,6 +514,33 @@ def _validate_workflow_profile(
     raise DomainError("GAMMA_WORKFLOW_PROFILE_INVALID", "Unsupported Gamma workflow profile.", 422)
 
 
+def _validate_gamma_engine_selection(payload: GammaRunCreateRequest) -> None:
+    """Keep new PSQA Gamma runs on the locked Pylinac 1D/2D boundary."""
+
+    if payload.workflow_profile != "PSQA_GAMMA":
+        return
+    configuration = payload.configuration
+    if configuration.dimensionality == "3D":
+        raise DomainError(
+            "PYLINAC_GAMMA_3D_UNAVAILABLE",
+            "Gamma Pylinac mới chỉ hỗ trợ một chiều và hai chiều; "
+            "Gamma 3D lịch sử chỉ được xem lại.",
+            422,
+        )
+    if configuration.dose_difference_mode == "ABSOLUTE":
+        raise DomainError(
+            "GAMMA_PYLINAC_ABSOLUTE_UNSUPPORTED",
+            "Gamma Pylinac dùng chênh lệch liều theo phần trăm của liều cực đại tham chiếu.",
+            422,
+        )
+    if configuration.interpolation != "GRID":
+        raise DomainError(
+            "GAMMA_PYLINAC_INTERPOLATION_UNSUPPORTED",
+            "Gamma Pylinac chỉ dùng phép tìm trên lưới đã kiểm định.",
+            422,
+        )
+
+
 def _grid_voxel_count(artifact: Artifact) -> int:
     """Return the validated voxel count used by the Gamma resource preflight."""
 
@@ -670,6 +699,7 @@ def enqueue_gamma_run(
         session, context, case, payload.evaluation_artifact_id, "evaluation"
     )
     _validate_workflow_profile(payload.workflow_profile, reference, evaluation)
+    _validate_gamma_engine_selection(payload)
     resource_budget = _resource_budget_snapshot(request, reference, evaluation)
     request_fingerprint = _fingerprint(payload)
     existing = session.scalar(
@@ -700,10 +730,17 @@ def enqueue_gamma_run(
         status="QUEUED",
         progress_percent=0,
         attempt_count=0,
-        engine_version=ENGINE_VERSION,
+        engine_version=(
+            PYLINAC_GAMMA_ENGINE_VERSION
+            if payload.workflow_profile == "PSQA_GAMMA"
+            else ENGINE_VERSION
+        ),
         config_snapshot={
             **payload.configuration.model_dump(mode="json"),
             "workflow_profile": payload.workflow_profile,
+            "engine_backend": (
+                "PYLINAC_GAMMA" if payload.workflow_profile == "PSQA_GAMMA" else "LEGACY_GAMMA"
+            ),
             "resource_budget": resource_budget,
         },
         input_manifest_snapshot={
@@ -1090,7 +1127,15 @@ def process_gamma_run(
         _verify_snapshot_checksum(run, "evaluation", evaluation_path)
         check_deadline()
         _heartbeat_gamma_run(session, run, lease_token, 45, lease_seconds=lease_seconds)
-        result = calculate_gamma_from_paths(reference_path, evaluation_path, run.config_snapshot)
+        engine_backend = run.config_snapshot.get("engine_backend")
+        if engine_backend == "PYLINAC_GAMMA":
+            result = calculate_pylinac_gamma_from_paths(
+                reference_path, evaluation_path, run.config_snapshot
+            )
+        else:
+            result = calculate_gamma_from_paths(
+                reference_path, evaluation_path, run.config_snapshot
+            )
         check_deadline()
         raw_warnings = result.get("warnings", [])
         _finish_gamma_attempt(

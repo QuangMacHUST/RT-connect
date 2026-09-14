@@ -634,7 +634,7 @@ P7 chỉ đóng khi mọi gói P07-CAL…P07-CONTRIB và bài nhập tay có b�
 
 ### Gói công việc P8
 
-- [ ] P08-W01 — `PylinacPsqaAdapter` cho `profile.gamma_1d`/`image.gamma_2d`; giữ input gốc, geometry validation, resampling và provenance.
+- [x] P08-W01 — `PylinacPsqaAdapter` gọi đúng `pylinac.core.gamma.gamma_1d`/`pylinac.core.gamma.gamma_2d`; giữ input gốc, kiểm tra hình học, đổi DTA mm sang lưới hai chiều và provenance. Đã có kiểm thử thực thi thật trên Pylinac 3.47.0; còn cổng staging end-to-end ở P8-VERIFY.
 - [ ] P08-W02 — Form luôn hiện ΔD (%), DTA (mm), global/local, low-dose threshold và pass-rate target; nâng cao có ROI/resampling/gamma cap và profile định dạng đo.
 - [ ] P08-W03 — Queue status/retry/cancel và kết quả 1D/2D gồm map/profile, histogram, pass rate, evaluated/excluded/invalid counts và cảnh báo vùng không đánh giá.
 - [ ] P08-W04 — Lịch sử/tính lại và dữ liệu cho PDF P9, xu hướng P10; kết quả nhập từ phần mềm khác có nhãn riêng; Gamma 3D cũ chỉ đọc với nguồn bộ tính, API mới từ chối 3D.

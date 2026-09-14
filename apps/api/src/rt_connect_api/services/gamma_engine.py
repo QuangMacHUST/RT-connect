@@ -119,9 +119,9 @@ def _coordinate(value: object, field: str, dimension: int, *, positive: bool) ->
 
 
 def _shape(value: object, field: str) -> tuple[int, ...]:
-    if not isinstance(value, list) or len(value) not in {2, 3}:
+    if not isinstance(value, list) or len(value) not in {1, 2, 3}:
         raise GammaEngineError(
-            "GAMMA_GRID_INVALID", f"{field} must contain two or three integer dimensions."
+            "GAMMA_GRID_INVALID", f"{field} must contain one, two or three integer dimensions."
         )
     if any(isinstance(item, bool) or not isinstance(item, int) or item <= 0 for item in value):
         raise GammaEngineError("GAMMA_GRID_INVALID", f"{field} dimensions must be positive.")
@@ -139,6 +139,8 @@ def _dose_unit_scale(value: object, field: str) -> tuple[str, float]:
 
 
 def _canonical_axis_order(dimension: int) -> AxisOrder:
+    if dimension == 1:
+        return ("x",)
     return ("y", "x") if dimension == 2 else ("z", "y", "x")
 
 
@@ -199,9 +201,9 @@ def _parse_transform_to_reference(value: object, field: str) -> tuple[float, ...
     return parsed
 
 
-def _parse_json_coordinate_frame(root: Mapping[str, object], dimension: int) -> tuple[
-    str, str, AxisOrder, tuple[float, ...]
-]:
+def _parse_json_coordinate_frame(
+    root: Mapping[str, object], dimension: int
+) -> tuple[str, str, AxisOrder, tuple[float, ...]]:
     raw_frame = root.get("coordinate_frame")
     if raw_frame is None:
         raise GammaEngineError(

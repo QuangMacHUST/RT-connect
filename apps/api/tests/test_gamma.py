@@ -4,14 +4,21 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
+from uuid import uuid4
 
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
 from rt_connect_api.api.artifacts import _storage as artifact_storage
-from rt_connect_api.api.gamma import _storage as gamma_storage
-from rt_connect_api.api.gamma import _validate_coordinate_frames
+from rt_connect_api.api.gamma import (
+    GammaRunCreateRequest,
+    _validate_coordinate_frames,
+    _validate_gamma_engine_selection,
+)
+from rt_connect_api.api.gamma import (
+    _storage as gamma_storage,
+)
 from rt_connect_api.core.errors import DomainError
 from rt_connect_api.services.gamma_engine import (
     GammaConfiguration,
@@ -555,6 +562,33 @@ def test_psqa_profile_rejects_json_only_inputs_before_enqueue() -> None:
         )
         assert rejected.status_code == 422, rejected.text
         assert rejected.json()["code"] == "RTDOSE_REQUIRED"
+
+
+@pytest.mark.parametrize(
+    ("configuration", "code"),
+    [
+        ({"dimensionality": "3D"}, "PYLINAC_GAMMA_3D_UNAVAILABLE"),
+        (
+            {"dose_difference_mode": "ABSOLUTE", "absolute_dose_difference_gy": 1.0},
+            "GAMMA_PYLINAC_ABSOLUTE_UNSUPPORTED",
+        ),
+        ({"interpolation": "BILINEAR"}, "GAMMA_PYLINAC_INTERPOLATION_UNSUPPORTED"),
+    ],
+)
+def test_new_psqa_run_cannot_select_an_unsupported_pylinac_mode(
+    configuration: dict[str, object], code: str
+) -> None:
+    payload = GammaRunCreateRequest(
+        reference_artifact_id=uuid4(),
+        evaluation_artifact_id=uuid4(),
+        idempotency_key="p8-pylinac-selection-001",
+        configuration=configuration,
+    )
+
+    with pytest.raises(DomainError) as error:
+        _validate_gamma_engine_selection(payload)
+
+    assert error.value.code == code
 
 
 def test_gamma_resource_preflight_rejects_oversized_validated_grid() -> None:

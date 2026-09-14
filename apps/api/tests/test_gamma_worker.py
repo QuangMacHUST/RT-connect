@@ -26,6 +26,7 @@ from rt_connect_api.db.models import (
     Site,
 )
 from rt_connect_api.services.object_storage import InMemoryObjectStorage, ObjectStorageError
+from rt_connect_api.services.pylinac_gamma_adapter import PYLINAC_GAMMA_ENGINE_VERSION
 from rt_connect_api.services.redis_queue import GammaQueueMessage
 from rt_connect_api.worker import process_gamma_queue_message, recover_stale_runs
 
@@ -66,7 +67,9 @@ def _dataset(dataset_id: str, values: list[float]) -> bytes:
     ).encode("utf-8")
 
 
-def _run_fixture() -> tuple[Session, InMemoryObjectStorage, GammaAnalysisRun]:
+def _run_fixture(
+    *, engine_backend: str = "LEGACY_GAMMA"
+) -> tuple[Session, InMemoryObjectStorage, GammaAnalysisRun]:
     engine = create_engine(
         "sqlite+pysqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -179,7 +182,9 @@ def _run_fixture() -> tuple[Session, InMemoryObjectStorage, GammaAnalysisRun]:
         idempotency_key="worker-test-001",
         request_fingerprint="c" * 64,
         status="QUEUED",
-        engine_version="gamma-2d-p8.1",
+        engine_version=(
+            PYLINAC_GAMMA_ENGINE_VERSION if engine_backend == "PYLINAC_GAMMA" else "gamma-2d-p8.1"
+        ),
         config_snapshot={
             "dimensionality": "2D",
             "dose_difference_percent": 3.0,
@@ -189,8 +194,11 @@ def _run_fixture() -> tuple[Session, InMemoryObjectStorage, GammaAnalysisRun]:
             "dose_threshold_percent": 0.0,
             "normalization": "GLOBAL",
             "interpolation": "GRID",
+            "coverage_policy": "FULL_ROI",
+            "max_gamma": 2.0,
             "pass_rate_threshold_percent": 95.0,
             "histogram_bins": 10,
+            "engine_backend": engine_backend,
         },
         input_manifest_snapshot={
             "reference": {
@@ -220,6 +228,18 @@ def test_worker_completes_queued_gamma_run_and_persists_result() -> None:
         assert run.attempt_count == 1
         assert run.result_snapshot["overall_status"] == "PASS"
         assert run.result_snapshot["metrics"]["pass_rate_percent"] == 100.0
+    finally:
+        session.close()
+
+
+def test_worker_completes_new_psqa_run_with_pylinac_gamma() -> None:
+    session, storage, run = _run_fixture(engine_backend="PYLINAC_GAMMA")
+    try:
+        process_gamma_run(session, run, storage)
+        assert run.status == "COMPLETED"
+        assert run.result_snapshot["engine"] == "pylinac"
+        assert run.result_snapshot["algorithm"] == "pylinac.core.gamma.gamma_2d"
+        assert run.result_snapshot["overall_status"] == "PASS"
     finally:
         session.close()
 

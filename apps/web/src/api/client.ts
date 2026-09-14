@@ -309,7 +309,7 @@ export type MachineQACompareResource = {
   }>
 }
 export type GammaConfiguration = {
-  dimensionality: '2D' | '3D'
+  dimensionality: '1D' | '2D' | '3D'
   dose_difference_percent: number
   dose_difference_mode: 'ABSOLUTE' | 'RELATIVE'
   absolute_dose_difference_gy: number | null
@@ -321,6 +321,7 @@ export type GammaConfiguration = {
   max_gamma: number
   pass_rate_threshold_percent: number
   histogram_bins: number
+  resolution_factor: number
 }
 export type GammaWorkflowProfile = 'PSQA_GAMMA' | 'ENGINE_TEST'
 export type GammaRunResource = {

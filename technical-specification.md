@@ -294,7 +294,7 @@ Calibration phải lưu đúng protocol implementation. Tài liệu pylinac hi�
 
 ### 7.3. Gamma
 
-Run PSQA mới dùng `pylinac.profile.gamma_1d` hoặc `pylinac.image.gamma_2d`. RTDOSE tham chiếu và measurement/comparison là hai vai trò; nhiều RTDOSE phải chọn rõ. Bộ đọc định dạng đo có registry phiên bản; import CSV nếu hỗ trợ dùng wizard ghép cột/đơn vị và xem trước bảng, không bắt sửa JSON.
+Run PSQA mới dùng đúng hàm công khai `pylinac.core.gamma.gamma_1d` hoặc `pylinac.core.gamma.gamma_2d`. RTDOSE tham chiếu và measurement/comparison là hai vai trò; nhiều RTDOSE phải chọn rõ. Bộ đọc định dạng đo có registry phiên bản; import CSV nếu hỗ trợ dùng wizard ghép cột/đơn vị và xem trước bảng, không bắt sửa JSON. Lớp điều hợp của RT-CONNECT chỉ kiểm tra hình học, đổi DTA từ mm sang số điểm lưới đối với Gamma hai chiều, gọi Pylinac và lưu kết quả cùng phiên bản gói, dấu vân tay gói và cấu hình bất biến.
 
 Schema giao diện cơ bản:
 
