@@ -921,7 +921,7 @@ function FieldAnalysisPage({ caseId, accessToken, title, catalogKey }: { caseId:
   </div>
 }
 
-type CatPhanCatalogKey = 'CATPHAN_503' | 'CATPHAN_504' | 'CATPHAN_600' | 'CATPHAN_604'
+type CatPhanCatalogKey = 'CATPHAN_503' | 'CATPHAN_504' | 'CATPHAN_600' | 'CATPHAN_604' | 'CATPHAN_700'
 
 function CatPhanPage({ caseId, accessToken, title, catalogKey }: { caseId: string; accessToken: string; title: string; catalogKey: CatPhanCatalogKey }) {
   const queryClient = useQueryClient()
@@ -1734,7 +1734,7 @@ export function MachineQAPage() {
   if ((selectedCase.qa_definition_key === 'FIELD_PROFILE_ANALYSIS' || selectedCase.qa_definition_key === 'FIELD_ANALYSIS_LEGACY') && accessToken) {
     return <FieldAnalysisPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key} />
   }
-  if ((selectedCase.qa_definition_key === 'CATPHAN_503' || selectedCase.qa_definition_key === 'CATPHAN_504' || selectedCase.qa_definition_key === 'CATPHAN_600' || selectedCase.qa_definition_key === 'CATPHAN_604') && accessToken) {
+  if ((selectedCase.qa_definition_key === 'CATPHAN_503' || selectedCase.qa_definition_key === 'CATPHAN_504' || selectedCase.qa_definition_key === 'CATPHAN_600' || selectedCase.qa_definition_key === 'CATPHAN_604' || selectedCase.qa_definition_key === 'CATPHAN_700') && accessToken) {
     return <CatPhanPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key} />
   }
   if ((selectedCase.qa_definition_key === 'ACR_CT_464' || selectedCase.qa_definition_key === 'ACR_MRI_LARGE' || selectedCase.qa_definition_key === 'ACR_MRI_MEDIUM') && accessToken) {

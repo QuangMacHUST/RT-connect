@@ -354,7 +354,7 @@ def calculate_pylinac_gamma(
             engine_class = "gamma_1d"
         else:
             distance_pixels = _validate_2d_geometry(reference, evaluation, distance_mm)
-            from pylinac.core.gamma import gamma_2d  # type: ignore[import-untyped]
+            from pylinac.core.gamma import gamma_2d
 
             result_array = np.asarray(
                 gamma_2d(

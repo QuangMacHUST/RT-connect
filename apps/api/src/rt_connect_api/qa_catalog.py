@@ -234,6 +234,18 @@ _CATALOG: tuple[dict[str, object], ...] = (
         supports_manual_adjustment=True,
     ),
     _item(
+        "CATPHAN_700",
+        "Kiểm tra CatPhan 700",
+        "Ảnh CT/CBCT",
+        "Phân tích các mô-đun có trong CatPhan 700.",
+        "DICOM_SERIES",
+        ("Chuỗi DICOM CT hoặc CBCT",),
+        ("Chọn lát", "Tâm phantom", "Góc", "Kích thước vùng quan tâm"),
+        engine_class="CatPhan700",
+        implementation_status="READY",
+        supports_manual_adjustment=True,
+    ),
+    _item(
         "ACR_CT_464",
         "Kiểm tra phantom ACR CT 464",
         "Phantom ACR",

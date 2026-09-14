@@ -119,6 +119,7 @@ RUNTIME_BINDINGS: Final[tuple[RuntimeBinding, ...]] = (
     _class("CATPHAN_504", "pylinac.ct.CatPhan504", "dicom_series", "CatPhan"),
     _class("CATPHAN_600", "pylinac.ct.CatPhan600", "dicom_series", "CatPhan"),
     _class("CATPHAN_604", "pylinac.ct.CatPhan604", "dicom_series", "CatPhan"),
+    _class("CATPHAN_700", "pylinac.ct.CatPhan700", "dicom_series", "CatPhan"),
     _class("ACR_CT_464", "pylinac.acr.ACRCT", "dicom_series", "ACR"),
     _class("ACR_MRI_LARGE", "pylinac.acr.ACRMRILarge", "dicom_series", "ACR"),
     _class("ACR_MRI_MEDIUM", "pylinac.acr.ACRMRIMedium", "dicom_series", "ACR"),

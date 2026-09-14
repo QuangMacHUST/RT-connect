@@ -194,9 +194,15 @@ def test_qa_catalog_is_complete_and_case_can_start_from_a_definition() -> None:
     assert catalogue.status_code == 200
     definitions = catalogue.json()["items"]
     keys = {item["key"] for item in definitions}
-    assert len(definitions) >= 55
+    assert len(definitions) == 64
     assert len(keys) == len(definitions)
-    assert {"STARSHOT", "PICKET_FENCE", "WINSTON_LUTZ", "PSQA_GAMMA_2D"} <= keys
+    assert {
+        "STARSHOT",
+        "PICKET_FENCE",
+        "WINSTON_LUTZ",
+        "PSQA_GAMMA_2D",
+        "CATPHAN_700",
+    } <= keys
     assert catalogue.json()["total"] == len(definitions)
     assert started.status_code == 201
     assert started.json()["qa_definition_key"] == "STARSHOT"

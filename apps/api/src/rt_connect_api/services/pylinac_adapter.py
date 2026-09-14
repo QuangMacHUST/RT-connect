@@ -1092,6 +1092,7 @@ def _execute_catphan(
             "CATPHAN_504": "CatPhan504",
             "CATPHAN_600": "CatPhan600",
             "CATPHAN_604": "CatPhan604",
+            "CATPHAN_700": "CatPhan700",
         }[catalog_key]
         warnings = result.get("warnings", [])
         warning_items = warnings if isinstance(warnings, list) else [warnings]
@@ -2672,7 +2673,7 @@ def execute_pylinac(
         return _execute_vmat(catalog_key, source_path, parameters)
     if catalog_key in {"FIELD_PROFILE_ANALYSIS", "FIELD_ANALYSIS_LEGACY"}:
         return _execute_field_profile(catalog_key, source_path, parameters)
-    if catalog_key in {"CATPHAN_503", "CATPHAN_504", "CATPHAN_600", "CATPHAN_604"}:
+    if catalog_key in {"CATPHAN_503", "CATPHAN_504", "CATPHAN_600", "CATPHAN_604", "CATPHAN_700"}:
         return _execute_catphan(catalog_key, source_path, parameters)
     if catalog_key in _ACR_KEYS:
         return _execute_acr(catalog_key, source_path, parameters)

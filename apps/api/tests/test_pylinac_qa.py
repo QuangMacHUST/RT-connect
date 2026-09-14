@@ -580,6 +580,52 @@ def test_catphan_adapter_passes_zip_and_analysis_controls(tmp_path, monkeypatch)
     assert len(result.overlay_bytes or b"") > 0
 
 
+def test_catphan700_adapter_uses_pylinac_binding(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "catphan700.zip"
+    source.write_bytes(b"dicom-zip")
+
+    from matplotlib import pyplot as plt
+
+    class FakeCatPhan700:
+        def __init__(self, path: str, **kwargs: object) -> None:
+            assert path.endswith("catphan700.zip")
+            assert kwargs["check_uid"] is True
+            assert kwargs["is_zip"] is True
+
+        def analyze(self, **kwargs: object) -> None:
+            assert kwargs["hu_tolerance"] == 35.0
+            assert kwargs["cnr_threshold"] == 12.0
+            assert kwargs["origin_slice"] == 9
+            assert kwargs["x_adjustment"] == -1.0
+
+        def results_data(self, *, as_dict: bool) -> dict[str, object]:
+            assert as_dict is True
+            return {"passed": True, "ctp404": {"hu": 2.1}, "warnings": []}
+
+        def plot_analyzed_image(self, *, show: bool) -> None:
+            assert show is False
+            plt.figure()
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (
+            (FakeCatPhan700, None) if key == "CATPHAN_700" else (None, "missing")
+        ),
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.package_fingerprint", lambda: "f" * 64
+    )
+    result = execute_pylinac(
+        "CATPHAN_700",
+        source,
+        {"hu_tolerance": 35, "cnr_threshold": 12, "origin_slice": 9, "x_adjustment": -1},
+    )
+    assert result.engine_class == "CatPhan700"
+    assert result.result_snapshot["engine_passed"] is True
+    assert result.overlay_filename == "catphan_700-phan-tich.png"
+    assert len(result.overlay_bytes or b"") > 0
+
+
 def test_acr_adapter_supports_mri_controls(tmp_path, monkeypatch) -> None:
     source = tmp_path / "acr.zip"
     source.write_bytes(b"dicom-zip")

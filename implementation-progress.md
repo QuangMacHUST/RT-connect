@@ -1,5 +1,11 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W03 — bổ sung CatPhan700 theo inventory Pylinac 3.47.0 — lát cắt cục bộ — 2026-09-15
+
+- Đối chiếu các lớp phân tích công khai của mô-đun CT trong wheel `pylinac 3.47.0` phát hiện `CatPhan700` chưa có trong danh mục dù là một biến thể phantom cụ thể. Đã bổ sung bài này vào danh mục, runtime registry, adapter CatPhan, kiểm tra đầu vào ZIP, tuyến giao diện và điều hướng.
+- Danh mục hiện hành là **64 bài**: 1 bài nhập số đo và 63 bài Pylinac. CatPhan hiện gồm 503, 504, 600, 604 và 700. Đây là bổ sung phạm vi; chưa có fixture CatPhan700 để tuyên bố engine đã chạy thật.
+- Kiểm tra local sau thay đổi phải xác nhận registry phân giải 63/63 liên kết Pylinac, danh mục không trùng khóa và giao diện vẫn dựng được. P7-W03/P07-CT/P7-VERIFY vẫn mở cho đến khi có fixture, đối chiếu kết quả từng mô-đun và kiểm chứng staging.
+
 ## P7-W04 — canvas thao tác tâm dùng chung — lát cắt cục bộ — 2026-09-15
 
 - Khung điều chỉnh ảnh dùng chung đã nhận thêm chế độ tọa độ chuẩn hóa 0–1 cho Field Profile/Field Analysis và được dùng ở chế độ chọn vị trí thủ công; Planar Imaging dùng cùng khung ở chế độ tọa độ điểm ảnh để chọn tâm phantom. Starshot tiếp tục dùng cùng thành phần cho tâm bắt đầu.
