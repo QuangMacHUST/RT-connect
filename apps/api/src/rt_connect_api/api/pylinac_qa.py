@@ -291,6 +291,9 @@ def create_pylinac_run(
         "CATPHAN_504",
         "CATPHAN_600",
         "CATPHAN_604",
+        "ACR_CT_464",
+        "ACR_MRI_LARGE",
+        "ACR_MRI_MEDIUM",
     } and len(artifacts) != 1:
         raise DomainError(
             "PYLINAC_INPUT_COUNT_INVALID", "Bài QA này yêu cầu đúng một tệp đầu vào.", 422
@@ -319,6 +322,15 @@ def create_pylinac_run(
         raise DomainError(
             "PYLINAC_INPUT_FORMAT_INVALID",
             "Bài CatPhan yêu cầu một tệp ZIP chứa chuỗi DICOM.",
+            422,
+        )
+    if (
+        definition.key in {"ACR_CT_464", "ACR_MRI_LARGE", "ACR_MRI_MEDIUM"}
+        and Path(artifacts[0].original_filename).suffix.lower() != ".zip"
+    ):
+        raise DomainError(
+            "PYLINAC_INPUT_FORMAT_INVALID",
+            "Bài ACR yêu cầu một tệp ZIP chứa chuỗi DICOM.",
             422,
         )
     binding = runtime_binding(definition.key)

@@ -3,8 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import cast
 
+import matplotlib
 from pylinac.core.geometry import Point
 from pylinac.winston_lutz import BBConfig
+
+matplotlib.use("Agg")
 
 from rt_connect_api.api.artifacts import _storage
 from rt_connect_api.services.object_storage import InMemoryObjectStorage
@@ -538,6 +541,71 @@ def test_catphan_adapter_passes_zip_and_analysis_controls(tmp_path, monkeypatch)
     assert result.result_snapshot["engine_passed"] is True
     assert result.overlay_filename == "catphan_503-phan-tich.png"
     assert len(result.overlay_bytes or b"") > 0
+
+
+def test_acr_adapter_supports_ct_and_mri_controls(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "acr.zip"
+    source.write_bytes(b"dicom-zip")
+
+    from matplotlib import pyplot as plt
+
+    class FakeACR:
+        def __init__(self, path: str, **kwargs: object) -> None:
+            assert path.endswith("acr.zip")
+            assert kwargs == {"check_uid": True, "memory_efficient_mode": False, "is_zip": True}
+
+        def analyze(self, **kwargs: object) -> None:
+            assert kwargs["x_adjustment"] == 1.5
+            assert kwargs["origin_slice"] == 4
+            assert kwargs["echo_number"] == 2
+            assert kwargs["low_contrast_method"] == "Weber"
+
+        def results_data(self, *, as_dict: bool) -> dict[str, object]:
+            assert as_dict is True
+            return {"passed": True, "geometric_accuracy": 0.4, "warnings": []}
+
+        def plot_analyzed_image(self, *, show: bool) -> object:
+            assert show is False
+            return plt.figure()
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (FakeACR, None) if key == "ACR_MRI_LARGE" else (None, "missing"),
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.package_fingerprint", lambda: "f" * 64
+    )
+    result = execute_pylinac(
+        "ACR_MRI_LARGE",
+        source,
+        {
+            "check_uid": True,
+            "is_zip": True,
+            "x_adjustment": 1.5,
+            "origin_slice": 4,
+            "echo_number": 2,
+            "low_contrast_method": "Weber",
+        },
+    )
+    assert result.engine_class == "ACRMRILarge"
+    assert result.result_snapshot["engine_passed"] is True
+    assert result.overlay_filename == "acr_mri_large-phan-tich.png"
+    assert len(result.overlay_bytes or b"") > 0
+
+
+def test_acr_adapter_rejects_non_zip_input(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "acr.dcm"
+    source.write_bytes(b"dicom")
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (object, None) if key == "ACR_CT_464" else (None, "missing"),
+    )
+    try:
+        execute_pylinac("ACR_CT_464", source, {})
+    except PylinacAdapterError as exc:
+        assert exc.code == "PYLINAC_INPUT_FORMAT_INVALID"
+    else:
+        raise AssertionError("Bài ACR phải từ chối tệp không phải ZIP")
 
 
 def test_planar_adapter_uses_common_pylinac_image_controls(tmp_path, monkeypatch) -> None:

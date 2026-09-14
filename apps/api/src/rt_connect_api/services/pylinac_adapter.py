@@ -1077,6 +1077,133 @@ def _execute_catphan(
         ) from exc
 
 
+_ACR_KEYS = {"ACR_CT_464", "ACR_MRI_LARGE", "ACR_MRI_MEDIUM"}
+
+
+def _acr_parameters(
+    catalog_key: str, source_path: Path, parameters: dict[str, object]
+) -> tuple[dict[str, object], dict[str, object]]:
+    constructor_keys = {"check_uid", "memory_efficient_mode", "is_zip"}
+    common_analysis_keys = {
+        "x_adjustment",
+        "y_adjustment",
+        "angle_adjustment",
+        "roi_size_factor",
+        "scaling_factor",
+        "origin_slice",
+    }
+    mri_analysis_keys = {
+        "echo_number",
+        "low_contrast_method",
+        "low_contrast_visibility_threshold",
+        "low_contrast_visibility_sanity_multiplier",
+    }
+    allowed = constructor_keys | common_analysis_keys
+    if catalog_key in {"ACR_MRI_LARGE", "ACR_MRI_MEDIUM"}:
+        allowed |= mri_analysis_keys
+    unknown = set(parameters) - allowed
+    if unknown:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_UNSUPPORTED", "Có tham số không được hỗ trợ cho bài ACR."
+        )
+    constructor: dict[str, object] = {
+        "check_uid": _bool(parameters, "check_uid", True),
+        "memory_efficient_mode": _bool(parameters, "memory_efficient_mode", False),
+        "is_zip": _bool(parameters, "is_zip", source_path.suffix.lower() == ".zip"),
+    }
+    analysis: dict[str, object] = {}
+    for key in ("x_adjustment", "y_adjustment", "angle_adjustment"):
+        if key in parameters:
+            analysis[key] = _number(parameters, key)
+    for key in ("roi_size_factor", "scaling_factor"):
+        if key in parameters:
+            analysis[key] = _number(parameters, key, minimum=0)
+    if "origin_slice" in parameters and parameters["origin_slice"] is not None:
+        analysis["origin_slice"] = _integer(parameters, "origin_slice", minimum=0)
+    if catalog_key in {"ACR_MRI_LARGE", "ACR_MRI_MEDIUM"}:
+        if "echo_number" in parameters and parameters["echo_number"] is not None:
+            analysis["echo_number"] = _integer(parameters, "echo_number", minimum=1)
+        for key in (
+            "low_contrast_visibility_threshold",
+            "low_contrast_visibility_sanity_multiplier",
+        ):
+            if key in parameters:
+                analysis[key] = _number(parameters, key, minimum=0)
+        if "low_contrast_method" in parameters:
+            method = parameters["low_contrast_method"]
+            if not isinstance(method, str) or not method.strip():
+                raise PylinacAdapterError(
+                    "PYLINAC_PARAMETER_INVALID", "Phương pháp tương phản thấp không hợp lệ."
+                )
+            analysis["low_contrast_method"] = method.strip()
+    return constructor, analysis
+
+
+def _execute_acr(
+    catalog_key: str, source_path: Path, parameters: dict[str, object]
+) -> PylinacExecutionResult:
+    symbol, _ = resolve_runtime_symbol(catalog_key)
+    if symbol is None:
+        raise PylinacAdapterError(
+            "PYLINAC_RUNTIME_UNAVAILABLE", "Bộ phân tích ACR chưa sẵn sàng."
+        )
+    if not source_path.is_file() or source_path.suffix.lower() != ".zip":
+        raise PylinacAdapterError(
+            "PYLINAC_INPUT_FORMAT_INVALID", "Bài ACR cần một tệp ZIP chứa chuỗi DICOM."
+        )
+    constructor, analysis = _acr_parameters(catalog_key, source_path, parameters)
+    try:
+        engine = symbol(str(source_path), **constructor)
+        engine.analyze(**analysis)
+        raw_result = engine.results_data(as_dict=True)
+        result = _json_safe(raw_result)
+        if not isinstance(result, dict):
+            raise PylinacAdapterError(
+                "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả ACR không hợp lệ."
+            )
+        from matplotlib import pyplot as plt  # type: ignore[import-untyped]
+
+        figure = engine.plot_analyzed_image(show=False)
+        overlay_bytes = _save_figure(figure)
+        plt.close(figure)
+        engine_class = {
+            "ACR_CT_464": "ACRCT",
+            "ACR_MRI_LARGE": "ACRMRILarge",
+            "ACR_MRI_MEDIUM": "ACRMRIMedium",
+        }[catalog_key]
+        warnings = result.get("warnings", [])
+        warning_items = warnings if isinstance(warnings, list) else [warnings]
+        return PylinacExecutionResult(
+            catalog_key=catalog_key,
+            engine_class=engine_class,
+            engine_version=PYLINAC_VERSION,
+            package_fingerprint=package_fingerprint(),
+            result_snapshot={
+                "schema_version": "p7.pylinac-result.v1",
+                "engine": "pylinac",
+                "engine_class": engine_class,
+                "metrics": result,
+                "engine_passed": result.get("passed"),
+                "parameters": _json_safe(parameters),
+            },
+            warnings=[
+                {"code": "PYLINAC_ENGINE_WARNING", "message": str(item)}
+                for item in warning_items
+                if item
+            ],
+            overlay_bytes=overlay_bytes,
+            overlay_media_type="image/png",
+            overlay_filename=f"{catalog_key.lower()}-phan-tich.png",
+        )
+    except PylinacAdapterError:
+        raise
+    except Exception as exc:
+        raise PylinacAdapterError(
+            "PYLINAC_EXECUTION_FAILED",
+            "Pylinac không thể phân tích bộ ảnh ACR. Hãy kiểm tra tệp ZIP và tham số rồi thử lại.",
+        ) from exc
+
+
 _PLANAR_PROFILE_KEYS = {
     "PLANAR_LEEDS_TOR_18",
     "PLANAR_LEEDS_TOR_BLUE",
@@ -1428,6 +1555,8 @@ def execute_pylinac(
         return _execute_field_profile(catalog_key, source_path, parameters)
     if catalog_key in {"CATPHAN_503", "CATPHAN_504", "CATPHAN_600", "CATPHAN_604"}:
         return _execute_catphan(catalog_key, source_path, parameters)
+    if catalog_key in _ACR_KEYS:
+        return _execute_acr(catalog_key, source_path, parameters)
     if catalog_key.startswith("PLANAR_"):
         return _execute_planar(catalog_key, source_path, parameters)
     raise PylinacAdapterError(

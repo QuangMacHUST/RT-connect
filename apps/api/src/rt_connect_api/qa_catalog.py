@@ -237,6 +237,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Chuỗi DICOM CT",),
         ("Chọn lát", "Tâm phantom", "Vùng quan tâm"),
         engine_class="ACRCT464",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(
@@ -248,6 +249,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Chuỗi DICOM MRI",),
         ("Chọn lát", "Tâm phantom", "Vùng quan tâm"),
         engine_class="ACRMriLarge",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(
@@ -259,6 +261,7 @@ _CATALOG: tuple[dict[str, object], ...] = (
         ("Chuỗi DICOM MRI",),
         ("Chọn lát", "Tâm phantom", "Vùng quan tâm"),
         engine_class="ACRMriMedium",
+        implementation_status="READY",
         supports_manual_adjustment=True,
     ),
     _item(
