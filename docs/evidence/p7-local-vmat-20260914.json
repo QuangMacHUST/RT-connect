@@ -1,0 +1,75 @@
+{
+  "evidence_id": "p7-local-vmat-20260914",
+  "phase": "P7",
+  "status": "LOCAL_VERIFIED_SLICE",
+  "source_commit": "265e7f52855b80068709a103bac80c0aae3d9892",
+  "engine": {
+    "name": "pylinac",
+    "version": "3.47.0",
+    "wheel_sha256": "7a99ec70a0242fa645882152fb5aa012f176b943a78339a3a18c15c953331b68",
+    "package_fingerprint": "19a8da65c321f709e700417fe629e4275052c646701fc8b1a146291df9e13e32",
+    "catalogue_version": "pylinac-3.47.0-rt-connect-1.0"
+  },
+  "executed_capabilities": [
+    {
+      "catalog_key": "VMAT_DRGS",
+      "fixture": "pylinac/demo_files/drgs.zip",
+      "image_count": 2,
+      "engine_passed": false,
+      "max_deviation_percent": 1.7785989166030163,
+      "overlay_byte_size": 87326,
+      "overlay_filename": "drgs-phan-tich.png"
+    },
+    {
+      "catalog_key": "VMAT_DRMLC",
+      "fixture": "pylinac/demo_files/drmlc.zip",
+      "image_count": 2,
+      "engine_passed": true,
+      "max_deviation_percent": 0.8179036281768219,
+      "overlay_byte_size": 71352,
+      "overlay_filename": "drmlc-phan-tich.png"
+    },
+    {
+      "catalog_key": "VMAT_DRCS",
+      "fixture": "pylinac/demo_files/drcs.zip",
+      "image_count": 2,
+      "engine_passed": true,
+      "max_deviation_percent": 1.077534625280066,
+      "overlay_byte_size": 81479,
+      "overlay_filename": "drcs-phan-tich.png"
+    }
+  ],
+  "input_contract": {
+    "requires_exactly_two_images": true,
+    "order_is_persisted": true,
+    "open_and_dynamic_roles_are_selected_in_ui": true,
+    "drcs_radial_distances_supported": true,
+    "single_image_is_rejected": true
+  },
+  "persisted_contract": {
+    "migration": "20260914_0023",
+    "stores_input_snapshot": true,
+    "stores_result_snapshot": true,
+    "stores_separate_user_assessment": true,
+    "stores_derived_overlay": true,
+    "preserves_old_runs": true,
+    "tenant_scope_is_first_lookup": true
+  },
+  "tests": {
+    "api_pylinac_tests": "10 passed",
+    "ruff": "PASS",
+    "mypy": "PASS",
+    "web_lint": "PASS",
+    "web_typecheck": "PASS",
+    "web_build": "PASS",
+    "planning_contract": "PASS"
+  },
+  "not_closed": [
+    "55 capability pylinac còn lại chưa có adapter và fixture/contract test riêng",
+    "ma trận đầy đủ cho ROI, segment và offset chưa hoàn tất",
+    "canvas dùng chung và thao tác click/drag trên ảnh chưa hoàn tất",
+    "P07-VERIFY và P07-HANDOFF chưa hoàn tất",
+    "chưa triển khai hoặc kiểm chứng lát cắt này trên staging"
+  ],
+  "secrets_or_patient_data": "none"
+}
