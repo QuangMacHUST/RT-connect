@@ -1,0 +1,40 @@
+{
+  "evidence": "P5 staging linked QA case purge rejection and integrity readback",
+  "captured_at": "2026-09-14T15:12:00+07:00",
+  "environment": "Railway staging",
+  "web_url": "https://rt-connect-web-staging-staging.up.railway.app/app/qa",
+  "target": {
+    "display_name": "dailyQA",
+    "site": "Staging Synthetic Site",
+    "machine": "Synthetic QA Linac",
+    "performed_at": "00:19:00 14/9/2026",
+    "archived_before_action": true
+  },
+  "authorization": "The user explicitly confirmed the permanent-delete test for the dailyQA synthetic record.",
+  "before": {
+    "purge_preview": "Chưa thể xóa vĩnh viễn.",
+    "machine_qa_results": 2,
+    "trend_points": 6,
+    "referenced_data_preservation_message": "Hồ sơ và toàn bộ dữ liệu liên quan vẫn được giữ nguyên."
+  },
+  "action": {
+    "control": "Xóa vĩnh viễn",
+    "result": "REJECTED_BY_REFERENCE_GUARD",
+    "ui_message": "Bài vẫn còn kết quả, tệp hoặc báo cáo liên quan nên chưa thể xóa vĩnh viễn.",
+    "request_boundary": "The staging purge-preview response returned can_purge=false with the two result/trend references. The web client therefore did not send a destructive purge request; the API purge route independently enforces QA_CASE_REFERENCED in the same transaction."
+  },
+  "after_reload": {
+    "dailyQA_visible_in_trash": true,
+    "dailyQA_still_archived": true,
+    "purge_preview_still_reports_machine_qa_results": 2,
+    "purge_preview_still_reports_trend_points": 6,
+    "other_staging_cases_affected": false
+  },
+  "verification": {
+    "browser": "Authenticated staging browser session",
+    "reload_readback": "PASS",
+    "data_integrity": "PASS",
+    "safety_result": "A linked QA case cannot be permanently deleted from the user interface and remains recoverable in the trash."
+  },
+  "result": "PASS"
+}
