@@ -33,6 +33,10 @@ P5 parity evidence checkpoint: the latest verifier result is recorded with the
 root progress update in this commit; rebuild all three services and rerun the
 verifier before treating this checkpoint as the current release candidate.
 
+P5 parity recheck marker: the current evidence packet was verified against the
+candidate that carried it. Any subsequent root-level progress update must again
+touch both service-root markers and repeat the exact-SHA public check.
+
 P17 release marker: DVH explicit P16/P11 binding UI is released against the
 same API contract; validate the selected source and result provenance in staging.
 
