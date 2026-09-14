@@ -741,6 +741,269 @@ def _execute_vmat(
         ) from exc
 
 
+def _choice(
+    parameters: dict[str, object], key: str, allowed: set[str], default: str
+) -> str:
+    value = parameters.get(key, default)
+    if not isinstance(value, str) or value not in allowed:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_INVALID", f"Tham số {key} chưa được chọn đúng giá trị."
+        )
+    return value
+
+
+def _pair_range(
+    parameters: dict[str, object], key: str, *, minimum: float = 0
+) -> tuple[float, float]:
+    first, second = _pair_of_numbers(parameters, key)
+    if first < minimum or second <= first:
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_INVALID", f"Khoảng {key} chưa hợp lệ."
+        )
+    return first, second
+
+
+def _field_profile_parameters(
+    parameters: dict[str, object], *, legacy: bool
+) -> dict[str, object]:
+    if legacy:
+        allowed = {
+            "protocol",
+            "centering",
+            "vert_position",
+            "horiz_position",
+            "vert_width",
+            "horiz_width",
+            "in_field_ratio",
+            "slope_exclusion_ratio",
+            "invert",
+            "is_FFF",
+            "penumbra",
+            "interpolation",
+            "interpolation_resolution_mm",
+            "ground",
+            "normalization_method",
+            "edge_detection_method",
+            "edge_smoothing_ratio",
+            "hill_window_ratio",
+        }
+    else:
+        allowed = {
+            "centering",
+            "position",
+            "x_width",
+            "y_width",
+            "normalization",
+            "edge_type",
+            "invert",
+            "ground",
+        }
+    unknown = set(parameters) - allowed
+    if unknown:
+        label = "Field Analysis" if legacy else "Field Profile Analysis"
+        raise PylinacAdapterError(
+            "PYLINAC_PARAMETER_UNSUPPORTED",
+            f"Có tham số không được hỗ trợ cho bài {label}.",
+        )
+
+    if legacy:
+        protocol = _choice(
+            parameters, "protocol", {"NONE", "VARIAN", "SIEMENS", "ELEKTA"}, "VARIAN"
+        )
+        centering = _choice(
+            parameters,
+            "centering",
+            {"MANUAL", "BEAM_CENTER", "GEOMETRIC_CENTER"},
+            "BEAM_CENTER",
+        )
+        interpolation = _choice(
+            parameters, "interpolation", {"NONE", "LINEAR", "SPLINE"}, "LINEAR"
+        )
+        normalization = _choice(
+            parameters,
+            "normalization_method",
+            {"NONE", "GEOMETRIC_CENTER", "BEAM_CENTER", "MAX"},
+            "BEAM_CENTER",
+        )
+        edge = _choice(
+            parameters,
+            "edge_detection_method",
+            {"FWHM", "INFLECTION_DERIVATIVE", "INFLECTION_HILL"},
+            "INFLECTION_DERIVATIVE",
+        )
+        result: dict[str, object] = {
+            "protocol": protocol,
+            "centering": centering,
+            "interpolation": interpolation,
+            "normalization_method": normalization,
+            "edge_detection_method": edge,
+        }
+        for key in ("vert_position", "horiz_position", "in_field_ratio", "slope_exclusion_ratio"):
+            if key in parameters:
+                value = _number(parameters, key, minimum=0)
+                if value > 1:
+                    raise PylinacAdapterError(
+                        "PYLINAC_PARAMETER_INVALID", f"Tham số {key} phải nằm trong khoảng 0 đến 1."
+                    )
+                result[key] = value
+        for key in (
+            "vert_width",
+            "horiz_width",
+            "interpolation_resolution_mm",
+            "edge_smoothing_ratio",
+        ):
+            if key in parameters:
+                result[key] = _number(parameters, key, minimum=0)
+        if "hill_window_ratio" in parameters:
+            result["hill_window_ratio"] = _number(parameters, "hill_window_ratio", minimum=0)
+        if "penumbra" in parameters:
+            result["penumbra"] = _pair_range(parameters, "penumbra")
+        for key in ("invert", "is_FFF", "ground"):
+            if key in parameters:
+                result[key] = _bool(parameters, key)
+        return result
+
+    centering = _choice(
+        parameters,
+        "centering",
+        {"MANUAL", "BEAM_CENTER", "GEOMETRIC_CENTER"},
+        "BEAM_CENTER",
+    )
+    normalization = _choice(
+        parameters,
+        "normalization",
+        {"NONE", "GEOMETRIC_CENTER", "BEAM_CENTER", "MAX"},
+        "NONE",
+    )
+    edge = _choice(
+        parameters,
+        "edge_type",
+        {"FWHM", "INFLECTION_DERIVATIVE", "INFLECTION_HILL"},
+        "INFLECTION_DERIVATIVE",
+    )
+    result = {"centering": centering, "normalization": normalization, "edge_type": edge}
+    if "position" in parameters:
+        x, y = _pair_of_numbers(parameters, "position")
+        if not 0 <= x <= 1 or not 0 <= y <= 1:
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID", "Vị trí biên dạng phải nằm trong khoảng 0 đến 1."
+            )
+        result["position"] = (x, y)
+    for key in ("x_width", "y_width"):
+        if key in parameters:
+            result[key] = _number(parameters, key, minimum=0)
+    for key in ("invert", "ground"):
+        if key in parameters:
+            result[key] = _bool(parameters, key)
+    return result
+
+
+def _enum_value(module_name: str, enum_name: str, value: str) -> object:
+    module = __import__(module_name, fromlist=[enum_name])
+    enum_type = getattr(module, enum_name)
+    return getattr(enum_type, value)
+
+
+def _save_figure(figure: Any) -> bytes:
+    overlay = BytesIO()
+    figure.savefig(overlay, format="png", dpi=120)
+    return overlay.getvalue()
+
+
+def _execute_field_profile(
+    catalog_key: str, source_path: Path, parameters: dict[str, object]
+) -> PylinacExecutionResult:
+    symbol, _ = resolve_runtime_symbol(catalog_key)
+    if symbol is None:
+        raise PylinacAdapterError(
+            "PYLINAC_RUNTIME_UNAVAILABLE", "Bộ phân tích biên dạng trường chưa sẵn sàng."
+        )
+    legacy = catalog_key == "FIELD_ANALYSIS_LEGACY"
+    analysis = _field_profile_parameters(parameters, legacy=legacy)
+    try:
+        engine = symbol(str(source_path))
+        if legacy:
+            analysis["protocol"] = _enum_value(
+                "pylinac.field_analysis", "Protocol", str(analysis["protocol"])
+            )
+            analysis["centering"] = _enum_value(
+                "pylinac.field_analysis", "Centering", str(analysis["centering"])
+            )
+            analysis["interpolation"] = _enum_value(
+                "pylinac.field_analysis", "Interpolation", str(analysis["interpolation"])
+            )
+            analysis["normalization_method"] = _enum_value(
+                "pylinac.field_analysis", "Normalization", str(analysis["normalization_method"])
+            )
+            analysis["edge_detection_method"] = _enum_value(
+                "pylinac.field_analysis", "Edge", str(analysis["edge_detection_method"])
+            )
+            figures, _ = engine.analyze(**analysis) or ([], [])
+            _ = figures
+            result_figures, _ = engine.plot_analyzed_image(show=False, split_plots=True)
+            figure = result_figures[0]
+            engine_class = "FieldAnalysis"
+            overlay_filename = "field-analysis-phan-tich.png"
+        else:
+            analysis["centering"] = _enum_value(
+                "pylinac.field_profile_analysis", "Centering", str(analysis["centering"])
+            )
+            analysis["normalization"] = _enum_value(
+                "pylinac.field_profile_analysis", "Normalization", str(analysis["normalization"])
+            )
+            analysis["edge_type"] = _enum_value(
+                "pylinac.field_profile_analysis", "Edge", str(analysis["edge_type"])
+            )
+            engine.analyze(**analysis)
+            result_figures = engine.plot_analyzed_images(show=False)
+            figure = result_figures[-1]
+            engine_class = "FieldProfileAnalysis"
+            overlay_filename = "field-profile-analysis-phan-tich.png"
+        raw_result = engine.results_data(as_dict=True)
+        result = _json_safe(raw_result)
+        if not isinstance(result, dict):
+            raise PylinacAdapterError(
+                "PYLINAC_RESULT_INVALID", "Pylinac trả về kết quả biên dạng không hợp lệ."
+            )
+        overlay_bytes = _save_figure(figure)
+        from matplotlib import pyplot as plt  # type: ignore[import-untyped]
+
+        for plotted in result_figures:
+            plt.close(plotted)
+        warnings = result.get("warnings", [])
+        warning_items = warnings if isinstance(warnings, list) else [warnings]
+        return PylinacExecutionResult(
+            catalog_key=catalog_key,
+            engine_class=engine_class,
+            engine_version=PYLINAC_VERSION,
+            package_fingerprint=package_fingerprint(),
+            result_snapshot={
+                "schema_version": "p7.pylinac-result.v1",
+                "engine": "pylinac",
+                "engine_class": engine_class,
+                "metrics": result,
+                "engine_passed": result.get("passed"),
+                "parameters": _json_safe(parameters),
+            },
+            warnings=[
+                {"code": "PYLINAC_ENGINE_WARNING", "message": str(item)}
+                for item in warning_items
+                if item
+            ],
+            overlay_bytes=overlay_bytes,
+            overlay_media_type="image/png",
+            overlay_filename=overlay_filename,
+        )
+    except PylinacAdapterError:
+        raise
+    except Exception as exc:
+        raise PylinacAdapterError(
+            "PYLINAC_EXECUTION_FAILED",
+            "Pylinac không thể phân tích biên dạng trường. Hãy kiểm tra ảnh và tham số "
+            "rồi thử lại.",
+        ) from exc
+
+
 def execute_pylinac(
     catalog_key: str, source_path: Path, parameters: dict[str, object]
 ) -> PylinacExecutionResult:
@@ -759,6 +1022,8 @@ def execute_pylinac(
         return _execute_winston_lutz_multi_target(source_path, parameters)
     if catalog_key in {"VMAT_DRGS", "VMAT_DRMLC", "VMAT_DRCS"}:
         return _execute_vmat(catalog_key, source_path, parameters)
+    if catalog_key in {"FIELD_PROFILE_ANALYSIS", "FIELD_ANALYSIS_LEGACY"}:
+        return _execute_field_profile(catalog_key, source_path, parameters)
     raise PylinacAdapterError(
         "PYLINAC_ADAPTER_NOT_READY",
         "Bộ giao diện cho bài QA này chưa được mở; chưa chạy bằng bộ tính khác.",

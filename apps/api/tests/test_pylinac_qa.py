@@ -395,3 +395,102 @@ def test_vmat_adapter_rejects_single_image(tmp_path) -> None:
         assert exc.code == "PYLINAC_INPUT_COUNT_INVALID"
     else:
         raise AssertionError("Bài VMAT phải yêu cầu cặp ảnh")
+
+
+def test_field_profile_adapter_passes_manual_profile_controls(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "profile.dcm"
+    source.write_bytes(b"profile")
+
+    from matplotlib import pyplot as plt
+
+    class FakeProfile:
+        def __init__(self, path: str) -> None:
+            assert path.endswith("profile.dcm")
+
+        def analyze(self, **kwargs: object) -> None:
+            assert kwargs["centering"] == "MANUAL"
+            assert kwargs["position"] == (0.4, 0.6)
+            assert kwargs["x_width"] == 20.0
+            assert kwargs["normalization"] == "MAX"
+            assert kwargs["edge_type"] == "FWHM"
+
+        def results_data(self, *, as_dict: bool) -> dict[str, object]:
+            assert as_dict is True
+            return {"x_metrics": {"flatness": 1.2}, "warnings": []}
+
+        def plot_analyzed_images(self, *, show: bool) -> list[object]:
+            assert show is False
+            return [plt.figure(), plt.figure(), plt.figure()]
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (FakeProfile, None) if key == "FIELD_PROFILE_ANALYSIS" else (None, "missing"),
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter._enum_value",
+        lambda _module, _enum, value: value,
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.package_fingerprint", lambda: "f" * 64
+    )
+    result = execute_pylinac(
+        "FIELD_PROFILE_ANALYSIS",
+        source,
+        {
+            "centering": "MANUAL",
+            "position": [0.4, 0.6],
+            "x_width": 20,
+            "normalization": "MAX",
+            "edge_type": "FWHM",
+        },
+    )
+    assert result.engine_class == "FieldProfileAnalysis"
+    assert result.overlay_filename == "field-profile-analysis-phan-tich.png"
+    assert len(result.overlay_bytes or b"") > 0
+
+
+def test_legacy_field_analysis_adapter_passes_protocol_controls(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "field.dcm"
+    source.write_bytes(b"field")
+
+    from matplotlib import pyplot as plt
+
+    class FakeLegacy:
+        def __init__(self, path: str) -> None:
+            assert path.endswith("field.dcm")
+
+        def analyze(self, **kwargs: object) -> None:
+            assert kwargs["protocol"] == "ELEKTA"
+            assert kwargs["centering"] == "GEOMETRIC_CENTER"
+            assert kwargs["interpolation"] == "SPLINE"
+
+        def results_data(self, *, as_dict: bool) -> dict[str, object]:
+            assert as_dict is True
+            return {"protocol_results": {"flatness": 1.1}, "warnings": []}
+
+        def plot_analyzed_image(
+            self, *, show: bool, split_plots: bool
+        ) -> tuple[list[object], list[str]]:
+            assert show is False
+            assert split_plots is True
+            return [plt.figure()], ["Image"]
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (FakeLegacy, None) if key == "FIELD_ANALYSIS_LEGACY" else (None, "missing"),
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter._enum_value",
+        lambda _module, _enum, value: value,
+    )
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.package_fingerprint", lambda: "f" * 64
+    )
+    result = execute_pylinac(
+        "FIELD_ANALYSIS_LEGACY",
+        source,
+        {"protocol": "ELEKTA", "centering": "GEOMETRIC_CENTER", "interpolation": "SPLINE"},
+    )
+    assert result.engine_class == "FieldAnalysis"
+    assert result.overlay_filename == "field-analysis-phan-tich.png"
+    assert len(result.overlay_bytes or b"") > 0

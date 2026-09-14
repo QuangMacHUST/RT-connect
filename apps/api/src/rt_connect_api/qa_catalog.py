@@ -463,6 +463,7 @@ def _build_catalog() -> tuple[dict[str, object], ...]:
                 ("Ảnh trường hoặc dữ liệu biên dạng",),
                 ("Vị trí biên dạng", "Độ rộng dải lấy mẫu", "Chuẩn hóa", "Chỉ số"),
                 engine_class="FieldProfileAnalysis",
+                implementation_status="READY",
                 supports_manual_adjustment=True,
             ),
             _item(
@@ -475,6 +476,7 @@ def _build_catalog() -> tuple[dict[str, object], ...]:
                 ("Vị trí biên dạng", "Độ rộng dải lấy mẫu", "Chuẩn hóa", "Chỉ số"),
                 engine_class="FieldAnalysis",
                 is_legacy=True,
+                implementation_status="READY",
                 supports_manual_adjustment=True,
             ),
         ]

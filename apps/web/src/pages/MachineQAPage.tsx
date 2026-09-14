@@ -597,6 +597,102 @@ function VmatPage({ caseId, accessToken, title, catalogKey }: { caseId: string; 
   </div>
 }
 
+type FieldAnalysisCatalogKey = 'FIELD_PROFILE_ANALYSIS' | 'FIELD_ANALYSIS_LEGACY'
+
+function FieldAnalysisPage({ caseId, accessToken, title, catalogKey }: { caseId: string; accessToken: string; title: string; catalogKey: FieldAnalysisCatalogKey }) {
+  const queryClient = useQueryClient()
+  const [selectedArtifactId, setSelectedArtifactId] = useState<string>()
+  const [centering, setCentering] = useState('BEAM_CENTER')
+  const [positionX, setPositionX] = useState('0.5')
+  const [positionY, setPositionY] = useState('0.5')
+  const [widthX, setWidthX] = useState('0')
+  const [widthY, setWidthY] = useState('0')
+  const [normalization, setNormalization] = useState(catalogKey === 'FIELD_PROFILE_ANALYSIS' ? 'NONE' : 'BEAM_CENTER')
+  const [edge, setEdge] = useState('INFLECTION_DERIVATIVE')
+  const [protocol, setProtocol] = useState('VARIAN')
+  const [interpolation, setInterpolation] = useState('LINEAR')
+  const [message, setMessage] = useState<string>()
+  const artifacts = useQuery({
+    queryKey: ['pylinac-artifacts', caseId, accessToken],
+    queryFn: () => apiClient.artifacts(accessToken, caseId), retry: false
+  })
+  const runs = useQuery({
+    queryKey: ['pylinac-runs', caseId, accessToken],
+    queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
+  })
+  const upload = useMutation({
+    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
+    onSuccess: (artifact) => {
+      setSelectedArtifactId(artifact.id)
+      setMessage('Đã tải tệp ảnh lên; có thể bắt đầu phân tích biên dạng.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-artifacts', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const imageArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' || item.artifact_type === 'IMAGE')
+  const selectedInput = selectedArtifactId ?? imageArtifacts[0]?.id
+  const analyze = useMutation({
+    mutationFn: () => {
+      const parameters: Record<string, unknown> = catalogKey === 'FIELD_PROFILE_ANALYSIS'
+        ? { centering, position: [Number(positionX), Number(positionY)], x_width: Number(widthX), y_width: Number(widthY), normalization, edge_type: edge, ground: true }
+        : { protocol, centering, vert_position: Number(positionY), horiz_position: Number(positionX), vert_width: Number(widthY), horiz_width: Number(widthX), interpolation, normalization_method: normalization, edge_detection_method: edge, ground: true }
+      return apiClient.createPylinacQARun(accessToken, caseId, { catalog_key: catalogKey, artifact_ids: [selectedInput!], parameters })
+    },
+    onSuccess: (run) => {
+      setMessage(run.status === 'COMPLETED' ? 'Đã phân tích biên dạng bằng Pylinac.' : 'Pylinac không thể hoàn tất phân tích; hãy xem thông báo lỗi bên dưới.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] })
+    },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const assess = useMutation({
+    mutationFn: ({ runId, value }: { runId: string; value: 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' }) => apiClient.assessPylinacQARun(accessToken, runId, value),
+    onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => setMessage(errorMessage(error))
+  })
+  const history = runs.data?.items ?? []
+  const latest = history[0]
+  const latestMetrics = objectValue(latest?.result_snapshot.metrics)
+  const xMetrics = objectValue(latestMetrics?.x_metrics)
+  const yMetrics = objectValue(latestMetrics?.y_metrics)
+  const protocolResults = objectValue(latestMetrics?.protocol_results)
+  const isBusy = upload.isPending || analyze.isPending || assess.isPending
+  const isLegacy = catalogKey === 'FIELD_ANALYSIS_LEGACY'
+  const displayName = isLegacy ? 'Phân tích trường phiên bản cũ' : 'Phân tích biên dạng trường'
+  const metricItems: Array<[string, unknown]> = isLegacy
+    ? [['Độ phẳng ngang', protocolResults?.flatness_horizontal], ['Độ phẳng dọc', protocolResults?.flatness_vertical], ['Đối xứng ngang', protocolResults?.symmetry_horizontal], ['Đối xứng dọc', protocolResults?.symmetry_vertical]]
+    : [['Độ phẳng trục X', xMetrics?.['Flatness (Difference) (%)']], ['Độ phẳng trục Y', yMetrics?.['Flatness (Difference) (%)']], ['Độ rộng trường X', xMetrics?.['Field Width (mm)']], ['Độ rộng trường Y', yMetrics?.['Field Width (mm)']]]
+
+  return <div className="page">
+    <header className="page-header">
+      <div><p className="eyebrow">KIỂM TRA CHẤT LƯỢNG MÁY · Pylinac</p><h1>{displayName}</h1><p>{title} · đọc biên dạng từ một tệp ảnh DICOM.</p></div>
+      <div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">Quay lại kho QA</Link><span className="status-badge">BỘ TÍNH Pylinac 3.47.0</span></div>
+    </header>
+    {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
+    <section className="panel machine-qa-panel">
+      <div className="panel-heading"><div><p className="eyebrow">TỆP ĐẦU VÀO</p><h2>Ảnh trường hoặc dữ liệu biên dạng</h2></div><strong>{imageArtifacts.length}</strong></div>
+      <p>Bài kiểm tra cần một tệp ảnh. Pylinac chịu trách nhiệm phân tích; RT-CONNECT chỉ thu thập lựa chọn và tham số của người thực hiện.</p>
+      <div className="machine-qa-actions"><label className="button-link">Chọn ảnh DICOM<input type="file" accept=".dcm,application/dicom" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>
+      {imageArtifacts.length > 0 && <label>Tệp đang chọn<select value={selectedInput ?? ''} onChange={(event) => setSelectedArtifactId(event.target.value)}>{imageArtifacts.map((artifact, index) => <option key={artifact.id} value={artifact.id}>Ảnh {index + 1} · {artifact.original_filename}</option>)}</select></label>}
+      <div className="machine-qa-protocol-controls">
+        <label>Cách xác định tâm<select value={centering} onChange={(event) => setCentering(event.target.value)}><option value="BEAM_CENTER">Tâm chùm tia</option><option value="GEOMETRIC_CENTER">Tâm hình học</option><option value="MANUAL">Chọn thủ công</option></select></label>
+        <label>Vị trí ngang (0–1)<input type="number" min="0" max="1" step="0.01" value={positionX} onChange={(event) => setPositionX(event.target.value)} /></label>
+        <label>Vị trí dọc (0–1)<input type="number" min="0" max="1" step="0.01" value={positionY} onChange={(event) => setPositionY(event.target.value)} /></label>
+        <label>Dải ngang (mm)<input type="number" min="0" step="0.1" value={widthX} onChange={(event) => setWidthX(event.target.value)} /></label>
+        <label>Dải dọc (mm)<input type="number" min="0" step="0.1" value={widthY} onChange={(event) => setWidthY(event.target.value)} /></label>
+      </div>
+      <div className="machine-qa-protocol-controls">
+        {isLegacy && <label>Quy trình<select value={protocol} onChange={(event) => setProtocol(event.target.value)}><option value="VARIAN">Varian</option><option value="SIEMENS">Siemens</option><option value="ELEKTA">Elekta</option><option value="NONE">Không dùng</option></select></label>}
+        {isLegacy && <label>Nội suy<select value={interpolation} onChange={(event) => setInterpolation(event.target.value)}><option value="LINEAR">Tuyến tính</option><option value="SPLINE">Spline</option><option value="NONE">Không dùng</option></select></label>}
+        <label>Chuẩn hóa<select value={normalization} onChange={(event) => setNormalization(event.target.value)}><option value="NONE">Không chuẩn hóa</option><option value="BEAM_CENTER">Tâm chùm tia</option><option value="GEOMETRIC_CENTER">Tâm hình học</option><option value="MAX">Giá trị lớn nhất</option></select></label>
+        <label>Phương pháp nhận biên<select value={edge} onChange={(event) => setEdge(event.target.value)}><option value="INFLECTION_DERIVATIVE">Đạo hàm điểm uốn</option><option value="FWHM">Nửa cực đại</option><option value="INFLECTION_HILL">Đỉnh điểm uốn</option></select></label>
+      </div>
+      <div className="machine-qa-actions"><button disabled={!selectedInput || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+    </section>
+    {latest && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">KẾT QUẢ MỚI NHẤT</p><h2>{latest.name}</h2></div><span className={statusClass(latest.status)}>{statusLabel(latest.status)}</span></div>{latest.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích</h3><ul>{latest.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{latest.status === 'COMPLETED' && <><div className="machine-qa-run-meta">{metricItems.map(([label, value]) => <span key={label}>{label}: {textValue(value)}</span>)}</div>{latest.overlay_artifact_id && <button className="button-secondary" onClick={() => { void apiClient.downloadArtifact(accessToken, latest.overlay_artifact_id!).then((download) => window.open(download.url, '_blank', 'noopener,noreferrer')).catch((error) => setMessage(errorMessage(error))) }}>Mở ảnh phân tích</button>}<label>Đánh giá của người dùng<select value={latest.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => assess.mutate({ runId: latest.id, value: event.target.value as 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' })}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">Chưa có kết quả phân tích.</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td></tr>)}</tbody></table></div>}</section>
+  </div>
+}
+
 export function MachineQAPage() {
   const { caseId } = useParams<{ caseId: string }>()
   const { session } = useAuth()
@@ -723,6 +819,9 @@ export function MachineQAPage() {
   }
   if ((selectedCase.qa_definition_key === 'VMAT_DRGS' || selectedCase.qa_definition_key === 'VMAT_DRMLC' || selectedCase.qa_definition_key === 'VMAT_DRCS') && accessToken) {
     return <VmatPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key} />
+  }
+  if ((selectedCase.qa_definition_key === 'FIELD_PROFILE_ANALYSIS' || selectedCase.qa_definition_key === 'FIELD_ANALYSIS_LEGACY') && accessToken) {
+    return <FieldAnalysisPage caseId={caseId} accessToken={accessToken} title={selectedCase.title} catalogKey={selectedCase.qa_definition_key} />
   }
 
   const metrics = records(activeRun?.result_snapshot.metrics)
