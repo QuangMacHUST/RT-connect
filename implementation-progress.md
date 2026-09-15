@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W03 — cổng máy chủ IMAGE_OR_PROFILE — đã kiểm tra staging — 2026-09-16
+
+- Máy chủ nay áp dụng cùng cổng tương thích cho `IMAGE_OR_PROFILE`; bài Phân tích biên dạng trường cũng từ chối RTDOSE, RTSTRUCT và RTPLAN trước khi gọi Pylinac, không phụ thuộc vào bộ lọc trình duyệt.
+- Bản API `3348524` đã triển khai thành công; kiểm tra công khai staging đạt `failed_check_count=0`, readiness đạt và toàn bộ kiểm thử API cục bộ không có lỗi.
+- Kiểm thử Pylinac liên quan đạt **49/49**, Ruff đạt; không tạo lịch sử mới và không động tới hồ sơ `dailyQA`.
+- Bằng chứng: [cổng máy chủ IMAGE_OR_PROFILE trên staging](docs/evidence/p7-staging-image-or-profile-server-gate-20260916.md). P7 vẫn mở các cổng fixture, đối chiếu độc lập, xác nhận chuyên môn, PDF và VERIFY/HANDOFF.
+
 ## P7-W04 — trạng thái rỗng vùng điều chỉnh ảnh — đã kiểm tra staging — 2026-09-16
 
 - Khi bài Kiểm tra sao không có ảnh phù hợp để chọn, vùng điều chỉnh nay hiển thị “Chọn ảnh để bật vùng điều chỉnh.” thay vì “Đang tải ảnh xem trước…” vô hạn.
