@@ -6,6 +6,7 @@ import type { PylinacQARunResource } from '../api/client'
 import { PylinacAdjustmentCanvas, PylinacResultPanel } from './MachineQAPage'
 import { historyForCatalog } from './pylinacHistory'
 import { mapImagePoint } from './pylinacCoordinates'
+import { artifactsAreValidated, selectedArtifactsAreValidated } from './qaArtifactLabels'
 
 const makeRun = (overrides: Partial<PylinacQARunResource> = {}): PylinacQARunResource => ({
   id: 'run-current',
@@ -115,4 +116,16 @@ test('keeps each QA page history isolated to its selected test', () => {
   expect(historyForCatalog([starshot, picketFence], 'STARSHOT')).toEqual([starshot])
   expect(historyForCatalog([starshot, picketFence], 'PICKET_FENCE')).toEqual([picketFence])
   expect(historyForCatalog(undefined, 'STARSHOT')).toEqual([])
+})
+
+test('requires validated inputs before a Pylinac analysis can start', () => {
+  const valid = { id: 'valid-image', data_status: 'VALID' } as import('../api/client').ArtifactResource
+  const warning = { id: 'warning-image', data_status: 'WARNING' } as import('../api/client').ArtifactResource
+
+  expect(artifactsAreValidated([valid])).toBe(true)
+  expect(artifactsAreValidated([warning])).toBe(false)
+  expect(artifactsAreValidated([])).toBe(false)
+  expect(selectedArtifactsAreValidated(['valid-image'], [valid])).toBe(true)
+  expect(selectedArtifactsAreValidated(['valid-image', 'warning-image'], [valid, warning])).toBe(false)
+  expect(selectedArtifactsAreValidated(['missing-image'], [valid])).toBe(false)
 })

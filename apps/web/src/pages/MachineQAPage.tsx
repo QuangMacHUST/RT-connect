@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 
 import { ApiClientError, apiClient, type ArtifactResource, type MachineQAMeasurement, type MachineQARunResource, type PylinacQARunResource, type QAProtocolResource } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
-import { artifactDisplayName, isPylinacImageArtifact } from './qaArtifactLabels'
+import { artifactDisplayName, artifactsAreValidated, isPylinacImageArtifact, selectedArtifactsAreValidated } from './qaArtifactLabels'
 import { historyForCatalog } from './pylinacHistory'
 import { mapImagePoint } from './pylinacCoordinates'
 
@@ -527,7 +527,7 @@ function PicketFencePage({ caseId, accessToken, title }: { caseId: string; acces
       <PylinacAdjustmentCanvas key={selected?.id ?? 'empty'} accessToken={accessToken} artifactId={selected?.id} x={centralAxisX} y={centralAxisY} heading="Chọn tâm trục trung tâm" description="Nếu ảnh không xác định chắc chắn tâm trường, nhấn hoặc kéo trên ảnh để đặt tâm. Pylinac sẽ dùng điểm này cho lần phân tích mới." disabled={isBusy} onPointChange={(x, y) => { setCentralAxisX(x); setCentralAxisY(y) }} />
       <div className="machine-qa-protocol-controls"><label>Tâm trục ngang (điểm ảnh)<input type="number" step="0.1" value={centralAxisX} onChange={(event) => setCentralAxisX(event.target.value)} placeholder="Tùy chọn" /></label><label>Tâm trục dọc (điểm ảnh)<input type="number" step="0.1" value={centralAxisY} onChange={(event) => setCentralAxisY(event.target.value)} placeholder="Tùy chọn" /></label></div>
       <div className="machine-qa-protocol-controls"><label>Dung sai (mm)<input type="number" min="0" step="0.01" value={tolerance} onChange={(event) => setTolerance(event.target.value)} /></label><label>Mẫu MLC<select value={mlc} onChange={(event) => setMlc(event.target.value)}><option value="Millennium">Millennium</option><option value="HD120">HD120</option><option value="Agility">Agility</option><option value="Halcyon">Halcyon</option></select></label><label>Cắt ảnh (mm)<input type="number" min="0" step="1" value={cropMm} onChange={(event) => setCropMm(event.target.value)} /></label></div>
-      <div className="machine-qa-actions"><button disabled={!selected || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      <div className="machine-qa-actions"><button disabled={!selected || !artifactsAreValidated(selected ? [selected] : []) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selected ? [selected.id] : []} emptyHistoryLabel="Chưa có kết quả Picket Fence." metrics={[
       { key: 'percent_leaves_passing', label: 'Độ chính xác lá đạt', value: `${textValue(pylinacMetric(latest, 'percent_leaves_passing'))}%` },
@@ -615,7 +615,7 @@ function StarshotPage({ caseId, accessToken, title }: { caseId: string; accessTo
         <label>Tâm bắt đầu X (pixel, tùy chọn)<input type="number" step="0.1" value={startX} onChange={(event) => setStartX(event.target.value)} /></label>
         <label>Tâm bắt đầu Y (pixel, tùy chọn)<input type="number" step="0.1" value={startY} onChange={(event) => setStartY(event.target.value)} /></label>
       </div>
-      <div className="machine-qa-actions"><button disabled={!selected || isBusy || ((startX.trim() === '') !== (startY.trim() === ''))} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      <div className="machine-qa-actions"><button disabled={!selected || !artifactsAreValidated(selected ? [selected] : []) || isBusy || ((startX.trim() === '') !== (startY.trim() === ''))} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selected ? [selected.id] : []} emptyHistoryLabel="Chưa có kết quả kiểm tra sao." metrics={[
       { key: 'circle_diameter_mm', label: 'Độ lệch đường kính', value: `${textValue(pylinacMetric(latest, 'circle_diameter_mm'))} mm` },
@@ -719,7 +719,7 @@ function WinstonLutzPage({ caseId, accessToken, title }: { caseId: string; acces
         <label><input type="checkbox" checked={openField} onChange={(event) => setOpenField(event.target.checked)} /> Ảnh trường mở</label>
         <label><input type="checkbox" checked={applyVirtualShift} onChange={(event) => setApplyVirtualShift(event.target.checked)} /> Áp dụng dịch chuyển ảo</label>
       </div>
-      <div className="machine-qa-actions"><button disabled={!selected || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      <div className="machine-qa-actions"><button disabled={!selected || !artifactsAreValidated(selected ? [selected] : []) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={zipArtifacts} selectedArtifactIds={selected ? [selected.id] : []} emptyHistoryLabel="Chưa có kết quả Winston–Lutz." metrics={[
       { key: 'max_2d_cax_to_bb_mm', label: 'Sai lệch trục–bi lớn nhất', value: `${metric('max_2d_cax_to_bb_mm')} mm` },
@@ -845,7 +845,7 @@ function WinstonLutzMultiTargetPage({ caseId, accessToken, title }: { caseId: st
       [row.gantry, row.collimator, row.couch].every((value) => value.trim() !== '' && Number.isFinite(Number(value)))
     )
   )
-  const canAnalyze = Boolean(selected) && !isBusy && manualAnglesValid
+  const canAnalyze = Boolean(selected) && artifactsAreValidated(selected ? [selected] : []) && !isBusy && manualAnglesValid
   const metric = (key: string) => textValue(pylinacMetric(latest, key))
 
   return <div className="page">
@@ -980,7 +980,7 @@ function VmatPage({ caseId, accessToken, title, catalogKey }: { caseId: string; 
         <label>Chiều dài đoạn phân tích (mm)<input type="number" min="0" step="0.1" value={segmentLength} onChange={(event) => setSegmentLength(event.target.value)} /></label>
         {catalogKey === 'VMAT_DRCS' && <><label>Khoảng cách xuyên tâm nhỏ nhất (mm)<input type="number" min="0" step="0.1" value={collimatorMin} onChange={(event) => setCollimatorMin(event.target.value)} /></label><label>Khoảng cách xuyên tâm lớn nhất (mm)<input type="number" min="0" step="0.1" value={collimatorMax} onChange={(event) => setCollimatorMax(event.target.value)} /></label></>}
       </div>
-      <div className="machine-qa-actions"><button disabled={selectedPair.length !== 2 || selectedPair[0] === selectedPair[1] || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      <div className="machine-qa-actions"><button disabled={selectedPair.length !== 2 || selectedPair[0] === selectedPair[1] || !selectedArtifactsAreValidated(selectedPair, imageArtifacts) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedPair} emptyHistoryLabel={`Chưa có kết quả ${displayName}.`} metrics={[
       { key: 'max_deviation_percent', label: 'Sai lệch lớn nhất', value: `${textValue(pylinacMetric(latest, 'max_deviation_percent'))}%` },
@@ -1081,7 +1081,7 @@ function FieldAnalysisPage({ caseId, accessToken, title, catalogKey }: { caseId:
         <label>Chuẩn hóa<select value={normalization} onChange={(event) => setNormalization(event.target.value)}><option value="NONE">Không chuẩn hóa</option><option value="BEAM_CENTER">Tâm chùm tia</option><option value="GEOMETRIC_CENTER">Tâm hình học</option><option value="MAX">Giá trị lớn nhất</option></select></label>
         <label>Phương pháp nhận biên<select value={edge} onChange={(event) => setEdge(event.target.value)}><option value="INFLECTION_DERIVATIVE">Đạo hàm điểm uốn</option><option value="FWHM">Nửa cực đại</option><option value="INFLECTION_HILL">Đỉnh điểm uốn</option></select></label>
       </div>
-      <div className="machine-qa-actions"><button disabled={!selectedInput || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      <div className="machine-qa-actions"><button disabled={!selectedInput || !selectedArtifactsAreValidated(selectedInput ? [selectedInput] : [], imageArtifacts) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedInput ? [selectedInput] : []} emptyHistoryLabel="Chưa có kết quả phân tích." metrics={metricItems.map(([label, value], index) => ({ key: `${label}-${index}`, label, value: textValue(value) }))} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>
@@ -1168,7 +1168,7 @@ function CatPhanPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
         <label>Điều chỉnh góc (độ)<input type="number" step="0.1" value={angleAdjustment} onChange={(event) => setAngleAdjustment(event.target.value)} /></label>
         <label>Hệ số kích thước vùng<input type="number" min="0" step="0.01" value={roiSizeFactor} onChange={(event) => setRoiSizeFactor(event.target.value)} /></label>
       </div>
-      <div className="machine-qa-actions"><button disabled={!selectedInput || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      <div className="machine-qa-actions"><button disabled={!selectedInput || !selectedArtifactsAreValidated(selectedInput ? [selectedInput] : [], imageArtifacts) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedInput ? [selectedInput] : []} emptyHistoryLabel={`Chưa có kết quả ${displayName}.`} resultNote={<p>Kết quả đã được lưu từ Pylinac, gồm các mô-đun theo loại phantom.</p>} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>
@@ -1270,7 +1270,7 @@ function AcrPage({ caseId, accessToken, title, catalogKey }: { caseId: string; a
         {isMri && <label>Phương pháp tương phản thấp<select value={lowContrastMethod} onChange={(event) => setLowContrastMethod(event.target.value)}><option value="Weber">Weber</option><option value="Michelson">Michelson</option></select></label>}
       </div>
       {isMri && <div className="machine-qa-protocol-controls"><label>Ngưỡng nhìn thấy tương phản thấp<input type="number" min="0" step="0.001" value={lowContrastThreshold} onChange={(event) => setLowContrastThreshold(event.target.value)} /></label><label>Hệ số kiểm tra hợp lý<input type="number" min="0" step="0.1" value={lowContrastSanity} onChange={(event) => setLowContrastSanity(event.target.value)} /></label></div>}
-      <div className="machine-qa-actions"><button disabled={!selectedInput || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      <div className="machine-qa-actions"><button disabled={!selectedInput || !selectedArtifactsAreValidated(selectedInput ? [selectedInput] : [], imageArtifacts) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedInput ? [selectedInput] : []} emptyHistoryLabel={`Chưa có kết quả ${displayName}.`} resultNote={<p>Kết quả và thông số của đúng phiên bản Pylinac đã được lưu cùng với bộ ảnh đầu vào.</p>} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>
@@ -1378,7 +1378,7 @@ function CtPylinacPage({ caseId, accessToken, title, catalogKey }: { caseId: str
       </div>
       {isCheese && <div className="machine-qa-protocol-controls"><label>Mật độ tham chiếu ROI 1 (g/cc)<input type="number" step="0.001" placeholder="Tùy chọn" value={roiOneDensity} onChange={(event) => setRoiOneDensity(event.target.value)} /></label><label>Mật độ tham chiếu ROI 2 (g/cc)<input type="number" step="0.001" placeholder="Tùy chọn" value={roiTwoDensity} onChange={(event) => setRoiTwoDensity(event.target.value)} /></label></div>}
       {isQuart && <div className="machine-qa-protocol-controls"><label>Dung sai thang đo (mm)<input type="number" min="0" step="0.1" value={scalingTolerance} onChange={(event) => setScalingTolerance(event.target.value)} /></label><label>Dung sai độ dày (mm)<input type="number" min="0" step="0.01" value={thicknessTolerance} onChange={(event) => setThicknessTolerance(event.target.value)} /></label><label>Dịch lát tìm góc (mm)<input type="number" step="0.1" value={rollSliceOffset} onChange={(event) => setRollSliceOffset(event.target.value)} /></label></div>}
-      <div className="machine-qa-actions"><button disabled={!selectedInput || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      <div className="machine-qa-actions"><button disabled={!selectedInput || !selectedArtifactsAreValidated(selectedInput ? [selectedInput] : [], imageArtifacts) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedInput ? [selectedInput] : []} emptyHistoryLabel={`Chưa có kết quả ${displayName}.`} resultNote={<p>Kết quả và thông số của đúng phiên bản Pylinac đã được lưu cùng với bộ ảnh đầu vào.</p>} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
     <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">Chưa có kết quả {displayName}.</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td></tr>)}</tbody></table></div>}</section>
@@ -1479,7 +1479,7 @@ function LogAnalyzerPage({ caseId, accessToken, title, catalogKey }: { caseId: s
   const logArtifacts = (artifacts.data?.items ?? []).filter((item) => ['.dlg', '.bin', '.tlog', '.txt'].some((suffix) => item.original_filename.toLowerCase().endsWith(suffix)))
   const selected = logArtifacts.filter((item) => selectedArtifactIds.includes(item.id))
   const isDynalog = catalogKey === 'LOG_DYNALOG'
-  const canAnalyze = isDynalog ? selected.length === 2 : selected.length >= 1 && selected.length <= 2
+  const canAnalyze = (isDynalog ? selected.length === 2 : selected.length >= 1 && selected.length <= 2) && artifactsAreValidated(selected)
   const analyze = useMutation({
     mutationFn: () => apiClient.createPylinacQARun(accessToken, caseId, { catalog_key: catalogKey, artifact_ids: selected.map((item) => item.id), parameters: { exclude_beam_off: excludeBeamOff, calc_gamma: calcGamma, ...(calcGamma ? { dose_tolerance: Number(doseTolerance), distance_tolerance: Number(distanceTolerance) } : {}) } }),
     onSuccess: (run) => { setMessage(run.status === 'COMPLETED' ? 'Đã phân tích nhật ký bằng Pylinac.' : 'Pylinac không thể hoàn tất phân tích; hãy xem thông báo lỗi bên dưới.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
@@ -1568,7 +1568,7 @@ function NuclearPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
   const nuclearArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' && item.original_filename.toLowerCase().endsWith('.dcm'))
   const selected = nuclearArtifacts.filter((item) => selectedArtifactIds.includes(item.id))
   const needsBackground = catalogKey === 'NUCLEAR_SS'
-  const canAnalyze = needsBackground ? selected.length >= 1 && selected.length <= 2 : selected.length === 1
+  const canAnalyze = (needsBackground ? selected.length >= 1 && selected.length <= 2 : selected.length === 1) && artifactsAreValidated(selected)
   const setValue = (key: string, value: string) => setValues((current) => ({ ...current, [key]: value }))
   const numbers = (key: string) => values[key].split(',').map((item) => Number(item.trim())).filter((item) => Number.isFinite(item))
   const parameters = () => {
@@ -1667,7 +1667,7 @@ function ContribPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
   const latest = history[0]
   const metrics = Object.entries(objectValue(latest?.result_snapshot.metrics) ?? {}).filter(([, value]) => typeof value === 'number' || typeof value === 'string')
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
-  const canAnalyze = Boolean(selectedArtifactId) && !isBusy
+  const canAnalyze = Boolean(selectedArtifactId) && selectedArtifactsAreValidated(selectedArtifactId ? [selectedArtifactId] : [], imageArtifacts) && !isBusy
 
   return <div className="page">
     <header className="page-header"><div><p className="eyebrow">KIỂM TRA CHẤT LƯỢNG MÁY · PYLİNAC ĐÓNG GÓP</p><h1>{contribNames[catalogKey]}</h1><p>{title} · mô-đun đóng góp của Pylinac, kết quả được lưu độc lập theo từng lần chạy.</p></div><div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">Quay lại kho QA</Link><span className="status-badge">BỘ TÍNH PYLİNAC 3.47.0</span></div></header>
@@ -1762,7 +1762,7 @@ function PlanarImagingPage({ caseId, accessToken, title, catalogKey }: { caseId:
         <label>Hệ số thang đo<input type="number" min="0" step="0.01" value={scaling} onChange={(event) => setScaling(event.target.value)} /></label>
         <label className="checkbox-label"><input type="checkbox" checked={invert} onChange={(event) => setInvert(event.target.checked)} /> Đảo ảnh</label>
       </div>
-      <div className="machine-qa-actions"><button disabled={!selectedInput || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      <div className="machine-qa-actions"><button disabled={!selectedInput || !selectedArtifactsAreValidated(selectedInput ? [selectedInput] : [], imageArtifacts) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedInput ? [selectedInput] : []} emptyHistoryLabel="Chưa có kết quả ảnh phẳng." resultNote={<p>Kết quả chi tiết của Pylinac đã được lưu cùng với ảnh phantom và các chỉ số của đúng biến thể đã chọn.</p>} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>

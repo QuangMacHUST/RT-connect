@@ -1,5 +1,13 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W03/W04 — chỉ chạy phân tích với tệp đã kiểm tra hợp lệ — đã kiểm tra local — 2026-09-16
+
+- Đã áp dụng cổng trạng thái `VALID` cho toàn bộ bài Pylinac có tệp đầu vào: tệp ảnh, bộ ảnh nén, cặp nhật ký, bài hạt nhân và mô-đun đóng góp. Bài hiệu chuẩn nhập số liệu vẫn không cần tệp.
+- Tệp chưa kiểm tra hoặc có cảnh báo không bị xóa khỏi danh sách; người dùng vẫn có nút kiểm tra lại. Nút phân tích chỉ mở khi mọi tệp đang chọn hợp lệ.
+- Kiểm thử giao diện đạt **56/56**, kiểm tra kiểu, lint, bản dựng và hợp đồng kế hoạch đều đạt. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa dữ liệu staging; `dailyQA` được bảo toàn.
+- Đây là cổng an toàn local, chưa đóng kiểm chứng staging toàn bộ bài, fixture chuẩn, đối chiếu độc lập hoặc nghiệm thu lâm sàng.
+- Bằng chứng: [cổng tệp hợp lệ trước khi phân tích](docs/evidence/p7-local-validated-input-gate-20260916.md).
+
 ## P7-W04 — giới hạn tọa độ chọn điểm theo ảnh gốc — đã kiểm tra local — 2026-09-16
 
 - Tách phép đổi tọa độ con trỏ thành tiện ích dùng chung. Điểm bấm/kéo được đổi theo kích thước ảnh gốc, giới hạn an toàn khi nằm ngoài mép và hỗ trợ cả tọa độ điểm ảnh lẫn tọa độ chuẩn hóa.

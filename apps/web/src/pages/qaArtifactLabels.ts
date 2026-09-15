@@ -2,6 +2,20 @@ import type { ArtifactResource } from '../api/client'
 
 export type ArtifactLabelSource = Pick<ArtifactResource, 'id' | 'artifact_type' | 'modality' | 'original_filename'>
 
+/**
+ * Chặn mọi lần chạy Pylinac khi ít nhất một tệp đầu vào chưa qua bước kiểm tra.
+ * Tệp chưa hợp lệ vẫn được giữ trong danh sách để người dùng có thể kiểm tra lại.
+ */
+export function artifactsAreValidated(artifacts: Array<Pick<ArtifactResource, 'data_status'>>): boolean {
+  return artifacts.length > 0 && artifacts.every((artifact) => artifact.data_status === 'VALID')
+}
+
+export function selectedArtifactsAreValidated(artifactIds: string[], artifacts: ArtifactResource[]): boolean {
+  if (artifactIds.length === 0) return false
+  const selected = artifactIds.map((artifactId) => artifacts.find((artifact) => artifact.id === artifactId))
+  return selected.length === artifactIds.length && selected.every((artifact) => artifact?.data_status === 'VALID')
+}
+
 /** Chỉ dùng cho các bài Pylinac cần ảnh; RTDOSE/RTSTRUCT/RTPLAN không phải ảnh phân tích. */
 export function isPylinacImageArtifact(artifact: Pick<ArtifactResource, 'artifact_type' | 'modality'>): boolean {
   if (artifact.artifact_type !== 'DICOM' && artifact.artifact_type !== 'IMAGE') return false
