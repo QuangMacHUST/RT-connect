@@ -468,7 +468,7 @@ def _winston_lutz_parameters(
                     "PYLINAC_PARAMETER_INVALID",
                     f"Góc của ảnh {index} chưa đủ ba giá trị.",
                 )
-            values: list[float] = []
+            angle_values: list[float] = []
             for key in ("gantry", "collimator", "couch"):
                 value = item.get(key)
                 if isinstance(value, bool) or not isinstance(value, int | float):
@@ -476,8 +476,8 @@ def _winston_lutz_parameters(
                         "PYLINAC_PARAMETER_INVALID",
                         f"Góc {key} của ảnh {index} phải là số.",
                     )
-                values.append(float(value))
-            manual_mapping.append((values[0], values[1], values[2]))
+                angle_values.append(float(value))
+            manual_mapping.append((angle_values[0], angle_values[1], angle_values[2]))
 
     analysis: dict[str, object] = {}
     if "bb_size_mm" in parameters:
@@ -615,7 +615,7 @@ def _winston_lutz_multi_target_parameters(
                     "PYLINAC_PARAMETER_INVALID",
                     f"Góc của ảnh {index} chưa đủ ba giá trị.",
                 )
-            values: list[float] = []
+            angle_values: list[float] = []
             for key in ("gantry", "collimator", "couch"):
                 value = item.get(key)
                 if isinstance(value, bool) or not isinstance(value, int | float):
@@ -623,8 +623,8 @@ def _winston_lutz_multi_target_parameters(
                         "PYLINAC_PARAMETER_INVALID",
                         f"Góc {key} của ảnh {index} phải là số.",
                     )
-                values.append(float(value))
-            manual_mapping.append((values[0], values[1], values[2]))
+                angle_values.append(float(value))
+            manual_mapping.append((angle_values[0], angle_values[1], angle_values[2]))
 
     arrangement = parameters.get("bb_arrangement")
     if not isinstance(arrangement, list) or not arrangement:
@@ -645,7 +645,7 @@ def _winston_lutz_multi_target_parameters(
             name = item.get("name")
             if not isinstance(name, str) or not name.strip():
                 raise ValueError("name")
-            values = {
+            bb_values = {
                 key: _number(item, key)
                 for key in (
                     "offset_left_mm",
@@ -655,9 +655,9 @@ def _winston_lutz_multi_target_parameters(
                     "rad_size_mm",
                 )
             }
-            if values["bb_size_mm"] <= 0 or values["rad_size_mm"] <= 0:
+            if bb_values["bb_size_mm"] <= 0 or bb_values["rad_size_mm"] <= 0:
                 raise ValueError("size")
-            bb_configs.append(BBConfig(name=name.strip(), **values))
+            bb_configs.append(BBConfig(name=name.strip(), **bb_values))
     except PylinacAdapterError:
         raise
     except (TypeError, ValueError, KeyError) as exc:
