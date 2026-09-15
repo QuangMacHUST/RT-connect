@@ -19,7 +19,12 @@
 - Bổ sung tuyến xem trước có xác thực cho artifact đầu vào. API kiểm tra lại phạm vi tổ chức, đọc DICOM hoặc thành viên ảnh an toàn trong ZIP, rồi chỉ trả PNG pixel; không trả thẻ DICOM, đường dẫn object storage hay mã nội bộ cho giao diện.
 - Thành viên ZIP có đường dẫn tuyệt đối hoặc chứa `..` bị loại trước khi đọc; chỉ số ảnh được giới hạn; tệp tạm trên Windows được đóng trước khi Pylinac đọc để tránh lỗi khóa tệp. Giao diện dùng blob URL có thu hồi khi thay đổi tệp, vì vậy không để lại URL xem trước trong bộ nhớ trình duyệt.
 - Canvas dùng chung của Starshot, Field Profile/Field Analysis và Planar Imaging nay không còn phụ thuộc URL tải xuống dạng tệp đính kèm. Picket Fence được bổ sung chọn tâm trục bằng nhấn/kéo hoặc nhập đủ tọa độ ngang/dọc; nếu chỉ nhập một tọa độ thì bị chặn trước khi gọi API.
-- Kiểm thử artifact đạt **13/13**, gồm DICOM, ZIP hợp lệ, ZIP có đường dẫn nguy hiểm và chỉ số ảnh thiếu; Ruff, lint và typecheck đạt. Bằng chứng: [xem trước đầu vào Pylinac](docs/evidence/p7-local-pylinac-input-preview-20260915.json). Đây là lát cắt local của W04, chưa đóng canvas đa ảnh/ROI chuyên biệt, chọn lát trong giao diện, ma trận fixture, staging hoặc VERIFY/HANDOFF P7.
+- Kiểm thử artifact đạt **11/11**, gồm DICOM, ZIP hợp lệ, ZIP có thành viên lồng nhau, ZIP có đường dẫn nguy hiểm, chỉ số ảnh thứ hai và chỉ số ảnh thiếu; Ruff, lint và typecheck đạt. Bằng chứng: [xem trước đầu vào Pylinac](docs/evidence/p7-local-pylinac-input-preview-20260915.json). Đây là lát cắt local của W04, chưa đóng canvas đa ảnh/ROI chuyên biệt, chọn lát trong giao diện, ma trận fixture, staging hoặc VERIFY/HANDOFF P7.
+
+## P7-W04 — parity triển khai xem trước đầu vào trên staging — 2026-09-15
+
+- Sau khi Railway hoàn tất cập nhật trễ của dịch vụ API, kiểm tra công khai exact-SHA đã đạt **15/15** trên staging. API và giao diện cùng nhận bản `7ed6ebf9b1064f4250efddf733446c1f5b8a9028`; health/readiness trả `200`, phiên bản đúng, lược đồ đúng `20260914_0023`, OpenAPI có tuyến xem trước DICOM/ZIP và tuyến thành viên/lời mời, các tuyến yêu cầu xác thực trả `401`, giao diện và gói web chứa đúng dấu hiệu bản phát hành.
+- Bằng chứng: [kiểm tra staging P7-W04 sau khi cập nhật](docs/evidence/p7-staging-public-recheck-20260915-7ed6ebf-pass.json). Đây là cổng parity và khả năng phát hành của tuyến xem trước; chưa phải kiểm chứng tương tác chọn tâm/ROI bằng tệp staging thật cho từng nhóm bài, chưa đóng P7-W04 và chưa đóng VERIFY/HANDOFF P7.
 
 ## P7 — kiểm tra hồi quy sau cổng inventory — lát cắt cục bộ — 2026-09-15
 
