@@ -41,7 +41,7 @@ def test_compose_keeps_schema_revision_as_the_exact_string() -> None:
     configuration = yaml.safe_load(compose.read_text(encoding="utf-8"))
 
     revision = configuration["services"]["api"]["environment"]["SCHEMA_REVISION"]
-    assert revision == "20260913_0022"
+    assert revision == "20260914_0023"
     assert isinstance(revision, str)
 
 
