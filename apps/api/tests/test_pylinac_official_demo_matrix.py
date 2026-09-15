@@ -195,3 +195,88 @@ def test_official_demo_reaches_locked_pylinac_adapter(
     if result.overlay_bytes is not None:
         assert len(result.overlay_bytes) > 0
         assert result.overlay_media_type == "image/png"
+
+
+@pytest.mark.parametrize(
+    "catalog_key,filename,profile,parameters,metric_path,expected",
+    (
+        ("PICKET_FENCE", "AS1200.dcm", "file", {}, ("max_error_mm",), 0.08977424727657998),
+        ("WINSTON_LUTZ", "winston_lutz.zip", "zip", {"sid": 1000}, ("max_2d_cax_to_bb_mm",), 1.2351661807567378),
+        (
+            "WINSTON_LUTZ_MULTI_TARGET",
+            "SNC_MTWL_demo.zip",
+            "zip",
+            {"bb_arrangement": _multi_target_demo_arrangement()},
+            ("max_2d_field_to_bb_mm",),
+            0.9430396381696953,
+        ),
+        ("VMAT_DRGS", "drgs.zip", "vmat", {}, ("max_deviation_percent",), 1.7785989166030163),
+        ("VMAT_DRMLC", "drmlc.zip", "vmat", {}, ("max_deviation_percent",), 0.8179036281768219),
+        ("VMAT_DRCS", "drcs.zip", "vmat", {}, ("max_deviation_percent",), 0.3848613270427137),
+        (
+            "FIELD_PROFILE_ANALYSIS",
+            "AS1200.dcm",
+            "file",
+            {},
+            ("x_metrics", "Flatness (Difference) (%)"),
+            44.77022249948014,
+        ),
+        (
+            "FIELD_PROFILE_ANALYSIS",
+            "AS1200.dcm",
+            "file",
+            {},
+            ("y_metrics", "Flatness (Difference) (%)"),
+            26.441515650741355,
+        ),
+        (
+            "FIELD_ANALYSIS_LEGACY",
+            "AS1200.dcm",
+            "file",
+            {},
+            ("protocol_results", "flatness_horizontal"),
+            44.78017532604955,
+        ),
+        (
+            "FIELD_ANALYSIS_LEGACY",
+            "AS1200.dcm",
+            "file",
+            {},
+            ("protocol_results", "flatness_vertical"),
+            20.294748024265772,
+        ),
+    ),
+)
+def test_official_demo_core_metric_matches_locked_reference(
+    tmp_path: Path,
+    catalog_key: str,
+    filename: str,
+    profile: str,
+    parameters: dict[str, object],
+    metric_path: tuple[str, ...],
+    expected: float,
+) -> None:
+    """Protect the adapter's core metric mapping against silent drift.
+
+    These are locked Pylinac demo references, not an independent clinical
+    oracle.  They prove that the selected RT-CONNECT metric remains aligned
+    with the pinned engine output while the full commissioning matrix is
+    still open.
+    """
+
+    source = _source_for_case(tmp_path, filename, profile)
+    with (
+        warnings.catch_warnings(),
+        patch("warnings.showwarning"),
+        redirect_stderr(StringIO()),
+    ):
+        warnings.simplefilter("ignore")
+        result = execute_pylinac(catalog_key, source, parameters)
+
+    metrics = result.result_snapshot["metrics"]
+    assert isinstance(metrics, dict)
+    value: object = metrics
+    for key in metric_path:
+        assert isinstance(value, dict)
+        value = value[key]
+    assert value == pytest.approx(expected, rel=1e-7, abs=1e-7)

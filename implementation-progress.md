@@ -1,5 +1,13 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W03 — đối chiếu chỉ số lõi với bộ mẫu chính thức — đã kiểm tra local — 2026-09-16
+
+- Bổ sung kiểm thử hồi quy cho 10 chỉ số lõi của Picket Fence, Winston–Lutz một bi, Winston–Lutz nhiều bi, ba biến thể VMAT, phân tích biên dạng trường và phân tích trường kiểu cũ.
+- Các giá trị được giữ làm tham chiếu cố định từ wheel Pylinac `3.47.0`; lần chạy `-k core_metric` đạt **10/10**. Bài DRCS được lấy giá trị trực tiếp từ wheel hiện tại để tránh dùng nhầm số liệu của fixture hoặc phiên bản cũ.
+- Đây là đối chiếu hợp đồng giữa bộ điều hợp và phiên bản engine đã khóa, chưa phải oracle độc lập hoặc nghiệm thu lâm sàng. Toàn bộ fixture đại diện, kiểm lỗi đặc trưng, staging và xác nhận chuyên môn của P7 vẫn còn mở.
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ staging; `dailyQA` được bảo toàn.
+- Bằng chứng: [đối chiếu chỉ số lõi Pylinac](docs/evidence/p7-local-official-core-metric-reference-20260916.md).
+
 ## P14/P15 — giao diện thuần tiếng Việt và ẩn chi tiết kỹ thuật — đã kiểm tra local — 2026-09-16
 
 - Trang so sánh phác đồ đã đổi toàn bộ nhãn thao tác, trạng thái, bảng kết quả, lịch sử và thông báo sang tiếng Việt; người dùng chỉ thấy tên phương án, thời điểm và số liệu cần thiết.

@@ -107,6 +107,25 @@ function comparisonStatusLabel(value: string): string {
   return 'Đang xử lý'
 }
 
+function ComparisonValidationBlock({ validation }: { validation: { valid: boolean; errors: Array<{ code: string; field: string | null; message: string }>; warnings: Array<{ code: string; field: string | null; message: string }>; preview: JsonRecord | null } }) {
+  const fieldLabel = (value: string | null): string => {
+    if (!value) return 'Thông tin nhập'
+    const labels: Record<string, string> = {
+      name: 'Tên bảng',
+      baseline_option_id: 'Phương án chuẩn',
+      options: 'Danh sách phương án',
+      calculation_id: 'Kết quả đã tính'
+    }
+    return labels[value] ?? 'Thông tin nhập'
+  }
+  return <section className={validation.valid ? 'bed-validation bed-validation--ok' : 'bed-validation bed-validation--error'}>
+    <strong>{validation.valid ? 'Thông tin hợp lệ' : 'Thông tin chưa hợp lệ'}</strong>
+    {validation.errors.length > 0
+      ? <ul>{validation.errors.map((item, index) => <li key={`${item.code}-${index}`}><strong>{fieldLabel(item.field)}</strong>: {item.message}</li>)}</ul>
+      : <p>{validation.warnings.length > 0 ? validation.warnings.map((item) => item.message).join(' ') : 'Đã kiểm tra xong; chưa lưu kết quả.'}</p>}
+  </section>
+}
+
 function ExportButton({ comparison, accessToken, organizationId, onMessage }: { comparison: PlanComparisonResource; accessToken: string; organizationId: string; onMessage: (message: string) => void }) {
   return <button className="button-secondary" onClick={async () => {
     try {
@@ -221,7 +240,7 @@ export function PlanComparisonPage() {
         <div className="comparison-editor-actions"><button className="button-secondary" disabled={activeOptions.length >= 10 || busy || !completedCalculations.length} onClick={addOption}>+ Thêm phương án</button><label className="comparison-baseline-field">Phương án chuẩn<select value={activeBaselineOptionId} onChange={(event) => setBaselineOptionId(event.target.value)}><option value="">Chọn phương án chuẩn…</option>{activeOptions.map((item, index) => <option key={item.option_id} value={item.option_id}>{item.label || `Phương án ${index + 1}`}</option>)}</select></label></div>
         <p className="form-hint">Có thể đổi thứ tự trình bày. Phương án chuẩn chỉ làm mốc tính chênh lệch, không có nghĩa là phương án tốt hơn.</p>
         <div className="comparison-actions"><button disabled={busy || activeOptions.length < 2} onClick={() => { const request = body(); if (request) validateMutation.mutate(request) }}>Kiểm tra trước khi lưu</button><button disabled={busy || activeOptions.length < 2} onClick={() => { const request = body(); if (request) calculateMutation.mutate(request) }}>Tính và lưu bảng so sánh</button></div>
-        {validation && <section className={validation.valid ? 'bed-validation bed-validation--ok' : 'bed-validation bed-validation--error'}><strong>{validation.valid ? 'VALIDATION OK' : 'VALIDATION FAILED'}</strong>{validation.errors.length ? <ul>{validation.errors.map((item, index) => <li key={`${item.code}-${index}`}><strong>{item.field ?? 'comparison'}</strong>: {item.message} <code>{item.code}</code></li>)}</ul> : <p>{validation.warnings.length ? validation.warnings.map((item) => `${item.message} (${item.code})`).join(' | ') : `Preview không ghi database · ${String(validation.preview?.dataset_sha256 ?? 'checksum pending')}`}</p>}</section>}
+        {validation && <ComparisonValidationBlock validation={validation} />}
       </section>
       <aside className="panel comparison-context-panel"><div className="panel-heading"><div><p className="eyebrow">KIỂM TRA TƯƠNG THÍCH</p><h2>Bối cảnh tính</h2></div></div>{activeOptions.length ? <ul className="comparison-context-list"><li><strong>Bối cảnh</strong><span>{activeOptions[0]?.calculation_id ? 'Các kết quả được kiểm tra cùng bối cảnh' : 'Chưa chọn kết quả'}</span></li><li><strong>Số phương án</strong><span>{activeOptions.length} · cho phép từ 2 đến 10</span></li><li><strong>Nguồn kết quả</strong><span>Kết quả BED/EQD2 đã lưu</span></li></ul> : <p className="empty-state">Chọn kết quả đã tính để bắt đầu.</p>}<div className="comparison-warning-box"><strong>Không dùng để xếp hạng</strong><span>Chênh lệch α/β chỉ là cảnh báo về bối cảnh. Công cụ trình bày số liệu, không kết luận phương án tốt hơn.</span></div></aside>
     </section>
