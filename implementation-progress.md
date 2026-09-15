@@ -19,7 +19,13 @@
 - Bổ sung tuyến xem trước có xác thực cho artifact đầu vào. API kiểm tra lại phạm vi tổ chức, đọc DICOM hoặc thành viên ảnh an toàn trong ZIP, rồi chỉ trả PNG pixel; không trả thẻ DICOM, đường dẫn object storage hay mã nội bộ cho giao diện.
 - Thành viên ZIP có đường dẫn tuyệt đối hoặc chứa `..` bị loại trước khi đọc; chỉ số ảnh được giới hạn; tệp tạm trên Windows được đóng trước khi Pylinac đọc để tránh lỗi khóa tệp. Giao diện dùng blob URL có thu hồi khi thay đổi tệp, vì vậy không để lại URL xem trước trong bộ nhớ trình duyệt.
 - Canvas dùng chung của Starshot, Field Profile/Field Analysis và Planar Imaging nay không còn phụ thuộc URL tải xuống dạng tệp đính kèm. Picket Fence được bổ sung chọn tâm trục bằng nhấn/kéo hoặc nhập đủ tọa độ ngang/dọc; nếu chỉ nhập một tọa độ thì bị chặn trước khi gọi API.
-- Kiểm thử artifact đạt **11/11**, gồm DICOM, ZIP hợp lệ, ZIP có thành viên lồng nhau, ZIP có đường dẫn nguy hiểm, chỉ số ảnh thứ hai và chỉ số ảnh thiếu; Ruff, lint và typecheck đạt. Bằng chứng: [xem trước đầu vào Pylinac](docs/evidence/p7-local-pylinac-input-preview-20260915.json). Đây là lát cắt local của W04, chưa đóng canvas đa ảnh/ROI chuyên biệt, chọn lát trong giao diện, ma trận fixture, staging hoặc VERIFY/HANDOFF P7.
+- Kiểm thử artifact đạt **13/13**, gồm DICOM, ZIP hợp lệ, ZIP có thành viên lồng nhau, ZIP có đường dẫn nguy hiểm, chỉ số ảnh thứ hai, chỉ số ảnh thiếu và thông tin số ảnh/lát; Ruff, lint và typecheck đạt. Bằng chứng: [xem trước đầu vào Pylinac](docs/evidence/p7-local-pylinac-input-preview-20260915.json). Đây là lát cắt local của W04, chưa đóng canvas ROI chuyên biệt, ánh xạ thao tác cho từng bài, ma trận fixture, staging tương tác hoặc VERIFY/HANDOFF P7.
+
+## P7-W04 — chọn ảnh/lát trong bộ tệp nhiều ảnh — lát cắt cục bộ — 2026-09-15
+
+- Bổ sung tuyến thông tin xem trước để máy chủ xác định số ảnh trong DICOM nhiều khung hoặc số thành viên DICOM trong ZIP; số lượng được giới hạn ở 32 ảnh/lát đầu tiên để tránh tạo danh sách không kiểm soát. Tất cả truy cập vẫn kiểm tra phạm vi tổ chức và đọc qua kho tệp riêng.
+- Vùng điều chỉnh dùng bộ chọn “Ảnh hoặc lát đang xem”. Khi đổi tệp, vùng này được tạo lại theo tệp mới, lát được đặt về ảnh đầu tiên và tọa độ đã chọn không bị giữ nhầm giữa hai tệp. Khi máy chủ không đọc được số lượng, ảnh đầu tiên vẫn có thể thử xem trước và người dùng nhận hướng dẫn nhập tọa độ bằng tay.
+- Kiểm thử máy chủ đạt **13/13**, web đạt **40/40**, lint, kiểm tra kiểu và bản dựng sản xuất đạt. Cảnh báo kích thước gói JavaScript lớn hơn 500 kB vẫn là việc tối ưu riêng. Lát cắt này chưa đóng vùng ROI chuyên biệt, ánh xạ tọa độ theo từng ảnh cho các bài có nhiều ảnh, kiểm chứng tệp staging đại diện hoặc VERIFY/HANDOFF P7.
 
 ## P7-W04 — parity triển khai xem trước đầu vào trên staging — 2026-09-15
 

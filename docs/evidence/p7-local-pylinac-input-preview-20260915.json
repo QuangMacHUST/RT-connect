@@ -3,15 +3,17 @@
   "captured_at_utc": "2026-09-15T09:35:00Z",
   "environment": "development",
   "pylinac_version": "3.47.0",
-  "scope": "Cổng xem trước có xác thực cho vùng chọn tâm/điều chỉnh thủ công của giao diện Pylinac.",
+  "scope": "Cổng xem trước có xác thực và bộ chọn ảnh/lát cho vùng chọn tâm/điều chỉnh thủ công của giao diện Pylinac.",
   "endpoint": "GET /api/v1/artifacts/{artifact_id}/preview?image_index=0",
   "passed_cases": [
     "DICOM ảnh hai chiều được dựng thành PNG trong phạm vi tổ chức.",
-    "ZIP có thành viên DICOM an toàn được dựng thành PNG mà không giải nén theo đường dẫn tùy ý."
+    "ZIP có thành viên DICOM an toàn được dựng thành PNG mà không giải nén theo đường dẫn tùy ý.",
+    "Tuyến thông tin xem trước trả số lượng ảnh/lát bị giới hạn để giao diện hiển thị bộ chọn."
   ],
   "rejected_cases": [
     "ZIP chỉ chứa thành viên có đường dẫn đi ra ngoài bị từ chối.",
-    "Chỉ số ảnh không tồn tại bị từ chối với lỗi ổn định."
+    "Chỉ số ảnh không tồn tại bị từ chối với lỗi ổn định.",
+    "Tệp không đọc được số ảnh/lát bị từ chối với lỗi ổn định."
   ],
   "security_properties": [
     "Mọi truy cập đều qua xác thực và kiểm tra organization_id của artifact.",
@@ -22,7 +24,7 @@
   "verification": {
     "command": "python -m pytest tests/test_artifacts.py -q --no-cov",
     "passed": true,
-    "passed_tests": 11,
+    "passed_tests": 13,
     "failed_tests": 0,
     "ruff": "passed"
   },

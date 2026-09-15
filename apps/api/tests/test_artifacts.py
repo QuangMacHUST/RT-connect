@@ -228,6 +228,9 @@ def test_authenticated_preview_renders_dicom_and_zip_input_without_metadata() ->
         assert dicom_preview.headers["content-type"].startswith("image/png")
         assert dicom_preview.content.startswith(b"\x89PNG\r\n\x1a\n")
         assert dicom_preview.headers["cache-control"] == "private, max-age=300"
+        dicom_info = client.get(f"/api/v1/artifacts/{dicom.json()['id']}/preview-info")
+        assert dicom_info.status_code == 200, dicom_info.text
+        assert dicom_info.json() == {"image_count": 1}
 
         archive = BytesIO()
         with ZipFile(archive, "w") as container:
@@ -242,6 +245,9 @@ def test_authenticated_preview_renders_dicom_and_zip_input_without_metadata() ->
         zip_preview = client.get(f"/api/v1/artifacts/{zipped.json()['id']}/preview")
         assert zip_preview.status_code == 200, zip_preview.text
         assert zip_preview.content.startswith(b"\x89PNG\r\n\x1a\n")
+        zip_info = client.get(f"/api/v1/artifacts/{zipped.json()['id']}/preview-info")
+        assert zip_info.status_code == 200, zip_info.text
+        assert zip_info.json() == {"image_count": 2}
         second_zip_preview = client.get(
             f"/api/v1/artifacts/{zipped.json()['id']}/preview?image_index=1"
         )

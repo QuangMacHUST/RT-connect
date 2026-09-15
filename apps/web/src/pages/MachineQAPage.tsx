@@ -383,9 +383,17 @@ function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, coordinateMode
   const imageRef = useRef<HTMLImageElement>(null)
   const dragging = useRef(false)
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 })
+  const [imageIndex, setImageIndex] = useState(0)
+  const previewInfo = useQuery({
+    queryKey: ['pylinac-adjustment-preview-info', accessToken, artifactId],
+    queryFn: () => apiClient.previewArtifactInfo(accessToken, artifactId!),
+    enabled: Boolean(accessToken && artifactId), retry: false
+  })
+  const imageCount = previewInfo.data?.image_count ?? 1
+  const selectedImageIndex = Math.min(imageIndex, Math.max(0, imageCount - 1))
   const preview = useQuery({
-    queryKey: ['pylinac-adjustment-preview', accessToken, artifactId],
-    queryFn: () => apiClient.previewArtifact(accessToken, artifactId!),
+    queryKey: ['pylinac-adjustment-preview', accessToken, artifactId, selectedImageIndex],
+    queryFn: () => apiClient.previewArtifact(accessToken, artifactId!, selectedImageIndex),
     enabled: Boolean(accessToken && artifactId), retry: false
   })
   const previewUrl = useMemo(() => preview.data ? URL.createObjectURL(preview.data) : undefined, [preview.data])
@@ -420,7 +428,7 @@ function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, coordinateMode
   const pointStyle = coordinateMode === 'NORMALIZED'
     ? { left: `${Number(x) * 100}%`, top: `${Number(y) * 100}%` }
     : { left: `${Number(x) / imageDimensions.width * 100}%`, top: `${Number(y) / imageDimensions.height * 100}%` }
-  return <div className="qa-adjustment-panel"><div className="panel-heading"><div><p className="eyebrow">ĐIỀU CHỈNH TRÊN ẢNH</p><h3>{heading}</h3></div><span className="status-badge">NHẤN VÀ KÉO</span></div><p className="form-hint">{description}</p>{previewUrl ? <div className={disabled ? 'qa-adjustment-canvas qa-adjustment-canvas--disabled' : 'qa-adjustment-canvas'} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={releasePointer} onPointerCancel={releasePointer} role="application" aria-label={heading}><img ref={imageRef} src={previewUrl} alt="Ảnh đầu vào để chọn tâm" draggable={false} onLoad={(event) => setImageDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />{hasPoint && imageDimensions.width > 0 && imageDimensions.height > 0 && <span className="qa-adjustment-point" style={pointStyle} />}</div> : <div className="qa-adjustment-canvas qa-adjustment-canvas--empty">{preview.isPending ? 'Đang tải ảnh xem trước…' : artifactId ? 'Không thể tải ảnh xem trước. Vẫn có thể nhập tọa độ bên dưới.' : 'Chọn ảnh để bật vùng điều chỉnh.'}</div>}</div>
+  return <div className="qa-adjustment-panel"><div className="panel-heading"><div><p className="eyebrow">ĐIỀU CHỈNH TRÊN ẢNH</p><h3>{heading}</h3></div><span className="status-badge">NHẤN VÀ KÉO</span></div><p className="form-hint">{description}</p>{imageCount > 1 && <label>Ảnh hoặc lát đang xem<select value={selectedImageIndex} onChange={(event) => { setImageIndex(Number(event.target.value)); setImageDimensions({ width: 0, height: 0 }) }} disabled={disabled}>{Array.from({ length: imageCount }, (_, index) => <option key={index} value={index}>#{index + 1}</option>)}</select></label>}{previewUrl ? <div className={disabled ? 'qa-adjustment-canvas qa-adjustment-canvas--disabled' : 'qa-adjustment-canvas'} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={releasePointer} onPointerCancel={releasePointer} role="application" aria-label={heading}><img ref={imageRef} src={previewUrl} alt={`Ảnh hoặc lát ${selectedImageIndex + 1} để chọn tâm`} draggable={false} onLoad={(event) => setImageDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />{hasPoint && imageDimensions.width > 0 && imageDimensions.height > 0 && <span className="qa-adjustment-point" style={pointStyle} />}</div> : <div className="qa-adjustment-canvas qa-adjustment-canvas--empty">{preview.isPending || previewInfo.isPending ? 'Đang tải ảnh xem trước…' : artifactId ? 'Không thể tải ảnh xem trước. Vẫn có thể nhập tọa độ bên dưới.' : 'Chọn ảnh để bật vùng điều chỉnh.'}</div>}</div>
 }
 
 function PicketFencePage({ caseId, accessToken, title }: { caseId: string; accessToken: string; title: string }) {
@@ -493,7 +501,7 @@ function PicketFencePage({ caseId, accessToken, title }: { caseId: string; acces
       <p>Chỉ phần bài QA cần ảnh mới hiện khu vực tải tệp. Ảnh gốc được giữ nguyên; Pylinac chịu trách nhiệm toàn bộ phép phân tích.</p>
       <div className="machine-qa-actions"><label className="button-link">Chọn ảnh DICOM<input type="file" accept=".dcm,application/dicom" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>
       {imageArtifacts.length > 0 && <label>Ảnh đang dùng<select value={selected?.id ?? ''} onChange={(event) => setSelectedArtifactId(event.target.value)}>{imageArtifacts.map((artifact, index) => <option key={artifact.id} value={artifact.id}>Ảnh {index + 1} · {artifact.original_filename}</option>)}</select></label>}
-      <PylinacAdjustmentCanvas accessToken={accessToken} artifactId={selected?.id} x={centralAxisX} y={centralAxisY} heading="Chọn tâm trục trung tâm" description="Nếu ảnh không xác định chắc chắn tâm trường, nhấn hoặc kéo trên ảnh để đặt tâm. Pylinac sẽ dùng điểm này cho lần phân tích mới." disabled={isBusy} onPointChange={(x, y) => { setCentralAxisX(x); setCentralAxisY(y) }} />
+      <PylinacAdjustmentCanvas key={selected?.id ?? 'empty'} accessToken={accessToken} artifactId={selected?.id} x={centralAxisX} y={centralAxisY} heading="Chọn tâm trục trung tâm" description="Nếu ảnh không xác định chắc chắn tâm trường, nhấn hoặc kéo trên ảnh để đặt tâm. Pylinac sẽ dùng điểm này cho lần phân tích mới." disabled={isBusy} onPointChange={(x, y) => { setCentralAxisX(x); setCentralAxisY(y) }} />
       <div className="machine-qa-protocol-controls"><label>Tâm trục ngang (điểm ảnh)<input type="number" step="0.1" value={centralAxisX} onChange={(event) => setCentralAxisX(event.target.value)} placeholder="Tùy chọn" /></label><label>Tâm trục dọc (điểm ảnh)<input type="number" step="0.1" value={centralAxisY} onChange={(event) => setCentralAxisY(event.target.value)} placeholder="Tùy chọn" /></label></div>
       <div className="machine-qa-protocol-controls"><label>Dung sai (mm)<input type="number" min="0" step="0.01" value={tolerance} onChange={(event) => setTolerance(event.target.value)} /></label><label>Mẫu MLC<select value={mlc} onChange={(event) => setMlc(event.target.value)}><option value="Millennium">Millennium</option><option value="HD120">HD120</option><option value="Agility">Agility</option><option value="Halcyon">Halcyon</option></select></label><label>Cắt ảnh (mm)<input type="number" min="0" step="1" value={cropMm} onChange={(event) => setCropMm(event.target.value)} /></label></div>
       <div className="machine-qa-actions"><button disabled={!selected || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
@@ -573,7 +581,7 @@ function StarshotPage({ caseId, accessToken, title }: { caseId: string; accessTo
       <p>Khu vực tệp chỉ hiện vì bài này cần ảnh. Có thể để Pylinac tự tìm tâm hoặc nhập tâm bắt đầu đã chọn trên ảnh để chạy lại một phiên bản mới.</p>
       <div className="machine-qa-actions"><label className="button-link">Chọn ảnh DICOM hoặc ảnh đo<input type="file" accept=".dcm,.tif,.tiff,.png,.jpg,.jpeg,application/dicom,image/*" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>
       {imageArtifacts.length > 0 && <label>Ảnh đang dùng<select value={selected?.id ?? ''} onChange={(event) => setSelectedArtifactId(event.target.value)}>{imageArtifacts.map((artifact, index) => <option key={artifact.id} value={artifact.id}>Ảnh {index + 1} · {artifact.original_filename}</option>)}</select></label>}
-      <PylinacAdjustmentCanvas accessToken={accessToken} artifactId={selected?.id} x={startX} y={startY} disabled={isBusy} onPointChange={(x, y) => { setStartX(x); setStartY(y) }} />
+      <PylinacAdjustmentCanvas key={selected?.id ?? 'empty'} accessToken={accessToken} artifactId={selected?.id} x={startX} y={startY} disabled={isBusy} onPointChange={(x, y) => { setStartX(x); setStartY(y) }} />
       <div className="machine-qa-protocol-controls">
         <label>Khoảng cách nguồn–ảnh (mm)<input type="number" min="0" step="0.1" value={sid} onChange={(event) => setSid(event.target.value)} /></label>
         <label>Mật độ điểm ảnh (dpi, nếu ảnh thiếu thang đo)<input type="number" min="0" step="0.1" value={dpi} onChange={(event) => setDpi(event.target.value)} placeholder="Tự đọc từ ảnh" /></label>
@@ -984,7 +992,7 @@ function FieldAnalysisPage({ caseId, accessToken, title, catalogKey }: { caseId:
       <p>Bài kiểm tra cần một tệp ảnh. Pylinac chịu trách nhiệm phân tích; RT-CONNECT chỉ thu thập lựa chọn và tham số của người thực hiện.</p>
       <div className="machine-qa-actions"><label className="button-link">Chọn ảnh DICOM<input type="file" accept=".dcm,application/dicom" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>
       {imageArtifacts.length > 0 && <label>Tệp đang chọn<select value={selectedInput ?? ''} onChange={(event) => setSelectedArtifactId(event.target.value)}>{imageArtifacts.map((artifact, index) => <option key={artifact.id} value={artifact.id}>Ảnh {index + 1} · {artifact.original_filename}</option>)}</select></label>}
-      {centering === 'MANUAL' && selectedInput && <PylinacAdjustmentCanvas accessToken={accessToken} artifactId={selectedInput} x={positionX} y={positionY} coordinateMode="NORMALIZED" heading="Chọn vị trí biên dạng" description="Nhấn hoặc kéo trên ảnh để đặt vị trí biên dạng. Vị trí được lưu theo tỷ lệ 0–1 của ảnh gốc và gửi đúng theo hợp đồng của Pylinac." disabled={isBusy} onPointChange={(x, y) => { setPositionX(x); setPositionY(y) }} />}
+      {centering === 'MANUAL' && selectedInput && <PylinacAdjustmentCanvas key={selectedInput} accessToken={accessToken} artifactId={selectedInput} x={positionX} y={positionY} coordinateMode="NORMALIZED" heading="Chọn vị trí biên dạng" description="Nhấn hoặc kéo trên ảnh để đặt vị trí biên dạng. Vị trí được lưu theo tỷ lệ 0–1 của ảnh gốc và gửi đúng theo hợp đồng của Pylinac." disabled={isBusy} onPointChange={(x, y) => { setPositionX(x); setPositionY(y) }} />}
       <div className="machine-qa-protocol-controls">
         <label>Cách xác định tâm<select value={centering} onChange={(event) => setCentering(event.target.value)}><option value="BEAM_CENTER">Tâm chùm tia</option><option value="GEOMETRIC_CENTER">Tâm hình học</option><option value="MANUAL">Chọn thủ công</option></select></label>
         <label>Vị trí ngang (0–1)<input type="number" min="0" max="1" step="0.01" value={positionX} onChange={(event) => setPositionX(event.target.value)} /></label>
@@ -1672,7 +1680,7 @@ function PlanarImagingPage({ caseId, accessToken, title, catalogKey }: { caseId:
         <label>Tâm ngang tùy chọn<input type="number" step="0.1" placeholder="Tự động" value={centerX} onChange={(event) => setCenterX(event.target.value)} /></label>
         <label>Tâm dọc tùy chọn<input type="number" step="0.1" placeholder="Tự động" value={centerY} onChange={(event) => setCenterY(event.target.value)} /></label>
       </div>
-      {selectedInput && <PylinacAdjustmentCanvas accessToken={accessToken} artifactId={selectedInput} x={centerX} y={centerY} heading="Chọn tâm phantom" description="Nhấn hoặc kéo trên ảnh để đặt tâm phantom. Tọa độ điểm ảnh được đồng bộ với hai ô tâm bên dưới và chỉ áp dụng cho lần phân tích mới." disabled={isBusy} onPointChange={(x, y) => { setCenterX(x); setCenterY(y) }} />}
+      {selectedInput && <PylinacAdjustmentCanvas key={selectedInput} accessToken={accessToken} artifactId={selectedInput} x={centerX} y={centerY} heading="Chọn tâm phantom" description="Nhấn hoặc kéo trên ảnh để đặt tâm phantom. Tọa độ điểm ảnh được đồng bộ với hai ô tâm bên dưới và chỉ áp dụng cho lần phân tích mới." disabled={isBusy} onPointChange={(x, y) => { setCenterX(x); setCenterY(y) }} />}
       <div className="machine-qa-protocol-controls">
         <label>Điều chỉnh góc (độ)<input type="number" step="0.1" value={angle} onChange={(event) => setAngle(event.target.value)} /></label>
         <label>Hệ số vùng quan tâm<input type="number" min="0" step="0.01" value={roiSize} onChange={(event) => setRoiSize(event.target.value)} /></label>

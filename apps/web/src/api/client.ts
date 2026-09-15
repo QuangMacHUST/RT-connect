@@ -1795,6 +1795,12 @@ export class ApiClient {
     return response.blob()
   }
 
+  previewArtifactInfo(accessToken: string, artifactId: string): Promise<{ image_count: number }> {
+    return this.get(`/artifacts/${artifactId}/preview-info`, z.object({
+      image_count: z.number().int().positive().max(32)
+    }), accessToken)
+  }
+
   machineQAProtocols(accessToken: string, organizationId: string): Promise<{ items: QAProtocolResource[]; total: number }> {
     return this.get(`/organizations/${organizationId}/machine-qa/protocols`, z.object({
       items: z.array(qaProtocolSchema), total: z.number().int()

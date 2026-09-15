@@ -23,6 +23,7 @@ class PylinacPreviewError(ValueError):
 
 
 _IMAGE_SUFFIXES = {".bmp", ".dcm", ".dicom", ".jpeg", ".jpg", ".png", ".tif", ".tiff"}
+MAX_PREVIEW_IMAGES = 32
 
 
 def _safe_zip_member(info: zipfile.ZipInfo) -> bool:
@@ -79,6 +80,25 @@ def _load_source(source: Path, image_index: int, max_bytes: int) -> object:
         return load(extracted)
     finally:
         extracted.unlink(missing_ok=True)
+
+
+def preview_image_count(source: Path) -> int:
+    """Return the bounded number of selectable images or frames in a source."""
+
+    if source.suffix.lower() == ".zip":
+        return min(len(_zip_candidates(source)), MAX_PREVIEW_IMAGES)
+    try:
+        image = load(source)
+        array = np.asarray(getattr(image, "array", image))
+    except Exception as exc:  # Pylinac and pydicom expose several exception types.
+        raise PylinacPreviewError(
+            "Không thể đọc số ảnh trong tệp đầu vào. Hãy kiểm tra đúng định dạng."
+        ) from exc
+    if array.ndim == 2:
+        return 1
+    if array.ndim == 3 and array.shape[0] > 0:
+        return min(int(array.shape[0]), MAX_PREVIEW_IMAGES)
+    raise PylinacPreviewError("Tệp không chứa chuỗi ảnh hai chiều để xem trước.")
 
 
 def _two_dimensional_array(image: object, image_index: int) -> np.ndarray:
