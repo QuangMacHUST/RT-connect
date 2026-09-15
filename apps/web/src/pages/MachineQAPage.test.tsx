@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { expect, test, vi } from 'vitest'
 
 import type { PylinacQARunResource } from '../api/client'
-import { PylinacResultPanel } from './MachineQAPage'
+import { PylinacAdjustmentCanvas, PylinacResultPanel } from './MachineQAPage'
 
 const makeRun = (overrides: Partial<PylinacQARunResource> = {}): PylinacQARunResource => ({
   id: 'run-current',
@@ -66,4 +67,17 @@ test('keeps the warning attached to the selected historical run', () => {
 
   expect(screen.getByText('Cảnh báo chỉ thuộc lượt cũ.')).toBeInTheDocument()
   expect(screen.getByText('Đang xem một lượt cũ trong lịch sử. Kết quả gốc không thay đổi khi xem lại hoặc đánh giá.')).toBeInTheDocument()
+})
+
+test('does not show a loading state when no image is selected', () => {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+
+  render(
+    <QueryClientProvider client={queryClient}>
+      <PylinacAdjustmentCanvas accessToken="access-token" artifactId={undefined} x="" y="" onPointChange={vi.fn()} />
+    </QueryClientProvider>,
+  )
+
+  expect(screen.getByText('Chọn ảnh để bật vùng điều chỉnh.')).toBeInTheDocument()
+  expect(screen.queryByText('Đang tải ảnh xem trước…')).not.toBeInTheDocument()
 })

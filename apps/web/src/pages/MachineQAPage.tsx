@@ -381,7 +381,7 @@ type PylinacAdjustmentCanvasProps = {
   onPointChange: (x: string, y: string) => void
 }
 
-function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, coordinateMode = 'PIXEL', heading = 'Chọn tâm bắt đầu', description = 'Nhấn hoặc kéo trên ảnh để đặt tâm bắt đầu. Tọa độ được quy đổi theo kích thước ảnh gốc và gửi cho Pylinac.', disabled = false, onPointChange }: PylinacAdjustmentCanvasProps) {
+export function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, coordinateMode = 'PIXEL', heading = 'Chọn tâm bắt đầu', description = 'Nhấn hoặc kéo trên ảnh để đặt tâm bắt đầu. Tọa độ được quy đổi theo kích thước ảnh gốc và gửi cho Pylinac.', disabled = false, onPointChange }: PylinacAdjustmentCanvasProps) {
   const imageRef = useRef<HTMLImageElement>(null)
   const dragging = useRef(false)
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 })
@@ -400,6 +400,7 @@ function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, coordinateMode
   })
   const previewUrl = useMemo(() => preview.data ? URL.createObjectURL(preview.data) : undefined, [preview.data])
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl) }, [previewUrl])
+  const previewLoading = Boolean(artifactId) && (preview.isPending || previewInfo.isPending)
   const updatePoint = (clientX: number, clientY: number) => {
     const image = imageRef.current
     if (!image || disabled) return
@@ -430,7 +431,7 @@ function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, coordinateMode
   const pointStyle = coordinateMode === 'NORMALIZED'
     ? { left: `${Number(x) * 100}%`, top: `${Number(y) * 100}%` }
     : { left: `${Number(x) / imageDimensions.width * 100}%`, top: `${Number(y) / imageDimensions.height * 100}%` }
-  return <div className="qa-adjustment-panel"><div className="panel-heading"><div><p className="eyebrow">ĐIỀU CHỈNH TRÊN ẢNH</p><h3>{heading}</h3></div><span className="status-badge">NHẤN VÀ KÉO</span></div><p className="form-hint">{description}</p>{imageCount > 1 && <label>Ảnh hoặc lát đang xem<select value={selectedImageIndex} onChange={(event) => { setImageIndex(Number(event.target.value)); setImageDimensions({ width: 0, height: 0 }) }} disabled={disabled}>{Array.from({ length: imageCount }, (_, index) => <option key={index} value={index}>#{index + 1}</option>)}</select></label>}{previewUrl ? <div className={disabled ? 'qa-adjustment-canvas qa-adjustment-canvas--disabled' : 'qa-adjustment-canvas'} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={releasePointer} onPointerCancel={releasePointer} role="application" aria-label={heading}><img ref={imageRef} src={previewUrl} alt={`Ảnh hoặc lát ${selectedImageIndex + 1} để chọn tâm`} draggable={false} onLoad={(event) => setImageDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />{hasPoint && imageDimensions.width > 0 && imageDimensions.height > 0 && <span className="qa-adjustment-point" style={pointStyle} />}</div> : <div className="qa-adjustment-canvas qa-adjustment-canvas--empty">{preview.isPending || previewInfo.isPending ? 'Đang tải ảnh xem trước…' : artifactId ? 'Không thể tải ảnh xem trước. Vẫn có thể nhập tọa độ bên dưới.' : 'Chọn ảnh để bật vùng điều chỉnh.'}</div>}</div>
+  return <div className="qa-adjustment-panel"><div className="panel-heading"><div><p className="eyebrow">ĐIỀU CHỈNH TRÊN ẢNH</p><h3>{heading}</h3></div><span className="status-badge">NHẤN VÀ KÉO</span></div><p className="form-hint">{description}</p>{imageCount > 1 && <label>Ảnh hoặc lát đang xem<select value={selectedImageIndex} onChange={(event) => { setImageIndex(Number(event.target.value)); setImageDimensions({ width: 0, height: 0 }) }} disabled={disabled}>{Array.from({ length: imageCount }, (_, index) => <option key={index} value={index}>#{index + 1}</option>)}</select></label>}{previewUrl ? <div className={disabled ? 'qa-adjustment-canvas qa-adjustment-canvas--disabled' : 'qa-adjustment-canvas'} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={releasePointer} onPointerCancel={releasePointer} role="application" aria-label={heading}><img ref={imageRef} src={previewUrl} alt={`Ảnh hoặc lát ${selectedImageIndex + 1} để chọn tâm`} draggable={false} onLoad={(event) => setImageDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />{hasPoint && imageDimensions.width > 0 && imageDimensions.height > 0 && <span className="qa-adjustment-point" style={pointStyle} />}</div> : <div className="qa-adjustment-canvas qa-adjustment-canvas--empty">{previewLoading ? 'Đang tải ảnh xem trước…' : artifactId ? 'Không thể tải ảnh xem trước. Vẫn có thể nhập tọa độ bên dưới.' : 'Chọn ảnh để bật vùng điều chỉnh.'}</div>}</div>
 }
 
 function PicketFencePage({ caseId, accessToken, title }: { caseId: string; accessToken: string; title: string }) {
