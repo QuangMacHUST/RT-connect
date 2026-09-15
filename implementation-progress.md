@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W04 — chọn ảnh/lát trong chuỗi DICOM dài — đã kiểm tra local — 2026-09-16
+
+- Mở giới hạn xem trước từ 32 lên 2.048 ảnh/lát trong phạm vi an toàn. Chuỗi ngắn vẫn dùng danh sách; chuỗi dài dùng ô nhập số từ 1 đến tổng số ảnh/lát để tránh một danh sách cuộn quá dài.
+- Kiểm thử máy chủ thêm ca ZIP 33 ảnh DICOM tổng hợp, xác nhận ảnh thứ 33 có thể xem; toàn bộ kiểm thử máy chủ đạt 100%, giao diện đạt **53/53**, lint, kiểm tra kiểu và bản dựng đạt.
+- Không chạy phân tích, không tạo hồ sơ mới và không thao tác xóa/lưu trữ/khôi phục hồ sơ `dailyQA`.
+- Bằng chứng: [xem trước chuỗi DICOM dài](docs/evidence/p7-local-long-series-preview-20260916.md). P7-W04 vẫn mở các cổng ROI riêng, ánh xạ tọa độ theo từng ảnh và kiểm tra staging tương tác đầy đủ.
+
 ## P7-W04 — chỉ hiện phân tích liều cho bài có hợp đồng liều — đã kiểm tra staging — 2026-09-16
 
 - Khu vực QA không còn suy luận quyền mở phân tích liều từ các tệp RTDOSE/RTSTRUCT đang nằm trong hồ sơ. Vì một hồ sơ có thể chứa tệp phục vụ bài khác, nút này nay chỉ xuất hiện khi loại bài QA yêu cầu đầu vào liều, như PSQA.
