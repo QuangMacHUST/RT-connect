@@ -160,3 +160,8 @@ keep every selected artifact visible for revalidation but block analysis until
 all selected inputs report VALID. This marker intentionally lives under the
 web service root so Railway rebuilds API, worker and web from the same source
 revision before the next staging exact-SHA check.
+
+P7 staging evidence marker (2026-09-16): the validated-input gate evidence and
+progress record were captured after the previous candidate. Rebuild API,
+worker and web from this revision before reusing the evidence as the current
+release candidate.
