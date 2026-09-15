@@ -231,3 +231,7 @@ P7 Winston-Lutz multi-target staging evidence marker (2026-09-16): the
 staging parity check for the detail viewer was captured before this progress
 note. Rebuild API, worker and web from this revision before reusing that
 evidence as the current release candidate.
+
+P7 Winston-Lutz multi-target viewer test-count correction marker (2026-09-16):
+the plan records the verified UI test count as 8/8. Rebuild API, worker and
+web from this revision before the next exact-SHA check.
