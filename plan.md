@@ -1143,7 +1143,7 @@ Chức năng hai nhánh và bảng dùng chung đạt; gói nội dung chỉ đ�
 - [ ] P17-W02 — Kiểm quan hệ hình học/ROI, sampling/cc/% và D/V definitions.
   Lát cắt cục bộ đã bổ sung kiểm tra đầu vào và đầu ra HI/CI; còn đối chiếu oracle độc lập, kiểm tra nguồn và nghiệm thu hình học.
 - [ ] P17-W03 — HI/CI có formula identifier/parameters, thiếu dữ liệu không tính; source contextual matching.
-  Lát cắt cục bộ đã thực hiện bốn công thức tách biệt, yêu cầu liều kê đơn cho CI, giữ tham số và không tự tạo ngưỡng đánh giá. Bằng chứng: `docs/evidence/p17-local-hi-ci-20260915.md`. Chưa đóng cho đến khi có oracle, nguồn theo bệnh cảnh và kiểm tra staging.
+  Lát cắt cục bộ đã thực hiện bốn công thức tách biệt, yêu cầu liều kê đơn cho CI, giữ tham số và không tự tạo ngưỡng đánh giá. Kiểm tra staging ngày 2026-09-15 đã xác nhận bản xem trước mới được ưu tiên hơn kết quả đã lưu, giá trị RTOG CI trên fixture là `0,7500`, lịch sử cũ không tăng thêm. Bằng chứng: `docs/evidence/p17-local-hi-ci-20260915.md` và `docs/evidence/p17-staging-hi-ci-preview-20260915.md`. Chưa đóng cho đến khi có oracle độc lập, xác nhận physicist, nguồn theo bệnh cảnh và kiểm tra đầy đủ hình học.
 - [ ] P17-W04 — Kiểm workload lớn, oracle, run persistence và selection PDF.
 - [ ] P17-VERIFY — Chạy các TC-UX1 dưới đây và nhóm lỗi dùng chung có liên quan; lưu actual/evidence theo SHA.
 - [ ] P17-HANDOFF — Cập nhật tiến độ, dữ liệu/migration/tuyến bị tác động, giới hạn hỗ trợ và bước tiếp theo.

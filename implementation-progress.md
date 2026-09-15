@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P17-W03 — bản xem trước HI/CI trên staging — 2026-09-15
+
+- Sau khi dừng hướng xóa vĩnh viễn hồ sơ, đã triển khai bản web `e7b3150` và kiểm tra trực tiếp trên staging; triển khai Railway `be7f670f-033d-44c6-8fa3-8df7ce7deeb8` đạt `SUCCESS`.
+- Luồng chọn “Chỉ số phù hợp RTOG ở mức 95%”, nhập liều kê đơn `6 Gy` và bấm “Kiểm tra và xem trước” hiển thị bản xem trước mới với giá trị `0,7500`, trạng thái “Đã tính”. Không bấm lưu, không tạo lần tính mới.
+- Lịch sử hồ sơ vẫn giữ nguyên 2 lần tính cũ; giao diện không hiển thị mã nội bộ, JSON hay tên tệp kỹ thuật. Khi dùng `60 Gy`, dữ liệu thiếu thể tích liều 95% được báo “Chưa đủ dữ liệu”, không suy đoán.
+- Bằng chứng: [bản xem trước HI/CI trên staging](docs/evidence/p17-staging-hi-ci-preview-20260915.md). P17-W03 đã có kiểm tra staging cho lát cắt xem trước, nhưng vẫn mở cổng oracle độc lập, xác nhận chuyên môn và nguồn tiêu chí theo bối cảnh.
+
 ## P17-W02/P17-W03 — chỉ số HI/CI trong DVH — lát cắt cục bộ — 2026-09-15
 
 - Đã nối máy chủ DVH với bốn công thức được chọn rõ: `(D2 − D98) / D50`, `D5 / D95`, chỉ số phù hợp RTOG 95% và chỉ số phù hợp Paddick 95%. Mỗi công thức giữ riêng tên định nghĩa, công thức, tham số, đơn vị, trạng thái và nguồn dữ liệu.
