@@ -837,6 +837,7 @@ def test_calibration_adapter_uses_pylinac_properties_without_input_file(
             "chamber": "30013",
             "n_dw": 5.1,
             "p_elec": 1.0,
+            "measured_pdd10": 66.7,
             "clinical_pdd10": 66.7,
             "voltage_reference": 300,
             "voltage_reduced": 150,

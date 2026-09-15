@@ -1945,7 +1945,11 @@ def _calibration_parameters(
     if catalog_key == "CALIBRATION_TG51_PHOTON":
         if parameters.get("lead_foil") is not None:
             constructor["lead_foil"] = _required_text(parameters, "lead_foil")
-        constructor["measured_pdd10"] = _optional_number(parameters, "measured_pdd10", minimum=0)
+        # RT-CONNECT always exposes PDDx/kQ and dose outputs for this class.
+        # Although Pylinac's constructor accepts None, those public properties
+        # require a measured PDD and would otherwise fail later as an opaque
+        # execution error.  Validate it at the user-input boundary instead.
+        constructor["measured_pdd10"] = _number(parameters, "measured_pdd10", minimum=0)
         constructor["clinical_pdd10"] = _number(parameters, "clinical_pdd10", minimum=0)
         constructor["fff"] = _bool(parameters, "fff", False)
     elif catalog_key == "CALIBRATION_TG51_ELECTRON_LEGACY":

@@ -82,10 +82,28 @@ cầu năm điểm của lớp `QuasarLightRadScaling`; fixture Jaw là ảnh DI
 
 Lệnh kiểm tra: `python -m pytest apps/api/tests/test_pylinac_contrib_engine.py --no-cov -q` → **2 passed**. Kiểm thử này xác nhận đường gọi engine, ánh xạ kết quả và dựng ảnh minh họa; không phải dữ liệu chuẩn của phantom Quasar/Jaw và không thay thế đối chiếu độc lập, dữ liệu commissioning hoặc nghiệm thu staging.
 
+## Kiểm tra thật năm bài hiệu chuẩn bằng số đo tổng hợp
+
+Năm lớp hiệu chuẩn không nhận tệp ảnh; RT-CONNECT đưa bộ số đo tổng hợp qua
+đúng constructor của Pylinac và ánh xạ các thuộc tính kết quả công khai. Các
+giá trị chỉ dùng để kiểm tra đường chạy phần mềm, không phải số liệu hiệu
+chuẩn của máy.
+
+| Bài | Lớp engine | Số nhóm chỉ số | Ảnh minh họa |
+|---|---|---:|---|
+| TG-51 photon | `TG51Photon` | 9 | Không áp dụng |
+| TG-51 electron phiên bản cũ | `TG51ElectronLegacy` | 11 | Không áp dụng |
+| TG-51 electron hiện hành | `TG51ElectronModern` | 10 | Không áp dụng |
+| TRS-398 photon | `TRS398Photon` | 8 | Không áp dụng |
+| TRS-398 electron | `TRS398Electron` | 10 | Không áp dụng |
+
+Lệnh kiểm tra: `python -m pytest apps/api/tests/test_pylinac_calibration_engine.py --no-cov -q` → **6 passed** (5 đường chạy đúng và 1 trường hợp thiếu PDD10 bị chặn ở biên nhập liệu). Cổng này xác nhận engine và ánh xạ thuộc tính; vẫn cần số đo được phê duyệt, đối chiếu độc lập với bộ tính/biên bản hiệu chuẩn, kiểm lỗi miền vật lý và kiểm chứng staging.
+
 ## Mã kiểm tra
 
 - Luồng dùng thư mục tạm để giải nén các gói ZIP; dữ liệu tạm được dọn sau khi chạy.
 - Mỗi bài phải qua cùng một lớp chuyển đổi đang được API sử dụng, không gọi riêng một đường tắt chỉ dành cho kiểm thử.
+- Các bài hiệu chuẩn không có overlay; RT-CONNECT chỉ lưu snapshot các thuộc tính công khai do Pylinac trả về và không tự suy diễn kết luận an toàn liều.
 - Kết quả phải có lớp engine đúng với registry, structured result không rỗng và overlay khi lớp Pylinac cung cấp ảnh phân tích.
 - Starshot sử dụng `sid = 1000 mm`, vì tệp TIFF không chứa thẻ khoảng cách nguồn–ảnh.
 - Dynalog không có overlay ảnh; bộ chuyển đổi lưu các chỉ số MLC và biểu đồ lỗi khi Pylinac tạo được tệp biểu đồ.
