@@ -254,3 +254,9 @@ Rebuild API and web from this revision when changing this contract.
 P7 fixture-status plan-sync marker (2026-09-16): the implementation progress
 and plan records now point to the staging evidence for the same API contract.
 Keep this marker aligned with the web service before the next exact-SHA check.
+
+P7 visual origin-slice parity marker (2026-09-16): the web service now lets
+CatPhan, ACR and CT phantom forms select an origin slice through the shared
+preview control. Keep API, worker and web on the same source revision before
+recording staging evidence; this marker does not alter persisted data or
+engine behavior.
