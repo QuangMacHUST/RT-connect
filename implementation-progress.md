@@ -1,5 +1,17 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W03 — cổng tương thích loại đầu vào Pylinac — đã kiểm tra staging — 2026-09-16
+
+- Bản `02c51f3404a0c7ef509b752c96c0d1738b830db3` đã triển khai thành công cho cả API và giao diện staging; kiểm tra công khai và đối chiếu cấu hình Railway đều không có lỗi.
+- Trên bài Kiểm tra sao đang có tệp RTDOSE hợp lệ, giao diện không còn đưa tệp đó vào bộ chọn ảnh; khu vực tệp vẫn giữ nguyên tệp đã tải và lịch sử vẫn là `0`.
+- Kiểm tra chỉ đọc: không tạo lượt Pylinac, không tải lên, không sửa, không lưu trữ, không khôi phục và không xóa hồ sơ `dailyQA` hay dữ liệu liên quan.
+- Bằng chứng: [cổng tương thích loại đầu vào Pylinac trên staging](docs/evidence/p7-staging-input-profile-gate-20260916.md). P7 vẫn mở các cổng fixture Starshot đại diện, đối chiếu độc lập, xác nhận chuyên môn, PDF và VERIFY/HANDOFF.
+
+## Quyết định phạm vi dữ liệu — 2026-09-16
+
+- Dừng công việc xóa vĩnh viễn hồ sơ thử nghiệm theo yêu cầu mới. `dailyQA`, lịch sử QA, tệp liên quan và điểm xu hướng được bảo toàn; không tiếp tục thiết kế hoặc chạy luồng xóa cho mục tiêu này.
+- Các công việc tiếp theo ưu tiên hoàn thiện cổng đầu vào, phân tích Pylinac, lịch sử, báo cáo, thư viện kiến thức và công cụ sinh học theo đúng thứ tự trong `plan.md`.
+
 ## P7-W03 — cổng tương thích loại đầu vào Pylinac — lát cắt cục bộ — 2026-09-16
 
 - Bài phân tích ảnh không còn nhận nhầm RTDOSE, RTSTRUCT, RTPLAN hoặc số đo chỉ vì tệp đã ở trạng thái hợp lệ. Máy chủ chặn trước khi gọi Pylinac; giao diện cũng loại các tệp này khỏi danh sách chọn ảnh.
