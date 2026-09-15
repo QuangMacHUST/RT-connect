@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P8-W02 — tinh giản đầu vào PSQA — lát cắt cục bộ — 2026-09-15
+
+- Trang phân tích PSQA không còn đưa tệp JSON kỹ thuật vào danh sách lựa chọn. Chỉ tệp RTDOSE và dữ liệu đo đã kiểm tra hợp lệ mới được phép xuất hiện trong luồng chọn liều.
+- Nhãn tệp được trình bày theo ngữ nghĩa nghiệp vụ: `Tệp liều RTDOSE`, `Tệp liều RTDOSE 1/2` và `Dữ liệu đo liều`. Tên tệp gốc, phần mở rộng JSON và mã nội bộ không xuất hiện trong lựa chọn hoặc phần tóm tắt đầu vào.
+- Kiểm thử riêng đạt; bộ kiểm thử giao diện đạt **42/42**, lint và kiểm tra kiểu đạt, bản dựng sản xuất đạt. Bằng chứng: [P8 giao diện đầu vào PSQA](docs/evidence/p8-local-psqa-user-facing-inputs-20260915.md).
+- Đây là lát cắt UX local cho P8-W02. P8 vẫn mở các cổng đối chiếu hình học, hàng đợi staging, lỗi phục hồi, tài nguyên lớn, kết quả 1D/2D bằng Pylinac và VERIFY/HANDOFF.
+
 ## P2/P7 — sửa lệch schema readiness trên staging — 2026-09-15
 
 - Kiểm tra công khai trước khi sửa phát hiện API staging trả health `200` nhưng readiness `503`: cơ sở dữ liệu đã ở migration `20260914_0023`, còn API vẫn kỳ vọng `20260913_0022`. Đây là lỗi lệch mốc cấu hình, không phải lỗi healthcheck.

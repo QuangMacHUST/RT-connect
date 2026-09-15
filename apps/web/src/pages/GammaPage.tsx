@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 
 import { ApiClientError, apiClient, type GammaConfiguration, type GammaRunResource } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
+import { artifactDisplayName } from './gammaArtifactLabels'
 
 type JsonRecord = Record<string, unknown>
 
@@ -179,7 +180,6 @@ export function GammaPage() {
     () => (artifacts.data?.items ?? []).filter((item) =>
       item.data_status === 'VALID' && (
         item.artifact_type === 'MEASUREMENT' ||
-        item.artifact_type === 'JSON' ||
         (item.artifact_type === 'DICOM' && item.modality === 'RTDOSE')
       )
     ),
@@ -315,10 +315,10 @@ export function GammaPage() {
         <div className="panel-heading"><div><p className="eyebrow">DỮ LIỆU ĐẦU VÀO</p><h2>Liều tham chiếu và liều đối chiếu</h2></div><strong>{eligibleArtifacts.length}</strong></div>
         {artifacts.isPending ? <p>Đang tải danh sách tệp…</p> : artifacts.error ? <div className="alert alert--error"><p>{errorMessage(artifacts.error)}</p><Link className="button-link" to="/app/qa">Mở phần kiểm tra chất lượng máy</Link></div> : eligibleArtifacts.length < 2 ? <div className="empty-state"><p>Cần ít nhất hai tệp liều hoặc dữ liệu đo đã được kiểm tra hợp lệ. Hãy tải tệp lên và kiểm tra ở phần kiểm tra chất lượng máy trước.</p><Link className="button-link" to="/app/qa">Đi tới kiểm tra chất lượng máy</Link></div> : <>
           <div className="gamma-input-grid">
-            <label>Liều tham chiếu<select value={selectedReferenceId} onChange={(event) => setReferenceId(event.target.value)}>{eligibleArtifacts.map((artifact) => <option key={artifact.id} value={artifact.id}>{artifact.original_filename}</option>)}</select></label>
-            <label>Liều đối chiếu<select value={selectedEvaluationId} onChange={(event) => setEvaluationId(event.target.value)}>{eligibleArtifacts.filter((item) => item.id !== selectedReferenceId).map((artifact) => <option key={artifact.id} value={artifact.id}>{artifact.original_filename}</option>)}</select></label>
+            <label>Liều tham chiếu<select value={selectedReferenceId} onChange={(event) => setReferenceId(event.target.value)}>{eligibleArtifacts.map((artifact) => <option key={artifact.id} value={artifact.id}>{artifactDisplayName(artifact, eligibleArtifacts)}</option>)}</select></label>
+            <label>Liều đối chiếu<select value={selectedEvaluationId} onChange={(event) => setEvaluationId(event.target.value)}>{eligibleArtifacts.filter((item) => item.id !== selectedReferenceId).map((artifact) => <option key={artifact.id} value={artifact.id}>{artifactDisplayName(artifact, eligibleArtifacts)}</option>)}</select></label>
           </div>
-          <div className="gamma-input-summary"><span>Tham chiếu: <strong>{selectedReference?.original_filename ?? '—'}</strong></span><span>Đối chiếu: <strong>{selectedEvaluation?.original_filename ?? '—'}</strong></span><span className={profileReady ? 'status-badge' : 'status-badge machine-status--fail'}>{profileReady ? 'Đã kiểm tra hợp lệ' : 'Thiếu dữ liệu phù hợp'}</span></div>
+          <div className="gamma-input-summary"><span>Tham chiếu: <strong>{selectedReference ? artifactDisplayName(selectedReference, eligibleArtifacts) : '—'}</strong></span><span>Đối chiếu: <strong>{selectedEvaluation ? artifactDisplayName(selectedEvaluation, eligibleArtifacts) : '—'}</strong></span><span className={profileReady ? 'status-badge' : 'status-badge machine-status--fail'}>{profileReady ? 'Đã kiểm tra hợp lệ' : 'Thiếu dữ liệu phù hợp'}</span></div>
           <p className="form-hint">Bài PSQA cần một tệp RTDOSE làm liều tham chiếu và một tệp đo hoặc RTDOSE làm liều đối chiếu. Pylinac thực hiện phép Gamma một chiều hoặc hai chiều.</p>
         </>}
       </section>
