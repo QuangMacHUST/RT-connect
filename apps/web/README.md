@@ -169,3 +169,7 @@ release candidate.
 P7 Winston-Lutz manual-angle parity marker (2026-09-16): the single-target
 Winston-Lutz form now supports manual angles in ZIP image order. Keep this
 marker aligned with the API marker before the next exact-SHA check.
+
+P7 Winston-Lutz multi-target detail marker (2026-09-16): the result viewer
+now shows per-image and per-BB values from the saved Pylinac result. Keep this
+marker aligned with the API marker before the next exact-SHA check.
