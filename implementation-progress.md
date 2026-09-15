@@ -2,7 +2,7 @@
 
 ## P7-W03/W04 — triển khai cổng tệp hợp lệ lên staging — đã kiểm tra staging — 2026-09-16
 
-- Railway đã dựng lại API, web và tiến trình nền từ cùng commit `f63e20afa9637debc9f063cfd93d6d5613bd2686` sau khi bổ sung mốc đồng bộ dưới thư mục dịch vụ.
+- Railway đã dựng lại API, web và tiến trình nền từ cùng commit `905fbda295ca8554417382f8a292891f6c3df573` sau khi bổ sung mốc đồng bộ dưới thư mục dịch vụ.
 - Kiểm tra exact-SHA công khai đạt **16/16**; API và gói web cùng báo đúng phiên bản commit, readiness trả lược đồ `20260914_0023`, các tuyến công khai và biên giới chưa xác thực đạt.
 - Đây mới là kiểm tra phát hành/cổng đầu vào; chưa chạy phân tích trên tệp staging, chưa đóng ma trận fixture P7 và chưa phải nghiệm thu lâm sàng. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa dữ liệu staging; `dailyQA` được bảo toàn.
 - Bằng chứng: [exact-SHA staging cho cổng tệp hợp lệ](docs/evidence/p7-staging-validated-input-gate-20260916.json).
