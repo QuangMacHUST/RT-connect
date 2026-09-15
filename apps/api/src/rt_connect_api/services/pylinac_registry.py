@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import importlib
 import importlib.metadata
+import inspect
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -70,6 +71,103 @@ class RegistrySummary(TypedDict):
     runtime_available: int
     unresolved_catalog_keys: list[str]
     capabilities: list[CapabilitySummary]
+
+
+class InventoryDiff(TypedDict):
+    """Differences between the locked wheel's public analysis symbols and RT-CONNECT."""
+
+    missing_symbols: list[str]
+    unexpected_symbols: list[str]
+    unbound_symbols: list[str]
+
+
+# These are the public, user-facing analysis classes/functions in pylinac 3.47.0.
+# Base classes, result models, and image containers are deliberately excluded:
+# they are implementation building blocks, not separate QA methods.  Keeping this
+# inventory explicit makes a wheel upgrade fail closed instead of silently shrinking
+# the RT-CONNECT catalogue.
+_PUBLIC_CAPABILITY_SYMBOLS: Final[dict[str, tuple[str, ...]]] = {
+    "pylinac.calibration.tg51": (
+        "TG51Photon",
+        "TG51ElectronLegacy",
+        "TG51ElectronModern",
+    ),
+    "pylinac.calibration.trs398": ("TRS398Photon", "TRS398Electron"),
+    "pylinac.starshot": ("Starshot",),
+    "pylinac.vmat": ("DRGS", "DRMLC", "DRCS"),
+    "pylinac.ct": ("CatPhan503", "CatPhan504", "CatPhan600", "CatPhan604", "CatPhan700"),
+    "pylinac.acr": ("ACRCT", "ACRMRILarge", "ACRMRIMedium"),
+    "pylinac.cheese": ("TomoCheese", "CIRS062M"),
+    "pylinac.helios": ("GEHeliosCTDaily",),
+    "pylinac.quart": ("QuartDVT", "HypersightQuartDVT"),
+    "pylinac.log_analyzer": ("Dynalog", "TrajectoryLog"),
+    "pylinac.picketfence": ("PicketFence",),
+    "pylinac.winston_lutz": ("WinstonLutz", "WinstonLutzMultiTargetMultiField"),
+    "pylinac.planar_imaging": (
+        "LeedsTOR",
+        "LeedsTORBlue",
+        "StandardImagingQC3",
+        "StandardImagingQCkV",
+        "LasVegas",
+        "ElektaLasVegas",
+        "DoselabMC2MV",
+        "DoselabMC2kV",
+        "SNCMV",
+        "SNCMV12510",
+        "SNCkV",
+        "PTWEPIDQC",
+        "IBAPrimusA",
+        "StandardImagingFC2",
+        "IMTLRad",
+        "DoselabRLf",
+        "IsoAlign",
+        "SNCFSQA",
+        "ACRDigitalMammography",
+    ),
+    "pylinac.field_profile_analysis": ("FieldProfileAnalysis",),
+    "pylinac.field_analysis": ("FieldAnalysis",),
+    "pylinac.nuclear": (
+        "MaxCountRate",
+        "PlanarUniformity",
+        "CenterOfRotation",
+        "TomographicResolution",
+        "SimpleSensitivity",
+        "FourBarResolution",
+        "QuadrantResolution",
+        "TomographicUniformity",
+        "TomographicContrast",
+    ),
+    "pylinac.contrib.quasar": ("QuasarLightRadScaling",),
+    "pylinac.contrib.orthogonality": ("JawOrthogonality",),
+}
+
+_PUBLIC_CAPABILITY_FUNCTIONS: Final[dict[str, tuple[str, ...]]] = {
+    "pylinac.core.gamma": ("gamma_1d", "gamma_2d"),
+}
+
+# HypersightQuartDVT is intentionally an alias in the locked wheel.  The class is
+# still part of the inventory, but Pylinac 3.47.0 deprecates it and routes the same
+# capability through QuartDVT, which is the registered execution symbol.
+_REGISTERED_ALIASES: Final[dict[str, str]] = {
+    "pylinac.quart.HypersightQuartDVT": "QUART_HYPERSIGHT",
+}
+
+_NON_CAPABILITY_CLASSES: Final[frozenset[str]] = frozenset(
+    {
+        "TG51Base",
+        "TRS398Base",
+        "VMATBase",
+        "VMATLinearBase",
+        "CatPhanBase",
+        "CheesePhantomBase",
+        "ImagePhantomBase",
+        "WLBaseImage",
+        "WinstonLutz2D",
+        "WinstonLutzMultiTargetMultiFieldImage",
+        "DeviceFieldAnalysis",
+        "MachineLogs",
+    }
+)
 
 
 def _class(key: str, path: str, profile: str, family: str) -> RuntimeBinding:
@@ -239,6 +337,68 @@ def _resolve(path: str) -> tuple[Any | None, str | None]:
         return getattr(module, symbol_name), None
     except (AttributeError, ImportError, ModuleNotFoundError) as exc:
         return None, f"{type(exc).__name__}: {exc}"
+
+
+def _installed_public_symbols() -> tuple[str, ...]:
+    """Return the analysis symbols exposed by the locked pylinac wheel."""
+
+    symbols: list[str] = []
+    for module_name in _PUBLIC_CAPABILITY_SYMBOLS:
+        module = importlib.import_module(module_name)
+        for name, symbol in vars(module).items():
+            if (
+                name.startswith("_")
+                or not inspect.isclass(symbol)
+                or getattr(symbol, "__module__", None) != module_name
+                or name in _NON_CAPABILITY_CLASSES
+            ):
+                continue
+            # Calibration classes have no ``analyze`` method because the
+            # calculation runs in the constructor. Log classes expose
+            # ``from_demo``/``to_csv`` rather than ``analyze``. Everything
+            # else must expose the public analyze method used by the adapter.
+            is_calibration = module_name.startswith("pylinac.calibration.")
+            is_log = module_name == "pylinac.log_analyzer" and (
+                hasattr(symbol, "from_demo") or hasattr(symbol, "to_csv")
+            )
+            if not (is_calibration or is_log or hasattr(symbol, "analyze")):
+                continue
+            symbols.append(f"{module_name}.{name}")
+    for module_name, names in _PUBLIC_CAPABILITY_FUNCTIONS.items():
+        module = importlib.import_module(module_name)
+        for name in names:
+            symbol = getattr(module, name, None)
+            if symbol is None or not inspect.isfunction(symbol):
+                continue
+            symbols.append(f"{module_name}.{name}")
+    return tuple(sorted(symbols))
+
+
+def pylinac_inventory_diff() -> InventoryDiff:
+    """Compare the locked wheel's public analysis surface with the registry.
+
+    The function is intentionally read-only and is suitable for a build/release
+    gate.  It does not make an unregistered class executable; it reports the
+    discrepancy so a human must update the catalogue, adapter, and UI contract.
+    """
+
+    expected = {
+        f"{module_name}.{name}"
+        for module_name, names in _PUBLIC_CAPABILITY_SYMBOLS.items()
+        for name in names
+    } | {
+        f"{module_name}.{name}"
+        for module_name, names in _PUBLIC_CAPABILITY_FUNCTIONS.items()
+        for name in names
+    }
+    installed = set(_installed_public_symbols())
+    registered_paths = {binding.import_path for binding in RUNTIME_BINDINGS}
+    registered_paths.update(_REGISTERED_ALIASES)
+    return {
+        "missing_symbols": sorted(expected - installed),
+        "unexpected_symbols": sorted(installed - expected),
+        "unbound_symbols": sorted((installed & expected) - registered_paths),
+    }
 
 
 def _definition_by_key() -> dict[str, QATestDefinition]:

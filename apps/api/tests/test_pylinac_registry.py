@@ -4,6 +4,7 @@ from rt_connect_api.qa_catalog import CATALOGUE_VERSION, QA_TEST_CATALOG
 from rt_connect_api.services.pylinac_registry import (
     PYLINAC_VERSION,
     PYLINAC_WHEEL_SHA256,
+    pylinac_inventory_diff,
     registry_summary,
     resolve_capabilities,
     resolve_runtime_symbol,
@@ -27,6 +28,16 @@ def test_registry_resolves_every_pylinac_catalogue_entry() -> None:
     assert {item.catalog_key for item in capabilities} == pylinac_keys
     assert all(item.runtime_available for item in capabilities)
     assert unresolved_catalog_keys() == ()
+
+
+def test_locked_pylinac_public_inventory_is_fully_bound() -> None:
+    """A wheel change must not silently remove or add an unmapped QA capability."""
+
+    assert pylinac_inventory_diff() == {
+        "missing_symbols": [],
+        "unexpected_symbols": [],
+        "unbound_symbols": [],
+    }
 
 
 def test_catalogue_engine_names_match_the_locked_runtime_symbols() -> None:

@@ -1067,7 +1067,7 @@ def _execute_catphan(
         raise PylinacAdapterError(
             "PYLINAC_RUNTIME_UNAVAILABLE", "Bộ phân tích CatPhan chưa sẵn sàng."
         )
-    if not source_path.is_file():
+    if not source_path.is_file() or source_path.suffix.lower() != ".zip":
         raise PylinacAdapterError(
             "PYLINAC_INPUT_FORMAT_INVALID", "Bài CatPhan cần một tệp ZIP DICOM."
         )

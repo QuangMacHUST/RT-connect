@@ -1,5 +1,11 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W03 — đối chiếu inventory công khai của Pylinac — lát cắt cục bộ — 2026-09-15
+
+- Đã bổ sung `pylinac_inventory_diff()` để quét các lớp/hàm phân tích công khai của wheel Pylinac 3.47.0, loại rõ lớp nền, lớp kết quả và lớp ảnh nội bộ, rồi đối chiếu với registry RT-CONNECT. HyperSight được ghi nhận là alias tương thích của `QuartDVT`; ba phiên bản Trajectory Log dùng chung một lớp runtime nhưng vẫn là ba capability logic riêng.
+- Inventory hiện đạt **61 đường dẫn biểu tượng công khai**, tương ứng **63 capability logic** trong danh mục; `missing_symbols`, `unexpected_symbols` và `unbound_symbols` đều rỗng. Kiểm thử `test_pylinac_registry.py` đạt **5/5**, Ruff và mypy strict trên tệp thay đổi đạt.
+- Đây là cổng ánh xạ runtime của P7-W03, chưa đóng P7: fixture chuẩn/commissioning, đối chiếu từng chỉ số, ma trận lỗi, giao diện đầy đủ và staging vẫn cần hoàn tất. Bằng chứng: [inventory Pylinac](docs/evidence/p7-local-pylinac-inventory-20260915.json).
+
 ## P7-CAL — năm bài hiệu chuẩn gọi engine thật — lát cắt cục bộ — 2026-09-15
 
 - Đã bổ sung kiểm thử hồi quy `apps/api/tests/test_pylinac_calibration_engine.py` cho `TG51Photon`, `TG51ElectronLegacy`, `TG51ElectronModern`, `TRS398Photon` và `TRS398Electron`. Bộ số đo tổng hợp được đưa qua đúng `execute_pylinac`; không dùng tệp ảnh hoặc bộ tính thay thế.

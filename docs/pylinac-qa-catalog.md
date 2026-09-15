@@ -32,6 +32,14 @@ Danh mục triển khai không được duy trì bằng trí nhớ. Khi thêm ho
 4. chạy contract test cho input, tham số, `results_data()` hoặc thuộc tính kết quả, hình minh họa nếu có và lỗi của từng capability;
 5. lưu `pylinac_version`, wheel hash, module/class, adapter version và tham số phân tích trong snapshot của run.
 
+Kiểm tra inventory hiện hành gọi trực tiếp các mô-đun đã khóa, loại các lớp nền/kết quả
+không phải bài QA, rồi đối chiếu từng biểu tượng phân tích với registry. Bản kiểm tra
+ngày 2026-09-15 ghi nhận 61 đường dẫn biểu tượng công khai tương ứng với 63 capability
+logic (ba phiên bản Trajectory Log dùng chung một lớp; HyperSight là nhãn tương thích
+của `QuartDVT`). Kết quả không có biểu tượng thiếu, thừa hoặc chưa gắn registry; đây
+chỉ là cổng ánh xạ runtime, không thay thế fixture đại diện, đối chiếu chỉ số hoặc
+nghiệm thu staging. Bằng chứng: [inventory Pylinac](evidence/p7-local-pylinac-inventory-20260915.json).
+
 Như vậy “đầy đủ” nghĩa là không bỏ sót capability công khai của **phiên bản runtime đã khóa**, không phải tự động bật code chưa được ánh xạ khi tài liệu `latest` thay đổi.
 
 ## 3. Toàn bộ 16 họ mô-đun chính và QA đóng góp

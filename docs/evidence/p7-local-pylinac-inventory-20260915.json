@@ -1,0 +1,20 @@
+{
+  "evidence_type": "P7_PYLINAC_PUBLIC_INVENTORY",
+  "verified_at": "2026-09-15",
+  "environment": "local-development",
+  "pylinac_version": "3.47.0",
+  "catalogue_pylinac_capabilities": 63,
+  "public_symbol_paths": 61,
+  "intentional_logical_variants": {
+    "trajectory_log_versions": 3,
+    "hypersight_quart_alias": true
+  },
+  "inventory_diff": {
+    "missing_symbols": [],
+    "unexpected_symbols": [],
+    "unbound_symbols": []
+  },
+  "command": "python -m pytest apps/api/tests/test_pylinac_registry.py --no-cov -q",
+  "result": "5 passed",
+  "scope": "The locked wheel's public analysis symbols are bound to the RT-CONNECT registry. This does not prove representative fixture analysis, independent metric agreement, staging execution, commissioning, or clinical validation."
+}

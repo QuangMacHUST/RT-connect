@@ -626,6 +626,21 @@ def test_catphan700_adapter_uses_pylinac_binding(tmp_path, monkeypatch) -> None:
     assert len(result.overlay_bytes or b"") > 0
 
 
+def test_catphan_adapter_rejects_non_zip_input(tmp_path, monkeypatch) -> None:
+    source = tmp_path / "catphan.dcm"
+    source.write_bytes(b"dicom")
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (object, None) if key == "CATPHAN_503" else (None, "missing"),
+    )
+    try:
+        execute_pylinac("CATPHAN_503", source, {})
+    except PylinacAdapterError as exc:
+        assert exc.code == "PYLINAC_INPUT_FORMAT_INVALID"
+    else:
+        raise AssertionError("Bài CatPhan phải từ chối tệp không phải ZIP")
+
+
 def test_acr_adapter_supports_mri_controls(tmp_path, monkeypatch) -> None:
     source = tmp_path / "acr.zip"
     source.write_bytes(b"dicom-zip")
