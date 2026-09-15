@@ -229,6 +229,13 @@ td code { color: #075e67; font-size: .78rem; }
 .machine-qa-diff-grid { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .machine-qa-diff-grid > div { background: #fff; border: 1px solid #dce5ea; display: grid; gap: 3px; padding: 8px 10px; }
 .machine-qa-diff-grid span { color: #173c5d; font-size: .8rem; overflow-wrap: anywhere; }
+.machine-qa-result-details { border-top: 1px solid #dce5ea; margin-top: 18px; padding-top: 16px; }
+.machine-qa-result-details .panel-heading { margin-bottom: 8px; }
+.machine-qa-result-details h3 { color: #173c5d; font-size: .95rem; margin: 0; }
+.machine-qa-result-details .form-hint { margin: 0 0 10px; }
+.winston-lutz-detail-table { min-width: 760px; }
+.winston-lutz-detail-table th, .winston-lutz-detail-table td { font-size: .76rem; white-space: nowrap; }
+.winston-lutz-detail-table tbody th { color: #173c5d; font-weight: 700; }
 .machine-qa-overlay-preview { background: #f4f9fa; border: 1px solid #dce5ea; margin: 14px 0 0; padding: 10px; }
 .machine-qa-overlay-preview img { background: #dce5ea; display: block; max-height: 520px; max-width: 100%; object-fit: contain; width: 100%; }
 .machine-qa-overlay-preview figcaption { color: #617787; font-size: .75rem; margin-top: 8px; }

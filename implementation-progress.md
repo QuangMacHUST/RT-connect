@@ -1617,3 +1617,11 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Trình xem kết quả dùng lại một bảng nhỏ “Kiểm tra đầu vào” cho các tệp đang chọn. Tệp đã có trạng thái `UPLOADED`, `WARNING` hoặc `INVALID` có nút kiểm tra lại ngay tại trang; tệp `VALID` hiện rõ là hợp lệ. Người dùng không cần quay về kho lưu trữ và giao diện không hiển thị mã nội bộ.
 - Áp dụng cho các nhóm Picket Fence, Starshot, Winston–Lutz, Winston–Lutz nhiều bi, VMAT, Field Analysis, CatPhan, ACR, Cheese/Quart/Helios, Log Analyzer, Nuclear, Contrib và Planar Imaging; bài hiệu chuẩn không có tệp nên không hiện bảng này.
 - Kiểm tra kiểu, lint, **12/12 tệp và 40/40 kiểm thử giao diện**, cùng bản dựng sản xuất đạt. Đây là lát cắt UX local; cần kiểm thử trình duyệt trên staging với tệp hợp lệ và tệp lỗi, sau đó mới đưa vào P07-VERIFY/HANDOFF. P7 vẫn mở.
+
+## P7-W04 — đối chiếu Winston–Lutz nhiều bi theo từng ảnh — lát cắt cục bộ — 2026-09-16
+
+- Trình xem kết quả Pylinac nay nhận một hàm hiển thị chi tiết theo đúng lượt đang xem. Khi mở kết quả Winston–Lutz nhiều bi, giao diện hiển thị từng ảnh, ba góc máy, khoảng cách trường–bi của từng bi và sai lệch xoay bàn.
+- Bảng lấy trực tiếp `image_details` và `bb_arrangement` từ kết quả Pylinac đã lưu; giao diện không tính lại chỉ số, không thay dấu thiếu bằng số 0 và không tự kết luận Đạt/Cảnh báo/Không đạt.
+- Tên tệp kỹ thuật, mã lượt chạy và mã nội bộ không xuất hiện trong bảng; người dùng chỉ thấy “Ảnh 1”, “Ảnh 2”… và tên bi do họ đặt trong cấu hình.
+- Kiểm thử giao diện `src/pages/MachineQAPage.test.tsx` đạt **8/8**, gồm ca mở bảng nhiều bi và xác nhận không rò rỉ tên tệp. Kiểm tra kiểu, lint và bản dựng tiếp tục được chạy sau thay đổi.
+- Đây là lát cắt trình xem cục bộ, chưa đóng P7-W04. Còn kiểm chứng staging, ROI chuyên biệt, ánh xạ thao tác theo từng ảnh và đối chiếu với bộ ảnh commissioning được phê duyệt.

@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { expect, test, vi } from 'vitest'
 
 import type { PylinacQARunResource } from '../api/client'
-import { PylinacAdjustmentCanvas, PylinacResultPanel } from './MachineQAPage'
+import { PylinacAdjustmentCanvas, PylinacResultPanel, WinstonLutzMultiTargetDetails } from './MachineQAPage'
 import { historyForCatalog } from './pylinacHistory'
 import { mapImagePoint } from './pylinacCoordinates'
 import { artifactsAreValidated, selectedArtifactsAreValidated } from './qaArtifactLabels'
@@ -84,6 +84,44 @@ test('shows parameters removed from the newer analysis in the history diff', () 
   render(<PylinacResultPanel {...baseProps(latest, [latest, previous])} />)
 
   expect(screen.getByText('Đã bỏ')).toBeInTheDocument()
+})
+
+test('shows Winston-Lutz multi-target details by image and BB without exposing filenames', () => {
+  const run = makeRun({
+    catalog_key: 'WINSTON_LUTZ_MULTI_TARGET',
+    result_snapshot: {
+      metrics: {
+        bb_arrangement: [{ name: 'Iso' }, { name: '1' }],
+        image_details: [
+          {
+            image_name: 'RT000001.dcm',
+            gantry_angle: 0,
+            collimator_angle: 10,
+            couch_angle: 20,
+            bb_distances: { Iso: 0.3, '1': 1.2 },
+            couch_yaw_error: 0.1,
+          },
+          {
+            image_name: 'RT000002.dcm',
+            gantry_angle: 180,
+            collimator_angle: 10,
+            couch_angle: 20,
+            bb_distances: { Iso: 0.4, '1': null },
+            couch_yaw_error: 0.2,
+          },
+        ],
+      },
+    },
+  })
+
+  render(<PylinacResultPanel {...baseProps(run, [run])} renderResultDetails={(selected) => <WinstonLutzMultiTargetDetails run={selected} />} />)
+
+  expect(screen.getByRole('heading', { name: 'Khoảng cách trường–bi' })).toBeInTheDocument()
+  expect(screen.getByRole('rowheader', { name: 'Ảnh 1' })).toBeInTheDocument()
+  expect(screen.getByRole('columnheader', { name: 'Bi Iso' })).toBeInTheDocument()
+  expect(screen.getByText('0,3')).toBeInTheDocument()
+  expect(screen.queryByText('RT000001.dcm')).not.toBeInTheDocument()
+  expect(screen.queryByText('RT000002.dcm')).not.toBeInTheDocument()
 })
 
 test('does not show a loading state when no image is selected', () => {
