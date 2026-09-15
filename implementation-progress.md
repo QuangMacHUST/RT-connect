@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W03 — hợp đồng hồ sơ đầu vào theo liên kết chạy thật — đã kiểm tra staging — 2026-09-16
+
+- Cổng máy chủ nay dùng `input_profile` của liên kết Pylinac thay vì suy ra lại từ danh mục giao diện; registry có kiểm thử phát hiện lệch giữa `input_kind` và hồ sơ thực thi cho toàn bộ 63 capability.
+- Bản `dee1b67` đã triển khai thành công cho API và giao diện staging; API `health/ready/version`, kiểm tra công khai và lược đồ hiện hành đều đạt.
+- Kiểm tra registry không có sai lệch hồ sơ đầu vào; kiểm thử API toàn bộ chạy đến 100% không lỗi; Ruff và kiểm tra hợp đồng kế hoạch đều đạt.
+- Bằng chứng: [hợp đồng hồ sơ đầu vào theo liên kết chạy thật trên staging](docs/evidence/p7-staging-runtime-input-profile-contract-20260916.md). P7 vẫn mở các cổng fixture, đối chiếu độc lập, xác nhận chuyên môn, PDF và VERIFY/HANDOFF.
+
 ## P7-W03 — cổng máy chủ IMAGE_OR_PROFILE — đã kiểm tra staging — 2026-09-16
 
 - Máy chủ nay áp dụng cùng cổng tương thích cho `IMAGE_OR_PROFILE`; bài Phân tích biên dạng trường cũng từ chối RTDOSE, RTSTRUCT và RTPLAN trước khi gọi Pylinac, không phụ thuộc vào bộ lọc trình duyệt.
