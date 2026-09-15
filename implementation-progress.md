@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W04 — trạng thái rỗng vùng điều chỉnh ảnh — đã kiểm tra staging — 2026-09-16
+
+- Khi bài Kiểm tra sao không có ảnh phù hợp để chọn, vùng điều chỉnh nay hiển thị “Chọn ảnh để bật vùng điều chỉnh.” thay vì “Đang tải ảnh xem trước…” vô hạn.
+- Nút bắt đầu phân tích bị khóa khi chưa có đầu vào ảnh; tệp RTDOSE hợp lệ vẫn được giữ nguyên trong hồ sơ và lịch sử vẫn là `0`.
+- Kiểm thử riêng đạt **3/3**; toàn bộ giao diện đạt **51/51**; lint, kiểm tra kiểu và bản dựng sản xuất đạt. Kiểm tra trình duyệt staging sau triển khai xác nhận đúng trạng thái rỗng.
+- Bằng chứng: [trạng thái rỗng vùng điều chỉnh trên staging](docs/evidence/p7-staging-empty-adjustment-state-20260916.md). Không có dữ liệu staging nào bị tạo, sửa, lưu trữ, khôi phục hoặc xóa.
+
 ## P7-W03 — cổng tương thích loại đầu vào Pylinac — đã kiểm tra staging — 2026-09-16
 
 - Bản `02c51f3404a0c7ef509b752c96c0d1738b830db3` đã triển khai thành công cho cả API và giao diện staging; kiểm tra công khai và đối chiếu cấu hình Railway đều không có lỗi.
