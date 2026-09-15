@@ -67,6 +67,21 @@ không chứa dữ liệu bệnh nhân. Chín tệp/luồng được đưa qua �
 
 Lệnh kiểm tra: `python -m pytest apps/api/tests/test_pylinac_nuclear_engine.py --no-cov -q` → **1 passed**. Đây là bằng chứng bộ điều hợp đã gọi được đủ chín lớp Pylinac và giữ được hợp đồng kết quả; dữ liệu tổng hợp không thay thế cho kiểm định bằng dữ liệu chạy máy đại diện, đối chiếu độc lập từng chỉ số hoặc nghiệm thu staging.
 
+## Kiểm tra thật hai bài đóng góp bằng dữ liệu tổng hợp
+
+Hai bài đóng góp đã được đưa qua đúng `execute_pylinac` của RT-CONNECT bằng
+dữ liệu không có thông tin bệnh nhân. Fixture Quasar được tạo từ bản sao tạm
+của ảnh FC-2 chính thức rồi bổ sung bốn điểm chuẩn trung tâm để đáp ứng yêu
+cầu năm điểm của lớp `QuasarLightRadScaling`; fixture Jaw là ảnh DICOM
+`RTIMAGE` hình chữ nhật tổng hợp.
+
+| Bài | Lớp engine | Nguồn kết quả | Số nhóm chỉ số | Ảnh minh họa |
+|---|---|---|---:|---|
+| Quasar Light và Rad Scaling | `QuasarLightRadScaling` | `results_data()` | 9 | Có |
+| Độ vuông góc của jaw | `JawOrthogonality` | `results()` | 4 | Có |
+
+Lệnh kiểm tra: `python -m pytest apps/api/tests/test_pylinac_contrib_engine.py --no-cov -q` → **2 passed**. Kiểm thử này xác nhận đường gọi engine, ánh xạ kết quả và dựng ảnh minh họa; không phải dữ liệu chuẩn của phantom Quasar/Jaw và không thay thế đối chiếu độc lập, dữ liệu commissioning hoặc nghiệm thu staging.
+
 ## Mã kiểm tra
 
 - Luồng dùng thư mục tạm để giải nén các gói ZIP; dữ liệu tạm được dọn sau khi chạy.
@@ -114,5 +129,5 @@ Các tên lớp trong danh mục đã được đối chiếu với tên biểu 
 ## Phạm vi còn mở
 
 - CatPhan 700 chưa có tệp mẫu chính thức tương thích trong bộ tệp cục bộ.
-- ACR CT/MRI, CIRS 062M, GE Helios, CatPhan 700 và bài đóng góp Jaw cần fixture riêng. Chín bài hạt nhân đã chạy qua đúng bộ chuyển đổi bằng dữ liệu tổng hợp hợp lệ, nhưng vẫn cần tệp mẫu đại diện/commissioning, đối chiếu từng chỉ số, kiểm lỗi đặc trưng và staging. Toàn bộ 19 biến thể ảnh phẳng đã chạy qua đúng bộ chuyển đổi bằng tệp mẫu chính thức của Pylinac; vẫn cần đối chiếu staging riêng. Nhãn HyperSight đã có đường chạy tương thích local bằng `QuartDVT`, nhưng vẫn cần kiểm tra hiển thị và staging riêng.
+- ACR CT/MRI, CIRS 062M, GE Helios và CatPhan 700 vẫn cần fixture riêng. Hai bài đóng góp đã có smoke test engine bằng fixture tổng hợp; vẫn cần tệp mẫu/commissioning đại diện, đối chiếu từng chỉ số, kiểm lỗi đặc trưng và staging. Chín bài hạt nhân cũng đã chạy qua đúng bộ chuyển đổi bằng dữ liệu tổng hợp hợp lệ nhưng vẫn cần các cổng tương tự. Toàn bộ 19 biến thể ảnh phẳng đã chạy qua đúng bộ chuyển đổi bằng tệp mẫu chính thức của Pylinac; vẫn cần đối chiếu staging riêng. Nhãn HyperSight đã có đường chạy tương thích local bằng `QuartDVT`, nhưng vẫn cần kiểm tra hiển thị và staging riêng.
 - Cần đối chiếu từng chỉ số với kỳ vọng của bộ kiểm thử Pylinac, kiểm lỗi đầu vào, kiểm tài nguyên và chạy lại trên staging trước khi đóng gói tương ứng.

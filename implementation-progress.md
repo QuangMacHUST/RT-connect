@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-CONTRIB — hai bài đóng góp gọi engine thật — lát cắt cục bộ — 2026-09-15
+
+- Đã bổ sung kiểm thử hồi quy `apps/api/tests/test_pylinac_contrib_engine.py` cho `QuasarLightRadScaling` và `JawOrthogonality`, đưa cả hai bài qua đúng `execute_pylinac` của RT-CONNECT với Pylinac 3.47.0.
+- Quasar dùng bản sao tạm của ảnh FC-2 chính thức, bổ sung bốn điểm chuẩn trung tâm để đáp ứng hợp đồng năm điểm của engine; Jaw dùng ảnh DICOM `RTIMAGE` hình chữ nhật tổng hợp. Cả hai đều trả kết quả không rỗng và tạo ảnh minh họa; Quasar dùng `results_data()`, Jaw dùng `results()` theo API công khai của Pylinac.
+- Kiểm thử thật đạt **2/2**. Đây là `LOCAL_VERIFIED_SLICE`, không phải dữ liệu chuẩn/commissioning hay nghiệm thu lâm sàng. Còn mở: fixture đại diện, đối chiếu độc lập từng chỉ số, ma trận lỗi thiếu cạnh/ảnh không phù hợp, kiểm thử giao diện đầy đủ và staging.
+- Bằng chứng: [ma trận Pylinac P7](docs/evidence/p7-local-pylinac-demo-matrix-20260915.md).
+
 ## P7-NUCLEAR — đủ chín bài hạt nhân gọi engine thật bằng fixture tổng hợp — lát cắt cục bộ — 2026-09-15
 
 - Đã bổ sung kiểm thử hồi quy `apps/api/tests/test_pylinac_nuclear_engine.py`, dựng DICOM hạt nhân tổng hợp không có dữ liệu bệnh nhân và đưa đủ chín bài trong registry qua đúng `execute_pylinac`: tốc độ đếm cực đại, độ đồng nhất phẳng, tâm quay, độ phân giải cắt lớp, độ nhạy đơn giản, độ phân giải bốn vạch, độ phân giải bốn góc, độ đồng nhất cắt lớp và độ tương phản cắt lớp.
@@ -77,12 +84,12 @@ Tài liệu hiện hành: `business-analysis.md` v1.3,
 - Cổng local đạt: 26/26 kiểm thử API nhóm Pylinac, ruff trên các tệp thay đổi, mypy 52/52 tệp nguồn, lint giao diện, kiểm tra kiểu và bản dựng sản xuất. Bằng chứng: [P7 hợp đồng chín bài hạt nhân](docs/evidence/p7-local-nuclear-contract-20260915.json).
 - Kiểm thử hồi quy mới `apps/api/tests/test_pylinac_nuclear_engine.py` đã dựng fixture DICOM tổng hợp không có dữ liệu bệnh nhân và gọi thật đủ chín lớp qua `execute_pylinac`, đạt **1/1**; các lớp có khả năng vẽ đã tạo ảnh minh họa. Đây là `LOCAL_VERIFIED_SLICE` cho đường chạy engine và hợp đồng kết quả, chưa phải nghiệm thu bằng dữ liệu máy: fixture DICOM chuẩn/commissioning, đối chiếu từng lớp, ma trận lỗi, kiểm thử giao diện và staging vẫn mở. P7-W03, P07-NUCLEAR, P07-VERIFY và P07-HANDOFF vẫn mở.
 
-## P7-W03 — hai bài One-Offs/Contrib của Pylinac — lát cắt hợp đồng local — 2026-09-15
+## P7-W03 — hai bài One-Offs/Contrib của Pylinac — lát cắt hợp đồng và engine local — 2026-09-15
 
 - Commit `2a46f67cf60f28cda541d1d513f95403a15c4509` đã bổ sung hai bài đóng góp công khai: `QuasarLightRadScaling` và `JawOrthogonality`. Cả hai được mở trực tiếp từ danh mục QA, nhận một ảnh, lưu lịch sử và cho phép người thực hiện đánh giá riêng.
 - Quasar có biểu mẫu `normalize`, đảo ảnh, FWXM và ngưỡng cạnh biên; adapter gọi đúng `analyze()` và `results_data()`. Jaw không có `results_data()` trong Pylinac 3.47.0 nên adapter gọi đúng `analyze()` và `results()`, sau đó lấy ảnh từ `plot_analyzed_image()`. Không có logic thay thế hoặc kết luận tự động ngoài kết quả engine.
 - Cổng local đạt: 28/28 kiểm thử API nhóm Pylinac, ruff trên các tệp thay đổi, mypy 52/52 tệp nguồn, lint giao diện, kiểm tra kiểu và bản dựng sản xuất. Bằng chứng: [P7 hợp đồng hai bài đóng góp](docs/evidence/p7-local-contrib-contract-20260915.json).
-- Đây là `LOCAL_VERIFIED_SLICE` cho adapter/biểu mẫu/hợp đồng, chưa phải chạy engine thật: chưa có fixture ảnh chuẩn cho hai bài, chưa có đối chiếu kết quả trên fixture và chưa có kiểm chứng staging. P07-CONTRIB, P7-W03, P07-VERIFY và P07-HANDOFF vẫn mở.
+- Kiểm thử hồi quy `apps/api/tests/test_pylinac_contrib_engine.py` đã đưa cả hai lớp qua `execute_pylinac` bằng fixture tổng hợp không có dữ liệu bệnh nhân và đạt **2/2**; Quasar dùng bản sao tạm của ảnh FC-2 chính thức có bổ sung bốn điểm chuẩn, còn Jaw dùng ảnh DICOM `RTIMAGE` hình chữ nhật. Đây là `LOCAL_VERIFIED_SLICE` cho đường gọi engine và hợp đồng kết quả, chưa phải dữ liệu chuẩn/commissioning. Chưa có đối chiếu độc lập trên fixture đại diện, ma trận lỗi đầy đủ hoặc kiểm chứng staging. P07-CONTRIB, P7-W03, P07-VERIFY và P07-HANDOFF vẫn mở.
 
 ## UX1.3 — Thư viện nội bộ/cộng đồng và triển khai tuần tự — 2026-09-13
 
