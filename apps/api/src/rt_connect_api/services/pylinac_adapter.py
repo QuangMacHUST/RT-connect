@@ -412,10 +412,14 @@ def _execute_starshot(
 
 def _winston_lutz_parameters(
     parameters: dict[str, object],
-) -> tuple[dict[str, object], dict[str, object]]:
+) -> tuple[
+    dict[str, object],
+    dict[str, object],
+    list[tuple[float, float, float]] | None,
+]:
     """Validate and split ZIP loading and Winston–Lutz analysis options."""
 
-    constructor_keys = {"use_filenames", "dpi", "sid"}
+    constructor_keys = {"use_filenames", "dpi", "sid", "axes_precision"}
     analysis_keys = {
         "bb_size_mm",
         "low_density_bb",
@@ -427,7 +431,8 @@ def _winston_lutz_parameters(
         "couch_reference",
         "bb_proximity_mm",
     }
-    unknown = set(parameters) - constructor_keys - analysis_keys
+    manual_mapping_key = "axis_mapping"
+    unknown = set(parameters) - constructor_keys - analysis_keys - {manual_mapping_key}
     if unknown:
         raise PylinacAdapterError(
             "PYLINAC_PARAMETER_UNSUPPORTED",
@@ -440,6 +445,39 @@ def _winston_lutz_parameters(
     for key in ("dpi", "sid"):
         if key in parameters and parameters[key] is not None:
             constructor[key] = _number(parameters, key, minimum=0)
+    if "axes_precision" in parameters:
+        constructor["axes_precision"] = _integer(parameters, "axes_precision", minimum=0)
+
+    manual_mapping: list[tuple[float, float, float]] | None = None
+    if manual_mapping_key in parameters:
+        raw_mapping = parameters.get(manual_mapping_key)
+        if not isinstance(raw_mapping, list) or not raw_mapping:
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID",
+                "Cần nhập góc máy cho từng ảnh trong bộ ảnh.",
+            )
+        if parameters.get("use_filenames") is True:
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID",
+                "Chỉ chọn một cách lấy góc: theo tên tệp hoặc nhập theo thứ tự ảnh.",
+            )
+        manual_mapping = []
+        for index, item in enumerate(raw_mapping, start=1):
+            if not isinstance(item, dict):
+                raise PylinacAdapterError(
+                    "PYLINAC_PARAMETER_INVALID",
+                    f"Góc của ảnh {index} chưa đủ ba giá trị.",
+                )
+            values: list[float] = []
+            for key in ("gantry", "collimator", "couch"):
+                value = item.get(key)
+                if isinstance(value, bool) or not isinstance(value, int | float):
+                    raise PylinacAdapterError(
+                        "PYLINAC_PARAMETER_INVALID",
+                        f"Góc {key} của ảnh {index} phải là số.",
+                    )
+                values.append(float(value))
+            manual_mapping.append((values[0], values[1], values[2]))
 
     analysis: dict[str, object] = {}
     if "bb_size_mm" in parameters:
@@ -452,7 +490,7 @@ def _winston_lutz_parameters(
     for key in ("low_density_bb", "open_field", "apply_virtual_shift"):
         if key in parameters:
             analysis[key] = _bool(parameters, key)
-    return constructor, analysis
+    return constructor, analysis, manual_mapping
 
 
 def _execute_winston_lutz(
@@ -468,7 +506,15 @@ def _execute_winston_lutz(
             "PYLINAC_INPUT_FORMAT_INVALID",
             "Winston–Lutz yêu cầu một tệp ZIP chứa bộ ảnh theo các góc máy.",
         )
-    constructor, analysis = _winston_lutz_parameters(parameters)
+    constructor, analysis, manual_mapping = _winston_lutz_parameters(parameters)
+    if manual_mapping is not None:
+        member_names = _zip_image_member_names(source_path)
+        if len(member_names) != len(manual_mapping):
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID",
+                "Số dòng góc nhập tay phải khớp với số ảnh trong bộ ảnh.",
+            )
+        constructor["axis_mapping"] = dict(zip(member_names, manual_mapping, strict=True))
     try:
         engine = symbol.from_zip(str(source_path), **constructor)
         engine.analyze(**analysis)

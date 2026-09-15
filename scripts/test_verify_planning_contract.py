@@ -50,7 +50,7 @@ class PlanningContractTests(unittest.TestCase):
     def test_stale_pylinac_catalog_version_fails(self):
         result = self.verify_with_change(
             "docs/pylinac-qa-catalog.md",
-            lambda text: text.replace("**Phiên bản danh mục:** 1.2", "**Phiên bản danh mục:** 1.0"),
+            lambda text: text.replace("**Phiên bản danh mục:** 1.3", "**Phiên bản danh mục:** 1.0"),
         )
         self.assert_failed(result, "version.pylinac_catalog")
 

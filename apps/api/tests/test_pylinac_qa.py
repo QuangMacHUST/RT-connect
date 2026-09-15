@@ -384,6 +384,84 @@ def test_winston_lutz_adapter_requires_zip_input() -> None:
         raise AssertionError("Winston–Lutz phải yêu cầu bộ ảnh ZIP")
 
 
+def test_winston_lutz_adapter_maps_manual_angles_by_zip_order(
+    monkeypatch, tmp_path: Path
+) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeFigure:
+        def savefig(self, stream, **kwargs: object) -> None:
+            stream.write(b"manual-winston-lutz-overlay")
+
+        def clf(self) -> None:
+            return None
+
+    class FakeWinstonLutz:
+        @classmethod
+        def from_zip(cls, path: str, **kwargs: object):
+            captured.update(kwargs)
+            return cls()
+
+        def analyze(self, **kwargs: object) -> None:
+            assert kwargs["bb_size_mm"] == 5.0
+
+        def results_data(self, *, as_dict: bool) -> dict[str, object]:
+            assert as_dict is True
+            return {"max_2d_cax_to_bb_mm": 0.31, "warnings": []}
+
+        def plot_images(self, **kwargs: object):
+            assert kwargs == {"show": False, "split": False}
+            return [FakeFigure()], []
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (FakeWinstonLutz, None) if key == "WINSTON_LUTZ" else (None, "missing"),
+    )
+    source = tmp_path / "manual-winston-lutz.zip"
+    with zipfile.ZipFile(source, "w") as archive:
+        archive.writestr("anh-01.dcm", b"first")
+        archive.writestr("anh-02.dcm", b"second")
+
+    result = execute_pylinac(
+        "WINSTON_LUTZ",
+        source,
+        {
+            "sid": 1000,
+            "use_filenames": False,
+            "bb_size_mm": 5,
+            "axis_mapping": [
+                {"gantry": 0, "collimator": 10, "couch": 20},
+                {"gantry": 180, "collimator": 10, "couch": 20},
+            ],
+        },
+    )
+
+    assert captured["axis_mapping"] == {
+        "anh-01.dcm": (0.0, 10.0, 20.0),
+        "anh-02.dcm": (180.0, 10.0, 20.0),
+    }
+    assert result.overlay_bytes == b"manual-winston-lutz-overlay"
+
+
+def test_winston_lutz_adapter_rejects_manual_angle_count_mismatch(tmp_path: Path) -> None:
+    source = tmp_path / "manual-winston-lutz.zip"
+    with zipfile.ZipFile(source, "w") as archive:
+        archive.writestr("anh-01.dcm", b"first")
+        archive.writestr("anh-02.dcm", b"second")
+
+    with pytest.raises(PylinacAdapterError) as error:
+        execute_pylinac(
+            "WINSTON_LUTZ",
+            source,
+            {
+                "bb_size_mm": 5,
+                "axis_mapping": [{"gantry": 0, "collimator": 10, "couch": 20}],
+            },
+        )
+
+    assert error.value.code == "PYLINAC_PARAMETER_INVALID"
+
+
 def test_winston_lutz_multi_target_adapter_maps_bb_arrangement(monkeypatch) -> None:
     class FakeFigure:
         def savefig(self, stream, **kwargs: object) -> None:

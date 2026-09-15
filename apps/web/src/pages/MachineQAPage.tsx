@@ -636,7 +636,9 @@ function WinstonLutzPage({ caseId, accessToken, title }: { caseId: string; acces
   const [gantryReference, setGantryReference] = useState('0')
   const [collimatorReference, setCollimatorReference] = useState('0')
   const [couchReference, setCouchReference] = useState('0')
-  const [useFilenames, setUseFilenames] = useState(false)
+  const [angleSource, setAngleSource] = useState<WinstonLutzAngleSource>('DICOM')
+  const [manualAngles, setManualAngles] = useState<WinstonLutzAngleRow[]>([])
+  const manualAngleArtifactId = useRef<string | undefined>(undefined)
   const [lowDensityBb, setLowDensityBb] = useState(false)
   const [openField, setOpenField] = useState(false)
   const [applyVirtualShift, setApplyVirtualShift] = useState(false)
@@ -664,8 +666,13 @@ function WinstonLutzPage({ caseId, accessToken, title }: { caseId: string; acces
         sid: Number(sid), bb_size_mm: Number(bbSize), snap_tolerance: Number(snapTolerance),
         bb_proximity_mm: Number(bbProximity), gantry_reference: Number(gantryReference),
         collimator_reference: Number(collimatorReference), couch_reference: Number(couchReference),
-        use_filenames: useFilenames, low_density_bb: lowDensityBb, open_field: openField,
+        use_filenames: angleSource === 'FILENAME', low_density_bb: lowDensityBb, open_field: openField,
         apply_virtual_shift: applyVirtualShift
+      }
+      if (angleSource === 'MANUAL') {
+        parameters.axis_mapping = manualAngles.map((row) => ({
+          gantry: Number(row.gantry), collimator: Number(row.collimator), couch: Number(row.couch)
+        }))
       }
       if (dpi.trim()) parameters.dpi = Number(dpi)
       return apiClient.createPylinacQARun(accessToken, caseId, {
@@ -685,9 +692,31 @@ function WinstonLutzPage({ caseId, accessToken, title }: { caseId: string; acces
   })
   const zipArtifacts = (artifacts.data?.items ?? []).filter((item) => item.original_filename.toLowerCase().endsWith('.zip'))
   const selected = zipArtifacts.find((item) => item.id === selectedArtifactId) ?? zipArtifacts[0]
+  const previewInfo = useQuery({
+    queryKey: ['pylinac-winston-lutz-preview-info', accessToken, selected?.id],
+    queryFn: () => apiClient.previewArtifactInfo(accessToken, selected!.id),
+    enabled: Boolean(selected?.id), retry: false
+  })
+  const imageCount = previewInfo.data?.image_count ?? 0
+  useEffect(() => {
+    if (manualAngleArtifactId.current !== selected?.id) {
+      manualAngleArtifactId.current = selected?.id
+      setManualAngles([])
+      return
+    }
+    setManualAngles((current) => {
+      if (!imageCount) return []
+      return Array.from({ length: imageCount }, (_, index) => current[index] ?? { gantry: '', collimator: '', couch: '' })
+    })
+  }, [imageCount, selected?.id])
   const history = historyForCatalog(runs.data?.items, 'WINSTON_LUTZ')
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
+  const manualAnglesValid = angleSource !== 'MANUAL' || (
+    imageCount > 1 && manualAngles.length === imageCount && manualAngles.every((row) =>
+      [row.gantry, row.collimator, row.couch].every((value) => value.trim() !== '' && Number.isFinite(Number(value)))
+    )
+  )
   const metric = (key: string) => textValue(pylinacMetric(latest, key))
 
   return <div className="page">
@@ -714,12 +743,26 @@ function WinstonLutzPage({ caseId, accessToken, title }: { caseId: string; acces
         <label>Góc bàn tham chiếu<input type="number" step="0.1" value={couchReference} onChange={(event) => setCouchReference(event.target.value)} /></label>
       </div>
       <div className="machine-qa-checks">
-        <label><input type="checkbox" checked={useFilenames} onChange={(event) => setUseFilenames(event.target.checked)} /> Ưu tiên đọc góc máy từ tên tệp</label>
         <label><input type="checkbox" checked={lowDensityBb} onChange={(event) => setLowDensityBb(event.target.checked)} /> Bi chuẩn có mật độ thấp</label>
         <label><input type="checkbox" checked={openField} onChange={(event) => setOpenField(event.target.checked)} /> Ảnh trường mở</label>
         <label><input type="checkbox" checked={applyVirtualShift} onChange={(event) => setApplyVirtualShift(event.target.checked)} /> Áp dụng dịch chuyển ảo</label>
       </div>
-      <div className="machine-qa-actions"><button disabled={!selected || !artifactsAreValidated(selected ? [selected] : []) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      <div className="machine-qa-protocol-controls">
+        <label>Cách lấy góc máy<select value={angleSource} onChange={(event) => setAngleSource(event.target.value as WinstonLutzAngleSource)}>
+          <option value="DICOM">Đọc từ thông tin ảnh</option>
+          <option value="FILENAME">Đọc từ tên tệp</option>
+          <option value="MANUAL">Nhập theo thứ tự ảnh</option>
+        </select></label>
+      </div>
+      {angleSource === 'MANUAL' && <section className="machine-qa-manual-angle-mapping">
+        <div className="panel-heading"><div><p className="eyebrow">GÓC THEO THỨ TỰ ẢNH</p><h3>Nhập góc cho từng ảnh</h3></div><strong>{imageCount || '—'}</strong></div>
+        <p className="form-hint">Chỉ hiển thị số thứ tự ảnh để tránh lộ tên tệp kỹ thuật. Các dòng được ghép theo đúng thứ tự ảnh trong bộ ZIP.</p>
+        {previewInfo.isPending && <p className="form-hint">Đang đếm số ảnh trong bộ ảnh…</p>}
+        {previewInfo.isError && <p className="alert alert--error">Không thể xác định số ảnh để nhập góc. Hãy kiểm tra lại bộ ZIP.</p>}
+        {!previewInfo.isPending && !previewInfo.isError && imageCount > 0 && <div className="table-wrap"><table className="winston-lutz-angle-table"><thead><tr><th>Ảnh</th><th>Góc máy</th><th>Góc chuẩn trực</th><th>Góc bàn</th></tr></thead><tbody>{manualAngles.map((row, index) => <tr key={index}><th scope="row">Ảnh {index + 1}</th><td><input aria-label={`Góc máy ảnh ${index + 1}`} type="number" step="0.1" value={row.gantry} onChange={(event) => setManualAngles((current) => current.map((item, rowIndex) => rowIndex === index ? { ...item, gantry: event.target.value } : item))} /></td><td><input aria-label={`Góc chuẩn trực ảnh ${index + 1}`} type="number" step="0.1" value={row.collimator} onChange={(event) => setManualAngles((current) => current.map((item, rowIndex) => rowIndex === index ? { ...item, collimator: event.target.value } : item))} /></td><td><input aria-label={`Góc bàn ảnh ${index + 1}`} type="number" step="0.1" value={row.couch} onChange={(event) => setManualAngles((current) => current.map((item, rowIndex) => rowIndex === index ? { ...item, couch: event.target.value } : item))} /></td></tr>)}</tbody></table></div>}
+        {imageCount > 0 && !manualAnglesValid && <p className="form-hint">Nhập đủ ba góc dạng số cho tất cả ảnh trước khi bắt đầu phân tích.</p>}
+      </section>}
+      <div className="machine-qa-actions"><button disabled={!selected || !artifactsAreValidated(selected ? [selected] : []) || !manualAnglesValid || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={zipArtifacts} selectedArtifactIds={selected ? [selected.id] : []} emptyHistoryLabel="Chưa có kết quả Winston–Lutz." metrics={[
       { key: 'max_2d_cax_to_bb_mm', label: 'Sai lệch trục–bi lớn nhất', value: `${metric('max_2d_cax_to_bb_mm')} mm` },

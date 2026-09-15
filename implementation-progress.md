@@ -1,5 +1,14 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W04 — nhập góc thủ công theo từng ảnh cho Winston–Lutz một bia — đã kiểm tra local — 2026-09-16
+
+- Bài Winston–Lutz một bia nay có ba cách lấy góc: đọc từ thông tin DICOM, đọc từ tên tệp hoặc nhập theo thứ tự ảnh.
+- Khi chọn nhập tay, giao diện tự đếm bộ ZIP và tạo đúng một dòng cho mỗi ảnh, chỉ hiển thị “Ảnh 1”, “Ảnh 2”…; không hiển thị tên tệp kỹ thuật. Nút phân tích chỉ mở khi đủ ba góc dạng số cho mọi ảnh.
+- Máy chủ kiểm tra ánh xạ tay, ghép theo đúng thứ tự thành viên ảnh an toàn trong ZIP và chặn số dòng không khớp hoặc đồng thời chọn đọc tên tệp. Pylinac nhận `axis_mapping` trực tiếp qua bộ khởi tạo chuẩn, không có thuật toán thay thế.
+- Kiểm thử riêng đạt **6/6** (bốn ca trước đó của Winston–Lutz và hai ca mới), kiểm tra kiểu, lint và bản dựng giao diện đạt. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa dữ liệu staging; hồ sơ `dailyQA` được bảo toàn.
+- Đây là hoàn thiện hợp đồng nhập góc, chưa phải nghiệm thu kết quả lâm sàng. Ma trận fixture đại diện, đối chiếu độc lập, điều chỉnh trực quan theo từng ảnh và kiểm chứng staging vẫn còn mở.
+- Bằng chứng: kiểm thử `apps/api/tests/test_pylinac_qa.py -k "winston_lutz_adapter"` và bản mã nguồn trên nhánh hiện tại.
+
 ## P7-W03/W04 — triển khai cổng tệp hợp lệ lên staging — đã kiểm tra staging — 2026-09-16
 
 - Railway đã dựng lại API, web và tiến trình nền từ cùng commit `905fbda295ca8554417382f8a292891f6c3df573` sau khi bổ sung mốc đồng bộ dưới thư mục dịch vụ.
