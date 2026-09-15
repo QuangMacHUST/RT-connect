@@ -25,7 +25,7 @@
 
 - Bổ sung tuyến thông tin xem trước để máy chủ xác định số ảnh trong DICOM nhiều khung hoặc số thành viên DICOM trong ZIP; số lượng được giới hạn ở 32 ảnh/lát đầu tiên để tránh tạo danh sách không kiểm soát. Tất cả truy cập vẫn kiểm tra phạm vi tổ chức và đọc qua kho tệp riêng.
 - Vùng điều chỉnh dùng bộ chọn “Ảnh hoặc lát đang xem”. Khi đổi tệp, vùng này được tạo lại theo tệp mới, lát được đặt về ảnh đầu tiên và tọa độ đã chọn không bị giữ nhầm giữa hai tệp. Khi máy chủ không đọc được số lượng, ảnh đầu tiên vẫn có thể thử xem trước và người dùng nhận hướng dẫn nhập tọa độ bằng tay.
-- Kiểm thử máy chủ đạt **13/13**, web đạt **40/40**, lint, kiểm tra kiểu và bản dựng sản xuất đạt. Cảnh báo kích thước gói JavaScript lớn hơn 500 kB vẫn là việc tối ưu riêng. Lát cắt này chưa đóng vùng ROI chuyên biệt, ánh xạ tọa độ theo từng ảnh cho các bài có nhiều ảnh, kiểm chứng tệp staging đại diện hoặc VERIFY/HANDOFF P7.
+- Kiểm thử máy chủ đạt **13/13**, web đạt **41/41**, lint, kiểm tra kiểu và bản dựng sản xuất đạt. Cảnh báo kích thước gói JavaScript lớn hơn 500 kB vẫn là việc tối ưu riêng. Lát cắt này chưa đóng vùng ROI chuyên biệt, ánh xạ tọa độ theo từng ảnh cho các bài có nhiều ảnh, kiểm chứng tệp staging đại diện hoặc VERIFY/HANDOFF P7.
 
 ## P7-W04 — parity triển khai xem trước đầu vào trên staging — 2026-09-15
 
