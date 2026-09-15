@@ -37,6 +37,7 @@ from rt_connect_api.services.object_storage import (
     ObjectStorageError,
     get_storage,
 )
+from rt_connect_api.services.pylinac_preview import PylinacPreviewError, render_preview
 from rt_connect_api.services.session_context import SessionContext, resolve_session_context
 
 router = APIRouter(tags=["artifacts"])
@@ -656,6 +657,46 @@ def get_download_url(
         url=url,
         expires_at=expires_at,
         filename=filename,
+    )
+
+
+@router.get("/artifacts/{artifact_id}/preview")
+def get_artifact_preview(
+    artifact_id: UUID,
+    request: Request,
+    image_index: int = Query(default=0, ge=0, le=31),
+    identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
+    session: Session = Depends(get_session),  # noqa: B008
+    storage: ObjectStorage = Depends(_storage),  # noqa: B008
+) -> Response:
+    """Return a tenant-scoped PNG preview for manual Pylinac adjustments.
+
+    The source artifact remains private and immutable.  The endpoint only
+    returns a rendered pixel preview, never DICOM tags or the stored object
+    key, and accepts the same organization scope as artifact download.
+    """
+
+    context = _context(identity, session)
+    artifact = _artifact_or_error(session, context, artifact_id)
+    with tempfile.TemporaryDirectory(prefix="rt-connect-pylinac-preview-") as directory:
+        source = Path(directory) / (Path(artifact.original_filename).name or "input.dcm")
+        try:
+            storage.download_to_path(artifact.object_key, source)
+            image = render_preview(
+                source,
+                image_index=image_index,
+                max_bytes=request.app.state.settings.max_upload_bytes,
+            )
+        except ObjectStorageError as exc:
+            raise DomainError(
+                "OBJECT_STORAGE_UNAVAILABLE", "Không thể đọc tệp xem trước từ kho lưu trữ.", 503
+            ) from exc
+        except PylinacPreviewError as exc:
+            raise DomainError("PYLINAC_PREVIEW_UNAVAILABLE", str(exc), 422) from exc
+    return Response(
+        content=image,
+        media_type="image/png",
+        headers={"Cache-Control": "private, max-age=300"},
     )
 
 

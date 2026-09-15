@@ -1770,6 +1770,31 @@ export class ApiClient {
     }), accessToken)
   }
 
+  async previewArtifact(accessToken: string, artifactId: string, imageIndex = 0): Promise<Blob> {
+    const correlationId = makeCorrelationId()
+    let response: Response
+    try {
+      response = await fetch(`${this.baseUrl}/artifacts/${artifactId}/preview?image_index=${imageIndex}`, {
+        headers: {
+          Accept: 'image/png',
+          'X-Correlation-ID': correlationId,
+          Authorization: `Bearer ${accessToken}`
+        }
+      })
+    } catch {
+      throw new ApiClientError('Không thể kết nối tới RT-CONNECT API.', 'NETWORK_ERROR', correlationId)
+    }
+    if (!response.ok) {
+      const body: unknown = await response.json().catch(() => undefined)
+      const parsed = errorSchema.safeParse(body)
+      if (parsed.success) throw new ApiClientError(parsed.data.message, parsed.data.code, parsed.data.correlation_id, parsed.data.details)
+      throw new ApiClientError('API không thể tạo ảnh xem trước.', 'INVALID_API_RESPONSE', correlationId)
+    }
+    const contentType = response.headers.get('content-type') ?? ''
+    if (!contentType.startsWith('image/png')) throw new ApiClientError('Ảnh xem trước không đúng định dạng.', 'INVALID_API_RESPONSE', correlationId)
+    return response.blob()
+  }
+
   machineQAProtocols(accessToken: string, organizationId: string): Promise<{ items: QAProtocolResource[]; total: number }> {
     return this.get(`/organizations/${organizationId}/machine-qa/protocols`, z.object({
       items: z.array(qaProtocolSchema), total: z.number().int()

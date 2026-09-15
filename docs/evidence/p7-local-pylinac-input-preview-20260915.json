@@ -1,0 +1,33 @@
+{
+  "evidence_id": "p7-local-pylinac-input-preview-20260915",
+  "captured_at_utc": "2026-09-15T09:35:00Z",
+  "environment": "development",
+  "pylinac_version": "3.47.0",
+  "scope": "Cổng xem trước có xác thực cho vùng chọn tâm/điều chỉnh thủ công của giao diện Pylinac.",
+  "endpoint": "GET /api/v1/artifacts/{artifact_id}/preview?image_index=0",
+  "passed_cases": [
+    "DICOM ảnh hai chiều được dựng thành PNG trong phạm vi tổ chức.",
+    "ZIP có thành viên DICOM an toàn được dựng thành PNG mà không giải nén theo đường dẫn tùy ý."
+  ],
+  "rejected_cases": [
+    "ZIP chỉ chứa thành viên có đường dẫn đi ra ngoài bị từ chối.",
+    "Chỉ số ảnh không tồn tại bị từ chối với lỗi ổn định."
+  ],
+  "security_properties": [
+    "Mọi truy cập đều qua xác thực và kiểm tra organization_id của artifact.",
+    "Phản hồi chỉ là pixel PNG, không trả DICOM tags, object key hoặc mã nội bộ cho giao diện.",
+    "Thành viên ZIP tuyệt đối hoặc có phần .. bị loại trước khi đọc.",
+    "Số thứ tự ảnh bị giới hạn từ 0 đến 31 và kích thước thành viên không vượt giới hạn tải tệp."
+  ],
+  "verification": {
+    "command": "python -m pytest tests/test_artifacts.py -q --no-cov",
+    "passed": true,
+    "passed_tests": 11,
+    "failed_tests": 0,
+    "ruff": "passed"
+  },
+  "limitations": [
+    "Đây là khả năng xem trước để người dùng chọn điểm; không thay thế kiểm tra dữ liệu hoặc kết quả Pylinac.",
+    "Bộ tệp nhiều lát hiện chọn theo chỉ số ảnh; giao diện ROI chuyên biệt và ánh xạ nhiều ảnh theo từng vai trò vẫn thuộc phần việc mở của P7-W04."
+  ]
+}

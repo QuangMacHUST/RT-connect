@@ -14,6 +14,13 @@
 - Đường tải ảnh dùng URL tạm thời của kho lưu trữ, giữ nguyên nguồn ảnh và không tạo bản sao hay thay đổi kết quả đã lưu. Lỗi tải ảnh vẫn hiện qua thông báo thao tác; trạng thái đang tải khóa nút để tránh gọi trùng.
 - Kiểm thử giao diện đạt **40/40**, lint đạt, kiểm tra kiểu đạt và bản dựng sản xuất đạt. Đây là phần cải thiện result viewer của P7-W04; canvas chuỗi/đa ảnh, ROI chuyên biệt, fixture đại diện và staging vẫn còn mở.
 
+## P7-W04 — xem trước DICOM/ZIP và chọn tâm Picket Fence — lát cắt cục bộ — 2026-09-15
+
+- Bổ sung tuyến xem trước có xác thực cho artifact đầu vào. API kiểm tra lại phạm vi tổ chức, đọc DICOM hoặc thành viên ảnh an toàn trong ZIP, rồi chỉ trả PNG pixel; không trả thẻ DICOM, đường dẫn object storage hay mã nội bộ cho giao diện.
+- Thành viên ZIP có đường dẫn tuyệt đối hoặc chứa `..` bị loại trước khi đọc; chỉ số ảnh được giới hạn; tệp tạm trên Windows được đóng trước khi Pylinac đọc để tránh lỗi khóa tệp. Giao diện dùng blob URL có thu hồi khi thay đổi tệp, vì vậy không để lại URL xem trước trong bộ nhớ trình duyệt.
+- Canvas dùng chung của Starshot, Field Profile/Field Analysis và Planar Imaging nay không còn phụ thuộc URL tải xuống dạng tệp đính kèm. Picket Fence được bổ sung chọn tâm trục bằng nhấn/kéo hoặc nhập đủ tọa độ ngang/dọc; nếu chỉ nhập một tọa độ thì bị chặn trước khi gọi API.
+- Kiểm thử artifact đạt **13/13**, gồm DICOM, ZIP hợp lệ, ZIP có đường dẫn nguy hiểm và chỉ số ảnh thiếu; Ruff, lint và typecheck đạt. Bằng chứng: [xem trước đầu vào Pylinac](docs/evidence/p7-local-pylinac-input-preview-20260915.json). Đây là lát cắt local của W04, chưa đóng canvas đa ảnh/ROI chuyên biệt, chọn lát trong giao diện, ma trận fixture, staging hoặc VERIFY/HANDOFF P7.
+
 ## P7 — kiểm tra hồi quy sau cổng inventory — lát cắt cục bộ — 2026-09-15
 
 - Bộ kiểm thử backend tập trung cho registry, adapter QA, hạt nhân, contrib và hiệu chuẩn đạt **tất cả kiểm thử**; riêng nhóm registry đạt 5/5. Ruff và mypy strict trên phần registry/adapter thay đổi đều đạt.

@@ -1,4 +1,4 @@
-import { type PointerEvent, type ReactNode, useMemo, useRef, useState } from 'react'
+import { type PointerEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 
@@ -29,6 +29,7 @@ function errorMessage(error: unknown): string {
       PYLINAC_PARAMETER_INVALID: 'Tham số chưa hợp lệ. Hãy kiểm tra lại các trường nhập.',
       PYLINAC_PARAMETER_UNSUPPORTED: 'Bài QA này không hỗ trợ một trong các tham số đã chọn.',
       PYLINAC_RUNTIME_UNAVAILABLE: 'Bộ tính Pylinac hiện chưa sẵn sàng trên máy chủ.',
+      PYLINAC_PREVIEW_UNAVAILABLE: 'Không thể tạo ảnh xem trước. Vẫn có thể nhập tọa độ bằng tay nếu biết thông số ảnh.',
       PYLINAC_ADAPTER_NOT_READY: 'Bài QA này đang được hoàn thiện giao diện phân tích.',
     }
     return messages[error.code] ?? 'Không thể hoàn tất thao tác. Hãy thử lại và kiểm tra kết nối.'
@@ -384,9 +385,11 @@ function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, coordinateMode
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 })
   const preview = useQuery({
     queryKey: ['pylinac-adjustment-preview', accessToken, artifactId],
-    queryFn: () => apiClient.downloadArtifact(accessToken, artifactId!),
+    queryFn: () => apiClient.previewArtifact(accessToken, artifactId!),
     enabled: Boolean(accessToken && artifactId), retry: false
   })
+  const previewUrl = useMemo(() => preview.data ? URL.createObjectURL(preview.data) : undefined, [preview.data])
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl) }, [previewUrl])
   const updatePoint = (clientX: number, clientY: number) => {
     const image = imageRef.current
     if (!image || disabled) return
@@ -417,7 +420,7 @@ function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, coordinateMode
   const pointStyle = coordinateMode === 'NORMALIZED'
     ? { left: `${Number(x) * 100}%`, top: `${Number(y) * 100}%` }
     : { left: `${Number(x) / imageDimensions.width * 100}%`, top: `${Number(y) / imageDimensions.height * 100}%` }
-  return <div className="qa-adjustment-panel"><div className="panel-heading"><div><p className="eyebrow">ĐIỀU CHỈNH TRÊN ẢNH</p><h3>{heading}</h3></div><span className="status-badge">NHẤN VÀ KÉO</span></div><p className="form-hint">{description}</p>{preview.data?.url ? <div className={disabled ? 'qa-adjustment-canvas qa-adjustment-canvas--disabled' : 'qa-adjustment-canvas'} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={releasePointer} onPointerCancel={releasePointer} role="application" aria-label={heading}><img ref={imageRef} src={preview.data.url} alt="Ảnh đầu vào để chọn tâm" draggable={false} onLoad={(event) => setImageDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />{hasPoint && imageDimensions.width > 0 && imageDimensions.height > 0 && <span className="qa-adjustment-point" style={pointStyle} />}</div> : <div className="qa-adjustment-canvas qa-adjustment-canvas--empty">{preview.isPending ? 'Đang tải ảnh xem trước…' : artifactId ? 'Không thể tải ảnh xem trước. Vẫn có thể nhập tọa độ bên dưới.' : 'Chọn ảnh để bật vùng điều chỉnh.'}</div>}</div>
+  return <div className="qa-adjustment-panel"><div className="panel-heading"><div><p className="eyebrow">ĐIỀU CHỈNH TRÊN ẢNH</p><h3>{heading}</h3></div><span className="status-badge">NHẤN VÀ KÉO</span></div><p className="form-hint">{description}</p>{previewUrl ? <div className={disabled ? 'qa-adjustment-canvas qa-adjustment-canvas--disabled' : 'qa-adjustment-canvas'} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={releasePointer} onPointerCancel={releasePointer} role="application" aria-label={heading}><img ref={imageRef} src={previewUrl} alt="Ảnh đầu vào để chọn tâm" draggable={false} onLoad={(event) => setImageDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />{hasPoint && imageDimensions.width > 0 && imageDimensions.height > 0 && <span className="qa-adjustment-point" style={pointStyle} />}</div> : <div className="qa-adjustment-canvas qa-adjustment-canvas--empty">{preview.isPending ? 'Đang tải ảnh xem trước…' : artifactId ? 'Không thể tải ảnh xem trước. Vẫn có thể nhập tọa độ bên dưới.' : 'Chọn ảnh để bật vùng điều chỉnh.'}</div>}</div>
 }
 
 function PicketFencePage({ caseId, accessToken, title }: { caseId: string; accessToken: string; title: string }) {
@@ -426,6 +429,8 @@ function PicketFencePage({ caseId, accessToken, title }: { caseId: string; acces
   const [tolerance, setTolerance] = useState('0.5')
   const [cropMm, setCropMm] = useState('3')
   const [mlc, setMlc] = useState('Millennium')
+  const [centralAxisX, setCentralAxisX] = useState('')
+  const [centralAxisY, setCentralAxisY] = useState('')
   const [message, setMessage] = useState<string>()
   const artifacts = useQuery({
     queryKey: ['pylinac-artifacts', caseId, accessToken],
@@ -445,11 +450,21 @@ function PicketFencePage({ caseId, accessToken, title }: { caseId: string; acces
     onError: (error) => setMessage(errorMessage(error))
   })
   const analyze = useMutation({
-    mutationFn: () => apiClient.createPylinacQARun(accessToken, caseId, {
-      catalog_key: 'PICKET_FENCE',
-      artifact_ids: [selectedArtifactId!],
-      parameters: { tolerance: Number(tolerance), crop_mm: Number(cropMm), mlc }
-    }),
+    mutationFn: () => {
+      const hasX = centralAxisX.trim() !== ''
+      const hasY = centralAxisY.trim() !== ''
+      if (hasX !== hasY) throw new ApiClientError('Tâm trục cần đủ cả tọa độ ngang và dọc.', 'PYLINAC_PARAMETER_INVALID')
+      const parameters: Record<string, unknown> = { tolerance: Number(tolerance), crop_mm: Number(cropMm), mlc }
+      if (hasX && hasY) {
+        const x = Number(centralAxisX)
+        const y = Number(centralAxisY)
+        if (!Number.isFinite(x) || !Number.isFinite(y)) throw new ApiClientError('Tọa độ tâm trục phải là số hợp lệ.', 'PYLINAC_PARAMETER_INVALID')
+        parameters.central_axis = { x, y }
+      }
+      return apiClient.createPylinacQARun(accessToken, caseId, {
+        catalog_key: 'PICKET_FENCE', artifact_ids: [selectedArtifactId!], parameters
+      })
+    },
     onSuccess: (run) => {
       setMessage(run.status === 'COMPLETED' ? 'Đã phân tích Picket Fence bằng Pylinac.' : 'Pylinac không thể hoàn tất phân tích; hãy xem thông báo lỗi bên dưới.')
       void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] })
@@ -478,6 +493,8 @@ function PicketFencePage({ caseId, accessToken, title }: { caseId: string; acces
       <p>Chỉ phần bài QA cần ảnh mới hiện khu vực tải tệp. Ảnh gốc được giữ nguyên; Pylinac chịu trách nhiệm toàn bộ phép phân tích.</p>
       <div className="machine-qa-actions"><label className="button-link">Chọn ảnh DICOM<input type="file" accept=".dcm,application/dicom" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>
       {imageArtifacts.length > 0 && <label>Ảnh đang dùng<select value={selected?.id ?? ''} onChange={(event) => setSelectedArtifactId(event.target.value)}>{imageArtifacts.map((artifact, index) => <option key={artifact.id} value={artifact.id}>Ảnh {index + 1} · {artifact.original_filename}</option>)}</select></label>}
+      <PylinacAdjustmentCanvas accessToken={accessToken} artifactId={selected?.id} x={centralAxisX} y={centralAxisY} heading="Chọn tâm trục trung tâm" description="Nếu ảnh không xác định chắc chắn tâm trường, nhấn hoặc kéo trên ảnh để đặt tâm. Pylinac sẽ dùng điểm này cho lần phân tích mới." disabled={isBusy} onPointChange={(x, y) => { setCentralAxisX(x); setCentralAxisY(y) }} />
+      <div className="machine-qa-protocol-controls"><label>Tâm trục ngang (điểm ảnh)<input type="number" step="0.1" value={centralAxisX} onChange={(event) => setCentralAxisX(event.target.value)} placeholder="Tùy chọn" /></label><label>Tâm trục dọc (điểm ảnh)<input type="number" step="0.1" value={centralAxisY} onChange={(event) => setCentralAxisY(event.target.value)} placeholder="Tùy chọn" /></label></div>
       <div className="machine-qa-protocol-controls"><label>Dung sai (mm)<input type="number" min="0" step="0.01" value={tolerance} onChange={(event) => setTolerance(event.target.value)} /></label><label>Mẫu MLC<select value={mlc} onChange={(event) => setMlc(event.target.value)}><option value="Millennium">Millennium</option><option value="HD120">HD120</option><option value="Agility">Agility</option><option value="Halcyon">Halcyon</option></select></label><label>Cắt ảnh (mm)<input type="number" min="0" step="1" value={cropMm} onChange={(event) => setCropMm(event.target.value)} /></label></div>
       <div className="machine-qa-actions"><button disabled={!selected || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>

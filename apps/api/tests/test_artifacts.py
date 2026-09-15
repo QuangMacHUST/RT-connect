@@ -212,6 +212,66 @@ def test_pylinac_container_image_and_log_inputs_have_validation_paths() -> None:
         assert log_validation.json()["result"] == "VALID"
 
 
+def test_authenticated_preview_renders_dicom_and_zip_input_without_metadata() -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+        dicom = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={"file": ("field-image.dcm", _ct_bytes(), "application/dicom")},
+            data={"artifact_type": "DICOM", "logical_role": "EVALUATION"},
+        )
+        assert dicom.status_code == 201, dicom.text
+        dicom_preview = client.get(f"/api/v1/artifacts/{dicom.json()['id']}/preview")
+        assert dicom_preview.status_code == 200, dicom_preview.text
+        assert dicom_preview.headers["content-type"].startswith("image/png")
+        assert dicom_preview.content.startswith(b"\x89PNG\r\n\x1a\n")
+        assert dicom_preview.headers["cache-control"] == "private, max-age=300"
+
+        archive = BytesIO()
+        with ZipFile(archive, "w") as container:
+            container.writestr("nested/field-image.dcm", _ct_bytes())
+            container.writestr("nested/field-image-02.dcm", _ct_bytes())
+        zipped = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={"file": ("field-series.zip", archive.getvalue(), "application/zip")},
+            data={"artifact_type": "DICOM", "logical_role": "EVALUATION"},
+        )
+        assert zipped.status_code == 201, zipped.text
+        zip_preview = client.get(f"/api/v1/artifacts/{zipped.json()['id']}/preview")
+        assert zip_preview.status_code == 200, zip_preview.text
+        assert zip_preview.content.startswith(b"\x89PNG\r\n\x1a\n")
+        second_zip_preview = client.get(
+            f"/api/v1/artifacts/{zipped.json()['id']}/preview?image_index=1"
+        )
+        assert second_zip_preview.status_code == 200, second_zip_preview.text
+        assert second_zip_preview.content.startswith(b"\x89PNG\r\n\x1a\n")
+
+
+def test_preview_rejects_zip_path_traversal_and_missing_member() -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+        archive = BytesIO()
+        with ZipFile(archive, "w") as container:
+            container.writestr("../outside.dcm", _ct_bytes())
+        uploaded = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={"file": ("unsafe-series.zip", archive.getvalue(), "application/zip")},
+            data={"artifact_type": "DICOM", "logical_role": "EVALUATION"},
+        )
+        assert uploaded.status_code == 201, uploaded.text
+        preview = client.get(f"/api/v1/artifacts/{uploaded.json()['id']}/preview")
+        assert preview.status_code == 422, preview.text
+        assert preview.json()["code"] == "PYLINAC_PREVIEW_UNAVAILABLE"
+
+        missing = client.get(f"/api/v1/artifacts/{uploaded.json()['id']}/preview?image_index=1")
+        assert missing.status_code == 422, missing.text
+        assert missing.json()["code"] == "PYLINAC_PREVIEW_UNAVAILABLE"
+
+
 def test_measurement_validation_explains_missing_units_and_grid() -> None:
     storage = InMemoryObjectStorage()
     with _workspace_client() as (client, organization):
