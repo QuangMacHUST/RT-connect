@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W04 — cô lập lịch sử theo bài QA — đã kiểm tra local — 2026-09-16
+
+- Các trang bài QA không còn dùng chung toàn bộ lịch sử trong hồ sơ; lịch sử và kết quả mới nhất được lọc theo đúng bài đang mở, bao phủ Picket Fence, Starshot, Winston–Lutz, VMAT, phân tích trường, CatPhan, phantom và ảnh phẳng.
+- Kiểm thử tiện ích và toàn bộ giao diện đạt **54/54**; kiểm tra kiểu, lint và bản dựng sản xuất đạt. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ staging; `dailyQA` được bảo toàn.
+- Đây là cổng đúng đắn local cho kết quả/lịch sử; còn kiểm chứng thao tác staging, ROI chuyên biệt và ánh xạ đa ảnh theo P7-W04.
+- Bằng chứng: [cô lập lịch sử theo bài QA](docs/evidence/p7-local-history-isolation-20260916.md).
+
 ## P7-W03 — đối chiếu chỉ số lõi với bộ mẫu chính thức — đã kiểm tra local — 2026-09-16
 
 - Bổ sung kiểm thử hồi quy cho 20 chỉ số lõi của Picket Fence, Winston–Lutz một bi, Winston–Lutz nhiều bi, ba biến thể VMAT, bốn bài CatPhan, TomoCheese, Quart DVT, phân tích ảnh phẳng, phân tích biên dạng trường và phân tích trường kiểu cũ.

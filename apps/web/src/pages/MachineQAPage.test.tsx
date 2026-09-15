@@ -4,6 +4,7 @@ import { expect, test, vi } from 'vitest'
 
 import type { PylinacQARunResource } from '../api/client'
 import { PylinacAdjustmentCanvas, PylinacResultPanel } from './MachineQAPage'
+import { historyForCatalog } from './pylinacHistory'
 
 const makeRun = (overrides: Partial<PylinacQARunResource> = {}): PylinacQARunResource => ({
   id: 'run-current',
@@ -94,4 +95,13 @@ test('does not show a loading state when no image is selected', () => {
 
   expect(screen.getByText('Chọn ảnh để bật vùng điều chỉnh.')).toBeInTheDocument()
   expect(screen.queryByText('Đang tải ảnh xem trước…')).not.toBeInTheDocument()
+})
+
+test('keeps each QA page history isolated to its selected test', () => {
+  const starshot = makeRun({ id: 'starshot-run', catalog_key: 'STARSHOT' })
+  const picketFence = makeRun({ id: 'picket-fence-run', catalog_key: 'PICKET_FENCE' })
+
+  expect(historyForCatalog([starshot, picketFence], 'STARSHOT')).toEqual([starshot])
+  expect(historyForCatalog([starshot, picketFence], 'PICKET_FENCE')).toEqual([picketFence])
+  expect(historyForCatalog(undefined, 'STARSHOT')).toEqual([])
 })

@@ -5,6 +5,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ApiClientError, apiClient, type ArtifactResource, type MachineQAMeasurement, type MachineQARunResource, type PylinacQARunResource, type QAProtocolResource } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { artifactDisplayName, isPylinacImageArtifact } from './qaArtifactLabels'
+import { historyForCatalog } from './pylinacHistory'
 
 type JsonRecord = Record<string, unknown>
 
@@ -513,7 +514,7 @@ function PicketFencePage({ caseId, accessToken, title }: { caseId: string; acces
   })
   const imageArtifacts = (artifacts.data?.items ?? []).filter(isPylinacImageArtifact)
   const selected = imageArtifacts.find((item) => item.id === selectedArtifactId) ?? imageArtifacts[0]
-  const history = runs.data?.items ?? []
+  const history = historyForCatalog(runs.data?.items, 'PICKET_FENCE')
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
 
@@ -592,7 +593,7 @@ function StarshotPage({ caseId, accessToken, title }: { caseId: string; accessTo
   })
   const imageArtifacts = (artifacts.data?.items ?? []).filter(isPylinacImageArtifact)
   const selected = imageArtifacts.find((item) => item.id === selectedArtifactId) ?? imageArtifacts[0]
-  const history = runs.data?.items ?? []
+  const history = historyForCatalog(runs.data?.items, 'STARSHOT')
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
   const center = pylinacMetric(latest, 'circle_center_x_y')
@@ -689,7 +690,7 @@ function WinstonLutzPage({ caseId, accessToken, title }: { caseId: string; acces
   })
   const zipArtifacts = (artifacts.data?.items ?? []).filter((item) => item.original_filename.toLowerCase().endsWith('.zip'))
   const selected = zipArtifacts.find((item) => item.id === selectedArtifactId) ?? zipArtifacts[0]
-  const history = runs.data?.items ?? []
+  const history = historyForCatalog(runs.data?.items, 'WINSTON_LUTZ')
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
   const metric = (key: string) => textValue(pylinacMetric(latest, key))
@@ -841,7 +842,7 @@ function WinstonLutzMultiTargetPage({ caseId, accessToken, title }: { caseId: st
       return Array.from({ length: imageCount }, (_, index) => current[index] ?? { gantry: '', collimator: '', couch: '' })
     })
   }, [imageCount, selected?.id])
-  const history = runs.data?.items ?? []
+  const history = historyForCatalog(runs.data?.items, 'WINSTON_LUTZ_MULTI_TARGET')
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
   const manualAnglesValid = angleSource !== 'MANUAL' || (
@@ -951,7 +952,7 @@ function VmatPage({ caseId, accessToken, title, catalogKey }: { caseId: string; 
   })
   const imageArtifacts = (artifacts.data?.items ?? []).filter(isPylinacImageArtifact)
   const selectedPair = selectedArtifactIds.length === 2 ? selectedArtifactIds : imageArtifacts.slice(0, 2).map((artifact) => artifact.id)
-  const history = runs.data?.items ?? []
+  const history = historyForCatalog(runs.data?.items, catalogKey)
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
   const displayName = catalogKey.replace('VMAT_', '')
@@ -1047,7 +1048,7 @@ function FieldAnalysisPage({ caseId, accessToken, title, catalogKey }: { caseId:
     onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
     onError: (error) => setMessage(errorMessage(error))
   })
-  const history = runs.data?.items ?? []
+  const history = historyForCatalog(runs.data?.items, catalogKey)
   const latest = history[0]
   const latestMetrics = objectValue(latest?.result_snapshot.metrics)
   const xMetrics = objectValue(latestMetrics?.x_metrics)
@@ -1144,7 +1145,7 @@ function CatPhanPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
     onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
     onError: (error) => setMessage(errorMessage(error))
   })
-  const history = runs.data?.items ?? []
+  const history = historyForCatalog(runs.data?.items, catalogKey)
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
   const displayName = catalogKey.replace('CATPHAN_', 'CatPhan ')
@@ -1245,7 +1246,7 @@ function AcrPage({ caseId, accessToken, title, catalogKey }: { caseId: string; a
     onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
     onError: (error) => setMessage(errorMessage(error))
   })
-  const history = runs.data?.items ?? []
+  const history = historyForCatalog(runs.data?.items, catalogKey)
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
   const displayName = catalogKey === 'ACR_CT_464' ? 'Phantom ACR CT 464' : catalogKey === 'ACR_MRI_LARGE' ? 'Phantom ACR MRI lớn' : 'Phantom ACR MRI vừa'
@@ -1352,7 +1353,7 @@ function CtPylinacPage({ caseId, accessToken, title, catalogKey }: { caseId: str
     onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
     onError: (error) => setMessage(errorMessage(error))
   })
-  const history = runs.data?.items ?? []
+  const history = historyForCatalog(runs.data?.items, catalogKey)
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
   const displayName = catalogKey === 'CHEESE_TOMO' ? 'Phantom TomoCheese' : catalogKey === 'CHEESE_CIRS_062M' ? 'Phantom CIRS 062M' : catalogKey === 'GE_HELIOS' ? 'Phantom GE Helios CT hằng ngày' : catalogKey === 'QUART_DVT' ? 'Phantom Quart DVT' : 'Phantom Quart HyperSight'
@@ -1737,7 +1738,7 @@ function PlanarImagingPage({ caseId, accessToken, title, catalogKey }: { caseId:
     onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
     onError: (error) => setMessage(errorMessage(error))
   })
-  const history = runs.data?.items ?? []
+  const history = historyForCatalog(runs.data?.items, catalogKey)
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
   const displayName = title || 'Bài kiểm tra ảnh phẳng'
