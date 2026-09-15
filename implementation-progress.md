@@ -1,5 +1,13 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W04 — giới hạn tọa độ chọn điểm theo ảnh gốc — đã kiểm tra local — 2026-09-16
+
+- Tách phép đổi tọa độ con trỏ thành tiện ích dùng chung. Điểm bấm/kéo được đổi theo kích thước ảnh gốc, giới hạn an toàn khi nằm ngoài mép và hỗ trợ cả tọa độ điểm ảnh lẫn tọa độ chuẩn hóa.
+- Kiểm thử riêng đạt **6/6**, toàn bộ giao diện đạt **55/55**, kiểm tra kiểu, lint và bản dựng sản xuất đạt; lint không còn cảnh báo.
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa dữ liệu staging; `dailyQA` được bảo toàn.
+- Đây là cổng an toàn tọa độ local, chưa đóng ROI chuyên biệt, ánh xạ trực quan theo từng ảnh hoặc kiểm chứng staging của P7-W04.
+- Bằng chứng: [ánh xạ tọa độ ảnh an toàn](docs/evidence/p7-local-coordinate-clamp-20260916.md).
+
 ## P16/P11 — thư viện kiến thức thuần tiếng Việt, không lộ JSON và mã kỹ thuật — đã kiểm tra local — 2026-09-16
 
 - Biểu mẫu thư viện đã chuyển sang tiếng Việt: người dùng chọn loại bài, nhập tên, mô tả, bối cảnh mặt bệnh, tiêu chí, nguồn và nội dung bài viết bằng các trường dễ hiểu; khóa nội bộ được sinh tự động ở phía hệ thống.

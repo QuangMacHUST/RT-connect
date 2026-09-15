@@ -6,6 +6,7 @@ import { ApiClientError, apiClient, type ArtifactResource, type MachineQAMeasure
 import { useAuth } from '../auth/AuthProvider'
 import { artifactDisplayName, isPylinacImageArtifact } from './qaArtifactLabels'
 import { historyForCatalog } from './pylinacHistory'
+import { mapImagePoint } from './pylinacCoordinates'
 
 type JsonRecord = Record<string, unknown>
 
@@ -426,14 +427,8 @@ export function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, coordin
     const image = imageRef.current
     if (!image || disabled) return
     const bounds = image.getBoundingClientRect()
-    if (!bounds.width || !bounds.height) return
-    const pixelX = Math.max(0, Math.min(image.naturalWidth, (clientX - bounds.left) * image.naturalWidth / bounds.width))
-    const pixelY = Math.max(0, Math.min(image.naturalHeight, (clientY - bounds.top) * image.naturalHeight / bounds.height))
-    if (coordinateMode === 'NORMALIZED') {
-      onPointChange((pixelX / image.naturalWidth).toFixed(4), (pixelY / image.naturalHeight).toFixed(4))
-    } else {
-      onPointChange(pixelX.toFixed(1), pixelY.toFixed(1))
-    }
+    const point = mapImagePoint(clientX, clientY, bounds, image.naturalWidth, image.naturalHeight, coordinateMode)
+    if (point) onPointChange(point.x, point.y)
   }
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (disabled || !imageRef.current) return

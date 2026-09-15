@@ -5,6 +5,7 @@ import { expect, test, vi } from 'vitest'
 import type { PylinacQARunResource } from '../api/client'
 import { PylinacAdjustmentCanvas, PylinacResultPanel } from './MachineQAPage'
 import { historyForCatalog } from './pylinacHistory'
+import { mapImagePoint } from './pylinacCoordinates'
 
 const makeRun = (overrides: Partial<PylinacQARunResource> = {}): PylinacQARunResource => ({
   id: 'run-current',
@@ -95,6 +96,16 @@ test('does not show a loading state when no image is selected', () => {
 
   expect(screen.getByText('Chọn ảnh để bật vùng điều chỉnh.')).toBeInTheDocument()
   expect(screen.queryByText('Đang tải ảnh xem trước…')).not.toBeInTheDocument()
+})
+
+test('maps pointer coordinates to the original image and clamps outside clicks', () => {
+  const bounds = { left: 100, top: 50, width: 400, height: 200 }
+
+  expect(mapImagePoint(300, 150, bounds, 2000, 1000)).toEqual({ x: '1000.0', y: '500.0' })
+  expect(mapImagePoint(50, 20, bounds, 2000, 1000)).toEqual({ x: '0.0', y: '0.0' })
+  expect(mapImagePoint(600, 300, bounds, 2000, 1000)).toEqual({ x: '2000.0', y: '1000.0' })
+  expect(mapImagePoint(300, 150, bounds, 2000, 1000, 'NORMALIZED')).toEqual({ x: '0.5000', y: '0.5000' })
+  expect(mapImagePoint(300, 150, { ...bounds, width: 0 }, 2000, 1000)).toBeUndefined()
 })
 
 test('keeps each QA page history isolated to its selected test', () => {
