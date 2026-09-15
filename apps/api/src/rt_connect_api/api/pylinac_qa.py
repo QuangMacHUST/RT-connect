@@ -173,7 +173,9 @@ def _artifact_inputs(
 
 
 _NON_IMAGE_MODALITIES = frozenset({"RTDOSE", "RTSTRUCT", "RTPLAN"})
-_IMAGE_INPUT_KINDS = frozenset({"IMAGE", "IMAGE_PAIR", "IMAGE_SERIES", "DICOM_SERIES", "NUCLEAR"})
+_IMAGE_INPUT_KINDS = frozenset(
+    {"IMAGE", "IMAGE_PAIR", "IMAGE_SERIES", "IMAGE_OR_PROFILE", "DICOM_SERIES", "NUCLEAR"}
+)
 
 
 def _validate_artifact_profile(
@@ -198,7 +200,8 @@ def _validate_artifact_profile(
     if wrong_inputs:
         raise DomainError(
             "PYLINAC_INPUT_PROFILE_MISMATCH",
-            "Bài kiểm tra đã chọn cần ảnh hoặc chuỗi ảnh phù hợp; không thể dùng tệp liều, cấu trúc RT hoặc kế hoạch xạ trị.",
+            "Bài kiểm tra đã chọn cần ảnh hoặc chuỗi ảnh phù hợp; không thể dùng "
+            "tệp liều, cấu trúc RT hoặc kế hoạch xạ trị.",
             422,
         )
 

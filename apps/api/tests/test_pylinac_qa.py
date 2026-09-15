@@ -201,6 +201,15 @@ def test_pylinac_run_rejects_validated_dose_for_image_analysis_before_engine(mon
         assert called is False
         assert client.get(f"/api/v1/qa-cases/{case_id}/pylinac-runs").json()["total"] == 0
 
+        response = client.post(
+            f"/api/v1/qa-cases/{case_id}/pylinac-runs",
+            json={"catalog_key": "FIELD_PROFILE_ANALYSIS", "artifact_ids": [artifact_id]},
+        )
+        assert response.status_code == 422, response.text
+        assert response.json()["code"] == "PYLINAC_INPUT_PROFILE_MISMATCH"
+        assert called is False
+        assert client.get(f"/api/v1/qa-cases/{case_id}/pylinac-runs").json()["total"] == 0
+
 
 def test_calibration_run_accepts_measurements_without_artifacts(monkeypatch) -> None:
     storage = InMemoryObjectStorage()
