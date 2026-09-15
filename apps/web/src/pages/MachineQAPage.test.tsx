@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { expect, test, vi } from 'vitest'
 
 import type { PylinacQARunResource } from '../api/client'
-import { PylinacAdjustmentCanvas, PylinacResultPanel, WinstonLutzMultiTargetDetails } from './MachineQAPage'
+import { PylinacAdjustmentCanvas, PylinacResultPanel, PylinacStructuredResultDetails, WinstonLutzMultiTargetDetails } from './MachineQAPage'
 import { historyForCatalog } from './pylinacHistory'
 import { mapImagePoint } from './pylinacCoordinates'
 import { artifactsAreValidated, selectedArtifactsAreValidated } from './qaArtifactLabels'
@@ -122,6 +122,27 @@ test('shows Winston-Lutz multi-target details by image and BB without exposing f
   expect(screen.getByText('0,3')).toBeInTheDocument()
   expect(screen.queryByText('RT000001.dcm')).not.toBeInTheDocument()
   expect(screen.queryByText('RT000002.dcm')).not.toBeInTheDocument()
+})
+
+test('renders nested Pylinac metrics in readable groups without technical identifiers', () => {
+  const run = makeRun({
+    result_snapshot: {
+      metrics: {
+        ctp404: { low_contrast_visibility: 6.95, image_name: 'CatPhan503.dcm' },
+        x_metrics: { 'Field Width (mm)': 100.2, artifact_id: 'internal-artifact' },
+      },
+    },
+  })
+
+  render(<PylinacStructuredResultDetails run={run} />)
+
+  expect(screen.getByRole('heading', { name: 'Các nhóm chỉ số do Pylinac cung cấp' })).toBeInTheDocument()
+  expect(screen.getByText('CTP404')).toBeInTheDocument()
+  expect(screen.getByText('6,95')).toBeInTheDocument()
+  expect(screen.getByText('X METRICS')).toBeInTheDocument()
+  expect(screen.getByText('100,2')).toBeInTheDocument()
+  expect(screen.queryByText('CatPhan503.dcm')).not.toBeInTheDocument()
+  expect(screen.queryByText('internal-artifact')).not.toBeInTheDocument()
 })
 
 test('does not show a loading state when no image is selected', () => {

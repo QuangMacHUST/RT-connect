@@ -235,3 +235,8 @@ evidence as the current release candidate.
 P7 Winston-Lutz multi-target viewer test-count correction marker (2026-09-16):
 the plan records the verified UI test count as 8/8. Rebuild API, worker and
 web from this revision before the next exact-SHA check.
+
+P7 structured-result viewer marker (2026-09-16): the web result viewer now
+renders readable nested Pylinac metric groups while hiding technical file and
+identifier fields. Rebuild API, worker and web from this revision before the
+next exact-SHA check.

@@ -1631,3 +1631,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Sau khi đồng bộ mốc dựng lại cho cả ba dịch vụ, API, tiến trình nền và giao diện staging cùng phục vụ mã `91519002e3a18fcfe4046d944826c40fc60cf708` với lược đồ `20260914_0023`.
 - Bộ xác minh công khai đạt **16/16**: health/readiness/version, OpenAPI, biên giới xác thực, chỉ báo gói giao diện và dấu hiệu nguồn đều đạt. Bằng chứng: `docs/evidence/p7-staging-wlmt-detail-deployment-20260916.json`.
 - Đây là bằng chứng triển khai và parity; chưa chạy phân tích Winston–Lutz nhiều bi bằng bộ ảnh commissioning trên staging, nên chưa đóng P7-W04 hoặc P7-VERIFY/HANDOFF. Không có thao tác tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
+## P7-W04 — trình xem nhóm chỉ số Pylinac — lát cắt cục bộ — 2026-09-16
+
+- Trình xem kết quả dùng chung nay hiển thị các nhóm chỉ số lồng nhau do Pylinac trả về dưới dạng các nhóm và dòng dễ đọc, áp dụng cho CatPhan, ACR, VMAT, biên dạng, hạt nhân, ảnh phẳng và các bài tương tự.
+- Tên tệp, mã hồ sơ, mã lượt chạy, mã đối tượng, mã bệnh nhân và đường dẫn bị loại khỏi giao diện. Không hiển thị JSON, không tính lại chỉ số và không thay đổi kết quả gốc đã lưu; Winston–Lutz nhiều bi vẫn dùng bảng chuyên biệt theo từng ảnh/bi để tránh hiển thị trùng.
+- Kiểm thử giao diện `src/pages/MachineQAPage.test.tsx` đạt **9/9**; toàn bộ giao diện đạt **58/58**, kiểm tra kiểu, lint và bản dựng sản xuất đạt. Bằng chứng: [trình xem nhóm chỉ số Pylinac](docs/evidence/p7-local-structured-result-viewer-20260916.md).
+- Đây là lát cắt hiển thị local; ROI chuyên biệt, ánh xạ tọa độ đa ảnh, fixture commissioning, staging tương tác và VERIFY/HANDOFF P7 vẫn mở. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.

@@ -233,6 +233,19 @@ td code { color: #075e67; font-size: .78rem; }
 .machine-qa-result-details .panel-heading { margin-bottom: 8px; }
 .machine-qa-result-details h3 { color: #173c5d; font-size: .95rem; margin: 0; }
 .machine-qa-result-details .form-hint { margin: 0 0 10px; }
+.machine-qa-structured-details { border-top: 1px solid #dce5ea; margin-top: 18px; padding-top: 16px; }
+.machine-qa-structured-details .panel-heading { margin-bottom: 8px; }
+.machine-qa-structured-details h3 { color: #173c5d; font-size: .95rem; margin: 0; }
+.machine-qa-structured-details .form-hint { margin: 0 0 10px; }
+.machine-qa-detail-groups { display: grid; gap: 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.machine-qa-detail-group { background: #f8fbfc; border: 1px solid #dce5ea; min-width: 0; padding: 10px; }
+.machine-qa-detail-group h4 { color: #173c5d; font-size: .82rem; margin: 0 0 8px; }
+.machine-qa-detail-list { display: grid; gap: 6px; }
+.machine-qa-detail-row { align-items: start; border-top: 1px solid #e5edf1; display: grid; gap: 8px; grid-template-columns: minmax(110px, .7fr) minmax(0, 1.3fr); padding-top: 6px; }
+.machine-qa-detail-row:first-child { border-top: 0; padding-top: 0; }
+.machine-qa-detail-row strong { color: #526b7b; font-size: .76rem; font-weight: 600; }
+.machine-qa-detail-row span { color: #173c5d; font-size: .8rem; overflow-wrap: anywhere; }
+.machine-qa-detail-card { background: #fff; border: 1px solid #e5edf1; padding: 8px; }
 .winston-lutz-detail-table { min-width: 760px; }
 .winston-lutz-detail-table th, .winston-lutz-detail-table td { font-size: .76rem; white-space: nowrap; }
 .winston-lutz-detail-table tbody th { color: #173c5d; font-weight: 700; }
@@ -675,7 +688,7 @@ td code { color: #075e67; font-size: .78rem; }
   .qa-catalog-toolbar { grid-template-columns: 1fr; }
   .qa-test-grid { grid-template-columns: 1fr; }
   .artifact-upload { grid-template-columns: 1fr; }
-  .machine-qa-protocol-controls, .machine-qa-parameter-grid, .machine-qa-diff-grid, .gamma-input-grid, .gamma-config-grid, .report-form-grid, .report-json-grid, .trend-filter-grid, .form-grid, .protocol-form-grid, .diff-grid, .biological-filter-row, .biological-form-grid, .bed-form-grid, .bed-form-grid--three, .p15-form-grid, .p15-form-grid--course, .p15-form-grid--tissue, .library-filter-grid, .library-form-grid, .library-use-form, .library-detail-grid, .dvh-input-grid, .dvh-config-grid, .dvh-index-options { grid-template-columns: 1fr; }
+  .machine-qa-protocol-controls, .machine-qa-parameter-grid, .machine-qa-diff-grid, .machine-qa-detail-groups, .gamma-input-grid, .gamma-config-grid, .report-form-grid, .report-json-grid, .trend-filter-grid, .form-grid, .protocol-form-grid, .diff-grid, .biological-filter-row, .biological-form-grid, .bed-form-grid, .bed-form-grid--three, .p15-form-grid, .p15-form-grid--course, .p15-form-grid--tissue, .library-filter-grid, .library-form-grid, .library-use-form, .library-detail-grid, .dvh-input-grid, .dvh-config-grid, .dvh-index-options { grid-template-columns: 1fr; }
   .biological-tool-grid { grid-template-columns: 1fr; }
   .biological-form-grid__wide, .bed-form-grid__wide, .p15-form-grid__wide, .library-form-grid__wide { grid-column: auto; }
   .p15-alternative-row, .p15-recovery-row { grid-template-columns: 1fr; }

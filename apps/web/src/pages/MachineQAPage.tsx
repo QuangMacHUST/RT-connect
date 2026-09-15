@@ -286,6 +286,46 @@ function scalarMetricEntries(run: PylinacQARunResource | undefined): Array<[stri
   return Object.entries(metrics).filter(([, value]) => value !== null && value !== undefined && typeof value !== 'object')
 }
 
+const technicalResultKeyPattern = /(^|_)(artifact|case|file|filename|hash|id|patient|path|run|uid|uuid)(_|$)/i
+
+function isTechnicalResultKey(key: string): boolean {
+  const normalized = key.trim().toLowerCase()
+  return technicalResultKeyPattern.test(normalized) || normalized === 'source' || normalized === 'image_name'
+}
+
+function visibleResultEntries(value: JsonRecord): Array<[string, unknown]> {
+  return Object.entries(value).filter(([key, item]) => !isTechnicalResultKey(key) && item !== null && item !== undefined)
+}
+
+function readableResultValue(value: unknown, depth: number, keyPrefix: string): ReactNode {
+  if (value === null || value === undefined || value === '') return <span>Chưa có dữ liệu</span>
+  if (typeof value !== 'object') return <span>{friendlyDataValue(value)}</span>
+  if (depth >= 2) {
+    const entries = visibleResultEntries(value as JsonRecord).slice(0, 8)
+    return <span>{entries.length === 0 ? 'Chưa có dữ liệu hiển thị' : entries.map(([key, item]) => `${friendlyDataLabel(key)}: ${friendlyDataValue(item)}`).join('; ')}</span>
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0) return <span>Chưa có dữ liệu</span>
+    if (value.every((item) => item !== null && typeof item === 'object' && !Array.isArray(item))) {
+      return <div className="machine-qa-detail-list">{value.map((item, index) => <div className="machine-qa-detail-card" key={`${keyPrefix}-${index}`}>{readableResultValue(item, depth + 1, `${keyPrefix}-${index}`)}</div>)}</div>
+    }
+    return <span>{value.map((item) => friendlyDataValue(item)).join(', ')}</span>
+  }
+  const entries = visibleResultEntries(value as JsonRecord)
+  if (entries.length === 0) return <span>Chưa có dữ liệu hiển thị</span>
+  return <div className="machine-qa-detail-list">{entries.map(([key, item]) => <div className="machine-qa-detail-row" key={`${keyPrefix}-${key}`}><strong>{friendlyDataLabel(key)}</strong><div>{readableResultValue(item, depth + 1, `${keyPrefix}-${key}`)}</div></div>)}</div>
+}
+
+export function PylinacStructuredResultDetails({ run, excludedKeys = [] }: { run: PylinacQARunResource; excludedKeys?: string[] }): ReactNode {
+  const metrics = objectValue(run.result_snapshot.metrics)
+  if (!metrics) return null
+  const excluded = new Set(excludedKeys)
+  const entries = Object.entries(metrics).filter(([key, value]) => !excluded.has(key) && !isTechnicalResultKey(key) && value !== null && value !== undefined && typeof value === 'object')
+  if (entries.length === 0) return null
+
+  return <section className="machine-qa-structured-details" aria-label="Chi tiết phân tích"><div className="panel-heading"><div><p className="eyebrow">KẾT QUẢ CHI TIẾT</p><h3>Các nhóm chỉ số do Pylinac cung cấp</h3></div><strong>{entries.length} nhóm</strong></div><p className="form-hint">Các nhóm dưới đây được đọc từ kết quả đã lưu của Pylinac. Chỉ hiển thị thông tin phục vụ đánh giá; tên tệp, mã hồ sơ và dữ liệu kỹ thuật nội bộ được ẩn.</p><div className="machine-qa-detail-groups">{entries.map(([key, value]) => <section className="machine-qa-detail-group" key={key}><h4>{friendlyDataLabel(key)}</h4>{readableResultValue(value, 0, key)}</section>)}</div></section>
+}
+
 async function uploadAndValidatePylinacArtifact(
   accessToken: string,
   caseId: string,
@@ -320,6 +360,7 @@ type PylinacResultPanelProps = {
   inputArtifacts?: ArtifactResource[]
   selectedArtifactIds?: string[]
   renderResultDetails?: (run: PylinacQARunResource) => ReactNode
+  structuredMetricExclusions?: string[]
   onMessage: (message: string) => void
   onAssess: (runId: string, value: AssessmentValue) => void
 }
@@ -354,7 +395,7 @@ function PylinacInputValidationPanel({ accessToken, caseId, artifacts, selectedA
   return <section className="panel machine-qa-panel machine-qa-input-status"><div className="panel-heading"><div><p className="eyebrow">KIỂM TRA ĐẦU VÀO</p><h2>Trạng thái tệp phân tích</h2></div><strong>{selected.length}</strong></div><p className="form-hint">Mỗi tệp phải ở trạng thái hợp lệ trước khi gọi Pylinac. Tệp mới đã được kiểm tra tự động; tệp đã có có thể kiểm tra lại ngay tại đây.</p><div className="table-wrap"><table><thead><tr><th>Tệp</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{selected.map((artifact) => <tr key={artifact.id}><td><strong>{artifactDisplayName(artifact, artifacts)}</strong></td><td><span className={artifact.data_status === 'INVALID' ? 'status-badge status-badge--warning' : 'status-badge'}>{inputStatusLabels[artifact.data_status] ?? 'Chưa xác định'}</span></td><td><button className="button-secondary" disabled={validation.isPending || artifact.data_status === 'VALID'} onClick={() => validation.mutate(artifact.id)}>{artifact.data_status === 'VALID' ? 'Đã hợp lệ' : validation.isPending ? 'Đang kiểm tra…' : artifact.data_status === 'INVALID' || artifact.data_status === 'WARNING' ? 'Kiểm tra lại' : 'Kiểm tra dữ liệu'}</button></td></tr>)}</tbody></table></div></section>
 }
 
-export function PylinacResultPanel({ latest, history, accessToken, caseId, emptyHistoryLabel, metrics = [], resultNote, overlayLabel = 'Mở ảnh phân tích', inputArtifacts, selectedArtifactIds, renderResultDetails, onMessage, onAssess }: PylinacResultPanelProps) {
+export function PylinacResultPanel({ latest, history, accessToken, caseId, emptyHistoryLabel, metrics = [], resultNote, overlayLabel = 'Mở ảnh phân tích', inputArtifacts, selectedArtifactIds, renderResultDetails, structuredMetricExclusions = [], onMessage, onAssess }: PylinacResultPanelProps) {
   const [selectedRunId, setSelectedRunId] = useState<string>()
   const [overlayState, setOverlayState] = useState<{ runId: string; url?: string; loading: boolean }>()
   const selectedRun = history.find((run) => run.id === selectedRunId) ?? latest
@@ -384,7 +425,7 @@ export function PylinacResultPanel({ latest, history, accessToken, caseId, empty
 
   return <>
     {inputArtifacts && selectedArtifactIds && <PylinacInputValidationPanel accessToken={accessToken} caseId={caseId} artifacts={inputArtifacts} selectedArtifactIds={selectedArtifactIds} onMessage={onMessage} />}
-    {selectedRun && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">{selectedIsLatest ? 'KẾT QUẢ MỚI NHẤT' : 'KẾT QUẢ ĐANG XEM'}</p><h2>{selectedRun.name}</h2></div><span className={statusClass(selectedRun.status)}>{statusLabel(selectedRun.status)}</span></div>{!selectedIsLatest && <p className="form-hint">Đang xem một lượt cũ trong lịch sử. Kết quả gốc không thay đổi khi xem lại hoặc đánh giá.</p>}{selectedRun.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích</h3><ul>{selectedRun.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{engineWarnings.length > 0 && <div className="alert alert--warning"><h3>Cảnh báo từ bộ tính</h3><p>Các cảnh báo này được giữ nguyên từ lần phân tích và cần được người thực hiện xem xét trước khi đánh giá.</p><ul>{engineWarnings.map((item, index) => <li key={`${textValue(item.code, 'warning')}-${index}`}>{textValue(item.message, 'Bộ tính có cảnh báo cần xem xét.')}</li>)}</ul></div>}{selectedRun.status === 'COMPLETED' && <><div className="machine-qa-metric-grid">{selectedIsLatest ? <>{resultNote}{metrics.length === 0 && !resultNote ? <p>Kết quả chi tiết đã được lưu; hãy mở ảnh phân tích để xem đầy đủ.</p> : metrics.map((metric) => <div className="machine-qa-metric" key={metric.key}><span>{metric.label}</span><strong>{metric.value}</strong></div>)}</> : historicalMetrics.length > 0 ? historicalMetrics.map(([key, value]) => <div className="machine-qa-metric" key={key}><span>{friendlyDataLabel(key)}</span><strong>{friendlyDataValue(value)}</strong></div>) : <p>Không có chỉ số dạng số để hiển thị trong lượt này.</p>}</div>{renderResultDetails?.(selectedRun)}{selectedRun.overlay_artifact_id && <><button className="button-secondary" disabled={overlayLoading} onClick={toggleOverlay} aria-expanded={Boolean(overlayUrl)}>{overlayUrl ? 'Ẩn ảnh phân tích' : overlayLoading ? 'Đang tải ảnh phân tích…' : overlayLabel}</button>{overlayUrl && <figure className="machine-qa-overlay-preview"><img src={overlayUrl} alt={`Ảnh phân tích ${selectedRun.name}`} /><figcaption>Ảnh minh họa do Pylinac tạo cho lượt đang xem.</figcaption></figure>}</>}<label>Đánh giá của người dùng<select value={selectedRun.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => onAssess(selectedRun.id, event.target.value as AssessmentValue)}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
+    {selectedRun && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">{selectedIsLatest ? 'KẾT QUẢ MỚI NHẤT' : 'KẾT QUẢ ĐANG XEM'}</p><h2>{selectedRun.name}</h2></div><span className={statusClass(selectedRun.status)}>{statusLabel(selectedRun.status)}</span></div>{!selectedIsLatest && <p className="form-hint">Đang xem một lượt cũ trong lịch sử. Kết quả gốc không thay đổi khi xem lại hoặc đánh giá.</p>}{selectedRun.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích</h3><ul>{selectedRun.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{engineWarnings.length > 0 && <div className="alert alert--warning"><h3>Cảnh báo từ bộ tính</h3><p>Các cảnh báo này được giữ nguyên từ lần phân tích và cần được người thực hiện xem xét trước khi đánh giá.</p><ul>{engineWarnings.map((item, index) => <li key={`${textValue(item.code, 'warning')}-${index}`}>{textValue(item.message, 'Bộ tính có cảnh báo cần xem xét.')}</li>)}</ul></div>}{selectedRun.status === 'COMPLETED' && <><div className="machine-qa-metric-grid">{selectedIsLatest ? <>{resultNote}{metrics.length === 0 && !resultNote ? <p>Kết quả chi tiết đã được lưu; hãy mở ảnh phân tích để xem đầy đủ.</p> : metrics.map((metric) => <div className="machine-qa-metric" key={metric.key}><span>{metric.label}</span><strong>{metric.value}</strong></div>)}</> : historicalMetrics.length > 0 ? historicalMetrics.map(([key, value]) => <div className="machine-qa-metric" key={key}><span>{friendlyDataLabel(key)}</span><strong>{friendlyDataValue(value)}</strong></div>) : <p>Không có chỉ số dạng số để hiển thị trong lượt này.</p>}</div>{renderResultDetails?.(selectedRun)}<PylinacStructuredResultDetails run={selectedRun} excludedKeys={[...structuredMetricExclusions, ...metrics.map((metric) => metric.key)]} />{selectedRun.overlay_artifact_id && <><button className="button-secondary" disabled={overlayLoading} onClick={toggleOverlay} aria-expanded={Boolean(overlayUrl)}>{overlayUrl ? 'Ẩn ảnh phân tích' : overlayLoading ? 'Đang tải ảnh phân tích…' : overlayLabel}</button>{overlayUrl && <figure className="machine-qa-overlay-preview"><img src={overlayUrl} alt={`Ảnh phân tích ${selectedRun.name}`} /><figcaption>Ảnh minh họa do Pylinac tạo cho lượt đang xem.</figcaption></figure>}</>}<label>Đánh giá của người dùng<select value={selectedRun.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => onAssess(selectedRun.id, event.target.value as AssessmentValue)}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
     {selectedRun && <section className="panel machine-qa-panel machine-qa-parameters"><div className="panel-heading"><div><p className="eyebrow">THÔNG SỐ ĐÃ LƯU</p><h2>Thiết lập của lượt đang xem</h2></div><strong>{selectedParameters.length}</strong></div>{selectedParameters.length === 0 ? <p className="empty-state">Bài này không có thông số nhập thêm.</p> : <div className="machine-qa-parameter-grid">{selectedParameters.map(([key, value]) => <div className="machine-qa-parameter" key={key}><span>{parameterLabels[key] ?? friendlyDataLabel(key, parameterLabels)}</span><strong>{parameterValueLabel(key, value)}</strong></div>)}</div>}{previousRun && <div className="machine-qa-diff"><h3>Thay đổi so với lượt ngay trước</h3>{changedParameters.length === 0 ? <p>Không có thay đổi thông số.</p> : <div className="machine-qa-diff-grid">{changedParameters.map(([key, previousValue, currentValue]) => <div key={key}><strong>{parameterLabels[key] ?? friendlyDataLabel(key, parameterLabels)}</strong><span>{previousValue === undefined ? 'Mới thêm' : currentValue === undefined ? 'Đã bỏ' : `${parameterValueLabel(key, previousValue)} → ${parameterValueLabel(key, currentValue)}`}</span></div>)}</div>}</div>}</section>}
     <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">{emptyHistoryLabel}</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th><th>Thao tác</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td><td><button className={run.id === selectedRun?.id ? 'history-button history-button--selected' : 'history-button'} onClick={() => setSelectedRunId(run.id)}>{run.id === selectedRun?.id ? 'Đang xem' : 'Mở'}</button></td></tr>)}</tbody></table></div>}</section>
   </>
@@ -950,7 +991,7 @@ function WinstonLutzMultiTargetPage({ caseId, accessToken, title }: { caseId: st
       </section>}
       <div className="machine-qa-actions"><button disabled={!canAnalyze} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={zipArtifacts} selectedArtifactIds={selected ? [selected.id] : []} renderResultDetails={(run) => <WinstonLutzMultiTargetDetails run={run} />} emptyHistoryLabel="Chưa có kết quả Winston–Lutz nhiều bi." metrics={[
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={zipArtifacts} selectedArtifactIds={selected ? [selected.id] : []} renderResultDetails={(run) => <WinstonLutzMultiTargetDetails run={run} />} structuredMetricExclusions={['image_details', 'bb_arrangement']} emptyHistoryLabel="Chưa có kết quả Winston–Lutz nhiều bi." metrics={[
       { key: 'max_2d_field_to_bb_mm', label: 'Sai lệch trường–bi lớn nhất', value: `${metric('max_2d_field_to_bb_mm')} mm` },
       { key: 'median_2d_field_to_bb_mm', label: 'Sai lệch trường–bi trung vị', value: `${metric('median_2d_field_to_bb_mm')} mm` },
       { key: 'num_total_images', label: 'Số ảnh', value: metric('num_total_images') },
