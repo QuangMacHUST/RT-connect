@@ -32,6 +32,11 @@
 - Sau khi Railway hoàn tất cập nhật trễ của dịch vụ API, kiểm tra công khai exact-SHA đã đạt **15/15** trên staging. API và giao diện cùng nhận bản `7ed6ebf9b1064f4250efddf733446c1f5b8a9028`; health/readiness trả `200`, phiên bản đúng, lược đồ đúng `20260914_0023`, OpenAPI có tuyến xem trước DICOM/ZIP và tuyến thành viên/lời mời, các tuyến yêu cầu xác thực trả `401`, giao diện và gói web chứa đúng dấu hiệu bản phát hành.
 - Bằng chứng: [kiểm tra staging P7-W04 sau khi cập nhật](docs/evidence/p7-staging-public-recheck-20260915-7ed6ebf-pass.json). Đây là cổng parity và khả năng phát hành của tuyến xem trước; chưa phải kiểm chứng tương tác chọn tâm/ROI bằng tệp staging thật cho từng nhóm bài, chưa đóng P7-W04 và chưa đóng VERIFY/HANDOFF P7.
 
+## P7-W04 — bộ chọn ảnh/lát đã lên staging — 2026-09-15
+
+- Bản `68d2202504c344ac2830f6ce09fba53ea2f34b2a` đã được Railway triển khai đồng bộ cho API và giao diện staging. Kiểm tra công khai exact-SHA đạt **15/15**; API `health/readiness/version`, lược đồ `20260914_0023`, OpenAPI, các tuyến yêu cầu xác thực và gói web đều đạt.
+- Bằng chứng: [kiểm tra staging bộ chọn ảnh/lát](docs/evidence/p7-staging-public-recheck-20260915-68d2202.json). Đây là cổng triển khai và hợp đồng tuyến xem trước; vẫn cần kiểm tra trình duyệt có đăng nhập với bộ tệp nhiều ảnh thực tế, đối chiếu tọa độ theo từng bài và hoàn tất VERIFY/HANDOFF P7.
+
 ## P7 — kiểm tra hồi quy sau cổng inventory — lát cắt cục bộ — 2026-09-15
 
 - Bộ kiểm thử backend tập trung cho registry, adapter QA, hạt nhân, contrib và hiệu chuẩn đạt **tất cả kiểm thử**; riêng nhóm registry đạt 5/5. Ruff và mypy strict trên phần registry/adapter thay đổi đều đạt.
