@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W04 — chỉ hiện phân tích liều cho bài có hợp đồng liều — đã kiểm tra staging — 2026-09-16
+
+- Khu vực QA không còn suy luận quyền mở phân tích liều từ các tệp RTDOSE/RTSTRUCT đang nằm trong hồ sơ. Vì một hồ sơ có thể chứa tệp phục vụ bài khác, nút này nay chỉ xuất hiện khi loại bài QA yêu cầu đầu vào liều, như PSQA.
+- Trên staging, hồ sơ Starshot vẫn hiện khu vực tệp ảnh nhưng không còn nút phân tích liều; hồ sơ PSQA vẫn hiện nút và hướng dẫn RTDOSE/RTSTRUCT. Danh mục hiển thị `64/64` bài.
+- Kiểm thử giao diện đạt **53/53**, lint, kiểm tra kiểu và bản dựng sản xuất đều đạt. Bản web `e647840` triển khai thành công; kiểm tra chỉ đọc không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+- Bằng chứng: [điều kiện phân tích liều trên staging](docs/evidence/p7-staging-dose-shortcut-contract-20260916.md). P7-W04 vẫn mở các cổng ROI, tọa độ đa ảnh, lựa chọn ảnh ngoài giới hạn xem trước và nghiệm thu đầy đủ.
+
 ## P7-W04 — diff lịch sử hiển thị tham số đã bỏ — đã kiểm tra local — 2026-09-16
 
 - Trình xem kết quả nay đối chiếu hợp của lượt hiện tại và lượt ngay trước, nên hiển thị đủ tham số mới thêm, thay đổi và đã bỏ bằng nhãn `Mới thêm`, `Đã bỏ` hoặc giá trị trước/sau.
