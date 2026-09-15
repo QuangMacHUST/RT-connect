@@ -1638,3 +1638,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Tên tệp, mã hồ sơ, mã lượt chạy, mã đối tượng, mã bệnh nhân và đường dẫn bị loại khỏi giao diện. Không hiển thị JSON, không tính lại chỉ số và không thay đổi kết quả gốc đã lưu; Winston–Lutz nhiều bi vẫn dùng bảng chuyên biệt theo từng ảnh/bi để tránh hiển thị trùng.
 - Kiểm thử giao diện `src/pages/MachineQAPage.test.tsx` đạt **9/9**; toàn bộ giao diện đạt **58/58**, kiểm tra kiểu, lint và bản dựng sản xuất đạt. Bằng chứng: [trình xem nhóm chỉ số Pylinac](docs/evidence/p7-local-structured-result-viewer-20260916.md).
 - Đây là lát cắt hiển thị local; ROI chuyên biệt, ánh xạ tọa độ đa ảnh, fixture commissioning, staging tương tác và VERIFY/HANDOFF P7 vẫn mở. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
+## P7-W03 — ma trận độ phủ bộ mẫu Pylinac — lát cắt cục bộ — 2026-09-16
+
+- Registry đã có trạng thái bằng chứng bắt buộc cho toàn bộ **63 capability** Pylinac đang khóa: **37 bộ mẫu chính thức**, **13 bộ mẫu tổng hợp kiểm hợp đồng** và **13 mục cần commissioning**. Mỗi mục đều có tên tham chiếu và ghi chú giới hạn; không dùng bộ mẫu tổng hợp để tuyên bố đã nghiệm thu.
+- Phép đối chiếu registry–ma trận phát hiện được cả mục thiếu và mục thừa; kiểm thử `tests/test_pylinac_registry.py` đạt **8/8**, Ruff đạt trên ma trận, registry và kiểm thử. Bằng chứng: [ma trận độ phủ bộ mẫu Pylinac](docs/evidence/p7-local-fixture-coverage-matrix-20260916.md).
+- Đây là cổng quản lý độ phủ và truy nguyên kiểm thử. Các bộ tệp CatPhan 700, ACR, CIRS 062M, GE Helios, Trajectory Log 3/4, số đo hiệu chuẩn, fixture Nuclear/Contrib chuẩn và đối chiếu độc lập vẫn cần bổ sung; P7-W03, P7-W04 và VERIFY/HANDOFF P7 vẫn mở.
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`; yêu cầu xóa vĩnh viễn đã được bỏ qua theo quyết định mới nhất.

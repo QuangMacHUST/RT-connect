@@ -187,3 +187,7 @@ P7 structured-result viewer marker (2026-09-16): the result viewer now
 renders readable nested Pylinac metric groups and hides technical file and
 identifier fields. Keep this marker aligned with the API marker before the
 next exact-SHA check.
+
+P7 fixture coverage marker (2026-09-16): the API registry now carries an
+explicit evidence status for all 63 locked Pylinac capabilities. Keep this
+marker aligned with the API marker before the next exact-SHA check.

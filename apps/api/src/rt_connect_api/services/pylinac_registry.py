@@ -17,6 +17,12 @@ from pathlib import Path
 from typing import Any, Final, TypedDict
 
 from rt_connect_api.qa_catalog import CATALOGUE_VERSION, QA_TEST_CATALOG, QATestDefinition
+from rt_connect_api.services.pylinac_fixture_matrix import (
+    FIXTURE_COVERAGE,
+    FixtureStatus,
+    fixture_coverage_counts,
+    fixture_coverage_diff,
+)
 
 PYLINAC_VERSION: Final[str] = "3.47.0"
 PYLINAC_WHEEL_SHA256: Final[str] = (
@@ -42,6 +48,9 @@ class PylinacCapability:
     symbol_kind: str
     input_profile: str
     source_tier: str
+    fixture_status: FixtureStatus
+    fixture_reference: str
+    fixture_note: str
     runtime_available: bool
     has_analyze: bool
     has_results_data: bool
@@ -56,6 +65,9 @@ class CapabilitySummary(TypedDict):
     symbol_kind: str
     input_profile: str
     source_tier: str
+    fixture_status: FixtureStatus
+    fixture_reference: str
+    fixture_note: str
     runtime_available: bool
     has_analyze: bool
     has_results_data: bool
@@ -71,6 +83,8 @@ class RegistrySummary(TypedDict):
     runtime_available: int
     unresolved_catalog_keys: list[str]
     input_profile_contract_mismatches: list[InputProfileDiff]
+    fixture_coverage: dict[str, list[str]]
+    fixture_coverage_counts: dict[str, int]
     capabilities: list[CapabilitySummary]
 
 
@@ -479,6 +493,7 @@ def resolve_capabilities() -> tuple[PylinacCapability, ...]:
     capabilities: list[PylinacCapability] = []
     for binding in RUNTIME_BINDINGS:
         definition = definitions[binding.catalog_key]
+        fixture = FIXTURE_COVERAGE.get(binding.catalog_key)
         symbol, error = _resolve(binding.import_path)
         is_class = isinstance(symbol, type)
         has_analyze = bool(is_class and hasattr(symbol, "analyze"))
@@ -492,6 +507,13 @@ def resolve_capabilities() -> tuple[PylinacCapability, ...]:
                 symbol_kind=binding.symbol_kind,
                 input_profile=binding.input_profile,
                 source_tier=definition.source_tier,
+                fixture_status=fixture["status"] if fixture else "COMMISSIONING_REQUIRED",
+                fixture_reference=fixture["reference"]
+                if fixture
+                else "fixture coverage chưa được khai báo",
+                fixture_note=fixture["note"]
+                if fixture
+                else "Registry không được phép thiếu trạng thái bộ mẫu.",
                 runtime_available=symbol is not None,
                 has_analyze=has_analyze,
                 has_results_data=has_results_data,
@@ -541,6 +563,9 @@ def registry_summary() -> RegistrySummary:
             "symbol_kind": item.symbol_kind,
             "input_profile": item.input_profile,
             "source_tier": item.source_tier,
+            "fixture_status": item.fixture_status,
+            "fixture_reference": item.fixture_reference,
+            "fixture_note": item.fixture_note,
             "runtime_available": item.runtime_available,
             "has_analyze": item.has_analyze,
             "has_results_data": item.has_results_data,
@@ -557,5 +582,9 @@ def registry_summary() -> RegistrySummary:
         "runtime_available": sum(item.runtime_available for item in capabilities),
         "unresolved_catalog_keys": list(unresolved),
         "input_profile_contract_mismatches": pylinac_input_profile_diff(),
+        "fixture_coverage": fixture_coverage_diff(
+            {binding.catalog_key for binding in RUNTIME_BINDINGS}
+        ),
+        "fixture_coverage_counts": dict(fixture_coverage_counts()),
         "capabilities": capability_summaries,
     }
