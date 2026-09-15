@@ -1645,3 +1645,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Phép đối chiếu registry–ma trận phát hiện được cả mục thiếu và mục thừa; kiểm thử `tests/test_pylinac_registry.py` đạt **8/8**, Ruff đạt trên ma trận, registry và kiểm thử. Bằng chứng: [ma trận độ phủ bộ mẫu Pylinac](docs/evidence/p7-local-fixture-coverage-matrix-20260916.md).
 - Đây là cổng quản lý độ phủ và truy nguyên kiểm thử. Các bộ tệp CatPhan 700, ACR, CIRS 062M, GE Helios, Trajectory Log 3/4, số đo hiệu chuẩn, fixture Nuclear/Contrib chuẩn và đối chiếu độc lập vẫn cần bổ sung; P7-W03, P7-W04 và VERIFY/HANDOFF P7 vẫn mở.
 - Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`; yêu cầu xóa vĩnh viễn đã được bỏ qua theo quyết định mới nhất.
+
+## P7-W03/W04 — hiển thị trạng thái bộ mẫu trong danh mục QA — staging verified — 2026-09-16
+
+- API tổ chức nay trả trạng thái bằng chứng, nhãn tham chiếu và ghi chú giới hạn cho từng capability Pylinac; giao diện danh mục QA hiển thị nhãn tiếng Việt tương ứng và tổng độ phủ theo ba nhóm. Toàn bộ bài vẫn xuất hiện; nhãn “cần bộ mẫu thẩm định” không khóa bài và không được hiểu là nghiệm thu lâm sàng.
+- Kiểm thử API registry đạt **8/8**, giao diện đạt **58/58**, kiểm tra kiểu, lint và bản dựng sản xuất đạt. Commit `226b5d2` đã triển khai đồng bộ API và giao diện staging; bộ xác minh công khai exact-SHA đạt **16/16**, readiness giữ lược đồ `20260914_0023`. Bằng chứng: [kiểm tra trạng thái bộ mẫu trên staging](docs/evidence/p7-staging-fixture-status-deployment-20260916.json).
+- Mốc này chỉ đóng thêm cổng minh bạch độ phủ. Fixture commissioning, đối chiếu độc lập, ROI chuyên biệt, ánh xạ tọa độ đa ảnh, kiểm chứng tương tác staging của từng nhóm và VERIFY/HANDOFF P7 vẫn mở.
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.

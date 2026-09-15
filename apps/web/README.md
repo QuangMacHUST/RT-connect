@@ -196,3 +196,7 @@ P7 fixture-status UI marker (2026-09-16): the QA catalogue displays the
 human-readable evidence state for each Pylinac capability and the aggregate
 coverage counts returned by the organization-scoped API. Keep this marker
 aligned with the API service when changing the response contract.
+
+P7 fixture-status plan-sync marker (2026-09-16): the implementation progress
+and plan records now point to the staging evidence for the same catalogue UI.
+Keep this marker aligned with the API service before the next exact-SHA check.

@@ -250,3 +250,7 @@ P7 fixture-status endpoint marker (2026-09-16): the organization-scoped
 Pylinac capability response now includes the user-safe fixture evidence state,
 reference label and note for each capability, plus aggregate coverage counts.
 Rebuild API and web from this revision when changing this contract.
+
+P7 fixture-status plan-sync marker (2026-09-16): the implementation progress
+and plan records now point to the staging evidence for the same API contract.
+Keep this marker aligned with the web service before the next exact-SHA check.
