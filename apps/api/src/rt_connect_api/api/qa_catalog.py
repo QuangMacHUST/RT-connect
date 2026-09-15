@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
@@ -31,6 +32,9 @@ class PylinacCapabilityStatus(BaseModel):
     family: str = Field(min_length=1)
     input_profile: str = Field(min_length=1)
     source_tier: str = Field(min_length=1)
+    fixture_status: Literal["OFFICIAL_DEMO", "SYNTHETIC_CONTRACT", "COMMISSIONING_REQUIRED"]
+    fixture_reference: str = Field(min_length=1)
+    fixture_note: str = Field(min_length=1)
     runtime_available: bool
     has_analyze: bool
     has_results_data: bool
@@ -47,6 +51,7 @@ class PylinacCapabilityCollection(BaseModel):
     runtime_available: int = Field(ge=0)
     unresolved_catalog_keys: list[str]
     input_profile_contract_mismatches: list[dict[str, str | None]]
+    fixture_coverage_counts: dict[str, int]
     capabilities: list[PylinacCapabilityStatus]
 
 
@@ -123,6 +128,9 @@ def get_pylinac_capabilities(
             family=item["module_family"],
             input_profile=item["input_profile"],
             source_tier=item["source_tier"],
+            fixture_status=item["fixture_status"],
+            fixture_reference=item["fixture_reference"],
+            fixture_note=item["fixture_note"],
             runtime_available=item["runtime_available"],
             has_analyze=item["has_analyze"],
             has_results_data=item["has_results_data"],
@@ -138,5 +146,6 @@ def get_pylinac_capabilities(
         runtime_available=summary["runtime_available"],
         unresolved_catalog_keys=summary["unresolved_catalog_keys"],
         input_profile_contract_mismatches=summary["input_profile_contract_mismatches"],
+        fixture_coverage_counts=summary["fixture_coverage_counts"],
         capabilities=capabilities,
     )

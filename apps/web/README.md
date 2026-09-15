@@ -191,3 +191,8 @@ next exact-SHA check.
 P7 fixture coverage marker (2026-09-16): the API registry now carries an
 explicit evidence status for all 63 locked Pylinac capabilities. Keep this
 marker aligned with the API marker before the next exact-SHA check.
+
+P7 fixture-status UI marker (2026-09-16): the QA catalogue displays the
+human-readable evidence state for each Pylinac capability and the aggregate
+coverage counts returned by the organization-scoped API. Keep this marker
+aligned with the API service when changing the response contract.

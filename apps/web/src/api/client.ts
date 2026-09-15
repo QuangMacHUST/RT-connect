@@ -146,6 +146,32 @@ export type QATestDefinitionResource = {
   is_legacy: boolean
   supports_manual_adjustment: boolean
 }
+export type PylinacFixtureStatus = 'OFFICIAL_DEMO' | 'SYNTHETIC_CONTRACT' | 'COMMISSIONING_REQUIRED'
+export type PylinacCapabilityResource = {
+  key: string
+  name: string
+  family: string
+  input_profile: string
+  source_tier: string
+  fixture_status: PylinacFixtureStatus
+  fixture_reference: string
+  fixture_note: string
+  runtime_available: boolean
+  has_analyze: boolean
+  has_results_data: boolean
+}
+export type PylinacCapabilityCollection = {
+  catalogue_version: string
+  pylinac_version: string
+  wheel_sha256: string
+  package_fingerprint: string
+  total_bindings: number
+  runtime_available: number
+  unresolved_catalog_keys: string[]
+  input_profile_contract_mismatches: Array<Record<string, string | null>>
+  fixture_coverage_counts: Record<string, number>
+  capabilities: PylinacCapabilityResource[]
+}
 export type ArtifactResource = {
   id: string
   organization_id: string
@@ -1554,6 +1580,21 @@ export class ApiClient {
         engine_name: z.string(), engine_class: z.string().nullable(), source_tier: z.string(),
         implementation_status: z.string(), is_legacy: z.boolean(), supports_manual_adjustment: z.boolean()
       })), total: z.number().int(), catalogue_version: z.string()
+    }), accessToken)
+  }
+
+  pylinacCapabilities(accessToken: string, organizationId: string): Promise<PylinacCapabilityCollection> {
+    return this.get(`/organizations/${organizationId}/pylinac-capabilities`, z.object({
+      catalogue_version: z.string(), pylinac_version: z.string(), wheel_sha256: z.string(), package_fingerprint: z.string(),
+      total_bindings: z.number().int(), runtime_available: z.number().int(), unresolved_catalog_keys: z.array(z.string()),
+      input_profile_contract_mismatches: z.array(z.record(z.string(), z.string().nullable())),
+      fixture_coverage_counts: z.record(z.string(), z.number().int().nonnegative()),
+      capabilities: z.array(z.object({
+        key: z.string(), name: z.string(), family: z.string(), input_profile: z.string(), source_tier: z.string(),
+        fixture_status: z.enum(['OFFICIAL_DEMO', 'SYNTHETIC_CONTRACT', 'COMMISSIONING_REQUIRED']),
+        fixture_reference: z.string(), fixture_note: z.string(), runtime_available: z.boolean(),
+        has_analyze: z.boolean(), has_results_data: z.boolean()
+      }))
     }), accessToken)
   }
 

@@ -126,6 +126,14 @@ def test_capability_endpoint_is_organization_scoped() -> None:
     assert body["runtime_available"] == 63
     assert body["unresolved_catalog_keys"] == []
     assert body["input_profile_contract_mismatches"] == []
+    assert body["fixture_coverage_counts"] == {
+        "OFFICIAL_DEMO": 37,
+        "SYNTHETIC_CONTRACT": 13,
+        "COMMISSIONING_REQUIRED": 13,
+    }
     assert len(body["capabilities"]) == 63
+    catphan = next(item for item in body["capabilities"] if item["key"] == "CATPHAN_503")
+    assert catphan["fixture_status"] == "OFFICIAL_DEMO"
+    assert catphan["fixture_reference"] == "CatPhan503.zip"
     assert outside.status_code == 403
     assert outside.json()["code"] == "ORGANIZATION_SCOPE_MISMATCH"
