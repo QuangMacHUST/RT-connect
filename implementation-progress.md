@@ -1,5 +1,11 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W04 — diff lịch sử hiển thị tham số đã bỏ — đã kiểm tra local — 2026-09-16
+
+- Trình xem kết quả nay đối chiếu hợp của lượt hiện tại và lượt ngay trước, nên hiển thị đủ tham số mới thêm, thay đổi và đã bỏ bằng nhãn `Mới thêm`, `Đã bỏ` hoặc giá trị trước/sau.
+- Kiểm thử giao diện đạt **52/52**, lint, kiểm tra kiểu và bản dựng sản xuất đều đạt; luồng chỉ đọc lịch sử, không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+- Bằng chứng: [diff tham số đã bỏ trong lịch sử](docs/evidence/p7-local-result-parameter-removal-20260916.md). Cần triển khai và kiểm tra trình duyệt staging trước khi ghi nhận parity.
+
 ## P7-W03 — hợp đồng hồ sơ đầu vào theo liên kết chạy thật — đã kiểm tra staging — 2026-09-16
 
 - Cổng máy chủ nay dùng `input_profile` của liên kết Pylinac thay vì suy ra lại từ danh mục giao diện; registry có kiểm thử phát hiện lệch giữa `input_kind` và hồ sơ thực thi cho toàn bộ 63 capability.

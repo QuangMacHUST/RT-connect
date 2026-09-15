@@ -69,6 +69,20 @@ test('keeps the warning attached to the selected historical run', () => {
   expect(screen.getByText('Đang xem một lượt cũ trong lịch sử. Kết quả gốc không thay đổi khi xem lại hoặc đánh giá.')).toBeInTheDocument()
 })
 
+test('shows parameters removed from the newer analysis in the history diff', () => {
+  const latest = makeRun({ parameters: {} })
+  const previous = makeRun({
+    id: 'run-previous',
+    parameters: { start_point: { x: 8, y: 9 } },
+    created_at: '2026-09-14T10:00:00Z',
+    updated_at: '2026-09-14T10:00:01Z'
+  })
+
+  render(<PylinacResultPanel {...baseProps(latest, [latest, previous])} />)
+
+  expect(screen.getByText('Đã bỏ')).toBeInTheDocument()
+})
+
 test('does not show a loading state when no image is selected', () => {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 
