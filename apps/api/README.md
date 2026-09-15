@@ -217,3 +217,7 @@ P7 staging evidence marker (2026-09-16): the validated-input gate evidence and
 progress record were captured after the previous candidate. Rebuild API,
 worker and web from this revision before reusing the evidence as the current
 release candidate.
+
+P7 Winston-Lutz manual-angle parity marker (2026-09-16): the single-target
+Winston-Lutz adapter and form now support manual angles in ZIP image order.
+Rebuild API, worker and web from this revision before the next exact-SHA check.
