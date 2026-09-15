@@ -255,6 +255,58 @@ def test_dvh_decodes_dicom_geometry_and_returns_physical_metrics(tmp_path: Path)
     assert any(item["code"] == "DVH_DOSE_ONLY_MODE" for item in analysis.warnings)
 
 
+def test_dvh_explicit_hi_ci_definitions_are_computed_with_formula_snapshot(tmp_path: Path) -> None:
+    dose_path = tmp_path / "dose-indices.dcm"
+    structure_path = tmp_path / "structures-indices.dcm"
+    frame_uid = _dose_file(dose_path)
+    _structure_file(structure_path, frame_uid)
+
+    analysis = analyze_dvh(
+        dose_path,
+        structure_path,
+        roi_number=1,
+        index_definitions=["HI_D2_D98_OVER_D50", "HI_D5_OVER_D95", "CI_RTOG_95", "CI_PADDICK_95"],
+        prescription_dose_gy=2.0,
+    )
+
+    assert analysis.normalized_input["index_definitions"] == [
+        "HI_D2_D98_OVER_D50",
+        "HI_D5_OVER_D95",
+        "CI_RTOG_95",
+        "CI_PADDICK_95",
+    ]
+    indices = analysis.result["indices"]
+    assert indices["status"] == "COMPUTED"
+    assert [item["status"] for item in indices["items"]] == ["COMPUTED"] * 4
+    assert indices["items"][0]["formula"] == "(D2 - D98) / D50"
+    assert indices["items"][0]["value"] == pytest.approx(0.0)
+    assert indices["items"][2]["parameters"]["prescription_dose_gy"] == 2.0
+    assert indices["items"][3]["parameters"]["isodose_volume_source"] == "entire RTDOSE grid"
+
+
+def test_dvh_ci_requires_explicit_prescription_and_rejects_unknown_definition(
+    tmp_path: Path,
+) -> None:
+    dose_path = tmp_path / "dose-index-errors.dcm"
+    structure_path = tmp_path / "structures-index-errors.dcm"
+    frame_uid = _dose_file(dose_path)
+    _structure_file(structure_path, frame_uid)
+
+    missing_prescription = analyze_dvh(
+        dose_path,
+        structure_path,
+        roi_number=1,
+        index_definitions=["CI_RTOG_95"],
+    )
+    item = missing_prescription.result["indices"]["items"][0]
+    assert item["status"] == "NOT_COMPUTED"
+    assert item["missing_inputs"] == ["prescription_dose_gy"]
+
+    with pytest.raises(DVHEngineError) as raised:
+        analyze_dvh(dose_path, structure_path, roi_number=1, index_definitions=["CI_UNKNOWN"])
+    assert raised.value.code == "DVH_INDEX_DEFINITION_UNSUPPORTED"
+
+
 def test_roi_selector_uses_number_when_names_are_duplicate(tmp_path: Path) -> None:
     dose_path = tmp_path / "dose.dcm"
     structure_path = tmp_path / "structures.dcm"

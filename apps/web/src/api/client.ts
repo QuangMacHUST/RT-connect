@@ -376,6 +376,8 @@ export type DvhRequest = {
   slice_thickness_mm?: number | null
   dx_percentages: number[]
   vx_doses_gy: number[]
+  index_definitions: string[]
+  prescription_dose_gy?: number | null
   preview_limit: number
   limit_entry_id?: string | null
   protocol_version_id?: string | null

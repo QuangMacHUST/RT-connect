@@ -85,6 +85,8 @@ class DvhRequest(BaseModel):
     vx_doses_gy: list[float] = Field(
         default_factory=lambda: list(DEFAULT_VX_DOSES_GY), min_length=1, max_length=20
     )
+    index_definitions: list[str] = Field(default_factory=list, max_length=4)
+    prescription_dose_gy: float | None = Field(default=None, gt=0)
     preview_limit: int = Field(default=4096, ge=64, le=16_384)
     limit_entry_id: UUID | None = None
     protocol_version_id: UUID | None = None
@@ -484,6 +486,8 @@ def _analyze(
                 slice_thickness_mm=request.slice_thickness_mm,
                 dx_percentages=request.dx_percentages,
                 vx_doses_gy=request.vx_doses_gy,
+                index_definitions=request.index_definitions,
+                prescription_dose_gy=request.prescription_dose_gy,
                 ct_path=paths[2],
                 max_voxels=max_voxels,
                 max_ct_pixels=max_ct_pixels,
@@ -653,10 +657,7 @@ def list_dvh_inputs(
                     503,
                 ) from exc
             digest = hashlib.sha256(path.read_bytes()).hexdigest()
-            if (
-                digest != structure.artifact.sha256
-                or digest != structure.manifest.checksum_at_use
-            ):
+            if digest != structure.artifact.sha256 or digest != structure.manifest.checksum_at_use:
                 raise DomainError(
                     "DVH_SOURCE_CHANGED",
                     "The selected RTSTRUCT no longer matches its stored checksum.",

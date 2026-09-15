@@ -26,6 +26,12 @@ import numpy as np
 import pydicom
 from pydicom.dataset import Dataset
 
+from rt_connect_api.services.dvh_indices import (
+    DvhIndexError,
+    calculate_dvh_indices,
+    normalize_index_definitions,
+)
+
 DVH_ENGINE_KEY = "visual-dose.dvh"
 DVH_ENGINE_VERSION = "p17-dvh-1.1.0"
 DVH_SCHEMA_VERSION = "visual-dose-dvh.result.v1"
@@ -120,9 +126,7 @@ def _continuous_frame_indices(
     normal = np.asarray(normal_mm, dtype=np.float64)
     offsets = np.asarray(offsets_mm, dtype=np.float64)
     if len(offsets) == 1:
-        return np.asarray(
-            (normal - offsets[0]) / float(slice_thickness_mm[0]), dtype=np.float64
-        )
+        return np.asarray((normal - offsets[0]) / float(slice_thickness_mm[0]), dtype=np.float64)
     frame = np.interp(normal, offsets, np.arange(len(offsets), dtype=np.float64))
     below = normal < offsets[0]
     above = normal > offsets[-1]
@@ -1369,9 +1373,7 @@ def validate_ct_frame(
     }
 
 
-def _metric_quantile(
-    values: np.ndarray, weights: np.ndarray, percent: float
-) -> float:
+def _metric_quantile(values: np.ndarray, weights: np.ndarray, percent: float) -> float:
     """Return the dose covering ``percent`` of selected volume.
 
     The P17 contract uses a volume-weighted, piecewise-linear inverse
@@ -1462,6 +1464,8 @@ def analyze_dvh(
     slice_thickness_mm: float | None = None,
     dx_percentages: Sequence[float] = DEFAULT_DX_PERCENTAGES,
     vx_doses_gy: Sequence[float] = DEFAULT_VX_DOSES_GY,
+    index_definitions: Sequence[str] = (),
+    prescription_dose_gy: float | None = None,
     ct_path: Path | None = None,
     max_voxels: int = 2_000_000,
     max_ct_pixels: int = 8_000_000,
@@ -1489,10 +1493,12 @@ def analyze_dvh(
     structure = _load_structure(structure_path, dose, roi_number)
     dx_values = _normalize_percentages(dx_percentages, "dx_percentages")
     vx_values = _normalize_doses(vx_doses_gy, "vx_doses_gy")
+    try:
+        normalized_index_definitions = normalize_index_definitions(index_definitions)
+    except DvhIndexError as exc:
+        raise DVHEngineError(exc.code, exc.message, field=exc.field) from exc
     ct_summary = (
-        validate_ct_frame(ct_path, dose, max_pixels=max_ct_pixels)
-        if ct_path is not None
-        else None
+        validate_ct_frame(ct_path, dose, max_pixels=max_ct_pixels) if ct_path is not None else None
     )
     warnings: list[dict[str, object]] = []
     if ct_summary is None:
@@ -1544,6 +1550,18 @@ def analyze_dvh(
     volume_cc = float(np.sum(selected_volumes))
     if not math.isfinite(volume_cc) or volume_cc <= 0:
         raise DVHEngineError("DVH_EMPTY_STRUCTURE", "The rasterized ROI volume is not positive.")
+    try:
+        indices = calculate_dvh_indices(
+            normalized_index_definitions,
+            selected_dose_gy=selected,
+            selected_volume_cc=selected_volumes,
+            all_dose_gy=dose.values_gy,
+            all_volume_cc=per_voxel_volume,
+            quantile=_metric_quantile,
+            prescription_dose_gy=prescription_dose_gy,
+        )
+    except DvhIndexError as exc:
+        raise DVHEngineError(exc.code, exc.message, field=exc.field) from exc
     dx = {
         f"D{int(value) if value.is_integer() else value:g}_gy": _metric_quantile(
             selected, selected_volumes, value
@@ -1586,6 +1604,8 @@ def analyze_dvh(
         "slice_thickness_mm": slice_thickness_mm,
         "dx_percentages": list(dx_values),
         "vx_doses_gy": list(vx_values),
+        "index_definitions": list(normalized_index_definitions),
+        "prescription_dose_gy": prescription_dose_gy,
         "ct_supplied": ct_path is not None,
         "preview_limit": preview_limit,
     }
@@ -1626,6 +1646,7 @@ def analyze_dvh(
             "Vx_percent": vx_percent,
             "Vx_cc": vx_cc,
         },
+        "indices": indices,
         "curve": {
             "dose_gy": [float(value) for value in curve_doses],
             "cumulative_volume_cc": cumulative_cc,
@@ -1657,6 +1678,8 @@ def validate_dvh_paths(
     slice_thickness_mm: float | None,
     dx_percentages: Sequence[float],
     vx_doses_gy: Sequence[float],
+    index_definitions: Sequence[str] = (),
+    prescription_dose_gy: float | None = None,
     ct_path: Path | None,
     max_voxels: int,
     preview_limit: int,
@@ -1671,6 +1694,8 @@ def validate_dvh_paths(
         slice_thickness_mm=slice_thickness_mm,
         dx_percentages=dx_percentages,
         vx_doses_gy=vx_doses_gy,
+        index_definitions=index_definitions,
+        prescription_dose_gy=prescription_dose_gy,
         ct_path=ct_path,
         max_voxels=max_voxels,
         preview_limit=preview_limit,

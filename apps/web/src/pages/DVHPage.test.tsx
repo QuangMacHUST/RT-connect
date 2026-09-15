@@ -6,7 +6,7 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { apiClient } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { DVHPage } from './DVHPage'
-import { dvhMetricLabel, dvhSourceLabel, dvhStatusLabel } from './dvhLabels'
+import { dvhIndexLabel, dvhIndexMissingLabel, dvhIndexStatusLabel, dvhMetricLabel, dvhSourceLabel, dvhStatusLabel } from './dvhLabels'
 
 vi.mock('../api/client', () => ({
   ApiClientError: class ApiClientError extends Error {
@@ -141,6 +141,53 @@ test('uses readable Vietnamese labels for stored DVH status and source', () => {
   expect(dvhStatusLabel('REVIEW_REQUIRED')).toBe('Cần xem lại')
   expect(dvhSourceLabel('BIOLOGICAL_LIBRARY')).toBe('Thư viện sinh học')
   expect(dvhMetricLabel('D95')).toBe('D95')
+  expect(dvhIndexLabel('CI_PADDICK_95')).toBe('Chỉ số phù hợp Paddick ở mức 95%')
+  expect(dvhIndexStatusLabel('NOT_COMPUTED')).toBe('Chưa đủ dữ liệu')
+  expect(dvhIndexMissingLabel('prescription_dose_gy')).toBe('liều kê đơn')
+})
+
+test('requires prescription dose for CI and sends explicitly selected indices', async () => {
+  vi.mocked(apiClient.validateDvh).mockResolvedValue({ valid: false, errors: [], warnings: [], normalized_input: null, preview: null })
+
+  renderPage()
+  expect(await screen.findByRole('option', { name: 'Vùng số 1 · P17_TARGET · 1 đường viền' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('checkbox', { name: /Chỉ số phù hợp RTOG/ }))
+  fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra và xem trước' }))
+  expect(await screen.findByText('Muốn tính CI, hãy nhập liều kê đơn bằng Gy.')).toBeInTheDocument()
+  fireEvent.change(screen.getByLabelText(/Liều kê đơn \(Gy\)/), { target: { value: '60' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra và xem trước' }))
+
+  await waitFor(() => expect(vi.mocked(apiClient.validateDvh)).toHaveBeenCalledWith(
+    'access-token', organizationId, caseId, expect.objectContaining({ index_definitions: ['CI_RTOG_95'], prescription_dose_gy: 60 })
+  ))
+})
+
+test('renders selected HI/CI results with readable labels and no technical identifier', async () => {
+  vi.mocked(apiClient.dvhRuns).mockResolvedValue({
+    items: [{
+      id: 'dvh-index-run', organization_id: organizationId, qa_case_id: caseId,
+      dose_artifact_id: 'dose-id', structure_artifact_id: structureId, ct_artifact_id: null,
+      roi_number: 1, idempotency_key: 'dvh-index-test', engine_key: 'visual-dose.dvh',
+      engine_version: 'p17-dvh-1.1.0', status: 'COMPLETED', input_snapshot: {},
+      result_snapshot: {
+        coverage: { status: 'FULL', coverage_percent: 100, selected_voxel_count: 4, policy: 'FULL_ROI' },
+        roi: { name: 'P17_TARGET', roi_number: 1, contour_count: 1 },
+        dose: { minimum_gy: 0, maximum_gy: 2, units: 'GY', dose_type: 'PHYSICAL' },
+        metrics: { volume_cc: 1, Dmean_gy: 1, Dmin_gy: 0, Dmax_gy: 2, Dx_gy: { D95_gy: 1 }, Vx_percent: {}, Vx_cc: {} },
+        curve: { dose_gy: [0, 1, 2], cumulative_volume_percent: [100, 50, 0] },
+        visual_preview: { dose_gy: [0, 1, 2, 1], roi_mask: [true, true, true, true], rows: 2, columns: 2, mode: 'dose' },
+        indices: { status: 'COMPUTED', items: [{ formula_id: 'CI_RTOG_95', formula: 'PIV95 / TV', status: 'COMPUTED', value: 1, unit: 'RATIO', missing_inputs: [] }] }
+      },
+      warning_snapshot: [], error_snapshot: [], created_by_user_identity_id: null,
+      created_at: '2026-09-09T00:00:00Z', updated_at: '2026-09-09T00:00:00Z'
+    }], total: 1
+  })
+
+  renderPage()
+  expect(await screen.findByText('Kết quả đã được tính và lưu')).toBeInTheDocument()
+  expect(screen.getAllByText('Chỉ số phù hợp RTOG ở mức 95%').length).toBeGreaterThan(1)
+  expect(screen.getAllByText('Đã tính').length).toBeGreaterThan(0)
+  expect(screen.queryByText('CI_RTOG_95')).not.toBeInTheDocument()
 })
 
 test('sends only the explicitly selected P16 limit binding', async () => {

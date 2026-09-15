@@ -15,7 +15,7 @@ import {
 } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { artifactDisplayName } from './qaArtifactLabels'
-import { dvhMetricLabel, dvhOperatorLabel, dvhSourceLabel, dvhStatusLabel } from './dvhLabels'
+import { dvhIndexLabel, dvhIndexMissingLabel, dvhIndexStatusLabel, dvhMetricLabel, dvhOperatorLabel, dvhSourceLabel, dvhStatusLabel } from './dvhLabels'
 
 type JsonRecord = Record<string, unknown>
 
@@ -57,6 +57,13 @@ function parseNumberList(value: string): number[] | null {
   const parsed = parts.map(Number)
   return parts.length > 0 && parsed.every((item) => Number.isFinite(item)) ? parsed : null
 }
+
+const indexOptions = [
+  { value: 'HI_D2_D98_OVER_D50', label: 'Độ đồng nhất (D2 − D98) / D50', hint: 'Dùng D2, D98 và D50 của thể tích ROI.' },
+  { value: 'HI_D5_OVER_D95', label: 'Độ đồng nhất D5 / D95', hint: 'Dùng D5 và D95 của thể tích ROI.' },
+  { value: 'CI_RTOG_95', label: 'Chỉ số phù hợp RTOG ở mức 95%', hint: 'Cần liều kê đơn để xác định thể tích liều 95%.' },
+  { value: 'CI_PADDICK_95', label: 'Chỉ số phù hợp Paddick ở mức 95%', hint: 'Cần liều kê đơn và thể tích đích nhận đủ 95%.' }
+]
 
 function chartPoints(result: JsonRecord | undefined): string {
   const curve = asRecord(result?.curve)
@@ -202,6 +209,8 @@ function ResultPanel({ result }: { result: JsonRecord | undefined }) {
   const dx = asRecord(metrics.Dx_gy)
   const vxPercent = asRecord(metrics.Vx_percent)
   const vxCc = asRecord(metrics.Vx_cc)
+  const indices = asRecord(result.indices)
+  const indexItems = Array.isArray(indices.items) ? indices.items.map(asRecord) : []
   const curve = chartPoints(result)
   const warnings = Array.isArray(result.warnings) ? result.warnings : []
   const limitEvaluation = asRecord(result.limit_evaluation)
@@ -227,6 +236,7 @@ function ResultPanel({ result }: { result: JsonRecord | undefined }) {
       <tr><td>Input dose</td><td>{formatNumber(dose.minimum_gy)}–{formatNumber(dose.maximum_gy)} Gy</td><td>{textValue(dose.units)} · {textValue(dose.dose_type)}</td></tr>
     </tbody></table></div>
     {Object.keys(limitEvaluation).length > 0 && <section className="dvh-subpanel dvh-limit-result"><div className="panel-heading"><div><p className="eyebrow">ĐÁNH GIÁ GIỚI HẠN</p><h3>Đánh giá theo nguồn đã chọn</h3></div><span className={statusClass(textValue(limitEvaluation.status))}>{dvhStatusLabel(textValue(limitEvaluation.status))}</span></div><div className="dvh-chart-legend"><span>Chỉ số: {dvhMetricLabel(textValue(limitEvaluation.metric_key))}</span><span>Thực tế: {formatNumber(limitEvaluation.actual)} {textValue(limitEvaluation.actual_unit)}</span><span>Giới hạn: {dvhOperatorLabel(textValue(limitEvaluation.operator))} {formatNumber(limitEvaluation.limit)} {textValue(limitEvaluation.actual_unit)}</span><span>Biên: {formatNumber(limitEvaluation.margin)} {textValue(limitEvaluation.margin_unit)}</span></div><p className="form-hint">Nguồn tham khảo: {dvhSourceLabel(textValue(limitEvaluation.source_type))}. Nguồn này được chọn rõ ràng và không tự áp dụng.</p></section>}
+    {indexItems.length > 0 && <section className="dvh-subpanel dvh-index-result"><div className="panel-heading"><div><p className="eyebrow">CHỈ SỐ KẾ HOẠCH</p><h3>HI và CI theo công thức đã chọn</h3></div><span className={textValue(indices.status) === 'COMPUTED' ? 'status-badge' : 'status-badge status-badge--warning'}>{dvhIndexStatusLabel(textValue(indices.status))}</span></div><div className="table-wrap"><table><thead><tr><th>Chỉ số</th><th>Giá trị</th><th>Công thức</th><th>Trạng thái</th></tr></thead><tbody>{indexItems.map((item, index) => { const missing = Array.isArray(item.missing_inputs) ? item.missing_inputs.map((value) => dvhIndexMissingLabel(textValue(value))).join(', ') : ''; return <tr key={`${textValue(item.formula_id)}-${index}`}><td>{dvhIndexLabel(textValue(item.formula_id))}</td><td>{formatNumber(item.value, 4)}</td><td>{textValue(item.formula)}</td><td><span className={textValue(item.status) === 'COMPUTED' ? 'status-badge' : 'status-badge status-badge--warning'}>{dvhIndexStatusLabel(textValue(item.status))}</span>{missing && <small className="table-note">Thiếu: {missing}</small>}</td></tr> })}</tbody></table></div><p className="form-hint">Các chỉ số chỉ được tính theo công thức đã chọn. Hệ thống không tự kết luận đạt hay không đạt nếu chưa có nguồn và ngưỡng đánh giá phù hợp.</p></section>}
     {warnings.length > 0 && <div className="alert alert--warning"><strong>Cảnh báo cần xem xét</strong><ul>{warnings.map((item, index) => <li key={`${textValue(asRecord(item).code)}-${index}`}>{textValue(asRecord(item).message, 'Có cảnh báo cần xem xét trong kết quả.')}</li>)}</ul></div>}
   </>
 }
@@ -245,6 +255,8 @@ export function DVHPage() {
   const [sliceThickness, setSliceThickness] = useState('')
   const [dxText, setDxText] = useState('2, 50, 95, 98')
   const [vxText, setVxText] = useState('0, 20, 30, 40, 50')
+  const [indexDefinitions, setIndexDefinitions] = useState<string[]>([])
+  const [prescriptionDose, setPrescriptionDose] = useState('')
   const [bindingSource, setBindingSource] = useState<'NONE' | 'DOSE_LIMIT' | 'PROTOCOL'>('NONE')
   const [selectedLimitEntryId, setSelectedLimitEntryId] = useState('')
   const [selectedProtocolVersionId, setSelectedProtocolVersionId] = useState('')
@@ -297,6 +309,7 @@ export function DVHPage() {
   const selectedProtocol = useMemo(() => activeProtocols.data?.items.find((item) => item.id === selectedProtocolVersionId), [activeProtocols.data?.items, selectedProtocolVersionId])
   const protocolMetricOptions = useMemo(() => (selectedProtocol?.rules ?? []).filter((rule) => ['MAX', 'MIN', 'RANGE', 'TARGET'].includes(rule.rule_type)), [selectedProtocol?.rules])
   const activeRun: DvhRunResource | undefined = useMemo(() => runs.data?.items.find((item) => item.id === selectedRunId) ?? runs.data?.items[0], [runs.data, selectedRunId])
+  const ciRequested = indexDefinitions.some((value) => value.startsWith('CI_'))
   const buildRequest = (): DvhRequest | null => {
     const dx = parseNumberList(dxText)
     const vx = parseNumberList(vxText)
@@ -311,6 +324,15 @@ export function DVHPage() {
     const thickness = sliceThickness.trim() ? Number(sliceThickness) : null
     if (thickness !== null && (!Number.isFinite(thickness) || thickness <= 0)) {
       setMessage('Slice thickness phải là số dương hoặc để trống để dùng metadata DICOM.')
+      return null
+    }
+    const prescription = prescriptionDose.trim() ? Number(prescriptionDose) : null
+    if (prescription !== null && (!Number.isFinite(prescription) || prescription <= 0)) {
+      setMessage('Liều kê đơn phải là số Gy dương hoặc để trống.')
+      return null
+    }
+    if (ciRequested && prescription === null) {
+      setMessage('Muốn tính CI, hãy nhập liều kê đơn bằng Gy.')
       return null
     }
     if (bindingSource === 'DOSE_LIMIT' && !selectedLimitEntryId) {
@@ -330,6 +352,8 @@ export function DVHPage() {
       slice_thickness_mm: thickness,
       dx_percentages: dx,
       vx_doses_gy: vx,
+      index_definitions: indexDefinitions,
+      prescription_dose_gy: prescription,
       preview_limit: 4096,
       ...(bindingSource === 'DOSE_LIMIT' ? { limit_entry_id: selectedLimitEntryId } : {}),
       ...(bindingSource === 'PROTOCOL' ? { protocol_version_id: selectedProtocolVersionId, protocol_metric_key: selectedProtocolMetricKey } : {})
@@ -406,6 +430,7 @@ export function DVHPage() {
       <label>Độ dày lát cắt (mm) · chỉ một khung hình<input inputMode="decimal" value={sliceThickness} placeholder="Để trống: dùng thông tin DICOM" onChange={(event) => setSliceThickness(event.target.value)} /></label>
       <label>D2/Dx (%)<input value={dxText} onChange={(event) => setDxText(event.target.value)} /></label>
       <label>Vx liều (Gy)<input value={vxText} onChange={(event) => setVxText(event.target.value)} /></label>
+      <fieldset className="dvh-index-picker"><legend>Chỉ số đồng nhất và phù hợp (tùy chọn)</legend><div className="dvh-index-options">{indexOptions.map((option) => <label className="dvh-index-option" key={option.value}><input type="checkbox" checked={indexDefinitions.includes(option.value)} onChange={(event) => { setIndexDefinitions((current) => event.target.checked ? [...current, option.value] : current.filter((value) => value !== option.value)); setValidation(undefined) }} /><span><strong>{option.label}</strong><small>{option.hint}</small></span></label>)}</div>{ciRequested && <label htmlFor="dvh-prescription-dose">Liều kê đơn (Gy)<input id="dvh-prescription-dose" inputMode="decimal" value={prescriptionDose} placeholder="Ví dụ: 60" onChange={(event) => { setPrescriptionDose(event.target.value); setValidation(undefined) }} /><small className="form-hint">Dùng để xác định ngưỡng liều 95% cho chỉ số phù hợp.</small></label>}</fieldset>
     </div><p className="form-hint">D(x) dùng phân vị tuyến tính; V(x) là thể tích nhận ít nhất ngưỡng x Gy. Danh sách được chuẩn hóa và lưu cùng kết quả.</p><section className="dvh-binding-panel"><div className="panel-heading"><div><p className="eyebrow">CHỌN NGUỒN GIỚI HẠN</p><h3>Đánh giá theo nguồn tham khảo</h3></div><span className="status-badge">Không tự áp dụng</span></div><div className="dvh-config-grid"><label>Nguồn tham khảo<select value={bindingSource} onChange={(event) => { const value = event.target.value as 'NONE' | 'DOSE_LIMIT' | 'PROTOCOL'; setBindingSource(value); setSelectedLimitEntryId(''); setSelectedProtocolVersionId(''); setSelectedProtocolMetricKey(''); setValidation(undefined) }}><option value="NONE">Không dùng nguồn P16/P11</option><option value="DOSE_LIMIT">Giới hạn liều đã công bố</option><option value="PROTOCOL">Quy trình QA đang dùng</option></select></label>{bindingSource === 'DOSE_LIMIT' && <label>Giới hạn liều<select value={selectedLimitEntryId} onChange={(event) => { setSelectedLimitEntryId(event.target.value); setValidation(undefined) }}><option value="">Chọn giới hạn liều</option>{(doseLimitEntries.data?.items ?? []).map((entry: BiologicalLibraryEntryResource) => <option key={entry.id} value={entry.id}>{entry.name} · phiên bản {entry.version_number} · {entry.metric_key ?? '—'} · {entry.operator ?? '—'} {entry.limit_value ?? entry.upper_limit ?? '—'} {entry.unit ?? ''}</option>)}</select></label>}{bindingSource === 'PROTOCOL' && <><label>Quy trình QA<select value={selectedProtocolVersionId} onChange={(event) => { setSelectedProtocolVersionId(event.target.value); setSelectedProtocolMetricKey(''); setValidation(undefined) }}><option value="">Chọn quy trình</option>{(activeProtocols.data?.items ?? []).map((protocol: QAProtocolResource) => <option key={protocol.id} value={protocol.id}>{protocol.name} · phiên bản {protocol.version_number}</option>)}</select></label><label>Tiêu chí đánh giá<select value={selectedProtocolMetricKey} onChange={(event) => { setSelectedProtocolMetricKey(event.target.value); setValidation(undefined) }} disabled={!selectedProtocol}><option value="">Chọn tiêu chí</option>{protocolMetricOptions.map((rule) => <option key={rule.metric_key} value={rule.metric_key}>{rule.metric_key} · {rule.rule_type} · {rule.target_value ?? rule.upper_limit ?? rule.lower_limit ?? '—'} {rule.unit}</option>)}</select></label></>}</div><p className="form-hint">Nguồn chỉ được dùng khi người thực hiện chọn rõ. Hệ thống không tự tìm, không xếp hạng và không biến tài liệu tham khảo thành chỉ định điều trị.</p>{bindingSource === 'DOSE_LIMIT' && doseLimitEntries.error && <div className="alert alert--error"><p>{errorMessage(doseLimitEntries.error)}</p></div>}{bindingSource === 'PROTOCOL' && activeProtocols.error && <div className="alert alert--error"><p>{errorMessage(activeProtocols.error)}</p></div>}</section><div className="dvh-actions"><button disabled={busy || !doseId || !structureId || !effectiveRoi} onClick={runValidation}>{validateMutation.isPending ? 'Đang kiểm tra…' : 'Kiểm tra và xem trước'}</button><button className="button-secondary" disabled={busy || !doseId || !structureId || !effectiveRoi} onClick={saveRun}>{createMutation.isPending ? 'Đang lưu…' : 'Tính và lưu kết quả'}</button></div></section>
     {validation && !validation.valid && <section className="alert alert--error"><h3>DVH không hợp lệ</h3><ul>{validation.errors.map((item, index) => <li key={`${textValue(asRecord(item).code)}-${index}`}><strong>{textValue(asRecord(item).code)}</strong> · {textValue(asRecord(item).message, 'Dữ liệu chưa đáp ứng điều kiện tính.')}</li>)}</ul></section>}
     <section className="panel dvh-panel"><div className="panel-heading"><div><p className="eyebrow">KẾT QUẢ VÀ NGUỒN</p><h2>Kết quả DVH</h2></div><div className="page-header__actions">{activeRun && <button className="button-secondary" onClick={() => void download()}>Tải bảng số liệu</button>}</div></div><ResultPanel result={result} />

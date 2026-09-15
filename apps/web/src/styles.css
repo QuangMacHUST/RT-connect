@@ -530,6 +530,20 @@ td code { color: #075e67; font-size: .78rem; }
 
 .dvh-panel { margin-top: 18px; }
 .dvh-input-grid, .dvh-config-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 16px; }
+.dvh-index-picker { border: 1px solid #d4e0e6; margin: 16px 0 0; padding: 12px; }
+.dvh-index-picker legend { color: #102a43; font-size: .86rem; font-weight: 700; padding: 0 6px; }
+.dvh-index-options { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.dvh-index-option { align-items: flex-start; background: #f8fbfc; border: 1px solid #d4e0e6; cursor: pointer; display: flex; gap: 8px; padding: 10px; }
+.dvh-index-option input { margin-top: 3px; }
+.dvh-index-option span { display: grid; gap: 3px; }
+.dvh-index-option strong { color: #102a43; font-size: .82rem; }
+.dvh-index-option small, .table-note { color: #526979; font-size: .76rem; font-weight: 400; }
+.dvh-index-picker > label { color: #334155; display: grid; font-size: .82rem; font-weight: 600; gap: 6px; margin-top: 12px; max-width: 360px; }
+.dvh-index-picker input:not([type='checkbox']) { border: 1px solid #c8d5de; border-radius: 4px; color: #0f172a; font: inherit; min-height: 38px; padding: 8px 10px; }
+.dvh-index-result { margin-top: 12px; }
+.dvh-index-result table { width: 100%; }
+.dvh-index-result td:last-child { min-width: 150px; }
+.table-note { display: block; margin-top: 4px; }
 .dvh-input-grid label, .dvh-config-grid label { color: #334155; display: grid; font-size: .82rem; font-weight: 600; gap: 6px; }
 .dvh-input-grid select, .dvh-config-grid input, .dvh-config-grid select { border: 1px solid #c8d5de; border-radius: 4px; color: #0f172a; font: inherit; min-height: 38px; padding: 8px 10px; }
 .dvh-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
@@ -641,7 +655,7 @@ td code { color: #075e67; font-size: .78rem; }
   .qa-catalog-toolbar { grid-template-columns: 1fr; }
   .qa-test-grid { grid-template-columns: 1fr; }
   .artifact-upload { grid-template-columns: 1fr; }
-  .machine-qa-protocol-controls, .machine-qa-parameter-grid, .machine-qa-diff-grid, .gamma-input-grid, .gamma-config-grid, .report-form-grid, .report-json-grid, .trend-filter-grid, .form-grid, .protocol-form-grid, .diff-grid, .biological-filter-row, .biological-form-grid, .bed-form-grid, .bed-form-grid--three, .p15-form-grid, .p15-form-grid--course, .p15-form-grid--tissue, .library-filter-grid, .library-form-grid, .library-use-form, .library-detail-grid, .dvh-input-grid, .dvh-config-grid { grid-template-columns: 1fr; }
+  .machine-qa-protocol-controls, .machine-qa-parameter-grid, .machine-qa-diff-grid, .gamma-input-grid, .gamma-config-grid, .report-form-grid, .report-json-grid, .trend-filter-grid, .form-grid, .protocol-form-grid, .diff-grid, .biological-filter-row, .biological-form-grid, .bed-form-grid, .bed-form-grid--three, .p15-form-grid, .p15-form-grid--course, .p15-form-grid--tissue, .library-filter-grid, .library-form-grid, .library-use-form, .library-detail-grid, .dvh-input-grid, .dvh-config-grid, .dvh-index-options { grid-template-columns: 1fr; }
   .biological-tool-grid { grid-template-columns: 1fr; }
   .biological-form-grid__wide, .bed-form-grid__wide, .p15-form-grid__wide, .library-form-grid__wide { grid-column: auto; }
   .p15-alternative-row, .p15-recovery-row { grid-template-columns: 1fr; }

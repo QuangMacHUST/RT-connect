@@ -1,5 +1,13 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P17-W02/P17-W03 — chỉ số HI/CI trong DVH — lát cắt cục bộ — 2026-09-15
+
+- Đã nối máy chủ DVH với bốn công thức được chọn rõ: `(D2 − D98) / D50`, `D5 / D95`, chỉ số phù hợp RTOG 95% và chỉ số phù hợp Paddick 95%. Mỗi công thức giữ riêng tên định nghĩa, công thức, tham số, đơn vị, trạng thái và nguồn dữ liệu.
+- Giao diện cho phép chọn HI/CI ngay trong tham số tính toán. Khi chọn CI, ô liều kê đơn mới xuất hiện và thao tác bị chặn nếu chưa nhập liều dương hợp lệ; thiếu dữ liệu hình học/liều trả trạng thái “Chưa đủ dữ liệu”, không suy đoán và không tự sinh ngưỡng đạt/không đạt.
+- Khu vực kết quả chỉ hiển thị nhãn nghiệp vụ, công thức toán học, giá trị và trạng thái; không hiển thị mã công thức, mã lần tính, chuỗi băm hoặc JSON. Không thao tác xóa hồ sơ `dailyQA` hay dữ liệu liên quan.
+- Kiểm thử máy chủ DVH đạt **22/22**, kiểm thử giao diện DVH đạt **6/6**, Ruff, kiểm tra kiểu và bản dựng giao diện đạt. Bằng chứng: [chỉ số HI/CI cục bộ](docs/evidence/p17-local-hi-ci-20260915.md).
+- Đây mới là lát cắt local của P17-W02/P17-W03; còn đối chiếu oracle độc lập, xác nhận cách tính CI với physicist, nguồn tiêu chí theo bệnh cảnh, kiểm thử dữ liệu thật trên staging và VERIFY/HANDOFF P17.
+
 ## P17 — tinh giản kết quả DVH cho người dùng — lát cắt cục bộ — 2026-09-15
 
 - Tiếp tục triển khai theo kế hoạch sau khi dừng hướng xóa vĩnh viễn; hồ sơ `dailyQA`, các kết quả liên quan và điểm xu hướng không bị xóa hoặc thay đổi.

@@ -1132,7 +1132,7 @@ Chức năng hai nhánh và bảng dùng chung đạt; gói nội dung chỉ đ�
 ### Luồng thao tác P17
 
 1. Trong bài PSQA chọn xem liều/DVH, chọn RTDOSE/RTSTRUCT và CT khi profile cần.
-2. Chọn cấu trúc, chỉ số và định nghĩa HI/CI; xem DVH/hình và dữ liệu đơn vị rõ.
+2. Chọn cấu trúc, Dxx/Vxx và định nghĩa HI/CI; nếu chọn CI thì nhập liều kê đơn; xem DVH/hình và dữ liệu đơn vị rõ.
 3. Lưu lần phân tích, chọn dòng/hình cho PDF, mở nguồn tiêu chí khi cần.
 
 ### Gói công việc P17
@@ -1141,7 +1141,9 @@ Chức năng hai nhánh và bảng dùng chung đạt; gói nội dung chỉ đ�
   Lát cắt UX hiện đã tinh giản khu vực chọn dữ liệu, kết quả và lịch sử theo nhãn tiếng Việt; không hiển thị mã lượt tính, dấu vết đầu vào, chuỗi băm, mã nguồn giới hạn hoặc xuất JSON. Đây chưa phải nghiệm thu engine, biểu đồ, HI/CI hay PDF.
   Parity giao diện trên staging đã được kiểm tra ở bản `3833783`; bằng chứng: `docs/evidence/p17-staging-dvh-user-facing-labels-20260915.md`. Cổng P17-W01 vẫn mở cho đến khi phần engine, biểu đồ, nguồn, lưu lại và xuất báo cáo được nghiệm thu đầy đủ.
 - [ ] P17-W02 — Kiểm quan hệ hình học/ROI, sampling/cc/% và D/V definitions.
+  Lát cắt cục bộ đã bổ sung kiểm tra đầu vào và đầu ra HI/CI; còn đối chiếu oracle độc lập, kiểm tra nguồn và nghiệm thu hình học.
 - [ ] P17-W03 — HI/CI có formula identifier/parameters, thiếu dữ liệu không tính; source contextual matching.
+  Lát cắt cục bộ đã thực hiện bốn công thức tách biệt, yêu cầu liều kê đơn cho CI, giữ tham số và không tự tạo ngưỡng đánh giá. Bằng chứng: `docs/evidence/p17-local-hi-ci-20260915.md`. Chưa đóng cho đến khi có oracle, nguồn theo bệnh cảnh và kiểm tra staging.
 - [ ] P17-W04 — Kiểm workload lớn, oracle, run persistence và selection PDF.
 - [ ] P17-VERIFY — Chạy các TC-UX1 dưới đây và nhóm lỗi dùng chung có liên quan; lưu actual/evidence theo SHA.
 - [ ] P17-HANDOFF — Cập nhật tiến độ, dữ liệu/migration/tuyến bị tác động, giới hạn hỗ trợ và bước tiếp theo.
