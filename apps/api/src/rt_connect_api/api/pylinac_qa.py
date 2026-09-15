@@ -33,6 +33,7 @@ from rt_connect_api.services.object_storage import ObjectStorage, ObjectStorageE
 from rt_connect_api.services.pylinac_adapter import PylinacAdapterError, execute_pylinac
 from rt_connect_api.services.pylinac_registry import (
     PYLINAC_VERSION,
+    RuntimeBinding,
     package_fingerprint,
     runtime_binding,
 )
@@ -123,7 +124,7 @@ def _case_or_error(session: Session, context: SessionContext, case_id: UUID) -> 
     return case
 
 
-def _definition_or_error(catalog_key: str) -> tuple[QATestDefinition, str]:
+def _definition_or_error(catalog_key: str) -> tuple[QATestDefinition, RuntimeBinding]:
     definition = get_qa_test_definition(catalog_key)
     if definition is None or definition.engine_name != "pylinac":
         raise DomainError(
@@ -134,7 +135,7 @@ def _definition_or_error(catalog_key: str) -> tuple[QATestDefinition, str]:
         raise DomainError(
             "PYLINAC_CAPABILITY_NOT_FOUND", "Bài QA này chưa có liên kết bộ tính.", 409
         )
-    return definition, binding.import_path
+    return definition, binding
 
 
 def _artifact_inputs(
@@ -173,13 +174,13 @@ def _artifact_inputs(
 
 
 _NON_IMAGE_MODALITIES = frozenset({"RTDOSE", "RTSTRUCT", "RTPLAN"})
-_IMAGE_INPUT_KINDS = frozenset(
-    {"IMAGE", "IMAGE_PAIR", "IMAGE_SERIES", "IMAGE_OR_PROFILE", "DICOM_SERIES", "NUCLEAR"}
+_IMAGE_INPUT_PROFILES = frozenset(
+    {"image", "image_pair", "image_series", "image_or_profile", "dicom_series", "nuclear"}
 )
 
 
 def _validate_artifact_profile(
-    definition: QATestDefinition, artifacts: list[Artifact]
+    input_profile: str, artifacts: list[Artifact]
 ) -> None:
     """Reject a validated artifact whose semantic modality cannot feed the QA class.
 
@@ -189,7 +190,7 @@ def _validate_artifact_profile(
     filter cannot send an RTDOSE to an image-analysis class such as Starshot.
     """
 
-    if definition.input_kind not in _IMAGE_INPUT_KINDS:
+    if input_profile not in _IMAGE_INPUT_PROFILES:
         return
     wrong_inputs = [
         artifact
@@ -322,14 +323,14 @@ def create_pylinac_run(
 
     context = resolve_session_context(session, identity)
     case = _case_or_error(session, context, case_id)
-    definition, import_path = _definition_or_error(payload.catalog_key)
+    definition, binding = _definition_or_error(payload.catalog_key)
     calibration_run = definition.key.startswith("CALIBRATION_")
     artifacts = (
         []
         if calibration_run
         else _artifact_inputs(session, context, case, payload.artifact_ids)
     )
-    _validate_artifact_profile(definition, artifacts)
+    _validate_artifact_profile(binding.input_profile, artifacts)
     if calibration_run and payload.artifact_ids:
         raise DomainError(
             "PYLINAC_INPUT_COUNT_INVALID",
@@ -461,15 +462,13 @@ def create_pylinac_run(
             "Bài ACR yêu cầu một tệp ZIP chứa chuỗi DICOM.",
             422,
         )
-    binding = runtime_binding(definition.key)
-    assert binding is not None
     started_at = datetime.now(UTC)
     run = PylinacQARun(
         organization_id=context.organization_id,
         qa_case_id=case.id,
         machine_id=case.machine_id,
         catalog_key=definition.key,
-        engine_class=definition.engine_class or import_path.rsplit(".", 1)[-1],
+        engine_class=definition.engine_class or binding.import_path.rsplit(".", 1)[-1],
         engine_version=PYLINAC_VERSION,
         package_fingerprint=package_fingerprint(),
         status="RUNNING",

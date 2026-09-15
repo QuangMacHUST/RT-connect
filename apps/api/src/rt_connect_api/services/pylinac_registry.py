@@ -70,6 +70,7 @@ class RegistrySummary(TypedDict):
     total_bindings: int
     runtime_available: int
     unresolved_catalog_keys: list[str]
+    input_profile_contract_mismatches: list[InputProfileDiff]
     capabilities: list[CapabilitySummary]
 
 
@@ -79,6 +80,15 @@ class InventoryDiff(TypedDict):
     missing_symbols: list[str]
     unexpected_symbols: list[str]
     unbound_symbols: list[str]
+
+
+class InputProfileDiff(TypedDict):
+    """A mismatch between the user-facing catalogue and the runtime adapter."""
+
+    catalog_key: str
+    input_kind: str
+    expected_profile: str | None
+    registered_profile: str
 
 
 # These are the public, user-facing analysis classes/functions in pylinac 3.47.0.
@@ -150,6 +160,23 @@ _PUBLIC_CAPABILITY_FUNCTIONS: Final[dict[str, tuple[str, ...]]] = {
 # capability through QuartDVT, which is the registered execution symbol.
 _REGISTERED_ALIASES: Final[dict[str, str]] = {
     "pylinac.quart.HypersightQuartDVT": "QUART_HYPERSIGHT",
+}
+
+# The catalogue speaks in terms of the form shown to the user; the registry
+# speaks in terms of the adapter's executable input contract.  Keeping this
+# mapping explicit makes a catalogue edit fail closed instead of silently
+# routing an image, log, measurement, or gamma profile to the wrong loader.
+_CATALOG_INPUT_PROFILES: Final[dict[str, str]] = {
+    "MEASUREMENT": "measurement",
+    "IMAGE": "image",
+    "IMAGE_PAIR": "image_pair",
+    "DICOM_SERIES": "dicom_series",
+    "LOG_PAIR": "log_pair",
+    "LOG": "log",
+    "IMAGE_SERIES": "image_series",
+    "IMAGE_OR_PROFILE": "image_or_profile",
+    "NUCLEAR": "nuclear",
+    "PROFILE_PAIR": "profile_pair",
 }
 
 _NON_CAPABILITY_CLASSES: Final[frozenset[str]] = frozenset(
@@ -401,6 +428,27 @@ def pylinac_inventory_diff() -> InventoryDiff:
     }
 
 
+def pylinac_input_profile_diff() -> list[InputProfileDiff]:
+    """Compare every Pylinac binding with its catalogue input contract."""
+
+    definitions = _definition_by_key()
+    differences: list[InputProfileDiff] = []
+    for binding in RUNTIME_BINDINGS:
+        definition = definitions[binding.catalog_key]
+        expected_profile = _CATALOG_INPUT_PROFILES.get(definition.input_kind)
+        if expected_profile == binding.input_profile:
+            continue
+        differences.append(
+            {
+                "catalog_key": binding.catalog_key,
+                "input_kind": definition.input_kind,
+                "expected_profile": expected_profile,
+                "registered_profile": binding.input_profile,
+            }
+        )
+    return differences
+
+
 def _definition_by_key() -> dict[str, QATestDefinition]:
     return {definition.key: definition for definition in QA_TEST_CATALOG}
 
@@ -508,5 +556,6 @@ def registry_summary() -> RegistrySummary:
         "total_bindings": len(capabilities),
         "runtime_available": sum(item.runtime_available for item in capabilities),
         "unresolved_catalog_keys": list(unresolved),
+        "input_profile_contract_mismatches": pylinac_input_profile_diff(),
         "capabilities": capability_summaries,
     }

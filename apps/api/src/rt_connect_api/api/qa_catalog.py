@@ -46,6 +46,7 @@ class PylinacCapabilityCollection(BaseModel):
     total_bindings: int = Field(ge=0)
     runtime_available: int = Field(ge=0)
     unresolved_catalog_keys: list[str]
+    input_profile_contract_mismatches: list[dict[str, str | None]]
     capabilities: list[PylinacCapabilityStatus]
 
 
@@ -136,5 +137,6 @@ def get_pylinac_capabilities(
         total_bindings=summary["total_bindings"],
         runtime_available=summary["runtime_available"],
         unresolved_catalog_keys=summary["unresolved_catalog_keys"],
+        input_profile_contract_mismatches=summary["input_profile_contract_mismatches"],
         capabilities=capabilities,
     )

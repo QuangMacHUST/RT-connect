@@ -4,6 +4,7 @@ from rt_connect_api.qa_catalog import CATALOGUE_VERSION, QA_TEST_CATALOG
 from rt_connect_api.services.pylinac_registry import (
     PYLINAC_VERSION,
     PYLINAC_WHEEL_SHA256,
+    pylinac_input_profile_diff,
     pylinac_inventory_diff,
     registry_summary,
     resolve_capabilities,
@@ -40,6 +41,10 @@ def test_locked_pylinac_public_inventory_is_fully_bound() -> None:
     }
 
 
+def test_catalogue_input_profiles_match_all_runtime_bindings() -> None:
+    assert pylinac_input_profile_diff() == []
+
+
 def test_catalogue_engine_names_match_the_locked_runtime_symbols() -> None:
     definitions = {definition.key: definition for definition in QA_TEST_CATALOG}
 
@@ -62,6 +67,7 @@ def test_registry_summary_contains_provenance_without_raw_error() -> None:
     assert summary["total_bindings"] == 63
     assert summary["runtime_available"] == 63
     assert summary["unresolved_catalog_keys"] == []
+    assert summary["input_profile_contract_mismatches"] == []
     assert len(summary["package_fingerprint"]) == 64
     assert all("traceback" not in str(item).casefold() for item in summary["capabilities"])
 
@@ -85,6 +91,7 @@ def test_capability_endpoint_is_organization_scoped() -> None:
     assert body["total_bindings"] == 63
     assert body["runtime_available"] == 63
     assert body["unresolved_catalog_keys"] == []
+    assert body["input_profile_contract_mismatches"] == []
     assert len(body["capabilities"]) == 63
     assert outside.status_code == 403
     assert outside.json()["code"] == "ORGANIZATION_SCOPE_MISMATCH"
