@@ -173,3 +173,20 @@ def test_calibration_missing_required_measurement_is_rejected_before_engine(
 
     assert error.value.code == "PYLINAC_PARAMETER_INVALID"
     assert "measured_pdd10" in error.value.message
+
+
+@pytest.mark.parametrize(
+    ("catalog_key", "unexpected_key"),
+    (
+        ("CALIBRATION_TG51_PHOTON", "k_elec"),
+        ("CALIBRATION_TRS398_PHOTON", "p_elec"),
+        ("CALIBRATION_TRS398_ELECTRON", "p_elec"),
+    ),
+)
+def test_calibration_rejects_coefficient_from_another_protocol_family(
+    tmp_path: Path, catalog_key: str, unexpected_key: str
+) -> None:
+    with pytest.raises(PylinacAdapterError) as error:
+        execute_pylinac(catalog_key, tmp_path, {unexpected_key: 1.0})
+
+    assert error.value.code == "PYLINAC_PARAMETER_UNSUPPORTED"

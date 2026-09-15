@@ -1667,3 +1667,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Kiểm thử API registry đạt **8/8**, giao diện đạt **58/58**, kiểm tra kiểu, lint và bản dựng sản xuất đạt. Commit `226b5d2` đã triển khai đồng bộ API và giao diện staging; bộ xác minh công khai exact-SHA đạt **16/16**, readiness giữ lược đồ `20260914_0023`. Bằng chứng: [kiểm tra trạng thái bộ mẫu trên staging](docs/evidence/p7-staging-fixture-status-deployment-20260916.json).
 - Mốc này chỉ đóng thêm cổng minh bạch độ phủ. Fixture commissioning, đối chiếu độc lập, ROI chuyên biệt, ánh xạ tọa độ đa ảnh, kiểm chứng tương tác staging của từng nhóm và VERIFY/HANDOFF P7 vẫn mở.
 - Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
+## P7-CAL/W04 — kiểm tra biểu mẫu hiệu chuẩn và sửa TRS-398 electron — đã kiểm tra cục bộ — 2026-09-16
+
+- Đã bổ sung lớp kiểm tra giao diện riêng cho năm bài hiệu chuẩn TG-51/TRS-398. Biểu mẫu yêu cầu các thông tin truy nguyên của phép đo, kiểm tra số hữu hạn, miền tối thiểu và từng phần tử trong các trường nhiều số đọc; lỗi hiển thị bằng tiếng Việt trước khi gửi yêu cầu, không còn âm thầm bỏ qua phần nhập sai.
+- Phát hiện và sửa lỗi ánh xạ ở bài TRS-398 electron: giao diện trước đây dùng tên trường `p_elec`, trong khi hợp đồng Pylinac/adapter yêu cầu `k_elec`; hai biến thể TRS-398 nay dùng đúng hệ số `k_elec`. Bộ gom tham số cũng chỉ gửi hệ số phù hợp với từng họ quy trình, không gửi hệ số ẩn còn lại làm tham số thừa. Tên các bài hiệu chuẩn cũng đã đổi sang nhãn nghiệp vụ tiếng Việt.
+- Kiểm thử giao diện đạt **60/60**, kiểm tra kiểu đạt, lint đạt và bản dựng sản xuất đạt. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+- Đây là `LOCAL_VERIFIED_SLICE` cho biên nhập liệu và ánh xạ giao diện. P07-CAL vẫn mở vì chưa có số đo chuẩn/commissioning, đối chiếu độc lập, kiểm lỗi miền vật lý và kiểm chứng staging; không được dùng lát cắt này để tuyên bố hiệu chuẩn lâm sàng.

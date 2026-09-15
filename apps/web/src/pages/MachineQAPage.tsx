@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { artifactDisplayName, artifactsAreValidated, isPylinacImageArtifact, selectedArtifactsAreValidated } from './qaArtifactLabels'
 import { historyForCatalog } from './pylinacHistory'
 import { mapImagePoint } from './pylinacCoordinates'
+import { calibrationCoefficientKey, calibrationNames, type CalibrationCatalogKey, validateCalibrationValues } from './calibrationValidation'
 
 type JsonRecord = Record<string, unknown>
 
@@ -1506,11 +1507,10 @@ function CtPylinacPage({ caseId, accessToken, title, catalogKey }: { caseId: str
 const planarCatalogKeys = [
   'PLANAR_LEEDS_TOR_18', 'PLANAR_LEEDS_TOR_BLUE', 'PLANAR_STANDARD_IMAGING_QC3', 'PLANAR_STANDARD_IMAGING_QC_KV', 'PLANAR_LAS_VEGAS', 'PLANAR_ELEKTA_LAS_VEGAS', 'PLANAR_DOSELAB_MC2_MV', 'PLANAR_DOSELAB_MC2_KV', 'PLANAR_SNC_MV', 'PLANAR_SNC_MV_12510', 'PLANAR_SNC_KV', 'PLANAR_PTW_EPID_QC', 'PLANAR_IBA_PRIMUS_A', 'PLANAR_STANDARD_IMAGING_FC2', 'PLANAR_IMT_LRAD', 'PLANAR_DOSELAB_RLF', 'PLANAR_PTW_ISO_ALIGN', 'PLANAR_SNC_FSQA', 'PLANAR_ACR_DIGITAL_MAMMOGRAPHY'
 ] as const
-type CalibrationCatalogKey = 'CALIBRATION_TG51_PHOTON' | 'CALIBRATION_TG51_ELECTRON_LEGACY' | 'CALIBRATION_TG51_ELECTRON_MODERN' | 'CALIBRATION_TRS398_PHOTON' | 'CALIBRATION_TRS398_ELECTRON'
-
 function CalibrationPage({ caseId, accessToken, title, catalogKey }: { caseId: string; accessToken: string; title: string; catalogKey: CalibrationCatalogKey }) {
   const queryClient = useQueryClient()
   const isTg = catalogKey.startsWith('CALIBRATION_TG51_')
+  const isTrs = catalogKey.startsWith('CALIBRATION_TRS398_')
   const isPhoton = catalogKey.endsWith('PHOTON')
   const isTrsPhoton = catalogKey === 'CALIBRATION_TRS398_PHOTON'
   const isLegacyElectron = catalogKey === 'CALIBRATION_TG51_ELECTRON_LEGACY'
@@ -1525,19 +1525,23 @@ function CalibrationPage({ caseId, accessToken, title, catalogKey }: { caseId: s
     setup: 'SSD', lead_foil: 'None', fff: 'false'
   }))
   const [message, setMessage] = useState<string>()
+  const [messageTone, setMessageTone] = useState<'success' | 'error'>('success')
   const runs = useQuery({ queryKey: ['pylinac-runs', caseId, accessToken], queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false })
   const analyze = useMutation({
     mutationFn: () => {
       const parameters: Record<string, unknown> = {}
       const textKeys = ['institution', 'physicist', 'unit', 'measurement_date', 'electrometer', 'chamber', 'cone', 'setup']
       for (const key of textKeys) if (values[key]?.trim()) parameters[key] = values[key].trim()
-      const numberKeys = ['temp', 'press', 'n_dw', 'p_elec', 'k_elec', 'energy', 'voltage_reference', 'voltage_reduced', 'mu', 'tissue_correction', 'clinical_pdd10', 'measured_pdd10', 'clinical_pdd', 'clinical_pdd_zref', 'clinical_tmr_zref', 'tpr2010', 'i_50', 'k_ecal']
+      const numberKeys = ['temp', 'press', 'n_dw', 'energy', 'voltage_reference', 'voltage_reduced', 'mu', 'tissue_correction', 'clinical_pdd10', 'measured_pdd10', 'clinical_pdd', 'clinical_pdd_zref', 'clinical_tmr_zref', 'tpr2010', 'i_50', 'k_ecal']
       for (const key of numberKeys) {
         if (values[key]?.trim() !== '') {
           const number = Number(values[key])
           if (Number.isFinite(number)) parameters[key] = number
         }
       }
+      const coefficientKey = calibrationCoefficientKey(catalogKey)
+      const coefficient = Number(values[coefficientKey])
+      if (values[coefficientKey]?.trim() && Number.isFinite(coefficient)) parameters[coefficientKey] = coefficient
       for (const key of ['m_reference', 'm_opposite', 'm_reduced', 'm_gradient']) {
         if (!values[key]?.trim()) continue
         const parsed = values[key].split(',').map((item) => Number(item.trim())).filter((item) => Number.isFinite(item))
@@ -1548,30 +1552,30 @@ function CalibrationPage({ caseId, accessToken, title, catalogKey }: { caseId: s
       if (isTg && isPhoton && values.lead_foil !== 'None') parameters.lead_foil = values.lead_foil
       return apiClient.createPylinacQARun(accessToken, caseId, { catalog_key: catalogKey, artifact_ids: [], parameters })
     },
-    onSuccess: (run) => { setMessage(run.status === 'COMPLETED' ? 'Đã tính hiệu chuẩn bằng Pylinac.' : 'Pylinac không thể hoàn tất phép tính; hãy xem thông báo lỗi bên dưới.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
-    onError: (error) => setMessage(errorMessage(error))
+    onSuccess: (run) => { setMessageTone(run.status === 'COMPLETED' ? 'success' : 'error'); setMessage(run.status === 'COMPLETED' ? 'Đã tính hiệu chuẩn bằng Pylinac.' : 'Pylinac không thể hoàn tất phép tính; hãy xem thông báo lỗi bên dưới.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => { setMessageTone('error'); setMessage(errorMessage(error)) }
   })
   const assess = useMutation({
     mutationFn: ({ runId, value }: { runId: string; value: 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED' }) => apiClient.assessPylinacQARun(accessToken, runId, value),
-    onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
-    onError: (error) => setMessage(errorMessage(error))
+    onSuccess: () => { setMessageTone('success'); setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
+    onError: (error) => { setMessageTone('error'); setMessage(errorMessage(error)) }
   })
   const history = (runs.data?.items ?? []).filter((run) => run.catalog_key === catalogKey)
   const latest = history[0]
   const isBusy = analyze.isPending || assess.isPending
   const setValue = (key: string, value: string) => setValues((current) => ({ ...current, [key]: value }))
   const field = (key: string, label: string, type: 'text' | 'number' = 'number', hint?: string) => <label key={key}>{label}{hint && <small className="table-subtitle">{hint}</small>}<input type={type} step={type === 'number' ? 'any' : undefined} value={values[key] ?? ''} onChange={(event) => setValue(key, event.target.value)} /></label>
-  const displayName = catalogKey.replace('CALIBRATION_', '').replaceAll('_', ' ')
+  const displayName = calibrationNames[catalogKey]
   const metricLabels: Record<string, string> = { p_tp: 'Hệ số nhiệt độ và áp suất', p_ion: 'Hệ số thu ion', p_pol: 'Hệ số phân cực', k_tp: 'Hệ số nhiệt độ và áp suất', k_s: 'Hệ số thu ion', k_pol: 'Hệ số phân cực', m_corrected: 'Số đọc đã hiệu chỉnh', pddx: 'PDDx(10)', r_50: 'R50', dref: 'Độ sâu tham chiếu', zref: 'Độ sâu tham chiếu', pq_gr: 'Hệ số gradient', kq: 'Hệ số chất lượng chùm', dose_mu_10: 'Liều trên MU tại 10 cm', dose_mu_dref: 'Liều trên MU tại Dref', dose_mu_zref: 'Liều trên MU tại zref', dose_mu_dmax: 'Liều trên MU tại dmax', dose_mu_zmax: 'Liều trên MU tại zmax' }
   return <div className="page">
     <header className="page-header"><div><p className="eyebrow">KIỂM TRA CHẤT LƯỢNG MÁY · PYLİNAC</p><h1>{displayName}</h1><p>{title} · nhập số đo hiệu chuẩn, Pylinac thực hiện phép tính và lưu nguyên vẹn kết quả.</p></div><div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">Quay lại kho QA</Link><span className="status-badge">BỘ TÍNH PYLINAC 3.47.0</span></div></header>
-    {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
-    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">BIỂU MẪU SỐ ĐO</p><h2>Thông tin hiệu chuẩn</h2></div><span className="status-badge">KHÔNG CẦN TỆP</span></div><p>Bài hiệu chuẩn nhận số đo từ giao diện, không yêu cầu ảnh DICOM. Các giá trị cách nhau bằng dấu phẩy được gửi như nhiều lần đọc; đơn vị hiển thị ngay cạnh trường nhập.</p><div className="machine-qa-protocol-controls">{field('unit', 'Tên máy', 'text')}{field('physicist', 'Người thực hiện', 'text')}{field('measurement_date', 'Ngày đo', 'text')}{field('electrometer', 'Điện kế', 'text')}</div><div className="machine-qa-protocol-controls">{field('energy', 'Năng lượng')}{field('temp', 'Nhiệt độ (°C)')}{field('press', 'Áp suất (kPa)')}{field('chamber', 'Buồng ion hóa', 'text')}</div><div className="machine-qa-protocol-controls">{field('n_dw', 'Hệ số NDW')}{field(isTrsPhoton ? 'k_elec' : 'p_elec', isTrsPhoton ? 'Hệ số điện kế' : 'Hệ số điện kế')}{field('voltage_reference', 'Điện áp tham chiếu')}{field('voltage_reduced', 'Điện áp giảm')}</div><div className="machine-qa-protocol-controls">{field('m_reference', 'Số đọc tham chiếu', 'text', 'Một hoặc nhiều giá trị, cách nhau bằng dấu phẩy')}{field('m_opposite', 'Số đọc ngược cực', 'text')}{field('m_reduced', 'Số đọc điện áp giảm', 'text')}{field('mu', 'Số MU')}</div>
+    {message && <section className={`alert alert--${messageTone}`} role="status"><p>{message}</p></section>}
+    <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">BIỂU MẪU SỐ ĐO</p><h2>Thông tin hiệu chuẩn</h2></div><span className="status-badge">KHÔNG CẦN TỆP</span></div><p>Bài hiệu chuẩn nhận số đo từ giao diện, không yêu cầu ảnh DICOM. Các giá trị cách nhau bằng dấu phẩy được gửi như nhiều lần đọc; đơn vị hiển thị ngay cạnh trường nhập.</p><div className="machine-qa-protocol-controls">{field('unit', 'Tên máy', 'text')}{field('physicist', 'Người thực hiện', 'text')}{field('measurement_date', 'Ngày đo', 'text')}{field('electrometer', 'Điện kế', 'text')}</div><div className="machine-qa-protocol-controls">{field('energy', 'Năng lượng')}{field('temp', 'Nhiệt độ (°C)')}{field('press', 'Áp suất (kPa)')}{field('chamber', 'Buồng ion hóa', 'text')}</div><div className="machine-qa-protocol-controls">{field('n_dw', 'Hệ số NDW')}{field(isTrs ? 'k_elec' : 'p_elec', 'Hệ số điện kế')}{field('voltage_reference', 'Điện áp tham chiếu')}{field('voltage_reduced', 'Điện áp giảm')}</div><div className="machine-qa-protocol-controls">{field('m_reference', 'Số đọc tham chiếu', 'text', 'Một hoặc nhiều giá trị, cách nhau bằng dấu phẩy')}{field('m_opposite', 'Số đọc ngược cực', 'text')}{field('m_reduced', 'Số đọc điện áp giảm', 'text')}{field('mu', 'Số MU')}</div>
       {isPhoton && <div className="machine-qa-protocol-controls">{isTg ? field('measured_pdd10', 'PDD đo tại 10 cm') : field('tpr2010', 'TPR(20)/TPR(10)')} {isTg ? field('clinical_pdd10', 'PDD lâm sàng tại 10 cm') : <><label>Thiết lập<select value={values.setup} onChange={(event) => setValue('setup', event.target.value)}><option value="SSD">SSD</option><option value="SAD">SAD</option></select></label>{field('clinical_pdd_zref', 'PDD tại độ sâu tham chiếu')}{field('clinical_tmr_zref', 'TMR tại độ sâu tham chiếu')}</>} {isTg && <label>Miền điện áp<select value={values.fff} onChange={(event) => setValue('fff', event.target.value)}><option value="false">Phẳng</option><option value="true">FFF</option></select></label>}</div>}
       {!isPhoton && <div className="machine-qa-protocol-controls">{field('i_50', 'Độ sâu I50 (cm)')}{field('clinical_pdd', isLegacyElectron ? 'PDD lâm sàng' : 'PDD lâm sàng tại Dref')}{field('cone', 'Kích thước nón', 'text')}{field('tissue_correction', 'Hiệu chỉnh mô')}</div>}
       {isLegacyElectron && <div className="machine-qa-protocol-controls">{field('k_ecal', 'Hệ số kecal')}{field('m_gradient', 'Số đọc gradient', 'text')}</div>}
       {isTg && isPhoton && <div className="machine-qa-protocol-controls"><label>Miếng lọc chì<select value={values.lead_foil} onChange={(event) => setValue('lead_foil', event.target.value)}><option value="None">Không dùng</option><option value="30cm">30 cm</option><option value="50cm">50 cm</option></select></label></div>}
-      <div className="machine-qa-actions"><button disabled={isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang tính…' : 'Tính hiệu chuẩn'}</button></div>
+      <div className="machine-qa-actions"><button disabled={isBusy} onClick={() => { const validationError = validateCalibrationValues(catalogKey, values); if (validationError) { setMessageTone('error'); setMessage(validationError); return } analyze.mutate() }}>{analyze.isPending ? 'Đang tính…' : 'Tính hiệu chuẩn'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} emptyHistoryLabel="Chưa có kết quả hiệu chuẩn." metrics={Object.entries(objectValue(latest?.result_snapshot.metrics) ?? {}).filter(([key]) => key !== 'output_was_adjusted').map(([key, value]) => ({ key, label: metricLabels[key] ?? 'Kết quả đo', value: textValue(value) }))} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>

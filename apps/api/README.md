@@ -260,3 +260,11 @@ CatPhan, ACR and CT phantom forms select an origin slice through the shared
 preview control. Keep API, worker and web on the same source revision before
 recording staging evidence; this marker does not alter persisted data or
 engine behavior.
+
+P7 calibration-form parity marker (2026-09-16): the web calibration forms now
+validate measurement input before submission, map both TRS-398 variants to the
+k_elec contract, and omit the hidden coefficient that is unsupported by the
+selected calibration family. Rebuild API, worker and web from this revision
+before the next exact-SHA check. The API regression suite also rejects a
+coefficient from another protocol family; this marker does not alter persisted
+data.

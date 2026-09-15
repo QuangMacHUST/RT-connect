@@ -4,6 +4,7 @@ import { expect, test, vi } from 'vitest'
 
 import type { PylinacQARunResource } from '../api/client'
 import { PylinacAdjustmentCanvas, PylinacResultPanel, PylinacStructuredResultDetails, WinstonLutzMultiTargetDetails } from './MachineQAPage'
+import { calibrationCoefficientKey, validateCalibrationValues } from './calibrationValidation'
 import { historyForCatalog } from './pylinacHistory'
 import { mapImagePoint } from './pylinacCoordinates'
 import { artifactsAreValidated, selectedArtifactsAreValidated } from './qaArtifactLabels'
@@ -187,4 +188,63 @@ test('requires validated inputs before a Pylinac analysis can start', () => {
   expect(selectedArtifactsAreValidated(['valid-image'], [valid])).toBe(true)
   expect(selectedArtifactsAreValidated(['valid-image', 'warning-image'], [valid, warning])).toBe(false)
   expect(selectedArtifactsAreValidated(['missing-image'], [valid])).toBe(false)
+})
+
+test('validates calibration readings before sending them to Pylinac', () => {
+  const values = {
+    institution: 'Bệnh viện tổng hợp',
+    physicist: 'Kỹ sư vật lý',
+    unit: 'LINAC-01',
+    measurement_date: '2026-09-16',
+    electrometer: 'Điện kế A',
+    energy: '6',
+    temp: '22',
+    press: '101.3',
+    chamber: 'A12',
+    p_elec: '1',
+    n_dw: '5',
+    voltage_reference: '300',
+    voltage_reduced: '150',
+    m_reference: '10.0, 10.2',
+    m_opposite: '10.1',
+    m_reduced: '9.8',
+    mu: '200',
+    measured_pdd10: '66.7',
+    clinical_pdd10: '66.7',
+  }
+
+  expect(validateCalibrationValues('CALIBRATION_TG51_PHOTON', values)).toBeUndefined()
+  expect(validateCalibrationValues('CALIBRATION_TG51_PHOTON', { ...values, m_reference: '10.0, sai' })).toContain('Số đọc tham chiếu')
+  expect(validateCalibrationValues('CALIBRATION_TG51_PHOTON', { ...values, measured_pdd10: '' })).toContain('PDD đo tại 10 cm')
+})
+
+test('uses the TRS-398 điện kế field for both TRS-398 calibration variants', () => {
+  const values = {
+    institution: 'Bệnh viện tổng hợp',
+    physicist: 'Kỹ sư vật lý',
+    unit: 'LINAC-01',
+    measurement_date: '2026-09-16',
+    electrometer: 'Điện kế A',
+    energy: '6 MeV',
+    temp: '22',
+    press: '101.3',
+    chamber: 'A12',
+    k_elec: '1',
+    n_dw: '5',
+    voltage_reference: '300',
+    voltage_reduced: '150',
+    m_reference: '10.0, 10.2',
+    m_opposite: '10.1',
+    m_reduced: '9.8',
+    mu: '200',
+    i_50: '5',
+    clinical_pdd_zref: '66.7',
+    tissue_correction: '1',
+    cone: '10x10',
+  }
+
+  expect(validateCalibrationValues('CALIBRATION_TRS398_ELECTRON', values)).toBeUndefined()
+  expect(calibrationCoefficientKey('CALIBRATION_TRS398_PHOTON')).toBe('k_elec')
+  expect(calibrationCoefficientKey('CALIBRATION_TRS398_ELECTRON')).toBe('k_elec')
+  expect(calibrationCoefficientKey('CALIBRATION_TG51_PHOTON')).toBe('p_elec')
 })

@@ -206,3 +206,10 @@ now be controlled by the CatPhan, ACR and CT phantom forms so a selected slice
 is persisted as the next Pylinac `origin_slice` parameter. This is an input
 selection aid, not an absolute phantom-center override. Rebuild API, worker
 and web from this revision before recording staging evidence.
+
+P7 calibration-form parity marker (2026-09-16): the calibration forms now
+validate measurement input before submission, use the correct k_elec field for
+both TRS-398 variants, and omit the hidden coefficient unsupported by the
+selected calibration family. Keep API, worker and web on this source revision
+before recording exact-SHA staging evidence; the API regression suite also
+guards the protocol-family coefficient boundary.
