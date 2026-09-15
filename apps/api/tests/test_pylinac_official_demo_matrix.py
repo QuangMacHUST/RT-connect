@@ -245,6 +245,16 @@ def test_official_demo_reaches_locked_pylinac_adapter(
             ("protocol_results", "flatness_vertical"),
             20.294748024265772,
         ),
+        ("CATPHAN_503", "CatPhan503.zip", "zip", {}, ("ctp404", "low_contrast_visibility"), 6.952952537530281),
+        ("CATPHAN_504", "CatPhan504.zip", "zip", {}, ("ctp404", "low_contrast_visibility"), 3.468561072408424),
+        ("CATPHAN_600", "CatPhan600.zip", "zip", {}, ("ctp404", "low_contrast_visibility"), 5.432720420862056),
+        ("CATPHAN_604", "CatPhan604.zip", "zip", {}, ("ctp404", "low_contrast_visibility"), 3.3136010489079224),
+        ("CHEESE_TOMO", "TomoCheese.zip", "zip", {}, ("phantom_roll",), -0.2360965372507735),
+        ("QUART_DVT", "quart.zip", "zip", {}, ("phantom_roll_deg",), 0.18427310316724288),
+        ("PLANAR_LEEDS_TOR_18", "leeds.dcm", "file", {}, ("percent_integral_uniformity",), 91.81275923121922),
+        ("PLANAR_LAS_VEGAS", "lasvegas.dcm", "file", {}, ("percent_integral_uniformity",), 98.39548559127846),
+        ("PLANAR_SNC_MV", "SNC-MV.dcm", "file", {}, ("median_cnr",), 81.18600407100408),
+        ("PLANAR_ACR_DIGITAL_MAMMOGRAPHY", "ACRDigitalMammography.dcm", "file", {}, ("speck_group_score",), 4.5),
     ),
 )
 def test_official_demo_core_metric_matches_locked_reference(

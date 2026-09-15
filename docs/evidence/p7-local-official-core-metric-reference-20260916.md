@@ -8,7 +8,7 @@ Kiểm tra hồi quy local cho các chỉ số lõi mà RT-CONNECT lấy ra từ
 
 ## Kết quả
 
-Kiểm thử `tests/test_pylinac_official_demo_matrix.py -k core_metric --no-cov -q` đạt **10/10**.
+Kiểm thử `tests/test_pylinac_official_demo_matrix.py -k core_metric --no-cov -q` đạt **20/20**.
 
 Các nhóm đã được kiểm tra:
 
@@ -18,6 +18,9 @@ Các nhóm đã được kiểm tra:
 - VMAT DRGS, DRMLC và DRCS: sai lệch lớn nhất theo phần trăm.
 - Phân tích biên dạng trường: độ phẳng theo trục ngang và dọc.
 - Phân tích trường kiểu cũ: độ phẳng ngang và dọc trong nhóm kết quả giao thức.
+- CatPhan 503, 504, 600 và 604: khả năng nhìn tương phản thấp.
+- TomoCheese và Quart DVT: góc nghiêng phantom.
+- Leeds TOR, Las Vegas, SNC MV và ACR Digital Mammography: độ đồng nhất, CNR hoặc điểm nhóm hạt.
 
 Các giá trị được kiểm tra bằng `pytest.approx` với sai số tuyệt đối và tương đối `1e-7`. Bài DRCS được lấy lại từ chính wheel đang khóa trong lần chạy này; không sử dụng lại giá trị của một fixture hoặc phiên bản cũ.
 
