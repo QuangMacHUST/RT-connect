@@ -6,6 +6,7 @@ import { beforeEach, expect, test, vi } from 'vitest'
 import { apiClient } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { DVHPage } from './DVHPage'
+import { dvhMetricLabel, dvhSourceLabel, dvhStatusLabel } from './dvhLabels'
 
 vi.mock('../api/client', () => ({
   ApiClientError: class ApiClientError extends Error {
@@ -96,14 +97,14 @@ function renderPage() {
 test('automatically loads the first valid RTSTRUCT ROI after the manifest request', async () => {
   renderPage()
 
-  expect(await screen.findByRole('option', { name: '#1 · P17_TARGET · 1 contour' }, { timeout: 5000 })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Validate & preview' })).toBeEnabled()
+  expect(await screen.findByRole('option', { name: 'Vùng số 1 · P17_TARGET · 1 đường viền' }, { timeout: 10000 })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Kiểm tra và xem trước' })).toBeEnabled()
   expect(screen.getByText('Chưa chọn CT')).toBeInTheDocument()
   expect(vi.mocked(apiClient.dvhInputs).mock.calls).toHaveLength(2)
   expect(vi.mocked(apiClient.dvhInputs).mock.calls[1]?.[3]).toBe(structureId)
 })
 
-test('keeps the blob URL alive until a DVH export has started', async () => {
+test('keeps the blob URL alive until a human-readable DVH table export has started', async () => {
   vi.mocked(apiClient.dvhRuns).mockResolvedValue({
     items: [{
       id: '8000ff9b-7a02-4cec-850e-e27e4fe50cc4', organization_id: organizationId, qa_case_id: caseId,
@@ -114,16 +115,16 @@ test('keeps the blob URL alive until a DVH export has started', async () => {
       created_by_user_identity_id: null, created_at: '2026-09-09T00:00:00Z', updated_at: '2026-09-09T00:00:00Z'
     }], total: 1
   })
-  vi.mocked(apiClient.downloadDvh).mockResolvedValue(new Blob(['{}'], { type: 'application/json' }))
+  vi.mocked(apiClient.downloadDvh).mockResolvedValue(new Blob(['metric,value'], { type: 'text/csv' }))
   const createObjectUrl = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test')
   const revokeObjectUrl = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
   const anchorClick = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
 
   renderPage()
-  fireEvent.click(await screen.findByRole('button', { name: /^JSON$/ }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Tải bảng số liệu' }))
 
   await waitFor(() => expect(vi.mocked(apiClient.downloadDvh)).toHaveBeenCalledWith(
-    'access-token', organizationId, caseId, '8000ff9b-7a02-4cec-850e-e27e4fe50cc4', 'JSON'
+    'access-token', organizationId, caseId, '8000ff9b-7a02-4cec-850e-e27e4fe50cc4', 'CSV'
   ))
   expect(createObjectUrl).toHaveBeenCalledOnce()
   expect(anchorClick).toHaveBeenCalledOnce()
@@ -134,6 +135,12 @@ test('keeps the blob URL alive until a DVH export has started', async () => {
   createObjectUrl.mockRestore()
   revokeObjectUrl.mockRestore()
   anchorClick.mockRestore()
+})
+
+test('uses readable Vietnamese labels for stored DVH status and source', () => {
+  expect(dvhStatusLabel('REVIEW_REQUIRED')).toBe('Cần xem lại')
+  expect(dvhSourceLabel('BIOLOGICAL_LIBRARY')).toBe('Thư viện sinh học')
+  expect(dvhMetricLabel('D95')).toBe('D95')
 })
 
 test('sends only the explicitly selected P16 limit binding', async () => {
@@ -149,15 +156,15 @@ test('sends only the explicitly selected P16 limit binding', async () => {
   vi.mocked(apiClient.validateDvh).mockResolvedValue({ valid: false, errors: [], warnings: [], normalized_input: null, preview: null })
 
   renderPage()
-  expect(await screen.findByRole('option', { name: '#1 · P17_TARGET · 1 contour' })).toBeInTheDocument()
-  fireEvent.change(screen.getByLabelText('Nguồn binding'), { target: { value: 'DOSE_LIMIT' } })
-  const limitSelect = await screen.findByRole('combobox', { name: 'P16 DOSE_LIMIT' })
-  const limitOption = await screen.findByRole('option', { name: /P17_TEST_DMAX · Synthetic Dmax limit/ })
+  expect(await screen.findByRole('option', { name: 'Vùng số 1 · P17_TARGET · 1 đường viền' })).toBeInTheDocument()
+  fireEvent.change(screen.getByLabelText('Nguồn tham khảo'), { target: { value: 'DOSE_LIMIT' } })
+  const limitSelect = await screen.findByRole('combobox', { name: 'Giới hạn liều' })
+  const limitOption = await screen.findByRole('option', { name: /Synthetic Dmax limit · phiên bản 1 · DMAX · MAX 10 Gy/ })
   ;(limitSelect as HTMLSelectElement).value = 'limit-entry-id'
   ;(limitOption as HTMLOptionElement).selected = true
   fireEvent.change(limitSelect)
   await waitFor(() => expect(limitSelect).toHaveValue('limit-entry-id'))
-  fireEvent.click(screen.getByRole('button', { name: 'Validate & preview' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra và xem trước' }))
 
   await waitFor(() => expect(vi.mocked(apiClient.validateDvh)).toHaveBeenCalledWith(
     'access-token', organizationId, caseId, expect.objectContaining({ limit_entry_id: 'limit-entry-id' })

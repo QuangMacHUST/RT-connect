@@ -1,4 +1,4 @@
-# Bằng chứng P7/P8 — nhãn dữ liệu QA theo ngôn ngữ người dùng
+# Bằng chứng P7/P8/P17 — nhãn dữ liệu QA theo ngôn ngữ người dùng
 
 ## Phạm vi
 
@@ -10,11 +10,13 @@ Lát cắt này tiếp tục P7/P8 sau khi tạm dừng hướng xóa vĩnh vi�
 - Các trang Picket Fence, Starshot, Winston–Lutz, Winston–Lutz nhiều bi, VMAT, phân tích trường, CatPhan, bài hạt nhân, bài đóng góp và ảnh phẳng chỉ hiển thị nhãn nghiệp vụ.
 - Kho lưu trữ QA không còn hiển thị tên tệp gốc hoặc dung lượng kỹ thuật trong bảng tệp; hàng đợi tải lên hiển thị “Tệp được chọn” theo thứ tự.
 - Màn hình DVH không còn hiển thị tên tệp, chuỗi băm hoặc mã kỹ thuật khi chọn RTDOSE, RTSTRUCT và CT.
+- Màn hình kết quả DVH không còn hiển thị mã lượt tính, dấu vết đầu vào, chuỗi băm, mã nguồn giới hạn hoặc nút xuất JSON; người dùng chỉ thấy trạng thái, vùng, độ bao phủ, thời điểm và nút “Tải bảng số liệu”.
+- Lịch sử DVH hiển thị theo “Lần tính 1”, “Lần tính 2” thay cho mã kỹ thuật; đánh giá giới hạn dùng nhãn nguồn tiếng Việt và không đưa mã nội bộ ra giao diện.
 - Tên tệp vẫn được giữ trong dữ liệu nội bộ để lọc đúng loại đầu vào và phục vụ bộ tính Pylinac; thay đổi này chỉ tác động lớp trình bày.
 
 ## Kiểm chứng cục bộ
 
-- Kiểm thử giao diện: **43/43**.
+- Kiểm thử giao diện: **44/44**.
 - Lint: đạt.
 - Kiểm tra kiểu TypeScript: đạt.
 - Bản dựng sản xuất: đạt.
@@ -22,4 +24,4 @@ Lát cắt này tiếp tục P7/P8 sau khi tạm dừng hướng xóa vĩnh vi�
 
 ## Ranh giới nghiệm thu
 
-Đây là lát cắt UX cục bộ. Cần triển khai giao diện lên staging và kiểm tra bằng trình duyệt với các nhóm bài có tệp thật trước khi ghi nhận parity staging. P7/P8 và cổng VERIFY/HANDOFF vẫn chưa hoàn tất.
+Đây là lát cắt UX cục bộ. Cần triển khai giao diện lên staging và kiểm tra bằng trình duyệt với các nhóm bài có tệp thật trước khi ghi nhận parity staging. P7/P8/P17 và các cổng VERIFY/HANDOFF vẫn chưa hoàn tất.
