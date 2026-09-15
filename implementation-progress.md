@@ -36,6 +36,7 @@
 
 - Bản `68d2202504c344ac2830f6ce09fba53ea2f34b2a` đã được Railway triển khai đồng bộ cho API và giao diện staging. Kiểm tra công khai exact-SHA đạt **15/15**; API `health/readiness/version`, lược đồ `20260914_0023`, OpenAPI, các tuyến yêu cầu xác thực và gói web đều đạt.
 - Bằng chứng: [kiểm tra staging bộ chọn ảnh/lát](docs/evidence/p7-staging-public-recheck-20260915-68d2202.json). Đây là cổng triển khai và hợp đồng tuyến xem trước; vẫn cần kiểm tra trình duyệt có đăng nhập với bộ tệp nhiều ảnh thực tế, đối chiếu tọa độ theo từng bài và hoàn tất VERIFY/HANDOFF P7.
+- Kiểm tra trình duyệt staging đã mở bài Kiểm tra sao có tệp DICOM nhiều khung: tệp báo Hợp lệ, vùng điều chỉnh hiển thị hai lựa chọn ảnh/lát `#1` và `#2`, lịch sử vẫn rỗng; không chạy phân tích và không tạo dữ liệu mới. Bằng chứng: [giao diện bộ chọn ảnh/lát staging](docs/evidence/p7-staging-multi-image-preview-ui-20260915.json). Đây mới là xác nhận hiển thị, chưa đối chiếu tọa độ theo từng lát trong phép phân tích.
 
 ## P7 — kiểm tra hồi quy sau cổng inventory — lát cắt cục bộ — 2026-09-15
 

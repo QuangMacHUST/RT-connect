@@ -1,0 +1,22 @@
+{
+  "evidence_id": "p7-staging-multi-image-preview-ui-20260915",
+  "captured_at_utc": "2026-09-15T14:12:00Z",
+  "environment": "Railway staging",
+  "scope": "Kiểm tra giao diện đã xác thực cho bộ chọn ảnh/lát của bài Pylinac nhiều khung.",
+  "workflow": [
+    "Mở bài Kiểm tra sao từ kho QA trên phiên staging đã xác thực.",
+    "Giao diện tải tệp DICOM hiện có và hiển thị trạng thái Hợp lệ.",
+    "Vùng điều chỉnh hiển thị bộ chọn Ảnh hoặc lát đang xem với hai lựa chọn #1 và #2.",
+    "Không bấm Bắt đầu phân tích; không tạo lượt chạy mới và không thay đổi dữ liệu staging."
+  ],
+  "observed": {
+    "input_file_count": 1,
+    "input_validation": "Hợp lệ",
+    "preview_selection_count": 2,
+    "preview_selector_visible": true,
+    "history_count": 0,
+    "internal_identifiers_visible": false
+  },
+  "result": "PASS",
+  "boundary": "Đã xác nhận hiển thị bộ chọn và trạng thái đầu vào trên staging; chưa xác nhận đối chiếu tọa độ theo từng lát trong phép phân tích Pylinac, chưa đóng P7-W04 hoặc VERIFY/HANDOFF P7."
+}
