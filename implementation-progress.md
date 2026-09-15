@@ -7,6 +7,14 @@
 - Kiểm thử giao diện đạt **53/53**, lint, kiểm tra kiểu và bản dựng sản xuất đạt. Không thay đổi dữ liệu, không tạo hồ sơ và không thao tác xóa/lưu trữ/khôi phục `dailyQA`.
 - Đây là cải tiến hiển thị local; cần kiểm tra trực tiếp staging ở các kích thước 1366×768 và 1440×900 trước khi ghi nhận parity.
 
+## P7-W03 — bộ mẫu chính thức Winston–Lutz nhiều bi — đã kiểm tra local — 2026-09-16
+
+- Đã đưa `SNC_MTWL_demo.zip` vào ma trận tệp mẫu chính thức. Bộ mẫu có 19 ảnh DICOM và được phân tích bằng cấu hình sáu bi chuẩn theo ví dụ chính thức của Pylinac.
+- Đường chạy qua `execute_pylinac` trả đúng lớp `WinstonLutzMultiTargetMultiField`, 14 nhóm chỉ số và ảnh overlay PNG; ma trận tệp mẫu chính thức đạt **37/37**.
+- Đây là bằng chứng engine và fixture local, không phải xác nhận kết quả lâm sàng. Còn mở đối chiếu độc lập từng chỉ số, ánh xạ góc thủ công theo từng ảnh, kiểm thử lỗi đặc trưng và kiểm chứng staging.
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa dữ liệu staging; hồ sơ `dailyQA` được bảo toàn.
+- Bằng chứng: [Winston–Lutz nhiều bi với bộ mẫu chính thức](docs/evidence/p7-local-winston-lutz-multi-target-official-demo-20260916.md).
+
 ## P7-W04 — chọn ảnh/lát trong chuỗi DICOM dài — đã kiểm tra local — 2026-09-16
 
 - Mở giới hạn xem trước từ 32 lên 2.048 ảnh/lát trong phạm vi an toàn. Chuỗi ngắn vẫn dùng danh sách; chuỗi dài dùng ô nhập số từ 1 đến tổng số ảnh/lát để tránh một danh sách cuộn quá dài.

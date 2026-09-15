@@ -30,6 +30,61 @@ matplotlib.use("Agg")
 DEMO_ROOT = Path(pylinac.__file__).resolve().parent / "demo_files"
 
 
+def _multi_target_demo_arrangement() -> list[dict[str, object]]:
+    """Return the six-bi arrangement documented by Pylinac's demo runner."""
+
+    return [
+        {
+            "name": "Iso",
+            "offset_left_mm": 0,
+            "offset_up_mm": 0,
+            "offset_in_mm": 0,
+            "bb_size_mm": 5,
+            "rad_size_mm": 20,
+        },
+        {
+            "name": "1",
+            "offset_left_mm": 0,
+            "offset_up_mm": 0,
+            "offset_in_mm": 30,
+            "bb_size_mm": 5,
+            "rad_size_mm": 20,
+        },
+        {
+            "name": "2",
+            "offset_left_mm": -30,
+            "offset_up_mm": 0,
+            "offset_in_mm": 15,
+            "bb_size_mm": 5,
+            "rad_size_mm": 20,
+        },
+        {
+            "name": "3",
+            "offset_left_mm": 0,
+            "offset_up_mm": 0,
+            "offset_in_mm": -30,
+            "bb_size_mm": 5,
+            "rad_size_mm": 20,
+        },
+        {
+            "name": "4",
+            "offset_left_mm": 30,
+            "offset_up_mm": 0,
+            "offset_in_mm": -50,
+            "bb_size_mm": 5,
+            "rad_size_mm": 20,
+        },
+        {
+            "name": "5",
+            "offset_left_mm": 0,
+            "offset_up_mm": 0,
+            "offset_in_mm": -70,
+            "bb_size_mm": 5,
+            "rad_size_mm": 20,
+        },
+    ]
+
+
 def _official_cases() -> tuple[tuple[str, str, str, dict[str, object]], ...]:
     planar = (
         ("PLANAR_LEEDS_TOR_18", "leeds.dcm"),
@@ -56,6 +111,12 @@ def _official_cases() -> tuple[tuple[str, str, str, dict[str, object]], ...]:
         ("PICKET_FENCE", "AS1200.dcm", "file", {}),
         ("STARSHOT", "starshot.tif", "file", {"sid": 1000}),
         ("WINSTON_LUTZ", "winston_lutz.zip", "zip", {"sid": 1000}),
+        (
+            "WINSTON_LUTZ_MULTI_TARGET",
+            "SNC_MTWL_demo.zip",
+            "zip",
+            {"bb_arrangement": _multi_target_demo_arrangement()},
+        ),
         ("VMAT_DRGS", "drgs.zip", "vmat", {}),
         ("VMAT_DRMLC", "drmlc.zip", "vmat", {}),
         ("VMAT_DRCS", "drcs.zip", "vmat", {}),
