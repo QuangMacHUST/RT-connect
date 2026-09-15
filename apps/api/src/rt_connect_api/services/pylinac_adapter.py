@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import tempfile
+import zipfile
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
@@ -521,12 +522,18 @@ def _execute_winston_lutz(
 
 def _winston_lutz_multi_target_parameters(
     parameters: dict[str, object],
-) -> tuple[dict[str, object], dict[str, object], tuple[object, ...]]:
+) -> tuple[
+    dict[str, object],
+    dict[str, object],
+    tuple[object, ...],
+    list[tuple[float, float, float]] | None,
+]:
     """Validate MT/MF loading options and build Pylinac BBConfig objects."""
 
     constructor_keys = {"use_filenames", "dpi", "sid", "axes_precision"}
     analysis_keys = {"bb_arrangement", "is_open_field", "is_low_density", "bb_proximity_mm"}
-    unknown = set(parameters) - constructor_keys - analysis_keys
+    manual_mapping_key = "axis_mapping"
+    unknown = set(parameters) - constructor_keys - analysis_keys - {manual_mapping_key}
     if unknown:
         raise PylinacAdapterError(
             "PYLINAC_PARAMETER_UNSUPPORTED",
@@ -541,6 +548,37 @@ def _winston_lutz_multi_target_parameters(
             constructor[key] = _number(parameters, key, minimum=0)
     if "axes_precision" in parameters:
         constructor["axes_precision"] = _integer(parameters, "axes_precision", minimum=0)
+
+    manual_mapping: list[tuple[float, float, float]] | None = None
+    if manual_mapping_key in parameters:
+        raw_mapping = parameters.get(manual_mapping_key)
+        if not isinstance(raw_mapping, list) or not raw_mapping:
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID",
+                "Cần nhập góc máy cho từng ảnh trong bộ ảnh.",
+            )
+        if parameters.get("use_filenames") is True:
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID",
+                "Chỉ chọn một cách lấy góc: theo tên tệp hoặc nhập theo thứ tự ảnh.",
+            )
+        manual_mapping = []
+        for index, item in enumerate(raw_mapping, start=1):
+            if not isinstance(item, dict):
+                raise PylinacAdapterError(
+                    "PYLINAC_PARAMETER_INVALID",
+                    f"Góc của ảnh {index} chưa đủ ba giá trị.",
+                )
+            values: list[float] = []
+            for key in ("gantry", "collimator", "couch"):
+                value = item.get(key)
+                if isinstance(value, bool) or not isinstance(value, int | float):
+                    raise PylinacAdapterError(
+                        "PYLINAC_PARAMETER_INVALID",
+                        f"Góc {key} của ảnh {index} phải là số.",
+                    )
+                values.append(float(value))
+            manual_mapping.append((values[0], values[1], values[2]))
 
     arrangement = parameters.get("bb_arrangement")
     if not isinstance(arrangement, list) or not arrangement:
@@ -588,7 +626,29 @@ def _winston_lutz_multi_target_parameters(
             analysis[key] = _bool(parameters, key)
     if "bb_proximity_mm" in parameters:
         analysis["bb_proximity_mm"] = _number(parameters, "bb_proximity_mm", minimum=0)
-    return constructor, analysis, tuple(bb_configs)
+    return constructor, analysis, tuple(bb_configs), manual_mapping
+
+
+def _zip_image_member_names(source_path: Path) -> list[str]:
+    """Return safe image members in the same stable order shown to the user."""
+
+    image_suffixes = {".bmp", ".dcm", ".dicom", ".jpeg", ".jpg", ".png", ".tif", ".tiff"}
+    try:
+        with zipfile.ZipFile(source_path) as archive:
+            members = [
+                info.filename
+                for info in archive.infolist()
+                if not info.is_dir()
+                and not Path(info.filename).is_absolute()
+                and ".." not in Path(info.filename).parts
+            ]
+    except (OSError, zipfile.BadZipFile) as exc:
+        raise PylinacAdapterError(
+            "PYLINAC_INPUT_FORMAT_INVALID",
+            "Bộ ảnh ZIP không thể mở để ánh xạ góc theo thứ tự ảnh.",
+        ) from exc
+    preferred = [name for name in members if Path(name).suffix.lower() in image_suffixes]
+    return preferred or members
 
 
 def _execute_winston_lutz_multi_target(
@@ -605,7 +665,15 @@ def _execute_winston_lutz_multi_target(
             "PYLINAC_INPUT_FORMAT_INVALID",
             "Winston–Lutz nhiều bi yêu cầu một tệp ZIP chứa bộ ảnh.",
         )
-    constructor, analysis, _ = _winston_lutz_multi_target_parameters(parameters)
+    constructor, analysis, _, manual_mapping = _winston_lutz_multi_target_parameters(parameters)
+    if manual_mapping is not None:
+        member_names = _zip_image_member_names(source_path)
+        if len(member_names) != len(manual_mapping):
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID",
+                "Số dòng góc nhập tay phải khớp với số ảnh trong bộ ảnh.",
+            )
+        constructor["axis_mapping"] = dict(zip(member_names, manual_mapping, strict=True))
     try:
         engine = symbol.from_zip(str(source_path), **constructor)
         engine.analyze(**analysis)

@@ -15,6 +15,14 @@
 - Không tạo, sửa, lưu trữ, khôi phục hoặc xóa dữ liệu staging; hồ sơ `dailyQA` được bảo toàn.
 - Bằng chứng: [Winston–Lutz nhiều bi với bộ mẫu chính thức](docs/evidence/p7-local-winston-lutz-multi-target-official-demo-20260916.md).
 
+## P7-WLMT — nhập góc thủ công theo thứ tự ảnh — đã kiểm tra local — 2026-09-16
+
+- Bài Winston–Lutz nhiều bi nay có ba cách lấy góc: đọc từ thông tin ảnh, đọc từ tên tệp hoặc nhập theo thứ tự ảnh.
+- Khi chọn nhập tay, giao diện chỉ hiển thị “Ảnh 1”, “Ảnh 2”… và tự tạo đủ dòng theo số ảnh trong bộ ZIP; không hiển thị tên tệp kỹ thuật hay cấu hình thô. Nút phân tích chỉ mở khi cả ba góc của mọi ảnh đều là số hợp lệ.
+- Máy chủ kiểm tra ánh xạ tay, ghép theo đúng thứ tự thành viên ảnh an toàn trong ZIP và chặn trường hợp số dòng không khớp hoặc vừa bật đọc tên tệp vừa nhập tay. Kiểm thử riêng đạt **4/4**; toàn bộ nhóm hồi quy Pylinac đạt **109/109**; Ruff, kiểm tra kiểu, lint, bản dựng và giao diện đạt.
+- Giá trị ánh xạ trong lịch sử được rút gọn thành “đã nhập góc cho N ảnh”, nhưng vẫn giữ đầy đủ dữ liệu để đối chiếu nội bộ.
+- Đây là hoàn thiện luồng nhập góc, không phải nghiệm thu kết quả lâm sàng. Còn mở ghép cặp/điều chỉnh trực quan theo từng ảnh, đối chiếu độc lập, fixture thực tế và kiểm chứng staging.
+
 ## P7-W04 — chọn ảnh/lát trong chuỗi DICOM dài — đã kiểm tra local — 2026-09-16
 
 - Mở giới hạn xem trước từ 32 lên 2.048 ảnh/lát trong phạm vi an toàn. Chuỗi ngắn vẫn dùng danh sách; chuỗi dài dùng ô nhập số từ 1 đến tổng số ảnh/lát để tránh một danh sách cuộn quá dài.

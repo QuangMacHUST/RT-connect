@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import zipfile
 from pathlib import Path
 from typing import cast
 
 import matplotlib
+import pytest
 from pylinac.core.geometry import Point
 from pylinac.winston_lutz import BBConfig
 
@@ -473,6 +475,103 @@ def test_winston_lutz_multi_target_rejects_invalid_arrangement() -> None:
         assert exc.code == "PYLINAC_PARAMETER_INVALID"
     else:
         raise AssertionError("Cấu hình bi thiếu trường phải bị từ chối")
+
+
+def test_winston_lutz_multi_target_maps_manual_angles_by_zip_order(
+    monkeypatch, tmp_path: Path
+) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeFigure:
+        def savefig(self, stream, **kwargs: object) -> None:
+            stream.write(b"manual-angle-overlay")
+
+        def clf(self) -> None:
+            return None
+
+    class FakeMultiTarget:
+        @classmethod
+        def from_zip(cls, path: str, **kwargs: object):
+            captured.update(kwargs)
+            return cls()
+
+        def analyze(self, **kwargs: object) -> None:
+            assert len(kwargs["bb_arrangement"]) == 1
+
+        def results_data(self, *, as_dict: bool) -> dict[str, object]:
+            assert as_dict is True
+            return {"num_total_images": 2, "warnings": []}
+
+        def plot_images(self, **kwargs: object):
+            return [FakeFigure()], []
+
+    monkeypatch.setattr(
+        "rt_connect_api.services.pylinac_adapter.resolve_runtime_symbol",
+        lambda key: (FakeMultiTarget, None)
+        if key == "WINSTON_LUTZ_MULTI_TARGET"
+        else (None, "missing"),
+    )
+    source = tmp_path / "manual-angles.zip"
+    with zipfile.ZipFile(source, "w") as archive:
+        archive.writestr("RT000001.dcm", b"first")
+        archive.writestr("RT000002.dcm", b"second")
+
+    result = execute_pylinac(
+        "WINSTON_LUTZ_MULTI_TARGET",
+        source,
+        {
+            "bb_arrangement": [
+                {
+                    "name": "Iso",
+                    "offset_left_mm": 0,
+                    "offset_up_mm": 0,
+                    "offset_in_mm": 0,
+                    "bb_size_mm": 5,
+                    "rad_size_mm": 20,
+                }
+            ],
+            "axis_mapping": [
+                {"gantry": 0, "collimator": 10, "couch": 20},
+                {"gantry": 180, "collimator": 10, "couch": 20},
+            ],
+        },
+    )
+
+    assert captured["axis_mapping"] == {
+        "RT000001.dcm": (0.0, 10.0, 20.0),
+        "RT000002.dcm": (180.0, 10.0, 20.0),
+    }
+    assert result.overlay_bytes == b"manual-angle-overlay"
+
+
+def test_winston_lutz_multi_target_rejects_manual_angle_count_mismatch(
+    tmp_path: Path,
+) -> None:
+    source = tmp_path / "manual-angles.zip"
+    with zipfile.ZipFile(source, "w") as archive:
+        archive.writestr("RT000001.dcm", b"first")
+        archive.writestr("RT000002.dcm", b"second")
+
+    with pytest.raises(PylinacAdapterError) as error:
+        execute_pylinac(
+            "WINSTON_LUTZ_MULTI_TARGET",
+            source,
+            {
+                "bb_arrangement": [
+                    {
+                        "name": "Iso",
+                        "offset_left_mm": 0,
+                        "offset_up_mm": 0,
+                        "offset_in_mm": 0,
+                        "bb_size_mm": 5,
+                        "rad_size_mm": 20,
+                    }
+                ],
+                "axis_mapping": [{"gantry": 0, "collimator": 10, "couch": 20}],
+            },
+        )
+
+    assert error.value.code == "PYLINAC_PARAMETER_INVALID"
 
 
 def test_vmat_adapter_uses_two_image_pair_and_drcs_specific_parameters(

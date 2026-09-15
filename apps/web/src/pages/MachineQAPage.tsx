@@ -166,6 +166,7 @@ const parameterLabels: Record<string, string> = {
   collimator_reference: 'Góc chuẩn chuẩn trực',
   couch_reference: 'Góc chuẩn bàn',
   use_filenames: 'Đọc góc từ tên tệp',
+  axis_mapping: 'Góc theo thứ tự ảnh',
   low_density_bb: 'Bi mật độ thấp',
   open_field: 'Trường mở',
   is_open_field: 'Trường mở',
@@ -256,6 +257,11 @@ function friendlyDataValue(value: unknown): string {
   return 'Đã ghi nhận'
 }
 
+function parameterValueLabel(key: string, value: unknown): string {
+  if (key === 'axis_mapping' && Array.isArray(value)) return `${value.length} ảnh đã nhập góc`
+  return friendlyDataValue(value)
+}
+
 function parameterEntries(run: PylinacQARunResource | undefined): Array<[string, unknown]> {
   return run ? Object.entries(run.parameters).filter(([, value]) => value !== null && value !== undefined) : []
 }
@@ -268,7 +274,7 @@ function parameterChanges(
   const previousMap = new Map(previous)
   const keys = new Set([...currentMap.keys(), ...previousMap.keys()])
   return [...keys]
-    .filter((key) => friendlyDataValue(currentMap.get(key)) !== friendlyDataValue(previousMap.get(key)))
+    .filter((key) => parameterValueLabel(key, currentMap.get(key)) !== parameterValueLabel(key, previousMap.get(key)))
     .map((key) => [key, previousMap.get(key), currentMap.get(key)])
 }
 
@@ -376,7 +382,7 @@ export function PylinacResultPanel({ latest, history, accessToken, caseId, empty
   return <>
     {inputArtifacts && selectedArtifactIds && <PylinacInputValidationPanel accessToken={accessToken} caseId={caseId} artifacts={inputArtifacts} selectedArtifactIds={selectedArtifactIds} onMessage={onMessage} />}
     {selectedRun && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">{selectedIsLatest ? 'KẾT QUẢ MỚI NHẤT' : 'KẾT QUẢ ĐANG XEM'}</p><h2>{selectedRun.name}</h2></div><span className={statusClass(selectedRun.status)}>{statusLabel(selectedRun.status)}</span></div>{!selectedIsLatest && <p className="form-hint">Đang xem một lượt cũ trong lịch sử. Kết quả gốc không thay đổi khi xem lại hoặc đánh giá.</p>}{selectedRun.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích</h3><ul>{selectedRun.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{engineWarnings.length > 0 && <div className="alert alert--warning"><h3>Cảnh báo từ bộ tính</h3><p>Các cảnh báo này được giữ nguyên từ lần phân tích và cần được người thực hiện xem xét trước khi đánh giá.</p><ul>{engineWarnings.map((item, index) => <li key={`${textValue(item.code, 'warning')}-${index}`}>{textValue(item.message, 'Bộ tính có cảnh báo cần xem xét.')}</li>)}</ul></div>}{selectedRun.status === 'COMPLETED' && <><div className="machine-qa-metric-grid">{selectedIsLatest ? <>{resultNote}{metrics.length === 0 && !resultNote ? <p>Kết quả chi tiết đã được lưu; hãy mở ảnh phân tích để xem đầy đủ.</p> : metrics.map((metric) => <div className="machine-qa-metric" key={metric.key}><span>{metric.label}</span><strong>{metric.value}</strong></div>)}</> : historicalMetrics.length > 0 ? historicalMetrics.map(([key, value]) => <div className="machine-qa-metric" key={key}><span>{friendlyDataLabel(key)}</span><strong>{friendlyDataValue(value)}</strong></div>) : <p>Không có chỉ số dạng số để hiển thị trong lượt này.</p>}</div>{selectedRun.overlay_artifact_id && <><button className="button-secondary" disabled={overlayLoading} onClick={toggleOverlay} aria-expanded={Boolean(overlayUrl)}>{overlayUrl ? 'Ẩn ảnh phân tích' : overlayLoading ? 'Đang tải ảnh phân tích…' : overlayLabel}</button>{overlayUrl && <figure className="machine-qa-overlay-preview"><img src={overlayUrl} alt={`Ảnh phân tích ${selectedRun.name}`} /><figcaption>Ảnh minh họa do Pylinac tạo cho lượt đang xem.</figcaption></figure>}</>}<label>Đánh giá của người dùng<select value={selectedRun.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => onAssess(selectedRun.id, event.target.value as AssessmentValue)}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
-    {selectedRun && <section className="panel machine-qa-panel machine-qa-parameters"><div className="panel-heading"><div><p className="eyebrow">THÔNG SỐ ĐÃ LƯU</p><h2>Thiết lập của lượt đang xem</h2></div><strong>{selectedParameters.length}</strong></div>{selectedParameters.length === 0 ? <p className="empty-state">Bài này không có thông số nhập thêm.</p> : <div className="machine-qa-parameter-grid">{selectedParameters.map(([key, value]) => <div className="machine-qa-parameter" key={key}><span>{parameterLabels[key] ?? friendlyDataLabel(key, parameterLabels)}</span><strong>{friendlyDataValue(value)}</strong></div>)}</div>}{previousRun && <div className="machine-qa-diff"><h3>Thay đổi so với lượt ngay trước</h3>{changedParameters.length === 0 ? <p>Không có thay đổi thông số.</p> : <div className="machine-qa-diff-grid">{changedParameters.map(([key, previousValue, currentValue]) => <div key={key}><strong>{parameterLabels[key] ?? friendlyDataLabel(key, parameterLabels)}</strong><span>{previousValue === undefined ? 'Mới thêm' : currentValue === undefined ? 'Đã bỏ' : `${friendlyDataValue(previousValue)} → ${friendlyDataValue(currentValue)}`}</span></div>)}</div>}</div>}</section>}
+    {selectedRun && <section className="panel machine-qa-panel machine-qa-parameters"><div className="panel-heading"><div><p className="eyebrow">THÔNG SỐ ĐÃ LƯU</p><h2>Thiết lập của lượt đang xem</h2></div><strong>{selectedParameters.length}</strong></div>{selectedParameters.length === 0 ? <p className="empty-state">Bài này không có thông số nhập thêm.</p> : <div className="machine-qa-parameter-grid">{selectedParameters.map(([key, value]) => <div className="machine-qa-parameter" key={key}><span>{parameterLabels[key] ?? friendlyDataLabel(key, parameterLabels)}</span><strong>{parameterValueLabel(key, value)}</strong></div>)}</div>}{previousRun && <div className="machine-qa-diff"><h3>Thay đổi so với lượt ngay trước</h3>{changedParameters.length === 0 ? <p>Không có thay đổi thông số.</p> : <div className="machine-qa-diff-grid">{changedParameters.map(([key, previousValue, currentValue]) => <div key={key}><strong>{parameterLabels[key] ?? friendlyDataLabel(key, parameterLabels)}</strong><span>{previousValue === undefined ? 'Mới thêm' : currentValue === undefined ? 'Đã bỏ' : `${parameterValueLabel(key, previousValue)} → ${parameterValueLabel(key, currentValue)}`}</span></div>)}</div>}</div>}</section>}
     <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">{emptyHistoryLabel}</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th><th>Thao tác</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td><td><button className={run.id === selectedRun?.id ? 'history-button history-button--selected' : 'history-button'} onClick={() => setSelectedRunId(run.id)}>{run.id === selectedRun?.id ? 'Đang xem' : 'Mở'}</button></td></tr>)}</tbody></table></div>}</section>
   </>
 }
@@ -737,16 +743,26 @@ type WinstonLutzBBRow = {
   rad_size_mm: string
 }
 
+type WinstonLutzAngleRow = {
+  gantry: string
+  collimator: string
+  couch: string
+}
+
+type WinstonLutzAngleSource = 'DICOM' | 'FILENAME' | 'MANUAL'
+
 function WinstonLutzMultiTargetPage({ caseId, accessToken, title }: { caseId: string; accessToken: string; title: string }) {
   const queryClient = useQueryClient()
   const [selectedArtifactId, setSelectedArtifactId] = useState<string>()
   const [sid, setSid] = useState('1000')
   const [dpi, setDpi] = useState('')
   const [bbProximity, setBbProximity] = useState('10')
-  const [useFilenames, setUseFilenames] = useState(false)
+  const [angleSource, setAngleSource] = useState<WinstonLutzAngleSource>('DICOM')
   const [isLowDensity, setIsLowDensity] = useState(false)
   const [isOpenField, setIsOpenField] = useState(false)
   const [message, setMessage] = useState<string>()
+  const [manualAngles, setManualAngles] = useState<WinstonLutzAngleRow[]>([])
+  const manualAngleArtifactId = useRef<string | undefined>(undefined)
   const [arrangement, setArrangement] = useState<WinstonLutzBBRow[]>([
     { name: 'Iso', offset_left_mm: '0', offset_up_mm: '0', offset_in_mm: '0', bb_size_mm: '5', rad_size_mm: '20' },
     { name: '1', offset_left_mm: '0', offset_up_mm: '0', offset_in_mm: '30', bb_size_mm: '5', rad_size_mm: '20' },
@@ -775,11 +791,16 @@ function WinstonLutzMultiTargetPage({ caseId, accessToken, title }: { caseId: st
   const analyze = useMutation({
     mutationFn: () => {
       const parameters: Record<string, unknown> = {
-        sid: Number(sid), bb_proximity_mm: Number(bbProximity), use_filenames: useFilenames,
+        sid: Number(sid), bb_proximity_mm: Number(bbProximity), use_filenames: angleSource === 'FILENAME',
         is_low_density: isLowDensity, is_open_field: isOpenField,
         bb_arrangement: arrangement.map((row) => ({
           name: row.name, offset_left_mm: Number(row.offset_left_mm), offset_up_mm: Number(row.offset_up_mm),
           offset_in_mm: Number(row.offset_in_mm), bb_size_mm: Number(row.bb_size_mm), rad_size_mm: Number(row.rad_size_mm)
+        }))
+      }
+      if (angleSource === 'MANUAL') {
+        parameters.axis_mapping = manualAngles.map((row) => ({
+          gantry: Number(row.gantry), collimator: Number(row.collimator), couch: Number(row.couch)
         }))
       }
       if (dpi.trim()) parameters.dpi = Number(dpi)
@@ -803,9 +824,32 @@ function WinstonLutzMultiTargetPage({ caseId, accessToken, title }: { caseId: st
   }
   const zipArtifacts = (artifacts.data?.items ?? []).filter((item) => item.original_filename.toLowerCase().endsWith('.zip'))
   const selected = zipArtifacts.find((item) => item.id === selectedArtifactId) ?? zipArtifacts[0]
+  const previewInfo = useQuery({
+    queryKey: ['pylinac-multi-target-preview-info', accessToken, selected?.id],
+    queryFn: () => apiClient.previewArtifactInfo(accessToken, selected!.id),
+    enabled: Boolean(selected?.id), retry: false
+  })
+  const imageCount = previewInfo.data?.image_count ?? 0
+  useEffect(() => {
+    if (manualAngleArtifactId.current !== selected?.id) {
+      manualAngleArtifactId.current = selected?.id
+      setManualAngles([])
+      return
+    }
+    setManualAngles((current) => {
+      if (!imageCount) return []
+      return Array.from({ length: imageCount }, (_, index) => current[index] ?? { gantry: '', collimator: '', couch: '' })
+    })
+  }, [imageCount, selected?.id])
   const history = runs.data?.items ?? []
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
+  const manualAnglesValid = angleSource !== 'MANUAL' || (
+    imageCount > 1 && manualAngles.length === imageCount && manualAngles.every((row) =>
+      [row.gantry, row.collimator, row.couch].every((value) => value.trim() !== '' && Number.isFinite(Number(value)))
+    )
+  )
+  const canAnalyze = Boolean(selected) && !isBusy && manualAnglesValid
   const metric = (key: string) => textValue(pylinacMetric(latest, key))
 
   return <div className="page">
@@ -826,11 +870,25 @@ function WinstonLutzMultiTargetPage({ caseId, accessToken, title }: { caseId: st
       </div>
       <div className="table-wrap"><table><thead><tr><th>Tên bi</th><th>Lệch trái/phải (mm)</th><th>Lệch lên/xuống (mm)</th><th>Lệch trong/ngoài (mm)</th><th>Kích thước bi (mm)</th><th>Bán kính trường (mm)</th></tr></thead><tbody>{arrangement.map((row, index) => <tr key={`${row.name}-${index}`}><td><input aria-label={`Tên bi ${index + 1}`} value={row.name} onChange={(event) => updateBB(index, 'name', event.target.value)} /></td><td><input aria-label={`Lệch trái phải ${index + 1}`} type="number" step="0.1" value={row.offset_left_mm} onChange={(event) => updateBB(index, 'offset_left_mm', event.target.value)} /></td><td><input aria-label={`Lệch lên xuống ${index + 1}`} type="number" step="0.1" value={row.offset_up_mm} onChange={(event) => updateBB(index, 'offset_up_mm', event.target.value)} /></td><td><input aria-label={`Lệch trong ngoài ${index + 1}`} type="number" step="0.1" value={row.offset_in_mm} onChange={(event) => updateBB(index, 'offset_in_mm', event.target.value)} /></td><td><input aria-label={`Kích thước bi ${index + 1}`} type="number" min="0" step="0.1" value={row.bb_size_mm} onChange={(event) => updateBB(index, 'bb_size_mm', event.target.value)} /></td><td><input aria-label={`Bán kính trường ${index + 1}`} type="number" min="0" step="0.1" value={row.rad_size_mm} onChange={(event) => updateBB(index, 'rad_size_mm', event.target.value)} /></td></tr>)}</tbody></table></div>
       <div className="machine-qa-checks">
-        <label><input type="checkbox" checked={useFilenames} onChange={(event) => setUseFilenames(event.target.checked)} /> Ưu tiên đọc góc máy từ tên tệp</label>
         <label><input type="checkbox" checked={isLowDensity} onChange={(event) => setIsLowDensity(event.target.checked)} /> Bi chuẩn có mật độ thấp</label>
         <label><input type="checkbox" checked={isOpenField} onChange={(event) => setIsOpenField(event.target.checked)} /> Trường chiếu mở</label>
       </div>
-      <div className="machine-qa-actions"><button disabled={!selected || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      <div className="machine-qa-protocol-controls">
+        <label>Cách lấy góc máy<select value={angleSource} onChange={(event) => setAngleSource(event.target.value as WinstonLutzAngleSource)}>
+          <option value="DICOM">Đọc từ thông tin ảnh</option>
+          <option value="FILENAME">Đọc từ tên tệp</option>
+          <option value="MANUAL">Nhập theo thứ tự ảnh</option>
+        </select></label>
+      </div>
+      {angleSource === 'MANUAL' && <section className="machine-qa-manual-angle-mapping">
+        <div className="panel-heading"><div><p className="eyebrow">GÓC THEO THỨ TỰ ẢNH</p><h3>Nhập góc cho từng ảnh</h3></div><strong>{imageCount || '—'}</strong></div>
+        <p className="form-hint">Chỉ hiển thị số thứ tự ảnh để tránh lộ tên tệp kỹ thuật. Các dòng được ghép theo đúng thứ tự ảnh trong bộ ZIP.</p>
+        {previewInfo.isPending && <p className="form-hint">Đang đếm số ảnh trong bộ ảnh…</p>}
+        {previewInfo.isError && <p className="alert alert--error">Không thể xác định số ảnh để nhập góc. Hãy kiểm tra lại bộ ZIP.</p>}
+        {!previewInfo.isPending && !previewInfo.isError && imageCount > 0 && <div className="table-wrap"><table className="winston-lutz-angle-table"><thead><tr><th>Ảnh</th><th>Góc máy</th><th>Góc chuẩn trực</th><th>Góc bàn</th></tr></thead><tbody>{manualAngles.map((row, index) => <tr key={index}><th scope="row">Ảnh {index + 1}</th><td><input aria-label={`Góc máy ảnh ${index + 1}`} type="number" step="0.1" value={row.gantry} onChange={(event) => setManualAngles((current) => current.map((item, rowIndex) => rowIndex === index ? { ...item, gantry: event.target.value } : item))} /></td><td><input aria-label={`Góc chuẩn trực ảnh ${index + 1}`} type="number" step="0.1" value={row.collimator} onChange={(event) => setManualAngles((current) => current.map((item, rowIndex) => rowIndex === index ? { ...item, collimator: event.target.value } : item))} /></td><td><input aria-label={`Góc bàn ảnh ${index + 1}`} type="number" step="0.1" value={row.couch} onChange={(event) => setManualAngles((current) => current.map((item, rowIndex) => rowIndex === index ? { ...item, couch: event.target.value } : item))} /></td></tr>)}</tbody></table></div>}
+        {imageCount > 0 && !manualAnglesValid && <p className="form-hint">Nhập đủ ba góc dạng số cho tất cả ảnh trước khi bắt đầu phân tích.</p>}
+      </section>}
+      <div className="machine-qa-actions"><button disabled={!canAnalyze} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={zipArtifacts} selectedArtifactIds={selected ? [selected.id] : []} emptyHistoryLabel="Chưa có kết quả Winston–Lutz nhiều bi." metrics={[
       { key: 'max_2d_field_to_bb_mm', label: 'Sai lệch trường–bi lớn nhất', value: `${metric('max_2d_field_to_bb_mm')} mm` },
