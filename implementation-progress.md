@@ -9,6 +9,13 @@
 - Đây là hoàn thiện hợp đồng nhập góc, chưa phải nghiệm thu kết quả lâm sàng. Ma trận fixture đại diện, đối chiếu độc lập, điều chỉnh trực quan theo từng ảnh và kiểm chứng staging vẫn còn mở.
 - Bằng chứng: kiểm thử `apps/api/tests/test_pylinac_qa.py -k "winston_lutz_adapter"` và bản mã nguồn trên nhánh hiện tại.
 
+## P7-W04 — triển khai nhập góc Winston–Lutz một bia trên staging — đã kiểm tra — 2026-09-16
+
+- Staging đã phục vụ cùng commit `eb0a87417d16364dd62a986efa62e9038bd54c86` với mã đã kiểm tra local; API và gói giao diện cùng nhận đúng bản phát hành.
+- Cổng kiểm tra công khai exact-SHA đạt **16/16**; health/readiness, lược đồ `20260914_0023`, OpenAPI, biên giới xác thực và gói giao diện đều đạt.
+- Đây là kiểm tra parity và phát hành, chưa chạy phân tích bằng tệp QA thật trên staging. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ; `dailyQA` được bảo toàn.
+- Bằng chứng: [staging nhập góc Winston–Lutz một bia](docs/evidence/p7-staging-winston-lutz-manual-angle-deployment-20260916.json).
+
 ## P7-W03/W04 — triển khai cổng tệp hợp lệ lên staging — đã kiểm tra staging — 2026-09-16
 
 - Railway đã dựng lại API, web và tiến trình nền từ cùng commit `905fbda295ca8554417382f8a292891f6c3df573` sau khi bổ sung mốc đồng bộ dưới thư mục dịch vụ.
