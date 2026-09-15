@@ -196,3 +196,8 @@ P5 staging worker observation (2026-09-14): the worker deployment started with
 Redis Streams and no startup errors were observed; no new analysis job was
 created, so running-job behavior remains unverified. Rebuild all services from
 this repository revision.
+
+P7 input-validation parity marker (2026-09-15): the Pylinac input gate now
+validates DICOM containers, images and machine log files before analysis. This
+service-root marker must ship with the web marker so API, web and worker are
+rebuilt from the same release commit before the next staging exact-SHA check.
