@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## UX — thu gọn thẻ xác thực và danh mục QA — đã kiểm tra local — 2026-09-16
+
+- Thẻ đăng nhập/chưa có đơn vị được thu gọn theo chiều dọc và mở rộng vừa đủ theo chiều ngang để hai lựa chọn tham gia bằng lời mời và tạo đơn vị dễ xem hơn trong một màn hình lớn.
+- Danh mục bài QA dùng ba cột ở màn hình rộng, hai cột ở màn hình trung bình và một cột ở màn hình hẹp; thẻ bài kiểm tra giảm khoảng đệm nhưng vẫn giữ nhãn, trạng thái và vùng bấm rõ ràng.
+- Kiểm thử giao diện đạt **53/53**, lint, kiểm tra kiểu và bản dựng sản xuất đạt. Không thay đổi dữ liệu, không tạo hồ sơ và không thao tác xóa/lưu trữ/khôi phục `dailyQA`.
+- Đây là cải tiến hiển thị local; cần kiểm tra trực tiếp staging ở các kích thước 1366×768 và 1440×900 trước khi ghi nhận parity.
+
 ## P7-W04 — chọn ảnh/lát trong chuỗi DICOM dài — đã kiểm tra local — 2026-09-16
 
 - Mở giới hạn xem trước từ 32 lên 2.048 ảnh/lát trong phạm vi an toàn. Chuỗi ngắn vẫn dùng danh sách; chuỗi dài dùng ô nhập số từ 1 đến tổng số ảnh/lát để tránh một danh sách cuộn quá dài.
