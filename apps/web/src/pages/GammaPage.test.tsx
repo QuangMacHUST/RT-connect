@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest'
 
 import { artifactDisplayName } from './gammaArtifactLabels'
+import { artifactDisplayName as qaArtifactDisplayName } from './qaArtifactLabels'
 
 const dose = (id: string, artifactType = 'DICOM', modality: string | null = 'RTDOSE') => ({
   id,
@@ -34,4 +35,18 @@ test('does not expose JSON filenames in the PSQA input labels', () => {
   expect(artifactDisplayName(measurement, artifacts)).toBe('Dữ liệu đo liều')
   expect(artifactDisplayName(reference, artifacts)).toBe('Tệp liều RTDOSE 1')
   expect(artifactDisplayName(evaluation, artifacts)).toBe('Tệp liều RTDOSE 2')
+})
+
+test('uses business labels for stored QA input types', () => {
+  const ct = dose('ct', 'DICOM', 'CT')
+  const archive = dose('archive', 'OTHER', null)
+  archive.original_filename = 'starshots.json.zip'
+  const log = dose('log', 'OTHER', null)
+  log.original_filename = 'trajectory.json.tlog'
+  const artifacts = [ct, archive, log]
+
+  expect(qaArtifactDisplayName(ct, artifacts)).toBe('Ảnh CT')
+  expect(qaArtifactDisplayName(archive, artifacts)).toBe('Bộ ảnh nhiều lớp')
+  expect(qaArtifactDisplayName(log, artifacts)).toBe('Nhật ký máy')
+  expect(qaArtifactDisplayName(archive, artifacts)).not.toContain('json')
 })

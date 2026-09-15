@@ -1,5 +1,13 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7/P8 — tinh giản nhãn dữ liệu QA và DVH — lát cắt cục bộ — 2026-09-15
+
+- Đã dừng hướng xóa vĩnh viễn hồ sơ theo quyết định mới; dữ liệu `dailyQA`, lịch sử, tệp liên quan và điểm xu hướng được giữ nguyên.
+- Bổ sung bộ nhãn nghiệp vụ dùng chung cho toàn bộ màn hình Pylinac và kho lưu trữ QA. Người dùng chỉ thấy “Ảnh kiểm tra”, “Bộ ảnh nhiều lớp”, “Nhật ký máy”, “Tệp liều RTDOSE”, “Cấu trúc RT”, “Ảnh CT” và các nhãn tương ứng; không thấy tên `.json`, `.dcm`, tên tệp gốc, chuỗi băm hoặc mã nội bộ.
+- Màn hình DVH cũng đã bỏ tên tệp và chuỗi băm khỏi các lựa chọn RTDOSE, RTSTRUCT và CT. Việc lọc định dạng vẫn thực hiện nội bộ, không thay đổi dữ liệu đầu vào hay hợp đồng Pylinac.
+- Kiểm thử giao diện đạt **43/43**, lint, kiểm tra kiểu và bản dựng sản xuất đạt. Bằng chứng: [nhãn dữ liệu QA theo ngôn ngữ người dùng](docs/evidence/p7-p8-user-facing-artifact-labels-20260915.md).
+- Đây là lát cắt local; cần triển khai giao diện lên staging để kiểm tra lại bằng trình duyệt. P7/P8 và VERIFY/HANDOFF vẫn mở.
+
 ## P8-W02 — tinh giản đầu vào PSQA — lát cắt cục bộ — 2026-09-15
 
 - Trang phân tích PSQA không còn đưa tệp JSON kỹ thuật vào danh sách lựa chọn. Chỉ tệp RTDOSE và dữ liệu đo đã kiểm tra hợp lệ mới được phép xuất hiện trong luồng chọn liều.

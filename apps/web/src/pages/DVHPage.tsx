@@ -14,6 +14,7 @@ import {
   type QAProtocolResource
 } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
+import { artifactDisplayName } from './qaArtifactLabels'
 
 type JsonRecord = Record<string, unknown>
 
@@ -391,9 +392,9 @@ export function DVHPage() {
     <section className="biological-notice dvh-notice"><strong>PHYSICAL DOSE · P17</strong><span>RTDOSE được quy đổi bằng DoseGridScaling và chỉ chấp nhận DoseUnits=GY. CT là liên kết hình học tùy chọn; khi không chọn CT, kết quả vẫn là DVH trên dose-native grid và không được gọi là anatomy overlay.</span></section>
     <section className="panel dvh-panel"><div className="panel-heading"><div><p className="eyebrow">INPUT PREFLIGHT</p><h2>Chọn dữ liệu DICOM đã VALID</h2></div><span className={inputRequestError ? 'status-badge machine-status--fail' : 'status-badge'}>{inputData ? `${inputData.dose_artifacts.length} dose · ${inputData.structure_artifacts.length} structure` : 'Đang tải'}</span></div>
       {inputError ? <div className="alert alert--error"><p>{inputError}</p><button onClick={refetchInputs}>Thử lại</button></div> : !inputData ? <p>Đang tải input manifest…</p> : <div className="dvh-input-grid">
-        <label>RTDOSE · dose<select value={doseId} onChange={(event) => setSelectedDoseId(event.target.value)}><option value="">Chọn RTDOSE</option>{inputData.dose_artifacts.map((item) => <option key={item.id} value={item.id}>{item.original_filename} · {item.sha256.slice(0, 12)}…</option>)}</select></label>
-        <label>RTSTRUCT · structures<select value={structureId} onChange={(event) => { setSelectedStructureId(event.target.value); setRoiNumber(0); setValidation(undefined) }}><option value="">Chọn RTSTRUCT</option>{inputData.structure_artifacts.map((item) => <option key={item.id} value={item.id}>{item.original_filename} · {item.sha256.slice(0, 12)}…</option>)}</select></label>
-        <label>CT · optional overlay<select value={selectedCtId} onChange={(event) => { setSelectedCtId(event.target.value); setCtFrameIndex(0); setValidation(undefined) }}><option value="">Không chọn CT · dose-native</option>{inputData.ct_artifacts.map((item) => <option key={item.id} value={item.id}>{item.original_filename} · {item.sha256.slice(0, 12)}…</option>)}</select></label>
+        <label>RTDOSE · dose<select value={doseId} onChange={(event) => setSelectedDoseId(event.target.value)}><option value="">Chọn RTDOSE</option>{inputData.dose_artifacts.map((item) => <option key={item.id} value={item.id}>{artifactDisplayName(item, inputData.dose_artifacts)}</option>)}</select></label>
+        <label>RTSTRUCT · structures<select value={structureId} onChange={(event) => { setSelectedStructureId(event.target.value); setRoiNumber(0); setValidation(undefined) }}><option value="">Chọn RTSTRUCT</option>{inputData.structure_artifacts.map((item) => <option key={item.id} value={item.id}>{artifactDisplayName(item, inputData.structure_artifacts)}</option>)}</select></label>
+        <label>CT · optional overlay<select value={selectedCtId} onChange={(event) => { setSelectedCtId(event.target.value); setCtFrameIndex(0); setValidation(undefined) }}><option value="">Không chọn CT · dose-native</option>{inputData.ct_artifacts.map((item) => <option key={item.id} value={item.id}>{artifactDisplayName(item, inputData.ct_artifacts)}</option>)}</select></label>
         <label>ROI · chọn theo ROINumber<select value={effectiveRoi || ''} onChange={(event) => setRoiNumber(Number(event.target.value))}><option value="">Chọn ROI</option>{roiOptions.map((item) => <option key={item.number} value={item.number}>#{item.number} · {item.name} · {item.contours ?? 0} contour</option>)}</select></label>
       </div>}
       {structureId && inputData && inputData.rois.length === 0 && !inputs.isPending && <p className="form-hint">RTSTRUCT đã chọn nhưng chưa có ROI để chọn hoặc chưa đọc được contour definition.</p>}
