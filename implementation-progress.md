@@ -8,6 +8,13 @@
 - Kiểm tra kiểu, lint, bản dựng và toàn bộ giao diện đạt **58/58**. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa dữ liệu staging; hồ sơ `dailyQA` được giữ nguyên.
 - Đây là hoàn thiện một phần P7-W04, chưa phải nghiệm thu phantom, chưa thay thế fixture chuẩn/commissioning, đối chiếu độc lập hoặc kiểm chứng staging.
 
+## P7-W04 — triển khai chọn lát gốc trực quan trên staging — đã kiểm tra — 2026-09-16
+
+- API, tiến trình nền và giao diện staging đã cùng phục vụ commit `02c154238dbaac047634f50ff31e4638f9b6eda9`.
+- Cổng kiểm tra công khai exact-SHA đạt **16/16**; health/readiness, lược đồ `20260914_0023`, OpenAPI, ranh giới chưa xác thực và dấu hiệu vùng xem trước đều đạt.
+- Đây là kiểm tra parity triển khai, chưa chạy phân tích bằng phantom được phê duyệt và chưa đóng P7-W04/P7. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa dữ liệu staging; hồ sơ `dailyQA` được giữ nguyên.
+- Bằng chứng: [staging chọn lát gốc trực quan](docs/evidence/p7-staging-visual-origin-slice-deployment-20260916.json).
+
 ## P7-W04 — nhập góc thủ công theo từng ảnh cho Winston–Lutz một bia — đã kiểm tra local — 2026-09-16
 
 - Bài Winston–Lutz một bia nay có ba cách lấy góc: đọc từ thông tin DICOM, đọc từ tên tệp hoặc nhập theo thứ tự ảnh.
