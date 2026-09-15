@@ -460,12 +460,14 @@ type PylinacAdjustmentCanvasProps = {
   heading?: string
   description?: string
   disabled?: boolean
+  controlledImageIndex?: number
+  onImageIndexChange?: (index: number) => void
   onPointChange: (x: string, y: string) => void
 }
 
 const PREVIEW_SELECT_LIMIT = 32
 
-export function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, coordinateMode = 'PIXEL', heading = 'Chọn tâm bắt đầu', description = 'Nhấn hoặc kéo trên ảnh để đặt tâm bắt đầu. Tọa độ được quy đổi theo kích thước ảnh gốc và gửi cho Pylinac.', disabled = false, onPointChange }: PylinacAdjustmentCanvasProps) {
+export function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, coordinateMode = 'PIXEL', heading = 'Chọn tâm bắt đầu', description = 'Nhấn hoặc kéo trên ảnh để đặt tâm bắt đầu. Tọa độ được quy đổi theo kích thước ảnh gốc và gửi cho Pylinac.', disabled = false, controlledImageIndex, onImageIndexChange, onPointChange }: PylinacAdjustmentCanvasProps) {
   const imageRef = useRef<HTMLImageElement>(null)
   const dragging = useRef(false)
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 })
@@ -476,7 +478,8 @@ export function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, coordin
     enabled: Boolean(accessToken && artifactId), retry: false
   })
   const imageCount = previewInfo.data?.image_count ?? 1
-  const selectedImageIndex = Math.min(imageIndex, Math.max(0, imageCount - 1))
+  const requestedImageIndex = controlledImageIndex ?? imageIndex
+  const selectedImageIndex = Math.max(0, Math.min(requestedImageIndex, Math.max(0, imageCount - 1)))
   const preview = useQuery({
     queryKey: ['pylinac-adjustment-preview', accessToken, artifactId, selectedImageIndex],
     queryFn: () => apiClient.previewArtifact(accessToken, artifactId!, selectedImageIndex),
@@ -485,6 +488,11 @@ export function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, coordin
   const previewUrl = useMemo(() => preview.data ? URL.createObjectURL(preview.data) : undefined, [preview.data])
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl) }, [previewUrl])
   const previewLoading = Boolean(artifactId) && (preview.isPending || previewInfo.isPending)
+  useEffect(() => {
+    if (controlledImageIndex === undefined || !Number.isInteger(controlledImageIndex)) return
+    const nextIndex = Math.max(0, Math.min(controlledImageIndex, imageCount - 1))
+    if (nextIndex !== controlledImageIndex) onImageIndexChange?.(nextIndex)
+  }, [controlledImageIndex, imageCount, onImageIndexChange])
   const updatePoint = (clientX: number, clientY: number) => {
     const image = imageRef.current
     if (!image || disabled) return
@@ -510,7 +518,9 @@ export function PylinacAdjustmentCanvas({ accessToken, artifactId, x, y, coordin
     ? { left: `${Number(x) * 100}%`, top: `${Number(y) * 100}%` }
     : { left: `${Number(x) / imageDimensions.width * 100}%`, top: `${Number(y) / imageDimensions.height * 100}%` }
   const selectImage = (nextIndex: number) => {
-    setImageIndex(Math.max(0, Math.min(nextIndex, imageCount - 1)))
+    const boundedIndex = Math.max(0, Math.min(nextIndex, imageCount - 1))
+    setImageIndex(boundedIndex)
+    onImageIndexChange?.(boundedIndex)
     setImageDimensions({ width: 0, height: 0 })
   }
   return <div className="qa-adjustment-panel"><div className="panel-heading"><div><p className="eyebrow">ĐIỀU CHỈNH TRÊN ẢNH</p><h3>{heading}</h3></div><span className="status-badge">NHẤN VÀ KÉO</span></div><p className="form-hint">{description}</p>{imageCount > 1 && <label>Ảnh hoặc lát đang xem{imageCount <= PREVIEW_SELECT_LIMIT ? <select value={selectedImageIndex} onChange={(event) => selectImage(Number(event.target.value))} disabled={disabled}>{Array.from({ length: imageCount }, (_, index) => <option key={index} value={index}>#{index + 1}</option>)}</select> : <><input type="number" min="1" max={imageCount} value={selectedImageIndex + 1} onChange={(event) => selectImage(Number(event.target.value) - 1)} disabled={disabled} aria-label="Số ảnh hoặc lát đang xem" /><small className="form-hint">Nhập từ 1 đến {imageCount}; chuỗi dài dùng ô số để không phải cuộn danh sách.</small></>}</label>}{previewUrl ? <div className={disabled ? 'qa-adjustment-canvas qa-adjustment-canvas--disabled' : 'qa-adjustment-canvas'} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={releasePointer} onPointerCancel={releasePointer} role="application" aria-label={heading}><img ref={imageRef} src={previewUrl} alt={`Ảnh hoặc lát ${selectedImageIndex + 1} để chọn tâm`} draggable={false} onLoad={(event) => setImageDimensions({ width: event.currentTarget.naturalWidth, height: event.currentTarget.naturalHeight })} />{hasPoint && imageDimensions.width > 0 && imageDimensions.height > 0 && <span className="qa-adjustment-point" style={pointStyle} />}</div> : <div className="qa-adjustment-canvas qa-adjustment-canvas--empty">{previewLoading ? 'Đang tải ảnh xem trước…' : artifactId ? 'Không thể tải ảnh xem trước. Vẫn có thể nhập tọa độ bên dưới.' : 'Chọn ảnh để bật vùng điều chỉnh.'}</div>}</div>
@@ -1261,6 +1271,7 @@ function CatPhanPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
       <p>CatPhan cần đúng một tệp ZIP chứa chuỗi DICOM cùng bộ phantom. Pylinac chịu trách nhiệm phân tích HU, độ dày, độ đồng nhất, độ phân giải và độ tương phản thấp.</p>
       <div className="machine-qa-actions"><label className="button-link">Chọn tệp ZIP DICOM<input type="file" accept=".zip,application/zip" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>
       {imageArtifacts.length > 0 && <label>Tệp đang chọn<select value={selectedInput ?? ''} onChange={(event) => setSelectedArtifactId(event.target.value)}>{imageArtifacts.map((artifact) => <option key={artifact.id} value={artifact.id}>{artifactDisplayName(artifact, imageArtifacts)}</option>)}</select></label>}
+      {selectedInput && <PylinacAdjustmentCanvas key={`${selectedInput}-catphan-slice`} accessToken={accessToken} artifactId={selectedInput} x="" y="" heading="Chọn lát gốc trên ảnh" description="Chọn một lát trong chuỗi ảnh để làm lát gốc khi Pylinac cần hỗ trợ thủ công. Nếu không chọn, Pylinac vẫn tự xác định lát phù hợp." controlledImageIndex={originSlice.trim() === '' ? undefined : Number(originSlice)} onImageIndexChange={(index) => setOriginSlice(String(index))} disabled={isBusy} onPointChange={() => undefined} />}
       <div className="machine-qa-protocol-controls">
         <label>Dung sai HU<input type="number" min="0" step="1" value={huTolerance} onChange={(event) => setHuTolerance(event.target.value)} /></label>
         <label>Ngưỡng CNR<input type="number" min="0" step="0.1" value={cnrThreshold} onChange={(event) => setCnrThreshold(event.target.value)} /></label>
@@ -1362,6 +1373,7 @@ function AcrPage({ caseId, accessToken, title, catalogKey }: { caseId: string; a
       <p>ACR cần đúng một tệp ZIP chứa chuỗi DICOM của phantom. Pylinac chịu trách nhiệm phân tích hình học, độ đồng nhất, độ phân giải và tương phản theo đúng loại phantom.</p>
       <div className="machine-qa-actions"><label className="button-link">Chọn tệp ZIP DICOM<input type="file" accept=".zip,application/zip" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>
       {imageArtifacts.length > 0 && <label>Tệp đang chọn<select value={selectedInput ?? ''} onChange={(event) => setSelectedArtifactId(event.target.value)}>{imageArtifacts.map((artifact) => <option key={artifact.id} value={artifact.id}>{artifactDisplayName(artifact, imageArtifacts)}</option>)}</select></label>}
+      {selectedInput && <PylinacAdjustmentCanvas key={`${selectedInput}-acr-slice`} accessToken={accessToken} artifactId={selectedInput} x="" y="" heading="Chọn lát gốc trên ảnh" description="Chọn lát gốc trực tiếp từ chuỗi ảnh khi tự động nhận diện chưa phù hợp. Lựa chọn này chỉ áp dụng cho lượt phân tích mới." controlledImageIndex={originSlice.trim() === '' ? undefined : Number(originSlice)} onImageIndexChange={(index) => setOriginSlice(String(index))} disabled={isBusy} onPointChange={() => undefined} />}
       <div className="machine-qa-protocol-controls">
         <label>Lát gốc tùy chọn<input type="number" min="0" step="1" placeholder="Tự động" value={originSlice} onChange={(event) => setOriginSlice(event.target.value)} /></label>
         <label>Điều chỉnh ngang (mm)<input type="number" step="0.1" value={xAdjustment} onChange={(event) => setXAdjustment(event.target.value)} /></label>
@@ -1469,6 +1481,7 @@ function CtPylinacPage({ caseId, accessToken, title, catalogKey }: { caseId: str
       <p>Chọn đúng một tệp ZIP của phantom. Pylinac phân tích và trả về các chỉ số chuyên môn; các điều chỉnh bên dưới chỉ áp dụng cho lần chạy mới.</p>
       <div className="machine-qa-actions"><label className="button-link">Chọn tệp ZIP DICOM<input type="file" accept=".zip,application/zip" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>
       {imageArtifacts.length > 0 && <label>Tệp đang chọn<select value={selectedInput ?? ''} onChange={(event) => setSelectedArtifactId(event.target.value)}>{imageArtifacts.map((artifact) => <option key={artifact.id} value={artifact.id}>{artifactDisplayName(artifact, imageArtifacts)}</option>)}</select></label>}
+      {selectedInput && <PylinacAdjustmentCanvas key={`${selectedInput}-ct-slice`} accessToken={accessToken} artifactId={selectedInput} x="" y="" heading="Chọn lát gốc trên ảnh" description="Chọn lát gốc trực tiếp từ chuỗi ảnh khi cần kiểm tra lại vị trí phantom. Lựa chọn này chỉ áp dụng cho lượt phân tích mới." controlledImageIndex={originSlice.trim() === '' ? undefined : Number(originSlice)} onImageIndexChange={(index) => setOriginSlice(String(index))} disabled={isBusy} onPointChange={() => undefined} />}
       <div className="machine-qa-protocol-controls">
         <label>Lát gốc tùy chọn<input type="number" min="0" step="1" placeholder="Tự động" value={originSlice} onChange={(event) => setOriginSlice(event.target.value)} /></label>
         <label>Điều chỉnh ngang (mm)<input type="number" step="0.1" value={xAdjustment} onChange={(event) => setXAdjustment(event.target.value)} /></label>

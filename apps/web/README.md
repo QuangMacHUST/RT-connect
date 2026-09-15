@@ -200,3 +200,9 @@ aligned with the API service when changing the response contract.
 P7 fixture-status plan-sync marker (2026-09-16): the implementation progress
 and plan records now point to the staging evidence for the same catalogue UI.
 Keep this marker aligned with the API service before the next exact-SHA check.
+
+P7 visual origin-slice marker (2026-09-16): the shared preview control can
+now be controlled by the CatPhan, ACR and CT phantom forms so a selected slice
+is persisted as the next Pylinac `origin_slice` parameter. This is an input
+selection aid, not an absolute phantom-center override. Rebuild API, worker
+and web from this revision before recording staging evidence.

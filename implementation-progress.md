@@ -1,5 +1,13 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W04 — chọn lát gốc trực quan cho nhóm phantom CT — đã kiểm tra local — 2026-09-16
+
+- Vùng xem trước dùng chung nay có thể điều khiển từ biểu mẫu cha: CatPhan, ACR và nhóm Cheese/Helios/Quart đồng bộ lát người dùng chọn vào `origin_slice` trước khi gọi Pylinac.
+- Chuỗi ngắn vẫn dùng danh sách lát; chuỗi dài vẫn dùng ô nhập số theo giới hạn xem trước hiện hành. Khi đổi tệp, vùng chọn được tạo lại để không giữ lựa chọn của tệp trước.
+- Việc chọn lát không giả định tâm tuyệt đối của phantom. Các điều chỉnh ngang/dọc/góc vẫn đi qua đúng tham số mà Pylinac công khai hỗ trợ; nếu cần chỉnh tâm, người thực hiện vẫn nhập điều chỉnh theo mm trong biểu mẫu.
+- Kiểm tra kiểu, lint, bản dựng và toàn bộ giao diện đạt **58/58**. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa dữ liệu staging; hồ sơ `dailyQA` được giữ nguyên.
+- Đây là hoàn thiện một phần P7-W04, chưa phải nghiệm thu phantom, chưa thay thế fixture chuẩn/commissioning, đối chiếu độc lập hoặc kiểm chứng staging.
+
 ## P7-W04 — nhập góc thủ công theo từng ảnh cho Winston–Lutz một bia — đã kiểm tra local — 2026-09-16
 
 - Bài Winston–Lutz một bia nay có ba cách lấy góc: đọc từ thông tin DICOM, đọc từ tên tệp hoặc nhập theo thứ tự ảnh.
