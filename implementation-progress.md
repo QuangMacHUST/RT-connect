@@ -12,6 +12,7 @@
 - Bộ kiểm thử backend tập trung cho registry, adapter QA, hạt nhân, contrib và hiệu chuẩn đạt **tất cả kiểm thử**; riêng nhóm registry đạt 5/5. Ruff và mypy strict trên phần registry/adapter thay đổi đều đạt.
 - Bộ kiểm thử giao diện đạt **12/12 tệp kiểm thử, 40/40 kiểm thử**, kiểm tra kiểu TypeScript đạt và bản dựng sản xuất hoàn tất. Bản dựng có cảnh báo kích thước gói JavaScript lớn hơn ngưỡng tối ưu, nhưng không có lỗi biên dịch hoặc lỗi kiểm thử.
 - Bổ sung chặn đầu vào không phải ZIP cho CatPhan trước khi gọi Pylinac; kiểm thử CatPhan 503/700 cùng đường lỗi định dạng đạt. Bằng chứng tổng hợp: [kiểm tra P7 cục bộ](docs/evidence/p7-local-validation-20260915.json).
+- Toàn bộ nhóm kiểm thử có tên `test_pylinac_*.py` hiện thu thập **104 ca** và chạy đạt **104/104**. Trong đó ma trận tệp mẫu chính thức đạt 36/36, ma trận lỗi đạt 16/16, năm bài hiệu chuẩn đạt 6/6, hai bài đóng góp đạt 2/2, nhóm Gamma đạt 6/6, nhóm hạt nhân đạt 1/1, registry đạt 5/5 và các hợp đồng adapter còn lại đạt 32/32. Lệnh kiểm tra: `python -m pytest tests/test_pylinac_*.py --no-cov -q` (trên PowerShell cần truyền danh sách tệp, không dùng ký tự đại diện trực tiếp). Cảnh báo thư viện phụ thuộc vẫn xuất hiện nhưng không có lỗi kiểm thử.
 - Đây là cổng hồi quy cục bộ, không thay thế fixture chuẩn/commissioning, đối chiếu chỉ số độc lập, kiểm thử staging hoặc nghiệm thu lâm sàng; P7 vẫn mở.
 
 ## P7-W03 — ma trận lỗi phantom/chuỗi — lát cắt cục bộ — 2026-09-15
@@ -1370,6 +1371,8 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Sau khi đẩy commit `783f8b5`, staging tự triển khai và bộ kiểm tra công khai exact-SHA đạt **16/16**; API/web cùng nhận đúng mã nguồn và lược đồ `20260914_0023`. Bằng chứng: [P7 cổng đầu vào trên staging](docs/evidence/p7-staging-input-validation-gate-20260915.md). Đây chỉ là cổng parity triển khai, chưa phải kiểm chứng chạy từng bài Pylinac trên staging.
 
 - Sau commit `ffad35305fa8a30d33ec052a793d85b0a28112d4`, API, giao diện và tiến trình nền staging đã được buộc dựng lại cùng nguồn; bộ xác minh công khai đạt **16/16**, API sẵn sàng với lược đồ `20260914_0023`. Trình duyệt staging mở bài Kiểm tra sao trên hồ sơ tổng hợp, hiển thị bảng kiểm tra đầu vào và báo tệp hiện có là **Hợp lệ**; lịch sử chưa có kết quả. Không chạy engine vì tệp đang có là RTDOSE tổng hợp, không phải fixture Starshot phù hợp. Bằng chứng: [giao diện cổng đầu vào Pylinac trên staging](docs/evidence/p7-staging-input-validation-ui-20260915.md). Đây là cổng UI/runtime và parity, chưa đóng chạy engine Starshot hay VERIFY/HANDOFF P7.
+
+- Ma trận tệp mẫu chính thức Pylinac nay đã có kiểm thử hồi quy tự động tại `apps/api/tests/test_pylinac_official_demo_matrix.py`: **36/36** trường hợp đạt, bao gồm Picket Fence, Starshot, Winston–Lutz, ba bài VMAT, bốn CatPhan có mẫu, TomoCheese, hai nhãn Quart, 19 bài ảnh phẳng, Field Profile/Field Analysis, Dynalog và Trajectory Log 2.1. Kiểm thử dùng chính `execute_pylinac`, kiểm lớp engine, structured result và overlay; không ghi staging. Bằng chứng: [ma trận tệp mẫu tự động](docs/evidence/p7-local-pylinac-official-demo-matrix-20260915.json). Đây là tiến bộ của W03, chưa đóng W03 vì các capability không có mẫu chính thức, đối chiếu chỉ số, lỗi đặc trưng và staging vẫn mở.
 
 ## P7-W04 — giao diện tự kiểm tra đầu vào Pylinac — lát cắt cục bộ — 2026-09-15
 

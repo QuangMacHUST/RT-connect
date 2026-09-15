@@ -5,6 +5,14 @@
 - Phạm vi: gọi trực tiếp `execute_pylinac`, lấy structured result và ảnh overlay; không ghi dữ liệu staging
 - Kết luận: các dòng dưới đây đạt lát cắt `LOCAL_VERIFIED_SLICE`, không phải nghiệm thu lâm sàng
 
+Ma trận này hiện đã được mã hóa thành kiểm thử hồi quy tại
+`apps/api/tests/test_pylinac_official_demo_matrix.py`. Lệnh kiểm tra thu thập
+36 trường hợp và lần chạy ngày 2026-09-15 đạt **36/36**. Bài VMAT được giải nén
+từ tệp mẫu ZIP thành đúng cặp ảnh; Dynalog được dựng từ đúng cặp A/B; bài IBA
+truyền SSD 1395 mm theo metadata của tệp mẫu. Kiểm thử không coi các bài chưa
+có tệp mẫu chính thức là đạt và không thay thế đối chiếu độc lập hoặc dữ liệu
+commissioning.
+
 ## Kết quả chạy thật
 
 | Bài | Tệp mẫu | Engine | Số nhóm chỉ số | Kích thước overlay |

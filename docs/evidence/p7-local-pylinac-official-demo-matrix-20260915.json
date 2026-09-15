@@ -1,0 +1,36 @@
+{
+  "evidence_id": "p7-local-pylinac-official-demo-matrix-20260915",
+  "captured_at_utc": "2026-09-15T08:18:00Z",
+  "environment": "development",
+  "pylinac_version": "3.47.0",
+  "command": "python -m pytest tests/test_pylinac_official_demo_matrix.py --no-cov -q",
+  "collected_cases": 36,
+  "passed_cases": 36,
+  "failed_cases": 0,
+  "passed": true,
+  "scope": "Mỗi trường hợp gọi execute_pylinac bằng tệp mẫu chính thức đang có trong wheel, kiểm tra lớp engine, kết quả có cấu trúc và ảnh minh họa khi engine cung cấp.",
+  "special_input_handling": {
+    "vmat": "Giải nén từng ZIP thành đúng cặp ảnh trước khi gọi adapter.",
+    "dynalog": "Dựng thư mục tạm từ đúng cặp AQA.dlg và BQA.dlg.",
+    "iba_primus_a": "Truyền SSD 1395 mm theo bộ tệp mẫu.",
+    "winston_lutz": "Truyền SID 1000 mm cho bộ ảnh không chứa đủ thang đo."
+  },
+  "excluded_capabilities": [
+    "CatPhan 700",
+    "ACR CT 464",
+    "ACR MRI lớn",
+    "ACR MRI vừa",
+    "CIRS 062M",
+    "GE Helios",
+    "Trajectory Log 3",
+    "Trajectory Log 4",
+    "chín bài hạt nhân",
+    "hai bài đóng góp",
+    "năm bài hiệu chuẩn"
+  ],
+  "limitations": [
+    "Không phải dữ liệu commissioning hoặc nghiệm thu lâm sàng.",
+    "Không thay thế đối chiếu độc lập từng chỉ số.",
+    "Không chứng minh khả năng chạy trên staging; cổng staging phải được thực hiện riêng."
+  ]
+}
