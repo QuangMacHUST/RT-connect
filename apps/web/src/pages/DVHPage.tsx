@@ -403,7 +403,7 @@ export function DVHPage() {
   if (!selectedCase) return <div className="page"><section className="alert alert--error"><h1>Không tìm thấy QA case</h1><p>Case này không thuộc organization hiện tại hoặc đã bị lưu trữ.</p><Link className="button-link" to="/app/qa">Quay lại QA Archive</Link></section></div>
 
   const previewResult = validation?.valid ? validation.preview ?? undefined : undefined
-  const result = activeRun?.result_snapshot ?? previewResult
+  const result = validation?.valid ? previewResult ?? activeRun?.result_snapshot : activeRun?.result_snapshot
   const inputRequestError = inputManifest.error ?? inputs.error
   const inputError = inputRequestError ? errorMessage(inputRequestError) : undefined
   const refetchInputs = () => {
