@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7 — kiểm tra hồi quy sau cổng inventory — lát cắt cục bộ — 2026-09-15
+
+- Bộ kiểm thử backend tập trung cho registry, adapter QA, hạt nhân, contrib và hiệu chuẩn đạt **tất cả kiểm thử**; riêng nhóm registry đạt 5/5. Ruff và mypy strict trên phần registry/adapter thay đổi đều đạt.
+- Bộ kiểm thử giao diện đạt **12/12 tệp kiểm thử, 40/40 kiểm thử**, kiểm tra kiểu TypeScript đạt và bản dựng sản xuất hoàn tất. Bản dựng có cảnh báo kích thước gói JavaScript lớn hơn ngưỡng tối ưu, nhưng không có lỗi biên dịch hoặc lỗi kiểm thử.
+- Bổ sung chặn đầu vào không phải ZIP cho CatPhan trước khi gọi Pylinac; kiểm thử CatPhan 503/700 cùng đường lỗi định dạng đạt. Bằng chứng tổng hợp: [kiểm tra P7 cục bộ](docs/evidence/p7-local-validation-20260915.json).
+- Đây là cổng hồi quy cục bộ, không thay thế fixture chuẩn/commissioning, đối chiếu chỉ số độc lập, kiểm thử staging hoặc nghiệm thu lâm sàng; P7 vẫn mở.
+
 ## P7-W03 — đối chiếu inventory công khai của Pylinac — lát cắt cục bộ — 2026-09-15
 
 - Đã bổ sung `pylinac_inventory_diff()` để quét các lớp/hàm phân tích công khai của wheel Pylinac 3.47.0, loại rõ lớp nền, lớp kết quả và lớp ảnh nội bộ, rồi đối chiếu với registry RT-CONNECT. HyperSight được ghi nhận là alias tương thích của `QuartDVT`; ba phiên bản Trajectory Log dùng chung một lớp runtime nhưng vẫn là ba capability logic riêng.

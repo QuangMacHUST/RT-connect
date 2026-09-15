@@ -1,0 +1,24 @@
+{
+  "evidence_type": "P7_LOCAL_VALIDATION",
+  "verified_at": "2026-09-15",
+  "environment": "local-development",
+  "backend": {
+    "command": "python -m pytest tests/test_pylinac_registry.py tests/test_pylinac_qa.py tests/test_pylinac_nuclear_engine.py tests/test_pylinac_contrib_engine.py tests/test_pylinac_calibration_engine.py --no-cov -q",
+    "result": "passed",
+    "scope": "registry, adapter, nuclear, contrib and calibration Pylinac slices"
+  },
+  "frontend": {
+    "typecheck": "passed",
+    "tests": "12 files passed, 40 tests passed",
+    "build": "passed",
+    "build_warning": "The production bundle is larger than the configured 500 kB advisory threshold."
+  },
+  "planning_contract": {
+    "command": "python scripts/verify-planning-contract.py",
+    "result": "passed",
+    "phase_count": 21,
+    "acceptance_scenario_count": 264,
+    "failed_check_count": 0
+  },
+  "scope_note": "This evidence proves local regression and planning-contract integrity only. It does not prove representative fixtures, commissioning, independent metric agreement, staging execution, or clinical readiness."
+}
