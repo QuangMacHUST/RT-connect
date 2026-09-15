@@ -5,6 +5,7 @@
 - Sau khi dừng hướng xóa vĩnh viễn hồ sơ, đã triển khai bản web `e7b3150` và kiểm tra trực tiếp trên staging; triển khai Railway `be7f670f-033d-44c6-8fa3-8df7ce7deeb8` đạt `SUCCESS`.
 - Luồng chọn “Chỉ số phù hợp RTOG ở mức 95%”, nhập liều kê đơn `6 Gy` và bấm “Kiểm tra và xem trước” hiển thị bản xem trước mới với giá trị `0,7500`, trạng thái “Đã tính”. Không bấm lưu, không tạo lần tính mới.
 - Lịch sử hồ sơ vẫn giữ nguyên 2 lần tính cũ; giao diện không hiển thị mã nội bộ, JSON hay tên tệp kỹ thuật. Khi dùng `60 Gy`, dữ liệu thiếu thể tích liều 95% được báo “Chưa đủ dữ liệu”, không suy đoán.
+- Bản web `8324540` tiếp tục sửa nhãn kết quả để phân biệt rõ “Bản xem trước · chưa lưu” với kết quả đã lưu; không còn hiển thị thời điểm lưu cũ như thể thuộc bản xem trước mới. Kiểm thử hồi quy DVH đạt **7/7**.
 - Bằng chứng: [bản xem trước HI/CI trên staging](docs/evidence/p17-staging-hi-ci-preview-20260915.md). P17-W03 đã có kiểm tra staging cho lát cắt xem trước, nhưng vẫn mở cổng oracle độc lập, xác nhận chuyên môn và nguồn tiêu chí theo bối cảnh.
 
 ## P17-W02/P17-W03 — chỉ số HI/CI trong DVH — lát cắt cục bộ — 2026-09-15
