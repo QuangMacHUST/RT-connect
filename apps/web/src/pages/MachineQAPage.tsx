@@ -23,6 +23,7 @@ function errorMessage(error: unknown): string {
       PYLINAC_INPUT_NOT_FOUND: 'Không tìm thấy tệp đầu vào trong bài kiểm tra này.',
       PYLINAC_INPUT_COUNT_INVALID: 'Số lượng tệp đầu vào chưa đúng với bài kiểm tra.',
       PYLINAC_INPUT_FORMAT_INVALID: 'Định dạng tệp chưa đúng với bài kiểm tra. Hãy chọn đúng tệp được yêu cầu.',
+      PYLINAC_INPUT_NOT_VALIDATED: 'Tệp chưa được kiểm tra hợp lệ. Hãy bấm “Kiểm tra dữ liệu” trước khi phân tích.',
       PYLINAC_EXECUTION_FAILED: 'Bộ tính Pylinac không thể phân tích tệp này. Hãy kiểm tra tệp rồi thử lại.',
       PYLINAC_INPUT_NOT_AVAILABLE: 'Không thể đọc tệp từ kho lưu trữ. Hãy thử lại sau.',
       PYLINAC_PARAMETER_INVALID: 'Tham số chưa hợp lệ. Hãy kiểm tra lại các trường nhập.',

@@ -161,7 +161,15 @@ def _artifact_inputs(
             "Một hoặc nhiều tệp không thuộc bài kiểm tra hiện tại.",
             404,
         )
-    return [by_id[artifact_id] for artifact_id in artifact_ids]
+    selected = [by_id[artifact_id] for artifact_id in artifact_ids]
+    if any(artifact.data_status != "VALID" for artifact in selected):
+        raise DomainError(
+            "PYLINAC_INPUT_NOT_VALIDATED",
+            "Tất cả tệp đầu vào phải được kiểm tra hợp lệ trước khi phân tích. "
+            "Hãy bấm “Kiểm tra dữ liệu” rồi thử lại.",
+            422,
+        )
+    return selected
 
 
 def _input_snapshot(artifacts: list[Artifact]) -> dict[str, object]:

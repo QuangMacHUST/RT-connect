@@ -1361,3 +1361,8 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Các nhánh đã được chạy gồm manifest/checksum/source drift, storage outage không tạo run, archived case, CT frame mismatch, CT no-overlap, CT resource limit, unsupported geometry và ORM immutability. Migration contract cũng xác nhận guard PostgreSQL được khai báo.
 - Independent known-answer oracle chạy `13/13` comparison PASS với fixture RTDOSE/RTSTRUCT tổng hợp và engine `p17-dvh-1.1.0`.
 - Evidence: [p17-local-negative-resource-20260911-f05508e.json](docs/evidence/p17-local-negative-resource-20260911-f05508e.json). Đây chỉ là `LOCAL_VERIFIED_SLICE`; chưa đóng staging PostgreSQL trigger probe, staging fault/resource/large-volume, provider restore, release hoặc production gate.
+## P7-W03 — chặn chạy Pylinac khi tệp chưa được kiểm tra — lát cắt cục bộ — 2026-09-15
+
+- API Pylinac nay yêu cầu mọi tệp đầu vào có trạng thái `VALID` trước khi tạo lượt phân tích. Tệp còn `UPLOADED`, `VALIDATING`, `WARNING` hoặc `INVALID` đều bị chặn tại preflight với thông báo hướng dẫn người dùng kiểm tra dữ liệu; bài hiệu chuẩn chỉ nhập số đo vẫn không bị ảnh hưởng.
+- Kiểm thử hồi quy xác nhận hai nhánh: tệp DICOM đã kiểm tra hợp lệ được chạy và lưu kết quả/ảnh minh họa; tệp chưa kiểm tra bị từ chối trước khi gọi engine và không tạo lượt chạy rỗng. Cổng giao diện đã có thông báo tiếng Việt tương ứng. Bằng chứng: [cổng kiểm tra tệp Pylinac](docs/evidence/p7-local-input-validation-gate-20260915.md).
+- Kiểm thử mục tiêu đạt **3/3**; đây là cổng an toàn đầu vào của P7-W03, chưa thay thế fixture chuẩn/commissioning, đối chiếu chỉ số độc lập hoặc kiểm chứng staging. P7 vẫn mở.

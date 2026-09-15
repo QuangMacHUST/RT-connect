@@ -73,13 +73,28 @@ def test_pylinac_run_persists_input_result_overlay_and_separate_assessment(monke
             "rt_connect_api.api.pylinac_qa.execute_pylinac", lambda *_args: fake_result
         )
         case_id = _case(client, str(organization.id))
+        fixture = (
+            Path(__file__).resolve().parents[3]
+            / "docs"
+            / "fixtures"
+            / "p17-ct-v1-smoke.dcm"
+        )
         uploaded = client.post(
             f"/api/v1/qa-cases/{case_id}/artifacts",
-            files={"file": ("picket-fence.dcm", b"synthetic-dicom", "application/dicom")},
+            files={
+                "file": (
+                    "picket-fence.dcm",
+                    fixture.read_bytes(),
+                    "application/dicom",
+                )
+            },
             data={"artifact_type": "DICOM", "logical_role": "EVALUATION"},
         )
         assert uploaded.status_code == 201, uploaded.text
         artifact_id = uploaded.json()["id"]
+        validation = client.post(f"/api/v1/artifacts/{artifact_id}/validate")
+        assert validation.status_code == 200, validation.text
+        assert validation.json()["result"] == "VALID"
 
         created = client.post(
             f"/api/v1/qa-cases/{case_id}/pylinac-runs",
@@ -109,6 +124,36 @@ def test_pylinac_run_persists_input_result_overlay_and_separate_assessment(monke
         assert assessment.status_code == 200, assessment.text
         assert assessment.json()["assessment_status"] == "WARNING"
         assert assessment.json()["result_snapshot"]["metrics"]["passed"] is True
+
+
+def test_pylinac_run_rejects_unvalidated_input_before_engine(monkeypatch) -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+        uploaded = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={"file": ("picket-fence.dcm", b"not-validated", "application/dicom")},
+            data={"artifact_type": "DICOM", "logical_role": "EVALUATION"},
+        )
+        assert uploaded.status_code == 201, uploaded.text
+
+        called = False
+
+        def fail_if_called(*_args, **_kwargs):
+            nonlocal called
+            called = True
+            raise AssertionError("Engine không được gọi trước khi tệp được kiểm tra")
+
+        monkeypatch.setattr("rt_connect_api.api.pylinac_qa.execute_pylinac", fail_if_called)
+        response = client.post(
+            f"/api/v1/qa-cases/{case_id}/pylinac-runs",
+            json={"catalog_key": "PICKET_FENCE", "artifact_ids": [uploaded.json()["id"]]},
+        )
+        assert response.status_code == 422, response.text
+        assert response.json()["code"] == "PYLINAC_INPUT_NOT_VALIDATED"
+        assert called is False
+        assert client.get(f"/api/v1/qa-cases/{case_id}/pylinac-runs").json()["total"] == 0
 
 
 def test_calibration_run_accepts_measurements_without_artifacts(monkeypatch) -> None:

@@ -251,6 +251,7 @@ Tại ngày 2026-09-12, PyPI công bố pylinac 3.47.0 và Python từ 3.10, tro
 RT-CONNECT dùng Anti-Corruption Layer để không lưu trực tiếp object/JSON riêng của pylinac:
 
 - `PylinacAdapter` nhận input manifest + machine/test profile + điều chỉnh người dùng, gọi đúng class/`analyze` của registry và chuyển `results_data()` sang `AnalysisRun` chung; riêng Calibration gọi constructor số đo rồi ánh xạ thuộc tính kết quả công khai, còn Log Analyzer lấy dữ liệu công khai Axis/MLC/Fluence sau khi loader của Pylinac đọc đúng tệp.
+- Trước khi tạo `PylinacQARun`, API phải kiểm tra phạm vi đơn vị/bài, số lượng và định dạng tệp, rồi yêu cầu mọi artifact có `data_status=VALID`. Các trạng thái `UPLOADED`, `VALIDATING`, `WARNING` và `INVALID` không được đưa vào engine; API trả lỗi ổn định `PYLINAC_INPUT_NOT_VALIDATED`, không tạo run, không tải tệp và không gọi Pylinac. Người dùng kiểm tra lại tệp qua luồng kiểm tra dữ liệu rồi mới thử phân tích.
 - Adapter không tự tính lại metric pylinac. Các phép tính bổ sung chỉ được phép nếu là capability pylinac mức thấp được gọi rõ ràng và snapshot ghi đúng hàm/module/version.
 - `engine_name=pylinac`, `pylinac_version`, wheel hash, adapter version, module/class, tham số analyze và hash input được lưu trong snapshot. Kết quả cũ không bị tính lại khi nâng phiên bản.
 - Lỗi/thông báo của pylinac được ánh xạ sang error code ổn định và tiếng Việt; stack trace chỉ ở log đã khử dữ liệu.
