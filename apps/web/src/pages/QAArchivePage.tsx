@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { ApiClientError, apiClient, type FolderResource, type QACasePurgePreviewResource, type QATestDefinitionResource } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { dvhArtifactStatusLabel, summarizeDvhArtifacts } from './dvhArtifactSummary'
+import { definitionSupportsDoseAnalysis } from './qaDefinitionRules'
 import { isCaseInArchiveView, toggleAllVisibleCaseSelection, toggleCaseSelection } from './qaArchiveView'
 import { processUploadQueue, type UploadQueueItem, updatePendingUploadMetadata } from './uploadQueue'
 import { artifactDisplayName } from './qaArtifactLabels'
@@ -80,13 +81,6 @@ function purgeReferenceSummary(references: Array<{ source: string; count: number
 function definitionNeedsInputFile(definition: QATestDefinitionResource | undefined): boolean {
   if (!definition) return false
   return definition.input_kind !== 'MEASUREMENT' || definition.required_inputs.some((item) => /ảnh|tệp|dicom|chuỗi|biên dạng|dose|liều/i.test(item))
-}
-
-function definitionSupportsDoseAnalysis(definition: QATestDefinitionResource | undefined): boolean {
-  if (!definition) return false
-  return definition.key.startsWith('PSQA_')
-    || definition.input_kind.includes('DOSE')
-    || definition.required_inputs.some((item) => /rtdose|dose|liều/i.test(item))
 }
 
 function inputKindLabel(inputKind: string): string {
@@ -254,7 +248,10 @@ export function QAArchivePage() {
   const selectedDefinition = definitionByKey.get(caseType)
   const selectedCaseDefinition = selectedCase?.qa_definition_key ? definitionByKey.get(selectedCase.qa_definition_key) : undefined
   const selectedCaseNeedsInputFile = Boolean(selectedCase && (definitionNeedsInputFile(selectedCaseDefinition) || (!selectedCaseDefinition && (artifacts.data?.items ?? []).some((item) => item.artifact_type === 'DICOM'))))
-  const selectedCaseSupportsDoseAnalysis = Boolean(selectedCase && (definitionSupportsDoseAnalysis(selectedCaseDefinition) || dvhArtifactSummary.dose > 0 || dvhArtifactSummary.structure > 0))
+  // Chỉ bài có hợp đồng đầu vào liều mới mở không gian DVH. Không suy luận
+  // từ các tệp đang lưu trong hồ sơ, vì một hồ sơ có thể chứa tệp DICOM
+  // phục vụ bài khác như Starshot hoặc Winston–Lutz.
+  const selectedCaseSupportsDoseAnalysis = Boolean(selectedCase && definitionSupportsDoseAnalysis(selectedCaseDefinition))
   const visibleDefinitions = definitions.filter((item) => {
     const query = catalogSearch.trim().toLowerCase()
     return !query || `${item.name} ${item.family} ${item.description}`.toLowerCase().includes(query)

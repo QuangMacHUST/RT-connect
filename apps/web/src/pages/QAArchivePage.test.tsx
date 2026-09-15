@@ -1,7 +1,28 @@
 import { expect, test } from 'vitest'
 
 import { dvhArtifactStatusLabel, summarizeDvhArtifacts } from './dvhArtifactSummary'
+import { definitionSupportsDoseAnalysis } from './qaDefinitionRules'
 import { isCaseInArchiveView, toggleAllVisibleCaseSelection, toggleCaseSelection } from './qaArchiveView'
+import type { QATestDefinitionResource } from '../api/client'
+
+function definition(overrides: Partial<QATestDefinitionResource>): QATestDefinitionResource {
+  return {
+    key: 'STARSHOT',
+    name: 'Kiểm tra sao',
+    family: 'Độ chính xác hình học',
+    description: 'Bài kiểm tra sao.',
+    input_kind: 'IMAGE',
+    required_inputs: ['Ảnh kiểm tra'],
+    manual_controls: [],
+    engine_name: 'Pylinac',
+    engine_class: 'Starshot',
+    source_tier: 'OFFICIAL',
+    implementation_status: 'READY',
+    is_legacy: false,
+    supports_manual_adjustment: true,
+    ...overrides
+  }
+}
 
 test('thùng rác chỉ hiển thị hồ sơ đã lưu trữ', () => {
   expect(isCaseInArchiveView(true, true)).toBe(true)
@@ -39,4 +60,10 @@ test('uses truthful loading and error labels for the archive DVH shortcut', () =
   expect(dvhArtifactStatusLabel(summary, 'loading')).toBe('Đang kiểm tra tệp cho phân tích liều…')
   expect(dvhArtifactStatusLabel(summary, 'error')).toBe('Chưa đọc được tệp cho phân tích liều')
   expect(dvhArtifactStatusLabel(summary, 'ready')).toBe('Phân tích liều: 1 RTDOSE · 0 RTSTRUCT · 0 CT hợp lệ')
+})
+
+test('chỉ bài có hợp đồng liều mới được mở phân tích liều', () => {
+  expect(definitionSupportsDoseAnalysis(definition({ key: 'STARSHOT' }))).toBe(false)
+  expect(definitionSupportsDoseAnalysis(definition({ key: 'PSQA_GAMMA_2D', input_kind: 'DOSE_IMAGE', required_inputs: ['RTDOSE'] }))).toBe(true)
+  expect(definitionSupportsDoseAnalysis(undefined)).toBe(false)
 })
