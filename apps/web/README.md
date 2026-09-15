@@ -154,3 +154,9 @@ P7 staging UI evidence marker (2026-09-15): the authenticated Starshot page
 was checked with a synthetic input already marked VALID; no incompatible
 analysis run was created. Rebuild all services from the commit carrying this
 marker before recording the evidence as the current release candidate.
+
+P7 validated-input gate marker (2026-09-16): specialized Pylinac pages now
+keep every selected artifact visible for revalidation but block analysis until
+all selected inputs report VALID. This marker intentionally lives under the
+web service root so Railway rebuilds API, worker and web from the same source
+revision before the next staging exact-SHA check.
