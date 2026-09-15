@@ -7,6 +7,12 @@
 - Đã đẩy đúng nhánh staging và Railway dựng lại API. Kiểm tra công khai sau triển khai đạt **16/16** ở bản `fba3addd0c4d865714c2e7d310429e8e54fd7031`; readiness trả `200/ready`, schema đúng `20260914_0023`, không có lỗi biên giới xác thực hoặc tuyến OpenAPI. Bằng chứng: [staging readiness recheck](docs/evidence/p7-staging-readiness-recheck-20260915-fba3add.json).
 - Từ nay mỗi thay đổi migration phải cập nhật đồng thời migration mới nhất, `Settings.schema_revision`, `.env.example`, Docker Compose, kiểm thử health và kiểm tra public staging; không dùng lại mốc cũ chỉ vì deployment vẫn báo thành công.
 
+## P7-W04 — hiển thị ảnh phân tích ngay trong kết quả — lát cắt cục bộ — 2026-09-15
+
+- `PylinacResultPanel` đã hiển thị ảnh overlay ngay trong trang kết quả thay vì chỉ mở một cửa sổ mới. Người dùng có thể mở/ẩn ảnh, xem chú thích tiếng Việt và khi chuyển sang lượt lịch sử khác thì ảnh cũ không bị dùng nhầm cho lượt mới.
+- Đường tải ảnh dùng URL tạm thời của kho lưu trữ, giữ nguyên nguồn ảnh và không tạo bản sao hay thay đổi kết quả đã lưu. Lỗi tải ảnh vẫn hiện qua thông báo thao tác; trạng thái đang tải khóa nút để tránh gọi trùng.
+- Kiểm thử giao diện đạt **40/40**, lint đạt, kiểm tra kiểu đạt và bản dựng sản xuất đạt. Đây là phần cải thiện result viewer của P7-W04; canvas chuỗi/đa ảnh, ROI chuyên biệt, fixture đại diện và staging vẫn còn mở.
+
 ## P7 — kiểm tra hồi quy sau cổng inventory — lát cắt cục bộ — 2026-09-15
 
 - Bộ kiểm thử backend tập trung cho registry, adapter QA, hạt nhân, contrib và hiệu chuẩn đạt **tất cả kiểm thử**; riêng nhóm registry đạt 5/5. Ruff và mypy strict trên phần registry/adapter thay đổi đều đạt.

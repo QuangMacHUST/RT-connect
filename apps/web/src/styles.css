@@ -222,6 +222,9 @@ td code { color: #075e67; font-size: .78rem; }
 .machine-qa-diff-grid { display: grid; gap: 8px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .machine-qa-diff-grid > div { background: #fff; border: 1px solid #dce5ea; display: grid; gap: 3px; padding: 8px 10px; }
 .machine-qa-diff-grid span { color: #173c5d; font-size: .8rem; overflow-wrap: anywhere; }
+.machine-qa-overlay-preview { background: #f4f9fa; border: 1px solid #dce5ea; margin: 14px 0 0; padding: 10px; }
+.machine-qa-overlay-preview img { background: #dce5ea; display: block; max-height: 520px; max-width: 100%; object-fit: contain; width: 100%; }
+.machine-qa-overlay-preview figcaption { color: #617787; font-size: .75rem; margin-top: 8px; }
 .machine-status--fail { background: #fde3e3; border-color: #dd7777; color: #8c2020; }
 .machine-status--draft { background: #edf2f6; border-color: #b6c6d1; color: #526e80; }
 .history-button { background: transparent; border-color: transparent; color: #075e67; padding: .2rem .3rem; }
