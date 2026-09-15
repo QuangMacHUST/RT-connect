@@ -7,6 +7,12 @@
 - Bổ sung chặn đầu vào không phải ZIP cho CatPhan trước khi gọi Pylinac; kiểm thử CatPhan 503/700 cùng đường lỗi định dạng đạt. Bằng chứng tổng hợp: [kiểm tra P7 cục bộ](docs/evidence/p7-local-validation-20260915.json).
 - Đây là cổng hồi quy cục bộ, không thay thế fixture chuẩn/commissioning, đối chiếu chỉ số độc lập, kiểm thử staging hoặc nghiệm thu lâm sàng; P7 vẫn mở.
 
+## P7-W03 — ma trận lỗi phantom/chuỗi — lát cắt cục bộ — 2026-09-15
+
+- Đã thêm `tests/test_pylinac_error_matrix.py` cho 13 capability CatPhan, ACR, Cheese, GE Helios và Quart. Tất cả đều từ chối tệp không phải ZIP bằng `PYLINAC_INPUT_FORMAT_INVALID` trước khi khởi tạo engine.
+- Ba trường hợp tham số đặc thù cũng được kiểm tra: phương pháp tương phản MRI rỗng, mật độ ROI không hợp lệ và dịch lát Quart không phải số. Cả ba đều trả `PYLINAC_PARAMETER_INVALID`, không làm phát sinh lượt phân tích lỗi mơ hồ.
+- Kết quả ma trận đạt **16/16**. Đây mới là phần kiểm lỗi định dạng/tham số cục bộ; lỗi nội dung DICOM, thiếu module, UID lẫn, fixture chuẩn và staging vẫn mở. Bằng chứng: [ma trận lỗi Pylinac](docs/evidence/p7-local-pylinac-error-matrix-20260915.json).
+
 ## P7-W03 — đối chiếu inventory công khai của Pylinac — lát cắt cục bộ — 2026-09-15
 
 - Đã bổ sung `pylinac_inventory_diff()` để quét các lớp/hàm phân tích công khai của wheel Pylinac 3.47.0, loại rõ lớp nền, lớp kết quả và lớp ảnh nội bộ, rồi đối chiếu với registry RT-CONNECT. HyperSight được ghi nhận là alias tương thích của `QuartDVT`; ba phiên bản Trajectory Log dùng chung một lớp runtime nhưng vẫn là ba capability logic riêng.

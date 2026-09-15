@@ -1,0 +1,18 @@
+{
+  "evidence_type": "P7_PYLINAC_ERROR_MATRIX",
+  "verified_at": "2026-09-15",
+  "environment": "local-development",
+  "pylinac_version": "3.47.0",
+  "test_file": "apps/api/tests/test_pylinac_error_matrix.py",
+  "command": "python -m pytest tests/test_pylinac_error_matrix.py --no-cov -q",
+  "result": "16 passed",
+  "coverage": {
+    "non_zip_input": 13,
+    "invalid_special_parameters": 3,
+    "error_codes": [
+      "PYLINAC_INPUT_FORMAT_INVALID",
+      "PYLINAC_PARAMETER_INVALID"
+    ]
+  },
+  "scope": "This matrix covers preflight file-extension and selected parameter validation only. It does not prove DICOM content validity, module completeness, representative fixtures, independent metric agreement, commissioning, staging, or clinical readiness."
+}
