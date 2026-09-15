@@ -4,6 +4,7 @@ import hashlib
 import json
 from io import BytesIO
 from typing import Any
+from zipfile import ZipFile
 
 import numpy as np
 from fastapi.testclient import TestClient
@@ -162,6 +163,53 @@ def test_upload_manifest_validate_and_duplicate_are_organization_scoped() -> Non
         assert duplicate.status_code == 200, duplicate.text
         assert duplicate.json()["duplicate"] is True
         assert duplicate.json()["id"] == artifact["id"]
+
+
+def test_pylinac_container_image_and_log_inputs_have_validation_paths() -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+
+        archive = BytesIO()
+        with ZipFile(archive, "w") as container:
+            container.writestr("image-01.dcm", _ct_bytes())
+        zip_upload = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={"file": ("winston-lutz.zip", archive.getvalue(), "application/zip")},
+            data={"artifact_type": "DICOM", "logical_role": "EVALUATION"},
+        )
+        assert zip_upload.status_code == 201, zip_upload.text
+        zip_validation = client.post(f"/api/v1/artifacts/{zip_upload.json()['id']}/validate")
+        assert zip_validation.status_code == 200, zip_validation.text
+        assert zip_validation.json()["result"] == "VALID"
+        assert zip_validation.json()["input_manifest_snapshot"]["byte_size"] > 0
+
+        image_payload = (
+            b"\x89PNG\r\n\x1a\n"
+            + b"\x00" * 8
+            + (2).to_bytes(4, "big")
+            + (2).to_bytes(4, "big")
+        )
+        image_upload = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={"file": ("starshot.png", image_payload, "image/png")},
+            data={"artifact_type": "IMAGE", "logical_role": "EVALUATION"},
+        )
+        assert image_upload.status_code == 201, image_upload.text
+        image_validation = client.post(f"/api/v1/artifacts/{image_upload.json()['id']}/validate")
+        assert image_validation.status_code == 200, image_validation.text
+        assert image_validation.json()["result"] == "VALID"
+
+        log_upload = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={"file": ("machine.dlg", b"synthetic-log", "application/octet-stream")},
+            data={"artifact_type": "OTHER", "logical_role": "REFERENCE"},
+        )
+        assert log_upload.status_code == 201, log_upload.text
+        log_validation = client.post(f"/api/v1/artifacts/{log_upload.json()['id']}/validate")
+        assert log_validation.status_code == 200, log_validation.text
+        assert log_validation.json()["result"] == "VALID"
 
 
 def test_measurement_validation_explains_missing_units_and_grid() -> None:

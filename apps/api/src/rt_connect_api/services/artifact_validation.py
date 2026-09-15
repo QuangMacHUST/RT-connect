@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import json
 import math
+import zipfile
 from collections.abc import Mapping
 from dataclasses import dataclass
-from pathlib import Path
+from io import BytesIO
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
 import pydicom
@@ -950,9 +952,181 @@ def validate_artifact(
             return False
         return True
 
+    def validate_image_content() -> ValidationResult:
+        checks: list[dict[str, object]] = []
+        try:
+            if path.stat().st_size == 0:
+                raise OSError("empty image")
+        except OSError:
+            _check(checks, "IMAGE_CONTENT_INVALID", "ERROR", "Image file is empty or unreadable.")
+            return _result(checks, {})
+
+        try:
+            with path.open("rb") as source:
+                header = source.read(32)
+        except OSError:
+            header = b""
+        if header.startswith(b"\x89PNG\r\n\x1a\n"):
+            width = int.from_bytes(header[16:20], "big") if len(header) >= 20 else 0
+            height = int.from_bytes(header[20:24], "big") if len(header) >= 24 else 0
+            if width <= 0 or height <= 0:
+                _check(
+                    checks,
+                    "IMAGE_DIMENSIONS_INVALID",
+                    "ERROR",
+                    "PNG image dimensions are invalid.",
+                )
+                return _result(checks, {})
+            image_format = "PNG"
+        elif header.startswith(b"\xff\xd8\xff"):
+            image_format = "JPEG"
+        elif header.startswith((b"II*\x00", b"MM\x00*", b"II+\x00", b"MM\x00+")):
+            image_format = "TIFF"
+        else:
+            try:
+                dataset = pydicom.dcmread(path, stop_before_pixels=True, force=True)
+            except Exception:
+                dataset = None
+            if dataset is not None:
+                rows = _number(_value(dataset, "Rows"))
+                columns = _number(_value(dataset, "Columns"))
+                if rows is None or columns is None or rows <= 0 or columns <= 0:
+                    _check(
+                        checks,
+                        "IMAGE_DICOM_DIMENSIONS_INVALID",
+                        "ERROR",
+                        "DICOM image must contain positive Rows and Columns.",
+                        "Rows/Columns",
+                    )
+                    return _result(checks, {})
+                _check(checks, "IMAGE_DICOM_READABLE", "PASS", "DICOM image is readable.")
+                return _result(
+                    checks,
+                    {"image_format": "DICOM", "rows": int(rows), "columns": int(columns)},
+                )
+            _check(
+                checks,
+                "IMAGE_CONTENT_INVALID",
+                "ERROR",
+                "The file is not a supported DICOM, PNG, JPEG or TIFF image.",
+            )
+            return _result(checks, {})
+        _check(checks, "IMAGE_HEADER_VALID", "PASS", "Image header is readable.")
+        return _result(checks, {"image_format": image_format})
+
+    def validate_zip_container() -> ValidationResult:
+        checks: list[dict[str, object]] = []
+        try:
+            with zipfile.ZipFile(path) as archive:
+                members = [item for item in archive.infolist() if not item.is_dir()]
+                if not members:
+                    _check(checks, "ZIP_EMPTY", "ERROR", "ZIP container contains no files.")
+                    return _result(checks, {})
+                candidates = []
+                for member in members:
+                    posix_name = PurePosixPath(member.filename.replace("\\", "/"))
+                    windows_name = PureWindowsPath(member.filename)
+                    if (
+                        posix_name.is_absolute()
+                        or windows_name.is_absolute()
+                        or ".." in posix_name.parts
+                        or ".." in windows_name.parts
+                    ):
+                        _check(
+                            checks,
+                            "ZIP_MEMBER_PATH_INVALID",
+                            "ERROR",
+                            "ZIP contains a member with an unsafe path.",
+                            "filename",
+                        )
+                        continue
+                    suffix = Path(member.filename).suffix.lower()
+                    if suffix in {"", ".dcm", ".dicom"}:
+                        candidates.append(member)
+
+                dicom_count = 0
+                invalid_candidates = 0
+                for member in candidates:
+                    try:
+                        with archive.open(member) as source:
+                            pydicom.dcmread(
+                                BytesIO(source.read()), stop_before_pixels=True, force=True
+                            )
+                    except Exception:
+                        invalid_candidates += 1
+                    else:
+                        dicom_count += 1
+                if invalid_candidates:
+                    _check(
+                        checks,
+                        "ZIP_DICOM_MEMBER_INVALID",
+                        "ERROR",
+                        "ZIP contains a DICOM member that cannot be read.",
+                        "members",
+                    )
+                if dicom_count == 0:
+                    _check(
+                        checks,
+                        "ZIP_NO_DICOM_MEMBER",
+                        "ERROR",
+                        "ZIP must contain at least one readable DICOM member.",
+                        "members",
+                    )
+                    return _result(checks, {})
+                _check(
+                    checks,
+                    "ZIP_DICOM_MEMBERS_VALID",
+                    "PASS",
+                    "Readable DICOM members are present.",
+                )
+                return _result(
+                    checks,
+                    {
+                        "container_format": "ZIP",
+                        "member_count": len(members),
+                        "dicom_member_count": dicom_count,
+                    },
+                )
+        except (OSError, zipfile.BadZipFile):
+            _check(
+                checks,
+                "ZIP_CONTAINER_INVALID",
+                "ERROR",
+                "The file is not a readable ZIP container.",
+            )
+            return _result(checks, {})
+
+    def validate_log_file() -> ValidationResult:
+        checks: list[dict[str, object]] = []
+        suffix = Path(filename).suffix.lower()
+        if suffix not in {".dlg", ".bin", ".tlog", ".txt"}:
+            _check(
+                checks,
+                "LOG_FORMAT_INVALID",
+                "ERROR",
+                "The file extension is not a supported machine log format.",
+            )
+            return _result(checks, {})
+        try:
+            byte_size = path.stat().st_size
+        except OSError:
+            byte_size = 0
+        if byte_size <= 0:
+            _check(
+                checks,
+                "LOG_CONTENT_INVALID",
+                "ERROR",
+                "The machine log file is empty or unreadable.",
+            )
+            return _result(checks, {})
+        _check(checks, "LOG_FILE_READABLE", "PASS", "Machine log file is readable.")
+        return _result(checks, {"log_format": suffix[1:].upper(), "byte_size": byte_size})
+
     # Explicit declarations are authoritative.  MIME type and filename are
     # deliberately not allowed to change the validator selected here.
     if artifact_type == "DICOM":
+        if zipfile.is_zipfile(path):
+            return validate_zip_container()
         if is_json_content():
             return mismatch("DICOM", "JSON")
         return validate_dicom(path)
@@ -960,7 +1134,18 @@ def validate_artifact(
         if is_dicom_content():
             return mismatch(artifact_type, "DICOM")
         return validate_measurement(path)
-    if artifact_type in {"CSV", "IMAGE", "PDF"}:
+    if artifact_type == "IMAGE":
+        return validate_image_content()
+    if artifact_type == "OTHER" and zipfile.is_zipfile(path):
+        return validate_zip_container()
+    if artifact_type == "OTHER" and Path(filename).suffix.lower() in {
+        ".dlg",
+        ".bin",
+        ".tlog",
+        ".txt",
+    }:
+        return validate_log_file()
+    if artifact_type in {"CSV", "PDF"}:
         explicit_warning: dict[str, object] = {
             "code": "VALIDATION_NOT_APPLICABLE",
             "status": "WARNING",
