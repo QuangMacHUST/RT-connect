@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W04 — cảnh báo Pylinac theo đúng lịch sử — lát cắt cục bộ — 2026-09-15
+
+- Trình xem kết quả QA máy đã được khóa hồi quy: cảnh báo do Pylinac nằm trong vùng riêng, không làm đổi đánh giá của người thực hiện và đi cùng đúng lượt lịch sử đang xem.
+- Kiểm thử riêng đạt **2/2**; toàn bộ giao diện đạt **49/49**, cùng lint, kiểm tra kiểu và bản dựng sản xuất.
+- Đây chỉ là bằng chứng local; chạy Pylinac thật trên staging, PDF và VERIFY/HANDOFF P7 vẫn mở. Không tạo, sửa hoặc xóa dữ liệu staging; hồ sơ `dailyQA` và lịch sử liên quan được giữ nguyên.
+- Bằng chứng: [cảnh báo Pylinac và lịch sử](docs/evidence/p7-local-result-warning-history-20260915.md).
+
 ## P17-W03 — bản xem trước HI/CI trên staging — 2026-09-15
 
 - Sau khi dừng hướng xóa vĩnh viễn hồ sơ, đã triển khai bản web `e7b3150` và kiểm tra trực tiếp trên staging; triển khai Railway `be7f670f-033d-44c6-8fa3-8df7ce7deeb8` đạt `SUCCESS`.
