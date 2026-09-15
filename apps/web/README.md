@@ -173,3 +173,8 @@ marker aligned with the API marker before the next exact-SHA check.
 P7 Winston-Lutz multi-target detail marker (2026-09-16): the result viewer
 now shows per-image and per-BB values from the saved Pylinac result. Keep this
 marker aligned with the API marker before the next exact-SHA check.
+
+P7 Winston-Lutz multi-target staging evidence marker (2026-09-16): the
+staging parity check for the detail viewer was captured before this progress
+note. Keep this marker aligned with the API marker before reusing that
+evidence as the current release candidate.

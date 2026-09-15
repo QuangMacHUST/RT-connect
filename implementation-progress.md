@@ -1625,3 +1625,9 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Tên tệp kỹ thuật, mã lượt chạy và mã nội bộ không xuất hiện trong bảng; người dùng chỉ thấy “Ảnh 1”, “Ảnh 2”… và tên bi do họ đặt trong cấu hình.
 - Kiểm thử giao diện `src/pages/MachineQAPage.test.tsx` đạt **8/8**, gồm ca mở bảng nhiều bi và xác nhận không rò rỉ tên tệp. Kiểm tra kiểu, lint và bản dựng tiếp tục được chạy sau thay đổi.
 - Đây là lát cắt trình xem cục bộ, chưa đóng P7-W04. Còn kiểm chứng staging, ROI chuyên biệt, ánh xạ thao tác theo từng ảnh và đối chiếu với bộ ảnh commissioning được phê duyệt.
+
+## P7-W04 — triển khai bảng Winston–Lutz nhiều bi lên staging — 2026-09-16
+
+- Sau khi đồng bộ mốc dựng lại cho cả ba dịch vụ, API, tiến trình nền và giao diện staging cùng phục vụ mã `91519002e3a18fcfe4046d944826c40fc60cf708` với lược đồ `20260914_0023`.
+- Bộ xác minh công khai đạt **16/16**: health/readiness/version, OpenAPI, biên giới xác thực, chỉ báo gói giao diện và dấu hiệu nguồn đều đạt. Bằng chứng: `docs/evidence/p7-staging-wlmt-detail-deployment-20260916.json`.
+- Đây là bằng chứng triển khai và parity; chưa chạy phân tích Winston–Lutz nhiều bi bằng bộ ảnh commissioning trên staging, nên chưa đóng P7-W04 hoặc P7-VERIFY/HANDOFF. Không có thao tác tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.

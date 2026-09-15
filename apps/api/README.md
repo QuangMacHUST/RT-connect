@@ -226,3 +226,8 @@ P7 Winston-Lutz multi-target detail marker (2026-09-16): the web result viewer
 now renders the per-image and per-BB detail table from the persisted Pylinac
 snapshot. Rebuild API, worker and web from this revision before the next
 exact-SHA check.
+
+P7 Winston-Lutz multi-target staging evidence marker (2026-09-16): the
+staging parity check for the detail viewer was captured before this progress
+note. Rebuild API, worker and web from this revision before reusing that
+evidence as the current release candidate.
