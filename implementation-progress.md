@@ -1369,6 +1369,8 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Kiểm thử mục tiêu Pylinac đạt **3/3**, kiểm thử đường xác thực ZIP/ảnh/nhật ký đạt **1/1**; đây là cổng an toàn đầu vào của P7-W03, chưa thay thế fixture chuẩn/commissioning, đối chiếu chỉ số độc lập hoặc kiểm chứng staging. P7 vẫn mở.
 - Sau khi đẩy commit `783f8b5`, staging tự triển khai và bộ kiểm tra công khai exact-SHA đạt **16/16**; API/web cùng nhận đúng mã nguồn và lược đồ `20260914_0023`. Bằng chứng: [P7 cổng đầu vào trên staging](docs/evidence/p7-staging-input-validation-gate-20260915.md). Đây chỉ là cổng parity triển khai, chưa phải kiểm chứng chạy từng bài Pylinac trên staging.
 
+- Sau commit `ffad35305fa8a30d33ec052a793d85b0a28112d4`, API, giao diện và tiến trình nền staging đã được buộc dựng lại cùng nguồn; bộ xác minh công khai đạt **16/16**, API sẵn sàng với lược đồ `20260914_0023`. Trình duyệt staging mở bài Kiểm tra sao trên hồ sơ tổng hợp, hiển thị bảng kiểm tra đầu vào và báo tệp hiện có là **Hợp lệ**; lịch sử chưa có kết quả. Không chạy engine vì tệp đang có là RTDOSE tổng hợp, không phải fixture Starshot phù hợp. Bằng chứng: [giao diện cổng đầu vào Pylinac trên staging](docs/evidence/p7-staging-input-validation-ui-20260915.md). Đây là cổng UI/runtime và parity, chưa đóng chạy engine Starshot hay VERIFY/HANDOFF P7.
+
 ## P7-W04 — giao diện tự kiểm tra đầu vào Pylinac — lát cắt cục bộ — 2026-09-15
 
 - Các trang Pylinac chuyên biệt nay gọi kiểm tra dữ liệu ngay sau khi tải tệp; tệp mới chỉ được báo là sẵn sàng sau khi máy chủ trả trạng thái `VALID`. Nếu kiểm tra thất bại, thao tác phân tích không bị coi là đã sẵn sàng và thông báo tiếng Việt được giữ nguyên.

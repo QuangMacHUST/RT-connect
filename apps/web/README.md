@@ -149,3 +149,8 @@ P7 input-validation parity marker (2026-09-15): specialized Pylinac pages now
 validate DICOM containers, images and machine log files before analysis. This
 service-root marker must ship with the API marker so API, web and worker are
 rebuilt from the same release commit before the next staging exact-SHA check.
+
+P7 staging UI evidence marker (2026-09-15): the authenticated Starshot page
+was checked with a synthetic input already marked VALID; no incompatible
+analysis run was created. Rebuild all services from the commit carrying this
+marker before recording the evidence as the current release candidate.
