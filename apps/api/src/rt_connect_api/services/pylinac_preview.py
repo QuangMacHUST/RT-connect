@@ -23,7 +23,9 @@ class PylinacPreviewError(ValueError):
 
 
 _IMAGE_SUFFIXES = {".bmp", ".dcm", ".dicom", ".jpeg", ".jpg", ".png", ".tif", ".tiff"}
-MAX_PREVIEW_IMAGES = 32
+# Keep the selector bounded, but do not make ordinary CT/CBCT stacks unusable
+# just because they contain more than the old 32-frame preview limit.
+MAX_PREVIEW_IMAGES = 2048
 
 
 def _safe_zip_member(info: zipfile.ZipInfo) -> bool:

@@ -198,6 +198,7 @@ td code { color: #075e67; font-size: .78rem; }
 .qa-adjustment-panel h3 { color: #173c5d; font-size: .95rem; margin: 0; }
 .qa-adjustment-panel .panel-heading { align-items: center; }
 .qa-adjustment-panel .form-hint { margin-bottom: 10px; }
+.qa-adjustment-panel label small.form-hint { display: block; font-weight: 400; margin: 5px 0 0; }
 .qa-adjustment-canvas { background: #dce5ea; border: 1px solid #b5c8d2; cursor: crosshair; line-height: 0; max-height: 420px; overflow: hidden; position: relative; touch-action: none; }
 .qa-adjustment-canvas img { display: block; height: auto; max-height: 420px; max-width: 100%; object-fit: contain; width: 100%; }
 .qa-adjustment-canvas--disabled { cursor: not-allowed; opacity: .65; }

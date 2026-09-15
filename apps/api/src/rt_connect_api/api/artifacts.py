@@ -673,7 +673,7 @@ def get_download_url(
 def get_artifact_preview(
     artifact_id: UUID,
     request: Request,
-    image_index: int = Query(default=0, ge=0, le=31),
+    image_index: int = Query(default=0, ge=0, le=MAX_PREVIEW_IMAGES - 1),
     identity: AuthenticatedIdentity = Depends(require_identity),  # noqa: B008
     session: Session = Depends(get_session),  # noqa: B008
     storage: ObjectStorage = Depends(_storage),  # noqa: B008

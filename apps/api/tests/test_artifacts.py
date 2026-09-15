@@ -255,6 +255,34 @@ def test_authenticated_preview_renders_dicom_and_zip_input_without_metadata() ->
         assert second_zip_preview.content.startswith(b"\x89PNG\r\n\x1a\n")
 
 
+def test_preview_supports_a_long_dicom_series_without_building_an_unbounded_selector() -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+        archive = BytesIO()
+        with ZipFile(archive, "w") as container:
+            for index in range(33):
+                container.writestr(f"series/image-{index:03d}.dcm", _ct_bytes())
+        uploaded = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={"file": ("long-series.zip", archive.getvalue(), "application/zip")},
+            data={"artifact_type": "DICOM", "logical_role": "EVALUATION"},
+        )
+        assert uploaded.status_code == 201, uploaded.text
+
+        artifact_id = uploaded.json()["id"]
+        preview_info = client.get(f"/api/v1/artifacts/{artifact_id}/preview-info")
+        assert preview_info.status_code == 200, preview_info.text
+        assert preview_info.json() == {"image_count": 33}
+
+        last_preview = client.get(
+            f"/api/v1/artifacts/{artifact_id}/preview?image_index=32"
+        )
+        assert last_preview.status_code == 200, last_preview.text
+        assert last_preview.content.startswith(b"\x89PNG\r\n\x1a\n")
+
+
 def test_preview_rejects_zip_path_traversal_and_missing_member() -> None:
     storage = InMemoryObjectStorage()
     with _workspace_client() as (client, organization):

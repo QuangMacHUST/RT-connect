@@ -1799,7 +1799,7 @@ export class ApiClient {
 
   previewArtifactInfo(accessToken: string, artifactId: string): Promise<{ image_count: number }> {
     return this.get(`/artifacts/${artifactId}/preview-info`, z.object({
-      image_count: z.number().int().positive().max(32)
+      image_count: z.number().int().positive().max(2048)
     }), accessToken)
   }
 
