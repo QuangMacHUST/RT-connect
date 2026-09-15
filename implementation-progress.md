@@ -7,6 +7,12 @@
 - Kiểm thử riêng đạt; bộ kiểm thử giao diện đạt **42/42**, lint và kiểm tra kiểu đạt, bản dựng sản xuất đạt. Bằng chứng: [P8 giao diện đầu vào PSQA](docs/evidence/p8-local-psqa-user-facing-inputs-20260915.md).
 - Đây là lát cắt UX local cho P8-W02. P8 vẫn mở các cổng đối chiếu hình học, hàng đợi staging, lỗi phục hồi, tài nguyên lớn, kết quả 1D/2D bằng Pylinac và VERIFY/HANDOFF.
 
+## P8-W02 — xác nhận nhãn đầu vào PSQA trên staging — 2026-09-15
+
+- Phiên trình duyệt staging mới đã xác nhận bốn lựa chọn đầu vào được trình bày bằng ngữ nghĩa nghiệp vụ: hai tệp liều RTDOSE và hai dữ liệu đo liều. Tên `.json`, tên tệp kỹ thuật và mã nội bộ không xuất hiện.
+- Các trường chênh lệch liều, DTA, ngưỡng, chuẩn hóa, phạm vi so sánh và giới hạn Gamma vẫn hiển thị; trạng thái đầu vào hợp lệ. Lần kiểm tra chỉ đọc, không tạo Gamma run mới và không thay đổi hồ sơ/tệp đã lưu.
+- Bằng chứng: [nhãn đầu vào PSQA trên staging](docs/evidence/p8-staging-psqa-input-labels-20260915.md). Railway đã triển khai web thành công; API/worker không bị dựng lại vì không có thay đổi mã nguồn tương ứng.
+
 ## P2/P7 — sửa lệch schema readiness trên staging — 2026-09-15
 
 - Kiểm tra công khai trước khi sửa phát hiện API staging trả health `200` nhưng readiness `503`: cơ sở dữ liệu đã ở migration `20260914_0023`, còn API vẫn kỳ vọng `20260913_0022`. Đây là lỗi lệch mốc cấu hình, không phải lỗi healthcheck.
