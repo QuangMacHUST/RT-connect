@@ -172,6 +172,37 @@ def _artifact_inputs(
     return selected
 
 
+_NON_IMAGE_MODALITIES = frozenset({"RTDOSE", "RTSTRUCT", "RTPLAN"})
+_IMAGE_INPUT_KINDS = frozenset({"IMAGE", "IMAGE_PAIR", "IMAGE_SERIES", "DICOM_SERIES", "NUCLEAR"})
+
+
+def _validate_artifact_profile(
+    definition: QATestDefinition, artifacts: list[Artifact]
+) -> None:
+    """Reject a validated artifact whose semantic modality cannot feed the QA class.
+
+    Validation answers whether a file is readable and safe to store. It does not
+    answer whether that file is the right input for the selected Pylinac family.
+    Keep the second check at the API boundary so a stale or overly broad client
+    filter cannot send an RTDOSE to an image-analysis class such as Starshot.
+    """
+
+    if definition.input_kind not in _IMAGE_INPUT_KINDS:
+        return
+    wrong_inputs = [
+        artifact
+        for artifact in artifacts
+        if artifact.artifact_type == "MEASUREMENT"
+        or (artifact.modality or "").upper() in _NON_IMAGE_MODALITIES
+    ]
+    if wrong_inputs:
+        raise DomainError(
+            "PYLINAC_INPUT_PROFILE_MISMATCH",
+            "Bài kiểm tra đã chọn cần ảnh hoặc chuỗi ảnh phù hợp; không thể dùng tệp liều, cấu trúc RT hoặc kế hoạch xạ trị.",
+            422,
+        )
+
+
 def _input_snapshot(artifacts: list[Artifact]) -> dict[str, object]:
     return {
         "schema_version": "p7.pylinac-input.v1",
@@ -295,6 +326,7 @@ def create_pylinac_run(
         if calibration_run
         else _artifact_inputs(session, context, case, payload.artifact_ids)
     )
+    _validate_artifact_profile(definition, artifacts)
     if calibration_run and payload.artifact_ids:
         raise DomainError(
             "PYLINAC_INPUT_COUNT_INVALID",

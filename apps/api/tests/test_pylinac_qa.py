@@ -156,6 +156,52 @@ def test_pylinac_run_rejects_unvalidated_input_before_engine(monkeypatch) -> Non
         assert client.get(f"/api/v1/qa-cases/{case_id}/pylinac-runs").json()["total"] == 0
 
 
+def test_pylinac_run_rejects_validated_dose_for_image_analysis_before_engine(monkeypatch) -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+        fixture = (
+            Path(__file__).resolve().parents[3]
+            / "docs"
+            / "fixtures"
+            / "gamma-rtdose-v1-smoke.dcm"
+        )
+        uploaded = client.post(
+            f"/api/v1/qa-cases/{case_id}/artifacts",
+            files={"file": ("dose-for-starshot.dcm", fixture.read_bytes(), "application/dicom")},
+            data={"artifact_type": "DICOM", "logical_role": "EVALUATION"},
+        )
+        assert uploaded.status_code == 201, uploaded.text
+        artifact_id = uploaded.json()["id"]
+        validation = client.post(f"/api/v1/artifacts/{artifact_id}/validate")
+        assert validation.status_code == 200, validation.text
+        assert validation.json()["result"] == "VALID"
+        artifact = next(
+            item
+            for item in client.get(f"/api/v1/qa-cases/{case_id}/artifacts").json()["items"]
+            if item["id"] == artifact_id
+        )
+        assert artifact["modality"] == "RTDOSE"
+
+        called = False
+
+        def fail_if_called(*_args, **_kwargs):
+            nonlocal called
+            called = True
+            raise AssertionError("Không được gọi Pylinac với tệp RTDOSE cho bài ảnh")
+
+        monkeypatch.setattr("rt_connect_api.api.pylinac_qa.execute_pylinac", fail_if_called)
+        response = client.post(
+            f"/api/v1/qa-cases/{case_id}/pylinac-runs",
+            json={"catalog_key": "STARSHOT", "artifact_ids": [artifact_id]},
+        )
+        assert response.status_code == 422, response.text
+        assert response.json()["code"] == "PYLINAC_INPUT_PROFILE_MISMATCH"
+        assert called is False
+        assert client.get(f"/api/v1/qa-cases/{case_id}/pylinac-runs").json()["total"] == 0
+
+
 def test_calibration_run_accepts_measurements_without_artifacts(monkeypatch) -> None:
     storage = InMemoryObjectStorage()
     fake_result = PylinacExecutionResult(

@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 
 import { artifactDisplayName } from './gammaArtifactLabels'
-import { artifactDisplayName as qaArtifactDisplayName } from './qaArtifactLabels'
+import { artifactDisplayName as qaArtifactDisplayName, isPylinacImageArtifact } from './qaArtifactLabels'
 
 const dose = (id: string, artifactType = 'DICOM', modality: string | null = 'RTDOSE') => ({
   id,
@@ -49,4 +49,12 @@ test('uses business labels for stored QA input types', () => {
   expect(qaArtifactDisplayName(archive, artifacts)).toBe('Bộ ảnh nhiều lớp')
   expect(qaArtifactDisplayName(log, artifacts)).toBe('Nhật ký máy')
   expect(qaArtifactDisplayName(archive, artifacts)).not.toContain('json')
+})
+
+test('does not offer RT objects as Pylinac image inputs', () => {
+  expect(isPylinacImageArtifact(dose('image', 'IMAGE', null))).toBe(true)
+  expect(isPylinacImageArtifact(dose('ct', 'DICOM', 'CT'))).toBe(true)
+  expect(isPylinacImageArtifact(dose('dose'))).toBe(false)
+  expect(isPylinacImageArtifact(dose('structure', 'DICOM', 'RTSTRUCT'))).toBe(false)
+  expect(isPylinacImageArtifact(dose('plan', 'DICOM', 'RTPLAN'))).toBe(false)
 })

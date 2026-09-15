@@ -1,5 +1,11 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P7-W03 — cổng tương thích loại đầu vào Pylinac — lát cắt cục bộ — 2026-09-16
+
+- Bài phân tích ảnh không còn nhận nhầm RTDOSE, RTSTRUCT, RTPLAN hoặc số đo chỉ vì tệp đã ở trạng thái hợp lệ. Máy chủ chặn trước khi gọi Pylinac; giao diện cũng loại các tệp này khỏi danh sách chọn ảnh.
+- Kiểm thử API liên quan đạt **49/49**; giao diện đạt **50/50**, lint và kiểm tra kiểu đạt. Trường hợp RTDOSE hợp lệ chọn cho Starshot không tạo lịch sử mới.
+- Bằng chứng: [cổng tương thích loại đầu vào Pylinac](docs/evidence/p7-local-input-profile-gate-20260916.md). Cần triển khai exact-SHA và kiểm tra lại trên staging; không xóa hoặc sửa hồ sơ `dailyQA`.
+
 ## P7-W04 — cảnh báo Pylinac theo đúng lịch sử — lát cắt cục bộ — 2026-09-15
 
 - Trình xem kết quả QA máy đã được khóa hồi quy: cảnh báo do Pylinac nằm trong vùng riêng, không làm đổi đánh giá của người thực hiện và đi cùng đúng lượt lịch sử đang xem.

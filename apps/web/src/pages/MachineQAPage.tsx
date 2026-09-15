@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 
 import { ApiClientError, apiClient, type ArtifactResource, type MachineQAMeasurement, type MachineQARunResource, type PylinacQARunResource, type QAProtocolResource } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
-import { artifactDisplayName } from './qaArtifactLabels'
+import { artifactDisplayName, isPylinacImageArtifact } from './qaArtifactLabels'
 
 type JsonRecord = Record<string, unknown>
 
@@ -24,6 +24,7 @@ function errorMessage(error: unknown): string {
       PYLINAC_INPUT_NOT_FOUND: 'Không tìm thấy tệp đầu vào trong bài kiểm tra này.',
       PYLINAC_INPUT_COUNT_INVALID: 'Số lượng tệp đầu vào chưa đúng với bài kiểm tra.',
       PYLINAC_INPUT_FORMAT_INVALID: 'Định dạng tệp chưa đúng với bài kiểm tra. Hãy chọn đúng tệp được yêu cầu.',
+      PYLINAC_INPUT_PROFILE_MISMATCH: 'Loại tệp chưa phù hợp với bài kiểm tra. Hãy chọn ảnh phân tích thay vì tệp liều, cấu trúc RT hoặc kế hoạch xạ trị.',
       PYLINAC_INPUT_NOT_VALIDATED: 'Tệp chưa được kiểm tra hợp lệ. Hãy bấm “Kiểm tra dữ liệu” trước khi phân tích.',
       PYLINAC_EXECUTION_FAILED: 'Bộ tính Pylinac không thể phân tích tệp này. Hãy kiểm tra tệp rồi thử lại.',
       PYLINAC_INPUT_NOT_AVAILABLE: 'Không thể đọc tệp từ kho lưu trữ. Hãy thử lại sau.',
@@ -485,7 +486,7 @@ function PicketFencePage({ caseId, accessToken, title }: { caseId: string; acces
     onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
     onError: (error) => setMessage(errorMessage(error))
   })
-  const imageArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' || item.artifact_type === 'IMAGE')
+  const imageArtifacts = (artifacts.data?.items ?? []).filter(isPylinacImageArtifact)
   const selected = imageArtifacts.find((item) => item.id === selectedArtifactId) ?? imageArtifacts[0]
   const history = runs.data?.items ?? []
   const latest = history[0]
@@ -564,7 +565,7 @@ function StarshotPage({ caseId, accessToken, title }: { caseId: string; accessTo
     onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
     onError: (error) => setMessage(errorMessage(error))
   })
-  const imageArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' || item.artifact_type === 'IMAGE')
+  const imageArtifacts = (artifacts.data?.items ?? []).filter(isPylinacImageArtifact)
   const selected = imageArtifacts.find((item) => item.id === selectedArtifactId) ?? imageArtifacts[0]
   const history = runs.data?.items ?? []
   const latest = history[0]
@@ -871,7 +872,7 @@ function VmatPage({ caseId, accessToken, title, catalogKey }: { caseId: string; 
     onSuccess: () => { setMessage('Đã lưu đánh giá của người dùng.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-runs', caseId, accessToken] }) },
     onError: (error) => setMessage(errorMessage(error))
   })
-  const imageArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' || item.artifact_type === 'IMAGE')
+  const imageArtifacts = (artifacts.data?.items ?? []).filter(isPylinacImageArtifact)
   const selectedPair = selectedArtifactIds.length === 2 ? selectedArtifactIds : imageArtifacts.slice(0, 2).map((artifact) => artifact.id)
   const history = runs.data?.items ?? []
   const latest = history[0]
@@ -949,7 +950,7 @@ function FieldAnalysisPage({ caseId, accessToken, title, catalogKey }: { caseId:
     },
     onError: (error) => setMessage(errorMessage(error))
   })
-  const imageArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' || item.artifact_type === 'IMAGE')
+  const imageArtifacts = (artifacts.data?.items ?? []).filter(isPylinacImageArtifact)
   const selectedInput = selectedArtifactId ?? imageArtifacts[0]?.id
   const analyze = useMutation({
     mutationFn: () => {
@@ -1044,7 +1045,7 @@ function CatPhanPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
     },
     onError: (error) => setMessage(errorMessage(error))
   })
-  const imageArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' || item.artifact_type === 'IMAGE')
+  const imageArtifacts = (artifacts.data?.items ?? []).filter(isPylinacImageArtifact)
   const selectedInput = selectedArtifactId ?? imageArtifacts[0]?.id
   const analyze = useMutation({
     mutationFn: () => apiClient.createPylinacQARun(accessToken, caseId, {
@@ -1134,7 +1135,7 @@ function AcrPage({ caseId, accessToken, title, catalogKey }: { caseId: string; a
     },
     onError: (error) => setMessage(errorMessage(error))
   })
-  const imageArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' || item.artifact_type === 'IMAGE')
+  const imageArtifacts = (artifacts.data?.items ?? []).filter(isPylinacImageArtifact)
   const selectedInput = selectedArtifactId ?? imageArtifacts[0]?.id
   const analyze = useMutation({
     mutationFn: () => {
@@ -1240,7 +1241,7 @@ function CtPylinacPage({ caseId, accessToken, title, catalogKey }: { caseId: str
     },
     onError: (error) => setMessage(errorMessage(error))
   })
-  const imageArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' || item.artifact_type === 'IMAGE')
+  const imageArtifacts = (artifacts.data?.items ?? []).filter(isPylinacImageArtifact)
   const selectedInput = selectedArtifactId ?? imageArtifacts[0]?.id
   const analyze = useMutation({
     mutationFn: () => {
@@ -1635,7 +1636,7 @@ function PlanarImagingPage({ caseId, accessToken, title, catalogKey }: { caseId:
     },
     onError: (error) => setMessage(errorMessage(error))
   })
-  const imageArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' || item.artifact_type === 'IMAGE')
+  const imageArtifacts = (artifacts.data?.items ?? []).filter(isPylinacImageArtifact)
   const selectedInput = selectedArtifactId ?? imageArtifacts[0]?.id
   const isFieldVariant = catalogKey === 'PLANAR_STANDARD_IMAGING_FC2' || catalogKey === 'PLANAR_IMT_LRAD' || catalogKey === 'PLANAR_DOSELAB_RLF' || catalogKey === 'PLANAR_PTW_ISO_ALIGN' || catalogKey === 'PLANAR_SNC_FSQA'
   const isMammography = catalogKey === 'PLANAR_ACR_DIGITAL_MAMMOGRAPHY'

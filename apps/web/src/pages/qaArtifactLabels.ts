@@ -2,6 +2,12 @@ import type { ArtifactResource } from '../api/client'
 
 export type ArtifactLabelSource = Pick<ArtifactResource, 'id' | 'artifact_type' | 'modality' | 'original_filename'>
 
+/** Chỉ dùng cho các bài Pylinac cần ảnh; RTDOSE/RTSTRUCT/RTPLAN không phải ảnh phân tích. */
+export function isPylinacImageArtifact(artifact: Pick<ArtifactResource, 'artifact_type' | 'modality'>): boolean {
+  if (artifact.artifact_type !== 'DICOM' && artifact.artifact_type !== 'IMAGE') return false
+  return !['RTDOSE', 'RTSTRUCT', 'RTPLAN'].includes((artifact.modality ?? '').toUpperCase())
+}
+
 type ArtifactLabelGroup = 'measurement' | 'dose' | 'structure' | 'ct' | 'plan' | 'archive' | 'log' | 'dicom-image' | 'image' | 'other'
 
 function artifactLabelGroup(artifact: ArtifactLabelSource): ArtifactLabelGroup {
