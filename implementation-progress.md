@@ -1,5 +1,14 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P16/P11 — thư viện kiến thức thuần tiếng Việt, không lộ JSON và mã kỹ thuật — đã kiểm tra local — 2026-09-16
+
+- Biểu mẫu thư viện đã chuyển sang tiếng Việt: người dùng chọn loại bài, nhập tên, mô tả, bối cảnh mặt bệnh, tiêu chí, nguồn và nội dung bài viết bằng các trường dễ hiểu; khóa nội bộ được sinh tự động ở phía hệ thống.
+- Đã ẩn mã bài viết, mã băm, liên kết bài gốc, phiên bản kỹ thuật, trạng thái nội bộ và vùng xem dữ liệu dạng JSON. Phần so sánh và lịch sử chỉ hiển thị tên bài, phiên bản, trạng thái và thời điểm cần thiết.
+- Vùng đưa tài liệu vào công cụ chỉ cho chọn công cụ và hiển thị thông báo dễ hiểu; không cho người dùng nhập phần ghi đè dạng JSON. Nút tải xuống chỉ còn bảng dữ liệu.
+- Kiểm tra kiểu, lint, bản dựng và giao diện đạt **54/54**. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa dữ liệu staging; `dailyQA` được bảo toàn.
+- Đây là cổng trải nghiệm local, chưa phải hoàn thành toàn bộ thư viện. Phạm vi nội bộ/cộng đồng, bài viết và tệp PDF, quyền chia sẻ, nguồn thật và kiểm chứng staging còn mở theo P11/P16.
+- Bằng chứng: [giao diện thư viện kiến thức thuần tiếng Việt](docs/evidence/p16-local-vietnamese-library-ui-20260916.md).
+
 ## P7-W04 — cô lập lịch sử theo bài QA — đã kiểm tra local — 2026-09-16
 
 - Các trang bài QA không còn dùng chung toàn bộ lịch sử trong hồ sơ; lịch sử và kết quả mới nhất được lọc theo đúng bài đang mở, bao phủ Picket Fence, Starshot, Winston–Lutz, VMAT, phân tích trường, CatPhan, phantom và ảnh phẳng.

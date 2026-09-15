@@ -1095,6 +1095,8 @@ Hai bộ test tái xạ/bù riêng đạt; kết quả nêu mô hình và giả 
 2. Đọc phác đồ với liều, phối hợp điều trị, PTV, OAR, HI/CI, lưu ý và nguồn.
 3. Tra giới hạn/α/β từ toolkit hoặc đọc nguồn; thêm/sửa bằng form và bảng, so sánh các nguồn.
 
+**Cập nhật giao diện 2026-09-16:** lát cắt thư viện local đã dùng biểu mẫu tiếng Việt, tự sinh khóa nội bộ, ẩn mã kỹ thuật/mã băm/liên kết bài gốc và bỏ vùng nhập hoặc xem JSON. Phần so sánh, lịch sử, chọn công cụ và tải dữ liệu cũng chỉ hiển thị thông tin cần cho người dùng. Bằng chứng: `docs/evidence/p16-local-vietnamese-library-ui-20260916.md`. Đây chưa phải nghiệm thu P11/P16: phạm vi nội bộ/cộng đồng, tệp PDF, quyền chia sẻ, nguồn thật, bảng chuyên biệt, đối chiếu chuyên môn và staging vẫn còn mở.
+
 ### Gói công việc P16
 
 - [ ] P16-W01 — Schema source/version/TreatmentContext/DoseConstraint/AlphaBeta và form đủ trường BA.
