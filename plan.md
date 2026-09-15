@@ -1139,6 +1139,7 @@ Chức năng hai nhánh và bảng dùng chung đạt; gói nội dung chỉ đ�
 
 - [ ] P17-W01 — Gắn DVH engine hiện có vào result workspace chung, chuyển route cũ.
   Lát cắt UX hiện đã tinh giản khu vực chọn dữ liệu, kết quả và lịch sử theo nhãn tiếng Việt; không hiển thị mã lượt tính, dấu vết đầu vào, chuỗi băm, mã nguồn giới hạn hoặc xuất JSON. Đây chưa phải nghiệm thu engine, biểu đồ, HI/CI hay PDF.
+  Parity giao diện trên staging đã được kiểm tra ở bản `3833783`; bằng chứng: `docs/evidence/p17-staging-dvh-user-facing-labels-20260915.md`. Cổng P17-W01 vẫn mở cho đến khi phần engine, biểu đồ, nguồn, lưu lại và xuất báo cáo được nghiệm thu đầy đủ.
 - [ ] P17-W02 — Kiểm quan hệ hình học/ROI, sampling/cc/% và D/V definitions.
 - [ ] P17-W03 — HI/CI có formula identifier/parameters, thiếu dữ liệu không tính; source contextual matching.
 - [ ] P17-W04 — Kiểm workload lớn, oracle, run persistence và selection PDF.

@@ -6,7 +6,7 @@
 - Khu vực kết quả DVH nay chỉ hiển thị trạng thái, vùng, độ bao phủ, thời điểm và thông tin nguồn ở dạng nhãn nghiệp vụ. Mã lượt tính, dấu vết đầu vào, chuỗi băm, mã nguồn giới hạn và dữ liệu kỹ thuật không còn xuất hiện trên giao diện.
 - Thay nút xuất JSON bằng “Tải bảng số liệu”; xuất bảng CSV vẫn giữ nguyên dữ liệu cần thiết cho người dùng chuyên môn mà không đưa cấu trúc kỹ thuật ra màn hình.
 - Lịch sử DVH hiển thị “Lần tính 1/2/…”; nguồn giới hạn và chỉ số được dịch sang nhãn dễ hiểu. Kiểm thử giao diện đạt **44/44**, lint, kiểm tra kiểu và bản dựng sản xuất đạt.
-- Lát cắt này mới ở máy phát triển; cần đẩy giao diện lên staging, kiểm tra trình duyệt có đăng nhập và ghi bằng chứng trước khi coi là parity. P17-VERIFY/HANDOFF vẫn mở.
+- Đã đẩy giao diện lên staging ở bản `3833783`; kiểm tra trình duyệt có đăng nhập trên hồ sơ DVH staging xác nhận các nhãn “Tệp liều RTDOSE”, “Cấu trúc RT”, “Ảnh CT”, “Tải bảng số liệu”, “Lần tính 1/2” và không còn mã lượt tính, dấu vết đầu vào, chuỗi băm hoặc mã nguồn giới hạn. Bằng chứng: [nhãn DVH trên staging](docs/evidence/p17-staging-dvh-user-facing-labels-20260915.md). Đây chỉ là parity giao diện; P17-VERIFY/HANDOFF vẫn mở.
 
 ## P7/P8 — tinh giản nhãn dữ liệu QA và DVH — lát cắt cục bộ — 2026-09-15
 

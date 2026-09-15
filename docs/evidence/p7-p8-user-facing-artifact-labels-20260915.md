@@ -24,4 +24,4 @@ Lát cắt này tiếp tục P7/P8 sau khi tạm dừng hướng xóa vĩnh vi�
 
 ## Ranh giới nghiệm thu
 
-Đây là lát cắt UX cục bộ. Cần triển khai giao diện lên staging và kiểm tra bằng trình duyệt với các nhóm bài có tệp thật trước khi ghi nhận parity staging. P7/P8/P17 và các cổng VERIFY/HANDOFF vẫn chưa hoàn tất.
+Đã triển khai lát cắt giao diện lên staging ở bản `3833783` và kiểm tra bằng trình duyệt có đăng nhập trên hồ sơ DVH staging. Bằng chứng chi tiết: [nhãn DVH trên staging](p17-staging-dvh-user-facing-labels-20260915.md). Đây chỉ là parity giao diện; P7/P8/P17 và các cổng VERIFY/HANDOFF vẫn chưa hoàn tất.
