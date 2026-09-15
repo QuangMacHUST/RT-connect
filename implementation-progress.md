@@ -1,5 +1,13 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P14/P15 — giao diện thuần tiếng Việt và ẩn chi tiết kỹ thuật — đã kiểm tra local — 2026-09-16
+
+- Trang so sánh phác đồ đã đổi toàn bộ nhãn thao tác, trạng thái, bảng kết quả, lịch sử và thông báo sang tiếng Việt; người dùng chỉ thấy tên phương án, thời điểm và số liệu cần thiết.
+- Đã ẩn mã nội bộ của phương án, kết quả, bản cập nhật, dấu kiểm tra và mã lỗi khỏi giao diện; các mã này vẫn được giữ bên trong để liên kết và truy xuất an toàn.
+- Giao diện so sánh chỉ còn tải bảng kết quả; không còn hiển thị lựa chọn tải dữ liệu dạng JSON. Phần tái xạ và bù phân liều cũng ẩn lựa chọn JSON, Việt hóa phần tóm tắt kết quả và dùng cách gọi “đợt điều trị”, “mô hoặc cơ quan”, “phương án”.
+- Kiểm tra giao diện đạt **53/53**, kiểm tra kiểu, lint và bản dựng sản xuất đạt. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ staging; `dailyQA` được bảo toàn.
+- Đây là cải tiến trải nghiệm và bảo vệ người dùng khỏi chi tiết kỹ thuật; các cổng nghiệm thu P14/P15 về số học, nguồn, dữ liệu thật và xác nhận chuyên môn vẫn còn mở theo `plan.md`.
+
 ## UX — thu gọn thẻ xác thực và danh mục QA — đã kiểm tra local — 2026-09-16
 
 - Thẻ đăng nhập/chưa có đơn vị được thu gọn theo chiều dọc và mở rộng vừa đủ theo chiều ngang để hai lựa chọn tham gia bằng lời mời và tạo đơn vị dễ xem hơn trong một màn hình lớn.

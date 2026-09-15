@@ -975,6 +975,8 @@ Test công thức/đồ thị/locale/source và màn hình một công cụ gọ
 **Phạm vi:** FR-UX1-P14-01; B10.
 **Trạng thái UX1 lúc lập kế hoạch:** yêu cầu mới; chưa được tính là hoàn thành từ evidence cũ.
 
+**Cập nhật UX 2026-09-16:** giao diện đã đổi sang tiếng Việt, ẩn mã nội bộ/kết quả kỹ thuật, chỉ giữ tên phương án, số liệu, lịch sử và tải bảng kết quả. Đây là cải tiến trình bày; P14 vẫn chưa đóng vì còn phải nghiệm thu số học, nguồn, dữ liệu thật và bàn giao.
+
 ### Trình tự triển khai P14
 
 1. Tạo hai biểu mẫu tên tự chọn, sao chép/hoán đổi và chung thông tin nguồn cần thiết.
@@ -1023,6 +1025,8 @@ Tính A/B đúng, UI gọn và không diễn giải chênh BED thành lựa ch�
 **Đầu vào/phụ thuộc:** P14 đã hoàn thành và có bàn giao; các hợp đồng liên quan xem mục kỹ thuật tương ứng.
 **Phạm vi:** FR-UX1-P15-01; B10/B12. Hai panel trong cùng công cụ sinh học, không hồ sơ QA.
 **Trạng thái UX1 lúc lập kế hoạch:** yêu cầu mới; chưa được tính là hoàn thành từ evidence cũ.
+
+**Cập nhật UX 2026-09-16:** phần tóm tắt tái xạ/bù phân liều đã Việt hóa và không còn cho người dùng chọn tải dữ liệu dạng JSON. Mã nội bộ vẫn chỉ dùng bên trong để liên kết kết quả; P15 vẫn chưa đóng vì còn các cổng kiểm thử số học, nguồn, mô hình thời gian, dữ liệu thật và bàn giao.
 
 ### Trình tự triển khai P15
 
