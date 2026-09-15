@@ -190,6 +190,49 @@ test('renders selected HI/CI results with readable labels and no technical ident
   expect(screen.queryByText('CI_RTOG_95')).not.toBeInTheDocument()
 })
 
+test('shows a fresh DVH preview as not saved and keeps the old history unchanged', async () => {
+  vi.mocked(apiClient.dvhRuns).mockResolvedValue({
+    items: [{
+      id: 'stored-dvh-run', organization_id: organizationId, qa_case_id: caseId,
+      dose_artifact_id: 'dose-id', structure_artifact_id: structureId, ct_artifact_id: null,
+      roi_number: 1, idempotency_key: 'stored-dvh', engine_key: 'visual-dose.dvh', engine_version: 'p17-dvh-1.1.0',
+      status: 'COMPLETED', input_snapshot: {}, result_snapshot: {
+        coverage: { status: 'FULL', coverage_percent: 100, selected_voxel_count: 4, policy: 'FULL_ROI' },
+        roi: { name: 'P17_TARGET', roi_number: 1, contour_count: 1 },
+        dose: { minimum_gy: 5, maximum_gy: 8, units: 'GY', dose_type: 'PHYSICAL' },
+        metrics: { volume_cc: 1, Dmean_gy: 6.5, Dmin_gy: 5, Dmax_gy: 8, Dx_gy: { D95_gy: 5.2 }, Vx_percent: {}, Vx_cc: {} },
+        curve: { dose_gy: [5, 8], cumulative_volume_percent: [100, 0] },
+        visual_preview: { dose_gy: [5, 8, 6, 7], roi_mask: [true, true, true, true], rows: 2, columns: 2, mode: 'dose' }
+      }, warning_snapshot: [], error_snapshot: [], created_by_user_identity_id: null,
+      created_at: '2026-09-09T00:00:00Z', updated_at: '2026-09-09T00:00:00Z'
+    }], total: 1
+  })
+  vi.mocked(apiClient.validateDvh).mockResolvedValue({
+    valid: true, errors: [], warnings: [], normalized_input: null, preview: {
+      coverage: { status: 'FULL', coverage_percent: 100, selected_voxel_count: 4, policy: 'FULL_ROI' },
+      roi: { name: 'P17_TARGET', roi_number: 1, contour_count: 1 },
+      dose: { minimum_gy: 5, maximum_gy: 8, units: 'GY', dose_type: 'PHYSICAL' },
+      metrics: { volume_cc: 1, Dmean_gy: 6.5, Dmin_gy: 5, Dmax_gy: 8, Dx_gy: { D95_gy: 5.2 }, Vx_percent: {}, Vx_cc: {} },
+      curve: { dose_gy: [5, 8], cumulative_volume_percent: [100, 0] },
+      visual_preview: { dose_gy: [5, 8, 6, 7], roi_mask: [true, true, true, true], rows: 2, columns: 2, mode: 'dose' },
+      indices: { status: 'COMPUTED', items: [{ formula_id: 'CI_RTOG_95', formula: 'PIV95 / TV', status: 'COMPUTED', value: 0.75, unit: 'RATIO', missing_inputs: [] }] }
+    }
+  } as never)
+
+  renderPage()
+  expect(await screen.findByText('Kết quả đã được tính và lưu')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('checkbox', { name: /Chỉ số phù hợp RTOG/ }))
+  fireEvent.change(screen.getByLabelText(/Liều kê đơn \(Gy\)/), { target: { value: '6' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Kiểm tra và xem trước' }))
+
+  expect(await screen.findByText('Bản xem trước · chưa lưu')).toBeInTheDocument()
+  expect(screen.getByText('Chưa tạo lần tính mới; lịch sử vẫn giữ nguyên.')).toBeInTheDocument()
+  expect(screen.getByText('0.7500')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Mở lần tính 1' })).toBeInTheDocument()
+  expect(screen.queryByText('Thời điểm lưu: 09/09/2026')).not.toBeInTheDocument()
+  expect(vi.mocked(apiClient.createDvhRun)).not.toHaveBeenCalled()
+})
+
 test('sends only the explicitly selected P16 limit binding', async () => {
   vi.mocked(apiClient.biologicalLibrary).mockResolvedValue({
     items: [{
