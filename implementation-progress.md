@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P2/P7 — sửa lệch schema readiness trên staging — 2026-09-15
+
+- Kiểm tra công khai trước khi sửa phát hiện API staging trả health `200` nhưng readiness `503`: cơ sở dữ liệu đã ở migration `20260914_0023`, còn API vẫn kỳ vọng `20260913_0022`. Đây là lỗi lệch mốc cấu hình, không phải lỗi healthcheck.
+- Đã đồng bộ mốc hiện hành sang `20260914_0023` trong cấu hình API, tệp môi trường mẫu, Docker Compose và kiểm thử readiness; kiểm thử health/migration đạt **22/22**. Commit sửa: `fba3add`.
+- Đã đẩy đúng nhánh staging và Railway dựng lại API. Kiểm tra công khai sau triển khai đạt **16/16** ở bản `fba3addd0c4d865714c2e7d310429e8e54fd7031`; readiness trả `200/ready`, schema đúng `20260914_0023`, không có lỗi biên giới xác thực hoặc tuyến OpenAPI. Bằng chứng: [staging readiness recheck](docs/evidence/p7-staging-readiness-recheck-20260915-fba3add.json).
+- Từ nay mỗi thay đổi migration phải cập nhật đồng thời migration mới nhất, `Settings.schema_revision`, `.env.example`, Docker Compose, kiểm thử health và kiểm tra public staging; không dùng lại mốc cũ chỉ vì deployment vẫn báo thành công.
+
 ## P7 — kiểm tra hồi quy sau cổng inventory — lát cắt cục bộ — 2026-09-15
 
 - Bộ kiểm thử backend tập trung cho registry, adapter QA, hạt nhân, contrib và hiệu chuẩn đạt **tất cả kiểm thử**; riêng nhóm registry đạt 5/5. Ruff và mypy strict trên phần registry/adapter thay đổi đều đạt.

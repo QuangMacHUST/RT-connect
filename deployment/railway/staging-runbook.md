@@ -56,6 +56,11 @@ config-as-code tự biến mất là lỗi nếu các cài đặt hiệu lực v
 6. Deploy the API. The pre-deploy command applies the Alembic baseline. Review logs for the
    migration and healthcheck, then run the five post-provision checks in `services.md`.
 
+After any migration is added, update the application's `SCHEMA_REVISION` expectation and
+the local Compose/example settings in the same change. Readiness must compare the database
+revision with that exact current migration; a successful Railway deployment or HTTP health
+response alone is insufficient. The current P7 staging schema is `20260914_0023`.
+
 ## P8 Gamma worker
 
 After the API has deployed the Gamma migration, create a separate service named
