@@ -28,7 +28,7 @@ apps/web/npm.cmd run test -- --run
 apps/web/npm.cmd run build
 ```
 
-Kết quả: kiểm thử mục tiêu Pylinac **3/3**, kiểm thử đường xác thực ZIP/ảnh/nhật ký **1/1**, toàn bộ kiểm thử API đạt, giao diện **12/12 tệp và 40/40 kiểm thử**, kiểm tra kiểu/lint/bản dựng đạt. Bản dựng vẫn có cảnh báo kích thước gói JavaScript đã biết.
+Kết quả: kiểm thử mục tiêu Pylinac **3/3**, kiểm thử đường xác thực ZIP/ảnh/nhật ký **1/1**, toàn bộ kiểm thử API đạt, giao diện **12/12 tệp và 40/40 kiểm thử**, kiểm tra kiểu/lint/bản dựng đạt. Các trang Pylinac tự kiểm tra tệp mới sau khi tải; tệp đã có được kiểm tra lại ngay trong trang bài QA. Bản dựng vẫn có cảnh báo kích thước gói JavaScript đã biết.
 
 ## Giới hạn
 

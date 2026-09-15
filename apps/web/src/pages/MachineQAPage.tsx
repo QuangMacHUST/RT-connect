@@ -2,7 +2,7 @@ import { type PointerEvent, type ReactNode, useMemo, useRef, useState } from 're
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 
-import { ApiClientError, apiClient, type MachineQAMeasurement, type MachineQARunResource, type PylinacQARunResource, type QAProtocolResource } from '../api/client'
+import { ApiClientError, apiClient, type ArtifactResource, type MachineQAMeasurement, type MachineQARunResource, type PylinacQARunResource, type QAProtocolResource } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 
 type JsonRecord = Record<string, unknown>
@@ -263,21 +263,74 @@ function scalarMetricEntries(run: PylinacQARunResource | undefined): Array<[stri
   return Object.entries(metrics).filter(([, value]) => value !== null && value !== undefined && typeof value !== 'object')
 }
 
+async function uploadAndValidatePylinacArtifact(
+  accessToken: string,
+  caseId: string,
+  file: File,
+  artifactType: string,
+  logicalRole: string
+): Promise<ArtifactResource & { duplicate: boolean }> {
+  const artifact = await apiClient.uploadArtifact(accessToken, caseId, file, artifactType, logicalRole)
+  const validation = await apiClient.validateArtifact(accessToken, artifact.id)
+  if (validation.result !== 'VALID') {
+    throw new ApiClientError(
+      'Tệp đầu vào chưa vượt qua kiểm tra dữ liệu.',
+      'PYLINAC_INPUT_NOT_VALIDATED',
+      undefined,
+      []
+    )
+  }
+  return { ...artifact, data_status: validation.result }
+}
+
 type AssessmentValue = 'PASS' | 'WARNING' | 'FAIL' | 'REVIEW' | 'NOT_ASSESSED'
 
 type PylinacResultPanelProps = {
   latest: PylinacQARunResource | undefined
   history: PylinacQARunResource[]
   accessToken: string
+  caseId: string
   emptyHistoryLabel: string
   metrics?: Array<{ key: string; label: string; value: ReactNode }>
   resultNote?: ReactNode
   overlayLabel?: string
+  inputArtifacts?: ArtifactResource[]
+  selectedArtifactIds?: string[]
   onMessage: (message: string) => void
   onAssess: (runId: string, value: AssessmentValue) => void
 }
 
-function PylinacResultPanel({ latest, history, accessToken, emptyHistoryLabel, metrics = [], resultNote, overlayLabel = 'Mở ảnh phân tích', onMessage, onAssess }: PylinacResultPanelProps) {
+const inputStatusLabels: Record<string, string> = {
+  UPLOADED: 'Chưa kiểm tra',
+  VALIDATING: 'Đang kiểm tra',
+  VALID: 'Hợp lệ',
+  WARNING: 'Cần xem lại',
+  INVALID: 'Không hợp lệ'
+}
+
+function PylinacInputValidationPanel({ accessToken, caseId, artifacts, selectedArtifactIds, onMessage }: {
+  accessToken: string
+  caseId: string
+  artifacts: ArtifactResource[]
+  selectedArtifactIds: string[]
+  onMessage: (message: string) => void
+}) {
+  const queryClient = useQueryClient()
+  const validation = useMutation({
+    mutationFn: (artifactId: string) => apiClient.validateArtifact(accessToken, artifactId, true),
+    onSuccess: (result) => {
+      onMessage(result.result === 'VALID' ? 'Tệp đã được kiểm tra và hợp lệ.' : 'Tệp chưa hợp lệ; hãy xem lại nội dung và thử lại.')
+      void queryClient.invalidateQueries({ queryKey: ['pylinac-artifacts', caseId, accessToken] })
+    },
+    onError: (error) => onMessage(errorMessage(error))
+  })
+  const selected = artifacts.filter((artifact) => selectedArtifactIds.includes(artifact.id))
+  if (selected.length === 0) return null
+
+  return <section className="panel machine-qa-panel machine-qa-input-status"><div className="panel-heading"><div><p className="eyebrow">KIỂM TRA ĐẦU VÀO</p><h2>Trạng thái tệp phân tích</h2></div><strong>{selected.length}</strong></div><p className="form-hint">Mỗi tệp phải ở trạng thái hợp lệ trước khi gọi Pylinac. Tệp mới đã được kiểm tra tự động; tệp đã có có thể kiểm tra lại ngay tại đây.</p><div className="table-wrap"><table><thead><tr><th>Tệp</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{selected.map((artifact) => <tr key={artifact.id}><td><strong>{artifact.original_filename}</strong><small className="table-subtitle">{artifact.byte_size.toLocaleString('vi-VN')} byte</small></td><td><span className={artifact.data_status === 'INVALID' ? 'status-badge status-badge--warning' : 'status-badge'}>{inputStatusLabels[artifact.data_status] ?? 'Chưa xác định'}</span></td><td><button className="button-secondary" disabled={validation.isPending || artifact.data_status === 'VALID'} onClick={() => validation.mutate(artifact.id)}>{artifact.data_status === 'VALID' ? 'Đã hợp lệ' : validation.isPending ? 'Đang kiểm tra…' : artifact.data_status === 'INVALID' || artifact.data_status === 'WARNING' ? 'Kiểm tra lại' : 'Kiểm tra dữ liệu'}</button></td></tr>)}</tbody></table></div></section>
+}
+
+function PylinacResultPanel({ latest, history, accessToken, caseId, emptyHistoryLabel, metrics = [], resultNote, overlayLabel = 'Mở ảnh phân tích', inputArtifacts, selectedArtifactIds, onMessage, onAssess }: PylinacResultPanelProps) {
   const [selectedRunId, setSelectedRunId] = useState<string>()
   const selectedRun = history.find((run) => run.id === selectedRunId) ?? latest
   const selectedIndex = selectedRun ? history.findIndex((run) => run.id === selectedRun.id) : -1
@@ -296,6 +349,7 @@ function PylinacResultPanel({ latest, history, accessToken, emptyHistoryLabel, m
   }
 
   return <>
+    {inputArtifacts && selectedArtifactIds && <PylinacInputValidationPanel accessToken={accessToken} caseId={caseId} artifacts={inputArtifacts} selectedArtifactIds={selectedArtifactIds} onMessage={onMessage} />}
     {selectedRun && <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">{selectedIsLatest ? 'KẾT QUẢ MỚI NHẤT' : 'KẾT QUẢ ĐANG XEM'}</p><h2>{selectedRun.name}</h2></div><span className={statusClass(selectedRun.status)}>{statusLabel(selectedRun.status)}</span></div>{!selectedIsLatest && <p className="form-hint">Đang xem một lượt cũ trong lịch sử. Kết quả gốc không thay đổi khi xem lại hoặc đánh giá.</p>}{selectedRun.error_snapshot.length > 0 && <div className="alert alert--error"><h3>Không thể phân tích</h3><ul>{selectedRun.error_snapshot.map((item, index) => <li key={index}>{textValue(item.message, 'Đã xảy ra lỗi trong bộ tính.')}</li>)}</ul></div>}{engineWarnings.length > 0 && <div className="alert alert--warning"><h3>Cảnh báo từ bộ tính</h3><p>Các cảnh báo này được giữ nguyên từ lần phân tích và cần được người thực hiện xem xét trước khi đánh giá.</p><ul>{engineWarnings.map((item, index) => <li key={`${textValue(item.code, 'warning')}-${index}`}>{textValue(item.message, 'Bộ tính có cảnh báo cần xem xét.')}</li>)}</ul></div>}{selectedRun.status === 'COMPLETED' && <><div className="machine-qa-metric-grid">{selectedIsLatest ? <>{resultNote}{metrics.length === 0 && !resultNote ? <p>Kết quả chi tiết đã được lưu; hãy mở ảnh phân tích để xem đầy đủ.</p> : metrics.map((metric) => <div className="machine-qa-metric" key={metric.key}><span>{metric.label}</span><strong>{metric.value}</strong></div>)}</> : historicalMetrics.length > 0 ? historicalMetrics.map(([key, value]) => <div className="machine-qa-metric" key={key}><span>{friendlyDataLabel(key)}</span><strong>{friendlyDataValue(value)}</strong></div>) : <p>Không có chỉ số dạng số để hiển thị trong lượt này.</p>}</div>{selectedRun.overlay_artifact_id && <button className="button-secondary" onClick={openOverlay}>{overlayLabel}</button>}<label>Đánh giá của người dùng<select value={selectedRun.assessment_status ?? 'NOT_ASSESSED'} onChange={(event) => onAssess(selectedRun.id, event.target.value as AssessmentValue)}><option value="NOT_ASSESSED">Chưa đánh giá</option><option value="PASS">Đạt</option><option value="WARNING">Cảnh báo</option><option value="REVIEW">Cần xem lại</option><option value="FAIL">Không đạt</option></select></label></>}</section>}
     {selectedRun && <section className="panel machine-qa-panel machine-qa-parameters"><div className="panel-heading"><div><p className="eyebrow">THÔNG SỐ ĐÃ LƯU</p><h2>Thiết lập của lượt đang xem</h2></div><strong>{selectedParameters.length}</strong></div>{selectedParameters.length === 0 ? <p className="empty-state">Bài này không có thông số nhập thêm.</p> : <div className="machine-qa-parameter-grid">{selectedParameters.map(([key, value]) => <div className="machine-qa-parameter" key={key}><span>{parameterLabels[key] ?? friendlyDataLabel(key, parameterLabels)}</span><strong>{friendlyDataValue(value)}</strong></div>)}</div>}{previousRun && <div className="machine-qa-diff"><h3>Thay đổi so với lượt ngay trước</h3>{parameterChanges.length === 0 ? <p>Không có thay đổi thông số.</p> : <div className="machine-qa-diff-grid">{parameterChanges.map(([key, value]) => <div key={key}><strong>{parameterLabels[key] ?? friendlyDataLabel(key, parameterLabels)}</strong><span>{friendlyDataValue(previousParameters.get(key))} → {friendlyDataValue(value)}</span></div>)}</div>}</div>}</section>}
     <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">{emptyHistoryLabel}</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th><th>Thao tác</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td><td><button className={run.id === selectedRun?.id ? 'history-button history-button--selected' : 'history-button'} onClick={() => setSelectedRunId(run.id)}>{run.id === selectedRun?.id ? 'Đang xem' : 'Mở'}</button></td></tr>)}</tbody></table></div>}</section>
@@ -372,7 +426,7 @@ function PicketFencePage({ caseId, accessToken, title }: { caseId: string; acces
     queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
   })
   const upload = useMutation({
-    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
+    mutationFn: (file: File) => uploadAndValidatePylinacArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
     onSuccess: (artifact) => {
       setSelectedArtifactId(artifact.id)
       setMessage('Đã tải tệp ảnh lên; có thể bắt đầu phân tích.')
@@ -417,7 +471,7 @@ function PicketFencePage({ caseId, accessToken, title }: { caseId: string; acces
       <div className="machine-qa-protocol-controls"><label>Dung sai (mm)<input type="number" min="0" step="0.01" value={tolerance} onChange={(event) => setTolerance(event.target.value)} /></label><label>Mẫu MLC<select value={mlc} onChange={(event) => setMlc(event.target.value)}><option value="Millennium">Millennium</option><option value="HD120">HD120</option><option value="Agility">Agility</option><option value="Halcyon">Halcyon</option></select></label><label>Cắt ảnh (mm)<input type="number" min="0" step="1" value={cropMm} onChange={(event) => setCropMm(event.target.value)} /></label></div>
       <div className="machine-qa-actions"><button disabled={!selected || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} emptyHistoryLabel="Chưa có kết quả Picket Fence." metrics={[
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selected ? [selected.id] : []} emptyHistoryLabel="Chưa có kết quả Picket Fence." metrics={[
       { key: 'percent_leaves_passing', label: 'Độ chính xác lá đạt', value: `${textValue(pylinacMetric(latest, 'percent_leaves_passing'))}%` },
       { key: 'number_of_pickets', label: 'Số vạch', value: textValue(pylinacMetric(latest, 'number_of_pickets')) },
       { key: 'max_error_mm', label: 'Sai lệch lớn nhất', value: `${textValue(pylinacMetric(latest, 'max_error_mm'))} mm` }
@@ -444,7 +498,7 @@ function StarshotPage({ caseId, accessToken, title }: { caseId: string; accessTo
     queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
   })
   const upload = useMutation({
-    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'IMAGE', 'EVALUATION'),
+    mutationFn: (file: File) => uploadAndValidatePylinacArtifact(accessToken, caseId, file, 'IMAGE', 'EVALUATION'),
     onSuccess: (artifact) => {
       setSelectedArtifactId(artifact.id)
       setMessage('Đã tải ảnh kiểm tra sao lên; có thể bắt đầu phân tích.')
@@ -505,7 +559,7 @@ function StarshotPage({ caseId, accessToken, title }: { caseId: string; accessTo
       </div>
       <div className="machine-qa-actions"><button disabled={!selected || isBusy || ((startX.trim() === '') !== (startY.trim() === ''))} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} emptyHistoryLabel="Chưa có kết quả kiểm tra sao." metrics={[
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selected ? [selected.id] : []} emptyHistoryLabel="Chưa có kết quả kiểm tra sao." metrics={[
       { key: 'circle_diameter_mm', label: 'Độ lệch đường kính', value: `${textValue(pylinacMetric(latest, 'circle_diameter_mm'))} mm` },
       { key: 'circle_center_x_y', label: 'Tâm phân tích', value: Array.isArray(center) ? `${textValue(center[0])}, ${textValue(center[1])}` : 'Tự động' },
       { key: 'angles', label: 'Số tia', value: Array.isArray(pylinacMetric(latest, 'angles')) ? (pylinacMetric(latest, 'angles') as unknown[]).length : '—' }
@@ -538,7 +592,7 @@ function WinstonLutzPage({ caseId, accessToken, title }: { caseId: string; acces
     queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
   })
   const upload = useMutation({
-    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'OTHER', 'EVALUATION'),
+    mutationFn: (file: File) => uploadAndValidatePylinacArtifact(accessToken, caseId, file, 'OTHER', 'EVALUATION'),
     onSuccess: (artifact) => {
       setSelectedArtifactId(artifact.id)
       setMessage('Đã tải bộ ảnh Winston–Lutz lên; có thể bắt đầu phân tích.')
@@ -609,7 +663,7 @@ function WinstonLutzPage({ caseId, accessToken, title }: { caseId: string; acces
       </div>
       <div className="machine-qa-actions"><button disabled={!selected || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} emptyHistoryLabel="Chưa có kết quả Winston–Lutz." metrics={[
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={zipArtifacts} selectedArtifactIds={selected ? [selected.id] : []} emptyHistoryLabel="Chưa có kết quả Winston–Lutz." metrics={[
       { key: 'max_2d_cax_to_bb_mm', label: 'Sai lệch trục–bi lớn nhất', value: `${metric('max_2d_cax_to_bb_mm')} mm` },
       { key: 'gantry_3d_iso_diameter_mm', label: 'Đường kính đồng tâm bàn gantry', value: `${metric('gantry_3d_iso_diameter_mm')} mm` },
       { key: 'coll_2d_iso_diameter_mm', label: 'Đường kính đồng tâm chuẩn trực', value: `${metric('coll_2d_iso_diameter_mm')} mm` },
@@ -654,7 +708,7 @@ function WinstonLutzMultiTargetPage({ caseId, accessToken, title }: { caseId: st
     queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
   })
   const upload = useMutation({
-    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'OTHER', 'EVALUATION'),
+    mutationFn: (file: File) => uploadAndValidatePylinacArtifact(accessToken, caseId, file, 'OTHER', 'EVALUATION'),
     onSuccess: (artifact) => {
       setSelectedArtifactId(artifact.id)
       setMessage('Đã tải bộ ảnh nhiều bi lên; có thể bắt đầu phân tích.')
@@ -722,7 +776,7 @@ function WinstonLutzMultiTargetPage({ caseId, accessToken, title }: { caseId: st
       </div>
       <div className="machine-qa-actions"><button disabled={!selected || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} emptyHistoryLabel="Chưa có kết quả Winston–Lutz nhiều bi." metrics={[
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={zipArtifacts} selectedArtifactIds={selected ? [selected.id] : []} emptyHistoryLabel="Chưa có kết quả Winston–Lutz nhiều bi." metrics={[
       { key: 'max_2d_field_to_bb_mm', label: 'Sai lệch trường–bi lớn nhất', value: `${metric('max_2d_field_to_bb_mm')} mm` },
       { key: 'median_2d_field_to_bb_mm', label: 'Sai lệch trường–bi trung vị', value: `${metric('median_2d_field_to_bb_mm')} mm` },
       { key: 'num_total_images', label: 'Số ảnh', value: metric('num_total_images') },
@@ -751,7 +805,7 @@ function VmatPage({ caseId, accessToken, title, catalogKey }: { caseId: string; 
     queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
   })
   const upload = useMutation({
-    mutationFn: (files: File[]) => Promise.all(files.slice(0, 2).map((file) => apiClient.uploadArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'))),
+    mutationFn: (files: File[]) => Promise.all(files.slice(0, 2).map((file) => uploadAndValidatePylinacArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'))),
     onSuccess: (uploaded) => {
       setSelectedArtifactIds(uploaded.map((artifact) => artifact.id))
       setMessage('Đã tải cặp ảnh VMAT lên; hãy xác nhận ảnh mở và ảnh điều biến rồi bắt đầu phân tích.')
@@ -818,7 +872,7 @@ function VmatPage({ caseId, accessToken, title, catalogKey }: { caseId: string; 
       </div>
       <div className="machine-qa-actions"><button disabled={selectedPair.length !== 2 || selectedPair[0] === selectedPair[1] || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} emptyHistoryLabel={`Chưa có kết quả ${displayName}.`} metrics={[
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedPair} emptyHistoryLabel={`Chưa có kết quả ${displayName}.`} metrics={[
       { key: 'max_deviation_percent', label: 'Sai lệch lớn nhất', value: `${textValue(pylinacMetric(latest, 'max_deviation_percent'))}%` },
       { key: 'abs_mean_deviation', label: 'Sai lệch trung bình tuyệt đối', value: `${textValue(pylinacMetric(latest, 'abs_mean_deviation'))}%` },
       { key: 'tolerance_percent', label: 'Dung sai', value: `${textValue(pylinacMetric(latest, 'tolerance_percent'))}%` },
@@ -851,7 +905,7 @@ function FieldAnalysisPage({ caseId, accessToken, title, catalogKey }: { caseId:
     queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
   })
   const upload = useMutation({
-    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
+    mutationFn: (file: File) => uploadAndValidatePylinacArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
     onSuccess: (artifact) => {
       setSelectedArtifactId(artifact.id)
       setMessage('Đã tải tệp ảnh lên; có thể bắt đầu phân tích biên dạng.')
@@ -919,7 +973,7 @@ function FieldAnalysisPage({ caseId, accessToken, title, catalogKey }: { caseId:
       </div>
       <div className="machine-qa-actions"><button disabled={!selectedInput || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} emptyHistoryLabel="Chưa có kết quả phân tích." metrics={metricItems.map(([label, value], index) => ({ key: `${label}-${index}`, label, value: textValue(value) }))} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedInput ? [selectedInput] : []} emptyHistoryLabel="Chưa có kết quả phân tích." metrics={metricItems.map(([label, value], index) => ({ key: `${label}-${index}`, label, value: textValue(value) }))} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>
 }
 
@@ -946,7 +1000,7 @@ function CatPhanPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
     queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
   })
   const upload = useMutation({
-    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
+    mutationFn: (file: File) => uploadAndValidatePylinacArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
     onSuccess: (artifact) => {
       setSelectedArtifactId(artifact.id)
       setMessage('Đã tải bộ ảnh CatPhan lên; có thể bắt đầu phân tích.')
@@ -1006,7 +1060,7 @@ function CatPhanPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
       </div>
       <div className="machine-qa-actions"><button disabled={!selectedInput || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} emptyHistoryLabel={`Chưa có kết quả ${displayName}.`} resultNote={<p>Kết quả đã được lưu từ Pylinac, gồm các mô-đun theo loại phantom.</p>} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedInput ? [selectedInput] : []} emptyHistoryLabel={`Chưa có kết quả ${displayName}.`} resultNote={<p>Kết quả đã được lưu từ Pylinac, gồm các mô-đun theo loại phantom.</p>} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>
 }
 
@@ -1036,7 +1090,7 @@ function AcrPage({ caseId, accessToken, title, catalogKey }: { caseId: string; a
     queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
   })
   const upload = useMutation({
-    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
+    mutationFn: (file: File) => uploadAndValidatePylinacArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
     onSuccess: (artifact) => {
       setSelectedArtifactId(artifact.id)
       setMessage('Đã tải bộ ảnh ACR lên; có thể bắt đầu phân tích.')
@@ -1108,7 +1162,7 @@ function AcrPage({ caseId, accessToken, title, catalogKey }: { caseId: string; a
       {isMri && <div className="machine-qa-protocol-controls"><label>Ngưỡng nhìn thấy tương phản thấp<input type="number" min="0" step="0.001" value={lowContrastThreshold} onChange={(event) => setLowContrastThreshold(event.target.value)} /></label><label>Hệ số kiểm tra hợp lý<input type="number" min="0" step="0.1" value={lowContrastSanity} onChange={(event) => setLowContrastSanity(event.target.value)} /></label></div>}
       <div className="machine-qa-actions"><button disabled={!selectedInput || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} emptyHistoryLabel={`Chưa có kết quả ${displayName}.`} resultNote={<p>Kết quả và thông số của đúng phiên bản Pylinac đã được lưu cùng với bộ ảnh đầu vào.</p>} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedInput ? [selectedInput] : []} emptyHistoryLabel={`Chưa có kết quả ${displayName}.`} resultNote={<p>Kết quả và thông số của đúng phiên bản Pylinac đã được lưu cùng với bộ ảnh đầu vào.</p>} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>
 }
 
@@ -1142,7 +1196,7 @@ function CtPylinacPage({ caseId, accessToken, title, catalogKey }: { caseId: str
     queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
   })
   const upload = useMutation({
-    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
+    mutationFn: (file: File) => uploadAndValidatePylinacArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
     onSuccess: (artifact) => {
       setSelectedArtifactId(artifact.id)
       setMessage('Đã tải bộ ảnh lên; có thể bắt đầu phân tích.')
@@ -1216,7 +1270,7 @@ function CtPylinacPage({ caseId, accessToken, title, catalogKey }: { caseId: str
       {isQuart && <div className="machine-qa-protocol-controls"><label>Dung sai thang đo (mm)<input type="number" min="0" step="0.1" value={scalingTolerance} onChange={(event) => setScalingTolerance(event.target.value)} /></label><label>Dung sai độ dày (mm)<input type="number" min="0" step="0.01" value={thicknessTolerance} onChange={(event) => setThicknessTolerance(event.target.value)} /></label><label>Dịch lát tìm góc (mm)<input type="number" step="0.1" value={rollSliceOffset} onChange={(event) => setRollSliceOffset(event.target.value)} /></label></div>}
       <div className="machine-qa-actions"><button disabled={!selectedInput || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} emptyHistoryLabel={`Chưa có kết quả ${displayName}.`} resultNote={<p>Kết quả và thông số của đúng phiên bản Pylinac đã được lưu cùng với bộ ảnh đầu vào.</p>} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedInput ? [selectedInput] : []} emptyHistoryLabel={`Chưa có kết quả ${displayName}.`} resultNote={<p>Kết quả và thông số của đúng phiên bản Pylinac đã được lưu cùng với bộ ảnh đầu vào.</p>} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
     <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">Chưa có kết quả {displayName}.</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td></tr>)}</tbody></table></div>}</section>
   </div>
 }
@@ -1291,7 +1345,7 @@ function CalibrationPage({ caseId, accessToken, title, catalogKey }: { caseId: s
       {isTg && isPhoton && <div className="machine-qa-protocol-controls"><label>Miếng lọc chì<select value={values.lead_foil} onChange={(event) => setValue('lead_foil', event.target.value)}><option value="None">Không dùng</option><option value="30cm">30 cm</option><option value="50cm">50 cm</option></select></label></div>}
       <div className="machine-qa-actions"><button disabled={isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang tính…' : 'Tính hiệu chuẩn'}</button></div>
     </section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} emptyHistoryLabel="Chưa có kết quả hiệu chuẩn." metrics={Object.entries(objectValue(latest?.result_snapshot.metrics) ?? {}).filter(([key]) => key !== 'output_was_adjusted').map(([key, value]) => ({ key, label: metricLabels[key] ?? 'Kết quả đo', value: textValue(value) }))} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} emptyHistoryLabel="Chưa có kết quả hiệu chuẩn." metrics={Object.entries(objectValue(latest?.result_snapshot.metrics) ?? {}).filter(([key]) => key !== 'output_was_adjusted').map(([key, value]) => ({ key, label: metricLabels[key] ?? 'Kết quả đo', value: textValue(value) }))} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>
 }
 
@@ -1308,7 +1362,7 @@ function LogAnalyzerPage({ caseId, accessToken, title, catalogKey }: { caseId: s
   const artifacts = useQuery({ queryKey: ['pylinac-artifacts', caseId, accessToken], queryFn: () => apiClient.artifacts(accessToken, caseId), retry: false })
   const runs = useQuery({ queryKey: ['pylinac-runs', caseId, accessToken], queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false })
   const upload = useMutation({
-    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'OTHER', 'REFERENCE'),
+    mutationFn: (file: File) => uploadAndValidatePylinacArtifact(accessToken, caseId, file, 'OTHER', 'REFERENCE'),
     onSuccess: (artifact) => { setSelectedArtifactIds((current) => current.includes(artifact.id) ? current : [...current, artifact.id]); setMessage('Đã tải tệp nhật ký lên.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-artifacts', caseId, accessToken] }) },
     onError: (error) => setMessage(errorMessage(error))
   })
@@ -1337,7 +1391,7 @@ function LogAnalyzerPage({ caseId, accessToken, title, catalogKey }: { caseId: s
     <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">TỆP NHẬT KÝ</p><h2>{isDynalog ? 'Cặp tệp A và B' : 'Tệp Trajectory Log'}</h2></div><strong>{selected.length}</strong></div><p>{isDynalog ? 'Tải cả hai tệp DLG bắt đầu bằng A và B. Không đổi tên tệp để Pylinac tự ghép đúng cặp.' : 'Tải tệp BIN hoặc TLOG; có thể tải thêm tệp TXT cùng tên để bổ sung thông tin mô tả.'}</p><div className="machine-qa-actions"><label className="button-link">Chọn tệp nhật ký<input type="file" accept=".dlg,.bin,.tlog,.txt" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>{logArtifacts.length > 0 && <div className="table-wrap"><table><thead><tr><th>Chọn</th><th>Tệp</th><th>Loại</th><th>Dung lượng</th></tr></thead><tbody>{logArtifacts.map((artifact) => <tr key={artifact.id}><td><input type="checkbox" aria-label={`Chọn ${artifact.original_filename}`} checked={selectedArtifactIds.includes(artifact.id)} onChange={(event) => setSelectedArtifactIds((current) => event.target.checked ? [...current, artifact.id] : current.filter((id) => id !== artifact.id))} /></td><td>{artifact.original_filename}</td><td>{artifact.original_filename.toLowerCase().endsWith('.dlg') ? 'Dynalog' : 'Trajectory Log'}</td><td>{artifact.byte_size.toLocaleString('vi-VN')} byte</td></tr>)}</tbody></table></div>}
       <div className="machine-qa-protocol-controls"><label><input type="checkbox" checked={excludeBeamOff} onChange={(event) => setExcludeBeamOff(event.target.checked)} /> Loại các mẫu khi tia tắt</label><label><input type="checkbox" checked={calcGamma} onChange={(event) => setCalcGamma(event.target.checked)} /> Tạo bản đồ Gamma fluence</label>{calcGamma && <><label>Dung sai liều (%)<input type="number" min="0.01" step="0.01" value={doseTolerance} onChange={(event) => setDoseTolerance(event.target.value)} /></label><label>Dung sai khoảng cách (mm)<input type="number" min="0.01" step="0.01" value={distanceTolerance} onChange={(event) => setDistanceTolerance(event.target.value)} /></label></>}</div><div className="machine-qa-actions"><button disabled={!canAnalyze || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} emptyHistoryLabel="Chưa có kết quả nhật ký." metrics={Object.entries(objectValue(latest?.result_snapshot.metrics) ?? {}).map(([key, value]) => ({ key, label: metricLabels[key] ?? 'Kết quả đo', value: textValue(value) }))} overlayLabel="Mở biểu đồ MLC" onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={logArtifacts} selectedArtifactIds={selectedArtifactIds} emptyHistoryLabel="Chưa có kết quả nhật ký." metrics={Object.entries(objectValue(latest?.result_snapshot.metrics) ?? {}).map(([key, value]) => ({ key, label: metricLabels[key] ?? 'Kết quả đo', value: textValue(value) }))} overlayLabel="Mở biểu đồ MLC" onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>
 }
 
@@ -1397,7 +1451,7 @@ function NuclearPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
   const artifacts = useQuery({ queryKey: ['pylinac-artifacts', caseId, accessToken], queryFn: () => apiClient.artifacts(accessToken, caseId), retry: false })
   const runs = useQuery({ queryKey: ['pylinac-runs', caseId, accessToken], queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false })
   const upload = useMutation({
-    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
+    mutationFn: (file: File) => uploadAndValidatePylinacArtifact(accessToken, caseId, file, 'DICOM', 'EVALUATION'),
     onSuccess: (artifact) => { setSelectedArtifactIds((current) => current.includes(artifact.id) ? current : [...current, artifact.id]); setMessage('Đã tải tệp DICOM lên.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-artifacts', caseId, accessToken] }) },
     onError: (error) => setMessage(errorMessage(error))
   })
@@ -1447,7 +1501,7 @@ function NuclearPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
       {catalogKey === 'NUCLEAR_TU' && <>{field('first_frame', 'Khung hình bắt đầu')}{field('last_frame', 'Khung hình kết thúc')}{field('ufov_ratio', 'Tỷ lệ vùng nhìn hữu ích')}{field('cfov_ratio', 'Tỷ lệ vùng nhìn trung tâm')}{field('center_ratio', 'Tỷ lệ vùng tâm')}{field('threshold', 'Ngưỡng loại nền')}{field('window_size', 'Kích thước cửa sổ (điểm ảnh)')}</>}
       {catalogKey === 'NUCLEAR_TC' && <>{field('sphere_diameters_mm', 'Đường kính sáu cầu (mm, cách nhau bằng dấu phẩy)', 'text')}{field('sphere_angles', 'Góc sáu cầu (độ, cách nhau bằng dấu phẩy)', 'text')}{field('ufov_ratio', 'Tỷ lệ vùng nhìn hữu ích')}{field('search_window_px', 'Cửa sổ tìm kiếm (điểm ảnh)')}{field('search_slices', 'Số lát tìm kiếm')}</>}
     </div><div className="machine-qa-actions"><button disabled={!canAnalyze || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div></section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} emptyHistoryLabel="Chưa có kết quả phân tích." metrics={metrics.map(([key, value]) => ({ key, label: nuclearMetricNames[key] ?? 'Kết quả đo', value: textValue(value) }))} overlayLabel="Mở ảnh phân tích" onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={nuclearArtifacts} selectedArtifactIds={selectedArtifactIds} emptyHistoryLabel="Chưa có kết quả phân tích." metrics={metrics.map(([key, value]) => ({ key, label: nuclearMetricNames[key] ?? 'Kết quả đo', value: textValue(value) }))} overlayLabel="Mở ảnh phân tích" onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>
 }
 
@@ -1480,7 +1534,7 @@ function ContribPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
   const artifacts = useQuery({ queryKey: ['pylinac-artifacts', caseId, accessToken], queryFn: () => apiClient.artifacts(accessToken, caseId), retry: false })
   const runs = useQuery({ queryKey: ['pylinac-runs', caseId, accessToken], queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false })
   const upload = useMutation({
-    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'IMAGE', 'EVALUATION'),
+    mutationFn: (file: File) => uploadAndValidatePylinacArtifact(accessToken, caseId, file, 'IMAGE', 'EVALUATION'),
     onSuccess: (artifact) => { setSelectedArtifactId(artifact.id); setMessage('Đã tải ảnh lên; có thể bắt đầu phân tích.'); void queryClient.invalidateQueries({ queryKey: ['pylinac-artifacts', caseId, accessToken] }) },
     onError: (error) => setMessage(errorMessage(error))
   })
@@ -1510,7 +1564,7 @@ function ContribPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
     {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
     <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">TỆP ĐẦU VÀO</p><h2>Ảnh kiểm tra</h2></div><strong>{selectedArtifactId ? '1' : '0'}</strong></div><p>Chọn một ảnh phantom hoặc ảnh trường phù hợp với bài đang thực hiện. Mô-đun đóng góp dùng trực tiếp bộ tính Pylinac.</p><div className="machine-qa-actions"><label className="button-link">Chọn ảnh<input type="file" accept=".dcm,.dicom,.tif,.tiff,.png,.jpg,.jpeg" hidden disabled={isBusy} onChange={(event) => { const file = event.target.files?.[0]; if (file) upload.mutate(file); event.currentTarget.value = '' }} /></label></div>{imageArtifacts.length > 0 && <div className="table-wrap"><table><thead><tr><th>Chọn</th><th>Tên ảnh</th><th>Dung lượng</th></tr></thead><tbody>{imageArtifacts.map((artifact) => <tr key={artifact.id}><td><input type="radio" name="contrib-input" aria-label={`Chọn ${artifact.original_filename}`} checked={selectedArtifactId === artifact.id} onChange={() => setSelectedArtifactId(artifact.id)} /></td><td>{artifact.original_filename}</td><td>{artifact.byte_size.toLocaleString('vi-VN')} byte</td></tr>)}</tbody></table></div>}</section>
     <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">THAM SỐ BÀI KIỂM TRA</p><h2>Thiết lập phân tích</h2></div></div>{catalogKey === 'CONTRIB_QUASAR_LIGHT_RAD_SCALING' ? <div className="machine-qa-protocol-controls"><label><input type="checkbox" checked={normalize} onChange={(event) => setNormalize(event.target.checked)} /> Chuẩn hóa ảnh</label><label><input type="checkbox" checked={invert} onChange={(event) => setInvert(event.target.checked)} /> Đảo ảnh</label><label>Phần trăm FWXM<input type="number" min="1" max="100" value={fwxm} onChange={(event) => setFwxm(event.target.value)} /></label><label>Ngưỡng cạnh biên (mm)<input type="number" min="0.01" step="0.01" value={bbEdgeThreshold} onChange={(event) => setBbEdgeThreshold(event.target.value)} /></label></div> : <p>Pylinac tự phát hiện bốn cạnh hàm trên ảnh. Không có tham số kỹ thuật ẩn; đánh giá Đạt, Cảnh báo hoặc Không đạt do người thực hiện chọn sau khi xem kết quả.</p>}<div className="machine-qa-actions"><button disabled={!canAnalyze} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div></section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} emptyHistoryLabel="Chưa có kết quả phân tích." metrics={metrics.map(([key, value]) => ({ key, label: contribMetricNames[key] ?? 'Kết quả đo', value: textValue(value) }))} overlayLabel="Mở ảnh phân tích" onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedArtifactId ? [selectedArtifactId] : []} emptyHistoryLabel="Chưa có kết quả phân tích." metrics={metrics.map(([key, value]) => ({ key, label: contribMetricNames[key] ?? 'Kết quả đo', value: textValue(value) }))} overlayLabel="Mở ảnh phân tích" onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>
 }
 
@@ -1537,7 +1591,7 @@ function PlanarImagingPage({ caseId, accessToken, title, catalogKey }: { caseId:
     queryFn: () => apiClient.pylinacQARuns(accessToken, caseId), retry: false
   })
   const upload = useMutation({
-    mutationFn: (file: File) => apiClient.uploadArtifact(accessToken, caseId, file, 'IMAGE', 'EVALUATION'),
+    mutationFn: (file: File) => uploadAndValidatePylinacArtifact(accessToken, caseId, file, 'IMAGE', 'EVALUATION'),
     onSuccess: (artifact) => {
       setSelectedArtifactId(artifact.id)
       setMessage('Đã tải ảnh phẳng lên; có thể bắt đầu phân tích.')
@@ -1600,7 +1654,7 @@ function PlanarImagingPage({ caseId, accessToken, title, catalogKey }: { caseId:
       </div>
       <div className="machine-qa-actions"><button disabled={!selectedInput || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} emptyHistoryLabel="Chưa có kết quả ảnh phẳng." resultNote={<p>Kết quả chi tiết của Pylinac đã được lưu cùng với ảnh phantom và các chỉ số của đúng biến thể đã chọn.</p>} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedInput ? [selectedInput] : []} emptyHistoryLabel="Chưa có kết quả ảnh phẳng." resultNote={<p>Kết quả chi tiết của Pylinac đã được lưu cùng với ảnh phantom và các chỉ số của đúng biến thể đã chọn.</p>} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>
 }
 
