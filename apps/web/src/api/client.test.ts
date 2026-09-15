@@ -137,3 +137,24 @@ test('translates a network failure into a retryable localized client error', asy
     message: 'Không thể kết nối tới RT-CONNECT API.'
   } satisfies Partial<ApiClientError>)
 })
+
+test('loads the bounded image count for a multi-image preview', async () => {
+  const artifactId = '123e4567-e89b-42d3-a456-426614174000'
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ image_count: 2 })
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  const client = new ApiClient('http://api.test/api/v1')
+
+  await expect(client.previewArtifactInfo('token', artifactId)).resolves.toEqual({ image_count: 2 })
+  expect(fetchMock).toHaveBeenCalledWith(
+    expect.stringContaining(`/artifacts/${artifactId}/preview-info`),
+    expect.objectContaining({
+      headers: expect.objectContaining({
+        Accept: 'application/json',
+        Authorization: 'Bearer token'
+      })
+    })
+  )
+})
