@@ -7,6 +7,13 @@
 - Kiểm thử giao diện toàn bộ đạt **67/67**, kiểm tra kiểu, lint và bản dựng sản xuất đạt. Cảnh báo gói JavaScript lớn hơn 500 kB vẫn là cảnh báo hiệu năng đã có từ trước.
 - Đây là hoàn thiện lớp trình bày local cho P07-STAR, chưa thay thế đối chiếu độc lập, fixture commissioning, kiểm lỗi đặc trưng hoặc kiểm chứng staging có đăng nhập. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 
+## P07-STAR — triển khai trình xem kết quả lên staging — đã kiểm tra — 2026-09-16
+
+- API, giao diện và tiến trình nền staging đã được dựng lại từ cùng commit `63c480ea29e871b05f537a554fba1cdbd8b96296`.
+- Bộ xác minh công khai đạt **16/16**; health/readiness 200, lược đồ `20260914_0023`, OpenAPI, biên xác thực và gói web đúng mốc nguồn đều đạt.
+- Đây là parity triển khai và kiểm tra hợp đồng công khai, chưa phải chạy bài Kiểm tra sao bằng tệp commissioning có đăng nhập. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+- Bằng chứng: [staging trình xem Kiểm tra sao](docs/evidence/p7-staging-starshot-result-viewer-20260916.json).
+
 ## P07-LOG — kiểm tra cặp Dynalog và tệp Trajectory trước khi gọi Pylinac — đã kiểm tra local — 2026-09-16
 
 - Bộ chọn tệp Dynalog nay chỉ chấp nhận đúng một tệp DLG bắt đầu bằng A và một tệp DLG bắt đầu bằng B. Tệp DLG thứ hai không đúng cặp sẽ bị báo lỗi ngay trên biểu mẫu.
