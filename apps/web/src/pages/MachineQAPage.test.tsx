@@ -12,6 +12,7 @@ import { validateManualWinstonLutzAngles, validateWinstonLutzMultiTargetValues, 
 import { validateLogGammaValues } from './logValidation'
 import { validateLogArtifactSelection } from './logSelectionValidation'
 import { validateVmatValues } from './vmatValidation'
+import { validateCatPhanValues } from './catphanValidation'
 
 const makeRun = (overrides: Partial<PylinacQARunResource> = {}): PylinacQARunResource => ({
   id: 'run-current',
@@ -188,6 +189,14 @@ test('validates VMAT analysis parameters before submission', () => {
   expect(validateVmatValues({ tolerance: '1.5', segmentWidth: '0', segmentLength: '100' })).toContain('Chiều rộng')
   expect(validateVmatValues({ tolerance: '1.5', segmentWidth: '5', segmentLength: '100', collimatorMin: '70', collimatorMax: '30', requiresCollimator: true })).toContain('lớn nhất')
   expect(validateVmatValues({ tolerance: '1.5', segmentWidth: '5', segmentLength: '100', collimatorMin: '30', collimatorMax: '70', requiresCollimator: true })).toBeUndefined()
+})
+
+test('validates CatPhan analysis parameters before submission', () => {
+  const valid = { huTolerance: '40', cnrThreshold: '15', thicknessTolerance: '0.2', originSlice: '12', xAdjustment: '0', yAdjustment: '0', angleAdjustment: '0', roiSizeFactor: '1' }
+  expect(validateCatPhanValues({ ...valid, huTolerance: '-1' })).toContain('Dung sai HU')
+  expect(validateCatPhanValues({ ...valid, originSlice: '1.5' })).toContain('Lát gốc')
+  expect(validateCatPhanValues({ ...valid, roiSizeFactor: '' })).toContain('Hệ số kích thước vùng')
+  expect(validateCatPhanValues(valid)).toBeUndefined()
 })
 
 test('renders nested Pylinac metrics in readable groups without technical identifiers', () => {

@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P07-CT — kiểm tra tham số CatPhan ngay trên biểu mẫu — đã kiểm tra local — 2026-09-16
+
+- Biểu mẫu năm bài CatPhan nay chặn dung sai HU, ngưỡng CNR, dung sai độ dày và hệ số kích thước vùng không phải số hoặc âm; lát gốc tùy chọn phải là số nguyên không âm; các điều chỉnh hình học phải là số hữu hạn.
+- Lỗi hiện ngay trên biểu mẫu và nút phân tích bị khóa; máy chủ Pylinac vẫn là nơi kiểm tra cuối cùng và chịu trách nhiệm tính toán.
+- Kiểm thử riêng và toàn bộ giao diện đạt **69/69**, kiểm tra kiểu, lint và bản dựng sản xuất đạt. Cảnh báo gói JavaScript lớn hơn 500 kB vẫn là cảnh báo hiệu năng đã có từ trước.
+- Đây là hoàn thiện biên nhập liệu local cho P07-CT, chưa thay thế fixture CatPhan 700, đối chiếu từng mô-đun, kiểm lỗi đặc trưng hoặc kiểm chứng staging. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
 ## P07-VMAT — kiểm tra tham số ngay trên biểu mẫu — đã kiểm tra local — 2026-09-16
 
 - Biểu mẫu ba bài VMAT nay chặn dung sai không phải số hoặc âm, chiều rộng/chiều dài đoạn phân tích không dương và, riêng DRCS, khoảng cách xuyên tâm lớn hơn nhỏ nhất.

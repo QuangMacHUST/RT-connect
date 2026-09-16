@@ -10,6 +10,7 @@ import { mapImagePoint } from './pylinacCoordinates'
 import { calibrationCoefficientKey, calibrationNames, type CalibrationCatalogKey, validateCalibrationValues } from './calibrationValidation'
 import { validateManualWinstonLutzAngles, validateWinstonLutzMultiTargetValues, validateWinstonLutzValues } from './winstonLutzValidation'
 import { validateVmatValues } from './vmatValidation'
+import { validateCatPhanValues } from './catphanValidation'
 import { validateLogGammaValues } from './logValidation'
 import { validateLogArtifactSelection } from './logSelectionValidation'
 
@@ -1339,6 +1340,10 @@ function CatPhanPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
   const displayName = catalogKey.replace('CATPHAN_', 'CatPhan ')
+  const validationError = validateCatPhanValues({
+    huTolerance, cnrThreshold, thicknessTolerance, originSlice,
+    xAdjustment, yAdjustment, angleAdjustment, roiSizeFactor
+  })
 
   return <div className="page">
     <header className="page-header">
@@ -1364,7 +1369,8 @@ function CatPhanPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
         <label>Điều chỉnh góc (độ)<input type="number" step="0.1" value={angleAdjustment} onChange={(event) => setAngleAdjustment(event.target.value)} /></label>
         <label>Hệ số kích thước vùng<input type="number" min="0" step="0.01" value={roiSizeFactor} onChange={(event) => setRoiSizeFactor(event.target.value)} /></label>
       </div>
-      <div className="machine-qa-actions"><button disabled={!selectedInput || !selectedArtifactsAreValidated(selectedInput ? [selectedInput] : [], imageArtifacts) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      {validationError && <p className="alert alert--error" role="alert">{validationError}</p>}
+      <div className="machine-qa-actions"><button disabled={!selectedInput || !selectedArtifactsAreValidated(selectedInput ? [selectedInput] : [], imageArtifacts) || Boolean(validationError) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedInput ? [selectedInput] : []} emptyHistoryLabel={`Chưa có kết quả ${displayName}.`} resultNote={<p>Kết quả đã được lưu từ Pylinac, gồm các mô-đun theo loại phantom.</p>} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>
