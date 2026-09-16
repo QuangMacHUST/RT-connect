@@ -481,7 +481,12 @@ def _winston_lutz_parameters(
 
     analysis: dict[str, object] = {}
     if "bb_size_mm" in parameters:
-        analysis["bb_size_mm"] = _number(parameters, "bb_size_mm", minimum=0)
+        bb_size_mm = _number(parameters, "bb_size_mm", minimum=0)
+        if bb_size_mm <= 0:
+            raise PylinacAdapterError(
+                "PYLINAC_PARAMETER_INVALID", "Kích thước bi chuẩn phải lớn hơn 0."
+            )
+        analysis["bb_size_mm"] = bb_size_mm
     for key in ("snap_tolerance", "gantry_reference", "collimator_reference", "couch_reference"):
         if key in parameters:
             analysis[key] = _number(parameters, key)

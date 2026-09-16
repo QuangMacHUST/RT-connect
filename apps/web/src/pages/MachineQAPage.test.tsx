@@ -8,6 +8,7 @@ import { calibrationCoefficientKey, validateCalibrationValues } from './calibrat
 import { historyForCatalog } from './pylinacHistory'
 import { mapImagePoint } from './pylinacCoordinates'
 import { artifactsAreValidated, selectedArtifactsAreValidated } from './qaArtifactLabels'
+import { validateManualWinstonLutzAngles, validateWinstonLutzMultiTargetValues, validateWinstonLutzValues } from './winstonLutzValidation'
 
 const makeRun = (overrides: Partial<PylinacQARunResource> = {}): PylinacQARunResource => ({
   id: 'run-current',
@@ -247,4 +248,32 @@ test('uses the TRS-398 điện kế field for both TRS-398 calibration variants'
   expect(calibrationCoefficientKey('CALIBRATION_TRS398_PHOTON')).toBe('k_elec')
   expect(calibrationCoefficientKey('CALIBRATION_TRS398_ELECTRON')).toBe('k_elec')
   expect(calibrationCoefficientKey('CALIBRATION_TG51_PHOTON')).toBe('p_elec')
+})
+
+test('validates Winston-Lutz numeric fields before the request is created', () => {
+  const valid = {
+    sid: '1000', dpi: '', bbSizeMm: '5', snapTolerance: '3', bbProximityMm: '20',
+    gantryReference: '0', collimatorReference: '0', couchReference: '0'
+  }
+
+  expect(validateWinstonLutzValues(valid)).toBeUndefined()
+  expect(validateWinstonLutzValues({ ...valid, sid: '' })).toContain('Khoảng cách nguồn–ảnh')
+  expect(validateWinstonLutzValues({ ...valid, bbSizeMm: '0' })).toContain('Kích thước bi chuẩn')
+  expect(validateWinstonLutzValues({ ...valid, dpi: 'sai' })).toContain('Mật độ điểm ảnh')
+})
+
+test('validates every multi-target BB row and manual angle mapping', () => {
+  const arrangement = [{
+    name: 'Iso', offset_left_mm: '0', offset_up_mm: '0', offset_in_mm: '0', bb_size_mm: '5', rad_size_mm: '20'
+  }]
+  const angles = [
+    { gantry: '0', collimator: '10', couch: '20' },
+    { gantry: '180', collimator: '10', couch: '20' }
+  ]
+
+  expect(validateWinstonLutzMultiTargetValues({ sid: '1000', dpi: '', bbProximityMm: '10', arrangement })).toBeUndefined()
+  expect(validateWinstonLutzMultiTargetValues({ sid: '1000', dpi: '', bbProximityMm: '10', arrangement: [{ ...arrangement[0], rad_size_mm: '' }] })).toContain('Bán kính trường')
+  expect(validateManualWinstonLutzAngles('MANUAL', angles, 2)).toBeUndefined()
+  expect(validateManualWinstonLutzAngles('MANUAL', [{ ...angles[0], couch: '' }, angles[1]], 2)).toContain('Góc bàn')
+  expect(validateManualWinstonLutzAngles('MANUAL', angles, 3)).toContain('Số dòng')
 })

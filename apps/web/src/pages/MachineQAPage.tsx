@@ -8,6 +8,7 @@ import { artifactDisplayName, artifactsAreValidated, isPylinacImageArtifact, sel
 import { historyForCatalog } from './pylinacHistory'
 import { mapImagePoint } from './pylinacCoordinates'
 import { calibrationCoefficientKey, calibrationNames, type CalibrationCatalogKey, validateCalibrationValues } from './calibrationValidation'
+import { validateManualWinstonLutzAngles, validateWinstonLutzMultiTargetValues, validateWinstonLutzValues } from './winstonLutzValidation'
 
 type JsonRecord = Record<string, unknown>
 
@@ -785,11 +786,10 @@ function WinstonLutzPage({ caseId, accessToken, title }: { caseId: string; acces
   const history = historyForCatalog(runs.data?.items, 'WINSTON_LUTZ')
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
-  const manualAnglesValid = angleSource !== 'MANUAL' || (
-    imageCount > 1 && manualAngles.length === imageCount && manualAngles.every((row) =>
-      [row.gantry, row.collimator, row.couch].every((value) => value.trim() !== '' && Number.isFinite(Number(value)))
-    )
-  )
+  const validationError = validateWinstonLutzValues({
+    sid, dpi, bbSizeMm: bbSize, snapTolerance, bbProximityMm: bbProximity,
+    gantryReference, collimatorReference, couchReference
+  }) ?? validateManualWinstonLutzAngles(angleSource, manualAngles, imageCount)
   const metric = (key: string) => textValue(pylinacMetric(latest, key))
 
   return <div className="page">
@@ -833,9 +833,10 @@ function WinstonLutzPage({ caseId, accessToken, title }: { caseId: string; acces
         {previewInfo.isPending && <p className="form-hint">Đang đếm số ảnh trong bộ ảnh…</p>}
         {previewInfo.isError && <p className="alert alert--error">Không thể xác định số ảnh để nhập góc. Hãy kiểm tra lại bộ ZIP.</p>}
         {!previewInfo.isPending && !previewInfo.isError && imageCount > 0 && <div className="table-wrap"><table className="winston-lutz-angle-table"><thead><tr><th>Ảnh</th><th>Góc máy</th><th>Góc chuẩn trực</th><th>Góc bàn</th></tr></thead><tbody>{manualAngles.map((row, index) => <tr key={index}><th scope="row">Ảnh {index + 1}</th><td><input aria-label={`Góc máy ảnh ${index + 1}`} type="number" step="0.1" value={row.gantry} onChange={(event) => setManualAngles((current) => current.map((item, rowIndex) => rowIndex === index ? { ...item, gantry: event.target.value } : item))} /></td><td><input aria-label={`Góc chuẩn trực ảnh ${index + 1}`} type="number" step="0.1" value={row.collimator} onChange={(event) => setManualAngles((current) => current.map((item, rowIndex) => rowIndex === index ? { ...item, collimator: event.target.value } : item))} /></td><td><input aria-label={`Góc bàn ảnh ${index + 1}`} type="number" step="0.1" value={row.couch} onChange={(event) => setManualAngles((current) => current.map((item, rowIndex) => rowIndex === index ? { ...item, couch: event.target.value } : item))} /></td></tr>)}</tbody></table></div>}
-        {imageCount > 0 && !manualAnglesValid && <p className="form-hint">Nhập đủ ba góc dạng số cho tất cả ảnh trước khi bắt đầu phân tích.</p>}
+        {angleSource === 'MANUAL' && imageCount > 0 && !validateManualWinstonLutzAngles(angleSource, manualAngles, imageCount) && <p className="form-hint">Đã nhập đủ ba góc cho tất cả ảnh.</p>}
       </section>}
-      <div className="machine-qa-actions"><button disabled={!selected || !artifactsAreValidated(selected ? [selected] : []) || !manualAnglesValid || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      {validationError && <p className="alert alert--error" role="alert">{validationError}</p>}
+      <div className="machine-qa-actions"><button disabled={!selected || !artifactsAreValidated(selected ? [selected] : []) || Boolean(validationError) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={zipArtifacts} selectedArtifactIds={selected ? [selected.id] : []} emptyHistoryLabel="Chưa có kết quả Winston–Lutz." metrics={[
       { key: 'max_2d_cax_to_bb_mm', label: 'Sai lệch trục–bi lớn nhất', value: `${metric('max_2d_cax_to_bb_mm')} mm` },
@@ -956,12 +957,9 @@ function WinstonLutzMultiTargetPage({ caseId, accessToken, title }: { caseId: st
   const history = historyForCatalog(runs.data?.items, 'WINSTON_LUTZ_MULTI_TARGET')
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
-  const manualAnglesValid = angleSource !== 'MANUAL' || (
-    imageCount > 1 && manualAngles.length === imageCount && manualAngles.every((row) =>
-      [row.gantry, row.collimator, row.couch].every((value) => value.trim() !== '' && Number.isFinite(Number(value)))
-    )
-  )
-  const canAnalyze = Boolean(selected) && artifactsAreValidated(selected ? [selected] : []) && !isBusy && manualAnglesValid
+  const validationError = validateWinstonLutzMultiTargetValues({ sid, dpi, bbProximityMm: bbProximity, arrangement })
+    ?? validateManualWinstonLutzAngles(angleSource, manualAngles, imageCount)
+  const canAnalyze = Boolean(selected) && artifactsAreValidated(selected ? [selected] : []) && !isBusy && !validationError
   const metric = (key: string) => textValue(pylinacMetric(latest, key))
 
   return <div className="page">
@@ -998,8 +996,9 @@ function WinstonLutzMultiTargetPage({ caseId, accessToken, title }: { caseId: st
         {previewInfo.isPending && <p className="form-hint">Đang đếm số ảnh trong bộ ảnh…</p>}
         {previewInfo.isError && <p className="alert alert--error">Không thể xác định số ảnh để nhập góc. Hãy kiểm tra lại bộ ZIP.</p>}
         {!previewInfo.isPending && !previewInfo.isError && imageCount > 0 && <div className="table-wrap"><table className="winston-lutz-angle-table"><thead><tr><th>Ảnh</th><th>Góc máy</th><th>Góc chuẩn trực</th><th>Góc bàn</th></tr></thead><tbody>{manualAngles.map((row, index) => <tr key={index}><th scope="row">Ảnh {index + 1}</th><td><input aria-label={`Góc máy ảnh ${index + 1}`} type="number" step="0.1" value={row.gantry} onChange={(event) => setManualAngles((current) => current.map((item, rowIndex) => rowIndex === index ? { ...item, gantry: event.target.value } : item))} /></td><td><input aria-label={`Góc chuẩn trực ảnh ${index + 1}`} type="number" step="0.1" value={row.collimator} onChange={(event) => setManualAngles((current) => current.map((item, rowIndex) => rowIndex === index ? { ...item, collimator: event.target.value } : item))} /></td><td><input aria-label={`Góc bàn ảnh ${index + 1}`} type="number" step="0.1" value={row.couch} onChange={(event) => setManualAngles((current) => current.map((item, rowIndex) => rowIndex === index ? { ...item, couch: event.target.value } : item))} /></td></tr>)}</tbody></table></div>}
-        {imageCount > 0 && !manualAnglesValid && <p className="form-hint">Nhập đủ ba góc dạng số cho tất cả ảnh trước khi bắt đầu phân tích.</p>}
+        {angleSource === 'MANUAL' && imageCount > 0 && !validateManualWinstonLutzAngles(angleSource, manualAngles, imageCount) && <p className="form-hint">Đã nhập đủ ba góc cho tất cả ảnh.</p>}
       </section>}
+      {validationError && <p className="alert alert--error" role="alert">{validationError}</p>}
       <div className="machine-qa-actions"><button disabled={!canAnalyze} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={zipArtifacts} selectedArtifactIds={selected ? [selected.id] : []} renderResultDetails={(run) => <WinstonLutzMultiTargetDetails run={run} />} structuredMetricExclusions={['image_details', 'bb_arrangement']} emptyHistoryLabel="Chưa có kết quả Winston–Lutz nhiều bi." metrics={[

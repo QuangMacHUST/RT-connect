@@ -1674,3 +1674,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Phát hiện và sửa lỗi ánh xạ ở bài TRS-398 electron: giao diện trước đây dùng tên trường `p_elec`, trong khi hợp đồng Pylinac/adapter yêu cầu `k_elec`; hai biến thể TRS-398 nay dùng đúng hệ số `k_elec`. Bộ gom tham số cũng chỉ gửi hệ số phù hợp với từng họ quy trình, không gửi hệ số ẩn còn lại làm tham số thừa. Tên các bài hiệu chuẩn cũng đã đổi sang nhãn nghiệp vụ tiếng Việt.
 - Kiểm thử giao diện đạt **60/60**, kiểm tra kiểu đạt, lint đạt và bản dựng sản xuất đạt. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 - Đây là `LOCAL_VERIFIED_SLICE` cho biên nhập liệu và ánh xạ giao diện. P07-CAL vẫn mở vì chưa có số đo chuẩn/commissioning, đối chiếu độc lập, kiểm lỗi miền vật lý và kiểm chứng staging; không được dùng lát cắt này để tuyên bố hiệu chuẩn lâm sàng.
+
+## P7-WL/WLMT — chặn tham số hình học sai trước khi gọi Pylinac — lát cắt cục bộ — 2026-09-16
+
+- Biểu mẫu Winston–Lutz và Winston–Lutz nhiều bi đã có lớp kiểm tra dùng chung cho khoảng cách nguồn–ảnh, mật độ điểm ảnh, kích thước bi, dung sai, khoảng cách nhận diện và các góc tham chiếu. Giá trị trống, không phải số, hoặc nằm ngoài miền cho phép hiện được báo bằng tiếng Việt và nút phân tích bị khóa.
+- Bảng cấu hình nhiều bi kiểm tra tên bi, số lượng tối đa, độ lệch không gian, kích thước bi và bán kính trường của từng dòng. Bảng góc nhập tay kiểm tra đủ ba góc cho đúng số ảnh trước khi tạo yêu cầu; người dùng chỉ thấy số thứ tự ảnh, không thấy tên tệp kỹ thuật.
+- Adapter máy chủ nay chặn kích thước bi Winston–Lutz bằng 0 trước khi gọi Pylinac, nhất quán với kiểm tra nhiều bi. Không có lượt chạy mới, không sửa lịch sử và không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA` trong cổng này.
+- Kiểm thử riêng giao diện đạt **13/13**, toàn bộ giao diện đạt **62/62**; kiểm thử máy chủ `test_pylinac_qa.py` đạt, Ruff và kiểm tra kiểu đạt. Đây là `LOCAL_VERIFIED_SLICE` cho biên nhập liệu, chưa đóng P07-WL/P07-WLMT vì còn fixture commissioning, đối chiếu độc lập, ánh xạ tọa độ theo từng ảnh và kiểm chứng tương tác staging.

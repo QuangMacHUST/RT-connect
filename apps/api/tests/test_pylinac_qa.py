@@ -384,6 +384,17 @@ def test_winston_lutz_adapter_requires_zip_input() -> None:
         raise AssertionError("Winston–Lutz phải yêu cầu bộ ảnh ZIP")
 
 
+def test_winston_lutz_adapter_rejects_zero_bb_size() -> None:
+    with pytest.raises(PylinacAdapterError) as error:
+        execute_pylinac(
+            "WINSTON_LUTZ",
+            Path("winston-lutz.zip"),
+            {"bb_size_mm": 0},
+        )
+
+    assert error.value.code == "PYLINAC_PARAMETER_INVALID"
+
+
 def test_winston_lutz_adapter_maps_manual_angles_by_zip_order(
     monkeypatch, tmp_path: Path
 ) -> None:
