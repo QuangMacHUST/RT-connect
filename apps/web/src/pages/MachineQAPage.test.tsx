@@ -10,6 +10,7 @@ import { mapImagePoint } from './pylinacCoordinates'
 import { artifactsAreValidated, selectedArtifactsAreValidated } from './qaArtifactLabels'
 import { validateManualWinstonLutzAngles, validateWinstonLutzMultiTargetValues, validateWinstonLutzValues } from './winstonLutzValidation'
 import { validateLogGammaValues } from './logValidation'
+import { validateLogArtifactSelection } from './logSelectionValidation'
 
 const makeRun = (overrides: Partial<PylinacQARunResource> = {}): PylinacQARunResource => ({
   id: 'run-current',
@@ -284,4 +285,18 @@ test('requires positive fluence Gamma tolerances only when Gamma is enabled', ()
   expect(validateLogGammaValues(true, '1', '1')).toBeUndefined()
   expect(validateLogGammaValues(true, '', '1')).toContain('Dung sai liều')
   expect(validateLogGammaValues(true, '1', '0')).toContain('Dung sai khoảng cách')
+})
+
+test('requires a Dynalog A and B pair before analysis', () => {
+  expect(validateLogArtifactSelection('LOG_DYNALOG', [{ original_filename: 'AQA.dlg' }, { original_filename: 'BQA.dlg' }])).toBeUndefined()
+  expect(validateLogArtifactSelection('LOG_DYNALOG', [{ original_filename: 'AQA.dlg' }])).toContain('đúng hai tệp')
+  expect(validateLogArtifactSelection('LOG_DYNALOG', [{ original_filename: 'AQA.dlg' }, { original_filename: 'CQA.dlg' }])).toContain('bắt đầu bằng A')
+  expect(validateLogArtifactSelection('LOG_DYNALOG', [{ original_filename: 'AQA.dlg' }, { original_filename: 'notes.txt' }])).toContain('chỉ nhận tệp DLG')
+})
+
+test('requires one Trajectory binary and allows one TXT sidecar', () => {
+  expect(validateLogArtifactSelection('LOG_TRAJECTORY_3', [{ original_filename: 'Tlog.bin' }])).toBeUndefined()
+  expect(validateLogArtifactSelection('LOG_TRAJECTORY_3', [{ original_filename: 'Tlog.bin' }, { original_filename: 'ghi-chu.txt' }])).toBeUndefined()
+  expect(validateLogArtifactSelection('LOG_TRAJECTORY_3', [{ original_filename: 'ghi-chu.txt' }])).toContain('đúng một tệp BIN')
+  expect(validateLogArtifactSelection('LOG_TRAJECTORY_3', [{ original_filename: 'A.bin' }, { original_filename: 'B.tlog' }])).toContain('đúng một tệp BIN')
 })

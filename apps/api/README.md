@@ -270,7 +270,8 @@ coefficient from another protocol family; this marker does not alter persisted
 data.
 
 P7 WL/WLMT and log-form parity marker (2026-09-16): the web forms now reject
-invalid Winston–Lutz geometry values and missing positive fluence-Gamma
-tolerances before creating a run. Rebuild API, worker and web from this
-revision before the next exact-SHA check; this marker does not alter persisted
-data or QA history.
+invalid Winston–Lutz geometry values, invalid Dynalog A/B pairs, invalid
+Trajectory binary/sidecar selections, and missing positive fluence-Gamma
+tolerances before creating a run. The API and adapter repeat the log-file
+contract. Rebuild API, worker and web from this revision before the next
+exact-SHA check; this marker does not alter persisted data or QA history.

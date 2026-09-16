@@ -59,7 +59,7 @@ def _json_safe(value: Any) -> object:
         return value
     if isinstance(value, dict):
         return {str(key): _json_safe(item) for key, item in value.items()}
-    if isinstance(value, (list, tuple, set)):
+    if isinstance(value, list | tuple | set):
         return [_json_safe(item) for item in value]
     if hasattr(value, "isoformat"):
         return str(value.isoformat())
@@ -103,7 +103,7 @@ def _number_or_array(
                 "PYLINAC_PARAMETER_INVALID", f"Tham số {key} phải lớn hơn hoặc bằng {minimum}."
             )
         return result
-    if isinstance(value, (list, tuple)) and value:
+    if isinstance(value, list | tuple) and value:
         values: list[float] = []
         for item in value:
             if isinstance(item, bool) or not isinstance(item, int | float):
@@ -780,7 +780,7 @@ def _execute_winston_lutz_multi_target(
 
 def _pair_of_numbers(parameters: dict[str, object], key: str) -> tuple[float, float]:
     value = parameters.get(key)
-    if not isinstance(value, (list, tuple)) or len(value) != 2:
+    if not isinstance(value, list | tuple) or len(value) != 2:
         raise PylinacAdapterError(
             "PYLINAC_PARAMETER_INVALID", f"Tham số {key} phải có đúng hai giá trị số."
         )
@@ -1161,7 +1161,7 @@ def _catphan_parameters(
         analysis["contrast_method"] = value.strip()
     if "thickness_slice_straddle" in parameters:
         value = parameters["thickness_slice_straddle"]
-        if not isinstance(value, (str, int)) or isinstance(value, bool):
+        if not isinstance(value, str | int) or isinstance(value, bool):
             raise PylinacAdapterError(
                 "PYLINAC_PARAMETER_INVALID", "Cách chọn lát độ dày không hợp lệ."
             )
@@ -1828,7 +1828,7 @@ def _execute_planar(
         # Plotly-facing API and is not present on classes such as LeedsTOR.
         plotted = engine.plot_analyzed_image(show=False)
         figures = plotted[0] if isinstance(plotted, tuple) and plotted else []
-        if not isinstance(figures, (list, tuple)):
+        if not isinstance(figures, list | tuple):
             figures = [figures]
         figure = figures[0] if figures else plt.gcf()
         overlay_bytes = _save_figure(figure)
@@ -2256,7 +2256,7 @@ def _log_parameters(parameters: dict[str, object]) -> dict[str, object]:
     if normalized["calc_gamma"]:
         for key in ("dose_tolerance", "distance_tolerance"):
             gamma_value = normalized.get(key)
-            if not isinstance(gamma_value, (int, float)) or gamma_value <= 0:
+            if not isinstance(gamma_value, int | float) or gamma_value <= 0:
                 raise PylinacAdapterError(
                     "PYLINAC_PARAMETER_INVALID",
                     "Muốn tạo bản đồ Gamma cần nhập dung sai liều và khoảng cách lớn hơn 0.",
@@ -2276,14 +2276,25 @@ def _log_source_file(source_path: Path, catalog_key: str) -> Path:
             raise PylinacAdapterError(
                 "PYLINAC_INPUT_COUNT_INVALID", "Dynalog cần đúng cặp tệp A và B có đuôi DLG."
             )
+        names = [item.name.upper() for item in dynalogs]
+        if sum(name.startswith("A") for name in names) != 1 or sum(
+            name.startswith("B") for name in names
+        ) != 1:
+            raise PylinacAdapterError(
+                "PYLINAC_INPUT_FORMAT_INVALID",
+                "Dynalog cần đúng một tệp bắt đầu bằng A và một tệp bắt đầu bằng B.",
+            )
         selected = next(
             (item for item in dynalogs if item.name.upper().startswith("A")), dynalogs[0]
         )
     else:
         binaries = [item for item in candidates if item.suffix.lower() in {".bin", ".tlog"}]
-        if not binaries:
+        if len(binaries) != 1 or any(
+            item.suffix.lower() not in {".bin", ".tlog", ".txt"} for item in candidates
+        ):
             raise PylinacAdapterError(
-                "PYLINAC_INPUT_FORMAT_INVALID", "Trajectory Log cần tệp nhị phân BIN hoặc TLOG."
+                "PYLINAC_INPUT_FORMAT_INVALID",
+                "Trajectory Log cần đúng một tệp BIN hoặc TLOG; tệp thứ hai nếu có phải là TXT.",
             )
         selected = binaries[0]
     return selected
@@ -2448,8 +2459,8 @@ def _contrib_overlay(engine: Any) -> tuple[bytes | None, list[dict[str, object]]
             candidates: list[Any] = []
             if isinstance(plotted, tuple) and plotted:
                 first = plotted[0]
-                candidates.extend(first if isinstance(first, (list, tuple)) else [first])
-            elif isinstance(plotted, (list, tuple)):
+                candidates.extend(first if isinstance(first, list | tuple) else [first])
+            elif isinstance(plotted, list | tuple):
                 candidates.extend(plotted)
             if candidates:
                 return _save_figure(candidates[0]), []
@@ -2686,8 +2697,8 @@ def _nuclear_overlay(engine: Any) -> tuple[bytes | None, list[dict[str, object]]
         candidates: list[Any] = []
         if isinstance(plotted, tuple) and plotted:
             first = plotted[0]
-            candidates.extend(first if isinstance(first, (list, tuple)) else [first])
-        elif isinstance(plotted, (list, tuple)):
+            candidates.extend(first if isinstance(first, list | tuple) else [first])
+        elif isinstance(plotted, list | tuple):
             candidates.extend(plotted)
         elif plotted is not None:
             candidates.append(plotted)

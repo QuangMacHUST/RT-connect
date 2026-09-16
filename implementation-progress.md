@@ -1,5 +1,13 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P07-LOG — kiểm tra cặp Dynalog và tệp Trajectory trước khi gọi Pylinac — đã kiểm tra local — 2026-09-16
+
+- Bộ chọn tệp Dynalog nay chỉ chấp nhận đúng một tệp DLG bắt đầu bằng A và một tệp DLG bắt đầu bằng B. Tệp DLG thứ hai không đúng cặp sẽ bị báo lỗi ngay trên biểu mẫu.
+- Bộ chọn Trajectory Log nay yêu cầu đúng một tệp BIN hoặc TLOG; nếu có tệp thứ hai thì chỉ được là TXT mô tả. Không thể vô tình gửi hai tệp nhị phân khiến bộ tính chọn tệp theo thứ tự tên.
+- API và bộ điều hợp Pylinac lặp lại cùng quy tắc, vì vậy yêu cầu gửi trực tiếp hoặc yêu cầu cũ từ giao diện đều được chặn cùng một cách.
+- Kiểm thử giao diện đạt **16/16**, kiểm thử nhóm Pylinac đạt **39/39**, kiểm tra kiểu, lint giao diện và bản dựng đạt. Một cảnh báo kích thước gói JavaScript vẫn còn từ trước và không ảnh hưởng kết quả.
+- Đây là cổng hợp đồng đầu vào local, chưa đóng P07-LOG: Trajectory 3/4 vẫn cần fixture đại diện, Gamma nhật ký cần kiểm tra ổn định, và còn cần chạy staging có đăng nhập bằng bộ tệp được phê duyệt. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
 ## P7-W04 — chọn lát gốc trực quan cho nhóm phantom CT — đã kiểm tra local — 2026-09-16
 
 - Vùng xem trước dùng chung nay có thể điều khiển từ biểu mẫu cha: CatPhan, ACR và nhóm Cheese/Helios/Quart đồng bộ lát người dùng chọn vào `origin_slice` trước khi gọi Pylinac.

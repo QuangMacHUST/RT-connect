@@ -410,6 +410,16 @@ def create_pylinac_run(
         raise DomainError(
             "PYLINAC_INPUT_FORMAT_INVALID", "Dynalog chỉ nhận hai tệp có đuôi DLG.", 422
         )
+    if definition.key == "LOG_DYNALOG":
+        names = [Path(artifact.original_filename).name.upper() for artifact in artifacts]
+        if sum(name.startswith("A") for name in names) != 1 or sum(
+            name.startswith("B") for name in names
+        ) != 1:
+            raise DomainError(
+                "PYLINAC_INPUT_FORMAT_INVALID",
+                "Dynalog cần đúng một tệp bắt đầu bằng A và một tệp bắt đầu bằng B.",
+                422,
+            )
     if definition.key.startswith("LOG_TRAJECTORY_") and not any(
         Path(artifact.original_filename).suffix.lower() in {".bin", ".tlog"}
         for artifact in artifacts
@@ -417,6 +427,20 @@ def create_pylinac_run(
         raise DomainError(
             "PYLINAC_INPUT_FORMAT_INVALID", "Trajectory Log cần ít nhất một tệp BIN hoặc TLOG.", 422
         )
+    if definition.key.startswith("LOG_TRAJECTORY_"):
+        binary_count = sum(
+            Path(artifact.original_filename).suffix.lower() in {".bin", ".tlog"}
+            for artifact in artifacts
+        )
+        if binary_count != 1 or any(
+            Path(artifact.original_filename).suffix.lower() not in {".bin", ".tlog", ".txt"}
+            for artifact in artifacts
+        ):
+            raise DomainError(
+                "PYLINAC_INPUT_FORMAT_INVALID",
+                "Trajectory Log cần đúng một tệp BIN hoặc TLOG; tệp thứ hai nếu có phải là TXT.",
+                422,
+            )
     if definition.key.startswith("PLANAR_") and len(artifacts) != 1:
         raise DomainError(
             "PYLINAC_INPUT_COUNT_INVALID", "Bài ảnh phẳng yêu cầu đúng một tệp đầu vào.", 422

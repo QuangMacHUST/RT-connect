@@ -1269,6 +1269,20 @@ def test_log_adapter_rejects_wrong_trajectory_version(tmp_path, monkeypatch) -> 
         raise AssertionError("Phiên bản Trajectory Log không khớp phải bị từ chối")
 
 
+def test_log_source_file_rejects_invalid_dynalog_pair(tmp_path) -> None:
+    source = tmp_path / "logs"
+    source.mkdir()
+    (source / "AQA.dlg").write_bytes(b"a")
+    (source / "CQA.dlg").write_bytes(b"c")
+
+    try:
+        execute_pylinac("LOG_DYNALOG", source, {})
+    except PylinacAdapterError as exc:
+        assert exc.code == "PYLINAC_INPUT_FORMAT_INVALID"
+    else:
+        raise AssertionError("Dynalog không có cặp A/B phải bị từ chối")
+
+
 def test_nuclear_adapter_maps_pylinac_results_and_overlay(tmp_path, monkeypatch) -> None:
     source = tmp_path / "nuclear.dcm"
     source.write_bytes(b"dicom")
