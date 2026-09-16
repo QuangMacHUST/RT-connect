@@ -9,6 +9,7 @@ import { historyForCatalog } from './pylinacHistory'
 import { mapImagePoint } from './pylinacCoordinates'
 import { calibrationCoefficientKey, calibrationNames, type CalibrationCatalogKey, validateCalibrationValues } from './calibrationValidation'
 import { validateManualWinstonLutzAngles, validateWinstonLutzMultiTargetValues, validateWinstonLutzValues } from './winstonLutzValidation'
+import { validateVmatValues } from './vmatValidation'
 import { validateLogGammaValues } from './logValidation'
 import { validateLogArtifactSelection } from './logSelectionValidation'
 
@@ -1140,6 +1141,10 @@ function VmatPage({ caseId, accessToken, title, catalogKey }: { caseId: string; 
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
   const displayName = catalogKey.replace('VMAT_', '')
+  const validationError = validateVmatValues({
+    tolerance, segmentWidth, segmentLength, collimatorMin, collimatorMax,
+    requiresCollimator: catalogKey === 'VMAT_DRCS'
+  })
 
   const setPairItem = (index: number, value: string) => {
     setSelectedArtifactIds((current) => {
@@ -1169,7 +1174,8 @@ function VmatPage({ caseId, accessToken, title, catalogKey }: { caseId: string; 
         <label>Chiều dài đoạn phân tích (mm)<input type="number" min="0" step="0.1" value={segmentLength} onChange={(event) => setSegmentLength(event.target.value)} /></label>
         {catalogKey === 'VMAT_DRCS' && <><label>Khoảng cách xuyên tâm nhỏ nhất (mm)<input type="number" min="0" step="0.1" value={collimatorMin} onChange={(event) => setCollimatorMin(event.target.value)} /></label><label>Khoảng cách xuyên tâm lớn nhất (mm)<input type="number" min="0" step="0.1" value={collimatorMax} onChange={(event) => setCollimatorMax(event.target.value)} /></label></>}
       </div>
-      <div className="machine-qa-actions"><button disabled={selectedPair.length !== 2 || selectedPair[0] === selectedPair[1] || !selectedArtifactsAreValidated(selectedPair, imageArtifacts) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      {validationError && <p className="alert alert--error" role="alert">{validationError}</p>}
+      <div className="machine-qa-actions"><button disabled={selectedPair.length !== 2 || selectedPair[0] === selectedPair[1] || !selectedArtifactsAreValidated(selectedPair, imageArtifacts) || Boolean(validationError) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedPair} emptyHistoryLabel={`Chưa có kết quả ${displayName}.`} metrics={[
       { key: 'max_deviation_percent', label: 'Sai lệch lớn nhất', value: `${textValue(pylinacMetric(latest, 'max_deviation_percent'))}%` },

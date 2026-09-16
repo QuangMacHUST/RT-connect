@@ -11,6 +11,7 @@ import { artifactsAreValidated, selectedArtifactsAreValidated } from './qaArtifa
 import { validateManualWinstonLutzAngles, validateWinstonLutzMultiTargetValues, validateWinstonLutzValues } from './winstonLutzValidation'
 import { validateLogGammaValues } from './logValidation'
 import { validateLogArtifactSelection } from './logSelectionValidation'
+import { validateVmatValues } from './vmatValidation'
 
 const makeRun = (overrides: Partial<PylinacQARunResource> = {}): PylinacQARunResource => ({
   id: 'run-current',
@@ -180,6 +181,13 @@ test('shows Starshot center, tolerance and detected rays without technical keys'
   expect(screen.getByRole('rowheader', { name: 'Tia 1' })).toBeInTheDocument()
   expect(screen.getByText('45,4')).toBeInTheDocument()
   expect(screen.queryByText('pylinac_version')).not.toBeInTheDocument()
+})
+
+test('validates VMAT analysis parameters before submission', () => {
+  expect(validateVmatValues({ tolerance: '', segmentWidth: '5', segmentLength: '100' })).toContain('Dung sai')
+  expect(validateVmatValues({ tolerance: '1.5', segmentWidth: '0', segmentLength: '100' })).toContain('Chiều rộng')
+  expect(validateVmatValues({ tolerance: '1.5', segmentWidth: '5', segmentLength: '100', collimatorMin: '70', collimatorMax: '30', requiresCollimator: true })).toContain('lớn nhất')
+  expect(validateVmatValues({ tolerance: '1.5', segmentWidth: '5', segmentLength: '100', collimatorMin: '30', collimatorMax: '70', requiresCollimator: true })).toBeUndefined()
 })
 
 test('renders nested Pylinac metrics in readable groups without technical identifiers', () => {

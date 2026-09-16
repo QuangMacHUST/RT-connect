@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P07-VMAT — kiểm tra tham số ngay trên biểu mẫu — đã kiểm tra local — 2026-09-16
+
+- Biểu mẫu ba bài VMAT nay chặn dung sai không phải số hoặc âm, chiều rộng/chiều dài đoạn phân tích không dương và, riêng DRCS, khoảng cách xuyên tâm lớn hơn nhỏ nhất.
+- Lỗi hiện ngay trong biểu mẫu và nút phân tích bị khóa; quy tắc này bổ sung cho cổng máy chủ, không tính lại hoặc thay thế Pylinac.
+- Kiểm thử riêng và toàn bộ giao diện đạt **68/68**, kiểm tra kiểu, lint và bản dựng sản xuất đạt. Cảnh báo gói JavaScript lớn hơn 500 kB vẫn là cảnh báo hiệu năng đã có từ trước.
+- Đây là hoàn thiện biên nhập liệu local cho P07-VMAT, chưa thay thế ma trận fixture, đối chiếu độc lập, lựa chọn ROI/offset đầy đủ hoặc kiểm chứng staging. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
 ## P07-STAR — trình bày tâm và các tia của bài Kiểm tra sao — đã kiểm tra local — 2026-09-16
 
 - Trình xem kết quả bài Kiểm tra sao nay có bảng riêng cho tâm vùng giao nhau, đường kính, bán kính, dung sai, kết luận của Pylinac và từng góc tia đã nhận diện.

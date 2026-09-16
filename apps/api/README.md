@@ -286,3 +286,9 @@ renders the detected center, intersection diameter/radius, tolerance and each
 detected ray angle using user-facing labels. Rebuild API, worker and web from
 this revision before the next exact-SHA check; this does not alter persisted
 data or QA history.
+
+P7 VMAT form-validation parity marker (2026-09-16): the web forms now reject
+invalid tolerance and segment dimensions, plus reversed DRCS radial distances,
+before creating a Pylinac run. Rebuild API, worker and web from this revision
+before the next exact-SHA check; this does not alter persisted data or QA
+history.
