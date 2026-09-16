@@ -1243,6 +1243,25 @@ def test_log_adapter_preserves_dynalog_pair_and_maps_pylinac_metrics(tmp_path, m
     assert result.overlay_bytes == b"log-overlay"
 
 
+def test_log_adapter_calculates_gamma_on_official_dynalog_demo() -> None:
+    import pylinac
+
+    demo_root = Path(pylinac.__file__).resolve().parent / "demo_files"
+    result = execute_pylinac(
+        "LOG_DYNALOG",
+        demo_root,
+        {"calc_gamma": True, "dose_tolerance": 2.0, "distance_tolerance": 2.0},
+    )
+
+    metrics = result.result_snapshot["metrics"]
+    assert isinstance(metrics, dict)
+    assert metrics["gamma_map_shape"] == [60, 4000]
+    assert metrics["gamma_valid_count"] == 240000
+    assert isinstance(metrics["gamma_maximum"], float)
+    assert isinstance(metrics["gamma_mean"], float)
+    assert metrics["gamma_maximum"] >= metrics["gamma_mean"] >= 0
+
+
 def test_log_adapter_rejects_wrong_trajectory_version(tmp_path, monkeypatch) -> None:
     source = tmp_path / "logs"
     source.mkdir()

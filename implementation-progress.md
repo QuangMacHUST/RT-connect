@@ -8,6 +8,12 @@
 - Kiểm thử giao diện đạt **16/16**, kiểm thử nhóm Pylinac đạt **39/39**, kiểm tra kiểu, lint giao diện và bản dựng đạt. Một cảnh báo kích thước gói JavaScript vẫn còn từ trước và không ảnh hưởng kết quả.
 - Đây là cổng hợp đồng đầu vào local, chưa đóng P07-LOG: Trajectory 3/4 vẫn cần fixture đại diện, Gamma nhật ký cần kiểm tra ổn định, và còn cần chạy staging có đăng nhập bằng bộ tệp được phê duyệt. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 
+## P07-LOG — Gamma fluence Dynalog bằng bộ mẫu chính thức — đã kiểm tra local — 2026-09-16
+
+- Hồi quy gọi trực tiếp `AQA.dlg/BQA.dlg` của Pylinac `3.47.0` với Gamma fluence, dung sai liều `2,0%` và dung sai khoảng cách `2,0 mm`.
+- Pylinac trả bản đồ kích thước `60 × 4000`, có `240000` điểm hợp lệ; giá trị Gamma cực đại và trung bình đều hữu hạn, không âm và cực đại không nhỏ hơn trung bình.
+- Đây là kiểm tra đường Gamma Dynalog thật trên bộ mẫu chính thức. Trajectory Log 3/4 vẫn chưa có fixture đại diện; chưa coi P07-LOG là hoàn thành và chưa tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
 ## P07-LOG — triển khai cổng chọn tệp lên staging — đã kiểm tra — 2026-09-16
 
 - Railway staging đã phục vụ commit `43fc158bbac34c93127cf27a633881f620e67056` cho cả API và giao diện.
