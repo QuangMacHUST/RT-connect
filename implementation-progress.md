@@ -20,6 +20,13 @@
 - Bộ xác minh công khai đạt **16/16**; health/readiness 200, lược đồ `20260914_0023`, API và giao diện cùng mã nguồn, gói giao diện có dấu hiệu kiểm tra tổ chức và cổng QA mới.
 - Đây là parity triển khai và biên chưa xác thực, chưa phải nghiệm thu Dynalog/Trajectory bằng tệp được phê duyệt hoặc đóng P07-LOG. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 
+## P07-WL — trình bày véc-tơ CAX–bi theo từng ảnh — đã kiểm tra local — 2026-09-16
+
+- Kết quả Winston–Lutz một bia nay có bảng riêng theo từng ảnh, đọc trực tiếp từ nhóm snapshot Pylinac dạng góc máy/góc chuẩn trực/góc bàn, khoảng cách CAX–bi, véc-tơ CAX–bi và khoảng cách CAX–EPID.
+- Khóa kết quả kỹ thuật kiểu `G…B…P…` không hiển thị cho người dùng; bảng chỉ dùng số thứ tự ảnh và không hiển thị tên tệp hoặc mã nội bộ.
+- Kiểm thử giao diện trang kết quả đạt **17/17**, kiểm tra kiểu và lint đạt. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+- Đây là lát cắt trình bày kết quả local, chưa đóng P07-WL: đối chiếu độc lập, ma trận fixture commissioning, điều chỉnh trực quan theo từng ảnh nếu Pylinac hỗ trợ và kiểm chứng staging tương tác vẫn mở.
+
 ## P7-W04 — chọn lát gốc trực quan cho nhóm phantom CT — đã kiểm tra local — 2026-09-16
 
 - Vùng xem trước dùng chung nay có thể điều khiển từ biểu mẫu cha: CatPhan, ACR và nhóm Cheese/Helios/Quart đồng bộ lát người dùng chọn vào `origin_slice` trước khi gọi Pylinac.

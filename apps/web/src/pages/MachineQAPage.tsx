@@ -297,8 +297,12 @@ function isTechnicalResultKey(key: string): boolean {
   return technicalResultKeyPattern.test(normalized) || normalized === 'source' || normalized === 'image_name'
 }
 
+function isWinstonLutzImageKey(key: string): boolean {
+  return /^G[-+]?\d+(?:\.\d+)?B[-+]?\d+(?:\.\d+)?P[-+]?\d+(?:\.\d+)?$/i.test(key.trim())
+}
+
 function visibleResultEntries(value: JsonRecord): Array<[string, unknown]> {
-  return Object.entries(value).filter(([key, item]) => !isTechnicalResultKey(key) && item !== null && item !== undefined)
+  return Object.entries(value).filter(([key, item]) => !isTechnicalResultKey(key) && !isWinstonLutzImageKey(key) && item !== null && item !== undefined)
 }
 
 function readableResultValue(value: unknown, depth: number, keyPrefix: string): ReactNode {
@@ -324,7 +328,7 @@ export function PylinacStructuredResultDetails({ run, excludedKeys = [] }: { run
   const metrics = objectValue(run.result_snapshot.metrics)
   if (!metrics) return null
   const excluded = new Set(excludedKeys)
-  const entries = Object.entries(metrics).filter(([key, value]) => !excluded.has(key) && !isTechnicalResultKey(key) && value !== null && value !== undefined && typeof value === 'object')
+  const entries = Object.entries(metrics).filter(([key, value]) => !excluded.has(key) && !isTechnicalResultKey(key) && !isWinstonLutzImageKey(key) && value !== null && value !== undefined && typeof value === 'object')
   if (entries.length === 0) return null
 
   return <section className="machine-qa-structured-details" aria-label="Chi tiết phân tích"><div className="panel-heading"><div><p className="eyebrow">KẾT QUẢ CHI TIẾT</p><h3>Các nhóm chỉ số do Pylinac cung cấp</h3></div><strong>{entries.length} nhóm</strong></div><p className="form-hint">Các nhóm dưới đây được đọc từ kết quả đã lưu của Pylinac. Chỉ hiển thị thông tin phục vụ đánh giá; tên tệp, mã hồ sơ và dữ liệu kỹ thuật nội bộ được ẩn.</p><div className="machine-qa-detail-groups">{entries.map(([key, value]) => <section className="machine-qa-detail-group" key={key}><h4>{friendlyDataLabel(key)}</h4>{readableResultValue(value, 0, key)}</section>)}</div></section>
@@ -453,6 +457,49 @@ export function WinstonLutzMultiTargetDetails({ run }: { run: PylinacQARunResour
   const bbNames = [...new Set([...configuredNames, ...detectedNames])]
 
   return <section className="machine-qa-result-details" aria-label="Chi tiết Winston–Lutz nhiều bi"><div className="panel-heading"><div><p className="eyebrow">ĐỐI CHIẾU THEO ẢNH VÀ BI</p><h3>Khoảng cách trường–bi</h3></div><strong>{imageDetails.length} ảnh</strong></div><p className="form-hint">Mỗi ô là khoảng cách do Pylinac đo giữa trường chiếu và bi tương ứng. Dấu gạch ngang nghĩa là bi không được nhận diện trong ảnh đó; không dùng kết quả này để thay cho đánh giá của người thực hiện.</p><div className="table-wrap"><table className="winston-lutz-detail-table"><thead><tr><th scope="col">Ảnh</th><th scope="col">Góc máy (°)</th><th scope="col">Góc chuẩn trực (°)</th><th scope="col">Góc bàn (°)</th>{bbNames.map((name) => <th scope="col" key={name}>Bi {name}</th>)}<th scope="col">Sai lệch xoay bàn (°)</th></tr></thead><tbody>{imageDetails.map((item, index) => { const distances = objectValue(item.bb_distances); return <tr key={index}><th scope="row">Ảnh {index + 1}</th><td>{numericResultValue(item.gantry_angle)}</td><td>{numericResultValue(item.collimator_angle)}</td><td>{numericResultValue(item.couch_angle)}</td>{bbNames.map((name) => <td key={name}>{numericResultValue(distances?.[name])}</td>)}<td>{numericResultValue(item.couch_yaw_error)}</td></tr> })}</tbody></table></div></section>
+}
+
+type WinstonLutzImageDetail = {
+  key: string
+  gantry: number | undefined
+  collimator: number | undefined
+  couch: number | undefined
+  caxToBbDistance: unknown
+  caxToBbVector: unknown
+  caxToEpidDistance: unknown
+}
+
+function winstonLutzImageDetails(run: PylinacQARunResource): WinstonLutzImageDetail[] {
+  const metrics = objectValue(run.result_snapshot.metrics)
+  if (!metrics) return []
+  return Object.entries(metrics)
+    .filter(([key, value]) => isWinstonLutzImageKey(key) && objectValue(value))
+    .map(([key, value]) => {
+      const match = key.match(/^G([-+]?\d+(?:\.\d+)?)B([-+]?\d+(?:\.\d+)?)P([-+]?\d+(?:\.\d+)?)$/i)
+      const detail = objectValue(value) ?? {}
+      return {
+        key,
+        gantry: match ? Number(match[1]) : undefined,
+        collimator: match ? Number(match[2]) : undefined,
+        couch: match ? Number(match[3]) : undefined,
+        caxToBbDistance: detail.cax2bb_distance,
+        caxToBbVector: detail.cax2bb_vector,
+        caxToEpidDistance: detail.cax2epid_distance,
+      }
+    })
+}
+
+function vectorResultValue(value: unknown): string {
+  const vector = objectValue(value)
+  if (!vector) return '—'
+  return ['x', 'y', 'z'].map((axis) => `${axis.toUpperCase()}: ${numericResultValue(vector[axis])}`).join(' · ')
+}
+
+export function WinstonLutzDetails({ run }: { run: PylinacQARunResource }): ReactNode {
+  const details = winstonLutzImageDetails(run)
+  if (details.length === 0) return null
+
+  return <section className="machine-qa-result-details" aria-label="Chi tiết Winston–Lutz một bia"><div className="panel-heading"><div><p className="eyebrow">ĐỐI CHIẾU THEO TỪNG ẢNH</p><h3>Véc-tơ CAX–bi</h3></div><strong>{details.length} ảnh</strong></div><p className="form-hint">Các khoảng cách và véc-tơ dưới đây được đọc trực tiếp từ Pylinac cho từng ảnh. Tên tệp kỹ thuật được ẩn; kết luận cuối cùng vẫn do người thực hiện đánh giá.</p><div className="table-wrap"><table className="winston-lutz-detail-table"><thead><tr><th scope="col">Ảnh</th><th scope="col">Góc máy (°)</th><th scope="col">Góc chuẩn trực (°)</th><th scope="col">Góc bàn (°)</th><th scope="col">CAX–bi (mm)</th><th scope="col">Véc-tơ CAX–bi</th><th scope="col">CAX–EPID (mm)</th></tr></thead><tbody>{details.map((item, index) => <tr key={item.key}><th scope="row">Ảnh {index + 1}</th><td>{numericResultValue(item.gantry)}</td><td>{numericResultValue(item.collimator)}</td><td>{numericResultValue(item.couch)}</td><td>{numericResultValue(item.caxToBbDistance)}</td><td>{vectorResultValue(item.caxToBbVector)}</td><td>{numericResultValue(item.caxToEpidDistance)}</td></tr>)}</tbody></table></div></section>
 }
 
 type PylinacAdjustmentCanvasProps = {
@@ -840,7 +887,7 @@ function WinstonLutzPage({ caseId, accessToken, title }: { caseId: string; acces
       {validationError && <p className="alert alert--error" role="alert">{validationError}</p>}
       <div className="machine-qa-actions"><button disabled={!selected || !artifactsAreValidated(selected ? [selected] : []) || Boolean(validationError) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={zipArtifacts} selectedArtifactIds={selected ? [selected.id] : []} emptyHistoryLabel="Chưa có kết quả Winston–Lutz." metrics={[
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={zipArtifacts} selectedArtifactIds={selected ? [selected.id] : []} renderResultDetails={(run) => <WinstonLutzDetails run={run} />} emptyHistoryLabel="Chưa có kết quả Winston–Lutz." metrics={[
       { key: 'max_2d_cax_to_bb_mm', label: 'Sai lệch trục–bi lớn nhất', value: `${metric('max_2d_cax_to_bb_mm')} mm` },
       { key: 'gantry_3d_iso_diameter_mm', label: 'Đường kính đồng tâm bàn gantry', value: `${metric('gantry_3d_iso_diameter_mm')} mm` },
       { key: 'coll_2d_iso_diameter_mm', label: 'Đường kính đồng tâm chuẩn trực', value: `${metric('coll_2d_iso_diameter_mm')} mm` },

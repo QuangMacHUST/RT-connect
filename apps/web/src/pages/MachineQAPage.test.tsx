@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { expect, test, vi } from 'vitest'
 
 import type { PylinacQARunResource } from '../api/client'
-import { PylinacAdjustmentCanvas, PylinacResultPanel, PylinacStructuredResultDetails, WinstonLutzMultiTargetDetails } from './MachineQAPage'
+import { PylinacAdjustmentCanvas, PylinacResultPanel, PylinacStructuredResultDetails, WinstonLutzDetails, WinstonLutzMultiTargetDetails } from './MachineQAPage'
 import { calibrationCoefficientKey, validateCalibrationValues } from './calibrationValidation'
 import { historyForCatalog } from './pylinacHistory'
 import { mapImagePoint } from './pylinacCoordinates'
@@ -126,6 +126,35 @@ test('shows Winston-Lutz multi-target details by image and BB without exposing f
   expect(screen.getByText('0,3')).toBeInTheDocument()
   expect(screen.queryByText('RT000001.dcm')).not.toBeInTheDocument()
   expect(screen.queryByText('RT000002.dcm')).not.toBeInTheDocument()
+})
+
+test('shows single-target Winston-Lutz CAX-BB vectors by image without technical keys', () => {
+  const run = makeRun({
+    catalog_key: 'WINSTON_LUTZ',
+    result_snapshot: {
+      metrics: {
+        max_2d_cax_to_bb_mm: 1.2,
+        G0B0P0: {
+          cax2bb_distance: 0.4,
+          cax2bb_vector: { x: 0.3, y: -0.2, z: 0 },
+          cax2epid_distance: 1.1,
+        },
+        G90B10P20: {
+          cax2bb_distance: 0.7,
+          cax2bb_vector: { x: -0.1, y: 0.2, z: 0 },
+          cax2epid_distance: 0.9,
+        },
+      },
+    },
+  })
+
+  render(<PylinacResultPanel {...baseProps(run, [run])} renderResultDetails={(selected) => <WinstonLutzDetails run={selected} />} />)
+
+  expect(screen.getByRole('heading', { name: 'Véc-tơ CAX–bi' })).toBeInTheDocument()
+  expect(screen.getByRole('rowheader', { name: 'Ảnh 1' })).toBeInTheDocument()
+  expect(screen.getByText('0,4')).toBeInTheDocument()
+  expect(screen.getByText('X: 0,3 · Y: -0,2 · Z: 0')).toBeInTheDocument()
+  expect(screen.queryByText('G0B0P0')).not.toBeInTheDocument()
 })
 
 test('renders nested Pylinac metrics in readable groups without technical identifiers', () => {
