@@ -27,6 +27,12 @@
 - Kiểm thử giao diện trang kết quả đạt **17/17**, kiểm tra kiểu và lint đạt. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 - Đây là lát cắt trình bày kết quả local, chưa đóng P07-WL: đối chiếu độc lập, ma trận fixture commissioning, điều chỉnh trực quan theo từng ảnh nếu Pylinac hỗ trợ và kiểm chứng staging tương tác vẫn mở.
 
+## P07-WL — triển khai trình xem véc-tơ lên staging — đã kiểm tra — 2026-09-16
+
+- Railway đã dựng lại API, worker và giao diện từ mốc `12650737b0b0c7a8de3f7773bfc2e5d27be4cab2`.
+- Bộ xác minh công khai đạt **16/16**; health/readiness 200, lược đồ `20260914_0023`, API và giao diện cùng mã nguồn, gói giao diện mới được phục vụ.
+- Đây là parity triển khai và biên chưa xác thực, chưa chạy Winston–Lutz có đăng nhập bằng bộ ảnh được phê duyệt và chưa đóng P07-WL. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
 ## P7-W04 — chọn lát gốc trực quan cho nhóm phantom CT — đã kiểm tra local — 2026-09-16
 
 - Vùng xem trước dùng chung nay có thể điều khiển từ biểu mẫu cha: CatPhan, ACR và nhóm Cheese/Helios/Quart đồng bộ lát người dùng chọn vào `origin_slice` trước khi gọi Pylinac.
