@@ -280,3 +280,9 @@ P7 Winston–Lutz result-viewer parity marker (2026-09-16): the web result panel
 now renders per-image CAX–BB vectors and hides Pylinac image keys. Rebuild API,
 worker and web from this revision before the next exact-SHA check; this marker
 does not alter persisted data or QA history.
+
+P7 Starshot result-viewer parity marker (2026-09-16): the web result panel now
+renders the detected center, intersection diameter/radius, tolerance and each
+detected ray angle using user-facing labels. Rebuild API, worker and web from
+this revision before the next exact-SHA check; this does not alter persisted
+data or QA history.
