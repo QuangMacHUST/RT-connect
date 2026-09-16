@@ -7,6 +7,13 @@
 - Kiểm thử riêng và toàn bộ giao diện đạt **68/68**, kiểm tra kiểu, lint và bản dựng sản xuất đạt. Cảnh báo gói JavaScript lớn hơn 500 kB vẫn là cảnh báo hiệu năng đã có từ trước.
 - Đây là hoàn thiện biên nhập liệu local cho P07-VMAT, chưa thay thế ma trận fixture, đối chiếu độc lập, lựa chọn ROI/offset đầy đủ hoặc kiểm chứng staging. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 
+## P07-VMAT — triển khai kiểm tra tham số lên staging — đã kiểm tra — 2026-09-16
+
+- API, giao diện và tiến trình nền staging đã được dựng lại từ cùng commit `17a5f91bb0665a04d323dd49d55113975dbcd4e2`.
+- Bộ xác minh công khai đạt **16/16**; health/readiness 200, lược đồ `20260914_0023`, OpenAPI, biên xác thực và gói web đúng mốc nguồn đều đạt.
+- Đây là parity triển khai và kiểm tra hợp đồng công khai, chưa phải chạy ba bài VMAT bằng bộ tệp commissioning có đăng nhập. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+- Bằng chứng: [staging kiểm tra tham số VMAT](docs/evidence/p7-staging-vmat-form-validation-20260916.json).
+
 ## P07-STAR — trình bày tâm và các tia của bài Kiểm tra sao — đã kiểm tra local — 2026-09-16
 
 - Trình xem kết quả bài Kiểm tra sao nay có bảng riêng cho tâm vùng giao nhau, đường kính, bán kính, dung sai, kết luận của Pylinac và từng góc tia đã nhận diện.
