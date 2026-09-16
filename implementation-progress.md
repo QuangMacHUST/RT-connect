@@ -8,6 +8,12 @@
 - Kiểm thử giao diện đạt **16/16**, kiểm thử nhóm Pylinac đạt **39/39**, kiểm tra kiểu, lint giao diện và bản dựng đạt. Một cảnh báo kích thước gói JavaScript vẫn còn từ trước và không ảnh hưởng kết quả.
 - Đây là cổng hợp đồng đầu vào local, chưa đóng P07-LOG: Trajectory 3/4 vẫn cần fixture đại diện, Gamma nhật ký cần kiểm tra ổn định, và còn cần chạy staging có đăng nhập bằng bộ tệp được phê duyệt. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 
+## P07-LOG — triển khai cổng chọn tệp lên staging — đã kiểm tra — 2026-09-16
+
+- Railway staging đã phục vụ commit `43fc158bbac34c93127cf27a633881f620e67056` cho cả API và giao diện.
+- Bộ xác minh công khai đạt **16/16**; health/readiness 200, lược đồ `20260914_0023`, API và giao diện cùng mã nguồn, gói giao diện có dấu hiệu kiểm tra tổ chức và cổng QA mới.
+- Đây là parity triển khai và biên chưa xác thực, chưa phải nghiệm thu Dynalog/Trajectory bằng tệp được phê duyệt hoặc đóng P07-LOG. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
 ## P7-W04 — chọn lát gốc trực quan cho nhóm phantom CT — đã kiểm tra local — 2026-09-16
 
 - Vùng xem trước dùng chung nay có thể điều khiển từ biểu mẫu cha: CatPhan, ACR và nhóm Cheese/Helios/Quart đồng bộ lát người dùng chọn vào `origin_slice` trước khi gọi Pylinac.
