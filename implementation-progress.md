@@ -7,6 +7,13 @@
 - Kiểm thử riêng và toàn bộ giao diện đạt **69/69**, kiểm tra kiểu, lint và bản dựng sản xuất đạt. Cảnh báo gói JavaScript lớn hơn 500 kB vẫn là cảnh báo hiệu năng đã có từ trước.
 - Đây là hoàn thiện biên nhập liệu local cho P07-CT, chưa thay thế fixture CatPhan 700, đối chiếu từng mô-đun, kiểm lỗi đặc trưng hoặc kiểm chứng staging. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 
+## P07-CT — triển khai kiểm tra tham số CatPhan lên staging — đã kiểm tra — 2026-09-16
+
+- API, giao diện và tiến trình nền staging đã được dựng lại từ cùng commit `f1bbd9b966895e65f9132813d75d3f0d91159a38`.
+- Bộ xác minh công khai đạt **16/16**; health/readiness 200, lược đồ `20260914_0023`, OpenAPI, biên xác thực và gói web đúng mốc nguồn đều đạt.
+- Đây là parity triển khai và kiểm tra hợp đồng công khai, chưa phải chạy CatPhan bằng fixture commissioning có đăng nhập. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+- Bằng chứng: [staging kiểm tra tham số CatPhan](docs/evidence/p7-staging-catphan-form-validation-20260916.json).
+
 ## P07-VMAT — kiểm tra tham số ngay trên biểu mẫu — đã kiểm tra local — 2026-09-16
 
 - Biểu mẫu ba bài VMAT nay chặn dung sai không phải số hoặc âm, chiều rộng/chiều dài đoạn phân tích không dương và, riêng DRCS, khoảng cách xuyên tâm lớn hơn nhỏ nhất.
