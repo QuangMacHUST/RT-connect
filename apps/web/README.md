@@ -213,3 +213,9 @@ both TRS-398 variants, and omit the hidden coefficient unsupported by the
 selected calibration family. Keep API, worker and web on this source revision
 before recording exact-SHA staging evidence; the API regression suite also
 guards the protocol-family coefficient boundary.
+
+P7 WL/WLMT and log-form parity marker (2026-09-16): the QA forms now reject
+invalid Winston–Lutz geometry values and missing positive fluence-Gamma
+tolerances before creating a run. Keep API, worker and web on this source
+revision before recording exact-SHA staging evidence; no persisted QA history
+is changed by this marker.
