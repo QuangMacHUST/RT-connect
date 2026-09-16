@@ -9,6 +9,7 @@ import { historyForCatalog } from './pylinacHistory'
 import { mapImagePoint } from './pylinacCoordinates'
 import { artifactsAreValidated, selectedArtifactsAreValidated } from './qaArtifactLabels'
 import { validateManualWinstonLutzAngles, validateWinstonLutzMultiTargetValues, validateWinstonLutzValues } from './winstonLutzValidation'
+import { validateLogGammaValues } from './logValidation'
 
 const makeRun = (overrides: Partial<PylinacQARunResource> = {}): PylinacQARunResource => ({
   id: 'run-current',
@@ -276,4 +277,11 @@ test('validates every multi-target BB row and manual angle mapping', () => {
   expect(validateManualWinstonLutzAngles('MANUAL', angles, 2)).toBeUndefined()
   expect(validateManualWinstonLutzAngles('MANUAL', [{ ...angles[0], couch: '' }, angles[1]], 2)).toContain('Góc bàn')
   expect(validateManualWinstonLutzAngles('MANUAL', angles, 3)).toContain('Số dòng')
+})
+
+test('requires positive fluence Gamma tolerances only when Gamma is enabled', () => {
+  expect(validateLogGammaValues(false, '', '')).toBeUndefined()
+  expect(validateLogGammaValues(true, '1', '1')).toBeUndefined()
+  expect(validateLogGammaValues(true, '', '1')).toContain('Dung sai liều')
+  expect(validateLogGammaValues(true, '1', '0')).toContain('Dung sai khoảng cách')
 })

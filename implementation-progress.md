@@ -1681,3 +1681,9 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Bảng cấu hình nhiều bi kiểm tra tên bi, số lượng tối đa, độ lệch không gian, kích thước bi và bán kính trường của từng dòng. Bảng góc nhập tay kiểm tra đủ ba góc cho đúng số ảnh trước khi tạo yêu cầu; người dùng chỉ thấy số thứ tự ảnh, không thấy tên tệp kỹ thuật.
 - Adapter máy chủ nay chặn kích thước bi Winston–Lutz bằng 0 trước khi gọi Pylinac, nhất quán với kiểm tra nhiều bi. Không có lượt chạy mới, không sửa lịch sử và không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA` trong cổng này.
 - Kiểm thử riêng giao diện đạt **13/13**, toàn bộ giao diện đạt **62/62**; kiểm thử máy chủ `test_pylinac_qa.py` đạt, Ruff và kiểm tra kiểu đạt. Đây là `LOCAL_VERIFIED_SLICE` cho biên nhập liệu, chưa đóng P07-WL/P07-WLMT vì còn fixture commissioning, đối chiếu độc lập, ánh xạ tọa độ theo từng ảnh và kiểm chứng tương tác staging.
+
+## P7-LOG — kiểm tra dung sai Gamma fluence ở biểu mẫu — lát cắt cục bộ — 2026-09-16
+
+- Khi người dùng bật “Tạo bản đồ Gamma fluence” trong bài Dynalog hoặc Trajectory Log, giao diện bắt buộc dung sai liều và dung sai khoảng cách là số hữu hạn lớn hơn 0. Khi tắt Gamma, hai trường không bị bắt buộc và không được gửi xuống máy chủ.
+- Lỗi được hiển thị ngay dưới vùng tham số và nút phân tích bị khóa; quy tắc máy chủ hiện có tiếp tục là lớp bảo vệ cuối cùng trước khi gọi Pylinac. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA` trong cổng này.
+- Kiểm thử giao diện riêng đạt **14/14**, kiểm tra kiểu, lint và bản dựng sản xuất đạt; kiểm thử máy chủ Pylinac liên quan tiếp tục đạt. Đây là `LOCAL_VERIFIED_SLICE`, chưa đóng P07-LOG vì còn fixture Trajectory Log 3/4, kiểm tra Gamma log ổn định, fixture commissioning, đối chiếu độc lập và staging.
