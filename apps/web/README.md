@@ -220,3 +220,8 @@ Trajectory binary/sidecar selections, and missing positive fluence-Gamma
 tolerances before creating a run. Keep API, worker and web on this source
 revision before recording exact-SHA staging evidence; no persisted QA history
 is changed by this marker.
+
+P7 Winston–Lutz result-viewer parity marker (2026-09-16): the result panel now
+renders per-image CAX–BB vectors and hides Pylinac image keys. Keep API, worker
+and web on this source revision before recording exact-SHA staging evidence;
+no persisted QA history is changed by this marker.
