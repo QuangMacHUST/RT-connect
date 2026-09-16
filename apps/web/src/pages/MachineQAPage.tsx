@@ -495,6 +495,31 @@ function vectorResultValue(value: unknown): string {
   return ['x', 'y', 'z'].map((axis) => `${axis.toUpperCase()}: ${numericResultValue(vector[axis])}`).join(' · ')
 }
 
+function starshotCenterValue(value: unknown): string {
+  if (!Array.isArray(value) || value.length < 2) return '—'
+  return `X: ${numericResultValue(value[0])} · Y: ${numericResultValue(value[1])}`
+}
+
+function starshotAngles(value: unknown): number[] {
+  return Array.isArray(value) ? value.filter((item): item is number => typeof item === 'number' && Number.isFinite(item)) : []
+}
+
+function engineResultLabel(value: unknown): string {
+  return value === true ? 'Đạt' : value === false ? 'Không đạt' : 'Chưa có kết luận'
+}
+
+export function StarshotDetails({ run }: { run: PylinacQARunResource }): ReactNode {
+  const center = pylinacMetric(run, 'circle_center_x_y')
+  const angles = starshotAngles(pylinacMetric(run, 'angles'))
+  const diameter = pylinacMetric(run, 'circle_diameter_mm')
+  const radius = pylinacMetric(run, 'circle_radius_mm')
+  const tolerance = pylinacMetric(run, 'tolerance_mm')
+  const passed = pylinacMetric(run, 'passed')
+  if (angles.length === 0 && !Array.isArray(center) && typeof diameter !== 'number' && typeof radius !== 'number') return null
+
+  return <section className="machine-qa-result-details" aria-label="Chi tiết kiểm tra sao"><div className="panel-heading"><div><p className="eyebrow">ĐỐI CHIẾU TÂM VÀ TIA</p><h3>Kết quả phân tích kiểm tra sao</h3></div><strong>{angles.length} tia</strong></div><p className="form-hint">Các số liệu và góc tia dưới đây được đọc trực tiếp từ Pylinac. Ảnh phân tích bên dưới dùng để xem trực quan vị trí tâm và các tia; kết luận cuối cùng vẫn do người thực hiện đánh giá.</p><div className="machine-qa-metric-grid"><div className="machine-qa-metric"><span>Tâm vùng giao nhau</span><strong>{starshotCenterValue(center)}</strong></div><div className="machine-qa-metric"><span>Đường kính vùng giao nhau</span><strong>{numericResultValue(diameter)} mm</strong></div><div className="machine-qa-metric"><span>Bán kính vùng giao nhau</span><strong>{numericResultValue(radius)} mm</strong></div><div className="machine-qa-metric"><span>Dung sai</span><strong>{numericResultValue(tolerance)} mm</strong></div><div className="machine-qa-metric"><span>Kết quả của bộ tính</span><strong>{engineResultLabel(passed)}</strong></div></div>{angles.length > 0 && <div className="table-wrap"><table className="winston-lutz-detail-table"><thead><tr><th scope="col">Tia</th><th scope="col">Góc tia (°)</th></tr></thead><tbody>{angles.map((angle, index) => <tr key={index}><th scope="row">Tia {index + 1}</th><td>{numericResultValue(angle)}</td></tr>)}</tbody></table></div>}</section>
+}
+
 export function WinstonLutzDetails({ run }: { run: PylinacQARunResource }): ReactNode {
   const details = winstonLutzImageDetails(run)
   if (details.length === 0) return null
@@ -740,7 +765,7 @@ function StarshotPage({ caseId, accessToken, title }: { caseId: string; accessTo
       </div>
       <div className="machine-qa-actions"><button disabled={!selected || !artifactsAreValidated(selected ? [selected] : []) || isBusy || ((startX.trim() === '') !== (startY.trim() === ''))} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
-    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selected ? [selected.id] : []} emptyHistoryLabel="Chưa có kết quả kiểm tra sao." metrics={[
+    <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selected ? [selected.id] : []} renderResultDetails={(run) => <StarshotDetails run={run} />} emptyHistoryLabel="Chưa có kết quả kiểm tra sao." metrics={[
       { key: 'circle_diameter_mm', label: 'Độ lệch đường kính', value: `${textValue(pylinacMetric(latest, 'circle_diameter_mm'))} mm` },
       { key: 'circle_center_x_y', label: 'Tâm phân tích', value: Array.isArray(center) ? `${textValue(center[0])}, ${textValue(center[1])}` : 'Tự động' },
       { key: 'angles', label: 'Số tia', value: Array.isArray(pylinacMetric(latest, 'angles')) ? (pylinacMetric(latest, 'angles') as unknown[]).length : '—' }

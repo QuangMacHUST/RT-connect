@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P07-STAR — trình bày tâm và các tia của bài Kiểm tra sao — đã kiểm tra local — 2026-09-16
+
+- Trình xem kết quả bài Kiểm tra sao nay có bảng riêng cho tâm vùng giao nhau, đường kính, bán kính, dung sai, kết luận của Pylinac và từng góc tia đã nhận diện.
+- Ảnh phân tích vẫn được mở riêng để xem trực quan tâm, đường tia và vòng tròn; bảng chỉ trình bày nhãn nghiệp vụ tiếng Việt, không hiện khóa kỹ thuật, phiên bản, tên tệp hoặc dữ liệu JSON.
+- Kiểm thử giao diện toàn bộ đạt **67/67**, kiểm tra kiểu, lint và bản dựng sản xuất đạt. Cảnh báo gói JavaScript lớn hơn 500 kB vẫn là cảnh báo hiệu năng đã có từ trước.
+- Đây là hoàn thiện lớp trình bày local cho P07-STAR, chưa thay thế đối chiếu độc lập, fixture commissioning, kiểm lỗi đặc trưng hoặc kiểm chứng staging có đăng nhập. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
 ## P07-LOG — kiểm tra cặp Dynalog và tệp Trajectory trước khi gọi Pylinac — đã kiểm tra local — 2026-09-16
 
 - Bộ chọn tệp Dynalog nay chỉ chấp nhận đúng một tệp DLG bắt đầu bằng A và một tệp DLG bắt đầu bằng B. Tệp DLG thứ hai không đúng cặp sẽ bị báo lỗi ngay trên biểu mẫu.

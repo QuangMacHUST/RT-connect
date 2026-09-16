@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { expect, test, vi } from 'vitest'
 
 import type { PylinacQARunResource } from '../api/client'
-import { PylinacAdjustmentCanvas, PylinacResultPanel, PylinacStructuredResultDetails, WinstonLutzDetails, WinstonLutzMultiTargetDetails } from './MachineQAPage'
+import { PylinacAdjustmentCanvas, PylinacResultPanel, PylinacStructuredResultDetails, StarshotDetails, WinstonLutzDetails, WinstonLutzMultiTargetDetails } from './MachineQAPage'
 import { calibrationCoefficientKey, validateCalibrationValues } from './calibrationValidation'
 import { historyForCatalog } from './pylinacHistory'
 import { mapImagePoint } from './pylinacCoordinates'
@@ -155,6 +155,31 @@ test('shows single-target Winston-Lutz CAX-BB vectors by image without technical
   expect(screen.getByText('0,4')).toBeInTheDocument()
   expect(screen.getByText('X: 0,3 · Y: -0,2 · Z: 0')).toBeInTheDocument()
   expect(screen.queryByText('G0B0P0')).not.toBeInTheDocument()
+})
+
+test('shows Starshot center, tolerance and detected rays without technical keys', () => {
+  const run = makeRun({
+    result_snapshot: {
+      metrics: {
+        circle_center_x_y: [1270.1, 1437.0],
+        circle_diameter_mm: 0.33,
+        circle_radius_mm: 0.16,
+        tolerance_mm: 1,
+        angles: [45.4, 0.3, -44.5, -89.4],
+        passed: true,
+        pylinac_version: '3.47.0',
+      },
+    },
+  })
+
+  render(<PylinacResultPanel {...baseProps(run, [run])} renderResultDetails={(selected) => <StarshotDetails run={selected} />} />)
+
+  expect(screen.getByRole('heading', { name: 'Kết quả phân tích kiểm tra sao' })).toBeInTheDocument()
+  expect(screen.getByText('X: 1.270,1 · Y: 1.437')).toBeInTheDocument()
+  expect(screen.getByText('0,33 mm')).toBeInTheDocument()
+  expect(screen.getByRole('rowheader', { name: 'Tia 1' })).toBeInTheDocument()
+  expect(screen.getByText('45,4')).toBeInTheDocument()
+  expect(screen.queryByText('pylinac_version')).not.toBeInTheDocument()
 })
 
 test('renders nested Pylinac metrics in readable groups without technical identifiers', () => {
