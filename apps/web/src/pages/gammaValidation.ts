@@ -1,8 +1,23 @@
-import type { GammaConfiguration } from '../api/client'
+import type { ArtifactResource, GammaConfiguration } from '../api/client'
 
 export type GammaValidationError = {
   field: keyof GammaConfiguration
   message: string
+}
+
+export function isGammaWorkflowReady(
+  configuration: Pick<GammaConfiguration, 'dimensionality'>,
+  reference: ArtifactResource | undefined,
+  evaluation: ArtifactResource | undefined
+): boolean {
+  if (!reference || !evaluation) return false
+  if (configuration.dimensionality === '1D') {
+    return reference.artifact_type === 'MEASUREMENT' && evaluation.artifact_type === 'MEASUREMENT'
+  }
+  return reference.artifact_type === 'DICOM' && reference.modality === 'RTDOSE' && (
+    evaluation.artifact_type === 'MEASUREMENT' ||
+    (evaluation.artifact_type === 'DICOM' && evaluation.modality === 'RTDOSE')
+  )
 }
 
 function finite(value: number): boolean {

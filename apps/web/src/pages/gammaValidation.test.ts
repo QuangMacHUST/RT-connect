@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 
-import type { GammaConfiguration } from '../api/client'
-import { validateGammaConfiguration } from './gammaValidation'
+import type { ArtifactResource, GammaConfiguration } from '../api/client'
+import { isGammaWorkflowReady, validateGammaConfiguration } from './gammaValidation'
 
 const validConfiguration: GammaConfiguration = {
   dimensionality: '2D',
@@ -42,4 +42,18 @@ test('rejects out-of-range thresholds and non-integer histogram settings', () =>
 test('does not allow a new 3D run through the PSQA form', () => {
   const errors = validateGammaConfiguration({ ...validConfiguration, dimensionality: '3D' })
   expect(errors).toEqual([{ field: 'dimensionality', message: 'Phân tích mới chỉ hỗ trợ dữ liệu một chiều hoặc hai chiều.' }])
+})
+
+function artifact(artifactType: string, modality: string | null = null): ArtifactResource {
+  return { artifact_type: artifactType, modality } as ArtifactResource
+}
+
+test('allows two validated measurements for one-dimensional Gamma', () => {
+  expect(isGammaWorkflowReady({ dimensionality: '1D' }, artifact('MEASUREMENT'), artifact('MEASUREMENT'))).toBe(true)
+  expect(isGammaWorkflowReady({ dimensionality: '1D' }, artifact('DICOM', 'RTDOSE'), artifact('MEASUREMENT'))).toBe(false)
+})
+
+test('keeps the RTDOSE reference requirement for two-dimensional Gamma', () => {
+  expect(isGammaWorkflowReady({ dimensionality: '2D' }, artifact('DICOM', 'RTDOSE'), artifact('MEASUREMENT'))).toBe(true)
+  expect(isGammaWorkflowReady({ dimensionality: '2D' }, artifact('MEASUREMENT'), artifact('MEASUREMENT'))).toBe(false)
 })

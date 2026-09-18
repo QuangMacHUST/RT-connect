@@ -6,7 +6,7 @@ import { ApiClientError, apiClient, type GammaConfiguration, type GammaRunResour
 import { useAuth } from '../auth/AuthProvider'
 import { artifactDisplayName } from './gammaArtifactLabels'
 import { validateGammaInputGeometry } from './gammaInputValidation'
-import { validateGammaConfiguration } from './gammaValidation'
+import { isGammaWorkflowReady, validateGammaConfiguration } from './gammaValidation'
 
 type JsonRecord = Record<string, unknown>
 
@@ -188,12 +188,18 @@ export function GammaPage() {
     ),
     [artifacts.data]
   )
-  const preferredReferenceId = eligibleArtifacts.find((item) =>
-    item.artifact_type === 'DICOM' && item.modality === 'RTDOSE' && item.logical_roles.includes('REFERENCE')
-  )?.id ?? eligibleArtifacts.find((item) => item.artifact_type === 'DICOM' && item.modality === 'RTDOSE')?.id
-  const preferredEvaluationId = eligibleArtifacts.find((item) =>
-    item.artifact_type === 'MEASUREMENT' && item.logical_roles.includes('EVALUATION')
-  )?.id ?? eligibleArtifacts.find((item) => item.artifact_type === 'MEASUREMENT')?.id
+  const preferredReferenceId = configuration.dimensionality === '1D'
+    ? eligibleArtifacts.find((item) => item.artifact_type === 'MEASUREMENT' && item.logical_roles.includes('REFERENCE'))?.id
+      ?? eligibleArtifacts.find((item) => item.artifact_type === 'MEASUREMENT')?.id
+    : eligibleArtifacts.find((item) =>
+      item.artifact_type === 'DICOM' && item.modality === 'RTDOSE' && item.logical_roles.includes('REFERENCE')
+    )?.id ?? eligibleArtifacts.find((item) => item.artifact_type === 'DICOM' && item.modality === 'RTDOSE')?.id
+  const preferredEvaluationId = configuration.dimensionality === '1D'
+    ? eligibleArtifacts.find((item) => item.artifact_type === 'MEASUREMENT' && item.logical_roles.includes('EVALUATION'))?.id
+      ?? eligibleArtifacts.find((item) => item.artifact_type === 'MEASUREMENT' && item.id !== preferredReferenceId)?.id
+    : eligibleArtifacts.find((item) =>
+      item.artifact_type === 'MEASUREMENT' && item.logical_roles.includes('EVALUATION')
+    )?.id ?? eligibleArtifacts.find((item) => item.artifact_type === 'MEASUREMENT')?.id
   const selectedReferenceId = referenceId && eligibleArtifacts.some((item) => item.id === referenceId)
     ? referenceId
     : preferredReferenceId ?? eligibleArtifacts[0]?.id ?? ''
@@ -299,10 +305,7 @@ export function GammaPage() {
   const selectedEvaluation = eligibleArtifacts.find((item) => item.id === selectedEvaluationId)
   const inputGeometryErrors = validateGammaInputGeometry(configuration, selectedReference, selectedEvaluation)
   const blockingErrors = [...configurationErrors, ...inputGeometryErrors]
-  const profileReady = selectedReference?.artifact_type === 'DICOM' && selectedReference.modality === 'RTDOSE' && (
-    selectedEvaluation?.artifact_type === 'MEASUREMENT' ||
-    (selectedEvaluation?.artifact_type === 'DICOM' && selectedEvaluation.modality === 'RTDOSE')
-  )
+  const profileReady = isGammaWorkflowReady(configuration, selectedReference, selectedEvaluation)
 
   const updateNumber = (key: keyof GammaConfiguration, value: string) => {
     const parsed = Number(value)
@@ -325,14 +328,14 @@ export function GammaPage() {
             <label>Liều đối chiếu<select value={selectedEvaluationId} onChange={(event) => setEvaluationId(event.target.value)}>{eligibleArtifacts.filter((item) => item.id !== selectedReferenceId).map((artifact) => <option key={artifact.id} value={artifact.id}>{artifactDisplayName(artifact, eligibleArtifacts)}</option>)}</select></label>
           </div>
           <div className="gamma-input-summary"><span>Tham chiếu: <strong>{selectedReference ? artifactDisplayName(selectedReference, eligibleArtifacts) : '—'}</strong></span><span>Đối chiếu: <strong>{selectedEvaluation ? artifactDisplayName(selectedEvaluation, eligibleArtifacts) : '—'}</strong></span><span className={profileReady ? 'status-badge' : 'status-badge machine-status--fail'}>{profileReady ? 'Đã kiểm tra hợp lệ' : 'Thiếu dữ liệu phù hợp'}</span></div>
-          <p className="form-hint">Bài PSQA cần một tệp RTDOSE làm liều tham chiếu và một tệp đo hoặc RTDOSE làm liều đối chiếu. Pylinac thực hiện phép Gamma một chiều hoặc hai chiều.</p>
+          <p className="form-hint">Phân tích một chiều cần hai tệp số đo đã kiểm tra hợp lệ. Phân tích hai chiều cần tệp RTDOSE làm liều tham chiếu và tệp số đo hoặc RTDOSE để đối chiếu. Pylinac thực hiện phép Gamma theo kiểu dữ liệu đã chọn.</p>
         </>}
       </section>
 
       <section className="panel gamma-panel">
         <div className="panel-heading"><div><p className="eyebrow">TIÊU CHÍ ĐÁNH GIÁ</p><h2>Tham số phân tích</h2></div><span className="status-badge">{dimensionalityLabel(configuration.dimensionality)}</span></div>
         <div className="gamma-config-grid">
-          <label>Kiểu dữ liệu<select value={configuration.dimensionality} onChange={(event) => setConfiguration((current) => ({ ...current, dimensionality: event.target.value as GammaConfiguration['dimensionality'] }))}><option value="1D">Một chiều</option><option value="2D">Hai chiều</option></select></label>
+          <label>Kiểu dữ liệu<select value={configuration.dimensionality} onChange={(event) => { const dimensionality = event.target.value as GammaConfiguration['dimensionality']; setConfiguration((current) => ({ ...current, dimensionality })); setReferenceId(undefined); setEvaluationId(undefined) }}><option value="1D">Một chiều</option><option value="2D">Hai chiều</option></select></label>
           <label>Chênh lệch liều (%)<input type="number" min="0.01" step="0.1" value={configuration.dose_difference_percent} onChange={(event) => updateNumber('dose_difference_percent', event.target.value)} /></label>
           <label>DTA (mm)<input type="number" min="0.01" step="0.1" value={configuration.distance_to_agreement_mm} onChange={(event) => updateNumber('distance_to_agreement_mm', event.target.value)} /></label>
           <label>Ngưỡng liều thấp (%)<input type="number" min="0" max="100" step="1" value={configuration.dose_threshold_percent} onChange={(event) => updateNumber('dose_threshold_percent', event.target.value)} /></label>
