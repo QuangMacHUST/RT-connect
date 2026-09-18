@@ -18,8 +18,9 @@ from pathlib import Path
 from typing import Any, Literal
 
 from fontTools.ttLib import TTFont  # type: ignore[import-untyped]
+from PIL import Image, UnidentifiedImageError
 
-RENDERER_VERSION = "report-renderer-0.2"
+RENDERER_VERSION = "report-renderer-0.3"
 ExportFormat = Literal["JSON", "CSV", "PDF", "PNG"]
 SUPPORTED_EXPORT_FORMATS: frozenset[str] = frozenset({"JSON", "CSV", "PDF", "PNG"})
 _PDF_FONT_PATH = Path(__file__).resolve().parent.parent / "assets" / "DejaVuSans.ttf"
@@ -47,7 +48,10 @@ def canonical_json(value: object) -> bytes:
 
 
 def render_report(
-    snapshot: Mapping[str, object], export_format: ExportFormat
+    snapshot: Mapping[str, object],
+    export_format: ExportFormat,
+    *,
+    overlay_bytes: bytes | None = None,
 ) -> tuple[bytes, str, str, list[str]]:
     """Render one immutable snapshot as bytes, media type, extension and warnings."""
 
@@ -58,7 +62,7 @@ def render_report(
     if export_format == "CSV":
         return _render_csv(snapshot), "text/csv; charset=utf-8", "csv", []
     if export_format == "PDF":
-        return _render_pdf(snapshot)
+        return _render_pdf(snapshot, overlay_bytes=overlay_bytes)
     return _render_png(snapshot), "image/png", "png", []
 
 
@@ -79,6 +83,8 @@ def _render_csv(snapshot: Mapping[str, object]) -> bytes:
 
 def _render_pdf(
     snapshot: Mapping[str, object],
+    *,
+    overlay_bytes: bytes | None = None,
 ) -> tuple[bytes, str, str, list[str]]:
     lines = [
         "BÁO CÁO KIỂM TRA CHẤT LƯỢNG",
@@ -92,6 +98,8 @@ def _render_pdf(
     source_status = _status_label(_first_value(payload, "overall_status", "status"))
     if source_status:
         lines.append(f"Đánh giá: {source_status}")
+    if overlay_bytes:
+        lines.append("Hình phân tích: Đã đính kèm.")
     visible_blocks = [block for block in _blocks(snapshot) if _is_visible(block)]
     if not visible_blocks:
         lines.append("Chưa chọn nội dung hiển thị.")
@@ -100,19 +108,28 @@ def _render_pdf(
         lines.append(f"• {_string(block.get('label'), 'Phần báo cáo')}")
         content = _block_content(block, payload)
         lines.extend(content[:12] or ["Nội dung sẽ được lấy từ kết quả đã chọn."])
-    pdf_payload = _pdf_document(lines)
+    pdf_payload = _pdf_document(lines, image_bytes=overlay_bytes)
     return pdf_payload, "application/pdf", "pdf", []
 
 
-def _pdf_document(lines: Sequence[str]) -> bytes:
+def _pdf_document(lines: Sequence[str], *, image_bytes: bytes | None = None) -> bytes:
     """Build a deterministic multi-page PDF with one shared Unicode font."""
 
     normalized_lines = tuple(_normalize_pdf_line(line) for line in lines) or ("",)
+    image_data = _prepare_pdf_image(image_bytes) if image_bytes else None
     font_data, cmap, metrics = _load_pdf_font()
     codepoints = sorted({ord(character) for line in normalized_lines for character in line})
-    page_lines = [
-        normalized_lines[index : index + 39] for index in range(0, len(normalized_lines), 39)
-    ]
+    if image_data:
+        first_page_lines = normalized_lines[:26]
+        remainder = normalized_lines[26:]
+        page_lines = [first_page_lines]
+        page_lines.extend(
+            remainder[index : index + 39] for index in range(0, len(remainder), 39)
+        )
+    else:
+        page_lines = [
+            normalized_lines[index : index + 39] for index in range(0, len(normalized_lines), 39)
+        ]
     page_count = len(page_lines)
     shared_start = 3 + page_count * 2
     type0_id = shared_start
@@ -121,6 +138,7 @@ def _pdf_document(lines: Sequence[str]) -> bytes:
     descriptor_id = shared_start + 3
     cidmap_id = shared_start + 4
     fontfile_id = shared_start + 5
+    image_id = shared_start + 6 if image_data else None
 
     cid_to_gid = bytearray(65536 * 2)
     width_entries: list[str] = []
@@ -161,12 +179,21 @@ def _pdf_document(lines: Sequence[str]) -> bytes:
         page_id = 3 + index * 2
         content_id = page_id + 1
         page_ids.append(page_id)
-        page_content = _pdf_page_content(chunk)
+        page_content = _pdf_page_content(
+            chunk,
+            image_size=(image_data[1], image_data[2]) if image_data and index == 0 else None,
+        )
+        resources = (
+            f"/ProcSet [/PDF /Text /ImageB /ImageC /ImageI] /Font << /F1 {type0_id} 0 R >> "
+            f"/XObject << /Im1 {image_id} 0 R >>"
+            if image_data and image_id is not None and index == 0
+            else f"/ProcSet [/PDF /Text] /Font << /F1 {type0_id} 0 R >>"
+        )
         objects.extend(
             [
                 (
                     f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
-                    f"/Resources << /ProcSet [/PDF /Text] /Font << /F1 {type0_id} 0 R >> >> "
+                    f"/Resources << {resources} >> "
                     f"/Contents {content_id} 0 R >>"
                 ).encode("ascii"),
                 _pdf_stream_object(page_content),
@@ -184,6 +211,8 @@ def _pdf_document(lines: Sequence[str]) -> bytes:
             _pdf_stream_object(font_data, extra=f"/Length1 {len(font_data)}".encode("ascii")),
         ]
     )
+    if image_data and image_id is not None:
+        objects.append(_pdf_image_object(image_data[0], image_data[1], image_data[2]))
     document = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
     offsets = [0]
     for number, obj in enumerate(objects, start=1):
@@ -203,14 +232,49 @@ def _pdf_document(lines: Sequence[str]) -> bytes:
     return bytes(document)
 
 
-def _pdf_page_content(lines: Sequence[str]) -> bytes:
+def _pdf_page_content(
+    lines: Sequence[str], *, image_size: tuple[int, int] | None = None
+) -> bytes:
     stream_lines = ["BT", "/F1 12 Tf", "50 760 Td"]
     for index, line in enumerate(lines):
         if index:
             stream_lines.append("0 -18 Td")
         stream_lines.append(f"<{line.encode('utf-16-be').hex().upper()}> Tj")
     stream_lines.append("ET")
+    if image_size:
+        width, height = image_size
+        stream_lines.extend(
+            [
+                "q",
+                f"{width} 0 0 {height} 50 40 cm",
+                "/Im1 Do",
+                "Q",
+            ]
+        )
     return "\n".join(stream_lines).encode("ascii")
+
+
+def _prepare_pdf_image(image_bytes: bytes) -> tuple[bytes, int, int]:
+    try:
+        with Image.open(io.BytesIO(image_bytes)) as source:
+            image = source.convert("RGB")
+            image.thumbnail((520, 240), Image.Resampling.LANCZOS)
+            if image.width < 1 or image.height < 1:
+                raise ReportRenderError("The report analysis image has no visible pixels")
+            return image.tobytes(), image.width, image.height
+    except (UnidentifiedImageError, OSError, ValueError) as exc:
+        raise ReportRenderError("The report analysis image could not be decoded") from exc
+
+
+def _pdf_image_object(pixels: bytes, width: int, height: int) -> bytes:
+    compressed = zlib.compress(pixels, level=9)
+    return (
+        f"<< /Type /XObject /Subtype /Image /Width {width} /Height {height} "
+        f"/ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode "
+        f"/Length {len(compressed)} >>\nstream\n".encode("ascii")
+        + compressed
+        + b"\nendstream"
+    )
 
 
 def _normalize_pdf_line(line: str) -> str:

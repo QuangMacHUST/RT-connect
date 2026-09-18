@@ -1891,10 +1891,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 
 ## P9-W02/P09-W03 — renderer báo cáo không lộ thông tin kỹ thuật — kiểm tra cục bộ — 2026-09-18
 
-- Renderer PDF/CSV nay dùng nhãn nghiệp vụ tiếng Việt, đưa ghi chú người dùng vào tài liệu và loại bỏ mã hồ sơ, mã lần chạy, bản chụp cấu hình, mã băm và loại phần kỹ thuật khỏi nội dung dành cho người dùng.
+- Renderer PDF/CSV nay dùng nhãn nghiệp vụ tiếng Việt, đưa ghi chú người dùng vào tài liệu và loại bỏ mã hồ sơ, mã lần chạy, bản chụp cấu hình, mã băm và loại phần kỹ thuật khỏi nội dung dành cho người dùng. PDF có thể lấy lớp phủ ảnh dẫn xuất từ kết quả Pylinac và nhúng an toàn vào trang đầu.
 - Phần ẩn không được render; phần chỉ số/cảnh báo/thông tin bài kiểm tra có tóm tắt an toàn. Font Unicode tiếng Việt tiếp tục được nhúng trong PDF.
-- Kiểm thử `test_reports.py` đạt **9/9**, gồm kiểm tra PDF nhiều trang; Ruff và mypy cho phần renderer đạt. Bằng chứng: [renderer báo cáo không lộ thông tin kỹ thuật](docs/evidence/p9-local-report-renderer-user-facing-20260918.md).
-- Đây là `LOCAL_VERIFIED_SLICE`; còn thiếu ảnh phân tích thật và lớp phủ, bảng nhiều trang, đối chiếu preview–PDF, kiểm tra có đăng nhập trên staging và VERIFY/HANDOFF. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+- Kiểm thử `test_reports.py` đạt **10/10**, gồm kiểm tra PDF nhiều trang và xuất PDF có lớp phủ Pylinac; Ruff và mypy cho phần renderer đạt. Bằng chứng: [renderer báo cáo không lộ thông tin kỹ thuật](docs/evidence/p9-local-report-renderer-user-facing-20260918.md).
+- Đây là `LOCAL_VERIFIED_SLICE`; còn thiếu ảnh PNG, bảng nghiệp vụ nhiều trang, đối chiếu preview–PDF, kiểm tra có đăng nhập trên staging và VERIFY/HANDOFF. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 
 ## P9-W02/P09-W03 — parity triển khai renderer báo cáo trên staging — đã kiểm tra — 2026-09-18
 
@@ -1908,7 +1908,7 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Renderer nhiều trang đã được đưa lên cùng commit `1324aee08bc9479d4600b0d4ba5fff784a825112` cho API, giao diện và tiến trình nền staging.
 - Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đạt, lược đồ `20260914_0023`, giao diện và API cùng phục vụ đúng commit.
 - Bằng chứng: [parity PDF nhiều trang trên staging](docs/evidence/p9-staging-report-renderer-pagination-20260918.json). Đây mới là source/runtime/public-boundary evidence; chưa phải kiểm thử có đăng nhập để xuất PDF từ hồ sơ thật.
-- P09-W03 vẫn mở phần ảnh/lớp phủ thật, bảng nghiệp vụ dài và đối chiếu trực quan; không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+- P09-W03 vẫn mở phần ảnh PNG, bảng nghiệp vụ dài và đối chiếu trực quan; PDF đã có lớp phủ ở cổng cục bộ nhưng chưa triển khai lát cắt này lên staging. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 
 ## P9-W01 — đưa kết quả Pylinac vào nguồn báo cáo — kiểm tra cục bộ — 2026-09-18
 

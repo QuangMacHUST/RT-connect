@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import io
 import re
 import zlib
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
+from PIL import Image
 from sqlalchemy.orm import Session
 
 from rt_connect_api.api.pylinac_qa import _storage as pylinac_storage
@@ -130,6 +132,8 @@ def _blocks(label: str = "Summary") -> list[dict[str, object]]:
 
 
 def test_pylinac_result_can_become_a_report_source(monkeypatch) -> None:
+    overlay_stream = io.BytesIO()
+    Image.new("RGB", (8, 6), (23, 145, 160)).save(overlay_stream, format="PNG")
     fake_result = PylinacExecutionResult(
         catalog_key="CALIBRATION_TG51_PHOTON",
         engine_class="TG51Photon",
@@ -142,14 +146,15 @@ def test_pylinac_result_can_become_a_report_source(monkeypatch) -> None:
             "engine_passed": None,
         },
         warnings=[],
-        overlay_bytes=None,
-        overlay_media_type=None,
-        overlay_filename=None,
+        overlay_bytes=overlay_stream.getvalue(),
+        overlay_media_type="image/png",
+        overlay_filename="tg51-phan-tich.png",
     )
 
     with _workspace_client() as (client, organization):
         storage = InMemoryObjectStorage()
         client.app.dependency_overrides[pylinac_storage] = lambda: storage
+        client.app.dependency_overrides[report_storage] = lambda: storage
         monkeypatch.setattr(
             "rt_connect_api.api.pylinac_qa.execute_pylinac", lambda *_args: fake_result
         )
@@ -166,7 +171,16 @@ def test_pylinac_result_can_become_a_report_source(monkeypatch) -> None:
                 "source_type": "PYLINAC_QA",
                 "source_id": run.json()["id"],
                 "title": "Báo cáo hiệu chuẩn TG-51",
-                "blocks": _blocks("Kết quả Pylinac"),
+                "blocks": [
+                    *_blocks("Kết quả Pylinac"),
+                    {
+                        "stable_block_id": "analysis-image",
+                        "block_type": "IMAGE",
+                        "label": "Hình phân tích",
+                        "config": {},
+                        "source_binding": {},
+                    },
+                ],
             },
         )
         assert report.status_code == 201, report.text
@@ -175,7 +189,21 @@ def test_pylinac_result_can_become_a_report_source(monkeypatch) -> None:
         assert payload["name"]
         assert payload["engine_class"] == "TG51Photon"
         assert payload["result_snapshot"]["metrics"]["dose_mu_10"] == 1.0
-        assert payload["overlay_artifact_id"] is None
+        assert payload["overlay_artifact_id"] == run.json()["overlay_artifact_id"]
+
+        exported = client.post(
+            f"/api/v1/reports/{report.json()['report_key']}/revisions/{report.json()['id']}/exports",
+            json={"export_format": "PDF", "idempotency_key": "p9-pylinac-overlay-001"},
+        )
+        assert exported.status_code == 201, exported.text
+        assert exported.json()["warning_snapshot"] == []
+        pdf = next(value for value in storage.objects.values() if value.startswith(b"%PDF-1.4"))
+        assert b"/Subtype /Image" in pdf
+        decoded_streams = b"\n".join(
+            zlib.decompress(stream)
+            for stream in re.findall(rb"stream\r?\n(.*?)\r?\nendstream", pdf, re.DOTALL)
+        )
+        assert b"/Im1 Do" in decoded_streams
 
 
 def test_report_revision_snapshots_source_and_supports_full_block_customization() -> None:

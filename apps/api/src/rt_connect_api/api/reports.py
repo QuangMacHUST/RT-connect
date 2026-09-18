@@ -8,8 +8,10 @@ from __future__ import annotations
 import hashlib
 import io
 import math
+import tempfile
 from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Literal
 from uuid import UUID, uuid4
 
@@ -21,6 +23,7 @@ from sqlalchemy.orm import Session
 
 from rt_connect_api.core.errors import DomainError
 from rt_connect_api.db.models import (
+    Artifact,
     AuditEvent,
     BiologicalCalculationRun,
     BiologicalComparisonRun,
@@ -1013,6 +1016,93 @@ def _snapshot_for_revision(session: Session, revision: ReportRevision) -> dict[s
     return snapshot
 
 
+def _overlay_bytes_for_snapshot(
+    session: Session,
+    storage: ObjectStorage,
+    snapshot: Mapping[str, object],
+    organization_id: UUID,
+    export_format: ExportFormat,
+) -> tuple[bytes | None, list[dict[str, object]]]:
+    """Load a Pylinac overlay without changing the immutable report snapshot.
+
+    Storage exposes a path-based download port so this helper keeps the image
+    lifecycle bounded to a temporary directory.  A missing overlay is
+    reported as a warning; the text report remains exportable and never
+    pretends that an image was included.
+    """
+
+    if export_format != "PDF":
+        return None, []
+    source_type = snapshot.get("source_type")
+    source_snapshot = snapshot.get("source_snapshot")
+    payload: Mapping[str, object] = {}
+    if isinstance(source_snapshot, Mapping) and isinstance(
+        source_snapshot.get("payload"), Mapping
+    ):
+        payload = source_snapshot["payload"]
+    overlay_id = payload.get("overlay_artifact_id")
+    wants_image = any(
+        block.get("is_visible", True) is not False
+        and str(block.get("block_type") or "")
+        in {"IMAGE", "GAMMA_MAP", "DOSE_PROFILE"}
+        for block in _blocks_for_snapshot(snapshot)
+    )
+    if source_type != "PYLINAC_QA" or not wants_image:
+        return None, []
+    if not isinstance(overlay_id, str) or not overlay_id:
+        return None, [
+            {
+                "code": "REPORT_OVERLAY_UNAVAILABLE",
+                "message": "Kết quả đã chọn không có hình phân tích để đính kèm.",
+            }
+        ]
+    try:
+        artifact_id = UUID(overlay_id)
+    except ValueError:
+        return None, [
+            {
+                "code": "REPORT_OVERLAY_UNAVAILABLE",
+                "message": "Liên kết hình phân tích của kết quả không hợp lệ.",
+            }
+        ]
+    artifact = session.scalar(
+        select(Artifact).where(
+            Artifact.id == artifact_id,
+            Artifact.organization_id == organization_id,
+            Artifact.data_status == "DERIVED",
+        )
+    )
+    if artifact is None:
+        return None, [
+            {
+                "code": "REPORT_OVERLAY_UNAVAILABLE",
+                "message": "Không tìm thấy hình phân tích trong đơn vị hiện tại.",
+            }
+        ]
+    try:
+        with tempfile.TemporaryDirectory(prefix="rt-connect-report-overlay-") as directory:
+            path = Path(directory) / "overlay"
+            storage.download_to_path(artifact.object_key, path)
+            return path.read_bytes(), []
+    except (ObjectStorageError, OSError):
+        return None, [
+            {
+                "code": "REPORT_OVERLAY_UNAVAILABLE",
+                "message": (
+                    "Không thể đọc hình phân tích từ kho lưu trữ; "
+                    "báo cáo văn bản vẫn được xuất."
+                ),
+            }
+        ]
+
+
+def _blocks_for_snapshot(snapshot: Mapping[str, object]) -> list[Mapping[str, object]]:
+    raw = snapshot.get("blocks")
+    if not isinstance(raw, list):
+        return []
+    return [item for item in raw if isinstance(item, Mapping)]
+
+
 def _content_hash(material: Mapping[str, object]) -> str:
     return hashlib.sha256(canonical_json(material)).hexdigest()
 
@@ -1698,8 +1788,17 @@ def create_report_export(
     session.refresh(job)
 
     snapshot = _snapshot_for_revision(session, revision)
+    overlay_bytes, overlay_warnings = _overlay_bytes_for_snapshot(
+        session,
+        storage,
+        snapshot,
+        context.organization_id,
+        export_format,
+    )
     try:
-        rendered, media_type, extension, warnings = render_report(snapshot, export_format)
+        rendered, media_type, extension, warnings = render_report(
+            snapshot, export_format, overlay_bytes=overlay_bytes
+        )
     except ReportRenderError as exc:
         job.status = "FAILED"
         job.error_snapshot = [{"code": "REPORT_RENDER_FAILED", "message": str(exc)}]
@@ -1736,9 +1835,11 @@ def create_report_export(
     job.sha256 = hashlib.sha256(rendered).hexdigest()
     job.byte_size = len(rendered)
     job.media_type = media_type
-    job.warning_snapshot = [
+    export_warnings: list[dict[str, object]] = [
         {"code": "REPORT_RENDER_WARNING", "message": warning} for warning in warnings
     ]
+    export_warnings.extend(overlay_warnings)
+    job.warning_snapshot = export_warnings
     try:
         session.commit()
     except Exception as exc:

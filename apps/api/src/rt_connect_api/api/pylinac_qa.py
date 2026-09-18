@@ -582,7 +582,7 @@ def create_pylinac_run(
                     media_type=execution.overlay_media_type or "application/octet-stream",
                     sha256=hashlib.sha256(execution.overlay_bytes).hexdigest(),
                     source_system=f"pylinac {execution.engine_version}",
-                    parent_artifact_id=artifacts[0].id,
+                    parent_artifact_id=artifacts[0].id if artifacts else None,
                     metadata_snapshot={
                         "derived_from_run_id": str(run.id),
                         "catalog_key": definition.key,
