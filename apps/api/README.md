@@ -322,3 +322,9 @@ reject invalid nuclear ratios, frame ranges, value lists, activity, isotope and
 search parameters before creating a Pylinac run. Rebuild API, worker and web
 from this revision before the next exact-SHA check; this marker does not alter
 persisted data or QA history.
+
+P7 contrib form-validation parity marker (2026-09-18): the web forms now
+reject invalid Quasar FWXM and jaw-edge parameters before creating a Pylinac
+run, while keeping Jaw Orthogonality free of unrelated inputs. Rebuild API,
+worker and web from this revision before the next exact-SHA check; this marker
+does not alter persisted data or QA history.

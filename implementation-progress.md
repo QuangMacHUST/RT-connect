@@ -1743,6 +1743,14 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Mốc này chỉ đóng thêm cổng minh bạch độ phủ. Fixture commissioning, đối chiếu độc lập, ROI chuyên biệt, ánh xạ tọa độ đa ảnh, kiểm chứng tương tác staging của từng nhóm và VERIFY/HANDOFF P7 vẫn mở.
 - Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 
+## P7-CONTRIB — kiểm tra tham số bài đóng góp — lát cắt cục bộ — 2026-09-18
+
+- Bài Quasar Light/Rad Scaling nay kiểm tra phần trăm FWXM trong khoảng 1–100 và ngưỡng cạnh biên lớn hơn 0 trước khi gửi yêu cầu tới Pylinac.
+- Bài Jaw Orthogonality không bị áp thêm tham số kỹ thuật không thuộc hợp đồng; người dùng chỉ chọn ảnh rồi xem kết quả do Pylinac trả về.
+- Lỗi hiển thị ngay bằng tiếng Việt và nút phân tích bị khóa trước khi gửi yêu cầu. Không có lượt chạy mới, không sửa lịch sử và không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA` trong cổng này.
+- Kiểm thử giao diện riêng đạt **5/5**, toàn bộ giao diện đạt **74/74**, kiểm tra kiểu, lint và bản dựng sản phẩm đạt. Đây là `LOCAL_VERIFIED_SLICE` cho biên nhập liệu.
+- P07-CONTRIB vẫn mở vì còn thiếu fixture ảnh chuẩn/commissioning, đối chiếu từng chỉ số, kiểm lỗi ảnh không phù hợp, kiểm chứng staging và nghiệm thu chuyên môn.
+
 ## P7-NUCLEAR — kiểm tra tham số chín bài hạt nhân — lát cắt cục bộ — 2026-09-18
 
 - Các bài tốc độ đếm, độ đồng nhất, độ phân giải, độ nhạy, tâm quay và tương phản nay kiểm tra đúng trường số theo từng loại bài trước khi gửi Pylinac.

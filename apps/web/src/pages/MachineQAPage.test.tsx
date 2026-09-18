@@ -17,6 +17,7 @@ import { validateAcrValues } from './acrValidation'
 import { validateCtPylinacValues } from './ctPylinacValidation'
 import { validatePlanarValues } from './planarValidation'
 import { validateNuclearValues } from './nuclearValidation'
+import { validateContribValues } from './contribValidation'
 
 const makeRun = (overrides: Partial<PylinacQARunResource> = {}): PylinacQARunResource => ({
   id: 'run-current',
@@ -245,6 +246,15 @@ test('validates nuclear QA parameters before submission', () => {
   expect(validateNuclearValues('NUCLEAR_PU', { ...common, threshold: '1.1' })).toContain('Ngưỡng loại nền')
   expect(validateNuclearValues('NUCLEAR_QR', common)).toBeUndefined()
   expect(validateNuclearValues('NUCLEAR_TC', common)).toBeUndefined()
+})
+
+test('validates Pylinac contrib parameters before submission', () => {
+  const valid = { catalogKey: 'CONTRIB_QUASAR_LIGHT_RAD_SCALING', fwxm: '50', bbEdgeThreshold: '10' }
+  expect(validateContribValues({ ...valid, fwxm: '0' })).toContain('FWXM')
+  expect(validateContribValues({ ...valid, fwxm: '101' })).toContain('FWXM')
+  expect(validateContribValues({ ...valid, bbEdgeThreshold: '0' })).toContain('cạnh biên')
+  expect(validateContribValues(valid)).toBeUndefined()
+  expect(validateContribValues({ catalogKey: 'CONTRIB_JAW_ORTHOGONALITY', fwxm: '', bbEdgeThreshold: '' })).toBeUndefined()
 })
 
 test('renders nested Pylinac metrics in readable groups without technical identifiers', () => {
