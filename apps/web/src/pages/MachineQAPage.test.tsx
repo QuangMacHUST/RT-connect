@@ -14,6 +14,7 @@ import { validateLogArtifactSelection } from './logSelectionValidation'
 import { validateVmatValues } from './vmatValidation'
 import { validateCatPhanValues } from './catphanValidation'
 import { validateAcrValues } from './acrValidation'
+import { validateCtPylinacValues } from './ctPylinacValidation'
 
 const makeRun = (overrides: Partial<PylinacQARunResource> = {}): PylinacQARunResource => ({
   id: 'run-current',
@@ -207,6 +208,21 @@ test('validates ACR CT and MRI analysis parameters before submission', () => {
   expect(validateAcrValues({ ...valid, lowContrastThreshold: '-0.1' })).toContain('Ngưỡng nhìn thấy')
   expect(validateAcrValues({ ...valid, isMri: false, echoNumber: '', lowContrastThreshold: '', lowContrastSanity: '' })).toBeUndefined()
   expect(validateAcrValues(valid)).toBeUndefined()
+})
+
+test('validates Cheese, Helios and Quart phantom parameters before submission', () => {
+  const common = {
+    originSlice: '', xAdjustment: '0', yAdjustment: '0', angleAdjustment: '0',
+    roiSizeFactor: '1', scalingFactor: '1', roiOneDensity: '', roiTwoDensity: '',
+    huTolerance: '40', scalingTolerance: '1', thicknessTolerance: '0.2',
+    cnrThreshold: '5', rollSliceOffset: '-8'
+  }
+  expect(validateCtPylinacValues({ ...common, isCheese: true, isQuart: false, roiOneDensity: '-0.1' })).toContain('Mật độ tham chiếu ROI 1')
+  expect(validateCtPylinacValues({ ...common, isCheese: false, isQuart: true, rollSliceOffset: 'x' })).toContain('Dịch lát')
+  expect(validateCtPylinacValues({ ...common, isCheese: false, isQuart: true, cnrThreshold: '-1' })).toContain('Ngưỡng CNR')
+  expect(validateCtPylinacValues({ ...common, isCheese: false, isQuart: false })).toBeUndefined()
+  expect(validateCtPylinacValues({ ...common, isCheese: true, isQuart: false })).toBeUndefined()
+  expect(validateCtPylinacValues({ ...common, isCheese: false, isQuart: true })).toBeUndefined()
 })
 
 test('renders nested Pylinac metrics in readable groups without technical identifiers', () => {

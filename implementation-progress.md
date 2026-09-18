@@ -1743,6 +1743,14 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Mốc này chỉ đóng thêm cổng minh bạch độ phủ. Fixture commissioning, đối chiếu độc lập, ROI chuyên biệt, ánh xạ tọa độ đa ảnh, kiểm chứng tương tác staging của từng nhóm và VERIFY/HANDOFF P7 vẫn mở.
 - Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 
+## P7-CHEESE/P7-HELIOS/P7-QUART — kiểm tra tham số biểu mẫu — lát cắt cục bộ — 2026-09-18
+
+- Biểu mẫu TomoCheese, CIRS 062M, GE Helios CT hằng ngày, Quart DVT và Quart HyperSight dùng cổng kiểm tra chung cho lát gốc tùy chọn, điều chỉnh ngang/dọc/góc và các hệ số vùng/thang đo.
+- Hai bài Cheese chỉ kiểm tra mật độ tham chiếu ROI khi người dùng nhập; bài Helios không bị áp thêm trường Quart; hai bài Quart kiểm tra dung sai HU, dung sai thang đo, dung sai độ dày, ngưỡng CNR và dịch lát tìm góc, trong đó dịch lát được phép âm.
+- Lỗi hiển thị ngay bằng tiếng Việt và nút phân tích bị khóa trước khi gửi yêu cầu tới Pylinac. Không có lượt chạy mới, không sửa lịch sử và không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA` trong cổng này.
+- Kiểm thử giao diện riêng đạt **6/6**, toàn bộ giao diện đạt **71/71**, kiểm tra kiểu, lint và bản dựng sản phẩm đạt. Đây là `LOCAL_VERIFIED_SLICE` cho biên nhập liệu.
+- Các nhóm vẫn mở vì môi trường hiện tại còn thiếu fixture Cheese CIRS 062M/GE Helios/Quart được phê duyệt, đối chiếu từng mô-đun, kiểm lỗi đặc trưng, kiểm chứng staging và nghiệm thu chuyên môn.
+
 ## P7-CAL/W04 — kiểm tra biểu mẫu hiệu chuẩn và sửa TRS-398 electron — đã kiểm tra cục bộ — 2026-09-16
 
 - Đã bổ sung lớp kiểm tra giao diện riêng cho năm bài hiệu chuẩn TG-51/TRS-398. Biểu mẫu yêu cầu các thông tin truy nguyên của phép đo, kiểm tra số hữu hạn, miền tối thiểu và từng phần tử trong các trường nhiều số đọc; lỗi hiển thị bằng tiếng Việt trước khi gửi yêu cầu, không còn âm thầm bỏ qua phần nhập sai.

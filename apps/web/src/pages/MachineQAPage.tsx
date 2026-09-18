@@ -12,6 +12,7 @@ import { validateManualWinstonLutzAngles, validateWinstonLutzMultiTargetValues, 
 import { validateVmatValues } from './vmatValidation'
 import { validateCatPhanValues } from './catphanValidation'
 import { validateAcrValues } from './acrValidation'
+import { validateCtPylinacValues } from './ctPylinacValidation'
 import { validateLogGammaValues } from './logValidation'
 import { validateLogArtifactSelection } from './logSelectionValidation'
 
@@ -1561,6 +1562,11 @@ function CtPylinacPage({ caseId, accessToken, title, catalogKey }: { caseId: str
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
   const displayName = catalogKey === 'CHEESE_TOMO' ? 'Phantom TomoCheese' : catalogKey === 'CHEESE_CIRS_062M' ? 'Phantom CIRS 062M' : catalogKey === 'GE_HELIOS' ? 'Phantom GE Helios CT hằng ngày' : catalogKey === 'QUART_DVT' ? 'Phantom Quart DVT' : 'Phantom Quart HyperSight'
+  const validationError = validateCtPylinacValues({
+    originSlice, xAdjustment, yAdjustment, angleAdjustment, roiSizeFactor, scalingFactor,
+    roiOneDensity, roiTwoDensity, huTolerance, scalingTolerance, thicknessTolerance,
+    cnrThreshold, rollSliceOffset, isCheese, isQuart
+  })
 
   return <div className="page">
     <header className="page-header">
@@ -1588,7 +1594,8 @@ function CtPylinacPage({ caseId, accessToken, title, catalogKey }: { caseId: str
       </div>
       {isCheese && <div className="machine-qa-protocol-controls"><label>Mật độ tham chiếu ROI 1 (g/cc)<input type="number" step="0.001" placeholder="Tùy chọn" value={roiOneDensity} onChange={(event) => setRoiOneDensity(event.target.value)} /></label><label>Mật độ tham chiếu ROI 2 (g/cc)<input type="number" step="0.001" placeholder="Tùy chọn" value={roiTwoDensity} onChange={(event) => setRoiTwoDensity(event.target.value)} /></label></div>}
       {isQuart && <div className="machine-qa-protocol-controls"><label>Dung sai thang đo (mm)<input type="number" min="0" step="0.1" value={scalingTolerance} onChange={(event) => setScalingTolerance(event.target.value)} /></label><label>Dung sai độ dày (mm)<input type="number" min="0" step="0.01" value={thicknessTolerance} onChange={(event) => setThicknessTolerance(event.target.value)} /></label><label>Dịch lát tìm góc (mm)<input type="number" step="0.1" value={rollSliceOffset} onChange={(event) => setRollSliceOffset(event.target.value)} /></label></div>}
-      <div className="machine-qa-actions"><button disabled={!selectedInput || !selectedArtifactsAreValidated(selectedInput ? [selectedInput] : [], imageArtifacts) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      {validationError && <p className="alert alert--error" role="alert">{validationError}</p>}
+      <div className="machine-qa-actions"><button disabled={!selectedInput || !selectedArtifactsAreValidated(selectedInput ? [selectedInput] : [], imageArtifacts) || Boolean(validationError) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedInput ? [selectedInput] : []} emptyHistoryLabel={`Chưa có kết quả ${displayName}.`} resultNote={<p>Kết quả và thông số của đúng phiên bản Pylinac đã được lưu cùng với bộ ảnh đầu vào.</p>} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
     <section className="panel machine-qa-panel"><div className="panel-heading"><div><p className="eyebrow">LỊCH SỬ PHÂN TÍCH</p><h2>Kết quả đã lưu</h2></div><strong>{history.length}</strong></div>{history.length === 0 ? <p className="empty-state">Chưa có kết quả {displayName}.</p> : <div className="table-wrap"><table><thead><tr><th>Lần phân tích</th><th>Trạng thái</th><th>Đánh giá</th><th>Thời điểm</th></tr></thead><tbody>{history.map((run, index) => <tr key={run.id}><td>Lần {history.length - index}</td><td><span className={statusClass(run.status)}>{statusLabel(run.status)}</span></td><td>{statusLabel(run.assessment_status)}</td><td>{formatDate(run.completed_at ?? run.created_at)}</td></tr>)}</tbody></table></div>}</section>

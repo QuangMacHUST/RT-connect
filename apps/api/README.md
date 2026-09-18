@@ -304,3 +304,9 @@ invalid ACR CT/MRI slice, geometry, ROI, scaling and MRI-specific parameters
 before creating a Pylinac run. Rebuild API, worker and web from this revision
 before the next exact-SHA check; this marker does not alter persisted data or
 QA history.
+
+P7 CT phantom form-validation parity marker (2026-09-18): the web forms now
+reject invalid Cheese/Helios/Quart slice, geometry, ROI, density, tolerance and
+roll-slice parameters before creating a Pylinac run. Rebuild API, worker and
+web from this revision before the next exact-SHA check; this marker does not
+alter persisted data or QA history.
