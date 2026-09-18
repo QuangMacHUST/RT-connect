@@ -1916,3 +1916,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Giao diện không hiển thị mã hồ sơ, mã lượt chạy hoặc dữ liệu JSON; người dùng chỉ thấy tên bài, số lần phân tích và trạng thái bằng tiếng Việt. Pylinac vẫn là engine duy nhất; RT-CONNECT chỉ quản lý lựa chọn, kiểm tra phạm vi, snapshot và báo cáo.
 - Kiểm thử tích hợp tạo lượt hiệu chuẩn Pylinac tổng hợp rồi dùng lượt đó làm nguồn báo cáo đạt **10/10**; toàn bộ giao diện đạt **16/16 tệp và 80/80 phép thử**, Ruff và mypy phần báo cáo đạt. Bằng chứng: [nguồn Pylinac cho báo cáo](docs/evidence/p9-local-pylinac-report-source-20260918.md).
 - Lát cắt này chưa nhúng lớp phủ vào PDF/PNG, chưa kiểm thử có đăng nhập trên staging và chưa đối chiếu xem trước–tài liệu xuất. P09-W01/P09-W03 vẫn mở. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
+## P9-W01 — nguồn Pylinac cho báo cáo trên staging — đã kiểm tra parity — 2026-09-18
+
+- API, giao diện và tiến trình nền staging đã được dựng lại cùng commit `f70fab80de566010b3304ae2f88f301379bed815`.
+- Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều `200`, lược đồ `20260914_0023`, tuyến thành viên/lời mời vẫn giữ đúng biên xác thực và giao diện phục vụ đúng gói mới.
+- Bằng chứng: [parity nguồn Pylinac cho báo cáo trên staging](docs/evidence/p9-staging-pylinac-report-source-20260918.json). Đây là bằng chứng nguồn/runtime/biên công khai; chưa phải phiên có đăng nhập để tạo báo cáo từ một lượt Pylinac thật.
+- P09-W01 vẫn mở phần kiểm thử có đăng nhập, snapshot/hạ tầng xuất thực và VERIFY/HANDOFF; P09-W03 vẫn mở phần lấy lớp phủ vào PDF/PNG. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
