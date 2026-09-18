@@ -1770,3 +1770,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Lỗi được hiển thị ngay bằng tiếng Việt và nút phân tích bị khóa trước khi gửi yêu cầu tới Pylinac. Không có lượt chạy mới, không sửa lịch sử và không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA` trong cổng này.
 - Kiểm thử giao diện riêng đạt **5/5**, toàn bộ giao diện đạt **70/70**, kiểm tra kiểu, lint và bản dựng sản phẩm đạt. Đây là `LOCAL_VERIFIED_SLICE` cho biên nhập liệu, chưa phải kiểm chứng kết quả ACR.
 - ACR vẫn mở vì môi trường Pylinac hiện chưa có fixture ACR được phê duyệt; còn thiếu fixture chuẩn/commissioning, đối chiếu từng mô-đun kết quả, kiểm lỗi đặc trưng, kiểm chứng staging và nghiệm thu chuyên môn.
+
+## P7-ACR — parity triển khai staging — 2026-09-18
+
+- API, giao diện và tiến trình nền staging đã dựng thành công cùng commit `7df6c1857edb1aa8066cae6e69309f8ef91f323d` sau khi thêm cổng kiểm tra tham số ACR.
+- Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều đạt, readiness giữ lược đồ `20260914_0023`, biên xác thực không bị mở và gói giao diện mới có mặt.
+- Bằng chứng: [kiểm tra parity ACR trên staging](docs/evidence/p7-staging-acr-form-validation-20260918.json). Đây là bằng chứng triển khai và hợp đồng giao diện, không phải chạy ACR bằng bộ ảnh chuẩn/commissioning; P07-ACR vẫn mở.
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
