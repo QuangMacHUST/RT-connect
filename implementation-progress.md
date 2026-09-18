@@ -1751,6 +1751,13 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Kiểm thử giao diện riêng đạt **5/5**, toàn bộ giao diện đạt **72/72**, kiểm tra kiểu, lint và bản dựng sản phẩm đạt. Đây là `LOCAL_VERIFIED_SLICE` cho biên nhập liệu.
 - P07-PLANAR vẫn mở vì còn thiếu fixture chuẩn/commissioning, đối chiếu từng mô-đun kết quả, kiểm lỗi đặc trưng, kiểm chứng staging và nghiệm thu chuyên môn.
 
+## P7-PLANAR — parity triển khai staging — 2026-09-18
+
+- API, giao diện và tiến trình nền staging đã dựng thành công cùng commit `27958d95309eb3a0d9d408dcefa35d2f774b655e` sau khi thêm cổng kiểm tra tham số 19 bài ảnh phẳng.
+- Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều đạt, readiness giữ lược đồ `20260914_0023`, biên xác thực không bị mở và gói giao diện mới có mặt.
+- Bằng chứng: [kiểm tra parity ảnh phẳng trên staging](docs/evidence/p7-staging-planar-form-validation-20260918.json). Đây là bằng chứng triển khai và hợp đồng giao diện, không phải chạy 19 bài bằng bộ ảnh chuẩn/commissioning; P07-PLANAR vẫn mở.
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
 ## P7-CHEESE/P7-HELIOS/P7-QUART — kiểm tra tham số biểu mẫu — lát cắt cục bộ — 2026-09-18
 
 - Biểu mẫu TomoCheese, CIRS 062M, GE Helios CT hằng ngày, Quart DVT và Quart HyperSight dùng cổng kiểm tra chung cho lát gốc tùy chọn, điều chỉnh ngang/dọc/góc và các hệ số vùng/thang đo.
