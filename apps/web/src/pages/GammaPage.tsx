@@ -5,6 +5,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ApiClientError, apiClient, type GammaConfiguration, type GammaRunResource } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { artifactDisplayName } from './gammaArtifactLabels'
+import { validateGammaInputGeometry } from './gammaInputValidation'
 import { validateGammaConfiguration } from './gammaValidation'
 
 type JsonRecord = Record<string, unknown>
@@ -26,6 +27,7 @@ function errorMessage(error: unknown): string {
       GAMMA_DTA_GRID_INCOMPATIBLE: 'DTA không khớp với kích thước lưới của hai tệp đã chọn.',
       GAMMA_DIMENSIONALITY_MISMATCH: 'Kiểu dữ liệu đã chọn không phù hợp với phép phân tích một chiều hoặc hai chiều.',
       GAMMA_GRID_INCOMPATIBLE: 'Hai lưới liều không có cùng kích thước để so sánh an toàn.',
+      GAMMA_GRID_INVALID: 'Hình học của tệp chưa hợp lệ để phân tích Gamma.',
       GAMMA_PYLINAC_GRID_NON_SQUARE: 'Dữ liệu hai chiều cần có điểm ảnh vuông để tính đúng khoảng cách.',
       GAMMA_INPUT_INCOMPATIBLE: 'Hai tệp không có cùng hệ tọa độ hoặc hình học để so sánh an toàn.',
       GAMMA_COORDINATE_FRAME_INVALID: 'Tệp thiếu thông tin hệ tọa độ đã được kiểm tra.',
@@ -295,6 +297,8 @@ export function GammaPage() {
   const configurationErrors = validateGammaConfiguration(configuration)
   const selectedReference = eligibleArtifacts.find((item) => item.id === selectedReferenceId)
   const selectedEvaluation = eligibleArtifacts.find((item) => item.id === selectedEvaluationId)
+  const inputGeometryErrors = validateGammaInputGeometry(configuration, selectedReference, selectedEvaluation)
+  const blockingErrors = [...configurationErrors, ...inputGeometryErrors]
   const profileReady = selectedReference?.artifact_type === 'DICOM' && selectedReference.modality === 'RTDOSE' && (
     selectedEvaluation?.artifact_type === 'MEASUREMENT' ||
     (selectedEvaluation?.artifact_type === 'DICOM' && selectedEvaluation.modality === 'RTDOSE')
@@ -341,8 +345,8 @@ export function GammaPage() {
           <label>Hệ số tinh chỉnh một chiều<input type="number" min="1" max="10" step="1" value={configuration.resolution_factor} onChange={(event) => updateNumber('resolution_factor', event.target.value)} /></label>
         </div>
         <p className="form-hint">Phép tính mới sử dụng Pylinac với chênh lệch liều tương đối và phép tìm trên lưới. Hệ số tinh chỉnh chỉ áp dụng cho Gamma một chiều; số khoảng biểu đồ chỉ thay đổi cách hiển thị kết quả. Mọi tiêu chí được lưu cùng kết quả, không thay đổi các lần phân tích trước.</p>
-        {configurationErrors.length > 0 && <div className="alert alert--error" role="alert"><strong>Chưa thể bắt đầu phân tích</strong><ul>{configurationErrors.map((item) => <li key={item.field}>{item.message}</li>)}</ul></div>}
-        <button disabled={busy || !profileReady || selectedReferenceId === selectedEvaluationId || configurationErrors.length > 0} onClick={() => createMutation.mutate()}>Bắt đầu phân tích</button>
+        {blockingErrors.length > 0 && <div className="alert alert--error" role="alert"><strong>Chưa thể bắt đầu phân tích</strong><ul>{blockingErrors.map((item, index) => <li key={`${item.field}-${index}`}>{item.message}</li>)}</ul></div>}
+        <button disabled={busy || !profileReady || selectedReferenceId === selectedEvaluationId || blockingErrors.length > 0} onClick={() => createMutation.mutate()}>Bắt đầu phân tích</button>
       </section>
 
       <section className="panel gamma-panel">

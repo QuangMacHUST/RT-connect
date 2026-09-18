@@ -1,5 +1,12 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P8-W02 — chặn trước cấu hình Gamma không tương thích — kiểm tra local — 2026-09-18
+
+- Đã bổ sung cùng một lớp preflight ở máy chủ và giao diện cho phép kiểm tra trước khi tạo lượt phân tích: số chiều 1D/2D, shape, spacing, gốc tọa độ, điểm ảnh vuông và DTA phải là bội số nguyên của spacing đối với Gamma hai chiều.
+- Metadata đo và RTDOSE được chuẩn hóa về cùng trục mà bộ điều hợp Pylinac sử dụng; lỗi được hiển thị bằng tiếng Việt, không hiển thị khóa nội bộ hay dữ liệu kỹ thuật cho người dùng. Nút bắt đầu bị khóa khi cấu hình không thể chạy an toàn.
+- API `apps/api/tests/test_gamma.py` đạt **21/21**; kiểm thử giao diện riêng đạt **8/8**; kiểm tra kiểu, lint và bản dựng giao diện đạt.
+- Đây là kiểm tra local, chưa phải xác nhận staging. Bước tiếp theo là triển khai cả API, giao diện và worker từ cùng mã nguồn, rồi xác nhận một cấu hình sai bị chặn trước khi lịch sử có thêm lượt mới. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`; yêu cầu xóa vĩnh viễn được giữ ngoài phạm vi.
+
 ## P07-CT — kiểm tra tham số CatPhan ngay trên biểu mẫu — đã kiểm tra local — 2026-09-16
 
 - Biểu mẫu năm bài CatPhan nay chặn dung sai HU, ngưỡng CNR, dung sai độ dày và hệ số kích thước vùng không phải số hoặc âm; lát gốc tùy chọn phải là số nguyên không âm; các điều chỉnh hình học phải là số hữu hạn.

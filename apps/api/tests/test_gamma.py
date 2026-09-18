@@ -15,6 +15,7 @@ from rt_connect_api.api.gamma import (
     GammaRunCreateRequest,
     _validate_coordinate_frames,
     _validate_gamma_engine_selection,
+    _validate_gamma_input_geometry,
 )
 from rt_connect_api.api.gamma import (
     _storage as gamma_storage,
@@ -70,6 +71,40 @@ def _measurement_bytes(
         "source": {"filename": f"{dataset_id}.json", "sha256": "a" * 64},
     }
     return json.dumps(payload).encode("utf-8")
+
+
+def _artifact_with_grid(
+    *,
+    shape: list[int],
+    spacing: list[float],
+    origin: list[float] | None = None,
+) -> SimpleNamespace:
+    return SimpleNamespace(
+        artifact_type="MEASUREMENT",
+        modality=None,
+        metadata_snapshot={
+            "grid": {
+                "shape": shape,
+                "spacing_mm": spacing,
+                **({"origin_mm": origin} if origin is not None else {}),
+            }
+        },
+    )
+
+
+def _geometry_payload(**overrides: object) -> GammaRunCreateRequest:
+    configuration: dict[str, object] = {
+        "dimensionality": "2D",
+        "distance_to_agreement_mm": 3.0,
+    }
+    configuration.update(overrides)
+    return GammaRunCreateRequest(
+        reference_artifact_id=uuid4(),
+        evaluation_artifact_id=uuid4(),
+        idempotency_key="gamma-geometry-001",
+        workflow_profile="ENGINE_TEST",
+        configuration=configuration,
+    )
 
 
 def _case(client: TestClient, organization_id: str) -> str:
@@ -601,6 +636,53 @@ def test_new_psqa_run_cannot_select_an_unsupported_pylinac_mode(
         _validate_gamma_engine_selection(payload)
 
     assert error.value.code == code
+
+
+@pytest.mark.parametrize(
+    ("dimensionality", "reference_shape", "evaluation_shape", "code"),
+    [
+        ("1D", [2, 2], [2, 2], "GAMMA_DIMENSIONALITY_MISMATCH"),
+        ("2D", [2, 2], [2, 3], "GAMMA_GRID_INCOMPATIBLE"),
+    ],
+)
+def test_gamma_geometry_is_rejected_before_enqueue(
+    dimensionality: str,
+    reference_shape: list[int],
+    evaluation_shape: list[int],
+    code: str,
+) -> None:
+    payload = _geometry_payload(dimensionality=dimensionality)
+    reference = _artifact_with_grid(shape=reference_shape, spacing=[1.0] * len(reference_shape))
+    evaluation = _artifact_with_grid(shape=evaluation_shape, spacing=[1.0] * len(evaluation_shape))
+
+    with pytest.raises(DomainError) as error:
+        _validate_gamma_input_geometry(payload, reference, evaluation)
+
+    assert error.value.code == code
+
+
+def test_gamma_geometry_rejects_non_square_grid_and_unaligned_dta() -> None:
+    reference = _artifact_with_grid(shape=[2, 2], spacing=[1.0, 2.0])
+    evaluation = _artifact_with_grid(shape=[2, 2], spacing=[1.0, 2.0])
+    with pytest.raises(DomainError) as non_square:
+        _validate_gamma_input_geometry(_geometry_payload(), reference, evaluation)
+    assert non_square.value.code == "GAMMA_PYLINAC_GRID_NON_SQUARE"
+
+    reference = _artifact_with_grid(shape=[2, 2], spacing=[2.0, 2.0])
+    evaluation = _artifact_with_grid(shape=[2, 2], spacing=[2.0, 2.0])
+    with pytest.raises(DomainError) as unaligned:
+        _validate_gamma_input_geometry(_geometry_payload(), reference, evaluation)
+    assert unaligned.value.code == "GAMMA_DTA_GRID_INCOMPATIBLE"
+
+
+def test_gamma_geometry_rejects_different_origin_before_enqueue() -> None:
+    reference = _artifact_with_grid(shape=[2, 2], spacing=[1.0, 1.0], origin=[0.0, 0.0])
+    evaluation = _artifact_with_grid(shape=[2, 2], spacing=[1.0, 1.0], origin=[1.0, 0.0])
+
+    with pytest.raises(DomainError) as error:
+        _validate_gamma_input_geometry(_geometry_payload(), reference, evaluation)
+
+    assert error.value.code == "GAMMA_INPUT_INCOMPATIBLE"
 
 
 def test_gamma_resource_preflight_rejects_oversized_validated_grid() -> None:

@@ -542,6 +542,189 @@ def _validate_gamma_engine_selection(payload: GammaRunCreateRequest) -> None:
         )
 
 
+def _validated_grid_geometry(
+    artifact: Artifact,
+) -> tuple[tuple[int, ...], tuple[float, ...], tuple[float, ...]]:
+    """Normalize validated measurement/RTDOSE metadata to the Pylinac axes.
+
+    The artifact validator intentionally stores native DICOM fields separately
+    from the measurement contract.  The worker later reconstructs the same
+    canonical axes, so the enqueue preflight must make the same conversion
+    before creating a durable Gamma run.
+    """
+
+    raw_grid = artifact.metadata_snapshot.get("grid")
+    if not isinstance(raw_grid, Mapping):
+        raise DomainError(
+            "GAMMA_GRID_INVALID",
+            "Tệp chưa có đủ thông tin hình học để kiểm tra trước khi phân tích.",
+            422,
+        )
+
+    raw_shape = raw_grid.get("shape")
+    if isinstance(raw_shape, list):
+        shape = tuple(raw_shape)
+    else:
+        rows = raw_grid.get("rows")
+        columns = raw_grid.get("columns")
+        frames = raw_grid.get("frames")
+        if (
+            isinstance(rows, bool)
+            or not isinstance(rows, int)
+            or rows <= 0
+            or isinstance(columns, bool)
+            or not isinstance(columns, int)
+            or columns <= 0
+        ):
+            raise DomainError(
+                "GAMMA_GRID_INVALID",
+                "Kích thước lưới của tệp chưa hợp lệ.",
+                422,
+            )
+        shape = (rows, columns)
+        if isinstance(frames, int) and not isinstance(frames, bool) and frames > 1:
+            shape = (frames, rows, columns)
+
+    if (
+        not shape
+        or any(isinstance(item, bool) or not isinstance(item, int) or item <= 0 for item in shape)
+    ):
+        raise DomainError("GAMMA_GRID_INVALID", "Kích thước lưới của tệp chưa hợp lệ.", 422)
+
+    raw_spacing = raw_grid.get("spacing_mm")
+    if not isinstance(raw_spacing, list):
+        raw_spacing = artifact.metadata_snapshot.get("pixel_spacing_mm")
+        if len(shape) == 3 and isinstance(raw_spacing, list):
+            offsets = artifact.metadata_snapshot.get("grid_frame_offset_vector_mm")
+            if not isinstance(offsets, list) or len(offsets) != shape[0]:
+                raise DomainError(
+                    "GAMMA_GRID_INVALID",
+                    "Tệp RTDOSE chưa có đủ khoảng cách giữa các lớp liều.",
+                    422,
+                )
+            try:
+                offset_values = [float(item) for item in offsets]
+            except (TypeError, ValueError) as exc:
+                raise DomainError(
+                    "GAMMA_GRID_INVALID",
+                    "Khoảng cách giữa các lớp liều chưa hợp lệ.",
+                    422,
+                ) from exc
+            if any(not math.isfinite(item) for item in offset_values):
+                raise DomainError(
+                    "GAMMA_GRID_INVALID",
+                    "Khoảng cách giữa các lớp liều chưa hợp lệ.",
+                    422,
+                )
+            differences = [
+                right - left for left, right in zip(offset_values, offset_values[1:], strict=False)
+            ]
+            if not differences or any(
+                value <= 0 or not math.isclose(value, differences[0], rel_tol=1e-6, abs_tol=1e-6)
+                for value in differences
+            ):
+                raise DomainError(
+                    "GAMMA_GRID_INVALID",
+                    "Khoảng cách giữa các lớp liều phải tăng đều.",
+                    422,
+                )
+            raw_spacing = [differences[0], *raw_spacing]
+    if not isinstance(raw_spacing, list) or len(raw_spacing) != len(shape):
+        raise DomainError("GAMMA_GRID_INVALID", "Khoảng cách điểm ảnh của tệp chưa hợp lệ.", 422)
+    try:
+        spacing = tuple(float(item) for item in raw_spacing)
+    except (TypeError, ValueError) as exc:
+        raise DomainError(
+            "GAMMA_GRID_INVALID", "Khoảng cách điểm ảnh của tệp chưa hợp lệ.", 422
+        ) from exc
+    if any(not math.isfinite(item) or item <= 0 for item in spacing):
+        raise DomainError("GAMMA_GRID_INVALID", "Khoảng cách điểm ảnh của tệp chưa hợp lệ.", 422)
+
+    raw_origin = raw_grid.get("origin_mm")
+    if not isinstance(raw_origin, list):
+        raw_origin = [0.0] * len(shape)
+        if artifact.artifact_type == "DICOM" and artifact.modality == "RTDOSE":
+            position = artifact.metadata_snapshot.get("image_position_patient")
+            if not isinstance(position, list) or len(position) != 3:
+                raise DomainError(
+                    "GAMMA_GRID_INVALID", "Vị trí gốc của tệp RTDOSE chưa hợp lệ.", 422
+                )
+            if len(shape) == 2:
+                raw_origin = [position[1], position[0]]
+            elif len(shape) == 3:
+                offsets = artifact.metadata_snapshot.get("grid_frame_offset_vector_mm")
+                if not isinstance(offsets, list) or not offsets:
+                    raise DomainError("GAMMA_GRID_INVALID", "Vị trí các lớp liều chưa hợp lệ.", 422)
+                raw_origin = [float(position[2]) + float(offsets[0]), position[1], position[0]]
+    if not isinstance(raw_origin, list) or len(raw_origin) != len(shape):
+        raise DomainError("GAMMA_GRID_INVALID", "Vị trí gốc của lưới chưa hợp lệ.", 422)
+    try:
+        origin = tuple(float(item) for item in raw_origin)
+    except (TypeError, ValueError) as exc:
+        raise DomainError("GAMMA_GRID_INVALID", "Vị trí gốc của lưới chưa hợp lệ.", 422) from exc
+    if any(not math.isfinite(item) for item in origin):
+        raise DomainError("GAMMA_GRID_INVALID", "Vị trí gốc của lưới chưa hợp lệ.", 422)
+    return shape, spacing, origin
+
+
+def _validate_gamma_input_geometry(
+    payload: GammaRunCreateRequest, reference: Artifact, evaluation: Artifact
+) -> None:
+    """Reject Pylinac-incompatible inputs before a queued row is created."""
+
+    reference_shape, reference_spacing, reference_origin = _validated_grid_geometry(reference)
+    evaluation_shape, evaluation_spacing, evaluation_origin = _validated_grid_geometry(evaluation)
+    dimensionality = payload.configuration.dimensionality
+    expected_rank = 1 if dimensionality == "1D" else 2
+    if len(reference_shape) != expected_rank or len(evaluation_shape) != expected_rank:
+        label = "một dãy liều một chiều" if dimensionality == "1D" else "hai lưới liều hai chiều"
+        raise DomainError(
+            "GAMMA_DIMENSIONALITY_MISMATCH",
+            f"Gamma {label}.",
+            422,
+        )
+    if reference_shape != evaluation_shape:
+        raise DomainError(
+            "GAMMA_GRID_INCOMPATIBLE",
+            "Hai lưới liều phải có cùng số hàng và số cột để so sánh an toàn.",
+            422,
+        )
+    if any(
+        not math.isclose(left, right, rel_tol=0, abs_tol=1e-6)
+        for left, right in zip(reference_spacing, evaluation_spacing, strict=True)
+    ):
+        raise DomainError(
+            "GAMMA_GRID_INCOMPATIBLE",
+            "Hai tệp phải có cùng kích thước điểm ảnh để so sánh an toàn.",
+            422,
+        )
+    if any(
+        not math.isclose(left, right, rel_tol=0, abs_tol=1e-6)
+        for left, right in zip(reference_origin, evaluation_origin, strict=True)
+    ):
+        raise DomainError(
+            "GAMMA_INPUT_INCOMPATIBLE",
+            "Hai tệp phải có cùng gốc tọa độ trong hệ quy chiếu đã kiểm định.",
+            422,
+        )
+    if dimensionality == "2D":
+        row_spacing, column_spacing = reference_spacing
+        if not math.isclose(row_spacing, column_spacing, rel_tol=0, abs_tol=1e-6):
+            raise DomainError(
+                "GAMMA_PYLINAC_GRID_NON_SQUARE",
+                "Dữ liệu hai chiều cần có điểm ảnh vuông để tính đúng khoảng cách.",
+                422,
+            )
+        pixels = payload.configuration.distance_to_agreement_mm / row_spacing
+        rounded = round(pixels)
+        if rounded < 1 or not math.isclose(pixels, rounded, rel_tol=0, abs_tol=1e-6):
+            raise DomainError(
+                "GAMMA_DTA_GRID_INCOMPATIBLE",
+                "DTA phải là bội số nguyên của kích thước điểm ảnh đối với Gamma hai chiều.",
+                422,
+            )
+
+
 def _grid_voxel_count(artifact: Artifact) -> int:
     """Return the validated voxel count used by the Gamma resource preflight."""
 
@@ -701,6 +884,7 @@ def enqueue_gamma_run(
     )
     _validate_workflow_profile(payload.workflow_profile, reference, evaluation)
     _validate_gamma_engine_selection(payload)
+    _validate_gamma_input_geometry(payload, reference, evaluation)
     resource_budget = _resource_budget_snapshot(request, reference, evaluation)
     request_fingerprint = _fingerprint(payload)
     existing = session.scalar(
