@@ -1,0 +1,57 @@
+{
+  "schema_version": "rt-connect.p8-staging-gamma-1d-pylinac.v1",
+  "captured_at": "2026-09-18T22:56:54+07:00",
+  "environment": "staging",
+  "api_version": "b45d1ff39a23d1962ce2c5ed9562c3433cc0dc9b",
+  "web_commit": "dafd4d3",
+  "case_label": "P6 Staging Upload Smoke",
+  "synthetic_only": true,
+  "inputs": {
+    "reference_label": "Dữ liệu đo liều 2",
+    "evaluation_label": "Dữ liệu đo liều 1",
+    "artifact_type": "measurement",
+    "dimensionality": "1D",
+    "shape": [4],
+    "spacing_mm": [1.0],
+    "axis_order": ["x"],
+    "validated": true
+  },
+  "engine": {
+    "name": "Pylinac",
+    "engine_class": "gamma_1d",
+    "workflow_profile": "PSQA_GAMMA"
+  },
+  "configuration": {
+    "dose_difference_percent": 3,
+    "distance_to_agreement_mm": 3,
+    "dose_threshold_percent": 10,
+    "pass_rate_threshold_percent": 95,
+    "normalization": "GLOBAL",
+    "coverage_policy": "FULL_ROI",
+    "max_gamma": 2,
+    "histogram_bins": 10,
+    "resolution_factor": 3
+  },
+  "result": {
+    "status": "PASS",
+    "pass_rate_percent": 100.0,
+    "evaluated_points": 4,
+    "passing_points": 4,
+    "nonpassing_points": 0,
+    "excluded_points": 0,
+    "coverage_fraction": 1.0,
+    "p95": 0.0,
+    "coordinate_table_visible": true,
+    "histogram_visible": true
+  },
+  "service_checks": {
+    "api_ready": true,
+    "completed_in_ui": true,
+    "result_history_visible": true
+  },
+  "data_safety": {
+    "patient_data_used": false,
+    "permanent_deletion_performed": false,
+    "dailyqa_touched": false
+  }
+}

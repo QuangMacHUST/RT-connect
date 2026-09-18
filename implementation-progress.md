@@ -2005,3 +2005,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Pylinac là engine duy nhất cho phép tính Gamma mới; Gamma ba chiều cũ vẫn chỉ đọc. Giao diện đã có tiến độ, nút hủy khi còn chờ, thử lại khi lỗi và bảng kết quả bằng tiếng Việt.
 - Bằng chứng: [hàng đợi và kết quả Gamma cục bộ](docs/evidence/p8-local-gamma-queue-results-20260918.md).
 - Đây là `LOCAL_VERIFIED_SLICE`; P08-W03 vẫn mở bước chạy thật trên staging với worker, retry/cancel, kết quả 1D/2D, lịch sử và ma trận lỗi. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
+## P8-W03 — Gamma một chiều Pylinac trên staging — đã kiểm tra happy path — 2026-09-18
+
+- Sau commit backend `b45d1ff39a23d1962ce2c5ed9562c3433cc0dc9b` và web `dafd4d3`, giao diện staging đã cho phép đúng luồng một chiều: chọn hai tệp số đo hợp lệ, không yêu cầu RTDOSE tham chiếu; hướng dẫn và nhãn đều dùng tiếng Việt nghiệp vụ, không lộ tên tệp JSON hay mã nội bộ.
+- Trên hồ sơ tổng hợp `P6 Staging Upload Smoke`, một lượt chạy `PSQA_GAMMA` bằng Pylinac `gamma_1d` đã hoàn tất với kết luận **Đạt**, tỷ lệ đạt **100%**, **4/4** điểm đạt, **0** điểm không đạt, **0** điểm loại khỏi tính toán, độ bao phủ **1**, Gamma P95 **0**. Bảng vị trí một chiều và biểu đồ phân bố hiển thị trên trang; lịch sử ghi nhận lượt chạy hoàn tất.
+- Bằng chứng: [Gamma một chiều Pylinac staging](docs/evidence/p8-staging-gamma-1d-pylinac-20260918.json). API `/ready` tại thời điểm kiểm tra trả `ready`.
+- Cổng này chỉ xác nhận happy path 1D trên staging với dữ liệu tổng hợp. P08-W03 vẫn mở queue retry/cancel, lỗi worker/Redis, ma trận đầu vào không hợp lệ, đối chiếu độc lập và VERIFY/HANDOFF; không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
