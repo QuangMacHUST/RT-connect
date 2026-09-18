@@ -11,6 +11,13 @@ import {
   type ReportSummary
 } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
+import {
+  reportBlockLabel,
+  reportExportLabel,
+  reportRunStatusLabel,
+  reportSourceLabel,
+  reportTemplateStatusLabel
+} from './reportBuilderLabels'
 
 const blockTypes = [
   'TEXT', 'METADATA', 'METRICS', 'GAMMA_MAP', 'DOSE_PROFILE', 'DVH', 'TREND_CHART',
@@ -21,15 +28,15 @@ type SourceType = (typeof sourceTypes)[number]
 type EditableBlock = ReportBlock & { sort_order: number }
 
 function errorMessage(error: unknown): string {
-  if (error instanceof ApiClientError) return `${error.message} (${error.code})`
+  if (error instanceof ApiClientError) return error.message
   return 'Không thể hoàn tất thao tác. Hãy thử lại và kiểm tra kết nối API.'
 }
 
 function defaultBlocks(): EditableBlock[] {
   return [
     { stable_block_id: 'title', block_type: 'TEXT', label: 'Ghi chú mở đầu', sort_order: 0, is_visible: true, config: { content: '' }, source_binding: {} },
-    { stable_block_id: 'metrics', block_type: 'METRICS', label: 'Metrics', sort_order: 1, is_visible: true, config: {}, source_binding: {} },
-    { stable_block_id: 'provenance', block_type: 'PROVENANCE', label: 'Provenance', sort_order: 2, is_visible: true, config: {}, source_binding: {} }
+    { stable_block_id: 'metrics', block_type: 'METRICS', label: 'Chỉ số kết quả', sort_order: 1, is_visible: true, config: {}, source_binding: {} },
+    { stable_block_id: 'provenance', block_type: 'PROVENANCE', label: 'Nguồn và phiên bản', sort_order: 2, is_visible: true, config: {}, source_binding: {} }
   ]
 }
 
@@ -45,9 +52,10 @@ function blockFromRevision(block: ReportRevision['blocks'][number]): EditableBlo
   }
 }
 
-function textValue(value: unknown): string {
-  if (typeof value === 'string') return value
-  return value === undefined ? '' : JSON.stringify(value, null, 2)
+function blockDescription(block: EditableBlock): string {
+  if (typeof block.config.content === 'string' && block.config.content.trim()) return block.config.content
+  if (block.block_type === 'TEXT' || block.block_type === 'COMMENTS') return 'Chưa có nội dung ghi chú.'
+  return 'Nội dung sẽ được lấy từ kết quả và nguồn đã chọn khi xuất báo cáo.'
 }
 
 export function ReportBuilderPage() {
@@ -57,10 +65,10 @@ export function ReportBuilderPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedReportKey, setSelectedReportKey] = useState<string | undefined>(() => searchParams.get('reportKey') ?? undefined)
   const [exportKeyNamespace] = useState(() => crypto.randomUUID())
-  const [title, setTitle] = useState('Clinical report')
+  const [title, setTitle] = useState('Báo cáo kiểm tra chất lượng')
   const [sourceType, setSourceType] = useState<SourceType>('CUSTOM')
   const [sourceId, setSourceId] = useState('')
-  const [dvhCaseId, setDvhCaseId] = useState('')
+  const [sourceCaseId, setSourceCaseId] = useState('')
   const [templateId, setTemplateId] = useState('')
   const [blocks, setBlocks] = useState<EditableBlock[]>(defaultBlocks)
   const [message, setMessage] = useState<string>()
@@ -88,9 +96,19 @@ export function ReportBuilderPage() {
     enabled: Boolean(accessToken && organizationId), retry: false
   })
   const dvhRuns = useQuery({
-    queryKey: ['dvh-runs-for-report', organizationId, dvhCaseId, accessToken],
-    queryFn: () => apiClient.dvhRuns(accessToken!, organizationId!, dvhCaseId!),
-    enabled: Boolean(accessToken && organizationId && sourceType === 'DVH' && dvhCaseId), retry: false
+    queryKey: ['dvh-runs-for-report', organizationId, sourceCaseId, accessToken],
+    queryFn: () => apiClient.dvhRuns(accessToken!, organizationId!, sourceCaseId!),
+    enabled: Boolean(accessToken && organizationId && sourceType === 'DVH' && sourceCaseId), retry: false
+  })
+  const machineQARuns = useQuery({
+    queryKey: ['machine-qa-runs-for-report', sourceCaseId, accessToken],
+    queryFn: () => apiClient.machineQARuns(accessToken!, sourceCaseId!),
+    enabled: Boolean(accessToken && sourceType === 'MACHINE_QA' && sourceCaseId), retry: false
+  })
+  const gammaRuns = useQuery({
+    queryKey: ['gamma-runs-for-report', sourceCaseId, accessToken],
+    queryFn: () => apiClient.gammaRuns(accessToken!, sourceCaseId!),
+    enabled: Boolean(accessToken && sourceType === 'GAMMA' && sourceCaseId), retry: false
   })
   const revisions = useQuery({
     queryKey: ['report-revisions', selectedReportKey, accessToken],
@@ -111,10 +129,10 @@ export function ReportBuilderPage() {
     setSourceType(currentRevision.source_type as SourceType)
     setSourceId(currentRevision.source_id ?? '')
     const payload = currentRevision.source_snapshot.payload
-    if (currentRevision.source_type === 'DVH' && typeof payload === 'object' && payload !== null && 'qa_case_id' in payload && typeof payload.qa_case_id === 'string') {
-      setDvhCaseId(payload.qa_case_id)
+    if (typeof payload === 'object' && payload !== null && 'qa_case_id' in payload && typeof payload.qa_case_id === 'string') {
+      setSourceCaseId(payload.qa_case_id)
     } else {
-      setDvhCaseId('')
+      setSourceCaseId(currentRevision.source_type === 'QA_CASE' ? currentRevision.source_id ?? '' : '')
     }
     setTemplateId(currentRevision.template_version_id ?? '')
     setBlocks(currentRevision.blocks.map(blockFromRevision))
@@ -153,7 +171,7 @@ export function ReportBuilderPage() {
     },
     onSuccess: (revision) => {
       setSelectedReportKey(revision.report_key)
-      setMessage(`Đã lưu report revision ${revision.revision_number}. Snapshot SHA-256: ${revision.content_sha256.slice(0, 16)}…`)
+      setMessage(`Đã lưu bản báo cáo ${revision.revision_number}.`)
       void queryClient.invalidateQueries({ queryKey: ['reports', organizationId] })
       void queryClient.invalidateQueries({ queryKey: ['report-revisions', revision.report_key] })
     },
@@ -168,33 +186,27 @@ export function ReportBuilderPage() {
       }
     ),
     onSuccess: (job) => {
-      setMessage(`Đã tạo export ${job.export_format} (${job.byte_size?.toLocaleString('vi-VN') ?? '—'} bytes).`)
+      setMessage(`Đã tạo tệp ${reportExportLabel(job.export_format)} (${job.byte_size?.toLocaleString('vi-VN') ?? '—'} byte).`)
       if (job.download_url) window.open(job.download_url, '_blank', 'noopener,noreferrer')
     },
     onError: (error) => setMessage(errorMessage(error))
   })
 
-  if (bootstrap.isPending || reports.isPending) return <main className="auth-state">Đang tải Report Builder…</main>
+  if (bootstrap.isPending || reports.isPending) return <main className="auth-state">Đang tải trình biên soạn báo cáo…</main>
   const failure = bootstrap.error ?? reports.error
-  if (failure || !organizationId || !reports.data) return <div className="page"><section className="alert alert--error"><h1>Không thể mở Report Builder</h1><p>{errorMessage(failure)}</p><button onClick={() => { void reports.refetch() }}>Thử lại</button></section></div>
+  if (failure || !organizationId || !reports.data) return <div className="page"><section className="alert alert--error"><h1>Không thể mở trình biên soạn báo cáo</h1><p>{errorMessage(failure)}</p><button onClick={() => { void reports.refetch() }}>Thử lại</button></section></div>
 
   const updateBlock = (index: number, update: Partial<EditableBlock>) => {
     setBlocks((current) => current.map((block, blockIndex) => blockIndex === index ? { ...block, ...update } : block))
   }
-  const updateJson = (index: number, key: 'config' | 'source_binding', value: string) => {
-    try {
-      const parsed: unknown = JSON.parse(value || '{}')
-      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) throw new Error('object')
-      updateBlock(index, { [key]: parsed as Record<string, unknown> })
-      setEditorError(undefined)
-    } catch {
-      setEditorError(`Block ${index + 1}: ${key} phải là một JSON object hợp lệ.`)
-    }
+  const updateBlockContent = (index: number, content: string) => {
+    updateBlock(index, { config: { ...blocks[index].config, content } })
+    setEditorError(undefined)
   }
   const addBlock = () => {
     setBlocks((current) => [...current, {
       stable_block_id: `block-${current.length + 1}`,
-      block_type: 'TEXT', label: 'Block mới', sort_order: current.length, is_visible: true,
+      block_type: 'TEXT', label: 'Khối văn bản mới', sort_order: current.length, is_visible: true,
       config: { content: '' }, source_binding: {}
     }])
   }
@@ -211,47 +223,47 @@ export function ReportBuilderPage() {
   const newReport = () => {
     setSelectedReportKey(undefined)
     setSearchParams({})
-    setTitle('Clinical report')
+    setTitle('Báo cáo kiểm tra chất lượng')
     setSourceType('CUSTOM')
     setSourceId('')
-    setDvhCaseId('')
+    setSourceCaseId('')
     setTemplateId('')
     setBlocks(defaultBlocks())
-    setMessage('Đã mở report mới; chưa ghi vào database.')
+    setMessage('Đã mở báo cáo mới; chưa lưu vào hệ thống.')
   }
 
   return (
     <div className="page">
       <header className="page-header">
-        <div><p className="eyebrow">P9 · MOD-07</p><h1>Trình biên soạn Báo cáo</h1><p>Toàn quyền sắp xếp, ẩn, đổi tên và cấu hình block. Mỗi lần lưu tạo revision mới với source snapshot và provenance độc lập.</p></div>
-        <div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">QA Archive</Link><span className="status-badge">API THẬT</span></div>
+        <div><p className="eyebrow">BÁO CÁO KIỂM TRA CHẤT LƯỢNG</p><h1>Trình biên soạn báo cáo</h1><p>Sắp xếp, ẩn, đổi tên và ghi chú cho từng phần. Mỗi lần lưu tạo một bản báo cáo độc lập từ đúng kết quả đã chọn.</p></div>
+        <div className="page-header__actions"><Link className="button-link button-secondary" to="/app/qa">Quay lại kiểm tra chất lượng máy</Link><span className="status-badge">ĐANG KẾT NỐI</span></div>
       </header>
       {message && <section className="alert alert--success" role="status"><p>{message}</p></section>}
       <div className="report-layout">
         <aside className="panel report-list-panel">
-          <div className="panel-heading"><div><p className="eyebrow">REPORT HISTORY</p><h2>Reports</h2></div><strong>{reports.data.total}</strong></div>
-          <button onClick={newReport}>+ Report mới</button>
+          <div className="panel-heading"><div><p className="eyebrow">CÁC BẢN BÁO CÁO</p><h2>Lịch sử báo cáo</h2></div><strong>{reports.data.total}</strong></div>
+          <button onClick={newReport}>+ Báo cáo mới</button>
           <div className="report-list">
-            {reports.data.items.map((report) => <button key={report.report_key} className={report.report_key === selectedReportKey ? 'report-list__item report-list__item--selected' : 'report-list__item'} onClick={() => setSelectedReportKey(report.report_key)}><strong>{report.title}</strong><small>{report.source_type} · rev {report.latest_revision_number}</small><code>{report.report_key.slice(0, 8)}…</code></button>)}
-            {!reports.data.items.length && <p className="empty-state">Chưa có report. Hãy tạo report đầu tiên.</p>}
+            {reports.data.items.map((report) => <button key={report.report_key} className={report.report_key === selectedReportKey ? 'report-list__item report-list__item--selected' : 'report-list__item'} onClick={() => setSelectedReportKey(report.report_key)}><strong>{report.title}</strong><small>{reportSourceLabel(report.source_type)} · bản {report.latest_revision_number}</small><span className="table-subtitle">Cập nhật {new Date(report.updated_at).toLocaleDateString('vi-VN')}</span></button>)}
+            {!reports.data.items.length && <p className="empty-state">Chưa có báo cáo. Hãy tạo báo cáo đầu tiên.</p>}
           </div>
-          {templates.data && <div className="report-template-box"><label>Template version<select value={templateId} onChange={(event) => setTemplateId(event.target.value)}><option value="">Không dùng template</option>{templates.data.items.map((template) => <option key={template.id} value={template.id}>{template.name} · v{template.version_number} · {template.status}</option>)}</select></label></div>}
+          {templates.data && <div className="report-template-box"><label>Mẫu báo cáo<select value={templateId} onChange={(event) => setTemplateId(event.target.value)}><option value="">Không dùng mẫu có sẵn</option>{templates.data.items.map((template) => <option key={template.id} value={template.id}>{template.name} · bản {template.version_number} · {reportTemplateStatusLabel(template.status)}</option>)}</select></label></div>}
         </aside>
         <section className="panel report-editor-panel">
-          <div className="panel-heading"><div><p className="eyebrow">EDITOR</p><h2>{selectedReport ? `Revision tiếp theo của ${selectedReport.title}` : 'Report draft mới'}</h2></div>{currentRevision && <span className="status-badge">REV {currentRevision.revision_number}</span>}</div>
-          <div className="report-form-grid"><label>Tiêu đề report<input value={title} onChange={(event) => setTitle(event.target.value)} /></label><label>Loại source<select value={sourceType} onChange={(event) => { const next = event.target.value as SourceType; setSourceType(next); setSourceId(''); setDvhCaseId('') }}>{sourceTypes.map((type) => <option key={type}>{type}</option>)}</select></label><label>Source ID<input value={sourceId} onChange={(event) => setSourceId(event.target.value)} placeholder={sourceType === 'CUSTOM' || sourceType === 'BIOLOGICAL' ? 'Không bắt buộc' : sourceType === 'DVH' ? 'UUID của DVH run' : 'UUID của source run/case'} /></label>{sourceType === 'QA_CASE' && cases.data && <label>Chọn nhanh QA case<select value={sourceId} onChange={(event) => setSourceId(event.target.value)}><option value="">Chọn QA case</option>{cases.data.items.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}{sourceType === 'DVH' && cases.data && <label>QA case chứa DVH run<select value={dvhCaseId} onChange={(event) => { setDvhCaseId(event.target.value); setSourceId('') }}><option value="">Chọn QA case</option>{cases.data.items.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}{sourceType === 'DVH' && dvhCaseId && <label>Chọn DVH run<select value={sourceId} onChange={(event) => setSourceId(event.target.value)}><option value="">Chọn DVH run</option>{(dvhRuns.data?.items ?? []).map((run: DvhRunResource) => <option key={run.id} value={run.id}>ROI #{run.roi_number} · {run.id.slice(0, 8)}… · {run.status}</option>)}</select>{dvhRuns.error && <small className="form-hint">Không tải được lịch sử DVH; có thể nhập UUID thủ công.</small>}</label>}</div>
-          <p className="form-hint">Source snapshot chỉ được chụp khi lưu revision. Source thay đổi sau đó không sửa report cũ; revision tiếp theo có thể chụp dữ liệu mới.</p>
+          <div className="panel-heading"><div><p className="eyebrow">NỘI DUNG BÁO CÁO</p><h2>{selectedReport ? `Bản tiếp theo của ${selectedReport.title}` : 'Bản báo cáo mới'}</h2></div>{currentRevision && <span className="status-badge">BẢN {currentRevision.revision_number}</span>}</div>
+          <div className="report-form-grid"><label>Tiêu đề báo cáo<input value={title} onChange={(event) => setTitle(event.target.value)} /></label><label>Loại nguồn<select value={sourceType} onChange={(event) => { const next = event.target.value as SourceType; setSourceType(next); setSourceId(''); setSourceCaseId('') }}>{sourceTypes.map((type) => <option key={type} value={type}>{reportSourceLabel(type)}</option>)}</select></label>{sourceType === 'QA_CASE' && cases.data && <label>Chọn bài kiểm tra<select value={sourceId} onChange={(event) => setSourceId(event.target.value)}><option value="">Chọn bài kiểm tra</option>{cases.data.items.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}{sourceType === 'DVH' && cases.data && <label>Bài kiểm tra chứa phân tích liều<select value={sourceCaseId} onChange={(event) => { setSourceCaseId(event.target.value); setSourceId('') }}><option value="">Chọn bài kiểm tra</option>{cases.data.items.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}{sourceType === 'DVH' && sourceCaseId && <label>Chọn kết quả liều–thể tích<select value={sourceId} onChange={(event) => setSourceId(event.target.value)}><option value="">Chọn kết quả</option>{(dvhRuns.data?.items ?? []).map((run: DvhRunResource, index) => <option key={run.id} value={run.id}>Lần phân tích {index + 1} · ROI {run.roi_number} · {reportRunStatusLabel(run.status)}</option>)}</select>{dvhRuns.error && <small className="form-hint">Không tải được lịch sử phân tích liều.</small>}</label>}{sourceType === 'MACHINE_QA' && cases.data && <label>Bài kiểm tra chứa kết quả máy<select value={sourceCaseId} onChange={(event) => { setSourceCaseId(event.target.value); setSourceId('') }}><option value="">Chọn bài kiểm tra</option>{cases.data.items.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}{sourceType === 'MACHINE_QA' && sourceCaseId && <label>Chọn kết quả kiểm tra máy<select value={sourceId} onChange={(event) => setSourceId(event.target.value)}><option value="">Chọn kết quả</option>{(machineQARuns.data?.items ?? []).map((run, index) => <option key={run.id} value={run.id}>Lần thực hiện {index + 1} · {reportRunStatusLabel(run.overall_status ?? run.status)}</option>)}</select></label>}{sourceType === 'GAMMA' && cases.data && <label>Bài kiểm tra chứa phân tích PSQA<select value={sourceCaseId} onChange={(event) => { setSourceCaseId(event.target.value); setSourceId('') }}><option value="">Chọn bài kiểm tra</option>{cases.data.items.map((item) => <option key={item.id} value={item.id}>{item.title}</option>)}</select></label>}{sourceType === 'GAMMA' && sourceCaseId && <label>Chọn kết quả PSQA<select value={sourceId} onChange={(event) => setSourceId(event.target.value)}><option value="">Chọn kết quả</option>{(gammaRuns.data?.items ?? []).map((run, index) => <option key={run.id} value={run.id}>Lần phân tích {index + 1} · {reportRunStatusLabel(run.status)}</option>)}</select></label>}</div>
+          <p className="form-hint">Bản chụp nguồn được lưu cùng báo cáo. Kết quả nguồn thay đổi sau đó không sửa các báo cáo đã lưu.</p>
           {editorError && <div className="alert alert--error"><p>{editorError}</p></div>}
-          <div className="report-block-heading"><div><p className="eyebrow">BLOCK CANVAS</p><h2>Cấu trúc report</h2></div><button className="button-secondary" onClick={addBlock}>+ Thêm block</button></div>
+          <div className="report-block-heading"><div><p className="eyebrow">CÁC PHẦN BÁO CÁO</p><h2>Thành phần hiển thị</h2></div><button className="button-secondary" onClick={addBlock}>+ Thêm phần</button></div>
           <div className="report-block-list">{blocks.map((block, index) => <article className="report-block-editor" key={block.stable_block_id}>
-            <div className="report-block-editor__top"><strong>#{index + 1}</strong><input aria-label={`Block ${index + 1} ID`} value={block.stable_block_id} onChange={(event) => updateBlock(index, { stable_block_id: event.target.value })} /><select aria-label={`Block ${index + 1} type`} value={block.block_type} onChange={(event) => updateBlock(index, { block_type: event.target.value })}>{blockTypes.map((type) => <option key={type}>{type}</option>)}</select><label className="checkbox-row"><input type="checkbox" checked={block.is_visible} onChange={(event) => updateBlock(index, { is_visible: event.target.checked })} /> Hiển thị</label><div className="table-actions"><button className="button-secondary" onClick={() => moveBlock(index, -1)} disabled={index === 0}>↑</button><button className="button-secondary" onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1}>↓</button><button className="button-secondary" onClick={() => setBlocks((current) => current.filter((_, blockIndex) => blockIndex !== index))}>Xóa</button></div></div>
+            <div className="report-block-editor__top"><strong>Phần {index + 1}</strong><select aria-label={`Loại phần ${index + 1}`} value={block.block_type} onChange={(event) => updateBlock(index, { block_type: event.target.value, label: reportBlockLabel(event.target.value) })}>{blockTypes.map((type) => <option key={type} value={type}>{reportBlockLabel(type)}</option>)}</select><label className="checkbox-row"><input type="checkbox" checked={block.is_visible} onChange={(event) => updateBlock(index, { is_visible: event.target.checked })} /> Hiển thị</label><div className="table-actions"><button className="button-secondary" onClick={() => moveBlock(index, -1)} disabled={index === 0}>↑</button><button className="button-secondary" onClick={() => moveBlock(index, 1)} disabled={index === blocks.length - 1}>↓</button><button className="button-secondary" onClick={() => setBlocks((current) => current.filter((_, blockIndex) => blockIndex !== index))}>Xóa</button></div></div>
             <label>Tên hiển thị<input value={block.label} onChange={(event) => updateBlock(index, { label: event.target.value })} /></label>
-            <div className="report-json-grid"><label>Config JSON<textarea value={JSON.stringify(block.config, null, 2)} onChange={(event) => updateJson(index, 'config', event.target.value)} rows={4} /></label><label>Source binding JSON<textarea value={JSON.stringify(block.source_binding, null, 2)} onChange={(event) => updateJson(index, 'source_binding', event.target.value)} rows={4} /></label></div>
+            {(block.block_type === 'TEXT' || block.block_type === 'COMMENTS') ? <label>Nội dung ghi chú<textarea value={typeof block.config.content === 'string' ? block.config.content : ''} onChange={(event) => updateBlockContent(index, event.target.value)} rows={4} placeholder="Nhập ghi chú muốn hiển thị trong báo cáo" /></label> : <p className="form-hint">Phần này sẽ lấy dữ liệu từ kết quả đã chọn khi xuất báo cáo.</p>}
           </article>)}</div>
-          <div className="report-editor-actions"><button disabled={saveMutation.isPending || Boolean(editorError) || !title.trim()} onClick={() => saveMutation.mutate()}>{saveMutation.isPending ? 'Đang lưu…' : currentRevision ? 'Lưu revision mới' : 'Lưu report'}</button>{currentRevision && <span className="form-hint">Expected revision: {currentRevision.revision_number}</span>}</div>
+          <div className="report-editor-actions"><button disabled={saveMutation.isPending || Boolean(editorError) || !title.trim()} onClick={() => saveMutation.mutate()}>{saveMutation.isPending ? 'Đang lưu…' : currentRevision ? 'Lưu bản mới' : 'Lưu báo cáo'}</button>{currentRevision && <span className="form-hint">Bản hiện tại: {currentRevision.revision_number}</span>}</div>
         </section>
       </div>
-      <section className="panel report-preview-panel"><div className="panel-heading"><div><p className="eyebrow">PREVIEW / EXPORT</p><h2>Preview snapshot hiện tại</h2></div>{currentRevision && <code>{currentRevision.content_sha256}</code>}</div><div className="report-preview"><h3>{title || 'Untitled report'}</h3><p>Source: {sourceType}{sourceId ? ` · ${sourceId}` : ''}</p>{blocks.filter((block) => block.is_visible).sort((left, right) => left.sort_order - right.sort_order).map((block) => <article key={block.stable_block_id}><strong>{block.label}</strong><small>{block.block_type}</small><pre>{textValue(block.config.content) || JSON.stringify(block.config, null, 2)}</pre></article>)}</div>{currentRevision && <div className="report-export-actions"><strong>Export revision {currentRevision.revision_number}</strong>{(['JSON', 'CSV', 'PDF', 'PNG'] as const).map((format) => <button key={format} className="button-secondary" disabled={exportMutation.isPending} onClick={() => exportMutation.mutate(format)}>{exportMutation.isPending ? 'Đang tạo…' : `Tải ${format}`}</button>)}</div>}</section>
+      <section className="panel report-preview-panel"><div className="panel-heading"><div><p className="eyebrow">XEM TRƯỚC VÀ XUẤT</p><h2>Xem trước báo cáo</h2></div>{currentRevision && <span className="status-badge">ĐÃ LƯU</span>}</div><div className="report-preview"><h3>{title || 'Báo cáo chưa đặt tên'}</h3><p>Nguồn: {reportSourceLabel(sourceType)}</p>{blocks.filter((block) => block.is_visible).sort((left, right) => left.sort_order - right.sort_order).map((block) => <article key={block.stable_block_id}><strong>{block.label}</strong><small>{reportBlockLabel(block.block_type)}</small><pre>{blockDescription(block)}</pre></article>)}</div>{currentRevision && <div className="report-export-actions"><strong>Xuất bản báo cáo {currentRevision.revision_number}</strong>{(['CSV', 'PDF', 'PNG'] as const).map((format) => <button key={format} className="button-secondary" disabled={exportMutation.isPending} onClick={() => exportMutation.mutate(format)}>{exportMutation.isPending ? 'Đang tạo…' : reportExportLabel(format)}</button>)}</div>}</section>
     </div>
   )
 }

@@ -750,7 +750,7 @@ Gamma pylinac 1D/2D chạy thật; biểu mẫu ΔD/DTA, ánh xạ tham số, đ
 
 ### Gói công việc P9
 
-- [ ] P09-W01 — Tích hợp editor theo ngữ cảnh kết quả, bộ chọn từng dòng/cột/ảnh, mọi khối đều ẩn được.
+- [ ] P09-W01 — Tích hợp trình biên soạn theo ngữ cảnh kết quả, bộ chọn bằng tên nghiệp vụ, mọi khối đều ẩn được; lát cắt giao diện cục bộ đã đạt theo [bằng chứng trình biên soạn báo cáo](docs/evidence/p9-local-report-builder-user-facing-20260918.md), còn chờ staging và hợp đồng xuất thực.
 - [ ] P09-W02 — Mở rộng snapshot/layout/render contract, định dạng số/locale, tránh chỉnh metric gốc qua template.
 - [ ] P09-W03 — Renderer dùng ảnh+overlays thật, font tiếng Việt, bảng qua trang, preview cùng engine.
 - [ ] P09-W04 — Export idempotency theo snapshot/layout/renderer và history tải lại, deletion propagation.

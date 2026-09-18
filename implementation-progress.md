@@ -1873,3 +1873,11 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều `200`, lược đồ `20260914_0023` và gói giao diện mới đều hiện diện.
 - Bằng chứng: [parity cổng tham số PSQA trên staging](docs/evidence/p8-staging-psqa-configuration-validation-20260918.json). Đây là kiểm tra triển khai và biên công khai chưa cần đăng nhập, chưa phải chạy Gamma thật với dữ liệu liều.
 - Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`. P08-W02 vẫn mở phần chạy Gamma thật, ma trận lỗi hàng đợi và VERIFY/HANDOFF.
+
+## P9-W01 — trình biên soạn báo cáo theo ngôn ngữ nghiệp vụ — kiểm tra cục bộ — 2026-09-18
+
+- Màn hình trình biên soạn báo cáo đã được thu gọn theo nghiệp vụ bác sĩ/kỹ sư: chọn bài kiểm tra và kết quả bằng tên hiển thị, chỉnh tiêu đề, nhãn, nội dung ghi chú, thứ tự và trạng thái hiển thị của từng phần.
+- Đã loại khỏi giao diện mã báo cáo, mã nguồn, mã lần chạy, mã mẫu, bản chụp cấu hình và lựa chọn xuất JSON. Các trạng thái kết quả và định dạng tệp xuất được hiển thị thuần tiếng Việt; mã nội bộ chỉ còn ở lớp giao tiếp dữ liệu cần thiết.
+- Không có thao tác tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA` trong lát cắt này.
+- Kiểm thử riêng đạt **2/2**, toàn bộ giao diện đạt **16/16 tệp và 80/80 phép thử**, kiểm tra kiểu, quy tắc mã nguồn, bản dựng sản phẩm và kiểm tra khoảng trắng đều đạt. Bằng chứng: [trình biên soạn báo cáo theo ngôn ngữ nghiệp vụ](docs/evidence/p9-local-report-builder-user-facing-20260918.md).
+- Đây là `LOCAL_VERIFIED_SLICE`; P09-W01 vẫn mở vì còn cần dựng PDF/hình chú thích thực, kiểm tra bản chụp và xuất lặp, kiểm tra có đăng nhập trên staging, VERIFY và HANDOFF của P9.
