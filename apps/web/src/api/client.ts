@@ -1194,6 +1194,9 @@ const exportJobSchema = z.object({
   download_url: z.string().nullable(), download_expires_at: z.string().nullable(),
   created_at: z.string(), updated_at: z.string()
 })
+const exportJobCollectionSchema = z.object({
+  items: z.array(exportJobSchema), total: z.number().int(), offset: z.number().int(), limit: z.number().int()
+})
 const exportDownloadSchema = z.object({
   export_job_id: z.string().uuid(), report_revision_id: z.string().uuid(), url: z.string(),
   expires_at: z.string(), sha256: z.string(), media_type: z.string()
@@ -2552,6 +2555,10 @@ export class ApiClient {
 
   reportRevisions(accessToken: string, reportKey: string): Promise<ReportRevision[]> {
     return this.get(`/reports/${reportKey}/revisions`, z.array(reportRevisionSchema), accessToken)
+  }
+
+  reportExports(accessToken: string, reportKey: string, revisionId: string): Promise<{ items: ExportJob[]; total: number; offset: number; limit: number }> {
+    return this.get(`/reports/${reportKey}/revisions/${revisionId}/exports`, exportJobCollectionSchema, accessToken)
   }
 
   async reportPreview(accessToken: string, reportKey: string, revisionId: string, format: 'PDF' | 'PNG' = 'PNG'): Promise<Blob> {

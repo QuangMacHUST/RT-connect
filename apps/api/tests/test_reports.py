@@ -485,6 +485,26 @@ def test_report_exports_are_deterministic_idempotent_and_downloadable() -> None:
                 == f'attachment; filename="{filename}"'
             )
 
+        history = client.get(
+            f"/api/v1/reports/{report_key}/revisions/{revision_id}/exports"
+        )
+        assert history.status_code == 200, history.text
+        assert history.json()["total"] == 4
+        assert len(history.json()["items"]) == 4
+        assert {item["export_format"] for item in history.json()["items"]} == {
+            "JSON",
+            "CSV",
+            "PDF",
+            "PNG",
+        }
+        page = client.get(
+            f"/api/v1/reports/{report_key}/revisions/{revision_id}/exports",
+            params={"offset": 1, "limit": 2},
+        )
+        assert page.status_code == 200, page.text
+        assert page.json()["total"] == 4
+        assert len(page.json()["items"]) == 2
+
         conflict = client.post(
             f"/api/v1/reports/{report_key}/revisions/{revision_id}/exports",
             json={"export_format": "JSON", "idempotency_key": "p9-json-001"},

@@ -182,3 +182,29 @@ test('loads a saved report preview as an image from the renderer endpoint', asyn
     })
   )
 })
+
+test('loads export history for one saved report revision', async () => {
+  const reportKey = '123e4567-e89b-42d3-a456-426614174000'
+  const revisionId = '123e4567-e89b-42d3-a456-426614174001'
+  const exportId = '123e4567-e89b-42d3-a456-426614174002'
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({
+      items: [{
+        id: exportId, organization_id: '123e4567-e89b-42d3-a456-426614174003', report_revision_id: revisionId,
+        idempotency_key: 'report-export-001', export_format: 'PDF', render_options: {}, renderer_version: 'report-renderer-0.4',
+        status: 'COMPLETED', object_key: null, sha256: 'a'.repeat(64), byte_size: 128, media_type: 'application/pdf',
+        error_snapshot: [], warning_snapshot: [], download_url: null, download_expires_at: null,
+        created_at: '2026-09-18T12:00:00Z', updated_at: '2026-09-18T12:00:01Z'
+      }], total: 1, offset: 0, limit: 20
+    })
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  const client = new ApiClient('http://api.test/api/v1')
+
+  await expect(client.reportExports('token', reportKey, revisionId)).resolves.toMatchObject({ total: 1, items: [{ export_format: 'PDF' }] })
+  expect(fetchMock).toHaveBeenCalledWith(
+    expect.stringContaining(`/reports/${reportKey}/revisions/${revisionId}/exports`),
+    expect.objectContaining({ headers: expect.objectContaining({ Authorization: 'Bearer token' }) })
+  )
+})

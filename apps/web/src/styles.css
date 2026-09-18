@@ -297,6 +297,13 @@ td code { color: #075e67; font-size: .78rem; }
 .report-preview article small { color: #087785; font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .68rem; }
 .report-preview article pre { color: #526e80; font: .8rem/1.5 "JetBrains Mono", ui-monospace, monospace; margin: 8px 0 0; overflow-x: auto; white-space: pre-wrap; }
 .report-export-actions { border-top: 1px solid #dce5ea; padding-top: 14px; }
+.report-export-history { border-top: 1px solid #dce5ea; margin-top: 16px; padding-top: 14px; }
+.report-export-history .panel-heading { margin-bottom: 8px; }
+.report-export-history .panel-heading h3 { font-size: 1rem; margin: 0; }
+.report-export-history__list { display: grid; gap: 8px; }
+.report-export-history__item { align-items: center; border: 1px solid #dce5ea; display: flex; gap: 12px; justify-content: space-between; padding: 8px 10px; }
+.report-export-history__item strong, .report-export-history__item small { display: block; }
+.report-export-history__item small { color: #617787; font-size: .75rem; margin-top: 3px; }
 .trend-filter-panel, .trend-series-card { margin-top: 18px; }
 .trend-filter-grid, .form-grid { display: grid; gap: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 16px; }
 .trend-filter-grid label, .form-grid label { color: #334155; display: grid; font-size: .82rem; font-weight: 600; gap: 6px; }

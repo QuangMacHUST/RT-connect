@@ -16,8 +16,10 @@ Kiểm thử cũng xác nhận:
 - dùng lại khóa cho định dạng khác bị từ chối với `EXPORT_IDEMPOTENCY_CONFLICT`;
 - lỗi lưu thông tin công việc dọn tệp đã dựng để lần thử lại không tạo bản mồ côi;
 - lỗi dọn tệp được trả về tín hiệu đối soát, không bị che giấu;
+- lịch sử tệp của từng bản báo cáo được đọc theo phạm vi đơn vị, có tổng số và phân trang;
+- giao diện có thể yêu cầu liên kết tải mới từ mã công việc đã lưu mà không tạo thêm bản xuất;
 - không có thao tác xóa vĩnh viễn hồ sơ QA trong kiểm thử này.
 
 ## Giới hạn bằng chứng
 
-Đây là bằng chứng cục bộ cho hợp đồng xuất và phục hồi. Chưa dùng phiên đăng nhập staging để mở lịch sử của một báo cáo thật, tải lại cả PDF/PNG từ giao diện và đối chiếu với bản xem trước. Việc xóa vĩnh viễn không thuộc phạm vi sản phẩm hiện tại; hồ sơ QA được giữ lại hoặc lưu trữ theo quyết định nghiệp vụ.
+Đây là bằng chứng cục bộ cho hợp đồng xuất, lịch sử và phục hồi. Bộ kiểm thử báo cáo đạt **11/11**; kiểm thử giao diện đạt **82/82**. Chưa dùng phiên đăng nhập staging để mở lịch sử của một báo cáo thật, tải lại cả PDF/PNG từ giao diện và đối chiếu với bản xem trước. Việc xóa vĩnh viễn không thuộc phạm vi sản phẩm hiện tại; hồ sơ QA được giữ lại hoặc lưu trữ theo quyết định nghiệp vụ.

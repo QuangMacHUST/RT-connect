@@ -1964,6 +1964,7 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Hợp đồng xuất hiện hỗ trợ JSON, CSV, PDF và PNG; cùng khóa idempotency trong cùng bản chụp trả lại đúng công việc đã có, còn dùng lại khóa cho định dạng khác bị từ chối `EXPORT_IDEMPOTENCY_CONFLICT`.
 - Tệp xuất được lưu theo bản chụp bất biến, tải lại trả đúng hàm băm/kích thước và tên tệp nghiệp vụ; lỗi ghi metadata được bù trừ tệp tạm để có thể thử lại an toàn. Lỗi dọn dẹp được phát tín hiệu đối soát thay vì mất im lặng.
 - Ba kiểm thử riêng cho P9-W04 đã đạt; toàn bộ `test_reports.py` đạt **11/11**, gồm cả bốn định dạng, lặp idempotency, xung đột khóa, tải lại và hai nhánh lỗi lưu/dọn dẹp. Không có thao tác xóa vĩnh viễn nào trong lát cắt này.
+- Lịch sử tệp của từng bản báo cáo đã có tuyến máy chủ theo đúng bản sửa đổi, phân trang theo phạm vi đơn vị, và giao diện hiển thị tên tệp nghiệp vụ cùng nút “Tải lại” để lấy liên kết mới. Kiểm thử giao diện đạt **16 tệp và 82 phép thử**; kiểm tra kiểu, lint và bản dựng đạt.
 - Đây là `LOCAL_VERIFIED_SLICE`; P09-W04 còn mở phần chạy có đăng nhập trên staging và đối chiếu lịch sử tải lại. Việc lan truyền xóa vĩnh viễn được giữ ngoài phạm vi theo quyết định sản phẩm hiện tại; hồ sơ QA chỉ dùng lưu trữ/khôi phục khi cần.
 
 ## P8-W03 — hàng đợi và kết quả Gamma — kiểm tra cục bộ — 2026-09-18

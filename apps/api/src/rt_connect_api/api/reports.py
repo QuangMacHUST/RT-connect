@@ -265,6 +265,13 @@ class ExportJobResponse(BaseModel):
     updated_at: datetime
 
 
+class ExportJobCollectionResponse(BaseModel):
+    items: list[ExportJobResponse]
+    total: int
+    offset: int
+    limit: int
+
+
 class ExportDownloadResponse(BaseModel):
     export_job_id: UUID
     report_revision_id: UUID
@@ -1937,6 +1944,60 @@ def get_report_export(
         job,
         storage,
         request.app.state.settings.s3_signed_url_ttl_seconds,
+    )
+
+
+@router.get(
+    "/reports/{report_key}/revisions/{revision_id}/exports",
+    response_model=ExportJobCollectionResponse,
+)
+def list_report_exports(
+    report_key: UUID,
+    revision_id: UUID,
+    request: Request,
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
+    identity: AuthenticatedIdentity = Depends(require_identity),
+    session: Session = Depends(get_session),
+) -> ExportJobCollectionResponse:
+    """List export history for one immutable report revision in the active organization."""
+
+    context = resolve_session_context(session, identity)
+    revision = _revision_or_error(session, context, report_key, revision_id)
+    total = int(
+        session.scalar(
+            select(func.count())
+            .select_from(ExportJob)
+            .where(
+                ExportJob.organization_id == context.organization_id,
+                ExportJob.report_revision_id == revision.id,
+            )
+        )
+        or 0
+    )
+    jobs = list(
+        session.scalars(
+            select(ExportJob)
+            .where(
+                ExportJob.organization_id == context.organization_id,
+                ExportJob.report_revision_id == revision.id,
+            )
+            .order_by(ExportJob.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+        )
+    )
+    storage: ObjectStorage | None = None
+    try:
+        storage = get_storage(request.app.state.settings)
+    except ObjectStorageError:
+        storage = None
+    ttl_seconds = request.app.state.settings.s3_signed_url_ttl_seconds
+    return ExportJobCollectionResponse(
+        items=[_export_response(job, storage, ttl_seconds) for job in jobs],
+        total=total,
+        offset=offset,
+        limit=limit,
     )
 
 
