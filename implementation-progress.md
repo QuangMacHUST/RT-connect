@@ -2012,3 +2012,11 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Trên hồ sơ tổng hợp `P6 Staging Upload Smoke`, một lượt chạy `PSQA_GAMMA` bằng Pylinac `gamma_1d` đã hoàn tất với kết luận **Đạt**, tỷ lệ đạt **100%**, **4/4** điểm đạt, **0** điểm không đạt, **0** điểm loại khỏi tính toán, độ bao phủ **1**, Gamma P95 **0**. Bảng vị trí một chiều và biểu đồ phân bố hiển thị trên trang; lịch sử ghi nhận lượt chạy hoàn tất.
 - Bằng chứng: [Gamma một chiều Pylinac staging](docs/evidence/p8-staging-gamma-1d-pylinac-20260918.json). API `/ready` tại thời điểm kiểm tra trả `ready`.
 - Cổng này chỉ xác nhận happy path 1D trên staging với dữ liệu tổng hợp. P08-W03 vẫn mở queue retry/cancel, lỗi worker/Redis, ma trận đầu vào không hợp lệ, đối chiếu độc lập và VERIFY/HANDOFF; không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
+## P8-W03 — Kiểm chứng thử lại Gamma trên staging — 2026-09-18
+
+- Không thực hiện xóa vĩnh viễn và không chạm hồ sơ `dailyQA`; chỉ dùng dữ liệu tổng hợp trong case staging `P6 Staging Upload Smoke`.
+- Trên candidate API `b45d1ff` và web `dafd4d3`, mở một lượt Gamma một chiều đã lỗi trong lịch sử rồi bấm `Phân tích lại`. Giao diện hiển thị đã đưa bài vào hàng chờ; lần thực hiện tăng từ `1` lên `2`, trạng thái trung gian đạt `25%`, sau đó worker kết thúc `FAILED` với lỗi `Gamma một chiều cần đúng một khoảng cách điểm và một gốc tọa độ.`
+- Kết quả lỗi không sinh `PASS`, không tạo snapshot kết quả mới và lịch sử vẫn giữ nguyên. Đây là staging evidence cho retry và lỗi đầu vào; không phải bằng chứng worker crash/ACK/dead-letter.
+- Lượt tổng hợp chạy quá nhanh nên không giữ được trạng thái `QUEUED` hoặc `RETRYING` đủ lâu để bấm hủy trên trình duyệt. Hợp đồng hủy trước khi worker nhận việc vẫn đã đạt trong kiểm thử local tại `docs/evidence/p8-local-gamma-queue-results-20260918.md`.
+- Bằng chứng: `docs/evidence/p8-staging-gamma-retry-20260918.json`. P08-W03 vẫn mở cho cổng hủy staging có kiểm soát, ma trận lỗi worker/Redis, giới hạn tài nguyên, oracle độc lập và VERIFY/HANDOFF.

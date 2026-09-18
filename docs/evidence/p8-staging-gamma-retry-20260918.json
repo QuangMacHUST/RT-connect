@@ -1,0 +1,33 @@
+{
+  "schema_version": "rt-connect.p8-staging-gamma-retry.v1",
+  "captured_at": "2026-09-18T23:05:58+07:00",
+  "environment": "staging",
+  "api_version": "b45d1ff39a23d1962ce2c5ed9562c3433cc0dc9b",
+  "web_commit": "dafd4d3",
+  "case_label": "P6 Staging Upload Smoke",
+  "synthetic_only": true,
+  "action": {
+    "source": "lượt phân tích Gamma một chiều đã lỗi trong lịch sử",
+    "control": "Phân tích lại",
+    "queued_message_visible": true,
+    "attempt_before": 1,
+    "attempt_after": 2,
+    "intermediate_status": "RUNNING",
+    "intermediate_progress_percent": 25,
+    "terminal_status": "FAILED",
+    "terminal_error_visible": "Gamma một chiều cần đúng một khoảng cách điểm và một gốc tọa độ."
+  },
+  "safety_checks": {
+    "result_snapshot_created_after_invalid_retry": false,
+    "history_preserved": true,
+    "patient_data_used": false,
+    "permanent_deletion_performed": false,
+    "dailyqa_touched": false
+  },
+  "scope_and_limitations": {
+    "staging_cancel_window_observed": false,
+    "cancel_window_reason": "Lượt tổng hợp chuyển từ hàng chờ sang worker quá nhanh để thao tác hủy trên giao diện.",
+    "local_cancel_contract": "Đã có kiểm thử hủy trước worker nhận việc trong docs/evidence/p8-local-gamma-queue-results-20260918.md",
+    "remaining": "Cần một lượt chạy staging đủ dài hoặc cơ chế giữ hàng chờ có kiểm soát để quan sát nút hủy; chưa đóng toàn bộ ma trận lỗi worker và cổng VERIFY/HANDOFF."
+  }
+}
