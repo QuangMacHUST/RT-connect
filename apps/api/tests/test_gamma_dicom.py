@@ -159,6 +159,25 @@ def test_rtdose_metadata_validation_is_strict_enough_for_gamma(tmp_path: Path) -
     assert {"RTDOSE_GRID_VALID", "RTDOSE_GEOMETRY_VALID", "RTDOSE_DOSE_UNITS_VALID"}.issubset(codes)
 
 
+def test_single_frame_rtdose_accepts_scalar_grid_offset_vector(tmp_path: Path) -> None:
+    rtdose = tmp_path / "single-frame-reference.dcm"
+    _write_rtdose(rtdose, [100, 200, 300, 400, 500, 600, 700, 800])
+    dataset = pydicom.dcmread(rtdose)
+    dataset.NumberOfFrames = 1
+    dataset.GridFrameOffsetVector = [0.0]
+    dataset.PixelData = np.asarray([100, 200, 300, 400], dtype=np.uint16).tobytes()
+    dataset.save_as(rtdose, write_like_original=False)
+
+    validation = validate_dicom(rtdose)
+
+    assert validation.result == "VALID"
+    assert validation.metadata["grid"] == {"rows": 2, "columns": 2, "frames": 1}
+    assert validation.metadata["grid_frame_offset_vector_mm"] == [0.0]
+    loaded = load_gamma_dataset(rtdose)
+    assert loaded.values.shape == (2, 2)
+    assert loaded.values.tolist() == [[1.0, 2.0], [3.0, 4.0]]
+
+
 def test_rtdose_rejects_non_axial_orientation_before_gamma(tmp_path: Path) -> None:
     rtdose = tmp_path / "oblique-reference.dcm"
     _write_rtdose(rtdose, [100, 200, 300, 400, 500, 600, 700, 800])

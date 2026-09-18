@@ -247,10 +247,17 @@ def _validate_rtdose(
             "GridFrameOffsetVector",
         )
     else:
-        try:
-            values = [_number(item) for item in offsets]
-        except TypeError:
-            values = None
+        if isinstance(offsets, (str, bytes)):
+            offset_items = [offsets]
+        else:
+            try:
+                offset_items = list(offsets)
+            except TypeError:
+                # pydicom represents a single-frame RTDOSE vector as one
+                # DSfloat rather than a MultiValue.  It is still a valid
+                # one-element GridFrameOffsetVector.
+                offset_items = [offsets]
+        values = [_number(item) for item in offset_items]
         valid_values = values is not None and all(item is not None for item in values)
         numeric_values = [item for item in values if item is not None] if values else []
         if (
