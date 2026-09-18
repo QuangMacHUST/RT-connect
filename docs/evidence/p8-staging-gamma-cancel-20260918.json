@@ -1,0 +1,36 @@
+{
+  "schema_version": "rt-connect.p8-staging-gamma-cancel.v1",
+  "captured_at": "2026-09-18T23:22:22+07:00",
+  "environment": "staging",
+  "worker_commit": "b301ca8",
+  "case_label": "P6 Staging Upload Smoke",
+  "synthetic_only": true,
+  "action": {
+    "control": "Bật chế độ chờ có kiểm soát trên worker riêng của staging",
+    "queued_status_visible": true,
+    "cancel_control_visible": true,
+    "cancel_control": "Hủy phân tích",
+    "terminal_status": "CANCELLED",
+    "terminal_message_visible": "Đã hủy bài phân tích đang chờ. Không có phép tính nào được thực hiện.",
+    "progress_percent": 0,
+    "attempt_count": 0,
+    "result_snapshot_created": false
+  },
+  "recovery": {
+    "drain_mode_removed": true,
+    "worker_restored_online": true,
+    "post_restore_synthetic_run": "COMPLETED/PASS",
+    "post_restore_evaluated_points": 4,
+    "post_restore_passing_points": 4
+  },
+  "safety_checks": {
+    "patient_data_used": false,
+    "permanent_deletion_performed": false,
+    "dailyqa_touched": false,
+    "existing_history_preserved": true
+  },
+  "scope_and_limitations": {
+    "verified": "Hủy lượt mới ở trạng thái QUEUED trước khi worker nhận việc trên staging; worker trở lại xử lý bình thường sau khi gỡ cờ.",
+    "remaining": "Chưa đóng toàn bộ ma trận lỗi worker/Redis, giới hạn tài nguyên, đối chiếu độc lập và các cổng VERIFY/HANDOFF P8."
+  }
+}

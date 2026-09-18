@@ -2020,3 +2020,11 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Kết quả lỗi không sinh `PASS`, không tạo snapshot kết quả mới và lịch sử vẫn giữ nguyên. Đây là staging evidence cho retry và lỗi đầu vào; không phải bằng chứng worker crash/ACK/dead-letter.
 - Lượt tổng hợp chạy quá nhanh nên không giữ được trạng thái `QUEUED` hoặc `RETRYING` đủ lâu để bấm hủy trên trình duyệt. Hợp đồng hủy trước khi worker nhận việc vẫn đã đạt trong kiểm thử local tại `docs/evidence/p8-local-gamma-queue-results-20260918.md`.
 - Bằng chứng: `docs/evidence/p8-staging-gamma-retry-20260918.json`. P08-W03 vẫn mở cho cổng hủy staging có kiểm soát, ma trận lỗi worker/Redis, giới hạn tài nguyên, oracle độc lập và VERIFY/HANDOFF.
+
+## P8-W03 — Hủy Gamma khi còn trong hàng chờ trên staging — đã kiểm tra — 2026-09-18
+
+- Không thực hiện xóa vĩnh viễn và không chạm hồ sơ `dailyQA`; chỉ dùng dữ liệu tổng hợp trong case staging `P6 Staging Upload Smoke`.
+- Worker Gamma staging được triển khai cờ chờ tạm thời chỉ dành cho kiểm thử. Một lượt Gamma một chiều mới được tạo và hiển thị `Đang chờ`; nút `Hủy phân tích` xuất hiện đúng lúc.
+- Sau khi hủy, giao diện hiển thị `Đã hủy bài phân tích đang chờ. Không có phép tính nào được thực hiện.` Trạng thái cuối là `Đã hủy`, tiến độ `0%`, lần thực hiện `0`, không có kết quả đạt và không tạo snapshot kết quả.
+- Cờ chờ đã được gỡ khỏi worker. Railway xác nhận worker trở lại `Online`; một lượt Gamma một chiều tổng hợp tiếp theo đã chạy qua worker và hoàn tất `Đạt`, `100%`, `4/4` điểm.
+- Bằng chứng: [Gamma cancel staging](docs/evidence/p8-staging-gamma-cancel-20260918.json). Đây là cổng hủy staging đã đạt; P08-W03 vẫn mở cho ma trận lỗi worker/Redis, giới hạn tài nguyên, oracle độc lập và VERIFY/HANDOFF.
