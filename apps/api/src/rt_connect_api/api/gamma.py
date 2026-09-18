@@ -480,13 +480,28 @@ def _validate_coordinate_frames(reference: Artifact, evaluation: Artifact) -> No
 
 
 def _validate_workflow_profile(
-    workflow_profile: str, reference: Artifact, evaluation: Artifact
+    workflow_profile: str,
+    reference: Artifact,
+    evaluation: Artifact,
+    *,
+    dimensionality: str = "2D",
 ) -> None:
     """Apply semantic input rules that are stronger than file validation."""
 
     _validate_coordinate_frames(reference, evaluation)
 
     if workflow_profile == "PSQA_GAMMA":
+        if dimensionality == "1D":
+            if (
+                reference.artifact_type != "MEASUREMENT"
+                or evaluation.artifact_type != "MEASUREMENT"
+            ):
+                raise DomainError(
+                    "MEASUREMENT_REQUIRED",
+                    "Gamma một chiều cần hai tệp số đo đã được kiểm tra hợp lệ.",
+                    422,
+                )
+            return
         if reference.artifact_type != "DICOM" or reference.modality != "RTDOSE":
             raise DomainError(
                 "RTDOSE_REQUIRED",
@@ -882,7 +897,12 @@ def enqueue_gamma_run(
     evaluation, evaluation_manifest = _preflight_artifact(
         session, context, case, payload.evaluation_artifact_id, "evaluation"
     )
-    _validate_workflow_profile(payload.workflow_profile, reference, evaluation)
+    _validate_workflow_profile(
+        payload.workflow_profile,
+        reference,
+        evaluation,
+        dimensionality=payload.configuration.dimensionality,
+    )
     _validate_gamma_engine_selection(payload)
     _validate_gamma_input_geometry(payload, reference, evaluation)
     resource_budget = _resource_budget_snapshot(request, reference, evaluation)

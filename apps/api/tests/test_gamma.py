@@ -16,6 +16,7 @@ from rt_connect_api.api.gamma import (
     _validate_coordinate_frames,
     _validate_gamma_engine_selection,
     _validate_gamma_input_geometry,
+    _validate_workflow_profile,
 )
 from rt_connect_api.api.gamma import (
     _storage as gamma_storage,
@@ -38,18 +39,24 @@ def _measurement_bytes(
     values: list[float],
     *,
     frame_id: str = "1.2.826.0.1.3680043.8.498.999.4",
+    shape: list[int] | None = None,
+    spacing_mm: list[float] | None = None,
+    axis_order: list[str] | None = None,
 ) -> bytes:
+    shape = shape or [2, 2]
+    spacing_mm = spacing_mm or [1.0, 1.0]
+    axis_order = axis_order or ["y", "x"]
     payload: dict[str, Any] = {
         "schema_version": "gamma.measurement.v1",
         "dataset_id": dataset_id,
         "data_type": "dose",
         "units": {"dose": "GY", "position": "mm"},
-        "grid": {"shape": [2, 2], "spacing_mm": [1.0, 1.0]},
+        "grid": {"shape": shape, "spacing_mm": spacing_mm},
         "coordinate_frame": {
             "basis": "PATIENT_LPS",
             "frame_id": frame_id,
             "frame_of_reference_uid": frame_id,
-            "axis_order": ["y", "x"],
+            "axis_order": axis_order,
             "transform_to_reference": {
                 "direction": "SOURCE_TO_REFERENCE",
                 "units": "mm",
@@ -609,6 +616,62 @@ def test_psqa_profile_rejects_json_only_inputs_before_enqueue() -> None:
         )
         assert rejected.status_code == 422, rejected.text
         assert rejected.json()["code"] == "RTDOSE_REQUIRED"
+
+
+def test_psqa_profile_accepts_one_dimensional_measurement_inputs_before_enqueue() -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[artifact_storage] = lambda: storage
+        client.app.dependency_overrides[gamma_storage] = lambda: storage
+        case_id = _case(client, str(organization.id))
+        ids = []
+        for role, dataset_id in (("REFERENCE", "reference-1d"), ("EVALUATION", "evaluation-1d")):
+            uploaded = client.post(
+                f"/api/v1/qa-cases/{case_id}/artifacts",
+                files={
+                    "file": (
+                        f"{dataset_id}.json",
+                        _measurement_bytes(
+                            dataset_id,
+                            [1, 2, 3, 4],
+                            shape=[4],
+                            spacing_mm=[1.0],
+                            axis_order=["x"],
+                        ),
+                        "application/json",
+                    )
+                },
+                data={"artifact_type": "MEASUREMENT", "logical_role": role},
+            )
+            assert uploaded.status_code == 201, uploaded.text
+            artifact_id = uploaded.json()["id"]
+            validation = client.post(f"/api/v1/artifacts/{artifact_id}/validate")
+            assert validation.status_code == 200, validation.text
+            assert validation.json()["result"] == "VALID"
+            ids.append(artifact_id)
+
+        queued = client.post(
+            f"/api/v1/qa-cases/{case_id}/gamma-runs",
+            json={
+                "reference_artifact_id": ids[0],
+                "evaluation_artifact_id": ids[1],
+                "idempotency_key": "psqa-1d-measurements-001",
+                "configuration": {"dimensionality": "1D"},
+            },
+        )
+        assert queued.status_code == 201, queued.text
+        assert queued.json()["status"] == "QUEUED"
+        assert queued.json()["engine_version"].startswith("pylinac-")
+
+
+def test_psqa_profile_keeps_rtdose_requirement_for_two_dimensional_runs() -> None:
+    reference = _artifact_with_grid(shape=[2, 2], spacing=[1.0, 1.0])
+    evaluation = _artifact_with_grid(shape=[2, 2], spacing=[1.0, 1.0])
+
+    with pytest.raises(DomainError) as error:
+        _validate_workflow_profile("PSQA_GAMMA", reference, evaluation, dimensionality="2D")
+
+    assert error.value.code == "RTDOSE_REQUIRED"
 
 
 @pytest.mark.parametrize(
