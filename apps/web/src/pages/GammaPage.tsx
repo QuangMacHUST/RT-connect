@@ -5,6 +5,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ApiClientError, apiClient, type GammaConfiguration, type GammaRunResource } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import { artifactDisplayName } from './gammaArtifactLabels'
+import { validateGammaConfiguration } from './gammaValidation'
 
 type JsonRecord = Record<string, unknown>
 
@@ -291,6 +292,7 @@ export function GammaPage() {
     : undefined
   const comparisonRows = comparison.data?.items.filter((item) => comparisonLabel(item.key)) ?? []
   const busy = createMutation.isPending || retryMutation.isPending || cancelMutation.isPending
+  const configurationErrors = validateGammaConfiguration(configuration)
   const selectedReference = eligibleArtifacts.find((item) => item.id === selectedReferenceId)
   const selectedEvaluation = eligibleArtifacts.find((item) => item.id === selectedEvaluationId)
   const profileReady = selectedReference?.artifact_type === 'DICOM' && selectedReference.modality === 'RTDOSE' && (
@@ -339,7 +341,8 @@ export function GammaPage() {
           <label>Hệ số tinh chỉnh một chiều<input type="number" min="1" max="10" step="1" value={configuration.resolution_factor} onChange={(event) => updateNumber('resolution_factor', event.target.value)} /></label>
         </div>
         <p className="form-hint">Phép tính mới sử dụng Pylinac với chênh lệch liều tương đối và phép tìm trên lưới. Hệ số tinh chỉnh chỉ áp dụng cho Gamma một chiều; số khoảng biểu đồ chỉ thay đổi cách hiển thị kết quả. Mọi tiêu chí được lưu cùng kết quả, không thay đổi các lần phân tích trước.</p>
-        <button disabled={busy || !profileReady || selectedReferenceId === selectedEvaluationId} onClick={() => createMutation.mutate()}>Bắt đầu phân tích</button>
+        {configurationErrors.length > 0 && <div className="alert alert--error" role="alert"><strong>Chưa thể bắt đầu phân tích</strong><ul>{configurationErrors.map((item) => <li key={item.field}>{item.message}</li>)}</ul></div>}
+        <button disabled={busy || !profileReady || selectedReferenceId === selectedEvaluationId || configurationErrors.length > 0} onClick={() => createMutation.mutate()}>Bắt đầu phân tích</button>
       </section>
 
       <section className="panel gamma-panel">

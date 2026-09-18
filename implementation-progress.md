@@ -1858,3 +1858,11 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều `200`, lược đồ `20260914_0023`, tuyến thông tin xem trước và gói giao diện đều hiện diện.
 - Bằng chứng: [parity chọn tâm phantom trên staging](docs/evidence/p7-staging-visual-phantom-center-adjustment-20260918.json). Đây là kiểm tra triển khai và biên công khai không cần đăng nhập, chưa phải chạy thao tác chọn tâm với fixture phantom được phê duyệt.
 - Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`. P7-W04 vẫn mở các cổng tương tác có đăng nhập, fixture đại diện, đối chiếu độc lập và nghiệm thu chuyên môn.
+
+## P8-W02 — kiểm tra tham số PSQA ngay trên biểu mẫu — đã kiểm tra local — 2026-09-18
+
+- Biểu mẫu PSQA đã có lớp kiểm tra dùng chung cho chênh lệch liều, DTA, ngưỡng liều thấp, ngưỡng đạt, giới hạn Gamma, số khoảng biểu đồ và hệ số tinh chỉnh một chiều. Dữ liệu không hữu hạn, bằng 0/âm, ngoài miền hoặc không phải số nguyên ở trường yêu cầu số nguyên đều bị báo ngay bằng tiếng Việt.
+- Phân tích Gamma ba chiều mới bị chặn rõ ràng vì Pylinac hiện chỉ được dùng cho Gamma một chiều và hai chiều; kết quả Gamma ba chiều cũ vẫn giữ đúng quy tắc chỉ xem lại ở phần lịch sử.
+- Khi còn lỗi, nút bắt đầu phân tích bị khóa nên không tạo tác vụ mới, không gọi máy chủ và không làm thay đổi lịch sử. Các trường “Chênh lệch liều (%)” và “DTA (mm)” vẫn là tham số người dùng nhập, được chuyển nguyên vẹn cho hợp đồng Pylinac sau khi hợp lệ.
+- Kiểm thử riêng đạt **7/7**, toàn bộ giao diện đạt **78/78**, kiểm tra kiểu, lint và bản dựng sản phẩm đạt. Bằng chứng: [kiểm tra tham số PSQA](docs/evidence/p8-local-psqa-configuration-validation-20260918.md).
+- Đây là `LOCAL_VERIFIED_SLICE`, chưa đóng P08-W02. Còn cần chạy Gamma thật trên staging bằng dữ liệu hợp lệ, kiểm tra hàng đợi/hủy/thử lại và VERIFY/HANDOFF P8. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
