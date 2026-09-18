@@ -31,6 +31,7 @@ from rt_connect_api.db.models import (
     ExportJob,
     GammaAnalysisRun,
     MachineQARun,
+    PylinacQARun,
     QACase,
     ReportBlockConfig,
     ReportRevision,
@@ -38,6 +39,7 @@ from rt_connect_api.db.models import (
     UserIdentity,
 )
 from rt_connect_api.db.session import get_session
+from rt_connect_api.qa_catalog import get_qa_test_definition
 from rt_connect_api.security.supabase_jwt import AuthenticatedIdentity, require_identity
 from rt_connect_api.services.object_storage import (
     ObjectStorage,
@@ -56,7 +58,9 @@ from rt_connect_api.services.session_context import SessionContext, resolve_sess
 
 router = APIRouter(tags=["reports"])
 
-ReportSourceType = Literal["CUSTOM", "QA_CASE", "MACHINE_QA", "GAMMA", "DVH", "BIOLOGICAL"]
+ReportSourceType = Literal[
+    "CUSTOM", "QA_CASE", "MACHINE_QA", "PYLINAC_QA", "GAMMA", "DVH", "BIOLOGICAL"
+]
 ReportBlockType = Literal[
     "TEXT",
     "METADATA",
@@ -92,7 +96,9 @@ _BLOCK_TYPES: frozenset[str] = frozenset(
         "WARNING",
     }
 )
-_SOURCE_IDS_REQUIRED: frozenset[str] = frozenset({"QA_CASE", "MACHINE_QA", "GAMMA", "DVH"})
+_SOURCE_IDS_REQUIRED: frozenset[str] = frozenset(
+    {"QA_CASE", "MACHINE_QA", "PYLINAC_QA", "GAMMA", "DVH"}
+)
 
 
 class ReportBlockInput(BaseModel):
@@ -835,6 +841,45 @@ def _source_snapshot(
             ),
             "created_at": machine_run.created_at.isoformat(),
             "updated_at": machine_run.updated_at.isoformat(),
+        }
+    elif source_type == "PYLINAC_QA":
+        pylinac_run = session.scalar(
+            select(PylinacQARun).where(
+                PylinacQARun.id == source_id,
+                PylinacQARun.organization_id == context.organization_id,
+            )
+        )
+        if pylinac_run is None:
+            raise DomainError(
+                "REPORT_SOURCE_UNAVAILABLE", "The Pylinac source was not found.", 404
+            )
+        definition = get_qa_test_definition(pylinac_run.catalog_key)
+        if definition is None:
+            raise DomainError(
+                "REPORT_SOURCE_UNAVAILABLE", "The Pylinac test definition was not found.", 404
+            )
+        payload = {
+            "id": str(pylinac_run.id),
+            "organization_id": str(pylinac_run.organization_id),
+            "qa_case_id": str(pylinac_run.qa_case_id),
+            "catalog_key": pylinac_run.catalog_key,
+            "name": definition.name,
+            "family": definition.family,
+            "status": pylinac_run.status,
+            "assessment_status": pylinac_run.assessment_status,
+            "engine_class": pylinac_run.engine_class,
+            "engine_version": pylinac_run.engine_version,
+            "parameters": pylinac_run.parameters_snapshot,
+            "result_snapshot": pylinac_run.result_snapshot,
+            "warning_snapshot": pylinac_run.warning_snapshot,
+            "error_snapshot": pylinac_run.error_snapshot,
+            "overlay_artifact_id": (
+                str(pylinac_run.overlay_artifact_id)
+                if pylinac_run.overlay_artifact_id
+                else None
+            ),
+            "created_at": pylinac_run.created_at.isoformat(),
+            "updated_at": pylinac_run.updated_at.isoformat(),
         }
     elif source_type == "GAMMA":
         gamma_run = session.scalar(

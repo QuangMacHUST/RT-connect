@@ -2,6 +2,7 @@ export const reportSourceLabels: Record<string, string> = {
   CUSTOM: 'Báo cáo tùy chỉnh',
   QA_CASE: 'Bài kiểm tra chất lượng máy',
   MACHINE_QA: 'Kết quả kiểm tra máy',
+  PYLINAC_QA: 'Phân tích QA bằng Pylinac',
   GAMMA: 'Phân tích PSQA',
   DVH: 'Phân tích liều và thể tích',
   BIOLOGICAL: 'Công cụ sinh học'
@@ -49,7 +50,9 @@ export const reportRunStatusLabels: Record<string, string> = {
   PROCESSING: 'Đang xử lý',
   COMPLETED: 'Đã hoàn tất',
   CANCELLED: 'Đã hủy',
-  CANCELED: 'Đã hủy'
+  CANCELED: 'Đã hủy',
+  REVIEW: 'Cần xem lại',
+  NOT_ASSESSED: 'Chưa đánh giá'
 }
 
 export function reportSourceLabel(value: string): string {

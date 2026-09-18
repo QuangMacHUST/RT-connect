@@ -2535,7 +2535,7 @@ export class ApiClient {
   }
 
   createReport(accessToken: string, organizationId: string, body: {
-    source_type: 'CUSTOM' | 'QA_CASE' | 'MACHINE_QA' | 'GAMMA' | 'DVH' | 'BIOLOGICAL'
+    source_type: 'CUSTOM' | 'QA_CASE' | 'MACHINE_QA' | 'PYLINAC_QA' | 'GAMMA' | 'DVH' | 'BIOLOGICAL'
     source_id?: string
     title: string
     template_version_id?: string
@@ -2556,7 +2556,7 @@ export class ApiClient {
 
   createReportRevision(accessToken: string, reportKey: string, body: {
     expected_revision?: number
-    source_type?: 'CUSTOM' | 'QA_CASE' | 'MACHINE_QA' | 'GAMMA' | 'DVH' | 'BIOLOGICAL'
+    source_type?: 'CUSTOM' | 'QA_CASE' | 'MACHINE_QA' | 'PYLINAC_QA' | 'GAMMA' | 'DVH' | 'BIOLOGICAL'
     source_id?: string
     title?: string
     template_version_id?: string

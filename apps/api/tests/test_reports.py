@@ -7,8 +7,10 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from rt_connect_api.api.pylinac_qa import _storage as pylinac_storage
 from rt_connect_api.api.reports import _storage as report_storage
 from rt_connect_api.services.object_storage import InMemoryObjectStorage, ObjectStorageError
+from rt_connect_api.services.pylinac_adapter import PylinacExecutionResult
 from rt_connect_api.services.report_renderer import render_report
 from test_workspace import _workspace_client
 
@@ -125,6 +127,55 @@ def _blocks(label: str = "Summary") -> list[dict[str, object]]:
             "source_binding": {"path": "source_snapshot.payload.error_snapshot"},
         },
     ]
+
+
+def test_pylinac_result_can_become_a_report_source(monkeypatch) -> None:
+    fake_result = PylinacExecutionResult(
+        catalog_key="CALIBRATION_TG51_PHOTON",
+        engine_class="TG51Photon",
+        engine_version="3.47.0",
+        package_fingerprint="f" * 64,
+        result_snapshot={
+            "schema_version": "p7.pylinac-calibration-result.v1",
+            "engine": "pylinac",
+            "metrics": {"dose_mu_10": 1.0},
+            "engine_passed": None,
+        },
+        warnings=[],
+        overlay_bytes=None,
+        overlay_media_type=None,
+        overlay_filename=None,
+    )
+
+    with _workspace_client() as (client, organization):
+        storage = InMemoryObjectStorage()
+        client.app.dependency_overrides[pylinac_storage] = lambda: storage
+        monkeypatch.setattr(
+            "rt_connect_api.api.pylinac_qa.execute_pylinac", lambda *_args: fake_result
+        )
+        case_id = _qa_case(client, str(organization.id))
+        run = client.post(
+            f"/api/v1/qa-cases/{case_id}/pylinac-runs",
+            json={"catalog_key": "CALIBRATION_TG51_PHOTON", "artifact_ids": []},
+        )
+        assert run.status_code == 201, run.text
+
+        report = client.post(
+            f"/api/v1/organizations/{organization.id}/reports",
+            json={
+                "source_type": "PYLINAC_QA",
+                "source_id": run.json()["id"],
+                "title": "Báo cáo hiệu chuẩn TG-51",
+                "blocks": _blocks("Kết quả Pylinac"),
+            },
+        )
+        assert report.status_code == 201, report.text
+        payload = report.json()["source_snapshot"]["payload"]
+        assert payload["catalog_key"] == "CALIBRATION_TG51_PHOTON"
+        assert payload["name"]
+        assert payload["engine_class"] == "TG51Photon"
+        assert payload["result_snapshot"]["metrics"]["dose_mu_10"] == 1.0
+        assert payload["overlay_artifact_id"] is None
 
 
 def test_report_revision_snapshots_source_and_supports_full_block_customization() -> None:

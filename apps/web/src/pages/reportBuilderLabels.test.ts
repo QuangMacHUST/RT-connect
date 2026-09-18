@@ -10,6 +10,7 @@ import {
 
 test('maps report sources and blocks to Vietnamese labels', () => {
   expect(reportSourceLabel('GAMMA')).toBe('Phân tích PSQA')
+  expect(reportSourceLabel('PYLINAC_QA')).toBe('Phân tích QA bằng Pylinac')
   expect(reportBlockLabel('GAMMA_MAP')).toBe('Bản đồ Gamma')
   expect(reportBlockLabel('UNKNOWN')).toBe('Khối nội dung')
 })
