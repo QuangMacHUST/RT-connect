@@ -29,6 +29,15 @@
       "download_again_action_available": true,
       "download_again_action_triggered": true
     },
+    "pdf_readback": {
+      "pages": 1,
+      "pdf_header_and_eof_readable": true,
+      "rendered_to_png_for_visual_inspection": true,
+      "vietnamese_text_rendered": true,
+      "visible_text_round_trip_verified": true,
+      "gamma_overlay_embedded": false,
+      "gamma_overlay_note": "Lượt phân tích tổng hợp được chọn không có ảnh kết quả; PDF hiển thị thông báo chờ ảnh thay vì tự tạo ảnh giả."
+    },
     "report_history_count_after_save": 5,
     "export_history_count_for_revision": 1,
     "technical_json_or_internal_id_shown_in_main_view": false

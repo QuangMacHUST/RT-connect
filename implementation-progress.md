@@ -6,6 +6,7 @@
 - Đã đặt tiêu đề, ghi chú mở đầu, đổi một phần sang `Bản đồ Gamma`, giữ phần `Nguồn và phiên bản`, sau đó lưu thành bản báo cáo mới. Giao diện xác nhận đã lưu bản 1 và lịch sử báo cáo tăng từ 4 lên 5.
 - Bản xem trước sau khi lưu hiển thị từ bản chụp đã lưu; không hiển thị JSON, mã hồ sơ, mã lần chạy hoặc mã nội bộ.
 - Đã xuất `Tài liệu PDF`, trạng thái hoàn tất, kích thước 383.014 byte; lịch sử tệp của bản báo cáo có một tệp PDF hoàn tất và nút `Tải lại` đã được kích hoạt và kiểm tra.
+- Kiểm tra chỉ đọc tệp PDF đã xuất xác nhận 1 trang, header/EOF đọc được, render thành ảnh được và văn bản tiếng Việt đọc lại đúng. Lượt Gamma tổng hợp được chọn không có ảnh kết quả nên PDF hiển thị thông báo chờ ảnh; đây là giới hạn đúng của dữ liệu đầu vào, chưa phải nghiệm thu lớp phủ Gamma thật.
 - Bằng chứng: [luồng báo cáo Gamma staging có đăng nhập](docs/evidence/p9-staging-authenticated-report-export-20260918.json).
 - Đây là cổng staging nghiệp vụ đầu tiên cho P9, chưa đóng P09-W01/W02/W03/W04: còn cần đối chiếu trực quan tệp tải về với bản xem trước, bảng nghiệp vụ nhiều trang, ảnh phân tích thực, lỗi/mất mạng/xuất lặp trên staging và VERIFY/HANDOFF. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`; không xóa vĩnh viễn hồ sơ nào.
 
