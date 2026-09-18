@@ -1,5 +1,14 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
+## P9-W01/P09-W03/P09-W04 — tạo, xem trước, xuất và tải lại báo cáo Gamma trên staging — đã kiểm tra luồng có đăng nhập — 2026-09-18
+
+- Trên staging có đăng nhập, đã mở trình biên soạn báo cáo, chọn nguồn `Phân tích PSQA`, chọn hồ sơ tổng hợp `P6 Staging Upload Smoke` và một lần phân tích đã hoàn tất bằng nhãn nghiệp vụ.
+- Đã đặt tiêu đề, ghi chú mở đầu, đổi một phần sang `Bản đồ Gamma`, giữ phần `Nguồn và phiên bản`, sau đó lưu thành bản báo cáo mới. Giao diện xác nhận đã lưu bản 1 và lịch sử báo cáo tăng từ 4 lên 5.
+- Bản xem trước sau khi lưu hiển thị từ bản chụp đã lưu; không hiển thị JSON, mã hồ sơ, mã lần chạy hoặc mã nội bộ.
+- Đã xuất `Tài liệu PDF`, trạng thái hoàn tất, kích thước 383.014 byte; lịch sử tệp của bản báo cáo có một tệp PDF hoàn tất và nút `Tải lại` đã được kích hoạt và kiểm tra.
+- Bằng chứng: [luồng báo cáo Gamma staging có đăng nhập](docs/evidence/p9-staging-authenticated-report-export-20260918.json).
+- Đây là cổng staging nghiệp vụ đầu tiên cho P9, chưa đóng P09-W01/W02/W03/W04: còn cần đối chiếu trực quan tệp tải về với bản xem trước, bảng nghiệp vụ nhiều trang, ảnh phân tích thực, lỗi/mất mạng/xuất lặp trên staging và VERIFY/HANDOFF. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`; không xóa vĩnh viễn hồ sơ nào.
+
 ## P8-W02 — chặn trước cấu hình Gamma không tương thích — local và staging — 2026-09-18
 
 - Đã bổ sung cùng một lớp preflight ở máy chủ và giao diện cho phép kiểm tra trước khi tạo lượt phân tích: số chiều 1D/2D, shape, spacing, gốc tọa độ, điểm ảnh vuông và DTA phải là bội số nguyên của spacing đối với Gamma hai chiều.

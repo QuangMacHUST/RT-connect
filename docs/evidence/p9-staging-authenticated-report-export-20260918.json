@@ -1,0 +1,44 @@
+{
+  "schema_version": "rt-connect.p9-staging-authenticated-report-export.v1",
+  "captured_at": "2026-09-18",
+  "environment": "staging",
+  "url": "https://rt-connect-web-staging-staging.up.railway.app/app/reports",
+  "scope": "authenticated_staging_workflow",
+  "mutation_performed": true,
+  "permanent_deletion_performed": false,
+  "dailyQA_touched": false,
+  "observed": {
+    "page_title": "Trình biên soạn báo cáo",
+    "source_type": "Phân tích PSQA",
+    "source_case_label": "P6 Staging Upload Smoke",
+    "source_run_label": "Lần phân tích 1 · Đã hoàn tất",
+    "report_title": "Kiểm tra báo cáo Gamma staging",
+    "report_saved": true,
+    "saved_revision_label": "Bản 1",
+    "preview_visible": true,
+    "visible_blocks": [
+      "Ghi chú mở đầu",
+      "Bản đồ Gamma",
+      "Nguồn và phiên bản"
+    ],
+    "preview_and_export_use_saved_revision": true,
+    "export": {
+      "format": "Tài liệu PDF",
+      "status": "Đã hoàn tất",
+      "byte_size": 383014,
+      "download_again_action_available": true,
+      "download_again_action_triggered": true
+    },
+    "report_history_count_after_save": 5,
+    "export_history_count_for_revision": 1,
+    "technical_json_or_internal_id_shown_in_main_view": false
+  },
+  "passed": true,
+  "result": "STAGING_AUTHENTICATED_REPORT_SAVE_PREVIEW_PDF_DOWNLOAD_CHECKED",
+  "remaining_scope": [
+    "kiểm tra trực quan nội dung PDF tải về so với ảnh xem trước",
+    "kiểm tra bảng nghiệp vụ nhiều trang và ảnh phân tích thực",
+    "kiểm tra lỗi dựng PDF, mất mạng và xuất lặp trên staging có đăng nhập",
+    "VERIFY và HANDOFF P9"
+  ]
+}
