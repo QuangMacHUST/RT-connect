@@ -1965,3 +1965,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Tệp xuất được lưu theo bản chụp bất biến, tải lại trả đúng hàm băm/kích thước và tên tệp nghiệp vụ; lỗi ghi metadata được bù trừ tệp tạm để có thể thử lại an toàn. Lỗi dọn dẹp được phát tín hiệu đối soát thay vì mất im lặng.
 - Ba kiểm thử riêng cho P9-W04 đã đạt; toàn bộ `test_reports.py` đạt **11/11**, gồm cả bốn định dạng, lặp idempotency, xung đột khóa, tải lại và hai nhánh lỗi lưu/dọn dẹp. Không có thao tác xóa vĩnh viễn nào trong lát cắt này.
 - Đây là `LOCAL_VERIFIED_SLICE`; P09-W04 còn mở phần chạy có đăng nhập trên staging và đối chiếu lịch sử tải lại. Việc lan truyền xóa vĩnh viễn được giữ ngoài phạm vi theo quyết định sản phẩm hiện tại; hồ sơ QA chỉ dùng lưu trữ/khôi phục khi cần.
+
+## P8-W03 — hàng đợi và kết quả Gamma — kiểm tra cục bộ — 2026-09-18
+
+- Bộ `apps/api/tests/test_gamma.py` đạt **15/15**, bao phủ phép tính một chiều/hai chiều, kiểm tra hình học và vùng so sánh, ngưỡng/độ bao phủ, giới hạn tài nguyên, trạng thái `QUEUED`/`CANCELLED`, hủy lặp an toàn và khóa lặp.
+- Pylinac là engine duy nhất cho phép tính Gamma mới; Gamma ba chiều cũ vẫn chỉ đọc. Giao diện đã có tiến độ, nút hủy khi còn chờ, thử lại khi lỗi và bảng kết quả bằng tiếng Việt.
+- Bằng chứng: [hàng đợi và kết quả Gamma cục bộ](docs/evidence/p8-local-gamma-queue-results-20260918.md).
+- Đây là `LOCAL_VERIFIED_SLICE`; P08-W03 vẫn mở bước chạy thật trên staging với worker, retry/cancel, kết quả 1D/2D, lịch sử và ma trận lỗi. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
