@@ -1743,6 +1743,14 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Mốc này chỉ đóng thêm cổng minh bạch độ phủ. Fixture commissioning, đối chiếu độc lập, ROI chuyên biệt, ánh xạ tọa độ đa ảnh, kiểm chứng tương tác staging của từng nhóm và VERIFY/HANDOFF P7 vẫn mở.
 - Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 
+## P7-PLANAR — kiểm tra tham số biểu mẫu ảnh phẳng — lát cắt cục bộ — 2026-09-18
+
+- Mười chín biến thể ảnh phẳng dùng cổng kiểm tra chung cho ngưỡng tương phản thấp, ngưỡng tương phản cao khi bài áp dụng, điều chỉnh tâm/góc và hệ số vùng/thang đo.
+- Tâm ngang và tâm dọc có thể để tự động; nếu người dùng nhập thủ công thì phải nhập đủ cả hai và đều là số hữu hạn. Bài chụp tuyến vú không bị kiểm tra một ngưỡng tương phản cao không dùng trong hợp đồng của bài.
+- Lỗi hiển thị ngay bằng tiếng Việt và nút phân tích bị khóa trước khi gửi yêu cầu tới Pylinac. Không có lượt chạy mới, không sửa lịch sử và không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA` trong cổng này.
+- Kiểm thử giao diện riêng đạt **5/5**, toàn bộ giao diện đạt **72/72**, kiểm tra kiểu, lint và bản dựng sản phẩm đạt. Đây là `LOCAL_VERIFIED_SLICE` cho biên nhập liệu.
+- P07-PLANAR vẫn mở vì còn thiếu fixture chuẩn/commissioning, đối chiếu từng mô-đun kết quả, kiểm lỗi đặc trưng, kiểm chứng staging và nghiệm thu chuyên môn.
+
 ## P7-CHEESE/P7-HELIOS/P7-QUART — kiểm tra tham số biểu mẫu — lát cắt cục bộ — 2026-09-18
 
 - Biểu mẫu TomoCheese, CIRS 062M, GE Helios CT hằng ngày, Quart DVT và Quart HyperSight dùng cổng kiểm tra chung cho lát gốc tùy chọn, điều chỉnh ngang/dọc/góc và các hệ số vùng/thang đo.

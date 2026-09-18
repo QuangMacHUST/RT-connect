@@ -15,6 +15,7 @@ import { validateVmatValues } from './vmatValidation'
 import { validateCatPhanValues } from './catphanValidation'
 import { validateAcrValues } from './acrValidation'
 import { validateCtPylinacValues } from './ctPylinacValidation'
+import { validatePlanarValues } from './planarValidation'
 
 const makeRun = (overrides: Partial<PylinacQARunResource> = {}): PylinacQARunResource => ({
   id: 'run-current',
@@ -223,6 +224,15 @@ test('validates Cheese, Helios and Quart phantom parameters before submission', 
   expect(validateCtPylinacValues({ ...common, isCheese: false, isQuart: false })).toBeUndefined()
   expect(validateCtPylinacValues({ ...common, isCheese: true, isQuart: false })).toBeUndefined()
   expect(validateCtPylinacValues({ ...common, isCheese: false, isQuart: true })).toBeUndefined()
+})
+
+test('validates planar imaging parameters before submission', () => {
+  const valid = { lowContrast: '0.05', highContrast: '0.5', centerX: '', centerY: '', angle: '0', roiSize: '1', scaling: '1', isMammography: false }
+  expect(validatePlanarValues({ ...valid, highContrast: '-1' })).toContain('Ngưỡng tương phản cao')
+  expect(validatePlanarValues({ ...valid, centerX: '10' })).toContain('cùng nhau')
+  expect(validatePlanarValues({ ...valid, centerX: 'x', centerY: '10' })).toContain('Tâm ngang')
+  expect(validatePlanarValues({ ...valid, isMammography: true, highContrast: '' })).toBeUndefined()
+  expect(validatePlanarValues(valid)).toBeUndefined()
 })
 
 test('renders nested Pylinac metrics in readable groups without technical identifiers', () => {

@@ -255,3 +255,9 @@ reject invalid Cheese/Helios/Quart slice, geometry, ROI, density, tolerance and
 roll-slice parameters before creating a Pylinac run. Keep API, worker and web
 on this source revision before recording exact-SHA staging evidence; no
 persisted QA history is changed by this marker.
+
+P7 planar form-validation parity marker (2026-09-18): the web forms now reject
+invalid planar contrast, center-pair, angle, ROI and scaling parameters before
+creating a Pylinac run. Keep API, worker and web on this source revision before
+recording exact-SHA staging evidence; no persisted QA history is changed by
+this marker.

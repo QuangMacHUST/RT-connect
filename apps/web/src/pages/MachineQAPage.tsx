@@ -13,6 +13,7 @@ import { validateVmatValues } from './vmatValidation'
 import { validateCatPhanValues } from './catphanValidation'
 import { validateAcrValues } from './acrValidation'
 import { validateCtPylinacValues } from './ctPylinacValidation'
+import { validatePlanarValues } from './planarValidation'
 import { validateLogGammaValues } from './logValidation'
 import { validateLogArtifactSelection } from './logSelectionValidation'
 
@@ -1962,6 +1963,7 @@ function PlanarImagingPage({ caseId, accessToken, title, catalogKey }: { caseId:
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
   const displayName = title || 'Bài kiểm tra ảnh phẳng'
+  const validationError = validatePlanarValues({ lowContrast, highContrast, centerX, centerY, angle, roiSize, scaling, isMammography })
 
   return <div className="page">
     <header className="page-header">
@@ -1987,7 +1989,8 @@ function PlanarImagingPage({ caseId, accessToken, title, catalogKey }: { caseId:
         <label>Hệ số thang đo<input type="number" min="0" step="0.01" value={scaling} onChange={(event) => setScaling(event.target.value)} /></label>
         <label className="checkbox-label"><input type="checkbox" checked={invert} onChange={(event) => setInvert(event.target.checked)} /> Đảo ảnh</label>
       </div>
-      <div className="machine-qa-actions"><button disabled={!selectedInput || !selectedArtifactsAreValidated(selectedInput ? [selectedInput] : [], imageArtifacts) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      {validationError && <p className="alert alert--error" role="alert">{validationError}</p>}
+      <div className="machine-qa-actions"><button disabled={!selectedInput || !selectedArtifactsAreValidated(selectedInput ? [selectedInput] : [], imageArtifacts) || Boolean(validationError) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedInput ? [selectedInput] : []} emptyHistoryLabel="Chưa có kết quả ảnh phẳng." resultNote={<p>Kết quả chi tiết của Pylinac đã được lưu cùng với ảnh phantom và các chỉ số của đúng biến thể đã chọn.</p>} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>
