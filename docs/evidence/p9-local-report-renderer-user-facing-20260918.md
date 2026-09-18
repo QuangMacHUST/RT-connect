@@ -7,6 +7,7 @@ Phạm vi: renderer PDF/CSV từ bản chụp báo cáo; không thay đổi hồ
 
 - PDF hiển thị tiêu đề tiếng Việt, loại báo cáo bằng nhãn nghiệp vụ, tên bài kiểm tra và đánh giá đã được chuyển ngữ.
 - PDF tôn trọng phần đang hiển thị; phần bị ẩn không được đưa vào tài liệu.
+- PDF dài được tự động chia thành nhiều trang, dùng chung một bộ font và giữ thứ tự phần báo cáo.
 - Ghi chú người dùng trong phần văn bản được đưa vào PDF thay vì chỉ hiển thị tên phần.
 - Các phần chỉ số, cảnh báo, thông tin bài kiểm tra, nguồn và hình phân tích có nội dung tóm tắt an toàn; không đẩy mã hồ sơ, mã lần chạy, mã nguồn, bản chụp cấu hình hoặc mã băm lên tài liệu dành cho người dùng.
 - CSV dành cho người dùng chỉ còn tiêu đề, loại báo cáo, nhãn phần và nội dung; không xuất cấu hình thô hoặc liên kết nguồn kỹ thuật.
@@ -14,10 +15,10 @@ Phạm vi: renderer PDF/CSV từ bản chụp báo cáo; không thay đổi hồ
 
 ## Cổng kiểm tra cục bộ
 
-- Kiểm thử `test_reports.py`: **8/8 đạt**.
+- Kiểm thử `test_reports.py`: **9/9 đạt**.
 - Kiểm tra quy tắc mã nguồn trên renderer và kiểm thử: **đạt**.
 - Kiểm tra kiểu renderer: **đạt**.
-- Kiểm tra Unicode tiếng Việt, ẩn phần, tính xác định và loại bỏ dòng phiên bản/mã băm kỹ thuật: **đạt**.
+- Kiểm tra Unicode tiếng Việt, ẩn phần, chia nhiều trang, tính xác định và loại bỏ dòng phiên bản/mã băm kỹ thuật: **đạt**.
 
 ## Giới hạn còn mở
 

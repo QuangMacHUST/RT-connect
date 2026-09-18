@@ -1893,7 +1893,7 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 
 - Renderer PDF/CSV nay dùng nhãn nghiệp vụ tiếng Việt, đưa ghi chú người dùng vào tài liệu và loại bỏ mã hồ sơ, mã lần chạy, bản chụp cấu hình, mã băm và loại phần kỹ thuật khỏi nội dung dành cho người dùng.
 - Phần ẩn không được render; phần chỉ số/cảnh báo/thông tin bài kiểm tra có tóm tắt an toàn. Font Unicode tiếng Việt tiếp tục được nhúng trong PDF.
-- Kiểm thử `test_reports.py` đạt **8/8**, Ruff và mypy cho phần renderer đạt. Bằng chứng: [renderer báo cáo không lộ thông tin kỹ thuật](docs/evidence/p9-local-report-renderer-user-facing-20260918.md).
+- Kiểm thử `test_reports.py` đạt **9/9**, gồm kiểm tra PDF nhiều trang; Ruff và mypy cho phần renderer đạt. Bằng chứng: [renderer báo cáo không lộ thông tin kỹ thuật](docs/evidence/p9-local-report-renderer-user-facing-20260918.md).
 - Đây là `LOCAL_VERIFIED_SLICE`; còn thiếu ảnh phân tích thật và lớp phủ, bảng nhiều trang, đối chiếu preview–PDF, kiểm tra có đăng nhập trên staging và VERIFY/HANDOFF. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 
 ## P9-W02/P09-W03 — parity triển khai renderer báo cáo trên staging — đã kiểm tra — 2026-09-18

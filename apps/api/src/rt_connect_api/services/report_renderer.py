@@ -105,18 +105,22 @@ def _render_pdf(
 
 
 def _pdf_document(lines: Sequence[str]) -> bytes:
-    """Build a deterministic one-page PDF with an embedded Unicode TrueType font."""
+    """Build a deterministic multi-page PDF with one shared Unicode font."""
 
-    normalized_lines = tuple(_normalize_pdf_line(line) for line in lines)
+    normalized_lines = tuple(_normalize_pdf_line(line) for line in lines) or ("",)
     font_data, cmap, metrics = _load_pdf_font()
     codepoints = sorted({ord(character) for line in normalized_lines for character in line})
-    stream_lines = ["BT", "/F1 12 Tf", "50 760 Td"]
-    for index, line in enumerate(normalized_lines):
-        if index:
-            stream_lines.append("0 -18 Td")
-        stream_lines.append(f"<{line.encode('utf-16-be').hex().upper()}> Tj")
-    stream_lines.append("ET")
-    content = "\n".join(stream_lines).encode("ascii")
+    page_lines = [
+        normalized_lines[index : index + 39] for index in range(0, len(normalized_lines), 39)
+    ]
+    page_count = len(page_lines)
+    shared_start = 3 + page_count * 2
+    type0_id = shared_start
+    cmap_id = shared_start + 1
+    cid_font_id = shared_start + 2
+    descriptor_id = shared_start + 3
+    cidmap_id = shared_start + 4
+    fontfile_id = shared_start + 5
 
     cid_to_gid = bytearray(65536 * 2)
     width_entries: list[str] = []
@@ -134,31 +138,52 @@ def _pdf_document(lines: Sequence[str]) -> bytes:
         f"<< /Type /FontDescriptor /FontName /{_PDF_FONT_NAME} /Flags 32 "
         f"/FontBBox [{descriptor_bbox}] /ItalicAngle 0 "
         f"/Ascent {metrics['ascent']} /Descent {metrics['descent']} "
-        f"/CapHeight {metrics['cap_height']} /StemV 80 /FontFile2 10 0 R >>"
+        f"/CapHeight {metrics['cap_height']} /StemV 80 /FontFile2 {fontfile_id} 0 R >>"
     ).encode("ascii")
     cid_font = (
         f"<< /Type /Font /Subtype /CIDFontType2 /BaseFont /{_PDF_FONT_NAME} "
         f"/CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> "
-        f"/FontDescriptor 8 0 R /DW {metrics['default_width']} "
-        f"/W [{' '.join(width_entries)}] /CIDToGIDMap 9 0 R >>"
+        f"/FontDescriptor {descriptor_id} 0 R /DW {metrics['default_width']} "
+        f"/W [{' '.join(width_entries)}] /CIDToGIDMap {cidmap_id} 0 R >>"
     ).encode("ascii")
     type0_font = (
         f"<< /Type /Font /Subtype /Type0 /BaseFont /{_PDF_FONT_NAME} "
-        f"/Encoding /Identity-H /DescendantFonts [7 0 R] /ToUnicode 6 0 R >>"
+        f"/Encoding /Identity-H /DescendantFonts [{cid_font_id} 0 R] "
+        f"/ToUnicode {cmap_id} 0 R >>"
     ).encode("ascii")
-    objects = [
+
+    objects: list[bytes] = [
         b"<< /Type /Catalog /Pages 2 0 R >>",
-        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
-        b"/Resources << /ProcSet [/PDF /Text] /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
-        type0_font,
-        _pdf_stream_object(content),
-        _pdf_stream_object(_pdf_to_unicode_cmap(codepoints)),
-        cid_font,
-        descriptor,
-        _pdf_stream_object(bytes(cid_to_gid)),
-        _pdf_stream_object(font_data, extra=f"/Length1 {len(font_data)}".encode("ascii")),
+        b"",
     ]
+    page_ids: list[int] = []
+    for index, chunk in enumerate(page_lines):
+        page_id = 3 + index * 2
+        content_id = page_id + 1
+        page_ids.append(page_id)
+        page_content = _pdf_page_content(chunk)
+        objects.extend(
+            [
+                (
+                    f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+                    f"/Resources << /ProcSet [/PDF /Text] /Font << /F1 {type0_id} 0 R >> >> "
+                    f"/Contents {content_id} 0 R >>"
+                ).encode("ascii"),
+                _pdf_stream_object(page_content),
+            ]
+        )
+    kids = " ".join(f"{page_id} 0 R" for page_id in page_ids)
+    objects[1] = f"<< /Type /Pages /Kids [{kids}] /Count {page_count} >>".encode("ascii")
+    objects.extend(
+        [
+            type0_font,
+            _pdf_stream_object(_pdf_to_unicode_cmap(codepoints)),
+            cid_font,
+            descriptor,
+            _pdf_stream_object(bytes(cid_to_gid)),
+            _pdf_stream_object(font_data, extra=f"/Length1 {len(font_data)}".encode("ascii")),
+        ]
+    )
     document = bytearray(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
     offsets = [0]
     for number, obj in enumerate(objects, start=1):
@@ -176,6 +201,16 @@ def _pdf_document(lines: Sequence[str]) -> bytes:
         f"startxref\n{xref_offset}\n%%EOF\n".encode("ascii")
     )
     return bytes(document)
+
+
+def _pdf_page_content(lines: Sequence[str]) -> bytes:
+    stream_lines = ["BT", "/F1 12 Tf", "50 760 Td"]
+    for index, line in enumerate(lines):
+        if index:
+            stream_lines.append("0 -18 Td")
+        stream_lines.append(f"<{line.encode('utf-16-be').hex().upper()}> Tj")
+    stream_lines.append("ET")
+    return "\n".join(stream_lines).encode("ascii")
 
 
 def _normalize_pdf_line(line: str) -> str:

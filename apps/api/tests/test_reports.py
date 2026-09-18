@@ -59,6 +59,28 @@ def test_pdf_renderer_embeds_unicode_text_without_fallback_replacement() -> None
     assert b"Revision:" not in content
 
 
+def test_pdf_renderer_splits_long_report_across_pages() -> None:
+    blocks = [
+        {
+            "label": f"Phần {index}",
+            "block_type": "TEXT",
+            "is_visible": True,
+            "config": {"content": "\n".join(f"Dòng nội dung {line}" for line in range(12))},
+        }
+        for index in range(4)
+    ]
+    payload, media_type, extension, warnings = render_report(
+        {"title": "Báo cáo nhiều trang", "source_type": "CUSTOM", "blocks": blocks},
+        "PDF",
+    )
+
+    assert payload.startswith(b"%PDF-1.4")
+    assert media_type == "application/pdf"
+    assert extension == "pdf"
+    assert warnings == []
+    assert payload.count(b"/Type /Page ") == 2
+
+
 def _qa_case(client: TestClient, organization_id: str) -> str:
     folder = client.post(
         f"/api/v1/organizations/{organization_id}/folders",
