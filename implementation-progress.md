@@ -2028,3 +2028,9 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Sau khi hủy, giao diện hiển thị `Đã hủy bài phân tích đang chờ. Không có phép tính nào được thực hiện.` Trạng thái cuối là `Đã hủy`, tiến độ `0%`, lần thực hiện `0`, không có kết quả đạt và không tạo snapshot kết quả.
 - Cờ chờ đã được gỡ khỏi worker. Railway xác nhận worker trở lại `Online`; một lượt Gamma một chiều tổng hợp tiếp theo đã chạy qua worker và hoàn tất `Đạt`, `100%`, `4/4` điểm.
 - Bằng chứng: [Gamma cancel staging](docs/evidence/p8-staging-gamma-cancel-20260918.json). Đây là cổng hủy staging đã đạt; P08-W03 vẫn mở cho ma trận lỗi worker/Redis, giới hạn tài nguyên, oracle độc lập và VERIFY/HANDOFF.
+
+## P8-W03 — Chặn đầu vào Gamma một chiều không phù hợp trên staging — đã kiểm tra — 2026-09-18
+
+- Không tạo lượt mới: ở kiểu một chiều, chọn nhầm một tệp RTDOSE làm tham chiếu và một tệp số đo làm đối chiếu khiến giao diện báo `Thiếu dữ liệu phù hợp`, giải thích cần hai dãy liều một chiều và khóa nút bắt đầu.
+- Lịch sử trước và sau kiểm tra đều giữ 21 lượt; không có mục hàng chờ mới. Sau khi trả lựa chọn tham chiếu về tệp số đo hợp lệ, preflight trở lại hợp lệ và nút bắt đầu được mở lại.
+- Bằng chứng: [Gamma một chiều preflight âm staging](docs/evidence/p8-staging-gamma-1d-preflight-negative-20260918.json). Đây là kiểm tra chặn ở giao diện; ma trận lỗi worker/Redis và cổng VERIFY/HANDOFF vẫn mở.

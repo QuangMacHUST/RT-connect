@@ -1,0 +1,30 @@
+{
+  "schema_version": "rt-connect.p8-staging-gamma-1d-preflight-negative.v1",
+  "captured_at": "2026-09-18T23:31:00+07:00",
+  "environment": "staging",
+  "web_commit": "dafd4d3",
+  "case_label": "P6 Staging Upload Smoke",
+  "synthetic_only": true,
+  "scenario": {
+    "dimension": "Một chiều",
+    "reference_selection": "Tệp liều RTDOSE 1",
+    "comparison_selection": "Dữ liệu đo liều 1",
+    "preflight_status": "Thiếu dữ liệu phù hợp",
+    "user_message": "Gamma một chiều cần hai dãy liều một chiều.",
+    "start_control_disabled": true,
+    "history_count_before": 21,
+    "history_count_after": 21,
+    "new_queue_item_created": false
+  },
+  "recovery": {
+    "valid_reference_restored": "Dữ liệu đo liều 2",
+    "preflight_valid_after_restore": true,
+    "start_control_enabled_after_restore": true
+  },
+  "safety_checks": {
+    "patient_data_used": false,
+    "permanent_deletion_performed": false,
+    "dailyqa_touched": false,
+    "existing_history_preserved": true
+  }
+}
