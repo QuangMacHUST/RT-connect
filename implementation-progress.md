@@ -1881,3 +1881,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Không có thao tác tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA` trong lát cắt này.
 - Kiểm thử riêng đạt **2/2**, toàn bộ giao diện đạt **16/16 tệp và 80/80 phép thử**, kiểm tra kiểu, quy tắc mã nguồn, bản dựng sản phẩm và kiểm tra khoảng trắng đều đạt. Bằng chứng: [trình biên soạn báo cáo theo ngôn ngữ nghiệp vụ](docs/evidence/p9-local-report-builder-user-facing-20260918.md).
 - Đây là `LOCAL_VERIFIED_SLICE`; P09-W01 vẫn mở vì còn cần dựng PDF/hình chú thích thực, kiểm tra bản chụp và xuất lặp, kiểm tra có đăng nhập trên staging, VERIFY và HANDOFF của P9.
+
+## P9-W01 — parity triển khai trình biên soạn báo cáo trên staging — đã kiểm tra — 2026-09-18
+
+- API, giao diện và tiến trình nền staging đã được dựng lại cùng commit `67184c4698af0994084816c9422e6c7ce7cb0285`.
+- Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều `200`, lược đồ `20260914_0023`, tuyến thành viên/lời mời vẫn giữ biên xác thực và giao diện phục vụ đúng phiên bản.
+- Bằng chứng: [parity trình biên soạn báo cáo trên staging](docs/evidence/p9-staging-report-builder-ux-20260918.json). Đây là kiểm tra triển khai và biên công khai, chưa phải phiên kiểm thử có đăng nhập để lưu báo cáo, mở lịch sử hoặc xuất PDF thật.
+- P09-W01 vẫn mở các cổng bản chụp, trình dựng PDF/hình chú thích, xuất lặp và VERIFY/HANDOFF. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
