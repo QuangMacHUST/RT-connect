@@ -1743,6 +1743,13 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Mốc này chỉ đóng thêm cổng minh bạch độ phủ. Fixture commissioning, đối chiếu độc lập, ROI chuyên biệt, ánh xạ tọa độ đa ảnh, kiểm chứng tương tác staging của từng nhóm và VERIFY/HANDOFF P7 vẫn mở.
 - Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 
+## P7-W03 — hồi quy engine Pylinac toàn bộ nhóm hiện có — đã kiểm tra local — 2026-09-18
+
+- Tám nhóm kiểm thử gồm hiệu chuẩn, bài đóng góp, ma trận lỗi, Gamma, hạt nhân, ma trận tệp mẫu chính thức, API Pylinac và registry đã chạy với môi trường khóa.
+- Kết quả **139/139 đạt**, không có lỗi; có bốn cảnh báo tương thích từ Starlette/httpx và cảnh báo nhiệt độ tham chiếu TRS-398 của Pylinac.
+- Bằng chứng: [hồi quy Pylinac toàn bộ nhóm hiện có](docs/evidence/p7-local-pylinac-regression-20260918.md). Đây là cổng hồi quy local, chưa đóng P07-W03 vì fixture commissioning, đối chiếu độc lập, lỗi đặc trưng và staging xác thực vẫn mở.
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
 ## P7-CONTRIB — kiểm tra tham số bài đóng góp — lát cắt cục bộ — 2026-09-18
 
 - Bài Quasar Light/Rad Scaling nay kiểm tra phần trăm FWXM trong khoảng 1–100 và ngưỡng cạnh biên lớn hơn 0 trước khi gửi yêu cầu tới Pylinac.
