@@ -1,11 +1,13 @@
 # RT-CONNECT IMPLEMENTATION PROGRESS
 
-## P8-W02 — chặn trước cấu hình Gamma không tương thích — kiểm tra local — 2026-09-18
+## P8-W02 — chặn trước cấu hình Gamma không tương thích — local và staging — 2026-09-18
 
 - Đã bổ sung cùng một lớp preflight ở máy chủ và giao diện cho phép kiểm tra trước khi tạo lượt phân tích: số chiều 1D/2D, shape, spacing, gốc tọa độ, điểm ảnh vuông và DTA phải là bội số nguyên của spacing đối với Gamma hai chiều.
 - Metadata đo và RTDOSE được chuẩn hóa về cùng trục mà bộ điều hợp Pylinac sử dụng; lỗi được hiển thị bằng tiếng Việt, không hiển thị khóa nội bộ hay dữ liệu kỹ thuật cho người dùng. Nút bắt đầu bị khóa khi cấu hình không thể chạy an toàn.
 - API `apps/api/tests/test_gamma.py` đạt **21/21**; kiểm thử giao diện riêng đạt **8/8**; kiểm tra kiểu, lint và bản dựng giao diện đạt.
-- Đây là kiểm tra local, chưa phải xác nhận staging. Bước tiếp theo là triển khai cả API, giao diện và worker từ cùng mã nguồn, rồi xác nhận một cấu hình sai bị chặn trước khi lịch sử có thêm lượt mới. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`; yêu cầu xóa vĩnh viễn được giữ ngoài phạm vi.
+- Railway staging đã phục vụ đồng bộ API, giao diện và worker từ mã `a686905c592955b4fc6a52945e42cd70bb75d21e`; cổng công khai đạt **16/16**, health/readiness `200`, lược đồ `20260914_0023` và biên xác thực đạt. Bằng chứng: [cổng công khai staging](docs/evidence/p8-staging-public-gamma-preflight-20260918.json).
+- Kiểm tra có đăng nhập trên hồ sơ tổng hợp staging xác nhận cấu hình hai chiều với đầu vào không phải hai lưới hai chiều hiện cảnh báo ngay, nút bắt đầu bị khóa và không tạo lượt mới trong lần kiểm tra. Kiểm tra lại với hai tệp RTDOSE không cùng điều kiện hai chiều vẫn bị chặn trước hàng đợi. Bằng chứng: [preflight Gamma staging](docs/evidence/p8-staging-gamma-preflight-20260918.json).
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`; yêu cầu xóa vĩnh viễn được giữ ngoài phạm vi. Đây là cổng preflight và parity, chưa đóng toàn bộ P8 vì vẫn còn ma trận chạy Pylinac thật, hàng đợi, lịch sử và bàn giao P9/P10.
 
 ## P07-CT — kiểm tra tham số CatPhan ngay trên biểu mẫu — đã kiểm tra local — 2026-09-16
 

@@ -1,0 +1,31 @@
+{
+  "schema_version": "rt-connect.p8-staging-gamma-preflight.v1",
+  "captured_at": "2026-09-18",
+  "environment": "staging",
+  "release": {
+    "commit": "a686905c592955b4fc6a52945e42cd70bb75d21e",
+    "public_contract_evidence": "docs/evidence/p8-staging-public-gamma-preflight-20260918.json"
+  },
+  "authenticated_browser_check": {
+    "url": "https://rt-connect-web-staging-staging.up.railway.app/app/qa/cases/8bc86303-c7e9-4e1a-b012-cfbe2a07ba24/gamma",
+    "case_label": "P6 Staging Upload Smoke",
+    "reference_label": "Tệp liều RTDOSE 1",
+    "evaluation_label_first": "Dữ liệu đo liều 1",
+    "evaluation_label_second": "Tệp liều RTDOSE 2",
+    "dimensionality": "Hai chiều",
+    "blocking_message": "Gamma hai chiều cần hai lưới liều hai chiều.",
+    "start_button_disabled": true,
+    "invalid_configurations_checked": [
+      "RTDOSE tham chiếu và dữ liệu đo được chọn cho Gamma hai chiều",
+      "RTDOSE tham chiếu và RTDOSE đối chiếu được chọn cho Gamma hai chiều"
+    ],
+    "created_runs_during_verification": 0,
+    "history_count_at_observation": 15
+  },
+  "data_safety": {
+    "permanent_deletion_performed": false,
+    "dailyQA_touched": false,
+    "synthetic_fixture_only": true
+  },
+  "result": "PASS_PREQUEUE_BLOCK"
+}
