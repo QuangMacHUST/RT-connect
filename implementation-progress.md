@@ -16,6 +16,14 @@
 - Đây chỉ là `STAGING_READONLY_LOAD`; chưa lưu bản sửa đổi, chưa xuất PDF/PNG và chưa đối chiếu lịch sử tải lại. Bằng chứng: [trình biên soạn báo cáo staging](docs/evidence/p9-staging-report-builder-readonly-20260918.json).
 - Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`; yêu cầu xóa vĩnh viễn vẫn ngoài phạm vi.
 
+## P8-W03 — Gamma hai chiều Pylinac chạy thật trên staging — đã kiểm tra lát cắt — 2026-09-18
+
+- Đã sửa bộ kiểm tra DICOM để chấp nhận đúng trường hợp RTDOSE một lớp có `GridFrameOffsetVector` được thư viện DICOM đọc thành một giá trị đơn; bổ sung kiểm thử hồi quy và toàn bộ nhóm Gamma/DICOM đạt **45/45**.
+- Staging đã chạy mã `c55a1a0cc33a41356325e5c31c589e3e7a5bf5ae`; hai tệp RTDOSE tổng hợp hai chiều được kiểm tra hợp lệ, cấu hình 3%/3 mm được mở và lượt phân tích được đưa vào hàng đợi bằng Pylinac.
+- Lượt chạy hoàn tất với kết luận **Đạt**, tỷ lệ đạt **100%**, 4/4 điểm đạt, 0 điểm không đạt, 0 điểm loại khỏi tính toán, bao phủ 1 và Gamma P95 **0,083**. Đây là bằng chứng chạy thật cho lát cắt Gamma hai chiều, không phải dữ liệu mô phỏng giao diện.
+- Bằng chứng: [Gamma hai chiều Pylinac staging](docs/evidence/p8-staging-gamma-2d-pylinac-20260918.json).
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`; không thực hiện xóa vĩnh viễn. P8 vẫn chưa đóng toàn bộ vì ma trận hàng đợi/lỗi, lịch sử–tính lại và bàn giao P9/P10 còn mở.
+
 ## P07-CT — kiểm tra tham số CatPhan ngay trên biểu mẫu — đã kiểm tra local — 2026-09-16
 
 - Biểu mẫu năm bài CatPhan nay chặn dung sai HU, ngưỡng CNR, dung sai độ dày và hệ số kích thước vùng không phải số hoặc âm; lát gốc tùy chọn phải là số nguyên không âm; các điều chỉnh hình học phải là số hữu hạn.

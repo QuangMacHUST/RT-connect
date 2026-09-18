@@ -1,0 +1,53 @@
+{
+  "schema_version": "rt-connect.p8-staging-gamma-2d-pylinac.v1",
+  "captured_at": "2026-09-18",
+  "environment": "staging",
+  "release": {
+    "commit": "c55a1a0cc33a41356325e5c31c589e3e7a5bf5ae",
+    "schema_revision": "20260914_0023",
+    "readiness": "ready"
+  },
+  "authenticated_browser_check": {
+    "surface": "QA máy / Phân tích độ lệch liều",
+    "case_label": "P6 Staging Upload Smoke",
+    "reference_label": "Tệp liều RTDOSE 1",
+    "evaluation_label": "Tệp liều RTDOSE 2",
+    "dimensionality": "Hai chiều",
+    "engine": "Pylinac",
+    "configuration": {
+      "dose_difference_percent": 3,
+      "distance_to_agreement_mm": 3,
+      "dose_threshold_percent": 10,
+      "pass_rate_threshold_percent": 95,
+      "normalization": "Toàn cục",
+      "coverage": "Toàn bộ vùng so sánh",
+      "max_gamma": 2
+    },
+    "preflight": {
+      "two_dimensional_grids_accepted": true,
+      "start_button_enabled": true,
+      "invalid_mixed_dimensionality_remained_blocked": true
+    },
+    "result": {
+      "status": "Đã hoàn tất",
+      "assessment": "Đạt",
+      "pass_rate_percent": 100,
+      "evaluated_points": 4,
+      "passing_points": 4,
+      "failing_points": 0,
+      "excluded_points": 0,
+      "coverage": 1,
+      "gamma_p95": 0.083,
+      "history_count_before": 15,
+      "history_count_after": 16
+    },
+    "created_runs_during_verification": 1
+  },
+  "data_safety": {
+    "synthetic_fixture_only": true,
+    "patient_data_used": false,
+    "permanent_deletion_performed": false,
+    "dailyQA_touched": false
+  },
+  "scope_note": "Đóng lát cắt kiểm thử Gamma hai chiều thật trên staging với hai lưới RTDOSE tổng hợp; chưa đóng toàn bộ P8, ma trận hàng đợi hoặc bàn giao P9/P10."
+}
