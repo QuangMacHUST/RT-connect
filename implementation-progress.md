@@ -1751,6 +1751,13 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Kiểm thử giao diện riêng đạt **7/7**, toàn bộ giao diện đạt **73/73**, kiểm tra kiểu, lint và bản dựng sản phẩm đạt. Đây là `LOCAL_VERIFIED_SLICE` cho biên nhập liệu.
 - P07-NUCLEAR vẫn mở vì còn thiếu fixture DICOM chuẩn/commissioning, đối chiếu từng lớp kết quả, kiểm lỗi đặc trưng, kiểm chứng staging và nghiệm thu chuyên môn.
 
+## P7-NUCLEAR — parity triển khai staging — 2026-09-18
+
+- API, giao diện và tiến trình nền staging đã dựng thành công cùng commit `7ddedcbcaa072024118fbca4bc128658cb4e3a17` sau khi thêm cổng kiểm tra tham số chín bài hạt nhân.
+- Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều đạt, readiness giữ lược đồ `20260914_0023`, biên xác thực không bị mở và gói giao diện mới có mặt.
+- Bằng chứng: [kiểm tra parity bài hạt nhân trên staging](docs/evidence/p7-staging-nuclear-form-validation-20260918.json). Đây là bằng chứng triển khai và hợp đồng giao diện, không phải chạy chín bài bằng bộ ảnh chuẩn/commissioning; P07-NUCLEAR vẫn mở.
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
 ## P7-PLANAR — kiểm tra tham số biểu mẫu ảnh phẳng — lát cắt cục bộ — 2026-09-18
 
 - Mười chín biến thể ảnh phẳng dùng cổng kiểm tra chung cho ngưỡng tương phản thấp, ngưỡng tương phản cao khi bài áp dụng, điều chỉnh tâm/góc và hệ số vùng/thang đo.
