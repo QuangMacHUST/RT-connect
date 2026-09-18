@@ -1902,3 +1902,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều `200`, lược đồ `20260914_0023`, biên xác thực thành viên/lời mời vẫn đúng và giao diện phục vụ đúng phiên bản.
 - Bằng chứng: [parity renderer báo cáo trên staging](docs/evidence/p9-staging-report-renderer-20260918.json). Đây là kiểm tra triển khai và biên công khai, chưa phải phiên có đăng nhập để xuất tài liệu thật.
 - P09-W02/P09-W03 vẫn mở các cổng ảnh phân tích thật, bảng nhiều trang, đối chiếu xem trước–PDF và VERIFY/HANDOFF. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
+## P9-W03 — PDF nhiều trang trên staging — đã kiểm tra parity — 2026-09-18
+
+- Renderer nhiều trang đã được đưa lên cùng commit `1324aee08bc9479d4600b0d4ba5fff784a825112` cho API, giao diện và tiến trình nền staging.
+- Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đạt, lược đồ `20260914_0023`, giao diện và API cùng phục vụ đúng commit.
+- Bằng chứng: [parity PDF nhiều trang trên staging](docs/evidence/p9-staging-report-renderer-pagination-20260918.json). Đây mới là source/runtime/public-boundary evidence; chưa phải kiểm thử có đăng nhập để xuất PDF từ hồ sơ thật.
+- P09-W03 vẫn mở phần ảnh/lớp phủ thật, bảng nghiệp vụ dài và đối chiếu trực quan; không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
