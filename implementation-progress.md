@@ -1895,3 +1895,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Phần ẩn không được render; phần chỉ số/cảnh báo/thông tin bài kiểm tra có tóm tắt an toàn. Font Unicode tiếng Việt tiếp tục được nhúng trong PDF.
 - Kiểm thử `test_reports.py` đạt **8/8**, Ruff và mypy cho phần renderer đạt. Bằng chứng: [renderer báo cáo không lộ thông tin kỹ thuật](docs/evidence/p9-local-report-renderer-user-facing-20260918.md).
 - Đây là `LOCAL_VERIFIED_SLICE`; còn thiếu ảnh phân tích thật và lớp phủ, bảng nhiều trang, đối chiếu preview–PDF, kiểm tra có đăng nhập trên staging và VERIFY/HANDOFF. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
+## P9-W02/P09-W03 — parity triển khai renderer báo cáo trên staging — đã kiểm tra — 2026-09-18
+
+- API, giao diện và tiến trình nền staging đã được dựng lại cùng commit `4a7988451f7b5e51445577eee86b2b7e1a4a528f`.
+- Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều `200`, lược đồ `20260914_0023`, biên xác thực thành viên/lời mời vẫn đúng và giao diện phục vụ đúng phiên bản.
+- Bằng chứng: [parity renderer báo cáo trên staging](docs/evidence/p9-staging-report-renderer-20260918.json). Đây là kiểm tra triển khai và biên công khai, chưa phải phiên có đăng nhập để xuất tài liệu thật.
+- P09-W02/P09-W03 vẫn mở các cổng ảnh phân tích thật, bảng nhiều trang, đối chiếu xem trước–PDF và VERIFY/HANDOFF. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
