@@ -14,6 +14,7 @@ import { validateCatPhanValues } from './catphanValidation'
 import { validateAcrValues } from './acrValidation'
 import { validateCtPylinacValues } from './ctPylinacValidation'
 import { validatePlanarValues } from './planarValidation'
+import { validateNuclearValues } from './nuclearValidation'
 import { validateLogGammaValues } from './logValidation'
 import { validateLogArtifactSelection } from './logSelectionValidation'
 
@@ -1794,7 +1795,8 @@ function NuclearPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
   const nuclearArtifacts = (artifacts.data?.items ?? []).filter((item) => item.artifact_type === 'DICOM' && item.original_filename.toLowerCase().endsWith('.dcm'))
   const selected = nuclearArtifacts.filter((item) => selectedArtifactIds.includes(item.id))
   const needsBackground = catalogKey === 'NUCLEAR_SS'
-  const canAnalyze = (needsBackground ? selected.length >= 1 && selected.length <= 2 : selected.length === 1) && artifactsAreValidated(selected)
+  const validationError = validateNuclearValues(catalogKey, values)
+  const canAnalyze = (needsBackground ? selected.length >= 1 && selected.length <= 2 : selected.length === 1) && artifactsAreValidated(selected) && !validationError
   const setValue = (key: string, value: string) => setValues((current) => ({ ...current, [key]: value }))
   const numbers = (key: string) => values[key].split(',').map((item) => Number(item.trim())).filter((item) => Number.isFinite(item))
   const parameters = () => {
@@ -1836,7 +1838,7 @@ function NuclearPage({ caseId, accessToken, title, catalogKey }: { caseId: strin
       {catalogKey === 'NUCLEAR_QR' && <>{field('bar_widths', 'Bề rộng bốn vạch (mm, cách nhau bằng dấu phẩy)', 'text')}{field('roi_diameter_mm', 'Đường kính vùng quan tâm (mm)')}{field('distance_from_center_mm', 'Khoảng cách đến tâm (mm)')}</>}
       {catalogKey === 'NUCLEAR_TU' && <>{field('first_frame', 'Khung hình bắt đầu')}{field('last_frame', 'Khung hình kết thúc')}{field('ufov_ratio', 'Tỷ lệ vùng nhìn hữu ích')}{field('cfov_ratio', 'Tỷ lệ vùng nhìn trung tâm')}{field('center_ratio', 'Tỷ lệ vùng tâm')}{field('threshold', 'Ngưỡng loại nền')}{field('window_size', 'Kích thước cửa sổ (điểm ảnh)')}</>}
       {catalogKey === 'NUCLEAR_TC' && <>{field('sphere_diameters_mm', 'Đường kính sáu cầu (mm, cách nhau bằng dấu phẩy)', 'text')}{field('sphere_angles', 'Góc sáu cầu (độ, cách nhau bằng dấu phẩy)', 'text')}{field('ufov_ratio', 'Tỷ lệ vùng nhìn hữu ích')}{field('search_window_px', 'Cửa sổ tìm kiếm (điểm ảnh)')}{field('search_slices', 'Số lát tìm kiếm')}</>}
-    </div><div className="machine-qa-actions"><button disabled={!canAnalyze || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div></section>
+    </div>{validationError && <p className="alert alert--error" role="alert">{validationError}</p>}<div className="machine-qa-actions"><button disabled={!canAnalyze || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div></section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={nuclearArtifacts} selectedArtifactIds={selectedArtifactIds} emptyHistoryLabel="Chưa có kết quả phân tích." metrics={metrics.map(([key, value]) => ({ key, label: nuclearMetricNames[key] ?? 'Kết quả đo', value: textValue(value) }))} overlayLabel="Mở ảnh phân tích" onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>
 }

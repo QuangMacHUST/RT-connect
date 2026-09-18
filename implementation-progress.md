@@ -1743,6 +1743,14 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Mốc này chỉ đóng thêm cổng minh bạch độ phủ. Fixture commissioning, đối chiếu độc lập, ROI chuyên biệt, ánh xạ tọa độ đa ảnh, kiểm chứng tương tác staging của từng nhóm và VERIFY/HANDOFF P7 vẫn mở.
 - Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 
+## P7-NUCLEAR — kiểm tra tham số chín bài hạt nhân — lát cắt cục bộ — 2026-09-18
+
+- Các bài tốc độ đếm, độ đồng nhất, độ phân giải, độ nhạy, tâm quay và tương phản nay kiểm tra đúng trường số theo từng loại bài trước khi gửi Pylinac.
+- Cổng kiểm tra bao phủ tỉ lệ vùng nhìn/ngưỡng trong miền hợp lệ, số khung nguyên và đúng thứ tự, bốn bề rộng vạch, sáu đường kính và sáu góc cầu, cửa sổ/số lát tìm kiếm, hoạt độ dương và đồng vị không trống.
+- Lỗi hiển thị ngay bằng tiếng Việt và nút phân tích bị khóa trước khi gửi yêu cầu tới Pylinac. Không có lượt chạy mới, không sửa lịch sử và không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA` trong cổng này.
+- Kiểm thử giao diện riêng đạt **7/7**, toàn bộ giao diện đạt **73/73**, kiểm tra kiểu, lint và bản dựng sản phẩm đạt. Đây là `LOCAL_VERIFIED_SLICE` cho biên nhập liệu.
+- P07-NUCLEAR vẫn mở vì còn thiếu fixture DICOM chuẩn/commissioning, đối chiếu từng lớp kết quả, kiểm lỗi đặc trưng, kiểm chứng staging và nghiệm thu chuyên môn.
+
 ## P7-PLANAR — kiểm tra tham số biểu mẫu ảnh phẳng — lát cắt cục bộ — 2026-09-18
 
 - Mười chín biến thể ảnh phẳng dùng cổng kiểm tra chung cho ngưỡng tương phản thấp, ngưỡng tương phản cao khi bài áp dụng, điều chỉnh tâm/góc và hệ số vùng/thang đo.

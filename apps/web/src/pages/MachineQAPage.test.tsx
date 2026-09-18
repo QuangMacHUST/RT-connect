@@ -16,6 +16,7 @@ import { validateCatPhanValues } from './catphanValidation'
 import { validateAcrValues } from './acrValidation'
 import { validateCtPylinacValues } from './ctPylinacValidation'
 import { validatePlanarValues } from './planarValidation'
+import { validateNuclearValues } from './nuclearValidation'
 
 const makeRun = (overrides: Partial<PylinacQARunResource> = {}): PylinacQARunResource => ({
   id: 'run-current',
@@ -233,6 +234,17 @@ test('validates planar imaging parameters before submission', () => {
   expect(validatePlanarValues({ ...valid, centerX: 'x', centerY: '10' })).toContain('Tâm ngang')
   expect(validatePlanarValues({ ...valid, isMammography: true, highContrast: '' })).toBeUndefined()
   expect(validatePlanarValues(valid)).toBeUndefined()
+})
+
+test('validates nuclear QA parameters before submission', () => {
+  const common = { ufov_ratio: '0.95', cfov_ratio: '0.75', window_size: '5', threshold: '0.75', activity_mbq: '25', nuclide: 'Tc99m', separation_mm: '100', roi_width_mm: '10', bar_widths: '10, 10, 10, 10', roi_diameter_mm: '70', distance_from_center_mm: '130', first_frame: '0', last_frame: '-1', center_ratio: '0.4', sphere_diameters_mm: '38, 31.8, 25.4, 19.1, 15.9, 12.7', sphere_angles: '-10, -70, -130, -190, 110, 50', search_window_px: '5', search_slices: '3', frame_duration: '1' }
+  expect(validateNuclearValues('NUCLEAR_QR', { ...common, bar_widths: '10, 10, 10' })).toContain('đúng 4')
+  expect(validateNuclearValues('NUCLEAR_TC', { ...common, sphere_angles: '0, 10' })).toContain('đúng 6')
+  expect(validateNuclearValues('NUCLEAR_TU', { ...common, first_frame: '4', last_frame: '2' })).toContain('Khung hình kết thúc')
+  expect(validateNuclearValues('NUCLEAR_SS', { ...common, nuclide: '' })).toContain('Đồng vị')
+  expect(validateNuclearValues('NUCLEAR_PU', { ...common, threshold: '1.1' })).toContain('Ngưỡng loại nền')
+  expect(validateNuclearValues('NUCLEAR_QR', common)).toBeUndefined()
+  expect(validateNuclearValues('NUCLEAR_TC', common)).toBeUndefined()
 })
 
 test('renders nested Pylinac metrics in readable groups without technical identifiers', () => {

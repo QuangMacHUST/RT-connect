@@ -261,3 +261,9 @@ invalid planar contrast, center-pair, angle, ROI and scaling parameters before
 creating a Pylinac run. Keep API, worker and web on this source revision before
 recording exact-SHA staging evidence; no persisted QA history is changed by
 this marker.
+
+P7 nuclear form-validation parity marker (2026-09-18): the web forms now
+reject invalid nuclear ratios, frame ranges, value lists, activity, isotope and
+search parameters before creating a Pylinac run. Keep API, worker and web on
+this source revision before recording exact-SHA staging evidence; no persisted
+QA history is changed by this marker.
