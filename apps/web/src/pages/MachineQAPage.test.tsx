@@ -13,6 +13,7 @@ import { validateLogGammaValues } from './logValidation'
 import { validateLogArtifactSelection } from './logSelectionValidation'
 import { validateVmatValues } from './vmatValidation'
 import { validateCatPhanValues } from './catphanValidation'
+import { validateAcrValues } from './acrValidation'
 
 const makeRun = (overrides: Partial<PylinacQARunResource> = {}): PylinacQARunResource => ({
   id: 'run-current',
@@ -197,6 +198,15 @@ test('validates CatPhan analysis parameters before submission', () => {
   expect(validateCatPhanValues({ ...valid, originSlice: '1.5' })).toContain('Lát gốc')
   expect(validateCatPhanValues({ ...valid, roiSizeFactor: '' })).toContain('Hệ số kích thước vùng')
   expect(validateCatPhanValues(valid)).toBeUndefined()
+})
+
+test('validates ACR CT and MRI analysis parameters before submission', () => {
+  const valid = { originSlice: '', xAdjustment: '0', yAdjustment: '0', angleAdjustment: '0', roiSizeFactor: '1', scalingFactor: '1', echoNumber: '', lowContrastThreshold: '0.001', lowContrastSanity: '3', isMri: true }
+  expect(validateAcrValues({ ...valid, originSlice: '2.5' })).toContain('Lát gốc')
+  expect(validateAcrValues({ ...valid, echoNumber: '0' })).toContain('Số lần vọng')
+  expect(validateAcrValues({ ...valid, lowContrastThreshold: '-0.1' })).toContain('Ngưỡng nhìn thấy')
+  expect(validateAcrValues({ ...valid, isMri: false, echoNumber: '', lowContrastThreshold: '', lowContrastSanity: '' })).toBeUndefined()
+  expect(validateAcrValues(valid)).toBeUndefined()
 })
 
 test('renders nested Pylinac metrics in readable groups without technical identifiers', () => {

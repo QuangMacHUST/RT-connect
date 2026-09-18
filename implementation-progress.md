@@ -1762,3 +1762,11 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Khi người dùng bật “Tạo bản đồ Gamma fluence” trong bài Dynalog hoặc Trajectory Log, giao diện bắt buộc dung sai liều và dung sai khoảng cách là số hữu hạn lớn hơn 0. Khi tắt Gamma, hai trường không bị bắt buộc và không được gửi xuống máy chủ.
 - Lỗi được hiển thị ngay dưới vùng tham số và nút phân tích bị khóa; quy tắc máy chủ hiện có tiếp tục là lớp bảo vệ cuối cùng trước khi gọi Pylinac. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA` trong cổng này.
 - Kiểm thử giao diện riêng đạt **14/14**, kiểm tra kiểu, lint và bản dựng sản xuất đạt; kiểm thử máy chủ Pylinac liên quan tiếp tục đạt. Đây là `LOCAL_VERIFIED_SLICE`, chưa đóng P07-LOG vì còn fixture Trajectory Log 3/4, kiểm tra Gamma log ổn định, fixture commissioning, đối chiếu độc lập và staging.
+
+## P7-ACR — kiểm tra tham số biểu mẫu CT/MRI — lát cắt cục bộ — 2026-09-16
+
+- Ba biểu mẫu ACR CT 464, ACR MRI lớn và ACR MRI vừa nay kiểm tra trước lát gốc tùy chọn phải là số nguyên không âm, các điều chỉnh ngang/dọc/góc phải là số hợp lệ, hệ số kích thước vùng và hệ số thang đo phải không âm.
+- Khi chọn ACR MRI, số lần vọng phải là số nguyên từ 1 trở lên nếu được nhập; ngưỡng nhìn thấy tương phản thấp và hệ số kiểm tra hợp lý phải là số không âm. Khi chọn ACR CT, các trường riêng của MRI không tham gia kiểm tra và không ảnh hưởng tới khả năng bắt đầu phân tích.
+- Lỗi được hiển thị ngay bằng tiếng Việt và nút phân tích bị khóa trước khi gửi yêu cầu tới Pylinac. Không có lượt chạy mới, không sửa lịch sử và không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA` trong cổng này.
+- Kiểm thử giao diện riêng đạt **5/5**, toàn bộ giao diện đạt **70/70**, kiểm tra kiểu, lint và bản dựng sản phẩm đạt. Đây là `LOCAL_VERIFIED_SLICE` cho biên nhập liệu, chưa phải kiểm chứng kết quả ACR.
+- ACR vẫn mở vì môi trường Pylinac hiện chưa có fixture ACR được phê duyệt; còn thiếu fixture chuẩn/commissioning, đối chiếu từng mô-đun kết quả, kiểm lỗi đặc trưng, kiểm chứng staging và nghiệm thu chuyên môn.

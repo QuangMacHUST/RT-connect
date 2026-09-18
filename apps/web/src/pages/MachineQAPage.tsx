@@ -11,6 +11,7 @@ import { calibrationCoefficientKey, calibrationNames, type CalibrationCatalogKey
 import { validateManualWinstonLutzAngles, validateWinstonLutzMultiTargetValues, validateWinstonLutzValues } from './winstonLutzValidation'
 import { validateVmatValues } from './vmatValidation'
 import { validateCatPhanValues } from './catphanValidation'
+import { validateAcrValues } from './acrValidation'
 import { validateLogGammaValues } from './logValidation'
 import { validateLogArtifactSelection } from './logSelectionValidation'
 
@@ -1447,6 +1448,10 @@ function AcrPage({ caseId, accessToken, title, catalogKey }: { caseId: string; a
   const latest = history[0]
   const isBusy = upload.isPending || analyze.isPending || assess.isPending
   const displayName = catalogKey === 'ACR_CT_464' ? 'Phantom ACR CT 464' : catalogKey === 'ACR_MRI_LARGE' ? 'Phantom ACR MRI lớn' : 'Phantom ACR MRI vừa'
+  const validationError = validateAcrValues({
+    originSlice, xAdjustment, yAdjustment, angleAdjustment, roiSizeFactor,
+    scalingFactor, echoNumber, lowContrastThreshold, lowContrastSanity, isMri
+  })
 
   return <div className="page">
     <header className="page-header">
@@ -1473,7 +1478,8 @@ function AcrPage({ caseId, accessToken, title, catalogKey }: { caseId: string; a
         {isMri && <label>Phương pháp tương phản thấp<select value={lowContrastMethod} onChange={(event) => setLowContrastMethod(event.target.value)}><option value="Weber">Weber</option><option value="Michelson">Michelson</option></select></label>}
       </div>
       {isMri && <div className="machine-qa-protocol-controls"><label>Ngưỡng nhìn thấy tương phản thấp<input type="number" min="0" step="0.001" value={lowContrastThreshold} onChange={(event) => setLowContrastThreshold(event.target.value)} /></label><label>Hệ số kiểm tra hợp lý<input type="number" min="0" step="0.1" value={lowContrastSanity} onChange={(event) => setLowContrastSanity(event.target.value)} /></label></div>}
-      <div className="machine-qa-actions"><button disabled={!selectedInput || !selectedArtifactsAreValidated(selectedInput ? [selectedInput] : [], imageArtifacts) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
+      {validationError && <p className="alert alert--error" role="alert">{validationError}</p>}
+      <div className="machine-qa-actions"><button disabled={!selectedInput || !selectedArtifactsAreValidated(selectedInput ? [selectedInput] : [], imageArtifacts) || Boolean(validationError) || isBusy} onClick={() => analyze.mutate()}>{analyze.isPending ? 'Đang phân tích…' : 'Bắt đầu phân tích'}</button></div>
     </section>
     <PylinacResultPanel latest={latest} history={history} accessToken={accessToken} caseId={caseId} inputArtifacts={imageArtifacts} selectedArtifactIds={selectedInput ? [selectedInput] : []} emptyHistoryLabel={`Chưa có kết quả ${displayName}.`} resultNote={<p>Kết quả và thông số của đúng phiên bản Pylinac đã được lưu cùng với bộ ảnh đầu vào.</p>} onMessage={setMessage} onAssess={(runId, value) => assess.mutate({ runId, value })} />
   </div>

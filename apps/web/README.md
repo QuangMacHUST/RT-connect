@@ -243,3 +243,9 @@ reject invalid CatPhan tolerances, geometry adjustments, ROI scale and origin
 slice values before creating a Pylinac run. Keep API, worker and web on this
 source revision before recording exact-SHA staging evidence; no persisted QA
 history is changed by this marker.
+
+P7 ACR form-validation parity marker (2026-09-16): the web forms now reject
+invalid ACR CT/MRI slice, geometry, ROI, scaling and MRI-specific parameters
+before creating a Pylinac run. Keep API, worker and web on this source revision
+before recording exact-SHA staging evidence; no persisted QA history is changed
+by this marker.
