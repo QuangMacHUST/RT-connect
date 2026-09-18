@@ -1,0 +1,47 @@
+{
+  "schema_version": "rt-connect.p9-staging-report-builder-readonly.v1",
+  "captured_at": "2026-09-18",
+  "environment": "staging",
+  "url": "https://rt-connect-web-staging-staging.up.railway.app/app/reports",
+  "scope": "authenticated_read_only",
+  "observed": {
+    "page_title": "Trình biên soạn báo cáo",
+    "saved_report_count": 4,
+    "saved_reports_loaded": true,
+    "report_source_options_visible": [
+      "Báo cáo tùy chỉnh",
+      "Bài kiểm tra chất lượng máy",
+      "Kết quả kiểm tra máy",
+      "Phân tích QA bằng Pylinac",
+      "Phân tích PSQA",
+      "Phân tích liều và thể tích",
+      "Công cụ sinh học"
+    ],
+    "report_block_options_visible": [
+      "Thông tin bài kiểm tra",
+      "Chỉ số kết quả",
+      "Bản đồ Gamma",
+      "Biên dạng liều",
+      "Đường cong liều–thể tích",
+      "Biểu đồ xu hướng",
+      "Bảng so sánh",
+      "Kết quả sinh học",
+      "Nguồn và phiên bản",
+      "Bảng dữ liệu",
+      "Hình phân tích",
+      "Cảnh báo"
+    ],
+    "technical_json_or_internal_id_shown_in_main_view": false,
+    "mutation_performed": false,
+    "permanent_deletion_performed": false,
+    "dailyQA_touched": false
+  },
+  "result": "PASS_READONLY_LOAD",
+  "remaining_scope": [
+    "chọn một nguồn kết quả thực tế có đăng nhập",
+    "lưu bản sửa đổi báo cáo",
+    "đối chiếu xem trước với PDF/PNG",
+    "kiểm tra lịch sử xuất và tải lại liên kết",
+    "VERIFY và HANDOFF P9"
+  ]
+}

@@ -9,6 +9,13 @@
 - Kiểm tra có đăng nhập trên hồ sơ tổng hợp staging xác nhận cấu hình hai chiều với đầu vào không phải hai lưới hai chiều hiện cảnh báo ngay, nút bắt đầu bị khóa và không tạo lượt mới trong lần kiểm tra. Kiểm tra lại với hai tệp RTDOSE không cùng điều kiện hai chiều vẫn bị chặn trước hàng đợi. Bằng chứng: [preflight Gamma staging](docs/evidence/p8-staging-gamma-preflight-20260918.json).
 - Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`; yêu cầu xóa vĩnh viễn được giữ ngoài phạm vi. Đây là cổng preflight và parity, chưa đóng toàn bộ P8 vì vẫn còn ma trận chạy Pylinac thật, hàng đợi, lịch sử và bàn giao P9/P10.
 
+## P9-W01 — tải trình biên soạn báo cáo trên staging — kiểm tra chỉ đọc — 2026-09-18
+
+- Phiên staging có đăng nhập đã tải được trang “Trình biên soạn báo cáo”, lịch sử có 4 báo cáo và các lựa chọn nguồn gồm kết quả kiểm tra máy, phân tích QA bằng Pylinac, phân tích PSQA, phân tích liều và thể tích cùng công cụ sinh học.
+- Các loại phần báo cáo gồm bản đồ Gamma, biên dạng liều, đường cong liều–thể tích, hình phân tích, cảnh báo và nguồn phiên bản; giao diện chính không hiện tệp JSON hoặc mã nội bộ.
+- Đây chỉ là `STAGING_READONLY_LOAD`; chưa lưu bản sửa đổi, chưa xuất PDF/PNG và chưa đối chiếu lịch sử tải lại. Bằng chứng: [trình biên soạn báo cáo staging](docs/evidence/p9-staging-report-builder-readonly-20260918.json).
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`; yêu cầu xóa vĩnh viễn vẫn ngoài phạm vi.
+
 ## P07-CT — kiểm tra tham số CatPhan ngay trên biểu mẫu — đã kiểm tra local — 2026-09-16
 
 - Biểu mẫu năm bài CatPhan nay chặn dung sai HU, ngưỡng CNR, dung sai độ dày và hệ số kích thước vùng không phải số hoặc âm; lát gốc tùy chọn phải là số nguyên không âm; các điều chỉnh hình học phải là số hữu hạn.
