@@ -24,6 +24,13 @@
 - Bằng chứng: [Gamma hai chiều Pylinac staging](docs/evidence/p8-staging-gamma-2d-pylinac-20260918.json).
 - Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`; không thực hiện xóa vĩnh viễn. P8 vẫn chưa đóng toàn bộ vì ma trận hàng đợi/lỗi, lịch sử–tính lại và bàn giao P9/P10 còn mở.
 
+## P8-W03 — mở đúng cổng đầu vào Gamma một chiều Pylinac — đã kiểm tra cục bộ — 2026-09-18
+
+- Đã sửa bộ xác thực tệp đo liều để chấp nhận lưới một chiều `[n]` với trục `x`; trước đây cổng này chỉ cho phép lưới hai hoặc ba chiều nên chặn sai nhánh Gamma một chiều dù engine và giao diện đã hỗ trợ.
+- Kiểm thử hồi quy xác nhận tệp đo liều một chiều hợp lệ đi qua xác thực, nạp đúng dạng mảng một chiều và hai hồ sơ một chiều cùng hình học được chấp nhận trước khi đưa vào hàng đợi.
+- Toàn bộ nhóm kiểm thử Gamma/DICOM/worker/bộ chuyển đổi Pylinac đạt, lint các tệp bị ảnh hưởng đạt. Bằng chứng: [đầu vào Gamma một chiều Pylinac cục bộ](docs/evidence/p8-local-gamma-1d-pylinac-20260918.md).
+- Staging chưa chạy lát cắt một chiều vì hồ sơ hiện tại chưa có cặp dữ liệu đo liều một chiều đã xác thực; không tạo thêm lượt chạy trong bước này. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`; không xóa vĩnh viễn hồ sơ nào.
+
 ## P07-CT — kiểm tra tham số CatPhan ngay trên biểu mẫu — đã kiểm tra local — 2026-09-16
 
 - Biểu mẫu năm bài CatPhan nay chặn dung sai HU, ngưỡng CNR, dung sai độ dày và hệ số kích thước vùng không phải số hoặc âm; lát gốc tùy chọn phải là số nguyên không âm; các điều chỉnh hình học phải là số hữu hạn.

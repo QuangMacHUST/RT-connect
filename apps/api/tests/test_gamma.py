@@ -661,6 +661,14 @@ def test_gamma_geometry_is_rejected_before_enqueue(
     assert error.value.code == code
 
 
+def test_gamma_geometry_accepts_matching_one_dimensional_profiles() -> None:
+    payload = _geometry_payload(dimensionality="1D")
+    reference = _artifact_with_grid(shape=[4], spacing=[1.0])
+    evaluation = _artifact_with_grid(shape=[4], spacing=[1.0])
+
+    _validate_gamma_input_geometry(payload, reference, evaluation)
+
+
 def test_gamma_geometry_rejects_non_square_grid_and_unaligned_dta() -> None:
     reference = _artifact_with_grid(shape=[2, 2], spacing=[1.0, 2.0])
     evaluation = _artifact_with_grid(shape=[2, 2], spacing=[1.0, 2.0])

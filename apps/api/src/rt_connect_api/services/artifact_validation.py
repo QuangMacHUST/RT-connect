@@ -592,9 +592,13 @@ def _validate_measurement_coordinate_frame(
         )
         valid = False
 
-    expected_axis: list[str] = (
-        ["y", "x"] if shape is not None and len(shape) == 2 else ["z", "y", "x"]
-    )
+    expected_axis: list[str]
+    if shape is not None and len(shape) == 1:
+        expected_axis = ["x"]
+    elif shape is not None and len(shape) == 2:
+        expected_axis = ["y", "x"]
+    else:
+        expected_axis = ["z", "y", "x"]
     axis_order = frame.get("axis_order")
     if axis_order != expected_axis:
         _check(
@@ -830,14 +834,14 @@ def validate_measurement(path: Path) -> ValidationResult:
     spacing = grid.get("spacing_mm") if grid else None
     if (
         not isinstance(shape, list)
-        or len(shape) not in {2, 3}
+        or len(shape) not in {1, 2, 3}
         or any(not isinstance(item, int) or item <= 0 for item in shape)
     ):
         _check(
             checks,
             "MEASUREMENT_GRID_INVALID",
             "ERROR",
-            "grid.shape must contain two or three positive integers.",
+            "grid.shape must contain one, two or three positive integers.",
             "grid.shape",
         )
     elif not isinstance(spacing, list) or len(spacing) != len(shape):

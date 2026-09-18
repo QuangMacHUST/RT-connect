@@ -10,7 +10,7 @@ import pytest
 from pydicom.dataset import Dataset, FileDataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian, RTDoseStorage, RTPlanStorage, generate_uid
 
-from rt_connect_api.services.artifact_validation import validate_dicom
+from rt_connect_api.services.artifact_validation import validate_dicom, validate_measurement
 from rt_connect_api.services.gamma_engine import (
     GammaEngineError,
     calculate_gamma_from_paths,
@@ -176,6 +176,35 @@ def test_single_frame_rtdose_accepts_scalar_grid_offset_vector(tmp_path: Path) -
     loaded = load_gamma_dataset(rtdose)
     assert loaded.values.shape == (2, 2)
     assert loaded.values.tolist() == [[1.0, 2.0], [3.0, 4.0]]
+
+
+def test_one_dimensional_measurement_is_valid_for_pylinac_gamma(tmp_path: Path) -> None:
+    measurement = tmp_path / "one-dimensional-profile.json"
+    payload = json.loads(_measurement_bytes("profile-1d", [1.0, 2.0, 3.0, 4.0]).decode("utf-8"))
+    payload["grid"] = {
+        "shape": [4],
+        "spacing_mm": [1.0],
+        "origin_mm": [0.0],
+    }
+    payload["coordinate_frame"]["axis_order"] = ["x"]
+    payload["acquisition"] = {
+        "detector": "synthetic-profile",
+        "measured_at": "2026-09-18T00:00:00Z",
+    }
+    payload["source"] = {"filename": measurement.name, "sha256": "a" * 64}
+    measurement.write_text(json.dumps(payload), encoding="utf-8")
+
+    validation = validate_measurement(measurement)
+
+    assert validation.result == "VALID"
+    assert validation.metadata["grid"] == {
+        "shape": [4],
+        "spacing_mm": [1.0],
+        "origin_mm": [0.0],
+    }
+    assert validation.metadata["coordinate_frame"]["axis_order"] == ["x"]
+    loaded = load_gamma_dataset(measurement)
+    assert loaded.values.shape == (4,)
 
 
 def test_rtdose_rejects_non_axial_orientation_before_gamma(tmp_path: Path) -> None:

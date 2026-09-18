@@ -1,4 +1,4 @@
-"""Deterministic 2D/3D Gamma engine for the P8 input contract.
+"""Deterministic 1D/2D/3D Gamma engine for the P8 input contract.
 
 The engine accepts the validated ``gamma.measurement.v1`` JSON contract and
 validated DICOM RTDOSE objects. JSON values are intentionally inline for this
@@ -431,7 +431,7 @@ def _load_rtdose(path: Path) -> MeasurementDataset:
 
 
 def load_measurement(path: Path) -> MeasurementDataset:
-    """Load a validated JSON measurement dataset, including 2D or 3D grids."""
+    """Load a validated JSON measurement dataset, including 1D, 2D or 3D grids."""
 
     return _load_inline_measurement(path)
 
