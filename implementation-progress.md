@@ -1751,6 +1751,13 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Kiểm thử giao diện riêng đạt **5/5**, toàn bộ giao diện đạt **74/74**, kiểm tra kiểu, lint và bản dựng sản phẩm đạt. Đây là `LOCAL_VERIFIED_SLICE` cho biên nhập liệu.
 - P07-CONTRIB vẫn mở vì còn thiếu fixture ảnh chuẩn/commissioning, đối chiếu từng chỉ số, kiểm lỗi ảnh không phù hợp, kiểm chứng staging và nghiệm thu chuyên môn.
 
+## P7-CONTRIB — parity triển khai staging — 2026-09-18
+
+- API, giao diện và tiến trình nền staging đã dựng thành công cùng commit `8d3ee7d3ff83820447b0962de14f1e2270404f5c` sau khi thêm cổng kiểm tra tham số Quasar và Jaw.
+- Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều đạt, readiness giữ lược đồ `20260914_0023`, biên xác thực không bị mở và gói giao diện mới có mặt.
+- Bằng chứng: [kiểm tra parity bài đóng góp trên staging](docs/evidence/p7-staging-contrib-form-validation-20260918.json). Đây là bằng chứng triển khai và hợp đồng giao diện, không phải chạy hai bài bằng ảnh chuẩn/commissioning; P07-CONTRIB vẫn mở.
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
 ## P7-NUCLEAR — kiểm tra tham số chín bài hạt nhân — lát cắt cục bộ — 2026-09-18
 
 - Các bài tốc độ đếm, độ đồng nhất, độ phân giải, độ nhạy, tâm quay và tương phản nay kiểm tra đúng trường số theo từng loại bài trước khi gửi Pylinac.
