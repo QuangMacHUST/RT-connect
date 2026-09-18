@@ -36,6 +36,23 @@ from rt_connect_api.services.redis_queue import (
 logger = logging.getLogger(__name__)
 
 
+def is_gamma_worker_drain_mode() -> bool:
+    """Return whether the worker must leave new Gamma jobs queued.
+
+    This is an operational maintenance switch for controlled queue tests and
+    safe worker drains. It deliberately defaults to disabled and accepts only
+    explicit truthy values so a malformed deployment variable cannot pause the
+    worker accidentally.
+    """
+
+    return os.getenv("GAMMA_WORKER_DRAIN_MODE", "0").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 def _as_utc(value: datetime | None) -> datetime | None:
     """Normalize SQLite's naive timestamp round-trip to the UTC contract."""
 
@@ -258,6 +275,7 @@ def main() -> None:
     storage = get_storage(settings)
     poll_seconds = max(0.5, float(os.getenv("GAMMA_WORKER_POLL_SECONDS", "2")))
     run_once = os.getenv("GAMMA_WORKER_ONCE", "0") == "1"
+    drain_mode = is_gamma_worker_drain_mode()
     factory = Session
     queue = get_gamma_queue(settings, consumer_name=os.getenv("GAMMA_QUEUE_CONSUMER"))
     logger.info(
@@ -266,6 +284,8 @@ def main() -> None:
         settings.gamma_queue_stream,
         settings.gamma_queue_group,
     )
+    if drain_mode:
+        logger.warning("Gamma worker drain mode enabled; new jobs remain queued")
     if queue is not None:
         queue.ensure_ready()
         logger.info("Gamma worker using Redis Streams queue")
@@ -278,6 +298,9 @@ def main() -> None:
                     retry_delay_seconds=_retry_delay_seconds(1, settings),
                 )
                 publish_pending_dispatches(session, queue)
+            if drain_mode:
+                time.sleep(poll_seconds)
+                continue
             try:
                 message = queue.claim(block_ms=int(poll_seconds * 1000))
             except RedisQueueError:
@@ -348,14 +371,17 @@ def main() -> None:
                 max_attempts=settings.gamma_retry_max_attempts,
                 retry_delay_seconds=_retry_delay_seconds(1, settings),
             )
-            processed = process_next_gamma_run(
-                session,
-                storage,
-                lease_seconds=settings.gamma_lease_seconds,
-                max_attempts=settings.gamma_retry_max_attempts,
-                execution_deadline_seconds=settings.gamma_execution_deadline_seconds,
-                retry_delay_seconds=_retry_delay_seconds(1, settings),
-            )
+            if drain_mode:
+                processed = False
+            else:
+                processed = process_next_gamma_run(
+                    session,
+                    storage,
+                    lease_seconds=settings.gamma_lease_seconds,
+                    max_attempts=settings.gamma_retry_max_attempts,
+                    execution_deadline_seconds=settings.gamma_execution_deadline_seconds,
+                    retry_delay_seconds=_retry_delay_seconds(1, settings),
+                )
         if run_once or not processed:
             if run_once:
                 return

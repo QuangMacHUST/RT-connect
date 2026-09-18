@@ -75,6 +75,7 @@ After the API has deployed the Gamma migration, create a separate service named
 | Healthcheck | None; this is a non-HTTP worker |
 | `GAMMA_WORKER_POLL_SECONDS` | `2` in staging |
 | `GAMMA_WORKER_ONCE` | unset |
+| `GAMMA_WORKER_DRAIN_MODE` | unset normally; set to `1` only for a controlled maintenance or queue-cancel test, then remove it |
 | `REDIS_URL` | Railway private reference `${{Redis.REDIS_URL}}`, same value source as API |
 
 Apply the root/start/healthcheck settings directly in the worker service (or through the
@@ -85,6 +86,11 @@ supported Railway IaC mechanism when adopted); do not assume that merely committ
 non-HTTP worker deployment to fail. With `REDIS_URL` set, verify worker logs show Redis
 Streams/consumer-group startup rather than database polling, then verify a Gamma run moves
 from `QUEUED` to `RUNNING` to `COMPLETED` and the Redis pending count is acknowledged.
+For a controlled queue-cancel check, set `GAMMA_WORKER_DRAIN_MODE=1` on the private worker,
+wait for the worker deployment to report healthy, create one synthetic Gamma run, cancel it
+while it remains `QUEUED`, verify the run becomes `CANCELLED` without an attempt or result,
+then remove the variable and redeploy the worker. Never enable drain mode on production as a
+normal operating setting and never use it to hide a worker outage.
 
 ## Supabase handoff
 

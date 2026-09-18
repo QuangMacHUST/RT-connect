@@ -28,9 +28,26 @@ from rt_connect_api.db.models import (
 from rt_connect_api.services.object_storage import InMemoryObjectStorage, ObjectStorageError
 from rt_connect_api.services.pylinac_gamma_adapter import PYLINAC_GAMMA_ENGINE_VERSION
 from rt_connect_api.services.redis_queue import GammaQueueMessage
-from rt_connect_api.worker import process_gamma_queue_message, recover_stale_runs
+from rt_connect_api.worker import (
+    is_gamma_worker_drain_mode,
+    process_gamma_queue_message,
+    recover_stale_runs,
+)
 
 FRAME_UID = "1.2.826.0.1.3680043.8.498.999.4"
+
+
+def test_gamma_worker_drain_mode_requires_explicit_truthy_value(monkeypatch) -> None:
+    monkeypatch.delenv("GAMMA_WORKER_DRAIN_MODE", raising=False)
+    assert is_gamma_worker_drain_mode() is False
+
+    for value in ("1", "true", "YES", "on"):
+        monkeypatch.setenv("GAMMA_WORKER_DRAIN_MODE", value)
+        assert is_gamma_worker_drain_mode() is True
+
+    for value in ("0", "false", "", "unexpected"):
+        monkeypatch.setenv("GAMMA_WORKER_DRAIN_MODE", value)
+        assert is_gamma_worker_drain_mode() is False
 
 
 def _dataset(dataset_id: str, values: list[float]) -> bytes:
