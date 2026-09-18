@@ -1937,3 +1937,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Lượt xuất PNG kiểm tra đúng phạm vi đơn vị, dùng lại cơ chế cảnh báo `REPORT_OVERLAY_UNAVAILABLE` khi ảnh thiếu hoặc không đọc được, và không làm thay đổi bản chụp báo cáo bất biến. Không có đường dẫn tệp, mã nội bộ hoặc dữ liệu JSON trong tài liệu người dùng.
 - Kiểm thử `test_reports.py` và `test_pylinac_qa.py` đạt **50/50**, riêng `test_reports.py` đạt **10/10**; Ruff, mypy phần báo cáo và kiểm tra khoảng trắng đều đạt. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 - Đây là `LOCAL_VERIFIED_SLICE`; sau khi triển khai cần tạo lại bằng chứng parity staging theo đúng toàn bộ mã nguồn, rồi mới kiểm tra có đăng nhập để đối chiếu xem trước–PDF/PNG và đóng P09-W03. Bảng nghiệp vụ nhiều trang, xem trước bằng chính renderer xuất và VERIFY/HANDOFF P9 vẫn mở.
+
+## P9-W03 — nhúng lớp phủ Pylinac vào PDF và PNG trên staging — đã kiểm tra parity — 2026-09-18
+
+- API, giao diện và tiến trình nền staging đã được dựng lại cùng commit `653d399e856a2901bd178fd18182924ffb03edf9`.
+- Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều `200`, readiness giữ lược đồ `20260914_0023`, gói giao diện có mặt và các tuyến thành viên/lời mời vẫn yêu cầu xác thực.
+- Bằng chứng: [parity lớp phủ Pylinac PDF/PNG trên staging](docs/evidence/p9-staging-pylinac-overlay-png-20260918.json). Đây là bằng chứng triển khai và biên công khai; chưa phải phiên có đăng nhập để tạo lượt Pylinac, mở trình biên soạn và xuất tài liệu trên dữ liệu staging thật.
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`. P09-W03 vẫn mở bảng nghiệp vụ nhiều trang, đối chiếu xem trước–PDF/PNG, kiểm thử có đăng nhập và VERIFY/HANDOFF P9.
