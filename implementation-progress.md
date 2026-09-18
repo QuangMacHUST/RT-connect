@@ -1866,3 +1866,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Khi còn lỗi, nút bắt đầu phân tích bị khóa nên không tạo tác vụ mới, không gọi máy chủ và không làm thay đổi lịch sử. Các trường “Chênh lệch liều (%)” và “DTA (mm)” vẫn là tham số người dùng nhập, được chuyển nguyên vẹn cho hợp đồng Pylinac sau khi hợp lệ.
 - Kiểm thử riêng đạt **7/7**, toàn bộ giao diện đạt **78/78**, kiểm tra kiểu, lint và bản dựng sản phẩm đạt. Bằng chứng: [kiểm tra tham số PSQA](docs/evidence/p8-local-psqa-configuration-validation-20260918.md).
 - Đây là `LOCAL_VERIFIED_SLICE`, chưa đóng P08-W02. Còn cần chạy Gamma thật trên staging bằng dữ liệu hợp lệ, kiểm tra hàng đợi/hủy/thử lại và VERIFY/HANDOFF P8. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
+## P8-W02 — parity triển khai cổng tham số PSQA trên staging — đã kiểm tra — 2026-09-18
+
+- API, giao diện và tiến trình nền staging đã được dựng lại từ cùng commit `e9f1b9a011b12c461f3d14b4bc060d29655f59d3`.
+- Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều `200`, lược đồ `20260914_0023` và gói giao diện mới đều hiện diện.
+- Bằng chứng: [parity cổng tham số PSQA trên staging](docs/evidence/p8-staging-psqa-configuration-validation-20260918.json). Đây là kiểm tra triển khai và biên công khai chưa cần đăng nhập, chưa phải chạy Gamma thật với dữ liệu liều.
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`. P08-W02 vẫn mở phần chạy Gamma thật, ma trận lỗi hàng đợi và VERIFY/HANDOFF.
