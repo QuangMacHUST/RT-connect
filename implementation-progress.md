@@ -1751,6 +1751,13 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Kiểm thử giao diện riêng đạt **6/6**, toàn bộ giao diện đạt **71/71**, kiểm tra kiểu, lint và bản dựng sản phẩm đạt. Đây là `LOCAL_VERIFIED_SLICE` cho biên nhập liệu.
 - Các nhóm vẫn mở vì môi trường hiện tại còn thiếu fixture Cheese CIRS 062M/GE Helios/Quart được phê duyệt, đối chiếu từng mô-đun, kiểm lỗi đặc trưng, kiểm chứng staging và nghiệm thu chuyên môn.
 
+## P7-CHEESE/P7-HELIOS/P7-QUART — parity triển khai staging — 2026-09-18
+
+- API, giao diện và tiến trình nền staging đã dựng thành công cùng commit `71aaf91ce2c1ea6cf9b035eb403c1ff08fae5476` sau khi thêm cổng kiểm tra tham số phantom.
+- Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều đạt, readiness giữ lược đồ `20260914_0023`, biên xác thực không bị mở và gói giao diện mới có mặt.
+- Bằng chứng: [kiểm tra parity nhóm phantom trên staging](docs/evidence/p7-staging-ct-phantom-form-validation-20260918.json). Đây là bằng chứng triển khai và hợp đồng giao diện, không phải chạy phantom bằng bộ ảnh chuẩn/commissioning; các gói P07 tương ứng vẫn mở.
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
 ## P7-CAL/W04 — kiểm tra biểu mẫu hiệu chuẩn và sửa TRS-398 electron — đã kiểm tra cục bộ — 2026-09-16
 
 - Đã bổ sung lớp kiểm tra giao diện riêng cho năm bài hiệu chuẩn TG-51/TRS-398. Biểu mẫu yêu cầu các thông tin truy nguyên của phép đo, kiểm tra số hữu hạn, miền tối thiểu và từng phần tử trong các trường nhiều số đọc; lỗi hiển thị bằng tiếng Việt trước khi gửi yêu cầu, không còn âm thầm bỏ qua phần nhập sai.
