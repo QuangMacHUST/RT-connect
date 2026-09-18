@@ -1959,13 +1959,14 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Bằng chứng: [parity xem trước dùng cùng renderer trên staging](docs/evidence/p9-staging-preview-renderer-20260918.json). Đây là bằng chứng triển khai, hợp đồng công khai và biên xác thực; chưa phải phiên có đăng nhập để mở bản báo cáo staging, xem ảnh thật hoặc tải PDF/PNG thật.
 - Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`. P09-W03 vẫn mở bảng nghiệp vụ nhiều trang, đối chiếu trực quan xem trước–PDF/PNG, kiểm thử có đăng nhập và VERIFY/HANDOFF.
 
-## P9-W04 — xuất lặp theo bản chụp và khôi phục sau lỗi lưu — kiểm tra cục bộ — 2026-09-18
+## P9-W04 — xuất lặp theo bản chụp và khôi phục sau lỗi lưu — cục bộ và parity staging — 2026-09-18
 
 - Hợp đồng xuất hiện hỗ trợ JSON, CSV, PDF và PNG; cùng khóa idempotency trong cùng bản chụp trả lại đúng công việc đã có, còn dùng lại khóa cho định dạng khác bị từ chối `EXPORT_IDEMPOTENCY_CONFLICT`.
 - Tệp xuất được lưu theo bản chụp bất biến, tải lại trả đúng hàm băm/kích thước và tên tệp nghiệp vụ; lỗi ghi metadata được bù trừ tệp tạm để có thể thử lại an toàn. Lỗi dọn dẹp được phát tín hiệu đối soát thay vì mất im lặng.
 - Ba kiểm thử riêng cho P9-W04 đã đạt; toàn bộ `test_reports.py` đạt **11/11**, gồm cả bốn định dạng, lặp idempotency, xung đột khóa, tải lại và hai nhánh lỗi lưu/dọn dẹp. Không có thao tác xóa vĩnh viễn nào trong lát cắt này.
 - Lịch sử tệp của từng bản báo cáo đã có tuyến máy chủ theo đúng bản sửa đổi, phân trang theo phạm vi đơn vị, và giao diện hiển thị tên tệp nghiệp vụ cùng nút “Tải lại” để lấy liên kết mới. Kiểm thử giao diện đạt **16 tệp và 82 phép thử**; kiểm tra kiểu, lint và bản dựng đạt.
-- Đây là `LOCAL_VERIFIED_SLICE`; P09-W04 còn mở phần chạy có đăng nhập trên staging và đối chiếu lịch sử tải lại. Việc lan truyền xóa vĩnh viễn được giữ ngoài phạm vi theo quyết định sản phẩm hiện tại; hồ sơ QA chỉ dùng lưu trữ/khôi phục khi cần.
+- Sau khi dựng lại cả API, web và tiến trình nền staging, bộ xác minh công khai exact-SHA đạt **16/16** với mã nguồn đầy đủ `829f7575d0560c84ffd5a9ec2971effb73394181`, lược đồ `20260914_0023`, health/readiness `200`, OpenAPI, biên xác thực và gói giao diện đúng phiên bản. Bằng chứng: [lịch sử tệp báo cáo trên staging](docs/evidence/p9-staging-export-history-20260918.json).
+- Đây là `STAGING_PARITY_VERIFIED`, chưa phải nghiệm thu nghiệp vụ đầy đủ: bộ kiểm tra công khai chưa đăng nhập để mở một bản báo cáo thật, xem lịch sử tệp và bấm “Tải lại”. P09-W04 vẫn mở phần kiểm tra có đăng nhập, đối chiếu liên kết tải và VERIFY/HANDOFF. Việc lan truyền xóa vĩnh viễn được giữ ngoài phạm vi theo quyết định sản phẩm hiện tại; hồ sơ QA chỉ dùng lưu trữ/khôi phục khi cần.
 
 ## P8-W03 — hàng đợi và kết quả Gamma — kiểm tra cục bộ — 2026-09-18
 
