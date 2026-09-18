@@ -1923,3 +1923,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều `200`, lược đồ `20260914_0023`, tuyến thành viên/lời mời vẫn giữ đúng biên xác thực và giao diện phục vụ đúng gói mới.
 - Bằng chứng: [parity nguồn Pylinac cho báo cáo trên staging](docs/evidence/p9-staging-pylinac-report-source-20260918.json). Đây là bằng chứng nguồn/runtime/biên công khai; chưa phải phiên có đăng nhập để tạo báo cáo từ một lượt Pylinac thật.
 - P09-W01 vẫn mở phần kiểm thử có đăng nhập, snapshot/hạ tầng xuất thực và VERIFY/HANDOFF; P09-W03 vẫn mở phần lấy lớp phủ vào PDF/PNG. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
+## P9-W03 — nhúng lớp phủ Pylinac vào PDF trên staging — đã kiểm tra parity — 2026-09-18
+
+- API, giao diện và tiến trình nền staging đã được dựng lại cùng commit `ab641714dbf82ad16ea2279620bb6edf57798311`.
+- Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều `200`, lược đồ `20260914_0023`, giao diện phục vụ đúng gói mới và biên thành viên/lời mời vẫn yêu cầu xác thực.
+- Bằng chứng: [parity nhúng lớp phủ Pylinac vào PDF trên staging](docs/evidence/p9-staging-pylinac-overlay-pdf-20260918.json). Đây là bằng chứng triển khai và biên công khai; chưa phải phiên có đăng nhập để tạo lượt Pylinac và xuất PDF trên dữ liệu staging thật.
+- PDF đã có đường đi cục bộ được kiểm thử với ảnh PNG hợp lệ; PNG xuất, bảng nghiệp vụ dài, đối chiếu xem trước–PDF và VERIFY/HANDOFF P9 vẫn mở. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
