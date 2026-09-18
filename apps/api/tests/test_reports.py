@@ -205,6 +205,16 @@ def test_pylinac_result_can_become_a_report_source(monkeypatch) -> None:
         )
         assert b"/Im1 Do" in decoded_streams
 
+        exported_png = client.post(
+            f"/api/v1/reports/{report.json()['report_key']}/revisions/{report.json()['id']}/exports",
+            json={"export_format": "PNG", "idempotency_key": "p9-pylinac-overlay-png-001"},
+        )
+        assert exported_png.status_code == 201, exported_png.text
+        assert exported_png.json()["warning_snapshot"] == []
+        png = storage.objects[exported_png.json()["object_key"]]
+        with Image.open(io.BytesIO(png)) as rendered_png:
+            assert rendered_png.getpixel((64, 204)) == (23, 145, 160)
+
 
 def test_report_revision_snapshots_source_and_supports_full_block_customization() -> None:
     storage = InMemoryObjectStorage()

@@ -20,7 +20,7 @@ from typing import Any, Literal
 from fontTools.ttLib import TTFont  # type: ignore[import-untyped]
 from PIL import Image, UnidentifiedImageError
 
-RENDERER_VERSION = "report-renderer-0.3"
+RENDERER_VERSION = "report-renderer-0.4"
 ExportFormat = Literal["JSON", "CSV", "PDF", "PNG"]
 SUPPORTED_EXPORT_FORMATS: frozenset[str] = frozenset({"JSON", "CSV", "PDF", "PNG"})
 _PDF_FONT_PATH = Path(__file__).resolve().parent.parent / "assets" / "DejaVuSans.ttf"
@@ -63,7 +63,7 @@ def render_report(
         return _render_csv(snapshot), "text/csv; charset=utf-8", "csv", []
     if export_format == "PDF":
         return _render_pdf(snapshot, overlay_bytes=overlay_bytes)
-    return _render_png(snapshot), "image/png", "png", []
+    return _render_png(snapshot, overlay_bytes=overlay_bytes), "image/png", "png", []
 
 
 def _render_csv(snapshot: Mapping[str, object]) -> bytes:
@@ -254,16 +254,22 @@ def _pdf_page_content(
     return "\n".join(stream_lines).encode("ascii")
 
 
-def _prepare_pdf_image(image_bytes: bytes) -> tuple[bytes, int, int]:
+def _prepare_overlay_image(
+    image_bytes: bytes, *, max_size: tuple[int, int]
+) -> tuple[bytes, int, int]:
     try:
         with Image.open(io.BytesIO(image_bytes)) as source:
             image = source.convert("RGB")
-            image.thumbnail((520, 240), Image.Resampling.LANCZOS)
+            image.thumbnail(max_size, Image.Resampling.LANCZOS)
             if image.width < 1 or image.height < 1:
                 raise ReportRenderError("The report analysis image has no visible pixels")
             return image.tobytes(), image.width, image.height
     except (UnidentifiedImageError, OSError, ValueError) as exc:
         raise ReportRenderError("The report analysis image could not be decoded") from exc
+
+
+def _prepare_pdf_image(image_bytes: bytes) -> tuple[bytes, int, int]:
+    return _prepare_overlay_image(image_bytes, max_size=(520, 240))
 
 
 def _pdf_image_object(pixels: bytes, width: int, height: int) -> bytes:
@@ -354,7 +360,9 @@ def _pdf_to_unicode_cmap(codepoints: Sequence[int]) -> bytes:
     return "\n".join(lines).encode("ascii")
 
 
-def _render_png(snapshot: Mapping[str, object]) -> bytes:
+def _render_png(
+    snapshot: Mapping[str, object], *, overlay_bytes: bytes | None = None
+) -> bytes:
     """Build a deterministic overview PNG for previews and lightweight exports."""
 
     width, height = 720, 400
@@ -371,6 +379,19 @@ def _render_png(snapshot: Mapping[str, object]) -> bytes:
     fill(0, 0, width, 72, (16, 48, 79))
     fill(32, 104, width - 32, 170, (255, 255, 255))
     fill(32, 194, width - 32, 360, (255, 255, 255))
+    if overlay_bytes:
+        overlay_pixels, overlay_width, overlay_height = _prepare_overlay_image(
+            overlay_bytes, max_size=(520, 140)
+        )
+        for row in range(overlay_height):
+            target_y = 204 + row
+            if target_y >= height:
+                break
+            source_start = row * overlay_width * 3
+            target_start = (target_y * width + 64) * 3
+            pixels[target_start : target_start + overlay_width * 3] = overlay_pixels[
+                source_start : source_start + overlay_width * 3
+            ]
     blocks = [block for block in _blocks(snapshot) if _is_visible(block)]
     bar_count = min(len(blocks), 12)
     for index in range(bar_count):

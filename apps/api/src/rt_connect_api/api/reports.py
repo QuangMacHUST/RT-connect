@@ -1031,7 +1031,7 @@ def _overlay_bytes_for_snapshot(
     pretends that an image was included.
     """
 
-    if export_format != "PDF":
+    if export_format not in {"PDF", "PNG"}:
         return None, []
     source_type = snapshot.get("source_type")
     source_snapshot = snapshot.get("source_snapshot")

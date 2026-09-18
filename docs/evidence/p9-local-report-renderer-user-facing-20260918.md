@@ -15,11 +15,11 @@ Phạm vi: renderer PDF/CSV từ bản chụp báo cáo; không thay đổi hồ
 
 ## Cổng kiểm tra cục bộ
 
-- Kiểm thử `test_reports.py`: **10/10 đạt**, gồm đường đi từ lượt Pylinac có ảnh lớp phủ tới tệp PDF.
+- Kiểm thử `test_reports.py`: **10/10 đạt**, gồm đường đi từ lượt Pylinac có ảnh lớp phủ tới tệp PDF và PNG.
 - Kiểm tra quy tắc mã nguồn trên renderer và kiểm thử: **đạt**.
 - Kiểm tra kiểu renderer: **đạt**.
 - Kiểm tra Unicode tiếng Việt, ẩn phần, chia nhiều trang, tính xác định, loại bỏ dòng phiên bản/mã băm kỹ thuật và nhúng ảnh phân tích RGB vào PDF: **đạt**.
 
 ## Giới hạn còn mở
 
-Lát cắt này chưa đính kèm ảnh phân tích vào PNG, chưa dựng bảng nhiều trang, chưa kiểm tra hiển thị trực quan trên trình duyệt và chưa chạy phiên có đăng nhập trên staging. Vì vậy P09-W02/P09-W03 và toàn bộ P9 vẫn mở; không được dùng bằng chứng này để tuyên bố sẵn sàng lâm sàng.
+Lát cắt này chưa dựng bảng nhiều trang, chưa kiểm tra hiển thị trực quan trên trình duyệt và chưa chạy phiên có đăng nhập trên staging. Vì vậy P09-W02/P09-W03 và toàn bộ P9 vẫn mở; không được dùng bằng chứng này để tuyên bố sẵn sàng lâm sàng.
