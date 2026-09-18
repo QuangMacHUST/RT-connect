@@ -1951,3 +1951,17 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Lớp phủ Pylinac được lấy theo đúng phạm vi đơn vị và dùng lại trong xem trước; bản chỉnh sửa chưa lưu được ghi chú rõ là cần lưu bản mới trước khi cập nhật ảnh.
 - Kiểm thử `test_reports.py` và `test_pylinac_qa.py` đạt **51/51**, riêng `test_reports.py` đạt **11/11**; toàn bộ giao diện đạt **16 tệp và 81 phép thử**, kiểm tra kiểu, lint và bản dựng sản phẩm đạt. Bằng chứng: [xem trước cùng renderer](docs/evidence/p9-local-preview-renderer-20260918.md).
 - Đây là `LOCAL_VERIFIED_SLICE`; chưa triển khai lát cắt này lên staging. Còn mở kiểm thử có đăng nhập, đối chiếu trực quan xem trước–PDF/PNG, bảng nghiệp vụ nhiều trang và VERIFY/HANDOFF P9. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
+## P9-W03 — xem trước dùng cùng renderer với tệp xuất trên staging — đã kiểm tra parity — 2026-09-18
+
+- API, giao diện và tiến trình nền staging đã được dựng lại cùng commit đầy đủ `02ff4c57d097a132c5c7e16901b7f29c356a2217`.
+- Bộ xác minh công khai exact-SHA đạt **16/16**: health/readiness `200`, lược đồ `20260914_0023`, tuyến xem trước có trong OpenAPI, giao diện có điều khiển xem trước và mã phiên bản đúng với commit triển khai.
+- Bằng chứng: [parity xem trước dùng cùng renderer trên staging](docs/evidence/p9-staging-preview-renderer-20260918.json). Đây là bằng chứng triển khai, hợp đồng công khai và biên xác thực; chưa phải phiên có đăng nhập để mở bản báo cáo staging, xem ảnh thật hoặc tải PDF/PNG thật.
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`. P09-W03 vẫn mở bảng nghiệp vụ nhiều trang, đối chiếu trực quan xem trước–PDF/PNG, kiểm thử có đăng nhập và VERIFY/HANDOFF.
+
+## P9-W04 — xuất lặp theo bản chụp và khôi phục sau lỗi lưu — kiểm tra cục bộ — 2026-09-18
+
+- Hợp đồng xuất hiện hỗ trợ JSON, CSV, PDF và PNG; cùng khóa idempotency trong cùng bản chụp trả lại đúng công việc đã có, còn dùng lại khóa cho định dạng khác bị từ chối `EXPORT_IDEMPOTENCY_CONFLICT`.
+- Tệp xuất được lưu theo bản chụp bất biến, tải lại trả đúng hàm băm/kích thước và tên tệp nghiệp vụ; lỗi ghi metadata được bù trừ tệp tạm để có thể thử lại an toàn. Lỗi dọn dẹp được phát tín hiệu đối soát thay vì mất im lặng.
+- Ba kiểm thử riêng cho P9-W04 đã đạt; toàn bộ `test_reports.py` đạt **11/11**, gồm cả bốn định dạng, lặp idempotency, xung đột khóa, tải lại và hai nhánh lỗi lưu/dọn dẹp. Không có thao tác xóa vĩnh viễn nào trong lát cắt này.
+- Đây là `LOCAL_VERIFIED_SLICE`; P09-W04 còn mở phần chạy có đăng nhập trên staging và đối chiếu lịch sử tải lại. Việc lan truyền xóa vĩnh viễn được giữ ngoài phạm vi theo quyết định sản phẩm hiện tại; hồ sơ QA chỉ dùng lưu trữ/khôi phục khi cần.
