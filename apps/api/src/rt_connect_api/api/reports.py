@@ -1624,6 +1624,52 @@ def get_report_revision(
     return _revision_response(session, revision)
 
 
+@router.get("/reports/{report_key}/revisions/{revision_id}/preview")
+def preview_report_revision(
+    report_key: UUID,
+    revision_id: UUID,
+    format: Literal["PDF", "PNG"] = Query(default="PNG"),
+    identity: AuthenticatedIdentity = Depends(require_identity),
+    session: Session = Depends(get_session),
+    storage: ObjectStorage = Depends(_storage),
+) -> Response:
+    """Render a saved revision through the same renderer used for export."""
+
+    context = resolve_session_context(session, identity)
+    revision = _revision_or_error(session, context, report_key, revision_id)
+    snapshot = _snapshot_for_revision(session, revision)
+    overlay_bytes, overlay_warnings = _overlay_bytes_for_snapshot(
+        session,
+        storage,
+        snapshot,
+        context.organization_id,
+        format,
+    )
+    try:
+        rendered, media_type, _, renderer_warnings = render_report(
+            snapshot,
+            format,
+            overlay_bytes=overlay_bytes,
+        )
+    except ReportRenderError as exc:
+        raise DomainError(
+            "REPORT_PREVIEW_FAILED",
+            "The saved report could not be previewed from its immutable snapshot.",
+            422,
+        ) from exc
+    warning_codes = [
+        str(item["code"])
+        for item in overlay_warnings
+        if item.get("code")
+    ]
+    warning_codes.extend(renderer_warnings)
+    headers = {
+        "Cache-Control": "no-store",
+        "X-RT-Connect-Preview-Warnings": ",".join(warning_codes),
+    }
+    return Response(content=rendered, media_type=media_type, headers=headers)
+
+
 @router.post(
     "/reports/{report_key}/revisions",
     response_model=ReportRevisionResponse,

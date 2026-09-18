@@ -121,6 +121,13 @@ export function ReportBuilderPage() {
     enabled: Boolean(accessToken && selectedReportKey), retry: false
   })
   const currentRevision = revisions.data?.[0]
+  const reportPreview = useQuery({
+    queryKey: ['report-preview', selectedReportKey, currentRevision?.id, accessToken],
+    queryFn: () => apiClient.reportPreview(accessToken!, selectedReportKey!, currentRevision!.id),
+    enabled: Boolean(accessToken && selectedReportKey && currentRevision), retry: false
+  })
+  const reportPreviewUrl = useMemo(() => reportPreview.data ? URL.createObjectURL(reportPreview.data) : undefined, [reportPreview.data])
+  useEffect(() => () => { if (reportPreviewUrl) URL.revokeObjectURL(reportPreviewUrl) }, [reportPreviewUrl])
   const selectedReport = useMemo<ReportSummary | undefined>(
     () => reports.data?.items.find((item) => item.report_key === selectedReportKey),
     [reports.data, selectedReportKey]
@@ -268,7 +275,7 @@ export function ReportBuilderPage() {
           <div className="report-editor-actions"><button disabled={saveMutation.isPending || Boolean(editorError) || !title.trim()} onClick={() => saveMutation.mutate()}>{saveMutation.isPending ? 'Đang lưu…' : currentRevision ? 'Lưu bản mới' : 'Lưu báo cáo'}</button>{currentRevision && <span className="form-hint">Bản hiện tại: {currentRevision.revision_number}</span>}</div>
         </section>
       </div>
-      <section className="panel report-preview-panel"><div className="panel-heading"><div><p className="eyebrow">XEM TRƯỚC VÀ XUẤT</p><h2>Xem trước báo cáo</h2></div>{currentRevision && <span className="status-badge">ĐÃ LƯU</span>}</div><div className="report-preview"><h3>{title || 'Báo cáo chưa đặt tên'}</h3><p>Nguồn: {reportSourceLabel(sourceType)}</p>{blocks.filter((block) => block.is_visible).sort((left, right) => left.sort_order - right.sort_order).map((block) => <article key={block.stable_block_id}><strong>{block.label}</strong><small>{reportBlockLabel(block.block_type)}</small><pre>{blockDescription(block)}</pre></article>)}</div>{currentRevision && <div className="report-export-actions"><strong>Xuất bản báo cáo {currentRevision.revision_number}</strong>{(['CSV', 'PDF', 'PNG'] as const).map((format) => <button key={format} className="button-secondary" disabled={exportMutation.isPending} onClick={() => exportMutation.mutate(format)}>{exportMutation.isPending ? 'Đang tạo…' : reportExportLabel(format)}</button>)}</div>}</section>
+      <section className="panel report-preview-panel"><div className="panel-heading"><div><p className="eyebrow">XEM TRƯỚC VÀ XUẤT</p><h2>Xem trước báo cáo</h2></div>{currentRevision && <span className="status-badge">ĐÃ LƯU</span>}</div>{currentRevision ? <><p className="form-hint">Bản xem trước được dựng từ bản đã lưu {currentRevision.revision_number} bằng cùng bộ dựng với tệp PNG/PDF. Nếu vừa chỉnh sửa, hãy lưu bản mới để cập nhật hình xem trước.</p>{reportPreview.isPending ? <div className="report-preview-engine report-preview-engine--empty">Đang dựng bản xem trước…</div> : reportPreview.error ? <div className="alert alert--error"><p>{errorMessage(reportPreview.error)}</p><button className="button-secondary" onClick={() => void reportPreview.refetch()}>Thử lại</button></div> : reportPreviewUrl ? <figure className="report-preview-engine"><img src={reportPreviewUrl} alt={`Bản xem trước báo cáo ${currentRevision.revision_number}`} /><figcaption>Bản xem trước từ cùng bản chụp dùng để xuất báo cáo.</figcaption></figure> : null}</> : <div className="report-preview report-preview--draft"><h3>{title || 'Báo cáo chưa đặt tên'}</h3><p>Nguồn: {reportSourceLabel(sourceType)}</p>{blocks.filter((block) => block.is_visible).sort((left, right) => left.sort_order - right.sort_order).map((block) => <article key={block.stable_block_id}><strong>{block.label}</strong><small>{reportBlockLabel(block.block_type)}</small><pre>{blockDescription(block)}</pre></article>)}</div>}{currentRevision && <div className="report-export-actions"><strong>Xuất bản báo cáo {currentRevision.revision_number}</strong>{(['CSV', 'PDF', 'PNG'] as const).map((format) => <button key={format} className="button-secondary" disabled={exportMutation.isPending} onClick={() => exportMutation.mutate(format)}>{exportMutation.isPending ? 'Đang tạo…' : reportExportLabel(format)}</button>)}</div>}</section>
     </div>
   )
 }

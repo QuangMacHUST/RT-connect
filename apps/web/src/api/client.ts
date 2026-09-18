@@ -2554,6 +2554,31 @@ export class ApiClient {
     return this.get(`/reports/${reportKey}/revisions`, z.array(reportRevisionSchema), accessToken)
   }
 
+  async reportPreview(accessToken: string, reportKey: string, revisionId: string, format: 'PDF' | 'PNG' = 'PNG'): Promise<Blob> {
+    const correlationId = makeCorrelationId()
+    let response: Response
+    try {
+      response = await fetch(`${this.baseUrl}/reports/${reportKey}/revisions/${revisionId}/preview?format=${format}`, {
+        headers: {
+          Accept: format === 'PDF' ? 'application/pdf' : 'image/png',
+          'X-Correlation-ID': correlationId,
+          Authorization: `Bearer ${accessToken}`
+        }
+      })
+    } catch {
+      throw new ApiClientError('Không thể kết nối tới RT-CONNECT API.', 'NETWORK_ERROR', correlationId)
+    }
+    if (!response.ok) {
+      const body: unknown = await response.json().catch(() => undefined)
+      const parsed = errorSchema.safeParse(body)
+      if (parsed.success) throw new ApiClientError(parsed.data.message, parsed.data.code, parsed.data.correlation_id, parsed.data.details)
+      throw new ApiClientError('API không thể tạo bản xem trước báo cáo.', 'INVALID_API_RESPONSE', correlationId)
+    }
+    const expectedType = format === 'PDF' ? 'application/pdf' : 'image/png'
+    if (!(response.headers.get('content-type') ?? '').startsWith(expectedType)) throw new ApiClientError('Bản xem trước không đúng định dạng.', 'INVALID_API_RESPONSE', correlationId)
+    return response.blob()
+  }
+
   createReportRevision(accessToken: string, reportKey: string, body: {
     expected_revision?: number
     source_type?: 'CUSTOM' | 'QA_CASE' | 'MACHINE_QA' | 'PYLINAC_QA' | 'GAMMA' | 'DVH' | 'BIOLOGICAL'

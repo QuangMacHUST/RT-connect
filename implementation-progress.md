@@ -1935,7 +1935,7 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 
 - Renderer báo cáo đã nâng lên `report-renderer-0.4`: cùng một tệp lớp phủ Pylinac được giải mã an toàn và đưa vào cả PDF lẫn PNG; PDF tiếp tục đặt ảnh ở trang đầu, PNG đặt ảnh trong vùng phân tích của bản xem trước/xuất nhẹ.
 - Lượt xuất PNG kiểm tra đúng phạm vi đơn vị, dùng lại cơ chế cảnh báo `REPORT_OVERLAY_UNAVAILABLE` khi ảnh thiếu hoặc không đọc được, và không làm thay đổi bản chụp báo cáo bất biến. Không có đường dẫn tệp, mã nội bộ hoặc dữ liệu JSON trong tài liệu người dùng.
-- Kiểm thử `test_reports.py` và `test_pylinac_qa.py` đạt **50/50**, riêng `test_reports.py` đạt **10/10**; Ruff, mypy phần báo cáo và kiểm tra khoảng trắng đều đạt. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+- Kiểm thử `test_reports.py` và `test_pylinac_qa.py` đạt **51/51**, riêng `test_reports.py` đạt **11/11**; Ruff, mypy phần báo cáo và kiểm tra khoảng trắng đều đạt. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
 - Đây là `LOCAL_VERIFIED_SLICE`; sau khi triển khai cần tạo lại bằng chứng parity staging theo đúng toàn bộ mã nguồn, rồi mới kiểm tra có đăng nhập để đối chiếu xem trước–PDF/PNG và đóng P09-W03. Bảng nghiệp vụ nhiều trang, xem trước bằng chính renderer xuất và VERIFY/HANDOFF P9 vẫn mở.
 
 ## P9-W03 — nhúng lớp phủ Pylinac vào PDF và PNG trên staging — đã kiểm tra parity — 2026-09-18
@@ -1944,3 +1944,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều `200`, readiness giữ lược đồ `20260914_0023`, gói giao diện có mặt và các tuyến thành viên/lời mời vẫn yêu cầu xác thực.
 - Bằng chứng: [parity lớp phủ Pylinac PDF/PNG trên staging](docs/evidence/p9-staging-pylinac-overlay-png-20260918.json). Đây là bằng chứng triển khai và biên công khai; chưa phải phiên có đăng nhập để tạo lượt Pylinac, mở trình biên soạn và xuất tài liệu trên dữ liệu staging thật.
 - Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`. P09-W03 vẫn mở bảng nghiệp vụ nhiều trang, đối chiếu xem trước–PDF/PNG, kiểm thử có đăng nhập và VERIFY/HANDOFF P9.
+
+## P9-W03 — xem trước dùng cùng renderer với tệp xuất — kiểm tra cục bộ — 2026-09-18
+
+- API đã có tuyến xem trước cho bản chỉnh sửa đã lưu; tuyến này lấy cùng bản chụp bất biến và gọi cùng `render_report` với đường xuất PNG/PDF. Giao diện hiển thị ảnh PNG do tuyến này trả về, không còn dựng một bản xem trước mô tả riêng cho bản đã lưu.
+- Lớp phủ Pylinac được lấy theo đúng phạm vi đơn vị và dùng lại trong xem trước; bản chỉnh sửa chưa lưu được ghi chú rõ là cần lưu bản mới trước khi cập nhật ảnh.
+- Kiểm thử `test_reports.py` và `test_pylinac_qa.py` đạt **51/51**, riêng `test_reports.py` đạt **11/11**; toàn bộ giao diện đạt **16 tệp và 81 phép thử**, kiểm tra kiểu, lint và bản dựng sản phẩm đạt. Bằng chứng: [xem trước cùng renderer](docs/evidence/p9-local-preview-renderer-20260918.md).
+- Đây là `LOCAL_VERIFIED_SLICE`; chưa triển khai lát cắt này lên staging. Còn mở kiểm thử có đăng nhập, đối chiếu trực quan xem trước–PDF/PNG, bảng nghiệp vụ nhiều trang và VERIFY/HANDOFF P9. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.

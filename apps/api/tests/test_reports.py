@@ -393,6 +393,40 @@ def test_report_rejects_executable_content_and_missing_scoped_source() -> None:
         assert dangerous.json()["code"] == "REPORT_CONTENT_INVALID"
 
 
+def test_saved_report_preview_uses_the_same_png_renderer_without_mutating_revision() -> None:
+    storage = InMemoryObjectStorage()
+    with _workspace_client() as (client, organization):
+        client.app.dependency_overrides[report_storage] = lambda: storage
+        created = client.post(
+            f"/api/v1/organizations/{organization.id}/reports",
+            json={
+                "source_type": "CUSTOM",
+                "title": "Bản xem trước cùng renderer",
+                "blocks": _blocks("Nội dung xem trước"),
+            },
+        )
+        assert created.status_code == 201, created.text
+        revision = created.json()
+
+        preview = client.get(
+            f"/api/v1/reports/{revision['report_key']}/revisions/{revision['id']}/preview"
+        )
+
+        assert preview.status_code == 200, preview.text
+        assert preview.headers["content-type"].startswith("image/png")
+        assert preview.headers["x-rt-connect-preview-warnings"] == ""
+        assert preview.content.startswith(b"\x89PNG\r\n\x1a\n")
+        with Image.open(io.BytesIO(preview.content)) as image:
+            assert image.size == (720, 400)
+
+        revisions = client.get(
+            f"/api/v1/reports/{revision['report_key']}/revisions"
+        )
+        assert revisions.status_code == 200, revisions.text
+        assert len(revisions.json()) == 1
+        assert revisions.json()[0]["content_sha256"] == revision["content_sha256"]
+
+
 def test_report_exports_are_deterministic_idempotent_and_downloadable() -> None:
     storage = InMemoryObjectStorage()
     with _workspace_client() as (client, organization):

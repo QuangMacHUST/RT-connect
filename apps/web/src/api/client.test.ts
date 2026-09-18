@@ -158,3 +158,27 @@ test('loads the bounded image count for a multi-image preview', async () => {
     })
   )
 })
+
+test('loads a saved report preview as an image from the renderer endpoint', async () => {
+  const reportKey = '123e4567-e89b-42d3-a456-426614174000'
+  const revisionId = '123e4567-e89b-42d3-a456-426614174001'
+  const preview = new Blob(['png-bytes'], { type: 'image/png' })
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: true,
+    headers: new Headers({ 'content-type': 'image/png' }),
+    blob: async () => preview
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  const client = new ApiClient('http://api.test/api/v1')
+
+  await expect(client.reportPreview('token', reportKey, revisionId)).resolves.toBe(preview)
+  expect(fetchMock).toHaveBeenCalledWith(
+    expect.stringContaining(`/reports/${reportKey}/revisions/${revisionId}/preview?format=PNG`),
+    expect.objectContaining({
+      headers: expect.objectContaining({
+        Accept: 'image/png',
+        Authorization: 'Bearer token'
+      })
+    })
+  )
+})
