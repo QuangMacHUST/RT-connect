@@ -1838,9 +1838,12 @@ export class ApiClient {
     return response.blob()
   }
 
-  previewArtifactInfo(accessToken: string, artifactId: string): Promise<{ image_count: number }> {
+  previewArtifactInfo(accessToken: string, artifactId: string): Promise<{ image_count: number; width: number; height: number; pixel_spacing_mm: number[] | null }> {
     return this.get(`/artifacts/${artifactId}/preview-info`, z.object({
-      image_count: z.number().int().positive().max(2048)
+      image_count: z.number().int().positive().max(2048),
+      width: z.number().int().positive(),
+      height: z.number().int().positive(),
+      pixel_spacing_mm: z.array(z.number().positive()).length(2).nullable()
     }), accessToken)
   }
 

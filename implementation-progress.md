@@ -1844,3 +1844,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều đạt, readiness giữ lược đồ `20260914_0023`, biên xác thực không bị mở và gói giao diện mới có mặt.
 - Bằng chứng: [kiểm tra parity ACR trên staging](docs/evidence/p7-staging-acr-form-validation-20260918.json). Đây là bằng chứng triển khai và hợp đồng giao diện, không phải chạy ACR bằng bộ ảnh chuẩn/commissioning; P07-ACR vẫn mở.
 - Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+## P7-W04 — chọn tâm phantom trực tiếp theo thang đo DICOM — đã kiểm tra local — 2026-09-18
+
+- Vùng xem trước dùng chung cho CatPhan, ACR, TomoCheese, CIRS 062M, GE Helios và Quart nay hỗ trợ chọn/kéo tâm phantom trên ảnh thay vì chỉ nhập số. Điểm được chọn được quy đổi từ tâm ảnh sang điều chỉnh ngang/dọc theo milimét để gửi đúng tham số mà Pylinac công khai hỗ trợ.
+- API thông tin xem trước chỉ trả số ảnh, chiều rộng, chiều cao và thang đo điểm ảnh; không trả thẻ DICOM, tên tệp, đường dẫn kho hoặc mã nội bộ. Nếu không đọc được thang đo vật lý, giao diện không suy diễn tọa độ và giữ ô nhập điều chỉnh bằng tay.
+- Pylinac tiếp tục là engine duy nhất. RT-CONNECT chỉ phụ trách chọn điểm, quy đổi tọa độ, kiểm tra đầu vào và truyền tham số; không có thuật toán phân tích ảnh thay thế.
+- Kiểm thử ánh xạ tâm, giới hạn điểm ngoài mép và trường hợp thiếu thang đo đạt; kiểm tra API artifact, toàn bộ giao diện đạt **74/74**, kiểm tra kiểu, lint và bản dựng sản phẩm đạt. Bằng chứng: [chọn tâm phantom trực tiếp](docs/evidence/p7-local-visual-phantom-center-adjustment-20260918.md).
+- Đây là `LOCAL_VERIFIED_SLICE`, chưa đóng P7-W04. Còn cần fixture phantom được phê duyệt, tương tác có đăng nhập trên staging, đối chiếu độc lập, kiểm tra các ROI chuyên biệt và nghiệm thu chuyên môn. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.

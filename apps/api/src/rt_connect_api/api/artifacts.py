@@ -41,6 +41,7 @@ from rt_connect_api.services.pylinac_preview import (
     MAX_PREVIEW_IMAGES,
     PylinacPreviewError,
     preview_image_count,
+    preview_image_geometry,
     render_preview,
 )
 from rt_connect_api.services.session_context import SessionContext, resolve_session_context
@@ -94,6 +95,9 @@ class DownloadResponse(BaseModel):
 
 class PreviewInfoResponse(BaseModel):
     image_count: int = Field(ge=1, le=MAX_PREVIEW_IMAGES)
+    width: int = Field(ge=1)
+    height: int = Field(ge=1)
+    pixel_spacing_mm: list[float] | None = None
 
 
 class StorageIntegrityResponse(BaseModel):
@@ -717,7 +721,7 @@ def get_artifact_preview_info(
     session: Session = Depends(get_session),  # noqa: B008
     storage: ObjectStorage = Depends(_storage),  # noqa: B008
 ) -> PreviewInfoResponse:
-    """Return only the bounded image/frame count needed by the preview selector."""
+    """Return bounded image geometry needed by the preview selector and canvas."""
 
     context = _context(identity, session)
     artifact = _artifact_or_error(session, context, artifact_id)
@@ -726,13 +730,18 @@ def get_artifact_preview_info(
         try:
             storage.download_to_path(artifact.object_key, source)
             count = preview_image_count(source)
+            geometry = preview_image_geometry(
+                source,
+                image_index=0,
+                max_bytes=request.app.state.settings.max_upload_bytes,
+            )
         except ObjectStorageError as exc:
             raise DomainError(
                 "OBJECT_STORAGE_UNAVAILABLE", "Không thể đọc tệp xem trước từ kho lưu trữ.", 503
             ) from exc
         except PylinacPreviewError as exc:
             raise DomainError("PYLINAC_PREVIEW_UNAVAILABLE", str(exc), 422) from exc
-    return PreviewInfoResponse(image_count=count)
+    return PreviewInfoResponse(image_count=count, **geometry)
 
 
 @router.post("/artifacts/{artifact_id}/validate", response_model=ValidationRunResponse)

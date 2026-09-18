@@ -298,6 +298,8 @@ test('maps pointer coordinates to the original image and clamps outside clicks',
   expect(mapImagePoint(50, 20, bounds, 2000, 1000)).toEqual({ x: '0.0', y: '0.0' })
   expect(mapImagePoint(600, 300, bounds, 2000, 1000)).toEqual({ x: '2000.0', y: '1000.0' })
   expect(mapImagePoint(300, 150, bounds, 2000, 1000, 'NORMALIZED')).toEqual({ x: '0.5000', y: '0.5000' })
+  expect(mapImagePoint(400, 200, bounds, 2000, 1000, 'OFFSET_MM', [2, 1])).toEqual({ x: '500.00', y: '500.00' })
+  expect(mapImagePoint(300, 150, bounds, 2000, 1000, 'OFFSET_MM')).toBeUndefined()
   expect(mapImagePoint(300, 150, { ...bounds, width: 0 }, 2000, 1000)).toBeUndefined()
 })
 

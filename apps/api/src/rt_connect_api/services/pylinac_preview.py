@@ -103,6 +103,52 @@ def preview_image_count(source: Path) -> int:
     raise PylinacPreviewError("Tệp không chứa chuỗi ảnh hai chiều để xem trước.")
 
 
+def preview_image_geometry(
+    source: Path,
+    *,
+    image_index: int = 0,
+    max_bytes: int = 104_857_600,
+) -> dict[str, object]:
+    """Return bounded geometry needed to map a click to a Pylinac adjustment.
+
+    Only image dimensions and pixel spacing are exposed.  DICOM tags, source
+    names and object-storage paths remain private.  ``pixel_spacing_mm`` is
+    omitted when the input does not provide a trustworthy physical scale; the
+    web client must then keep millimetre adjustments manual.
+    """
+
+    try:
+        image = _load_source(source, image_index, max_bytes)
+        array = np.asarray(getattr(image, "array", image))
+        selected = _two_dimensional_array(
+            image, image_index if source.suffix.lower() != ".zip" else 0
+        )
+    except PylinacPreviewError:
+        raise
+    except Exception as exc:
+        raise PylinacPreviewError(
+            "Không thể đọc hình học ảnh để quy đổi điểm chọn."
+        ) from exc
+
+    if array.ndim not in (2, 3) or selected.ndim != 2:
+        raise PylinacPreviewError("Tệp không chứa ảnh hai chiều để đọc hình học.")
+
+    spacing: list[float] | None = None
+    dpmm = getattr(image, "dpmm", None)
+    try:
+        physical_scale = float(dpmm)
+    except (TypeError, ValueError):
+        physical_scale = 0.0
+    if np.isfinite(physical_scale) and physical_scale > 0:
+        spacing = [1.0 / physical_scale, 1.0 / physical_scale]
+
+    return {
+        "width": int(selected.shape[1]),
+        "height": int(selected.shape[0]),
+        "pixel_spacing_mm": spacing,
+    }
+
+
 def _two_dimensional_array(image: object, image_index: int) -> np.ndarray:
     array = np.asarray(getattr(image, "array", image))
     if array.ndim == 2:

@@ -142,12 +142,12 @@ test('loads the bounded image count for a multi-image preview', async () => {
   const artifactId = '123e4567-e89b-42d3-a456-426614174000'
   const fetchMock = vi.fn().mockResolvedValue({
     ok: true,
-    json: async () => ({ image_count: 2 })
+    json: async () => ({ image_count: 2, width: 270, height: 270, pixel_spacing_mm: [1, 1] })
   })
   vi.stubGlobal('fetch', fetchMock)
   const client = new ApiClient('http://api.test/api/v1')
 
-  await expect(client.previewArtifactInfo('token', artifactId)).resolves.toEqual({ image_count: 2 })
+  await expect(client.previewArtifactInfo('token', artifactId)).resolves.toEqual({ image_count: 2, width: 270, height: 270, pixel_spacing_mm: [1, 1] })
   expect(fetchMock).toHaveBeenCalledWith(
     expect.stringContaining(`/artifacts/${artifactId}/preview-info`),
     expect.objectContaining({
