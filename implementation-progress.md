@@ -2034,3 +2034,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Không tạo lượt mới: ở kiểu một chiều, chọn nhầm một tệp RTDOSE làm tham chiếu và một tệp số đo làm đối chiếu khiến giao diện báo `Thiếu dữ liệu phù hợp`, giải thích cần hai dãy liều một chiều và khóa nút bắt đầu.
 - Lịch sử trước và sau kiểm tra đều giữ 21 lượt; không có mục hàng chờ mới. Sau khi trả lựa chọn tham chiếu về tệp số đo hợp lệ, preflight trở lại hợp lệ và nút bắt đầu được mở lại.
 - Bằng chứng: [Gamma một chiều preflight âm staging](docs/evidence/p8-staging-gamma-1d-preflight-negative-20260918.json). Đây là kiểm tra chặn ở giao diện; ma trận lỗi worker/Redis và cổng VERIFY/HANDOFF vẫn mở.
+
+## P8-W03 — Ma trận Redis/worker cục bộ trên mã nguồn hiện tại — đã kiểm tra — 2026-09-18
+
+- Bộ xác minh dùng cơ sở dữ liệu, Redis, kho tệp và worker riêng dùng tạm đã đạt `passed=true` trên mã nguồn hiện tại. Không dùng dữ liệu bệnh nhân hay dữ liệu staging.
+- Đường chạy đúng và gửi trùng được khử; lỗi xác nhận được mô phỏng rồi phục hồi, thông điệp vẫn chờ cho đến khi xác nhận lại, kết quả bền vững không đổi và không tạo lần thử thứ hai.
+- Lỗi xử lý có giới hạn đạt 3 lần thử rồi đưa thông điệp vào khu cách ly; thông điệp sai cũng được cách ly, giữ mã lỗi và nguồn thông điệp nhưng không sao chép tải dữ liệu không hợp lệ. Sau xác nhận, số mục chờ là 0.
+- Bằng chứng: [ma trận Redis/worker cục bộ hiện tại](docs/evidence/p8-local-redis-worker-smoke-20260918.json). Đây là cổng hợp đồng cục bộ; kiểm thử lỗi worker/Redis trên staging, giới hạn tài nguyên, đối chiếu độc lập và VERIFY/HANDOFF vẫn mở.
