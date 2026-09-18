@@ -17,7 +17,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, Literal
 
-from fontTools.ttLib import TTFont
+from fontTools.ttLib import TTFont  # type: ignore[import-untyped]
 
 RENDERER_VERSION = "report-renderer-0.2"
 ExportFormat = Literal["JSON", "CSV", "PDF", "PNG"]
@@ -66,28 +66,14 @@ def _render_csv(snapshot: Mapping[str, object]) -> bytes:
     stream = io.StringIO(newline="")
     writer = csv.writer(stream, lineterminator="\r\n")
     writer.writerow(("section", "key", "value"))
-    for key in (
-        "report_key",
-        "revision_number",
-        "title",
-        "source_type",
-        "source_id",
-        "content_sha256",
-        "renderer_version",
-    ):
-        writer.writerow(("report", key, _csv_value(snapshot.get(key))))
+    writer.writerow(("báo cáo", "tiêu đề", _csv_value(snapshot.get("title"))))
+    writer.writerow(("báo cáo", "loại báo cáo", _source_label(snapshot.get("source_type"))))
     for block in _blocks(snapshot):
         if not _is_visible(block):
             continue
-        block_id = _string(block.get("stable_block_id"), "")
-        block_type = _string(block.get("block_type"), "")
         label = _csv_value(block.get("label"))
-        config = _csv_value(block.get("config", {}))
-        binding = _csv_value(block.get("source_binding", {}))
-        writer.writerow(("block", f"{block_id}:type", _csv_value(block_type)))
-        writer.writerow(("block", f"{block_id}:label", label))
-        writer.writerow(("block", f"{block_id}:config", config))
-        writer.writerow(("block", f"{block_id}:source_binding", binding))
+        content = " ".join(_block_content(block, _source_payload(snapshot)))
+        writer.writerow(("phần báo cáo", label, _csv_value(content)))
     return stream.getvalue().encode("utf-8")
 
 
@@ -95,21 +81,27 @@ def _render_pdf(
     snapshot: Mapping[str, object],
 ) -> tuple[bytes, str, str, list[str]]:
     lines = [
-        "RT-CONNECT REPORT",
-        _string(snapshot.get("title"), "Untitled report"),
-        f"Source: {_string(snapshot.get('source_type'), 'CUSTOM')}",
-        f"Revision: {_string(snapshot.get('revision_number'), '—')}",
-        f"Content SHA-256: {_string(snapshot.get('content_sha256'), '—')}",
+        "BÁO CÁO KIỂM TRA CHẤT LƯỢNG",
+        _string(snapshot.get("title"), "Báo cáo chưa đặt tên"),
+        f"Loại báo cáo: {_source_label(snapshot.get('source_type'))}",
     ]
+    payload = _source_payload(snapshot)
+    source_name = _source_display_name(payload)
+    if source_name:
+        lines.append(f"Bài kiểm tra: {source_name}")
+    source_status = _status_label(_first_value(payload, "overall_status", "status"))
+    if source_status:
+        lines.append(f"Đánh giá: {source_status}")
     visible_blocks = [block for block in _blocks(snapshot) if _is_visible(block)]
-    lines.append(f"Visible blocks: {len(visible_blocks)}")
+    if not visible_blocks:
+        lines.append("Chưa chọn nội dung hiển thị.")
     for block in visible_blocks[:24]:
-        lines.append(
-            f"• {_string(block.get('label'), 'Unnamed')} "
-            f"[{_string(block.get('block_type'), 'BLOCK')}]"
-        )
-    payload = _pdf_document(lines)
-    return payload, "application/pdf", "pdf", []
+        lines.append("")
+        lines.append(f"• {_string(block.get('label'), 'Phần báo cáo')}")
+        content = _block_content(block, payload)
+        lines.extend(content[:12] or ["Nội dung sẽ được lấy từ kết quả đã chọn."])
+    pdf_payload = _pdf_document(lines)
+    return pdf_payload, "application/pdf", "pdf", []
 
 
 def _pdf_document(lines: Sequence[str]) -> bytes:
@@ -287,6 +279,125 @@ def _render_png(snapshot: Mapping[str, object]) -> bytes:
         x0 = 64 + index * 50
         fill(x0, 330 - bar_height, x0 + 28, 330, (23, 145, 160))
     return _png_rgb(width, height, bytes(pixels))
+
+
+def _source_label(value: object) -> str:
+    labels = {
+        "CUSTOM": "Báo cáo tùy chỉnh",
+        "QA_CASE": "Bài kiểm tra chất lượng máy",
+        "MACHINE_QA": "Kết quả kiểm tra máy",
+        "GAMMA": "Phân tích PSQA",
+        "DVH": "Phân tích liều và thể tích",
+        "BIOLOGICAL": "Công cụ sinh học",
+    }
+    return labels.get(_string(value, "CUSTOM"), "Báo cáo kiểm tra chất lượng")
+
+
+def _source_payload(snapshot: Mapping[str, object]) -> Mapping[str, object]:
+    source_snapshot = snapshot.get("source_snapshot")
+    if not isinstance(source_snapshot, Mapping):
+        return {}
+    payload = source_snapshot.get("payload")
+    return payload if isinstance(payload, Mapping) else {}
+
+
+def _source_display_name(payload: Mapping[str, object]) -> str | None:
+    for key in ("title", "name", "qa_type", "scenario_type"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return None
+
+
+def _first_value(payload: Mapping[str, object], *keys: str) -> object | None:
+    for key in keys:
+        value = payload.get(key)
+        if value not in (None, ""):
+            return value
+    result = payload.get("result_snapshot")
+    if isinstance(result, Mapping):
+        for key in keys:
+            value = result.get(key)
+            if value not in (None, ""):
+                return value
+    return None
+
+
+def _status_label(value: object) -> str | None:
+    if value in (None, ""):
+        return None
+    labels = {
+        "PASS": "Đạt",
+        "PASSED": "Đạt",
+        "WARNING": "Cảnh báo",
+        "FAIL": "Không đạt",
+        "FAILED": "Không đạt",
+        "PENDING": "Đang chờ",
+        "QUEUED": "Đang chờ",
+        "RUNNING": "Đang chạy",
+        "PROCESSING": "Đang xử lý",
+        "COMPLETED": "Đã hoàn tất",
+        "CANCELLED": "Đã hủy",
+        "CANCELED": "Đã hủy",
+    }
+    return labels.get(str(value).upper(), "Đã ghi nhận")
+
+
+def _block_content(block: Mapping[str, object], payload: Mapping[str, object]) -> list[str]:
+    config = block.get("config")
+    if isinstance(config, Mapping):
+        content = config.get("content")
+        if isinstance(content, str) and content.strip():
+            return [line.strip() for line in content.splitlines() if line.strip()]
+
+    block_type = _string(block.get("block_type"), "")
+    if block_type == "METADATA":
+        performed_at = payload.get("performed_at") or payload.get("created_at")
+        if isinstance(performed_at, str) and performed_at:
+            return [f"Thời điểm ghi nhận: {performed_at[:10]}"]
+    if block_type == "METRICS":
+        return _metric_lines(payload)
+    if block_type == "WARNING":
+        warnings = payload.get("warning_snapshot") or payload.get("error_snapshot")
+        if isinstance(warnings, list) and warnings:
+            return [f"Có {len(warnings)} cảnh báo hoặc nội dung cần xem lại."]
+        return ["Không ghi nhận cảnh báo."]
+    if block_type == "PROVENANCE":
+        return ["Kết quả được lấy từ bản chụp đã lưu cùng báo cáo."]
+    if block_type in {"GAMMA_MAP", "DOSE_PROFILE", "DVH", "IMAGE"}:
+        return ["Hình phân tích sẽ được đính kèm khi kết quả có dữ liệu hình ảnh."]
+    return []
+
+
+def _metric_lines(payload: Mapping[str, object]) -> list[str]:
+    result = payload.get("result_snapshot")
+    if not isinstance(result, Mapping):
+        result = payload
+    allowed = (
+        ("pass_rate", "Tỷ lệ đạt"),
+        ("coverage_percent", "Độ bao phủ"),
+        ("max_gamma", "Gamma lớn nhất"),
+        ("mean_gamma", "Gamma trung bình"),
+        ("dose_difference_percent", "Chênh lệch liều"),
+        ("dta_mm", "Khoảng cách DTA"),
+        ("roi_number", "Vùng quan tâm"),
+    )
+    lines: list[str] = []
+    for key, label in allowed:
+        value = result.get(key)
+        if value not in (None, ""):
+            lines.append(f"{label}: {_string(value, '—')}")
+    measurements = payload.get("measurements")
+    if isinstance(measurements, list):
+        for index, measurement in enumerate(measurements[:12], start=1):
+            if not isinstance(measurement, Mapping):
+                continue
+            value = measurement.get("value")
+            unit = measurement.get("unit")
+            if value not in (None, ""):
+                suffix = f" {unit}" if isinstance(unit, str) and unit else ""
+                lines.append(f"Chỉ số {index}: {_string(value, '—')}{suffix}")
+    return lines
 
 
 def _png_rgb(width: int, height: int, pixels: bytes) -> bytes:

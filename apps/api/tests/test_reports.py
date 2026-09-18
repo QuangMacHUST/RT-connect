@@ -31,6 +31,12 @@ def test_pdf_renderer_embeds_unicode_text_without_fallback_replacement() -> None
                 "is_visible": True,
             }
         ],
+        "source_snapshot": {
+            "payload": {
+                "title": "Bài kiểm tra vú sau phẫu thuật",
+                "status": "COMPLETED",
+            }
+        },
     }
 
     payload, media_type, extension, warnings = render_report(snapshot, "PDF")
@@ -45,7 +51,12 @@ def test_pdf_renderer_embeds_unicode_text_without_fallback_replacement() -> None
         "ascii"
     )
     streams = re.findall(rb"stream\r?\n(.*?)\r?\nendstream", payload, flags=re.DOTALL)
-    assert any(expected_text in zlib.decompress(stream) for stream in streams)
+    content = b"\n".join(zlib.decompress(stream) for stream in streams)
+    assert expected_text in content
+    source_text = "Bài kiểm tra vú sau phẫu thuật".encode("utf-16-be").hex().upper().encode("ascii")
+    assert source_text in content
+    assert b"Content SHA-256" not in content
+    assert b"Revision:" not in content
 
 
 def _qa_case(client: TestClient, organization_id: str) -> str:
