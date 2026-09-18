@@ -1851,3 +1851,10 @@ The older Railway-history bullets below are retained as evidence of earlier inci
 - Pylinac tiếp tục là engine duy nhất. RT-CONNECT chỉ phụ trách chọn điểm, quy đổi tọa độ, kiểm tra đầu vào và truyền tham số; không có thuật toán phân tích ảnh thay thế.
 - Kiểm thử ánh xạ tâm, giới hạn điểm ngoài mép và trường hợp thiếu thang đo đạt; kiểm tra API artifact, toàn bộ giao diện đạt **74/74**, kiểm tra kiểu, lint và bản dựng sản phẩm đạt. Bằng chứng: [chọn tâm phantom trực tiếp](docs/evidence/p7-local-visual-phantom-center-adjustment-20260918.md).
 - Đây là `LOCAL_VERIFIED_SLICE`, chưa đóng P7-W04. Còn cần fixture phantom được phê duyệt, tương tác có đăng nhập trên staging, đối chiếu độc lập, kiểm tra các ROI chuyên biệt và nghiệm thu chuyên môn. Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`.
+
+## P7-W04 — parity triển khai chọn tâm phantom trên staging — đã kiểm tra — 2026-09-18
+
+- API, giao diện và tiến trình nền staging đã được dựng lại từ cùng commit `b49aaf3363480c0c6468c7f53eb8038b86b31bda`.
+- Bộ xác minh công khai exact-SHA đạt **16/16**; health/readiness đều `200`, lược đồ `20260914_0023`, tuyến thông tin xem trước và gói giao diện đều hiện diện.
+- Bằng chứng: [parity chọn tâm phantom trên staging](docs/evidence/p7-staging-visual-phantom-center-adjustment-20260918.json). Đây là kiểm tra triển khai và biên công khai không cần đăng nhập, chưa phải chạy thao tác chọn tâm với fixture phantom được phê duyệt.
+- Không tạo, sửa, lưu trữ, khôi phục hoặc xóa hồ sơ `dailyQA`. P7-W04 vẫn mở các cổng tương tác có đăng nhập, fixture đại diện, đối chiếu độc lập và nghiệm thu chuyên môn.
